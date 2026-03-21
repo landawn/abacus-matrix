@@ -35,14 +35,14 @@ import com.landawn.abacus.util.stream.ObjIteratorEx;
 import com.landawn.abacus.util.stream.Stream;
 
 /**
- * Matrix implementation backed by a {@code byte[][]}.
+ * Matrix implementation backed by a rectangular {@code byte[][]}.
  *
- * <p>It provides byte-specific accessors, transformations, and bulk operations on top of
- * {@link AbstractMatrix}. Constructors and {@code of(...)} usually wrap the supplied array directly,
- * while builders such as diagonal factories, conversions, and mapping methods allocate fresh storage.</p>
+ * <p>This type specializes {@link AbstractMatrix} for {@code byte} values while keeping the data in a
+ * validated backing array. Constructors and {@code of(...)} generally wrap the supplied storage
+ * directly, while factories, conversions, and mapping operations allocate new arrays.</p>
  *
- * <p>Cells introduced by resizing or extension default to {@code 0} unless an overload lets the caller
- * provide a different fill value.</p>
+ * <p>Cells introduced by growth or reshaping default to {@code 0} unless an overload accepts an
+ * explicit fill value.</p>
  */
 public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStream, Stream<ByteStream>, ByteMatrix> {
 
@@ -51,16 +51,12 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     static final ByteMatrix EMPTY_BYTE_MATRIX = new ByteMatrix(new byte[0][0]);
 
     /**
-     * Constructs a ByteMatrix from a two-dimensional byte array.
-     * If the input array is null, an empty matrix (0x0) is created.
+     * Constructs a {@code ByteMatrix} backed by the supplied two-dimensional array.
      *
-     * <p><b>Important:</b> The array is used directly without copying. This means:
-     * <ul>
-     * <li>Modifications to the input array after construction will affect the matrix</li>
-     * <li>Modifications to the matrix will affect the original array</li>
-     * <li>This provides better performance but less encapsulation</li>
-     * </ul>
-     * For an independent matrix, pass in a copied array or call {@link #copy()} after construction.
+     * <p>If {@code a} is {@code null}, this creates an empty {@code 0x0} matrix. Otherwise the array
+     * is used directly after rectangular-shape validation, so later modifications to either the input
+     * array or the matrix remain visible through the other view. Call {@link #copy()} if you need an
+     * independently owned matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -71,7 +67,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * ByteMatrix empty = new ByteMatrix(null);   // Creates 0x0 empty matrix
      * }</pre>
      *
-     * @param a the two-dimensional byte array to wrap as a matrix. Can be null.
+     * @param a the two-dimensional byte array to wrap, or {@code null} for an empty matrix
      */
     public ByteMatrix(final byte[][] a) {
         super(a == null ? new byte[0][0] : a);

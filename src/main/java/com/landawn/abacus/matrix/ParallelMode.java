@@ -19,25 +19,26 @@ package com.landawn.abacus.matrix;
  *
  * <p>The active value is set through {@link Matrices#setParallelMode(ParallelMode)} and consulted by
  * helpers such as {@link Matrices#isParallelizable(AbstractMatrix, long)}. {@link #FORCE_ON} requests
- * parallel execution whenever the required runtime support is present, {@link #FORCE_OFF} disables it,
- * and {@link #AUTO} defers to the built-in size heuristics.</p>
+ * parallel execution whenever the required runtime support is present, {@link #FORCE_OFF} disables
+ * it, and {@link #AUTO} combines runtime support with the built-in size heuristics.</p>
  *
  * @see Matrices#setParallelMode(ParallelMode)
  * @see Matrices#getParallelMode()
  */
 public enum ParallelMode {
     /**
-     * Prefer parallel execution whenever the runtime supports it.
+     * Request parallel execution whenever the runtime supports it.
      */
     FORCE_ON,
 
     /**
-     * Force sequential execution.
+     * Force sequential execution for the current thread.
      */
     FORCE_OFF,
 
     /**
-     * Use the built-in heuristics in {@link Matrices#isParallelizable(AbstractMatrix, long)}.
+     * Use runtime support plus the built-in heuristics in
+     * {@link Matrices#isParallelizable(AbstractMatrix, long)}.
      */
     AUTO
 }

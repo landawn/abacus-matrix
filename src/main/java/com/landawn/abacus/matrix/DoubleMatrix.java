@@ -35,14 +35,14 @@ import com.landawn.abacus.util.stream.ObjIteratorEx;
 import com.landawn.abacus.util.stream.Stream;
 
 /**
- * Matrix implementation backed by a {@code double[][]}.
+ * Matrix implementation backed by a rectangular {@code double[][]}.
  *
- * <p>It provides double-specific accessors, transformations, and bulk operations on top of
- * {@link AbstractMatrix}. Constructors and {@code of(...)} usually wrap the supplied array directly,
- * while builders such as diagonal factories, conversions, and mapping methods allocate fresh storage.</p>
+ * <p>This type specializes {@link AbstractMatrix} for {@code double} values while keeping the data in
+ * a validated backing array. Constructors and {@code of(...)} generally wrap the supplied storage
+ * directly, while factories, conversions, and mapping operations allocate new arrays.</p>
  *
- * <p>Cells introduced by resizing or extension default to {@code 0.0d} unless an overload lets the
- * caller provide a different fill value.</p>
+ * <p>Cells introduced by growth or reshaping default to {@code 0.0d} unless an overload accepts an
+ * explicit fill value.</p>
  */
 public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, DoubleStream, Stream<DoubleStream>, DoubleMatrix> {
 
@@ -50,14 +50,12 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     static final DoubleMatrix EMPTY_DOUBLE_MATRIX = new DoubleMatrix(new double[0][0]);
 
     /**
-     * Constructs a DoubleMatrix from a two-dimensional double array.
+     * Constructs a {@code DoubleMatrix} backed by the supplied two-dimensional array.
      *
-     * <p>The provided array is used directly as the internal storage without copying.
-     * If the input array is null, an empty matrix (0x0) is created instead.
-     *
-     * <p><b>Important:</b> Since the array is not copied, any external modifications
-     * to the array will affect this matrix. To avoid this issue, use {@link #copy()} method
-     * on the created matrix to obtain a copy, or manually copy the array before passing it.
+     * <p>If {@code a} is {@code null}, this creates an empty {@code 0x0} matrix. Otherwise the array
+     * is used directly after rectangular-shape validation, so later modifications to either the input
+     * array or the matrix remain visible through the other view. Call {@link #copy()} if you need an
+     * independently owned matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -77,7 +75,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * // empty.rowCount() returns 0, empty.columnCount() returns 0
      * }</pre>
      *
-     * @param a the two-dimensional double array to wrap, or null for an empty matrix
+     * @param a the two-dimensional double array to wrap, or {@code null} for an empty matrix
      */
     public DoubleMatrix(final double[][] a) {
         super(a == null ? new double[0][0] : a);

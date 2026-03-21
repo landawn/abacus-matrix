@@ -35,9 +35,9 @@ import com.landawn.abacus.util.stream.Stream;
 /**
  * Utility and policy holder shared by the matrix implementations in this package.
  *
- * <p>In addition to the public shape-check and parallel-mode APIs, this class centralizes package-level
- * helpers for index traversal, overflow-safe size calculations, matrix-array allocation, and zipping
- * compatible matrices.</p>
+ * <p>In addition to the public shape-checking and parallel-mode APIs, this class centralizes
+ * package-level helpers for index traversal, overflow-safe size calculations, backing-array
+ * allocation, and element-wise zipping of compatible matrices.</p>
  */
 public final class Matrices {
 
@@ -77,7 +77,7 @@ public final class Matrices {
      * <p>The returned value indicates how matrix operations should decide whether to use
      * parallel processing:</p>
      * <ul>
-     * <li>{@link ParallelMode#FORCE_ON} - Forces parallel execution regardless of matrix size</li>
+     * <li>{@link ParallelMode#FORCE_ON} - Requests parallel execution whenever the runtime supports it</li>
      * <li>{@link ParallelMode#FORCE_OFF} - Forces sequential execution regardless of matrix size</li>
      * <li>{@link ParallelMode#AUTO} - Automatically decides based on matrix size (threshold: 8192 elements)</li>
      * </ul>
@@ -108,8 +108,8 @@ public final class Matrices {
      *
      * <p>Available settings:</p>
      * <ul>
-     * <li>{@link ParallelMode#FORCE_ON} - Forces all matrix operations to use parallel processing,
-     *     regardless of matrix size. Use this when you know operations will benefit from parallelization.</li>
+     * <li>{@link ParallelMode#FORCE_ON} - Requests parallel processing for all matrix operations when
+     *     the runtime supports it, regardless of matrix size.</li>
      * <li>{@link ParallelMode#FORCE_OFF} - Forces all matrix operations to use sequential processing,
      *     regardless of matrix size. Use this to avoid parallelization overhead for small matrices.</li>
      * <li>{@link ParallelMode#AUTO} - Automatically decides based on matrix size. Operations
@@ -184,7 +184,7 @@ public final class Matrices {
      *     If not supported, always returns {@code false}.</li>
      * <li><b>Thread Setting:</b> Checks the current thread's {@link ParallelMode} setting:
      *     <ul>
-     *     <li>{@link ParallelMode#FORCE_ON} - Always returns {@code true} (if runtime supports it)</li>
+     *     <li>{@link ParallelMode#FORCE_ON} - Returns {@code true} whenever runtime support is available</li>
      *     <li>{@link ParallelMode#FORCE_OFF} - Always returns {@code false}</li>
      *     <li>{@link ParallelMode#AUTO} - Decides based on element count</li>
      *     </ul>

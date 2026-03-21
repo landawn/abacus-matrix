@@ -28,14 +28,14 @@ import com.landawn.abacus.util.stream.Stream;
 /**
  * Shared implementation base for the matrix types in this package.
  *
- * <p>An {@code AbstractMatrix} stores a rectangular row-array backing structure and centralizes the
- * behavior common to primitive and object matrices, including shape validation, coordinate navigation,
- * row and column access, reshaping, and stream-oriented traversal.</p>
+ * <p>An {@code AbstractMatrix} wraps a validated rectangular row-array backing structure and
+ * centralizes behavior common to both primitive and object matrices, including shape validation,
+ * coordinate navigation, row and column access, reshaping, and stream-oriented traversal.</p>
  *
- * <p>Some APIs intentionally expose live storage for performance-sensitive code, notably
- * {@link #backingArray()}, {@link #rowView(int)}, and {@link #applyOnFlattened(Throwables.Consumer)}.
- * Callers that need isolation should prefer copy-producing operations such as {@link #copy()},
- * {@link #flatten()}, and {@link #rowCopy(int)}.</p>
+ * <p>Several APIs intentionally expose live storage for performance-sensitive code, notably
+ * {@link #backingArray()}, {@link #rowView(int)}, and
+ * {@link #applyOnFlattened(Throwables.Consumer)}. Callers that need isolation should prefer
+ * copy-producing operations such as {@link #copy()}, {@link #flatten()}, and {@link #rowCopy(int)}.</p>
  *
  * @param <A> the array type used for internal row storage (for example {@code int[]}, {@code double[]}, or {@code Object[]})
  * @param <PL> the flattened-view list type

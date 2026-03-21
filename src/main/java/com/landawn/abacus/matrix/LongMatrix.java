@@ -35,14 +35,14 @@ import com.landawn.abacus.util.stream.ObjIteratorEx;
 import com.landawn.abacus.util.stream.Stream;
 
 /**
- * Matrix implementation backed by a {@code long[][]}.
+ * Matrix implementation backed by a rectangular {@code long[][]}.
  *
- * <p>It provides long-specific accessors, transformations, and bulk operations on top of
- * {@link AbstractMatrix}. Constructors and {@code of(...)} usually wrap the supplied array directly,
- * while builders such as diagonal factories, conversions, and mapping methods allocate fresh storage.</p>
+ * <p>This type specializes {@link AbstractMatrix} for {@code long} values while keeping the data in a
+ * validated backing array. Constructors and {@code of(...)} generally wrap the supplied storage
+ * directly, while factories, conversions, and mapping operations allocate new arrays.</p>
  *
- * <p>Cells introduced by resizing or extension default to {@code 0L} unless an overload lets the caller
- * provide a different fill value.</p>
+ * <p>Cells introduced by growth or reshaping default to {@code 0L} unless an overload accepts an
+ * explicit fill value.</p>
  */
 public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStream, Stream<LongStream>, LongMatrix> {
 
@@ -50,12 +50,12 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     static final LongMatrix EMPTY_LONG_MATRIX = new LongMatrix(new long[0][0]);
 
     /**
-     * Constructs a LongMatrix from a two-dimensional long array.
-     * If the input array is null, an empty matrix (0x0) is created.
+     * Constructs a {@code LongMatrix} backed by the supplied two-dimensional array.
      *
-     * <p><b>Important:</b> The array is used directly without copying. Modifications to the input array
-     * after construction will affect the matrix, and vice versa. If you need an independent copy,
-     * use {@link #copy()} after construction.</p>
+     * <p>If {@code a} is {@code null}, this creates an empty {@code 0x0} matrix. Otherwise the array
+     * is used directly after rectangular-shape validation, so later modifications to either the input
+     * array or the matrix remain visible through the other view. Call {@link #copy()} if you need an
+     * independently owned matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -64,7 +64,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * // Modifying data[0][0] will also modify matrix.get(0, 0)
      * }</pre>
      *
-     * @param a the two-dimensional long array to wrap as a matrix. Can be null, which creates an empty matrix.
+     * @param a the two-dimensional long array to wrap, or {@code null} for an empty matrix
      */
     public LongMatrix(final long[][] a) {
         super(a == null ? new long[0][0] : a);

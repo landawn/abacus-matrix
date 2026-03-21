@@ -39,13 +39,14 @@ import com.landawn.abacus.util.stream.Stream;
 /**
  * Object matrix backed by a rectangular {@code T[][]}.
  *
- * <p>This type provides the same shape, traversal, and transformation operations as the primitive matrix
- * variants while preserving reference semantics. Constructors and {@code of(...)} usually wrap the
- * supplied backing array directly, while builders that synthesize data allocate fresh storage.</p>
+ * <p>This type provides the same shape, traversal, and transformation operations as the primitive
+ * matrix variants while preserving reference semantics. Constructors and {@code of(...)} generally
+ * wrap the supplied backing array directly, while builders, conversions, and mapping methods
+ * allocate fresh storage.</p>
  *
- * <p>{@code null} elements are permitted. When a new backing array must be created, the implementation
- * tracks either an explicit target type or the runtime component type so array-typed results remain
- * reifiable where possible.</p>
+ * <p>{@code null} elements are permitted. When a new backing array must be created, the
+ * implementation tracks either an explicit target type or the runtime component type so array-typed
+ * results remain reifiable where possible.</p>
  *
  * @param <T> the element type stored in the matrix
  */
@@ -56,14 +57,14 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     Class<T> elementType;
 
     /**
-     * Constructs a Matrix from a two-dimensional array.
+     * Constructs a {@code Matrix} backed by the supplied two-dimensional array.
      *
-     * <p><b>Important:</b> The matrix maintains a reference to the provided array,
-     * not a copy. Modifications to the original array will affect the matrix,
-     * and vice versa.</p>
+     * <p>The provided array is used directly after rectangular-shape validation, so later
+     * modifications to either the input array or the matrix remain visible through the other view.</p>
      *
-     * <p>The array must be rectangular (all rows must have the same length).
-     * Empty arrays are allowed (e.g., {@code new String[0][0]} or {@code new String[5][0]}).</p>
+     * <p>The array must be rectangular (all rows must have the same length). Empty arrays are allowed
+     * (for example {@code new String[0][0]} or {@code new String[5][0]}). Call {@link #copy()} if
+     * you need an independently owned matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

@@ -35,14 +35,14 @@ import com.landawn.abacus.util.stream.ObjIteratorEx;
 import com.landawn.abacus.util.stream.Stream;
 
 /**
- * Matrix implementation backed by a {@code char[][]}.
+ * Matrix implementation backed by a rectangular {@code char[][]}.
  *
- * <p>It provides char-specific accessors, transformations, and bulk operations on top of
- * {@link AbstractMatrix}. Constructors and {@code of(...)} usually wrap the supplied array directly,
- * while builders such as diagonal factories, conversions, and mapping methods allocate fresh storage.</p>
+ * <p>This type specializes {@link AbstractMatrix} for {@code char} values while keeping the data in a
+ * validated backing array. Constructors and {@code of(...)} generally wrap the supplied storage
+ * directly, while factories, conversions, and mapping operations allocate new arrays.</p>
  *
- * <p>Cells introduced by resizing or extension default to {@code '\0'} unless an overload lets the
- * caller provide a different fill value.</p>
+ * <p>Cells introduced by growth or reshaping default to {@code '\0'} unless an overload accepts an
+ * explicit fill value.</p>
  */
 public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStream, Stream<CharStream>, CharMatrix> {
 
@@ -51,12 +51,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     static final CharMatrix EMPTY_CHAR_MATRIX = new CharMatrix(new char[0][0]);
 
     /**
-     * Constructs a new CharMatrix with the specified two-dimensional char array.
-     * If the input array is null, an empty matrix (0x0) is created.
+     * Constructs a {@code CharMatrix} backed by the supplied two-dimensional array.
      *
-     * <p><b>Important:</b> The input array is used directly without defensive copying.
-     * This means modifications to the input array after construction will affect the matrix,
-     * and vice versa. For independent matrices, create a copy of the array before passing it.
+     * <p>If {@code a} is {@code null}, this creates an empty {@code 0x0} matrix. Otherwise the array
+     * is used directly after rectangular-shape validation, so later modifications to either the input
+     * array or the matrix remain visible through the other view. Call {@link #copy()} if you need an
+     * independently owned matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -67,7 +67,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * CharMatrix empty = new CharMatrix(null);   // Creates 0x0 empty matrix
      * }</pre>
      *
-     * @param a the two-dimensional char array to initialize the matrix with, or null for an empty matrix
+     * @param a the two-dimensional char array to wrap, or {@code null} for an empty matrix
      */
     public CharMatrix(final char[][] a) {
         super(a == null ? new char[0][0] : a);
