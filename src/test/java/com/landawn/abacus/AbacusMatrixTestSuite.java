@@ -11,5 +11,5 @@ import org.junit.platform.suite.api.Suite;
 @SelectPackages("") // Scan all packages, or specify specific ones
 @IncludeTags({ "base-test", "2025", "2510", "2511", "2512" })
 @ExcludeTags("slow-test") // But exclude any that also have "slow-test" tag
-public class AbacusExtraTestSuite {
+public class AbacusMatrixTestSuite {
 }

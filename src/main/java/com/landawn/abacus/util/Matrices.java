@@ -14,10 +14,14 @@
 
 package com.landawn.abacus.util;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.landawn.abacus.logging.Logger;
 import com.landawn.abacus.logging.LoggerFactory;
@@ -3131,20 +3135,112 @@ public final class Matrices {
         return new Matrix<>(result);
     }
 
+    /**
+     * Resolves the most specific assignable common type for the two input types.
+     *
+     * <p>This search considers both super classes and interfaces. If no better common type
+     * can be identified, {@link Object} is returned.</p>
+     *
+     * @param left the first type, may be {@code null}
+     * @param right the second type, may be {@code null}
+     * @return the most specific common assignable type, never {@code null}
+     */
+    protected static Class<?> resolveCommonAssignableType(final Class<?> left, final Class<?> right) {
+        if (left == null) {
+            return right == null ? Object.class : right;
+        }
+
+        if (right == null) {
+            return left;
+        }
+
+        if (left.isAssignableFrom(right)) {
+            return left;
+        }
+
+        if (right.isAssignableFrom(left)) {
+            return right;
+        }
+
+        final Map<Class<?>, Integer> leftDistances = collectTypeDistances(left);
+        final Map<Class<?>, Integer> rightDistances = collectTypeDistances(right);
+        Class<?> best = Object.class;
+        int bestDistance = Integer.MAX_VALUE;
+        int bestPenalty = Integer.MAX_VALUE;
+        int bestMethodCount = Integer.MIN_VALUE;
+
+        for (final Map.Entry<Class<?>, Integer> entry : leftDistances.entrySet()) {
+            final Class<?> candidate = entry.getKey();
+            final Integer rightDistance = rightDistances.get(candidate);
+
+            if (rightDistance == null || !candidate.isAssignableFrom(left) || !candidate.isAssignableFrom(right)) {
+                continue;
+            }
+
+            final int totalDistance = entry.getValue() + rightDistance;
+            final int typePenalty = commonTypePenalty(candidate);
+            final int methodCount = candidate.getMethods().length;
+
+            if (totalDistance < bestDistance || (totalDistance == bestDistance && typePenalty < bestPenalty)
+                    || (totalDistance == bestDistance && typePenalty == bestPenalty && methodCount > bestMethodCount)
+                    || (totalDistance == bestDistance && typePenalty == bestPenalty && methodCount == bestMethodCount && best.isAssignableFrom(candidate))) {
+                best = candidate;
+                bestDistance = totalDistance;
+                bestPenalty = typePenalty;
+                bestMethodCount = methodCount;
+            }
+        }
+
+        return best;
+    }
+
     @SuppressWarnings("unchecked")
-    private static <T> Class<T> resolveCommonElementType(final Matrix<T>[] matrices) {
+    protected static <T> Class<T> resolveCommonElementType(final Matrix<T>[] matrices) {
         Class<?> commonType = matrices[0].elementType;
 
         for (int i = 1, len = matrices.length; i < len; i++) {
-            commonType = resolveCommonSuperType(commonType, matrices[i].elementType);
+            commonType = resolveCommonAssignableType(commonType, matrices[i].elementType);
         }
 
         return (Class<T>) commonType;
     }
 
-    private static Class<?> resolveCommonSuperType(final Class<?> left, final Class<?> right) {
-        // Use the same interface-aware common-type resolution as matrices themselves.
-        return AbstractMatrix.resolveCommonAssignableType(left, right);
+    private static Map<Class<?>, Integer> collectTypeDistances(final Class<?> startType) {
+        final Map<Class<?>, Integer> distances = new LinkedHashMap<>();
+        final Deque<Class<?>> queue = new ArrayDeque<>();
+        distances.put(startType, 0);
+        queue.add(startType);
+
+        while (!queue.isEmpty()) {
+            final Class<?> current = queue.removeFirst();
+            final int nextDistance = distances.get(current) + 1;
+
+            final Class<?> superClass = current.getSuperclass();
+
+            if (superClass != null && distances.putIfAbsent(superClass, nextDistance) == null) {
+                queue.addLast(superClass);
+            }
+
+            for (final Class<?> intf : current.getInterfaces()) {
+                if (distances.putIfAbsent(intf, nextDistance) == null) {
+                    queue.addLast(intf);
+                }
+            }
+        }
+
+        return distances;
+    }
+
+    private static int commonTypePenalty(final Class<?> type) {
+        if (type == Object.class) {
+            return 3;
+        }
+
+        if (type.isInterface()) {
+            return type.getMethods().length == 0 ? 2 : 1;
+        }
+
+        return 0;
     }
 
     private static void checkShapeForZip(final AbstractMatrix<?, ?, ?, ?, ?> a, final AbstractMatrix<?, ?, ?, ?, ?> b) {

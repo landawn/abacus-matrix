@@ -277,7 +277,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         final Class<?> leftComponentClass = mainDiagonal == null ? null : mainDiagonal.getClass().getComponentType();
         final Class<?> rightComponentClass = antiDiagonal == null ? null : antiDiagonal.getClass().getComponentType();
 
-        final Class<?> commonType = resolveCommonAssignableType(leftComponentClass, rightComponentClass);
+        final Class<?> commonType = Matrices.resolveCommonAssignableType(leftComponentClass, rightComponentClass);
 
         @SuppressWarnings("unchecked")
         final T[][] c = (T[][]) new Object[len][len];
@@ -655,7 +655,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             return currentElementType;
         }
 
-        return (Class<T>) resolveCommonAssignableType(currentElementType, valueType);
+        return (Class<T>) Matrices.resolveCommonAssignableType(currentElementType, valueType);
     }
 
     private Class<?> resolveRowElementType(final T[] row) {
@@ -686,7 +686,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             if (candidate == null) {
                 candidate = valueClass;
             } else if (!candidate.isAssignableFrom(valueClass)) {
-                candidate = resolveCommonAssignableType(candidate, valueClass);
+                candidate = Matrices.resolveCommonAssignableType(candidate, valueClass);
 
                 if (candidate == Object.class) {
                     return Object.class;
@@ -2451,7 +2451,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         N.checkArgument(mergedRowCount <= Integer.MAX_VALUE, "Merged row count overflow: {} + {} = {}", rowCount, other.rowCount, mergedRowCount);
 
         @SuppressWarnings("unchecked")
-        final Class<T> mergedElementType = (Class<T>) resolveCommonAssignableType(elementType, other.elementType);
+        final Class<T> mergedElementType = (Class<T>) Matrices.resolveCommonAssignableType(elementType, other.elementType);
         @SuppressWarnings("unchecked")
         final Class<T[]> mergedArrayType = (Class<T[]>) N.newArray(mergedElementType, 0).getClass();
         final T[][] c = N.newArray(mergedArrayType, (int) mergedRowCount);
@@ -2500,7 +2500,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
                 mergedColumnCount);
 
         @SuppressWarnings("unchecked")
-        final Class<T> mergedElementType = (Class<T>) resolveCommonAssignableType(elementType, other.elementType);
+        final Class<T> mergedElementType = (Class<T>) Matrices.resolveCommonAssignableType(elementType, other.elementType);
         @SuppressWarnings("unchecked")
         final Class<T[]> mergedArrayType = (Class<T[]>) N.newArray(mergedElementType, 0).getClass();
         final T[][] c = N.newArray(mergedArrayType, rowCount);
