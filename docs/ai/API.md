@@ -4,10 +4,10 @@
 - Generated: 2026-03-21
 
 ## Packages
-- com.landawn.abacus.util
+- com.landawn.abacus.matrix
 
-## com.landawn.abacus.util
-### Class AbstractMatrix (com.landawn.abacus.util.AbstractMatrix)
+## com.landawn.abacus.matrix
+### Class AbstractMatrix (com.landawn.abacus.matrix.AbstractMatrix)
 Shared implementation base for the matrix types in this package.
 
 **Thread-safety:** unspecified
@@ -419,7 +419,7 @@ Shared implementation base for the matrix types in this package.
 - **Throws:**
   - `E` — if the function throws an exception
 
-### Class BooleanMatrix (com.landawn.abacus.util.BooleanMatrix)
+### Class BooleanMatrix (com.landawn.abacus.matrix.BooleanMatrix)
 Matrix implementation backed by a {@code boolean\[\]\[\]} .
 
 **Thread-safety:** unspecified
@@ -1185,7 +1185,7 @@ Matrix implementation backed by a {@code boolean\[\]\[\]} .
   - (none)
 - **Returns:** a string representation of this matrix
 
-### Class ByteMatrix (com.landawn.abacus.util.ByteMatrix)
+### Class ByteMatrix (com.landawn.abacus.matrix.ByteMatrix)
 Matrix implementation backed by a {@code byte\[\]\[\]} .
 
 **Thread-safety:** unspecified
@@ -1988,7 +1988,7 @@ Matrix implementation backed by a {@code byte\[\]\[\]} .
 - **Returns:** a string representation of this matrix in two-dimensional array format
 - **See also:** #println()
 
-### Class CharMatrix (com.landawn.abacus.util.CharMatrix)
+### Class CharMatrix (com.landawn.abacus.matrix.CharMatrix)
 Matrix implementation backed by a {@code char\[\]\[\]} .
 
 **Thread-safety:** unspecified
@@ -2772,7 +2772,7 @@ Matrix implementation backed by a {@code char\[\]\[\]} .
   - (none)
 - **Returns:** a string representation of this matrix
 
-### Class DoubleMatrix (com.landawn.abacus.util.DoubleMatrix)
+### Class DoubleMatrix (com.landawn.abacus.matrix.DoubleMatrix)
 Matrix implementation backed by a {@code double\[\]\[\]} .
 
 **Thread-safety:** unspecified
@@ -3556,7 +3556,7 @@ Matrix implementation backed by a {@code double\[\]\[\]} .
   - (none)
 - **Returns:** a string representation of this matrix
 
-### Class FloatMatrix (com.landawn.abacus.util.FloatMatrix)
+### Class FloatMatrix (com.landawn.abacus.matrix.FloatMatrix)
 Matrix implementation backed by a {@code float\[\]\[\]} .
 
 **Thread-safety:** unspecified
@@ -4310,7 +4310,7 @@ Matrix implementation backed by a {@code float\[\]\[\]} .
   - (none)
 - **Returns:** a string representation of this matrix
 
-### Class IntMatrix (com.landawn.abacus.util.IntMatrix)
+### Class IntMatrix (com.landawn.abacus.matrix.IntMatrix)
 Matrix implementation backed by an {@code int\[\]\[\]} .
 
 **Thread-safety:** unspecified
@@ -5136,7 +5136,7 @@ Matrix implementation backed by an {@code int\[\]\[\]} .
   - (none)
 - **Returns:** a string representation of this matrix
 
-### Class LongMatrix (com.landawn.abacus.util.LongMatrix)
+### Class LongMatrix (com.landawn.abacus.matrix.LongMatrix)
 Matrix implementation backed by a {@code long\[\]\[\]} .
 
 **Thread-safety:** unspecified
@@ -5947,7 +5947,7 @@ Matrix implementation backed by a {@code long\[\]\[\]} .
   - (none)
 - **Returns:** a string representation of this matrix
 
-### Class Matrices (com.landawn.abacus.util.Matrices)
+### Class Matrices (com.landawn.abacus.matrix.Matrices)
 Utility and policy holder shared by the matrix implementations in this package.
 
 **Thread-safety:** unspecified
@@ -6679,7 +6679,7 @@ Utility and policy holder shared by the matrix implementations in this package.
 #### Public Instance Methods
 - (none)
 
-### Class Matrix (com.landawn.abacus.util.Matrix)
+### Class Matrix (com.landawn.abacus.matrix.Matrix)
 Object matrix backed by a rectangular {@code T\[\]\[\]} .
 
 **Thread-safety:** unspecified
@@ -7471,7 +7471,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
   - (none)
 - **Returns:** a string representation of this matrix
 
-### Enum ParallelMode (com.landawn.abacus.util.ParallelMode)
+### Enum ParallelMode (com.landawn.abacus.matrix.ParallelMode)
 Thread-local parallelization policy consulted by {@link Matrices} .
 
 **Thread-safety:** unspecified
@@ -7486,7 +7486,7 @@ Thread-local parallelization policy consulted by {@link Matrices} .
 #### Public Instance Methods
 - (none)
 
-### Class ShortMatrix (com.landawn.abacus.util.ShortMatrix)
+### Class ShortMatrix (com.landawn.abacus.matrix.ShortMatrix)
 Matrix implementation backed by a {@code short\[\]\[\]} .
 
 **Thread-safety:** unspecified

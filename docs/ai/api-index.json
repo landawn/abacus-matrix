@@ -10,10 +10,10 @@
   },
   "packages": [
     {
-      "name": "com.landawn.abacus.util",
+      "name": "com.landawn.abacus.matrix",
       "types": [
         {
-          "fqn": "com.landawn.abacus.util.AbstractMatrix",
+          "fqn": "com.landawn.abacus.matrix.AbstractMatrix",
           "name": "AbstractMatrix",
           "kind": "class",
           "modifiers": [
@@ -1519,7 +1519,7 @@
           "fields": []
         },
         {
-          "fqn": "com.landawn.abacus.util.BooleanMatrix",
+          "fqn": "com.landawn.abacus.matrix.BooleanMatrix",
           "name": "BooleanMatrix",
           "kind": "class",
           "modifiers": [
@@ -4209,7 +4209,7 @@
           "fields": []
         },
         {
-          "fqn": "com.landawn.abacus.util.ByteMatrix",
+          "fqn": "com.landawn.abacus.matrix.ByteMatrix",
           "name": "ByteMatrix",
           "kind": "class",
           "modifiers": [
@@ -7078,7 +7078,7 @@
           "fields": []
         },
         {
-          "fqn": "com.landawn.abacus.util.CharMatrix",
+          "fqn": "com.landawn.abacus.matrix.CharMatrix",
           "name": "CharMatrix",
           "kind": "class",
           "modifiers": [
@@ -9897,7 +9897,7 @@
           "fields": []
         },
         {
-          "fqn": "com.landawn.abacus.util.DoubleMatrix",
+          "fqn": "com.landawn.abacus.matrix.DoubleMatrix",
           "name": "DoubleMatrix",
           "kind": "class",
           "modifiers": [
@@ -12712,7 +12712,7 @@
           "fields": []
         },
         {
-          "fqn": "com.landawn.abacus.util.FloatMatrix",
+          "fqn": "com.landawn.abacus.matrix.FloatMatrix",
           "name": "FloatMatrix",
           "kind": "class",
           "modifiers": [
@@ -15401,7 +15401,7 @@
           "fields": []
         },
         {
-          "fqn": "com.landawn.abacus.util.IntMatrix",
+          "fqn": "com.landawn.abacus.matrix.IntMatrix",
           "name": "IntMatrix",
           "kind": "class",
           "modifiers": [
@@ -18367,7 +18367,7 @@
           "fields": []
         },
         {
-          "fqn": "com.landawn.abacus.util.LongMatrix",
+          "fqn": "com.landawn.abacus.matrix.LongMatrix",
           "name": "LongMatrix",
           "kind": "class",
           "modifiers": [
@@ -21275,7 +21275,7 @@
           "fields": []
         },
         {
-          "fqn": "com.landawn.abacus.util.Matrices",
+          "fqn": "com.landawn.abacus.matrix.Matrices",
           "name": "Matrices",
           "kind": "class",
           "modifiers": [
@@ -24625,7 +24625,7 @@
           "fields": []
         },
         {
-          "fqn": "com.landawn.abacus.util.Matrix",
+          "fqn": "com.landawn.abacus.matrix.Matrix",
           "name": "Matrix",
           "kind": "class",
           "modifiers": [
@@ -27621,7 +27621,7 @@
           "fields": []
         },
         {
-          "fqn": "com.landawn.abacus.util.ParallelMode",
+          "fqn": "com.landawn.abacus.matrix.ParallelMode",
           "name": "ParallelMode",
           "kind": "enum",
           "modifiers": [
@@ -27670,7 +27670,7 @@
           ]
         },
         {
-          "fqn": "com.landawn.abacus.util.ShortMatrix",
+          "fqn": "com.landawn.abacus.matrix.ShortMatrix",
           "name": "ShortMatrix",
           "kind": "class",
           "modifiers": [
