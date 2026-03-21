@@ -40,7 +40,7 @@ compile 'com.landawn:abacus-matrix:3.6.5'
 Please refer to [Wiki](https://github.com/landawn/abacus-matrix/wiki)
 
 
-## Also See: [abacus-common](https://github.com/landawn/abacus-common), [abacus-jdbc](https://github.com/landawn/abacus-jdbc).
+## Also See: [abacus-common](https://github.com/landawn/abacus-common), [abacus-extra](https://github.com/landawn/abacus-extra).
 
 
 ## Recommended Java programming libraries/frameworks:
