@@ -2702,6 +2702,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
                     }
                 }
 
+                if (c.length > len) {
+                    c[len] = null;
+                }
+
                 return c;
             }
         });
@@ -2858,6 +2862,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
                         i = 0;
                         j++;
                     }
+                }
+
+                if (c.length > len) {
+                    c[len] = null;
                 }
 
                 return c;

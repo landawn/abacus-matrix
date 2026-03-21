@@ -1225,6 +1225,22 @@ class MatrixTest extends TestBase {
         Assertions.assertThrows(NoSuchElementException.class, ex::next);
     }
 
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testStreamVerticalToArrayNullTerminatesOversizedArray_EdgeCase() {
+        Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2 }, { 3, 4 } });
+        var iterator = matrix.streamVertical(0, 2).iterator();
+
+        Assertions.assertTrue(iterator instanceof ObjIteratorEx);
+
+        ObjIteratorEx<Integer> ex = (ObjIteratorEx<Integer>) iterator;
+        Integer[] destination = new Integer[] { -1, -1, -1, -1, -1, -1 };
+        Integer[] array = ex.toArray(destination);
+
+        Assertions.assertSame(destination, array);
+        Assertions.assertArrayEquals(new Integer[] { 1, 3, 2, 4, null, -1 }, array);
+    }
+
     @Test
     public void testStreamR() {
         Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
@@ -1463,6 +1479,22 @@ class MatrixTest extends TestBase {
             Integer[] array = ex.toArray(new Integer[0]);
             Assertions.assertArrayEquals(new Integer[] { 1, 2, 3, 4 }, array);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testStreamHorizontalToArrayNullTerminatesOversizedArray() {
+        Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2 }, { 3, 4 } });
+        var iterator = matrix.streamHorizontal(0, 2).iterator();
+
+        Assertions.assertTrue(iterator instanceof ObjIteratorEx);
+
+        ObjIteratorEx<Integer> ex = (ObjIteratorEx<Integer>) iterator;
+        Integer[] destination = new Integer[] { -1, -1, -1, -1, -1, -1 };
+        Integer[] array = ex.toArray(destination);
+
+        Assertions.assertSame(destination, array);
+        Assertions.assertArrayEquals(new Integer[] { 1, 2, 3, 4, null, -1 }, array);
     }
 
     @Test

@@ -5936,6 +5936,22 @@ class BooleanMatrixTest extends TestBase {
 
     @SuppressWarnings("unchecked")
     @Test
+    public void testStreamHorizontalIteratorOversizedArrayIsNullTerminated_EdgeCase() {
+        BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
+        var iterator = matrix.streamHorizontal(0, 2).iterator();
+
+        assertTrue(iterator instanceof com.landawn.abacus.util.stream.ObjIteratorEx);
+
+        com.landawn.abacus.util.stream.ObjIteratorEx<Boolean> ex = (com.landawn.abacus.util.stream.ObjIteratorEx<Boolean>) iterator;
+        Boolean[] destination = new Boolean[] { null, null, null, null, Boolean.TRUE, Boolean.TRUE };
+        Boolean[] array = ex.toArray(destination);
+
+        assertSame(destination, array);
+        assertArrayEquals(new Boolean[] { Boolean.TRUE, Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, null, Boolean.TRUE }, array);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
     public void testStreamVerticalIteratorAdvanceAndToArray_EdgeCase() {
         BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true }, { true, true } });
         var iterator = matrix.streamVertical(0, 2).iterator();
@@ -5950,6 +5966,22 @@ class BooleanMatrixTest extends TestBase {
         ex.advance(10);
         assertEquals(0L, ex.count());
         assertThrows(java.util.NoSuchElementException.class, ex::next);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testStreamVerticalIteratorOversizedArrayIsNullTerminated_EdgeCase() {
+        BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
+        var iterator = matrix.streamVertical(0, 2).iterator();
+
+        assertTrue(iterator instanceof com.landawn.abacus.util.stream.ObjIteratorEx);
+
+        com.landawn.abacus.util.stream.ObjIteratorEx<Boolean> ex = (com.landawn.abacus.util.stream.ObjIteratorEx<Boolean>) iterator;
+        Boolean[] destination = new Boolean[] { null, null, null, null, Boolean.TRUE, Boolean.TRUE };
+        Boolean[] array = ex.toArray(destination);
+
+        assertSame(destination, array);
+        assertArrayEquals(new Boolean[] { Boolean.TRUE, Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, null, Boolean.TRUE }, array);
     }
 
     @Test

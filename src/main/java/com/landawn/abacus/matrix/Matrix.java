@@ -2905,6 +2905,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
                     }
                 }
 
+                if (c.length > len) {
+                    c[len] = null;
+                }
+
                 return c;
             }
         });
@@ -3036,6 +3040,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
                         i = 0;
                         j++;
                     }
+                }
+
+                if (c.length > len) {
+                    c[len] = null;
                 }
 
                 return c;
