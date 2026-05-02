@@ -750,12 +750,12 @@ Matrix implementation backed by a {@code boolean\[\]\[\]} .
 - **Summary:** Fills all elements in the matrix with the specified value.
 - **Parameters:**
   - `val` (`boolean`) — the boolean value to fill the matrix with
-##### copyFrom(...) -> void
-- **Signature:** `public void copyFrom(final boolean[][] b)`
+##### assignFrom(...) -> void
+- **Signature:** `public void assignFrom(final boolean[][] b)`
 - **Summary:** Fills the matrix with values from the provided two-dimensional array, starting from position (0, 0).
 - **Parameters:**
   - `b` (`boolean[][]`) — the two-dimensional boolean array to copy values from; must not be null
-- **Signature:** `public void copyFrom(final int destRowIndex, final int destColumnIndex, final boolean[][] b) throws IllegalArgumentException`
+- **Signature:** `public void assignFrom(final int destRowIndex, final int destColumnIndex, final boolean[][] b) throws IllegalArgumentException`
 - **Summary:** Fills a portion of the matrix with values from the provided two-dimensional array.
 - **Contract:**
   - If the input array extends beyond the matrix boundaries, only the overlapping portion is copied.
@@ -1546,16 +1546,16 @@ Matrix implementation backed by a {@code byte\[\]\[\]} .
 - **Summary:** Fills all elements of the matrix with the specified value.
 - **Parameters:**
   - `val` (`byte`) — the value to fill the matrix with
-##### copyFrom(...) -> void
-- **Signature:** `public void copyFrom(final byte[][] b)`
+##### assignFrom(...) -> void
+- **Signature:** `public void assignFrom(final byte[][] b)`
 - **Summary:** Fills this matrix with values from another two-dimensional byte array, starting from position \[0,0\].
 - **Contract:**
   - If the source array is smaller than this matrix, only the overlapping portion is modified.
   - If the source array is larger, only the portion that fits within this matrix is copied.
 - **Parameters:**
   - `b` (`byte[][]`) — the source array to copy values from
-- **See also:** #copyFrom(int, int, byte\[\]\[\])
-- **Signature:** `public void copyFrom(final int destRowIndex, final int destColumnIndex, final byte[][] b) throws IllegalArgumentException`
+- **See also:** #assignFrom(int, int, byte\[\]\[\])
+- **Signature:** `public void assignFrom(final int destRowIndex, final int destColumnIndex, final byte[][] b) throws IllegalArgumentException`
 - **Summary:** Fills a portion of this matrix with values from another two-dimensional byte array.
 - **Parameters:**
   - `destRowIndex` (`int`) — the target row index in this matrix
@@ -2349,15 +2349,15 @@ Matrix implementation backed by a {@code char\[\]\[\]} .
 - **Summary:** Fills all elements in the matrix with the specified value.
 - **Parameters:**
   - `val` (`char`) — the value to fill the matrix with
-##### copyFrom(...) -> void
-- **Signature:** `public void copyFrom(final char[][] b)`
+##### assignFrom(...) -> void
+- **Signature:** `public void assignFrom(final char[][] b)`
 - **Summary:** Fills the matrix with values from the specified two-dimensional array in-place, starting from position (0,0).
 - **Contract:**
   - If the source array is smaller than the matrix, only the overlapping region is filled.
   - If the source array is larger, only the portion that fits is copied.
 - **Parameters:**
   - `b` (`char[][]`) — the source array to copy values from (may be smaller or larger than the matrix)
-- **Signature:** `public void copyFrom(final int destRowIndex, final int destColumnIndex, final char[][] b) throws IllegalArgumentException`
+- **Signature:** `public void assignFrom(final int destRowIndex, final int destColumnIndex, final char[][] b) throws IllegalArgumentException`
 - **Summary:** Fills a portion of the matrix with values from the specified two-dimensional array in-place, starting from a specified position.
 - **Contract:**
   - If the source array extends beyond the matrix bounds from the starting position, only the portion that fits is copied.
@@ -3140,15 +3140,15 @@ Matrix implementation backed by a {@code double\[\]\[\]} .
 - **Summary:** Fills the entire matrix with the specified value in-place.
 - **Parameters:**
   - `val` (`double`) — the value to fill the matrix with
-##### copyFrom(...) -> void
-- **Signature:** `public void copyFrom(final double[][] b)`
+##### assignFrom(...) -> void
+- **Signature:** `public void assignFrom(final double[][] b)`
 - **Summary:** Fills the matrix with values from the specified two-dimensional array in-place, starting from position (0,0).
 - **Contract:**
   - If the source array is smaller than the matrix, only the overlapping region is filled.
   - If the source array is larger, only the portion that fits is copied.
 - **Parameters:**
   - `b` (`double[][]`) — the source array to copy values from (may be smaller or larger than the matrix)
-- **Signature:** `public void copyFrom(final int destRowIndex, final int destColumnIndex, final double[][] b) throws IllegalArgumentException`
+- **Signature:** `public void assignFrom(final int destRowIndex, final int destColumnIndex, final double[][] b) throws IllegalArgumentException`
 - **Summary:** Fills a portion of the matrix with values from the specified two-dimensional array in-place, starting from a specified position.
 - **Contract:**
   - If the source array extends beyond the matrix bounds from the starting position, only the portion that fits is copied.
@@ -3896,15 +3896,15 @@ Matrix implementation backed by a {@code float\[\]\[\]} .
 - **Summary:** Fills the entire matrix with the specified value in-place.
 - **Parameters:**
   - `val` (`float`) — the value to fill the matrix with
-##### copyFrom(...) -> void
-- **Signature:** `public void copyFrom(final float[][] b)`
+##### assignFrom(...) -> void
+- **Signature:** `public void assignFrom(final float[][] b)`
 - **Summary:** Fills the matrix with values from the specified two-dimensional array in-place, starting from position (0,0).
 - **Contract:**
   - If the source array is smaller than the matrix, only the overlapping region is filled.
   - If the source array is larger, only the portion that fits is copied.
 - **Parameters:**
   - `b` (`float[][]`) — the source array to copy values from (may be smaller or larger than the matrix)
-- **Signature:** `public void copyFrom(final int destRowIndex, final int destColumnIndex, final float[][] b) throws IllegalArgumentException`
+- **Signature:** `public void assignFrom(final int destRowIndex, final int destColumnIndex, final float[][] b) throws IllegalArgumentException`
 - **Summary:** Fills a portion of the matrix with values from the specified two-dimensional array in-place, starting from a specified position.
 - **Contract:**
   - If the source array extends beyond the matrix bounds from the starting position, only the portion that fits is copied.
@@ -4715,14 +4715,14 @@ Matrix implementation backed by an {@code int\[\]\[\]} .
 - **Summary:** Fills all elements of the matrix with the specified value.
 - **Parameters:**
   - `val` (`int`) — the value to fill the matrix with
-##### copyFrom(...) -> void
-- **Signature:** `public void copyFrom(final int[][] b)`
+##### assignFrom(...) -> void
+- **Signature:** `public void assignFrom(final int[][] b)`
 - **Summary:** Fills the matrix with values from another two-dimensional array, starting at position (0, 0).
 - **Contract:**
   - If the source array is larger, only the portion that fits is copied.
 - **Parameters:**
   - `b` (`int[][]`) — the two-dimensional array to copy values from
-- **Signature:** `public void copyFrom(final int destRowIndex, final int destColumnIndex, final int[][] b) throws IllegalArgumentException`
+- **Signature:** `public void assignFrom(final int destRowIndex, final int destColumnIndex, final int[][] b) throws IllegalArgumentException`
 - **Summary:** Fills a region of the matrix with values from another two-dimensional array, starting at the specified position.
 - **Parameters:**
   - `destRowIndex` (`int`) — the target row index in this matrix (0-based, must be 0 &lt; = destRowIndex &lt; = rowCount)
@@ -5531,14 +5531,14 @@ Matrix implementation backed by a {@code long\[\]\[\]} .
 - **Summary:** Fills all elements of the matrix with the specified value.
 - **Parameters:**
   - `val` (`long`) — the value to fill the matrix with
-##### copyFrom(...) -> void
-- **Signature:** `public void copyFrom(final long[][] b)`
+##### assignFrom(...) -> void
+- **Signature:** `public void assignFrom(final long[][] b)`
 - **Summary:** Fills the matrix with values from another two-dimensional array, starting at position (0, 0).
 - **Contract:**
   - If the source array is larger, only the portion that fits is copied.
 - **Parameters:**
   - `b` (`long[][]`) — the two-dimensional array to copy values from
-- **Signature:** `public void copyFrom(final int destRowIndex, final int destColumnIndex, final long[][] b) throws IllegalArgumentException`
+- **Signature:** `public void assignFrom(final int destRowIndex, final int destColumnIndex, final long[][] b) throws IllegalArgumentException`
 - **Summary:** Fills a region of the matrix with values from another two-dimensional array, starting at the specified position.
 - **Parameters:**
   - `destRowIndex` (`int`) — the target row index in this matrix (0-based, must be 0 &lt; = destRowIndex &lt; = rowCount)
@@ -7061,15 +7061,15 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Summary:** Fills all elements in the matrix with the specified value.
 - **Parameters:**
   - `val` (`T`) — the value to fill the matrix with (can be null)
-##### copyFrom(...) -> void
-- **Signature:** `public void copyFrom(final T[][] b)`
+##### assignFrom(...) -> void
+- **Signature:** `public void assignFrom(final T[][] b)`
 - **Summary:** Copies values into the matrix from another two-dimensional array.
 - **Contract:**
   - If the source array is larger than this matrix, extra data is ignored.
   - If the source array is smaller than this matrix, the remaining cells are unchanged.
 - **Parameters:**
   - `b` (`T[][]`) — the source two-dimensional array to copy values from (must not be null)
-- **Signature:** `public void copyFrom(final int destRowIndex, final int destColumnIndex, final T[][] b) throws IllegalArgumentException`
+- **Signature:** `public void assignFrom(final int destRowIndex, final int destColumnIndex, final T[][] b) throws IllegalArgumentException`
 - **Summary:** Copies values into the matrix from another two-dimensional array starting at the specified position.
 - **Contract:**
   - If the source data extends beyond the matrix bounds, it is truncated.
@@ -7854,14 +7854,14 @@ Matrix implementation backed by a {@code short\[\]\[\]} .
 - **Summary:** Fills all elements of the matrix with the specified value.
 - **Parameters:**
   - `val` (`short`) — the value to fill the matrix with
-##### copyFrom(...) -> void
-- **Signature:** `public void copyFrom(final short[][] b)`
+##### assignFrom(...) -> void
+- **Signature:** `public void assignFrom(final short[][] b)`
 - **Summary:** Fills the matrix with values from another two-dimensional array, starting at position (0, 0).
 - **Contract:**
   - If the source array is larger, only the portion that fits is copied.
 - **Parameters:**
   - `b` (`short[][]`) — the two-dimensional array to copy values from
-- **Signature:** `public void copyFrom(final int destRowIndex, final int destColumnIndex, final short[][] b) throws IllegalArgumentException`
+- **Signature:** `public void assignFrom(final int destRowIndex, final int destColumnIndex, final short[][] b) throws IllegalArgumentException`
 - **Summary:** Fills a region of the matrix with values from another two-dimensional array, starting at the specified position.
 - **Parameters:**
   - `destRowIndex` (`int`) — the target row index in this matrix (0-based, must be 0 &lt; = destRowIndex &lt; = rowCount)

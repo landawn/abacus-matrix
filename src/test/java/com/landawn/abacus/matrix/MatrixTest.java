@@ -757,7 +757,7 @@ class MatrixTest extends TestBase {
         Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 } });
 
         Integer[][] patch = { { 7, 8 } };
-        matrix.copyFrom(patch);
+        matrix.assignFrom(patch);
         Assertions.assertEquals(7, matrix.get(0, 0));
         Assertions.assertEquals(8, matrix.get(0, 1));
         Assertions.assertEquals(3, matrix.get(0, 2)); // unchanged
@@ -769,7 +769,7 @@ class MatrixTest extends TestBase {
         Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
 
         Integer[][] patch = { { 10, 11 }, { 12, 13 } };
-        matrix.copyFrom(1, 1, patch);
+        matrix.assignFrom(1, 1, patch);
         Assertions.assertEquals(1, matrix.get(0, 0)); // unchanged
         Assertions.assertEquals(10, matrix.get(1, 1));
         Assertions.assertEquals(11, matrix.get(1, 2));
@@ -1587,7 +1587,7 @@ class MatrixTest extends TestBase {
         Assertions.assertEquals(2.5d, matrix.get(0, 0).doubleValue(), 0.000001d);
         Assertions.assertEquals(2.5d, matrix.get(0, 1).doubleValue(), 0.000001d);
 
-        matrix.copyFrom(new Number[][] { { 3.5d, 4.5d } });
+        matrix.assignFrom(new Number[][] { { 3.5d, 4.5d } });
         Assertions.assertEquals(3.5d, matrix.get(0, 0).doubleValue(), 0.000001d);
         Assertions.assertEquals(4.5d, matrix.get(0, 1).doubleValue(), 0.000001d);
     }
@@ -2529,7 +2529,7 @@ class MatrixTest extends TestBase {
         public void testFill_withArray() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "A", "A" }, { "A", "A", "A" }, { "A", "A", "A" } });
             String[][] patch = { { "X", "Y" }, { "Z", "W" } };
-            m.copyFrom(patch);
+            m.assignFrom(patch);
             assertEquals("X", m.get(0, 0));
             assertEquals("Y", m.get(0, 1));
             assertEquals("Z", m.get(1, 0));
@@ -2541,7 +2541,7 @@ class MatrixTest extends TestBase {
         public void testFill_withArrayAtPosition() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "A", "A" }, { "A", "A", "A" }, { "A", "A", "A" } });
             String[][] patch = { { "X", "Y" }, { "Z", "W" } };
-            m.copyFrom(1, 1, patch);
+            m.assignFrom(1, 1, patch);
             assertEquals("A", m.get(0, 0)); // unchanged
             assertEquals("X", m.get(1, 1));
             assertEquals("Y", m.get(1, 2));
@@ -2553,7 +2553,7 @@ class MatrixTest extends TestBase {
         public void testFill_outOfBounds() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
             String[][] patch = { { "X", "Y" }, { "Z", "W" } };
-            assertThrows(IllegalArgumentException.class, () -> m.copyFrom(-1, 0, patch));
+            assertThrows(IllegalArgumentException.class, () -> m.assignFrom(-1, 0, patch));
         }
 
         // ============ Copy Tests ============
@@ -3471,7 +3471,7 @@ class MatrixTest extends TestBase {
         public void testFill_withArray_emptySource() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
             String[][] emptySource = {};
-            m.copyFrom(emptySource);
+            m.assignFrom(emptySource);
             assertEquals("A", m.get(0, 0));
             assertEquals("D", m.get(1, 1));
         }
@@ -3480,7 +3480,7 @@ class MatrixTest extends TestBase {
         public void testFill_withArray_largerSource() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
             String[][] largeSource = { { "X", "Y", "Z" }, { "W", "V", "U" }, { "T", "S", "R" } };
-            m.copyFrom(largeSource);
+            m.assignFrom(largeSource);
             assertEquals("X", m.get(0, 0));
             assertEquals("Y", m.get(0, 1));
             assertEquals("W", m.get(1, 0));
@@ -3491,7 +3491,7 @@ class MatrixTest extends TestBase {
         public void testFill_atBoundary() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "A", "A" }, { "A", "A", "A" }, { "A", "A", "A" } });
             String[][] patch = { { "X" } };
-            m.copyFrom(2, 2, patch);
+            m.assignFrom(2, 2, patch);
             assertEquals("A", m.get(0, 0));
             assertEquals("X", m.get(2, 2));
         }
@@ -3500,7 +3500,7 @@ class MatrixTest extends TestBase {
         public void testFill_atEdgePosition() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
             String[][] patch = { { "X", "Y" } };
-            m.copyFrom(1, 0, patch);
+            m.assignFrom(1, 0, patch);
             assertEquals("A", m.get(0, 0));
             assertEquals("X", m.get(1, 0));
             assertEquals("Y", m.get(1, 1));
@@ -4108,7 +4108,7 @@ class MatrixTest extends TestBase {
         public void testFill_array_partial() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B", "C" }, { "D", "E", "F" }, { "G", "H", "I" } });
             String[][] patch = { { "X", "Y" } };
-            m.copyFrom(patch);
+            m.assignFrom(patch);
             assertEquals("X", m.get(0, 0));
             assertEquals("Y", m.get(0, 1));
             assertEquals("C", m.get(0, 2)); // Unchanged
@@ -4119,7 +4119,7 @@ class MatrixTest extends TestBase {
         public void testFill_array_withOffset() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B", "C" }, { "D", "E", "F" }, { "G", "H", "I" } });
             String[][] patch = { { "X", "Y" } };
-            m.copyFrom(1, 1, patch);
+            m.assignFrom(1, 1, patch);
             assertEquals("A", m.get(0, 0));
             assertEquals("X", m.get(1, 1));
             assertEquals("Y", m.get(1, 2));
@@ -4130,10 +4130,10 @@ class MatrixTest extends TestBase {
         public void testFill_array_withOffset_invalidIndices() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" } });
             String[][] patch = { { "X" } };
-            assertThrows(IllegalArgumentException.class, () -> m.copyFrom(-1, 0, patch));
-            assertThrows(IllegalArgumentException.class, () -> m.copyFrom(0, -1, patch));
-            assertThrows(IllegalArgumentException.class, () -> m.copyFrom(2, 0, patch));
-            assertThrows(IllegalArgumentException.class, () -> m.copyFrom(0, 3, patch));
+            assertThrows(IllegalArgumentException.class, () -> m.assignFrom(-1, 0, patch));
+            assertThrows(IllegalArgumentException.class, () -> m.assignFrom(0, -1, patch));
+            assertThrows(IllegalArgumentException.class, () -> m.assignFrom(2, 0, patch));
+            assertThrows(IllegalArgumentException.class, () -> m.assignFrom(0, 3, patch));
         }
 
         @Test
@@ -4874,7 +4874,7 @@ class MatrixTest extends TestBase {
         public void testFill_array_strings() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
             String[][] newData = { { "X", "Y" }, { "Z", "W" } };
-            m.copyFrom(newData);
+            m.assignFrom(newData);
             assertEquals("X", m.get(0, 0));
             assertEquals("Y", m.get(0, 1));
             assertEquals("Z", m.get(1, 0));
@@ -4885,7 +4885,7 @@ class MatrixTest extends TestBase {
         public void testFill_array_integers() {
             Matrix<Integer> m = Matrix.of(new Integer[][] { { 1, 2 }, { 3, 4 } });
             Integer[][] newData = { { 10, 20 }, { 30, 40 } };
-            m.copyFrom(newData);
+            m.assignFrom(newData);
             assertEquals(10, m.get(0, 0));
             assertEquals(20, m.get(0, 1));
             assertEquals(30, m.get(1, 0));
@@ -6357,7 +6357,7 @@ class MatrixTest extends TestBase {
             String[][] arr = { { "a", "b" }, { "c", "d" } };
             Matrix<String> m = new Matrix<>(arr);
             String[][] b = { { "X", "Y" }, { "Z", "W" } };
-            m.copyFrom(b);
+            m.assignFrom(b);
             assertEquals("X", m.get(0, 0));
             assertEquals("W", m.get(1, 1));
         }
@@ -6367,7 +6367,7 @@ class MatrixTest extends TestBase {
             String[][] arr = { { "a", "b", "c" }, { "d", "e", "f" }, { "g", "h", "i" } };
             Matrix<String> m = new Matrix<>(arr);
             String[][] b = { { "X", "Y" } };
-            m.copyFrom(1, 1, b);
+            m.assignFrom(1, 1, b);
             assertEquals("a", m.get(0, 0));
             assertEquals("X", m.get(1, 1));
             assertEquals("Y", m.get(1, 2));
@@ -7012,7 +7012,7 @@ class MatrixTest extends TestBase {
         }
     }
 
-    // === Missing coverage: resize, copyFrom, flipInPlace ===
+    // === Missing coverage: resize, assignFrom, flipInPlace ===
 
     @Test
     public void testResize_expand() {
@@ -7081,7 +7081,7 @@ class MatrixTest extends TestBase {
     @Test
     public void testCopyFrom_fullOverwrite() {
         Matrix<String> m = Matrix.of(new String[][] { { "x", "x" }, { "x", "x" } });
-        m.copyFrom(new String[][] { { "a", "b" }, { "c", "d" } });
+        m.assignFrom(new String[][] { { "a", "b" }, { "c", "d" } });
         assertEquals("a", m.get(0, 0));
         assertEquals("b", m.get(0, 1));
         assertEquals("c", m.get(1, 0));
@@ -7091,7 +7091,7 @@ class MatrixTest extends TestBase {
     @Test
     public void testCopyFrom_partialOverwrite() {
         Matrix<String> m = Matrix.of(new String[][] { { "x", "x", "x" }, { "x", "x", "x" }, { "x", "x", "x" } });
-        m.copyFrom(new String[][] { { "a", "b" }, { "c", "d" } });
+        m.assignFrom(new String[][] { { "a", "b" }, { "c", "d" } });
         assertEquals("a", m.get(0, 0));
         assertEquals("b", m.get(0, 1));
         assertEquals("x", m.get(0, 2));
@@ -7103,7 +7103,7 @@ class MatrixTest extends TestBase {
     @Test
     public void testCopyFrom_withOffset() {
         Matrix<String> m = Matrix.of(new String[][] { { "x", "x", "x" }, { "x", "x", "x" }, { "x", "x", "x" } });
-        m.copyFrom(1, 1, new String[][] { { "a", "b" }, { "c", "d" } });
+        m.assignFrom(1, 1, new String[][] { { "a", "b" }, { "c", "d" } });
         assertEquals("x", m.get(0, 0));
         assertEquals("x", m.get(1, 0));
         assertEquals("a", m.get(1, 1));
@@ -7115,7 +7115,7 @@ class MatrixTest extends TestBase {
     @Test
     public void testCopyFrom_emptySource() {
         Matrix<String> m = Matrix.of(new String[][] { { "a", "b" }, { "c", "d" } });
-        m.copyFrom(new String[0][0]);
+        m.assignFrom(new String[0][0]);
         assertEquals("a", m.get(0, 0));
         assertEquals("d", m.get(1, 1));
     }
@@ -7123,8 +7123,8 @@ class MatrixTest extends TestBase {
     @Test
     public void testCopyFrom_negativeIndexThrows() {
         Matrix<String> m = Matrix.of(new String[][] { { "a" } });
-        assertThrows(IllegalArgumentException.class, () -> m.copyFrom(-1, 0, new String[][] { { "b" } }));
-        assertThrows(IllegalArgumentException.class, () -> m.copyFrom(0, -1, new String[][] { { "b" } }));
+        assertThrows(IllegalArgumentException.class, () -> m.assignFrom(-1, 0, new String[][] { { "b" } }));
+        assertThrows(IllegalArgumentException.class, () -> m.assignFrom(0, -1, new String[][] { { "b" } }));
     }
 
     @Test

@@ -1085,15 +1085,15 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.of(new boolean[3][3]);   // 3x3 of false
-     * matrix.copyFrom(new boolean[][] {{true, true}, {true, true}});
+     * matrix.assignFrom(new boolean[][] {{true, true}, {true, true}});
      * // Top-left 2x2 region is now true, rest remains false
      * }</pre>
      *
      * @param source the two-dimensional boolean array to copy values from; must not be null
      * @throws IllegalArgumentException if {@code source} is {@code null}
      */
-    public void copyFrom(final boolean[][] source) {
-        copyFrom(0, 0, source);
+    public void assignFrom(final boolean[][] source) {
+        assignFrom(0, 0, source);
     }
 
     /**
@@ -1105,7 +1105,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.of(new boolean[4][4]);   // 4x4 of false
-     * matrix.copyFrom(1, 1, new boolean[][] {{true, true}, {true, true}});
+     * matrix.assignFrom(1, 1, new boolean[][] {{true, true}, {true, true}});
      * // 2x2 region starting at (1,1) is now true, rest remains false
      * }</pre>
      *
@@ -1114,7 +1114,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param source the source array to copy values from; must not be null
      * @throws IllegalArgumentException if {@code source} is {@code null}, or if the target indices are negative or exceed matrix dimensions
      */
-    public void copyFrom(final int destRowIndex, final int destColumnIndex, final boolean[][] source) throws IllegalArgumentException {
+    public void assignFrom(final int destRowIndex, final int destColumnIndex, final boolean[][] source) throws IllegalArgumentException {
         N.checkArgNotNull(source, "source");
         N.checkArgument(destRowIndex >= 0 && destRowIndex <= rowCount, "destRowIndex({}) must be between 0 and rowCount({})", destRowIndex, rowCount);
         N.checkArgument(destColumnIndex >= 0 && destColumnIndex <= columnCount, "destColumnIndex({}) must be between 0 and columnCount({})", destColumnIndex,

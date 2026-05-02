@@ -580,7 +580,7 @@ class LongMatrixTest extends TestBase {
         LongMatrix matrix = LongMatrix.of(a);
 
         long[][] b = { { 1L, 2L }, { 3L, 4L } };
-        matrix.copyFrom(b);
+        matrix.assignFrom(b);
         Assertions.assertEquals(1L, matrix.get(0, 0));
         Assertions.assertEquals(2L, matrix.get(0, 1));
         Assertions.assertEquals(3L, matrix.get(1, 0));
@@ -594,13 +594,13 @@ class LongMatrixTest extends TestBase {
         LongMatrix matrix = LongMatrix.of(a);
 
         long[][] b = { { 1L, 2L } };
-        matrix.copyFrom(1, 1, b);
+        matrix.assignFrom(1, 1, b);
         Assertions.assertEquals(0L, matrix.get(0, 0)); // unchanged
         Assertions.assertEquals(1L, matrix.get(1, 1));
         Assertions.assertEquals(2L, matrix.get(1, 2));
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.copyFrom(-1, 0, b));
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.copyFrom(0, -1, b));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.assignFrom(-1, 0, b));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.assignFrom(0, -1, b));
     }
 
     @Test
@@ -2315,7 +2315,7 @@ class LongMatrixTest extends TestBase {
         public void testFill_withArray() {
             LongMatrix m = LongMatrix.of(new long[][] { { 0L, 0L, 0L }, { 0L, 0L, 0L }, { 0L, 0L, 0L } });
             long[][] patch = { { 1L, 2L }, { 3L, 4L } };
-            m.copyFrom(patch);
+            m.assignFrom(patch);
             assertEquals(1L, m.get(0, 0));
             assertEquals(2L, m.get(0, 1));
             assertEquals(3L, m.get(1, 0));
@@ -2327,7 +2327,7 @@ class LongMatrixTest extends TestBase {
         public void testFill_withArrayAtPosition() {
             LongMatrix m = LongMatrix.of(new long[][] { { 0L, 0L, 0L }, { 0L, 0L, 0L }, { 0L, 0L, 0L } });
             long[][] patch = { { 1L, 2L }, { 3L, 4L } };
-            m.copyFrom(1, 1, patch);
+            m.assignFrom(1, 1, patch);
             assertEquals(0L, m.get(0, 0)); // unchanged
             assertEquals(1L, m.get(1, 1));
             assertEquals(2L, m.get(1, 2));
@@ -2339,7 +2339,7 @@ class LongMatrixTest extends TestBase {
         public void testFill_outOfBounds() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
             long[][] patch = { { 1L, 2L }, { 3L, 4L } };
-            assertThrows(IllegalArgumentException.class, () -> m.copyFrom(-1, 0, patch));
+            assertThrows(IllegalArgumentException.class, () -> m.assignFrom(-1, 0, patch));
         }
 
         // ============ Copy Tests ============
@@ -4090,7 +4090,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testFill_array() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            m.copyFrom(new long[][] { { 10L, 20L }, { 30L, 40L } });
+            m.assignFrom(new long[][] { { 10L, 20L }, { 30L, 40L } });
             assertEquals(10L, m.get(0, 0));
             assertEquals(20L, m.get(0, 1));
             assertEquals(30L, m.get(1, 0));
@@ -4100,7 +4100,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testFill_arrayWithOffset() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
-            m.copyFrom(1, 1, new long[][] { { 99L, 88L } });
+            m.assignFrom(1, 1, new long[][] { { 99L, 88L } });
             assertEquals(1L, m.get(0, 0));
             assertEquals(99L, m.get(1, 1));
             assertEquals(88L, m.get(1, 2));
@@ -5158,7 +5158,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void test_fill_array() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            m.copyFrom(new long[][] { { 9L, 8L }, { 7L, 6L } });
+            m.assignFrom(new long[][] { { 9L, 8L }, { 7L, 6L } });
             assertEquals(9L, m.get(0, 0));
             assertEquals(8L, m.get(0, 1));
             assertEquals(7L, m.get(1, 0));
@@ -5168,7 +5168,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void test_fill_withOffset() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
-            m.copyFrom(1, 1, new long[][] { { 99L } });
+            m.assignFrom(1, 1, new long[][] { { 99L } });
             assertEquals(1L, m.get(0, 0));
             assertEquals(99L, m.get(1, 1));
             assertEquals(9L, m.get(2, 2));
@@ -5179,7 +5179,7 @@ class LongMatrixTest extends TestBase {
             // Test that fill() gracefully handles source arrays larger than the target matrix
             // by copying only what fits (as documented in the javadoc)
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
-            m.copyFrom(0, 0, new long[][] { { 9L, 8L, 7L } }); // Source array has 3 elements, matrix has 2
+            m.assignFrom(0, 0, new long[][] { { 9L, 8L, 7L } }); // Source array has 3 elements, matrix has 2
             // Should copy only the first 2 elements that fit
             assertEquals(9L, m.get(0, 0));
             assertEquals(8L, m.get(0, 1));

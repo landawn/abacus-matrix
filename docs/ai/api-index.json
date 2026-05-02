@@ -2764,12 +2764,12 @@
               "see_also": []
             },
             {
-              "name": "copyFrom",
+              "name": "assignFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void copyFrom(final boolean[][] b)",
+              "signature": "public void assignFrom(final boolean[][] b)",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -2787,12 +2787,12 @@
               "see_also": []
             },
             {
-              "name": "copyFrom",
+              "name": "assignFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void copyFrom(final int destRowIndex, final int destColumnIndex, final boolean[][] b) throws IllegalArgumentException",
+              "signature": "public void assignFrom(final int destRowIndex, final int destColumnIndex, final boolean[][] b) throws IllegalArgumentException",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -5587,12 +5587,12 @@
               "see_also": []
             },
             {
-              "name": "copyFrom",
+              "name": "assignFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void copyFrom(final byte[][] b)",
+              "signature": "public void assignFrom(final byte[][] b)",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -5611,16 +5611,16 @@
               ],
               "examples": [],
               "see_also": [
-                "#copyFrom(int, int, byte[][])"
+                "#assignFrom(int, int, byte[][])"
               ]
             },
             {
-              "name": "copyFrom",
+              "name": "assignFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void copyFrom(final int destRowIndex, final int destColumnIndex, final byte[][] b) throws IllegalArgumentException",
+              "signature": "public void assignFrom(final int destRowIndex, final int destColumnIndex, final byte[][] b) throws IllegalArgumentException",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -8457,12 +8457,12 @@
               "see_also": []
             },
             {
-              "name": "copyFrom",
+              "name": "assignFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void copyFrom(final char[][] b)",
+              "signature": "public void assignFrom(final char[][] b)",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -8483,12 +8483,12 @@
               "see_also": []
             },
             {
-              "name": "copyFrom",
+              "name": "assignFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void copyFrom(final int destRowIndex, final int destColumnIndex, final char[][] b) throws IllegalArgumentException",
+              "signature": "public void assignFrom(final int destRowIndex, final int destColumnIndex, final char[][] b) throws IllegalArgumentException",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -11289,12 +11289,12 @@
               "see_also": []
             },
             {
-              "name": "copyFrom",
+              "name": "assignFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void copyFrom(final double[][] b)",
+              "signature": "public void assignFrom(final double[][] b)",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -11315,12 +11315,12 @@
               "see_also": []
             },
             {
-              "name": "copyFrom",
+              "name": "assignFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void copyFrom(final int destRowIndex, final int destColumnIndex, final double[][] b) throws IllegalArgumentException",
+              "signature": "public void assignFrom(final int destRowIndex, final int destColumnIndex, final double[][] b) throws IllegalArgumentException",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -13983,12 +13983,12 @@
               "see_also": []
             },
             {
-              "name": "copyFrom",
+              "name": "assignFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void copyFrom(final float[][] b)",
+              "signature": "public void assignFrom(final float[][] b)",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -14009,12 +14009,12 @@
               "see_also": []
             },
             {
-              "name": "copyFrom",
+              "name": "assignFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void copyFrom(final int destRowIndex, final int destColumnIndex, final float[][] b) throws IllegalArgumentException",
+              "signature": "public void assignFrom(final int destRowIndex, final int destColumnIndex, final float[][] b) throws IllegalArgumentException",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -16934,12 +16934,12 @@
               "see_also": []
             },
             {
-              "name": "copyFrom",
+              "name": "assignFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void copyFrom(final int[][] b)",
+              "signature": "public void assignFrom(final int[][] b)",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -16959,12 +16959,12 @@
               "see_also": []
             },
             {
-              "name": "copyFrom",
+              "name": "assignFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void copyFrom(final int destRowIndex, final int destColumnIndex, final int[][] b) throws IllegalArgumentException",
+              "signature": "public void assignFrom(final int destRowIndex, final int destColumnIndex, final int[][] b) throws IllegalArgumentException",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -19853,12 +19853,12 @@
               "see_also": []
             },
             {
-              "name": "copyFrom",
+              "name": "assignFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void copyFrom(final long[][] b)",
+              "signature": "public void assignFrom(final long[][] b)",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -19878,12 +19878,12 @@
               "see_also": []
             },
             {
-              "name": "copyFrom",
+              "name": "assignFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void copyFrom(final int destRowIndex, final int destColumnIndex, final long[][] b) throws IllegalArgumentException",
+              "signature": "public void assignFrom(final int destRowIndex, final int destColumnIndex, final long[][] b) throws IllegalArgumentException",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -26130,12 +26130,12 @@
               "see_also": []
             },
             {
-              "name": "copyFrom",
+              "name": "assignFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void copyFrom(final T[][] b)",
+              "signature": "public void assignFrom(final T[][] b)",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -26156,12 +26156,12 @@
               "see_also": []
             },
             {
-              "name": "copyFrom",
+              "name": "assignFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void copyFrom(final int destRowIndex, final int destColumnIndex, final T[][] b) throws IllegalArgumentException",
+              "signature": "public void assignFrom(final int destRowIndex, final int destColumnIndex, final T[][] b) throws IllegalArgumentException",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -29056,12 +29056,12 @@
               "see_also": []
             },
             {
-              "name": "copyFrom",
+              "name": "assignFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void copyFrom(final short[][] b)",
+              "signature": "public void assignFrom(final short[][] b)",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -29081,12 +29081,12 @@
               "see_also": []
             },
             {
-              "name": "copyFrom",
+              "name": "assignFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void copyFrom(final int destRowIndex, final int destColumnIndex, final short[][] b) throws IllegalArgumentException",
+              "signature": "public void assignFrom(final int destRowIndex, final int destColumnIndex, final short[][] b) throws IllegalArgumentException",
               "return_type": "void",
               "type_params": [],
               "params": [

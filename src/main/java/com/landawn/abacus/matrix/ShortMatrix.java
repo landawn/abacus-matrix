@@ -1083,14 +1083,14 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{0, 0, 0}, {0, 0, 0}});
-     * matrix.copyFrom(new short[][] {{1, 2}, {3, 4}});
+     * matrix.assignFrom(new short[][] {{1, 2}, {3, 4}});
      * // Result: [[1, 2, 0], [3, 4, 0]]
      * }</pre>
      *
      * @param source the two-dimensional array to copy values from
      */
-    public void copyFrom(final short[][] source) {
-        copyFrom(0, 0, source);
+    public void assignFrom(final short[][] source) {
+        assignFrom(0, 0, source);
     }
 
     /**
@@ -1101,7 +1101,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}});
-     * matrix.copyFrom(1, 1, new short[][] {{1, 2}, {3, 4}});
+     * matrix.assignFrom(1, 1, new short[][] {{1, 2}, {3, 4}});
      * // Result: [[0, 0, 0], [0, 1, 2], [0, 3, 4]]
      * }</pre>
      *
@@ -1110,7 +1110,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param source the source array to copy values from
      * @throws IllegalArgumentException if destRowIndex &lt; 0 or &gt; rowCount, or if destColumnIndex &lt; 0 or &gt; columnCount
      */
-    public void copyFrom(final int destRowIndex, final int destColumnIndex, final short[][] source) throws IllegalArgumentException {
+    public void assignFrom(final int destRowIndex, final int destColumnIndex, final short[][] source) throws IllegalArgumentException {
         N.checkArgNotNull(source, "source");
         N.checkArgument(destRowIndex >= 0 && destRowIndex <= rowCount, "destRowIndex({}) must be between 0 and rowCount({})", destRowIndex, rowCount);
         N.checkArgument(destColumnIndex >= 0 && destColumnIndex <= columnCount, "destColumnIndex({}) must be between 0 and columnCount({})", destColumnIndex,

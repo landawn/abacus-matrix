@@ -1086,15 +1086,15 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{0, 0, 0}, {0, 0, 0}});
-     * matrix.copyFrom(new byte[][] {{1, 2}, {3, 4}});
+     * matrix.assignFrom(new byte[][] {{1, 2}, {3, 4}});
      * // Matrix is now: [[1, 2, 0], [3, 4, 0]]
      * }</pre>
      *
      * @param source the source array to copy values from
-     * @see #copyFrom(int, int, byte[][])
+     * @see #assignFrom(int, int, byte[][])
      */
-    public void copyFrom(final byte[][] source) {
-        copyFrom(0, 0, source);
+    public void assignFrom(final byte[][] source) {
+        assignFrom(0, 0, source);
     }
 
     /**
@@ -1105,7 +1105,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}});
-     * matrix.copyFrom(1, 1, new byte[][] {{1, 2}, {3, 4}});
+     * matrix.assignFrom(1, 1, new byte[][] {{1, 2}, {3, 4}});
      * // Matrix is now: [[0, 0, 0], [0, 1, 2], [0, 3, 4]]
      * }</pre>
      *
@@ -1114,7 +1114,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param source the source array to copy values from
      * @throws IllegalArgumentException if the target indices are negative or exceed matrix dimensions
      */
-    public void copyFrom(final int destRowIndex, final int destColumnIndex, final byte[][] source) throws IllegalArgumentException {
+    public void assignFrom(final int destRowIndex, final int destColumnIndex, final byte[][] source) throws IllegalArgumentException {
         N.checkArgNotNull(source, "source");
         N.checkArgument(destRowIndex >= 0 && destRowIndex <= rowCount, "destRowIndex({}) must be between 0 and rowCount({})", destRowIndex, rowCount);
         N.checkArgument(destColumnIndex >= 0 && destColumnIndex <= columnCount, "destColumnIndex({}) must be between 0 and columnCount({})", destColumnIndex,

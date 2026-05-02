@@ -1870,7 +1870,7 @@ class IntMatrixTest extends TestBase {
         public void testFill_withArray() {
             IntMatrix m = IntMatrix.of(new int[][] { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } });
             int[][] patch = { { 1, 2 }, { 3, 4 } };
-            m.copyFrom(patch);
+            m.assignFrom(patch);
             assertEquals(1, m.get(0, 0));
             assertEquals(2, m.get(0, 1));
             assertEquals(3, m.get(1, 0));
@@ -1882,7 +1882,7 @@ class IntMatrixTest extends TestBase {
         public void testFill_withArrayAtPosition() {
             IntMatrix m = IntMatrix.of(new int[][] { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } });
             int[][] patch = { { 1, 2 }, { 3, 4 } };
-            m.copyFrom(1, 1, patch);
+            m.assignFrom(1, 1, patch);
             assertEquals(0, m.get(0, 0)); // unchanged
             assertEquals(1, m.get(1, 1));
             assertEquals(2, m.get(1, 2));
@@ -1894,7 +1894,7 @@ class IntMatrixTest extends TestBase {
         public void testFill_outOfBounds() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             int[][] patch = { { 1, 2 }, { 3, 4 } };
-            assertThrows(IllegalArgumentException.class, () -> m.copyFrom(-1, 0, patch));
+            assertThrows(IllegalArgumentException.class, () -> m.assignFrom(-1, 0, patch));
         }
 
         // ============ Copy Tests ============
@@ -3350,7 +3350,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testFill_array() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            m.copyFrom(new int[][] { { 10, 20 }, { 30, 40 } });
+            m.assignFrom(new int[][] { { 10, 20 }, { 30, 40 } });
             assertEquals(10, m.get(0, 0));
             assertEquals(20, m.get(0, 1));
             assertEquals(30, m.get(1, 0));
@@ -3360,7 +3360,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testFill_arrayWithOffset() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            m.copyFrom(1, 1, new int[][] { { 99, 88 } });
+            m.assignFrom(1, 1, new int[][] { { 99, 88 } });
             assertEquals(1, m.get(0, 0));
             assertEquals(99, m.get(1, 1));
             assertEquals(88, m.get(1, 2));
@@ -4476,7 +4476,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void test_fill_array() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            m.copyFrom(new int[][] { { 9, 8 }, { 7, 6 } });
+            m.assignFrom(new int[][] { { 9, 8 }, { 7, 6 } });
             assertEquals(9, m.get(0, 0));
             assertEquals(8, m.get(0, 1));
             assertEquals(7, m.get(1, 0));
@@ -4486,7 +4486,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void test_fill_withOffset() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            m.copyFrom(1, 1, new int[][] { { 99 } });
+            m.assignFrom(1, 1, new int[][] { { 99 } });
             assertEquals(1, m.get(0, 0));
             assertEquals(99, m.get(1, 1));
             assertEquals(9, m.get(2, 2));
@@ -4496,7 +4496,7 @@ class IntMatrixTest extends TestBase {
         public void test_fill_withOffset_partialFill() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 } });
             // When source array is larger than destination, only what fits is copied
-            m.copyFrom(0, 0, new int[][] { { 9, 8, 7 } });
+            m.assignFrom(0, 0, new int[][] { { 9, 8, 7 } });
             assertEquals(9, m.get(0, 0));
             assertEquals(8, m.get(0, 1));
         }
@@ -5226,9 +5226,9 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void testIntMatrix_copyFrom() {
+        public void testIntMatrix_assignFrom() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 0, 0, 0 }, { 0, 0, 0 } });
-            matrix.copyFrom(new int[][] { { 1, 2 }, { 3, 4 } });
+            matrix.assignFrom(new int[][] { { 1, 2 }, { 3, 4 } });
             assertEquals(1, matrix.get(0, 0));
             assertEquals(2, matrix.get(0, 1));
             assertEquals(0, matrix.get(0, 2));
@@ -5238,9 +5238,9 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void testIntMatrix_copyFromWithOffset() {
+        public void testIntMatrix_assignFromWithOffset() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } });
-            matrix.copyFrom(1, 1, new int[][] { { 1, 2 }, { 3, 4 } });
+            matrix.assignFrom(1, 1, new int[][] { { 1, 2 }, { 3, 4 } });
             assertEquals(0, matrix.get(0, 0));
             assertEquals(0, matrix.get(0, 1));
             assertEquals(0, matrix.get(0, 2));
