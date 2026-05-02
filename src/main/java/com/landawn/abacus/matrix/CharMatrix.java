@@ -836,6 +836,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param <E> the type of exception that the operator may throw
      * @param operator the operator to apply to each diagonal element
      * @throws IllegalStateException if the matrix is not square
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateMainDiagonal(final Throwables.CharUnaryOperator<E> operator) throws IllegalStateException, E {
@@ -921,8 +922,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * @param <E> the exception type that the operator may throw
      * @param operator the operator to apply to each anti-diagonal element
-     * @throws E if the operator throws an exception
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
+     * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateAntiDiagonal(final Throwables.CharUnaryOperator<E> operator) throws IllegalStateException, E {
         checkIfRowAndColumnSizeAreSame();
@@ -948,6 +950,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * @param <E> the exception type that the operator may throw
      * @param operator the operator to apply to each element
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateAll(final Throwables.CharUnaryOperator<E> operator) throws E {
@@ -975,6 +978,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * @param <E> the exception type that the operator may throw
      * @param operator the operator that takes (rowIndex, columnIndex) and returns the new char value
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<Character, E> operator) throws E {
@@ -1000,6 +1004,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param <E> the exception type that the predicate may throw
      * @param predicate the predicate to test each element
      * @param newValue the value to replace matching elements with
+     * @throws IllegalArgumentException if {@code predicate} is {@code null}
      * @throws E if the predicate throws an exception
      */
     public <E extends Exception> void replaceIf(final Throwables.CharPredicate<E> predicate, final char newValue) throws E {
@@ -1028,6 +1033,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param <E> the exception type that the predicate may throw
      * @param predicate the predicate that takes (rowIndex, columnIndex) and returns true for positions to replace
      * @param newValue the value to replace at matching positions
+     * @throws IllegalArgumentException if {@code predicate} is {@code null}
      * @throws E if the predicate throws an exception
      */
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final char newValue) throws E {
@@ -1057,6 +1063,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param mapper the function to apply to each element; receives the current element value
      *             and returns the transformed value
      * @return a new CharMatrix with transformed values
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
      * @see #updateAll(Throwables.CharUnaryOperator)
      */
@@ -1092,6 +1099,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param mapper the mapping function that converts each char to an object of type T
      * @param targetElementType the class object representing the target element type (required for array creation)
      * @return a new Matrix&lt;T&gt; with the mapped object values
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
      */
     public <T, E extends Exception> Matrix<T> mapToObj(final Throwables.CharFunction<? extends T, E> mapper, final Class<T> targetElementType) throws E {
@@ -2320,7 +2328,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param matrixB the second matrix to zip with this matrix
      * @param zipFunction the binary operation to apply to corresponding elements
      * @return a new CharMatrix containing the results of the zip operation
-     * @throws IllegalArgumentException if the matrices have different dimensions
+     * @throws IllegalArgumentException if the matrices have different dimensions, or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception
      */
     public <E extends Exception> CharMatrix zipWith(final CharMatrix matrixB, final Throwables.CharBinaryOperator<E> zipFunction)
@@ -2358,7 +2366,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param matrixC the third matrix to zip with
      * @param zipFunction the ternary operation to apply to corresponding elements
      * @return a new CharMatrix containing the results of the zip operation
-     * @throws IllegalArgumentException if any of the matrices have different dimensions
+     * @throws IllegalArgumentException if any of the matrices have different dimensions, or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception
      */
     public <E extends Exception> CharMatrix zipWith(final CharMatrix matrixB, final CharMatrix matrixC, final Throwables.CharTernaryOperator<E> zipFunction)

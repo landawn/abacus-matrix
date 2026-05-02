@@ -938,7 +938,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param mainDiagonal the new values for the main diagonal; must have length equal to rowCount
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
-     * @throws IllegalArgumentException if mainDiagonal array length does not equal rowCount
+     * @throws IllegalArgumentException if {@code mainDiagonal} array length does not equal {@code rowCount},
+     *         or if any element is incompatible with the row's storage component type
      */
     public void setMainDiagonal(final T[] mainDiagonal) throws IllegalStateException, IllegalArgumentException {
         checkIfRowAndColumnSizeAreSame();
@@ -1031,7 +1032,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param antiDiagonal the new values for the anti-diagonal; must have length equal to rowCount
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
-     * @throws IllegalArgumentException if antiDiagonal array length does not equal rowCount
+     * @throws IllegalArgumentException if {@code antiDiagonal} array length does not equal {@code rowCount},
+     *         or if any element is incompatible with the row's storage component type
      */
     public void setAntiDiagonal(final T[] antiDiagonal) throws IllegalStateException, IllegalArgumentException {
         checkIfRowAndColumnSizeAreSame();
@@ -2309,8 +2311,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param rowRepeats number of times to repeat each element in the row direction (must be &gt;= 1)
      * @param columnRepeats number of times to repeat each element in the column direction (must be &gt;= 1)
      * @return a new matrix with repeated elements, dimensions (rowCount x rowRepeats) x (columnCount x columnRepeats)
-     * @throws IllegalArgumentException if rowRepeats &lt; 1 or columnRepeats &lt; 1
-     * @see <a href="https://www.mathworks.com/help/matlab/ref/repeatElements.html">MATLAB repeatElements</a>
+     * @throws IllegalArgumentException if rowRepeats &lt; 1 or columnRepeats &lt; 1, or if the resulting
+     *         dimensions would overflow {@code Integer.MAX_VALUE}
+     * @see <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">MATLAB repelem function</a>
      */
     @Override
     public Matrix<T> repeatElements(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
@@ -2361,8 +2364,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param rowRepeats number of times to repeat the matrix in the row direction (must be &gt;= 1)
      * @param columnRepeats number of times to repeat the matrix in the column direction (must be &gt;= 1)
      * @return a new matrix with the original matrix repeated, dimensions (rowCount x rowRepeats) x (columnCount x columnRepeats)
-     * @throws IllegalArgumentException if rowRepeats &lt; 1 or columnRepeats &lt; 1
-     * @see <a href="https://www.mathworks.com/help/matlab/ref/repeatMatrix.html">MATLAB repeatMatrix</a>
+     * @throws IllegalArgumentException if rowRepeats &lt; 1 or columnRepeats &lt; 1, or if the resulting
+     *         dimensions would overflow {@code Integer.MAX_VALUE}
+     * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
     @Override
     public Matrix<T> repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
@@ -2466,7 +2470,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param other the matrix to stack below this matrix (must not be null)
      * @return a new vertically stacked matrix with dimensions (this.rowCount + other.rowCount) × columnCount
-     * @throws IllegalArgumentException if {@code other} is {@code null} or the matrices have different column counts
+     * @throws IllegalArgumentException if {@code other} is {@code null}, the matrices have different column counts,
+     *         or the merged row count would overflow {@code Integer.MAX_VALUE}
      * @see #stackHorizontally(Matrix)
      * @see IntMatrix#stackVertically(IntMatrix)
      */
@@ -2514,7 +2519,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param other the matrix to stack to the right of this matrix (must not be null)
      * @return a new horizontally stacked matrix with dimensions rowCount × (this.columnCount + other.columnCount)
-     * @throws IllegalArgumentException if {@code other} is {@code null} or the matrices have different row counts
+     * @throws IllegalArgumentException if {@code other} is {@code null}, the matrices have different row counts,
+     *         or the merged column count would overflow {@code Integer.MAX_VALUE}
      * @see #stackVertically(Matrix)
      * @see IntMatrix#stackHorizontally(IntMatrix)
      */

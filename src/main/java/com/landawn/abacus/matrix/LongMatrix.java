@@ -418,6 +418,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * @param x the boxed Long matrix to convert (must not be null)
      * @return a new LongMatrix with unboxed primitive values
+     * @throws NullPointerException if {@code x} is {@code null}
      * @see #boxed()
      */
     public static LongMatrix unbox(final Matrix<Long> x) {
@@ -1482,7 +1483,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
      * @param defaultValueForNewCell the long value used to fill any newly created cells
      * @return a new LongMatrix with the specified dimensions
-     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative
+     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
      * @see #resize(int, int)
      * @see #extend(int, int, int, int, long)
      */
@@ -1551,7 +1553,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param toLeft number of columns to add to the left; must be {@code >= 0}
      * @param toRight number of columns to add to the right; must be {@code >= 0}
      * @return a new LongMatrix with dimensions {@code (toUp+rowCount+toDown) × (toLeft+columnCount+toRight)}
-     * @throws IllegalArgumentException if any padding parameter is negative
+     * @throws IllegalArgumentException if any padding parameter is negative,
+     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
      * @see #extend(int, int, int, int, long)
      * @see #resize(int, int)
      */
@@ -1916,10 +1919,11 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * LongMatrix extended = matrix.reshape(2, 4);   // Becomes [[1, 2, 3, 4], [5, 6, 0, 0]]
      * }</pre>
      *
-     * @param newRowCount the number of rows in the reshaped matrix
-     * @param newColumnCount the number of columns in the reshaped matrix
+     * @param newRowCount the number of rows in the reshaped matrix (must be non-negative)
+     * @param newColumnCount the number of columns in the reshaped matrix (must be non-negative)
      * @return a new LongMatrix with the specified shape containing this matrix's elements
-     * @throws IllegalArgumentException if the new shape is too small to hold all elements
+     * @throws IllegalArgumentException if either dimension is negative, if the dimensions are not a representable shape,
+     *         or if the new shape is too small to hold all elements
      */
     @SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG")
     @Override
@@ -1973,7 +1977,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param rowRepeats the number of times to repeat each element in the row direction
      * @param columnRepeats the number of times to repeat each element in the column direction
      * @return a new matrix with repeated elements
-     * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is less than or equal to 0
+     * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is less than or equal to 0,
+     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
      * @see IntMatrix#repeatElements(int, int)
      */
     @Override
@@ -2024,7 +2029,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param rowRepeats the number of times to repeat the matrix in the row direction
      * @param columnRepeats the number of times to repeat the matrix in the column direction
      * @return a new matrix with the original matrix repeated as tiles
-     * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is less than or equal to 0
+     * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is less than or equal to 0,
+     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
      * @see IntMatrix#repeatMatrix(int, int)
      */
     @Override
@@ -2127,7 +2133,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * @param other the matrix to stack below this matrix
      * @return a new matrix with rows from both matrices stacked vertically
-     * @throws IllegalArgumentException if the matrices don't have the same number of columns
+     * @throws IllegalArgumentException if {@code other} is {@code null}, if the matrices don't have the same number of columns,
+     *         or if the merged row count would exceed {@code Integer.MAX_VALUE}
      * @see IntMatrix#stackVertically(IntMatrix)
      */
     public LongMatrix stackVertically(final LongMatrix other) throws IllegalArgumentException {
@@ -2166,7 +2173,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * @param other the matrix to stack to the right of this matrix
      * @return a new matrix with columns from both matrices stacked horizontally
-     * @throws IllegalArgumentException if the matrices don't have the same number of rows
+     * @throws IllegalArgumentException if {@code other} is {@code null}, if the matrices don't have the same number of rows,
+     *         or if the merged column count would exceed {@code Integer.MAX_VALUE}
      * @see IntMatrix#stackHorizontally(IntMatrix)
      */
     public LongMatrix stackHorizontally(final LongMatrix other) throws IllegalArgumentException {
@@ -2330,11 +2338,13 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
     /**
      * Converts this long matrix to an int matrix.
-     * Each long value is narrowed to int by casting, which truncates toward zero.
+     * Each long value is narrowed to int by a Java primitive narrowing cast, which discards
+     * all but the low-order 32 bits (per JLS §5.1.3).
      *
      * <p><b>Warning:</b> This is a narrowing conversion that may lose information.
      * Values outside the int range ({@code Integer.MIN_VALUE} to {@code Integer.MAX_VALUE})
-     * will overflow.</p>
+     * wrap around modulo 2^32 rather than being clamped; the resulting int may have a
+     * different sign than the original long (e.g. {@code (int) Long.MAX_VALUE} is {@code -1}).</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

@@ -807,6 +807,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param operator the operator to apply to each diagonal element; receives the current
      *             element value and returns the new value
      * @throws IllegalStateException if the matrix is not square
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateMainDiagonal(final Throwables.FloatUnaryOperator<E> operator) throws IllegalStateException, E {
@@ -888,6 +889,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param operator the operator to apply to each anti-diagonal element; receives the current
      *             element value and returns the new value
      * @throws IllegalStateException if the matrix is not square
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateAntiDiagonal(final Throwables.FloatUnaryOperator<E> operator) throws IllegalStateException, E {
@@ -916,6 +918,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param <E> the type of exception that the operator may throw
      * @param operator the operator to apply to each element; receives the current element value
      *             and returns the new value
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateAll(final Throwables.FloatUnaryOperator<E> operator) throws E {
@@ -945,6 +948,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param <E> the type of exception that the operator may throw
      * @param operator the operator that receives row index and column index (0-based) and returns
      *             the new value for that position
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<Float, E> operator) throws E {
@@ -974,6 +978,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param predicate the condition to test each element; elements for which this returns
      *                  {@code true} will be replaced
      * @param newValue the value to use for replacing matching elements
+     * @throws IllegalArgumentException if {@code predicate} is {@code null}
      * @throws E if the predicate throws an exception
      */
     public <E extends Exception> void replaceIf(final Throwables.FloatPredicate<E> predicate, final float newValue) throws E {
@@ -1004,6 +1009,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param predicate the condition to test each position; receives row index and column index (0-based)
      *                  and returns {@code true} if the element at that position should be replaced
      * @param newValue the value to use for replacing at matching positions
+     * @throws IllegalArgumentException if {@code predicate} is {@code null}
      * @throws E if the predicate throws an exception
      */
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final float newValue) throws E {
@@ -1028,6 +1034,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param <E> the exception type that the function may throw
      * @param mapper the mapping function to apply to each element; must not be null
      * @return a new FloatMatrix with the mapped values (same dimensions as the original)
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
      */
     public <E extends Exception> FloatMatrix map(final Throwables.FloatUnaryOperator<E> mapper) throws E {
@@ -1060,6 +1067,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param mapper the mapping function that converts each float element to type T; must not be null
      * @param targetElementType the class object representing the target element type (used for array creation); must not be null
      * @return a new Matrix&lt;T&gt; with the mapped values (same dimensions as the original)
+     * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null}
      * @throws E if the function throws an exception
      */
     public <T, E extends Exception> Matrix<T> mapToObj(final Throwables.FloatFunction<? extends T, E> mapper, final Class<T> targetElementType) throws E {
@@ -2309,8 +2317,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param matrixB the second matrix; must not be null
      * @param zipFunction the binary operator to apply element-wise; must not be null
      * @return a new FloatMatrix with the results of the element-wise operation
-     * @throws IllegalArgumentException if {@code zipFunction} is {@code null} or the matrices have different dimensions
-     * @throws NullPointerException if {@code matrixB} is {@code null}
+     * @throws IllegalArgumentException if {@code matrixB} or {@code zipFunction} is {@code null}, or the matrices have different dimensions
      * @throws E if the zip function throws an exception
      */
     public <E extends Exception> FloatMatrix zipWith(final FloatMatrix matrixB, final Throwables.FloatBinaryOperator<E> zipFunction)
@@ -2347,8 +2354,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param matrixC the third matrix; must not be null
      * @param zipFunction the ternary operator to apply element-wise; must not be null
      * @return a new FloatMatrix with the results of the element-wise operation
-     * @throws IllegalArgumentException if {@code zipFunction} is {@code null} or the matrices have different dimensions
-     * @throws NullPointerException if {@code matrixB} or {@code matrixC} is {@code null}
+     * @throws IllegalArgumentException if {@code matrixB}, {@code matrixC}, or {@code zipFunction} is {@code null}, or the matrices have different dimensions
      * @throws E if the zip function throws an exception
      */
     public <E extends Exception> FloatMatrix zipWith(final FloatMatrix matrixB, final FloatMatrix matrixC, final Throwables.FloatTernaryOperator<E> zipFunction)
@@ -2948,6 +2954,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @param <E> the type of exception that the action may throw
      * @param action the action to perform on each element
+     * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the action throws an exception
      */
     public <E extends Exception> void forEach(final Throwables.FloatConsumer<E> action) throws E {
@@ -2978,6 +2985,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param toColumnIndex the ending column index (exclusive)
      * @param action the action to perform on each element
      * @throws IndexOutOfBoundsException if indices are out of bounds
+     * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the action throws an exception
      */
     public <E extends Exception> void forEach(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,

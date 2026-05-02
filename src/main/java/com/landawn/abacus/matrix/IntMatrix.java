@@ -500,6 +500,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * @param x the boxed Integer matrix to convert (must not be null)
      * @return a new IntMatrix with primitive int values
+     * @throws NullPointerException if {@code x} is {@code null}
      * @see #boxed()
      */
     public static IntMatrix unbox(final Matrix<Integer> x) {
@@ -1992,7 +1993,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param newRowCount the number of rows in the reshaped matrix (must be non-negative)
      * @param newColumnCount the number of columns in the reshaped matrix (must be non-negative)
      * @return a new IntMatrix with the specified dimensions
-     * @throws IllegalArgumentException if the new shape is too small to hold all elements
+     * @throws IllegalArgumentException if either dimension is negative, if the dimensions are not a representable shape,
+     *         or if the new shape is too small to hold all elements
      */
     @SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG")
     @Override
@@ -2043,7 +2045,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param rowRepeats number of times to repeat each element in row direction
      * @param columnRepeats number of times to repeat each element in column direction
      * @return a new IntMatrix with repeated elements
-     * @throws IllegalArgumentException if rowRepeats or columnRepeats is not positive
+     * @throws IllegalArgumentException if rowRepeats or columnRepeats is not positive,
+     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">MATLAB repelem function</a>
      */
     @Override
@@ -2093,7 +2096,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param rowRepeats number of times to repeat the matrix vertically
      * @param columnRepeats number of times to repeat the matrix horizontally
      * @return a new IntMatrix with the tiled pattern
-     * @throws IllegalArgumentException if rowRepeats or columnRepeats is not positive
+     * @throws IllegalArgumentException if rowRepeats or columnRepeats is not positive,
+     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
     @Override
@@ -2200,7 +2204,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * @param other the matrix to stack below this matrix (must have the same column count)
      * @return a new IntMatrix with dimensions (this.rowCount + other.rowCount) x this.columnCount
-     * @throws IllegalArgumentException if {@code this.columnCount != other.columnCount}
+     * @throws IllegalArgumentException if {@code other} is {@code null}, if {@code this.columnCount != other.columnCount},
+     *         or if the merged row count would exceed {@code Integer.MAX_VALUE}
      * @see #stackHorizontally(IntMatrix)
      */
     public IntMatrix stackVertically(final IntMatrix other) throws IllegalArgumentException {
@@ -2242,7 +2247,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * @param other the matrix to stack to the right of this matrix (must have the same row count)
      * @return a new IntMatrix with dimensions this.rowCount x (this.columnCount + other.columnCount)
-     * @throws IllegalArgumentException if {@code this.rowCount != other.rowCount}
+     * @throws IllegalArgumentException if {@code other} is {@code null}, if {@code this.rowCount != other.rowCount},
+     *         or if the merged column count would exceed {@code Integer.MAX_VALUE}
      * @see #stackVertically(IntMatrix)
      */
     public IntMatrix stackHorizontally(final IntMatrix other) throws IllegalArgumentException {

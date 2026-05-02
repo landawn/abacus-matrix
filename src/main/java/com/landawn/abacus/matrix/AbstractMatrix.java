@@ -677,7 +677,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, X extends AbstractMat
      * The resulting matrix has dimensions (rowCount x rowRepeats) x (columnCount x columnRepeats).
      * The original matrix is not modified.
      *
-     * <p>This operation is similar to MATLAB's repeatElements function. Each element becomes a block,
+     * <p>This operation is similar to MATLAB's repelem function. Each element becomes a block,
      * effectively creating a "zoomed in" version of the matrix where each original element
      * occupies multiple positions.</p>
      *
@@ -697,7 +697,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, X extends AbstractMat
      * @param columnRepeats number of times to repeat each element in the column direction (must be &gt;= 1)
      * @return a new matrix with repeated elements, with dimensions (rowCount x rowRepeats) x (columnCount x columnRepeats)
      * @throws IllegalArgumentException if rowRepeats &lt; 1 or columnRepeats &lt; 1
-     * @see <a href="https://www.mathworks.com/help/matlab/ref/repeatElements.html">MATLAB repeatElements</a>
+     * @see <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">MATLAB repelem function</a>
      */
     public abstract X repeatElements(int rowRepeats, int columnRepeats);
 
@@ -707,7 +707,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, X extends AbstractMat
      * The resulting matrix has dimensions (rowCount x rowRepeats) x (columnCount x columnRepeats).
      * The original matrix is not modified.
      *
-     * <p>This operation is similar to MATLAB's repeatMatrix function. The entire matrix pattern
+     * <p>This operation is similar to MATLAB's repmat function. The entire matrix pattern
      * is replicated, creating a tiled arrangement.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -726,7 +726,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, X extends AbstractMat
      * @param columnRepeats number of times to repeat the matrix in the column direction (must be &gt;= 1)
      * @return a new matrix with this matrix tiled, with dimensions (rowCount x rowRepeats) x (columnCount x columnRepeats)
      * @throws IllegalArgumentException if rowRepeats &lt; 1 or columnRepeats &lt; 1
-     * @see <a href="https://www.mathworks.com/help/matlab/ref/repeatMatrix.html">MATLAB repeatMatrix</a>
+     * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
     public abstract X repeatMatrix(int rowRepeats, int columnRepeats);
 

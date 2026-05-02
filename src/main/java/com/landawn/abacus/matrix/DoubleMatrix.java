@@ -905,6 +905,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param operator the operator to apply to each diagonal element; receives the current
      *             element value and returns the new value
      * @throws IllegalStateException if the matrix is not square
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateMainDiagonal(final Throwables.DoubleUnaryOperator<E> operator) throws IllegalStateException, E {
@@ -987,6 +988,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param operator the operator to apply to each anti-diagonal element; receives the current
      *             element value and returns the new value
      * @throws IllegalStateException if the matrix is not square
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateAntiDiagonal(final Throwables.DoubleUnaryOperator<E> operator) throws IllegalStateException, E {
@@ -1015,6 +1017,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param <E> the type of exception that the operator may throw
      * @param operator the operator to apply to each element; receives the current element value
      *             and returns the new value
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateAll(final Throwables.DoubleUnaryOperator<E> operator) throws E {
@@ -1044,6 +1047,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param <E> the type of exception that the operator may throw
      * @param operator the operator that receives row index and column index (0-based) and returns
      *             the new value for that position
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<Double, E> operator) throws E {
@@ -1073,6 +1077,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param predicate the condition to test each element; elements for which this returns
      *                  {@code true} will be replaced
      * @param newValue the value to use for replacing matching elements
+     * @throws IllegalArgumentException if {@code predicate} is {@code null}
      * @throws E if the predicate throws an exception
      */
     public <E extends Exception> void replaceIf(final Throwables.DoublePredicate<E> predicate, final double newValue) throws E {
@@ -1103,6 +1108,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param predicate the condition that tests row index and column index (0-based); elements
      *                  at positions for which this returns {@code true} will be replaced
      * @param newValue the value to use for replacing matching elements
+     * @throws IllegalArgumentException if {@code predicate} is {@code null}
      * @throws E if the predicate throws an exception
      */
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final double newValue) throws E {
@@ -1132,6 +1138,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param mapper the function to apply to each element; receives the current element value
      *             and returns the transformed value
      * @return a new DoubleMatrix with transformed values
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
      * @see #updateAll(Throwables.DoubleUnaryOperator)
      */
@@ -1161,6 +1168,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param <E> the exception type that the function may throw
      * @param mapper the mapping function that converts each double element to an int; must not be null
      * @return a new IntMatrix with the mapped values (same dimensions as the original)
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
      */
     public <E extends Exception> IntMatrix mapToInt(final Throwables.DoubleToIntFunction<E> mapper) throws E {
@@ -1189,6 +1197,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param <E> the exception type that the function may throw
      * @param mapper the mapping function that converts each double element to a long; must not be null
      * @return a new LongMatrix with the mapped values (same dimensions as the original)
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
      */
     public <E extends Exception> LongMatrix mapToLong(final Throwables.DoubleToLongFunction<E> mapper) throws E {
@@ -1219,6 +1228,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param mapper the mapping function that converts each double element to type T; must not be null
      * @param targetElementType the class object representing the target element type (used for array creation); must not be null
      * @return a new Matrix&lt;T&gt; with the mapped values (same dimensions as the original)
+     * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null}
      * @throws E if the function throws an exception
      */
     public <T, E extends Exception> Matrix<T> mapToObj(final Throwables.DoubleFunction<? extends T, E> mapper, final Class<T> targetElementType) throws E {
@@ -2492,8 +2502,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param matrixB the matrix to combine with this matrix; must have the same dimensions and must not be null
      * @param zipFunction the binary operation to apply to corresponding elements; must not be null
      * @return a new matrix with the operation applied element-wise (same dimensions as the input matrices)
-     * @throws IllegalArgumentException if {@code zipFunction} is {@code null} or the matrices have different dimensions
-     * @throws NullPointerException if {@code matrixB} is {@code null}
+     * @throws IllegalArgumentException if {@code matrixB} or {@code zipFunction} is {@code null}, or the matrices have different dimensions
      * @throws E if the zip function throws an exception
      */
     public <E extends Exception> DoubleMatrix zipWith(final DoubleMatrix matrixB, final Throwables.DoubleBinaryOperator<E> zipFunction)
@@ -2532,8 +2541,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param matrixC the third matrix to combine; must have the same dimensions and must not be null
      * @param zipFunction the ternary operation to apply to corresponding elements; must not be null
      * @return a new matrix with the operation applied element-wise (same dimensions as the input matrices)
-     * @throws IllegalArgumentException if {@code zipFunction} is {@code null} or the matrices have different dimensions
-     * @throws NullPointerException if {@code matrixB} or {@code matrixC} is {@code null}
+     * @throws IllegalArgumentException if {@code matrixB}, {@code matrixC}, or {@code zipFunction} is {@code null}, or the matrices have different dimensions
      * @throws E if the zip function throws an exception
      */
     public <E extends Exception> DoubleMatrix zipWith(final DoubleMatrix matrixB, final DoubleMatrix matrixC,
@@ -3147,6 +3155,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * @param <E> the type of exception that the action may throw
      * @param action the action to perform on each element; must not be null
+     * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the action throws an exception
      */
     public <E extends Exception> void forEach(final Throwables.DoubleConsumer<E> action) throws E {
@@ -3173,6 +3182,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param toColumnIndex the ending column index (exclusive, must be &gt;= fromColumnIndex and &lt;= columnCount)
      * @param action the action to perform on each element in the sub-region; must not be null
      * @throws IndexOutOfBoundsException if the indices are out of bounds or invalid
+     * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the action throws an exception
      */
     public <E extends Exception> void forEach(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
