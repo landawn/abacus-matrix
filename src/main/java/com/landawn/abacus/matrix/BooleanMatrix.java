@@ -2266,7 +2266,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * Matrix<Boolean> boxed = primitive.boxed();
      *
      * // Now you can use methods that work with generic types
-     * Stream<Boolean> stream = boxed.streamHorizontal();
+     * Stream<Boolean> stream = boxed.horizontalStream();
      * boxed.set(0, 0, null);   // Can use null values
      * }</pre>
      *
@@ -2418,17 +2418,17 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *     {false, true, false},
      *     {false, false, true}
      * });
-     * List<Boolean> diagonal = matrix.streamMainDiagonal().toList();   // [true, true, true]
+     * List<Boolean> diagonal = matrix.mainDiagonalStream().toList();   // [true, true, true]
      *
      * // Check if it's an identity-like matrix
-     * boolean allTrue = matrix.streamMainDiagonal().allMatch(b -> b);
+     * boolean allTrue = matrix.mainDiagonalStream().allMatch(b -> b);
      * }</pre>
      *
      * @return a Stream&lt;Boolean&gt; containing the diagonal elements from top-left to bottom-right
      * @throws IllegalStateException if the matrix is not square
      */
     @Override
-    public Stream<Boolean> streamMainDiagonal() {
+    public Stream<Boolean> mainDiagonalStream() {
         checkIfRowAndColumnSizeAreSame();
 
         if (isEmpty()) {
@@ -2484,17 +2484,17 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *     {false, true, false},
      *     {true, false, false}
      * });
-     * List<Boolean> antiDiagonal = matrix.streamAntiDiagonal().toList();   // [true, true, true]
+     * List<Boolean> antiDiagonal = matrix.antiDiagonalStream().toList();   // [true, true, true]
      *
      * // Count true values on anti-diagonal
-     * long trueCount = matrix.streamAntiDiagonal().filter(b -> b).count();
+     * long trueCount = matrix.antiDiagonalStream().filter(b -> b).count();
      * }</pre>
      *
      * @return a Stream&lt;Boolean&gt; containing the anti-diagonal elements from top-right to bottom-left
      * @throws IllegalStateException if the matrix is not square
      */
     @Override
-    public Stream<Boolean> streamAntiDiagonal() {
+    public Stream<Boolean> antiDiagonalStream() {
         checkIfRowAndColumnSizeAreSame();
 
         if (isEmpty()) {
@@ -2549,20 +2549,20 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] {{true, false}, {false, true}});
-     * Stream<Boolean> stream = matrix.streamHorizontal();   // Stream of [true, false, false, true]
+     * Stream<Boolean> stream = matrix.horizontalStream();   // Stream of [true, false, false, true]
      *
      * // Count true values
-     * long trueCount = matrix.streamHorizontal().filter(b -> b).count();   // Returns 2
+     * long trueCount = matrix.horizontalStream().filter(b -> b).count();   // Returns 2
      *
      * // Convert to list
-     * List<Boolean> list = matrix.streamHorizontal().toList();   // [true, false, false, true]
+     * List<Boolean> list = matrix.horizontalStream().toList();   // [true, false, false, true]
      * }</pre>
      *
      * @return a Stream&lt;Boolean&gt; of all elements in row-major order, or an empty stream if the matrix is empty
      */
     @Override
-    public Stream<Boolean> streamHorizontal() {
-        return streamHorizontal(0, rowCount);
+    public Stream<Boolean> horizontalStream() {
+        return horizontalStream(0, rowCount);
     }
 
     /**
@@ -2578,10 +2578,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *     {true, false, true},
      *     {false, true, false}
      * });
-     * Stream<Boolean> firstRow = matrix.streamHorizontal(0);   // Stream of [true, false, true]
+     * Stream<Boolean> firstRow = matrix.horizontalStream(0);   // Stream of [true, false, true]
      *
      * // Check if any value in the second row is true
-     * boolean hasTrue = matrix.streamHorizontal(1).anyMatch(b -> b);   // Returns true
+     * boolean hasTrue = matrix.horizontalStream(1).anyMatch(b -> b);   // Returns true
      * }</pre>
      *
      * @param rowIndex the index of the row to stream (0-based)
@@ -2589,8 +2589,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @throws IndexOutOfBoundsException if rowIndex &lt; 0 or rowIndex &gt;= rowCount
      */
     @Override
-    public Stream<Boolean> streamHorizontal(final int rowIndex) {
-        return streamHorizontal(rowIndex, rowIndex + 1);
+    public Stream<Boolean> horizontalStream(final int rowIndex) {
+        return horizontalStream(rowIndex, rowIndex + 1);
     }
 
     /**
@@ -2609,10 +2609,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *     {false, true},
      *     {true, true}
      * });
-     * Stream<Boolean> middleRows = matrix.streamHorizontal(1, 3);   // Stream rows 1 and 2: [false, true, true, true]
+     * Stream<Boolean> middleRows = matrix.horizontalStream(1, 3);   // Stream rows 1 and 2: [false, true, true, true]
      *
      * // Process subset of rows
-     * int[] subset = matrix.streamHorizontal(0, 2)
+     * int[] subset = matrix.horizontalStream(0, 2)
      *     .mapToInt(b -> b ? 1 : 0)
      *     .toArray();   // [1, 0, 0, 1]
      * }</pre>
@@ -2623,7 +2623,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @throws IndexOutOfBoundsException if fromRowIndex &lt; 0, toRowIndex &gt; rowCount, or fromRowIndex &gt; toRowIndex
      */
     @Override
-    public Stream<Boolean> streamHorizontal(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
+    public Stream<Boolean> horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
         if (isEmpty()) {
@@ -2708,23 +2708,23 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * <p>This method is marked as @Beta, indicating it may be subject to change
      * in future versions. It provides an alternative way to iterate through matrix
-     * elements compared to the row-major order of streamHorizontal().</p>
+     * elements compared to the row-major order of horizontalStream().</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] {{true, false}, {false, true}});
-     * Stream<Boolean> stream = matrix.streamVertical();   // Stream of [true, false, false, true]
+     * Stream<Boolean> stream = matrix.verticalStream();   // Stream of [true, false, false, true]
      *
      * // Process in column order
-     * List<Boolean> colMajor = matrix.streamVertical().toList();   // [true, false, false, true]
+     * List<Boolean> colMajor = matrix.verticalStream().toList();   // [true, false, false, true]
      * }</pre>
      *
      * @return a Stream&lt;Boolean&gt; of all elements in column-major order, or an empty stream if the matrix is empty
      */
     @Override
     @Beta
-    public Stream<Boolean> streamVertical() {
-        return streamVertical(0, columnCount);
+    public Stream<Boolean> verticalStream() {
+        return verticalStream(0, columnCount);
     }
 
     /**
@@ -2740,10 +2740,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *     {true, false, true},
      *     {true, true, false}
      * });
-     * Stream<Boolean> firstCol = matrix.streamVertical(0);   // Stream of [true, true]
+     * Stream<Boolean> firstCol = matrix.verticalStream(0);   // Stream of [true, true]
      *
      * // Check if all values in a column are true
-     * boolean allTrue = matrix.streamVertical(0).allMatch(b -> b);   // Returns true
+     * boolean allTrue = matrix.verticalStream(0).allMatch(b -> b);   // Returns true
      * }</pre>
      *
      * @param columnIndex the index of the column to stream (0-based)
@@ -2751,8 +2751,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @throws IndexOutOfBoundsException if columnIndex &lt; 0 or columnIndex &gt;= columnCount
      */
     @Override
-    public Stream<Boolean> streamVertical(final int columnIndex) {
-        return streamVertical(columnIndex, columnIndex + 1);
+    public Stream<Boolean> verticalStream(final int columnIndex) {
+        return verticalStream(columnIndex, columnIndex + 1);
     }
 
     /**
@@ -2769,10 +2769,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *     {true, false, true},
      *     {false, true, false}
      * });
-     * Stream<Boolean> lastTwoCols = matrix.streamVertical(1, 3);   // Stream columns 1 and 2: [false, true, true, false]
+     * Stream<Boolean> lastTwoCols = matrix.verticalStream(1, 3);   // Stream columns 1 and 2: [false, true, true, false]
      *
      * // Count true values in column subset
-     * long trueCount = matrix.streamVertical(0, 2).filter(b -> b).count();
+     * long trueCount = matrix.verticalStream(0, 2).filter(b -> b).count();
      * }</pre>
      *
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
@@ -2784,7 +2784,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     @Override
     @Beta
-    public Stream<Boolean> streamVertical(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
+    public Stream<Boolean> verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
         if (isEmpty()) {
@@ -2880,12 +2880,12 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * });
      *
      * // Count rows that contain at least one true value
-     * long rowsWithTrue = matrix.streamRows()
+     * long rowsWithTrue = matrix.rowStreams()
      *     .filter(row -> row.anyMatch(b -> b))
      *     .count();   // Returns 2
      *
      * // Get row sums (count of true values per row)
-     * int[] rowTrueCounts = matrix.streamRows()
+     * int[] rowTrueCounts = matrix.rowStreams()
      *     .mapToInt(row -> (int) row.filter(b -> b).count())
      *     .toArray();   // [2, 0, 3]
      * }</pre>
@@ -2893,8 +2893,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @return a Stream of Stream&lt;Boolean&gt; objects, one for each row in the matrix
      */
     @Override
-    public Stream<Stream<Boolean>> streamRows() {
-        return streamRows(0, rowCount);
+    public Stream<Stream<Boolean>> rowStreams() {
+        return rowStreams(0, rowCount);
     }
 
     /**
@@ -2913,7 +2913,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * });
      *
      * // Process middle rows only
-     * List<Boolean> hasPattern = matrix.streamRows(1, 3)
+     * List<Boolean> hasPattern = matrix.rowStreams(1, 3)
      *     .map(row -> {
      *         List<Boolean> list = row.toList();
      *         return list.get(0) != list.get(2);   // Check if first != last
@@ -2928,7 +2928,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *         or fromRowIndex &gt; toRowIndex
      */
     @Override
-    public Stream<Stream<Boolean>> streamRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
+    public Stream<Stream<Boolean>> rowStreams(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
         return Stream.of(new ObjIteratorEx<>() {
@@ -2981,12 +2981,12 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * });
      *
      * // Check which columns have all true values
-     * List<Boolean> allTrueColumns = matrix.streamColumns()
+     * List<Boolean> allTrueColumns = matrix.columnStreams()
      *     .map(col -> col.allMatch(b -> b))
      *     .toList();   // [true, false, false]
      *
      * // Count true values per column
-     * long[] colTrueCounts = matrix.streamColumns()
+     * long[] colTrueCounts = matrix.columnStreams()
      *     .mapToLong(col -> col.filter(b -> b).count())
      *     .toArray();   // [2, 1, 1]
      * }</pre>
@@ -2996,8 +2996,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     @Override
     @Beta
-    public Stream<Stream<Boolean>> streamColumns() {
-        return streamColumns(0, columnCount);
+    public Stream<Stream<Boolean>> columnStreams() {
+        return columnStreams(0, columnCount);
     }
 
     /**
@@ -3015,7 +3015,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * });
      *
      * // Process last two columns
-     * List<String> patterns = matrix.streamColumns(2, 4)
+     * List<String> patterns = matrix.columnStreams(2, 4)
      *     .map(col -> col.map(b -> b ? "1" : "0")
      *                    .collect(java.util.stream.Collectors.joining()))
      *     .toList();   // ["10", "01"]
@@ -3030,7 +3030,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     @Override
     @Beta
-    public Stream<Stream<Boolean>> streamColumns(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
+    public Stream<Stream<Boolean>> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
         if (isEmpty()) {

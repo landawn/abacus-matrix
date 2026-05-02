@@ -2388,14 +2388,14 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'},
      *                                                 {'d', 'e', 'f'},
      *                                                 {'g', 'h', 'i'}});
-     * CharStream diagonal = matrix.streamMainDiagonal();   // Stream of: 'a', 'e', 'i'
+     * CharStream diagonal = matrix.mainDiagonalStream();   // Stream of: 'a', 'e', 'i'
      * }</pre>
      *
      * @return a CharStream containing the diagonal elements from top-left to bottom-right
      * @throws IllegalStateException if the matrix is not square
      */
     @Override
-    public CharStream streamMainDiagonal() {
+    public CharStream mainDiagonalStream() {
         checkIfRowAndColumnSizeAreSame();
 
         if (isEmpty()) {
@@ -2445,14 +2445,14 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'},
      *                                                 {'d', 'e', 'f'},
      *                                                 {'g', 'h', 'i'}});
-     * CharStream diagonal = matrix.streamAntiDiagonal();   // Stream of: 'c', 'e', 'g'
+     * CharStream diagonal = matrix.antiDiagonalStream();   // Stream of: 'c', 'e', 'g'
      * }</pre>
      *
      * @return a CharStream containing the diagonal elements from top-right to bottom-left
      * @throws IllegalStateException if the matrix is not square
      */
     @Override
-    public CharStream streamAntiDiagonal() {
+    public CharStream antiDiagonalStream() {
         checkIfRowAndColumnSizeAreSame();
 
         if (isEmpty()) {
@@ -2503,14 +2503,14 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * CharStream stream = matrix.streamHorizontal();   // Stream of: 'a', 'b', 'c', 'd'
+     * CharStream stream = matrix.horizontalStream();   // Stream of: 'a', 'b', 'c', 'd'
      * }</pre>
      *
      * @return a CharStream containing all matrix elements traversed horizontally (left to right, top to bottom)
      */
     @Override
-    public CharStream streamHorizontal() {
-        return streamHorizontal(0, rowCount);
+    public CharStream horizontalStream() {
+        return horizontalStream(0, rowCount);
     }
 
     /**
@@ -2519,7 +2519,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * CharStream row = matrix.streamHorizontal(1);   // Stream of: 'c', 'd'
+     * CharStream row = matrix.horizontalStream(1);   // Stream of: 'c', 'd'
      * }</pre>
      *
      * @param rowIndex the index of the row to stream (0-based)
@@ -2527,8 +2527,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @throws IndexOutOfBoundsException if rowIndex is negative or &gt;= number of rows
      */
     @Override
-    public CharStream streamHorizontal(final int rowIndex) {
-        return streamHorizontal(rowIndex, rowIndex + 1);
+    public CharStream horizontalStream(final int rowIndex) {
+        return horizontalStream(rowIndex, rowIndex + 1);
     }
 
     /**
@@ -2537,7 +2537,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}, {'e', 'f'}});
-     * CharStream stream = matrix.streamHorizontal(1, 3);   // Elements from rows 1 and 2
+     * CharStream stream = matrix.horizontalStream(1, 3);   // Elements from rows 1 and 2
      * // stream contains: 'c', 'd', 'e', 'f'
      * }</pre>
      *
@@ -2547,7 +2547,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @throws IndexOutOfBoundsException if fromRowIndex &lt; 0, toRowIndex &gt; rowCount, or fromRowIndex &gt; toRowIndex
      */
     @Override
-    public CharStream streamHorizontal(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
+    public CharStream horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
         if (isEmpty()) {
@@ -2628,15 +2628,15 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * CharStream stream = matrix.streamVertical();   // Stream of: 'a', 'c', 'b', 'd'
+     * CharStream stream = matrix.verticalStream();   // Stream of: 'a', 'c', 'b', 'd'
      * }</pre>
      *
      * @return a CharStream containing all matrix elements in column-major order
      */
     @Override
     @Beta
-    public CharStream streamVertical() {
-        return streamVertical(0, columnCount);
+    public CharStream verticalStream() {
+        return verticalStream(0, columnCount);
     }
 
     /**
@@ -2645,7 +2645,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * CharStream column = matrix.streamVertical(1);   // Stream of: 'b', 'd'
+     * CharStream column = matrix.verticalStream(1);   // Stream of: 'b', 'd'
      * }</pre>
      *
      * @param columnIndex the index of the column to stream (0-based)
@@ -2653,8 +2653,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @throws IndexOutOfBoundsException if columnIndex is negative or &gt;= number of columns
      */
     @Override
-    public CharStream streamVertical(final int columnIndex) {
-        return streamVertical(columnIndex, columnIndex + 1);
+    public CharStream verticalStream(final int columnIndex) {
+        return verticalStream(columnIndex, columnIndex + 1);
     }
 
     /**
@@ -2666,7 +2666,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
-     * CharStream stream = matrix.streamVertical(1, 3);   // Stream of: 'b', 'e', 'c', 'f'
+     * CharStream stream = matrix.verticalStream(1, 3);   // Stream of: 'b', 'e', 'c', 'f'
      * }</pre>
      *
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
@@ -2676,7 +2676,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      */
     @Override
     @Beta
-    public CharStream streamVertical(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
+    public CharStream verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
         if (isEmpty()) {
@@ -2755,7 +2755,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * Stream<CharStream> rows = matrix.streamRows();
+     * Stream<CharStream> rows = matrix.rowStreams();
      * // First stream contains: 'a', 'b'
      * // Second stream contains: 'c', 'd'
      * }</pre>
@@ -2763,8 +2763,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @return a Stream of CharStreams, one for each row in the matrix
      */
     @Override
-    public Stream<CharStream> streamRows() {
-        return streamRows(0, rowCount);
+    public Stream<CharStream> rowStreams() {
+        return rowStreams(0, rowCount);
     }
 
     /**
@@ -2774,7 +2774,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}, {'e', 'f'}});
-     * Stream<CharStream> rows = matrix.streamRows(1, 3);
+     * Stream<CharStream> rows = matrix.rowStreams(1, 3);
      * // First stream contains: 'c', 'd'
      * // Second stream contains: 'e', 'f'
      * }</pre>
@@ -2785,7 +2785,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @throws IndexOutOfBoundsException if the indices are out of bounds or fromRowIndex &gt; toRowIndex
      */
     @Override
-    public Stream<CharStream> streamRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
+    public Stream<CharStream> rowStreams(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
         return Stream.of(new ObjIteratorEx<>() {
@@ -2831,7 +2831,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * Stream<CharStream> columns = matrix.streamColumns();
+     * Stream<CharStream> columns = matrix.columnStreams();
      * // First stream contains: 'a', 'c'
      * // Second stream contains: 'b', 'd'
      * }</pre>
@@ -2840,8 +2840,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      */
     @Override
     @Beta
-    public Stream<CharStream> streamColumns() {
-        return streamColumns(0, columnCount);
+    public Stream<CharStream> columnStreams() {
+        return columnStreams(0, columnCount);
     }
 
     /**
@@ -2853,7 +2853,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
-     * Stream<CharStream> columns = matrix.streamColumns(1, 3);
+     * Stream<CharStream> columns = matrix.columnStreams(1, 3);
      * // First stream contains: 'b', 'e'
      * // Second stream contains: 'c', 'f'
      * }</pre>
@@ -2865,7 +2865,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      */
     @Override
     @Beta
-    public Stream<CharStream> streamColumns(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
+    public Stream<CharStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
         if (isEmpty()) {

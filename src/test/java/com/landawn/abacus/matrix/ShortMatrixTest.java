@@ -955,136 +955,136 @@ class ShortMatrixTest extends TestBase {
 
     @Test
     public void testStreamLU2RD() {
-        short[] diagonal = matrix.streamMainDiagonal().toArray();
+        short[] diagonal = matrix.mainDiagonalStream().toArray();
         assertArrayEquals(new short[] { 1, 5, 9 }, diagonal);
 
         // Test empty matrix
-        assertTrue(emptyMatrix.streamMainDiagonal().toArray().length == 0);
+        assertTrue(emptyMatrix.mainDiagonalStream().toArray().length == 0);
 
         // Test non-square
         ShortMatrix nonSquare = ShortMatrix.of(new short[][] { { 1, 2 } });
-        assertThrows(IllegalStateException.class, () -> nonSquare.streamMainDiagonal());
+        assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalStream());
     }
 
     @Test
     public void testStreamRU2LD() {
-        short[] antiDiagonal = matrix.streamAntiDiagonal().toArray();
+        short[] antiDiagonal = matrix.antiDiagonalStream().toArray();
         assertArrayEquals(new short[] { 3, 5, 7 }, antiDiagonal);
 
         // Test empty matrix
-        assertTrue(emptyMatrix.streamAntiDiagonal().toArray().length == 0);
+        assertTrue(emptyMatrix.antiDiagonalStream().toArray().length == 0);
 
         // Test non-square
         ShortMatrix nonSquare = ShortMatrix.of(new short[][] { { 1, 2 } });
-        assertThrows(IllegalStateException.class, () -> nonSquare.streamAntiDiagonal());
+        assertThrows(IllegalStateException.class, () -> nonSquare.antiDiagonalStream());
     }
 
     @Test
     public void testStreamH() {
-        short[] all = matrix.streamHorizontal().toArray();
+        short[] all = matrix.horizontalStream().toArray();
         assertArrayEquals(new short[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, all);
 
         // Test empty matrix
-        assertTrue(emptyMatrix.streamHorizontal().toArray().length == 0);
+        assertTrue(emptyMatrix.horizontalStream().toArray().length == 0);
     }
 
     @Test
     public void testStreamHRow() {
-        short[] row1 = matrix.streamHorizontal(1).toArray();
+        short[] row1 = matrix.horizontalStream(1).toArray();
         assertArrayEquals(new short[] { 4, 5, 6 }, row1);
 
         // Test bounds
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamHorizontal(-1));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamHorizontal(3));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.horizontalStream(-1));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.horizontalStream(3));
     }
 
     @Test
     public void testStreamHRange() {
-        short[] rows = matrix.streamHorizontal(1, 3).toArray();
+        short[] rows = matrix.horizontalStream(1, 3).toArray();
         assertArrayEquals(new short[] { 4, 5, 6, 7, 8, 9 }, rows);
 
         // Test bounds
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamHorizontal(-1, 2));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamHorizontal(0, 4));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamHorizontal(2, 1));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.horizontalStream(-1, 2));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.horizontalStream(0, 4));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.horizontalStream(2, 1));
     }
 
     @Test
     public void testStreamV() {
-        short[] all = matrix.streamVertical().toArray();
+        short[] all = matrix.verticalStream().toArray();
         assertArrayEquals(new short[] { 1, 4, 7, 2, 5, 8, 3, 6, 9 }, all);
 
         // Test empty matrix
-        assertTrue(emptyMatrix.streamVertical().toArray().length == 0);
+        assertTrue(emptyMatrix.verticalStream().toArray().length == 0);
     }
 
     @Test
     public void testStreamVColumn() {
-        short[] col1 = matrix.streamVertical(1).toArray();
+        short[] col1 = matrix.verticalStream(1).toArray();
         assertArrayEquals(new short[] { 2, 5, 8 }, col1);
 
         // Test bounds
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamVertical(-1));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamVertical(3));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.verticalStream(-1));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.verticalStream(3));
     }
 
     @Test
     public void testStreamVRange() {
-        short[] columnCount = matrix.streamVertical(1, 3).toArray();
+        short[] columnCount = matrix.verticalStream(1, 3).toArray();
         assertArrayEquals(new short[] { 2, 5, 8, 3, 6, 9 }, columnCount);
 
         // Test bounds
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamVertical(-1, 2));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamVertical(0, 4));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamVertical(2, 1));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.verticalStream(-1, 2));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.verticalStream(0, 4));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.verticalStream(2, 1));
     }
 
     @Test
     public void testStreamR() {
-        List<short[]> rows = matrix.streamRows().map(ShortStream::toArray).toList();
+        List<short[]> rows = matrix.rowStreams().map(ShortStream::toArray).toList();
         assertEquals(3, rows.size());
         assertArrayEquals(new short[] { 1, 2, 3 }, rows.get(0));
         assertArrayEquals(new short[] { 4, 5, 6 }, rows.get(1));
         assertArrayEquals(new short[] { 7, 8, 9 }, rows.get(2));
 
         // Test empty matrix
-        assertTrue(emptyMatrix.streamRows().count() == 0);
+        assertTrue(emptyMatrix.rowStreams().count() == 0);
     }
 
     @Test
     public void testStreamRRange() {
-        List<short[]> rows = matrix.streamRows(1, 3).map(ShortStream::toArray).toList();
+        List<short[]> rows = matrix.rowStreams(1, 3).map(ShortStream::toArray).toList();
         assertEquals(2, rows.size());
         assertArrayEquals(new short[] { 4, 5, 6 }, rows.get(0));
         assertArrayEquals(new short[] { 7, 8, 9 }, rows.get(1));
 
         // Test bounds
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamRows(-1, 2));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamRows(0, 4));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowStreams(-1, 2));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowStreams(0, 4));
     }
 
     @Test
     public void testStreamC() {
-        List<short[]> columnCount = matrix.streamColumns().map(ShortStream::toArray).toList();
+        List<short[]> columnCount = matrix.columnStreams().map(ShortStream::toArray).toList();
         assertEquals(3, columnCount.size());
         assertArrayEquals(new short[] { 1, 4, 7 }, columnCount.get(0));
         assertArrayEquals(new short[] { 2, 5, 8 }, columnCount.get(1));
         assertArrayEquals(new short[] { 3, 6, 9 }, columnCount.get(2));
 
         // Test empty matrix
-        assertTrue(emptyMatrix.streamColumns().count() == 0);
+        assertTrue(emptyMatrix.columnStreams().count() == 0);
     }
 
     @Test
     public void testStreamCRange() {
-        List<short[]> columnCount = matrix.streamColumns(1, 3).map(ShortStream::toArray).toList();
+        List<short[]> columnCount = matrix.columnStreams(1, 3).map(ShortStream::toArray).toList();
         assertEquals(2, columnCount.size());
         assertArrayEquals(new short[] { 2, 5, 8 }, columnCount.get(0));
         assertArrayEquals(new short[] { 3, 6, 9 }, columnCount.get(1));
 
         // Test bounds
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamColumns(-1, 2));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamColumns(0, 4));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.columnStreams(-1, 2));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.columnStreams(0, 4));
     }
 
     @Test
@@ -1140,13 +1140,13 @@ class ShortMatrixTest extends TestBase {
 
     @Test
     public void testIteratorNoSuchElement() {
-        // Test streamHorizontal iterator
-        ShortStream stream = matrix.streamHorizontal(0, 1);
+        // Test horizontalStream iterator
+        ShortStream stream = matrix.horizontalStream(0, 1);
         stream.toArray(); // Consume all
         assertThrows(IllegalStateException.class, () -> stream.iterator().next());
 
-        // Test streamMainDiagonal iterator
-        ShortStream diagStream = matrix.streamMainDiagonal();
+        // Test mainDiagonalStream iterator
+        ShortStream diagStream = matrix.mainDiagonalStream();
         diagStream.toArray(); // Consume all
         assertThrows(IllegalStateException.class, () -> diagStream.iterator().next());
     }
@@ -1652,7 +1652,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testShortMatrixRowsForZeroColumnMatrix() {
             final ShortMatrix matrix = ShortMatrix.of(new short[][] { {}, {}, {} });
-            final List<short[]> rows = matrix.streamRows().map(ShortStream::toArray).toList();
+            final List<short[]> rows = matrix.rowStreams().map(ShortStream::toArray).toList();
 
             assertEquals(3, rows.size());
             assertArrayEquals(new short[0], rows.get(0));
@@ -2803,108 +2803,108 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testStreamLU2RD() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            short[] diagonal = m.streamMainDiagonal().toArray();
+            short[] diagonal = m.mainDiagonalStream().toArray();
             assertArrayEquals(new short[] { 1, 5, 9 }, diagonal);
         }
 
         @Test
         public void testStreamLU2RD_empty() {
             ShortMatrix empty = ShortMatrix.empty();
-            assertEquals(0, empty.streamMainDiagonal().toArray().length);
+            assertEquals(0, empty.mainDiagonalStream().toArray().length);
         }
 
         @Test
         public void testStreamLU2RD_nonSquare() {
             ShortMatrix nonSquare = ShortMatrix.of(new short[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> nonSquare.streamMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalStream());
         }
 
         @Test
         public void testStreamRU2LD() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            short[] antiDiagonal = m.streamAntiDiagonal().toArray();
+            short[] antiDiagonal = m.antiDiagonalStream().toArray();
             assertArrayEquals(new short[] { 3, 5, 7 }, antiDiagonal);
         }
 
         @Test
         public void testStreamRU2LD_empty() {
             ShortMatrix empty = ShortMatrix.empty();
-            assertEquals(0, empty.streamAntiDiagonal().toArray().length);
+            assertEquals(0, empty.antiDiagonalStream().toArray().length);
         }
 
         @Test
         public void testStreamRU2LD_nonSquare() {
             ShortMatrix nonSquare = ShortMatrix.of(new short[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> nonSquare.streamAntiDiagonal());
+            assertThrows(IllegalStateException.class, () -> nonSquare.antiDiagonalStream());
         }
 
         @Test
         public void testStreamH() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            short[] all = m.streamHorizontal().toArray();
+            short[] all = m.horizontalStream().toArray();
             assertArrayEquals(new short[] { 1, 2, 3, 4, 5, 6 }, all);
         }
 
         @Test
         public void testStreamH_empty() {
             ShortMatrix empty = ShortMatrix.empty();
-            assertEquals(0, empty.streamHorizontal().toArray().length);
+            assertEquals(0, empty.horizontalStream().toArray().length);
         }
 
         @Test
         public void testStreamH_withRow_outOfBounds() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamHorizontal(-1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamHorizontal(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.horizontalStream(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.horizontalStream(2));
         }
 
         @Test
         public void testStreamH_withRange_outOfBounds() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamHorizontal(-1, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamHorizontal(0, 3));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamHorizontal(2, 1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.horizontalStream(-1, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.horizontalStream(0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.horizontalStream(2, 1));
         }
 
         @Test
         public void testStreamV() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            short[] all = m.streamVertical().toArray();
+            short[] all = m.verticalStream().toArray();
             assertArrayEquals(new short[] { 1, 4, 2, 5, 3, 6 }, all);
         }
 
         @Test
         public void testStreamV_empty() {
             ShortMatrix empty = ShortMatrix.empty();
-            assertEquals(0, empty.streamVertical().toArray().length);
+            assertEquals(0, empty.verticalStream().toArray().length);
         }
 
         @Test
         public void testStreamV_withColumn_outOfBounds() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamVertical(-1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamVertical(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.verticalStream(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.verticalStream(2));
         }
 
         @Test
         public void testStreamV_withRange() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            short[] columnCount = m.streamVertical(1, 3).toArray();
+            short[] columnCount = m.verticalStream(1, 3).toArray();
             assertArrayEquals(new short[] { 2, 5, 8, 3, 6, 9 }, columnCount);
         }
 
         @Test
         public void testStreamV_withRange_outOfBounds() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamVertical(-1, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamVertical(0, 3));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamVertical(2, 1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.verticalStream(-1, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.verticalStream(0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.verticalStream(2, 1));
         }
 
         @Test
         public void testStreamR() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            List<short[]> rows = m.streamRows().map(ShortStream::toArray).toList();
+            List<short[]> rows = m.rowStreams().map(ShortStream::toArray).toList();
             assertEquals(2, rows.size());
             assertArrayEquals(new short[] { 1, 2, 3 }, rows.get(0));
             assertArrayEquals(new short[] { 4, 5, 6 }, rows.get(1));
@@ -2913,13 +2913,13 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testStreamR_empty() {
             ShortMatrix empty = ShortMatrix.empty();
-            assertEquals(0, empty.streamRows().count());
+            assertEquals(0, empty.rowStreams().count());
         }
 
         @Test
         public void testStreamR_withRange() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            List<short[]> rows = m.streamRows(1, 3).map(ShortStream::toArray).toList();
+            List<short[]> rows = m.rowStreams(1, 3).map(ShortStream::toArray).toList();
             assertEquals(2, rows.size());
             assertArrayEquals(new short[] { 4, 5, 6 }, rows.get(0));
             assertArrayEquals(new short[] { 7, 8, 9 }, rows.get(1));
@@ -2928,14 +2928,14 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testStreamR_withRange_outOfBounds() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamRows(-1, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamRows(0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowStreams(-1, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowStreams(0, 3));
         }
 
         @Test
         public void testStreamC() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            List<short[]> columnCount = m.streamColumns().map(ShortStream::toArray).toList();
+            List<short[]> columnCount = m.columnStreams().map(ShortStream::toArray).toList();
             assertEquals(3, columnCount.size());
             assertArrayEquals(new short[] { 1, 4 }, columnCount.get(0));
             assertArrayEquals(new short[] { 2, 5 }, columnCount.get(1));
@@ -2945,13 +2945,13 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testStreamC_empty() {
             ShortMatrix empty = ShortMatrix.empty();
-            assertEquals(0, empty.streamColumns().count());
+            assertEquals(0, empty.columnStreams().count());
         }
 
         @Test
         public void testStreamC_withRange() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            List<short[]> columnCount = m.streamColumns(1, 3).map(ShortStream::toArray).toList();
+            List<short[]> columnCount = m.columnStreams(1, 3).map(ShortStream::toArray).toList();
             assertEquals(2, columnCount.size());
             assertArrayEquals(new short[] { 2, 5, 8 }, columnCount.get(0));
             assertArrayEquals(new short[] { 3, 6, 9 }, columnCount.get(1));
@@ -2960,8 +2960,8 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testStreamC_withRange_outOfBounds() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamColumns(-1, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamColumns(0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnStreams(-1, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnStreams(0, 3));
         }
 
         // ============ Object Methods Tests ============
@@ -3346,28 +3346,28 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testStreamH_emptyRow() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            short[] row = m.streamHorizontal(0, 0).toArray();
+            short[] row = m.horizontalStream(0, 0).toArray();
             assertEquals(0, row.length);
         }
 
         @Test
         public void testStreamV_emptyColumn() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            short[] col = m.streamVertical(0, 0).toArray();
+            short[] col = m.verticalStream(0, 0).toArray();
             assertEquals(0, col.length);
         }
 
         @Test
         public void testStreamR_emptyRange() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            long count = m.streamRows(1, 1).count();
+            long count = m.rowStreams(1, 1).count();
             assertEquals(0, count);
         }
 
         @Test
         public void testStreamC_emptyRange() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            long count = m.streamColumns(1, 1).count();
+            long count = m.columnStreams(1, 1).count();
             assertEquals(0, count);
         }
 
@@ -3786,62 +3786,62 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testStreamLU2RD_nonSquare() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.streamMainDiagonal().toArray());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalStream().toArray());
         }
 
         @Test
         public void testStreamRU2LD() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            short[] diagonal = m.streamAntiDiagonal().toArray();
+            short[] diagonal = m.antiDiagonalStream().toArray();
             assertArrayEquals(new short[] { 3, 5, 7 }, diagonal);
         }
 
         @Test
         public void testStreamRU2LD_nonSquare() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.streamAntiDiagonal().toArray());
+            assertThrows(IllegalStateException.class, () -> m.antiDiagonalStream().toArray());
         }
 
         @Test
         public void testStreamH_withRowIndex() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            short[] row1 = m.streamHorizontal(1).toArray();
+            short[] row1 = m.horizontalStream(1).toArray();
             assertArrayEquals(new short[] { 4, 5, 6 }, row1);
         }
 
         @Test
         public void testStreamH_withRowRange() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            short[] rows = m.streamHorizontal(1, 3).toArray();
+            short[] rows = m.horizontalStream(1, 3).toArray();
             assertArrayEquals(new short[] { 4, 5, 6, 7, 8, 9 }, rows);
         }
 
         @Test
         public void testStreamH_outOfBounds() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamHorizontal(-1, 1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamHorizontal(0, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.horizontalStream(-1, 1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.horizontalStream(0, 2));
         }
 
         @Test
         public void testStreamV_withColumnIndex() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            short[] col1 = m.streamVertical(1).toArray();
+            short[] col1 = m.verticalStream(1).toArray();
             assertArrayEquals(new short[] { 2, 5 }, col1);
         }
 
         @Test
         public void testStreamV_withColumnRange() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            short[] columnCount = m.streamVertical(1, 3).toArray();
+            short[] columnCount = m.verticalStream(1, 3).toArray();
             assertArrayEquals(new short[] { 2, 5, 3, 6 }, columnCount);
         }
 
         @Test
         public void testStreamV_outOfBounds() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamVertical(-1, 1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamVertical(0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.verticalStream(-1, 1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.verticalStream(0, 3));
         }
 
         // ============ Stream of Streams Tests ============
@@ -3849,7 +3849,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testStreamR() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            List<short[]> rows = m.streamRows().map(ShortStream::toArray).toList();
+            List<short[]> rows = m.rowStreams().map(ShortStream::toArray).toList();
             assertEquals(2, rows.size());
             assertArrayEquals(new short[] { 1, 2 }, rows.get(0));
             assertArrayEquals(new short[] { 3, 4 }, rows.get(1));
@@ -3858,7 +3858,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testStreamC() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            List<short[]> columnCount = m.streamColumns().map(ShortStream::toArray).toList();
+            List<short[]> columnCount = m.columnStreams().map(ShortStream::toArray).toList();
             assertEquals(2, columnCount.size());
             assertArrayEquals(new short[] { 1, 3 }, columnCount.get(0));
             assertArrayEquals(new short[] { 2, 4 }, columnCount.get(1));
@@ -3869,7 +3869,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testPointsH() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            List<Point> points = m.pointsHorizontal().toList();
+            List<Point> points = m.horizontalPoints().toList();
             assertEquals(4, points.size());
             assertEquals(Point.of(0, 0), points.get(0));
             assertEquals(Point.of(0, 1), points.get(1));
@@ -3880,7 +3880,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testPointsV() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            List<Point> points = m.pointsVertical().toList();
+            List<Point> points = m.verticalPoints().toList();
             assertEquals(4, points.size());
             assertEquals(Point.of(0, 0), points.get(0));
             assertEquals(Point.of(1, 0), points.get(1));
@@ -4735,14 +4735,14 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testStreamH_rowRange() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            short[] rows = m.streamHorizontal(1, 3).toArray();
+            short[] rows = m.horizontalStream(1, 3).toArray();
             assertArrayEquals(new short[] { 3, 4, 5, 6 }, rows);
         }
 
         @Test
         public void testStreamV_columnRange() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            short[] columnCount = m.streamVertical(0, 2).toArray();
+            short[] columnCount = m.verticalStream(0, 2).toArray();
             assertArrayEquals(new short[] { 1, 4, 2, 5 }, columnCount);
         }
 
@@ -5812,18 +5812,18 @@ class ShortMatrixTest extends TestBase {
         // ============ Stream Tests ============
 
         @Test
-        public void test_streamMainDiagonal_streamsDiagonal() {
+        public void test_mainDiagonalStream_streamsDiagonal() {
             short[][] arr = { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } };
             ShortMatrix m = new ShortMatrix(arr);
-            short[] result = m.streamMainDiagonal().toArray();
+            short[] result = m.mainDiagonalStream().toArray();
             assertArrayEquals(new short[] { 1, 5, 9 }, result);
         }
 
         @Test
-        public void test_streamAntiDiagonal_streamsAntiDiagonal() {
+        public void test_antiDiagonalStream_streamsAntiDiagonal() {
             short[][] arr = { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } };
             ShortMatrix m = new ShortMatrix(arr);
-            short[] result = m.streamAntiDiagonal().toArray();
+            short[] result = m.antiDiagonalStream().toArray();
             assertArrayEquals(new short[] { 3, 5, 7 }, result);
         }
 
@@ -5831,7 +5831,7 @@ class ShortMatrixTest extends TestBase {
         public void test_streamH_streamsAllElements() {
             short[][] arr = { { 1, 2 }, { 3, 4 } };
             ShortMatrix m = new ShortMatrix(arr);
-            short[] result = m.streamHorizontal().toArray();
+            short[] result = m.horizontalStream().toArray();
             assertArrayEquals(new short[] { 1, 2, 3, 4 }, result);
         }
 
@@ -5839,7 +5839,7 @@ class ShortMatrixTest extends TestBase {
         public void test_streamH_withRowIndex() {
             short[][] arr = { { 1, 2, 3 }, { 4, 5, 6 } };
             ShortMatrix m = new ShortMatrix(arr);
-            short[] result = m.streamHorizontal(1).toArray();
+            short[] result = m.horizontalStream(1).toArray();
             assertArrayEquals(new short[] { 4, 5, 6 }, result);
         }
 
@@ -5847,7 +5847,7 @@ class ShortMatrixTest extends TestBase {
         public void test_streamH_withRowRange() {
             short[][] arr = { { 1, 2 }, { 3, 4 }, { 5, 6 } };
             ShortMatrix m = new ShortMatrix(arr);
-            short[] result = m.streamHorizontal(1, 3).toArray();
+            short[] result = m.horizontalStream(1, 3).toArray();
             assertArrayEquals(new short[] { 3, 4, 5, 6 }, result);
         }
 
@@ -5855,7 +5855,7 @@ class ShortMatrixTest extends TestBase {
         public void test_streamV_streamsAllElementsVertically() {
             short[][] arr = { { 1, 2 }, { 3, 4 } };
             ShortMatrix m = new ShortMatrix(arr);
-            short[] result = m.streamVertical().toArray();
+            short[] result = m.verticalStream().toArray();
             assertArrayEquals(new short[] { 1, 3, 2, 4 }, result);
         }
 
@@ -5863,7 +5863,7 @@ class ShortMatrixTest extends TestBase {
         public void test_streamV_withColumnIndex() {
             short[][] arr = { { 1, 2, 3 }, { 4, 5, 6 } };
             ShortMatrix m = new ShortMatrix(arr);
-            short[] result = m.streamVertical(1).toArray();
+            short[] result = m.verticalStream(1).toArray();
             assertArrayEquals(new short[] { 2, 5 }, result);
         }
 
@@ -5871,7 +5871,7 @@ class ShortMatrixTest extends TestBase {
         public void test_streamV_withColumnRange() {
             short[][] arr = { { 1, 2, 3 }, { 4, 5, 6 } };
             ShortMatrix m = new ShortMatrix(arr);
-            short[] result = m.streamVertical(1, 3).toArray();
+            short[] result = m.verticalStream(1, 3).toArray();
             assertArrayEquals(new short[] { 2, 5, 3, 6 }, result);
         }
 
@@ -5879,7 +5879,7 @@ class ShortMatrixTest extends TestBase {
         public void test_streamR_streamsRows() {
             short[][] arr = { { 1, 2 }, { 3, 4 } };
             ShortMatrix m = new ShortMatrix(arr);
-            Stream<ShortStream> streams = m.streamRows();
+            Stream<ShortStream> streams = m.rowStreams();
             assertEquals(2, streams.count());
         }
 
@@ -5887,7 +5887,7 @@ class ShortMatrixTest extends TestBase {
         public void test_streamR_withRange() {
             short[][] arr = { { 1, 2 }, { 3, 4 }, { 5, 6 } };
             ShortMatrix m = new ShortMatrix(arr);
-            Stream<ShortStream> streams = m.streamRows(1, 3);
+            Stream<ShortStream> streams = m.rowStreams(1, 3);
             assertEquals(2, streams.count());
         }
 
@@ -5895,7 +5895,7 @@ class ShortMatrixTest extends TestBase {
         public void test_streamC_streamsColumns() {
             short[][] arr = { { 1, 2 }, { 3, 4 } };
             ShortMatrix m = new ShortMatrix(arr);
-            Stream<ShortStream> streams = m.streamColumns();
+            Stream<ShortStream> streams = m.columnStreams();
             assertEquals(2, streams.count());
         }
 
@@ -5903,7 +5903,7 @@ class ShortMatrixTest extends TestBase {
         public void test_streamC_withRange() {
             short[][] arr = { { 1, 2, 3 }, { 4, 5, 6 } };
             ShortMatrix m = new ShortMatrix(arr);
-            Stream<ShortStream> streams = m.streamColumns(1, 3);
+            Stream<ShortStream> streams = m.columnStreams(1, 3);
             assertEquals(2, streams.count());
         }
 
@@ -6027,7 +6027,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testPointsMainDiagonal() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            List<Sheet.Point> points = m.pointsMainDiagonal().toList();
+            List<Sheet.Point> points = m.mainDiagonalPoints().toList();
             assertEquals(3, points.size());
             assertEquals(0, points.get(0).rowIndex());
             assertEquals(0, points.get(0).columnIndex());
@@ -6036,13 +6036,13 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testPointsMainDiagonal_NonSquareThrows() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.pointsMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalPoints());
         }
 
         @Test
         public void testPointsAntiDiagonal() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            List<Sheet.Point> points = m.pointsAntiDiagonal().toList();
+            List<Sheet.Point> points = m.antiDiagonalPoints().toList();
             assertEquals(3, points.size());
             assertEquals(0, points.get(0).rowIndex());
             assertEquals(2, points.get(0).columnIndex());
@@ -6051,35 +6051,35 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testPointsHorizontal() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            List<Sheet.Point> points = m.pointsHorizontal().toList();
+            List<Sheet.Point> points = m.horizontalPoints().toList();
             assertEquals(4, points.size());
         }
 
         @Test
         public void testPointsHorizontal_SingleRow() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            List<Sheet.Point> points = m.pointsHorizontal(0).toList();
+            List<Sheet.Point> points = m.horizontalPoints(0).toList();
             assertEquals(2, points.size());
         }
 
         @Test
         public void testPointsVertical() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            List<Sheet.Point> points = m.pointsVertical().toList();
+            List<Sheet.Point> points = m.verticalPoints().toList();
             assertEquals(4, points.size());
         }
 
         @Test
         public void testPointsVertical_SingleColumn() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            List<Sheet.Point> points = m.pointsVertical(1).toList();
+            List<Sheet.Point> points = m.verticalPoints(1).toList();
             assertEquals(2, points.size());
         }
 
         @Test
         public void testPointsRows() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            List<List<Sheet.Point>> rows = m.pointsRows().map(s -> s.toList()).toList();
+            List<List<Sheet.Point>> rows = m.rowPoints().map(s -> s.toList()).toList();
             assertEquals(3, rows.size());
             assertEquals(2, rows.get(0).size());
         }
@@ -6087,7 +6087,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testPointsColumns() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            List<List<Sheet.Point>> cols = m.pointsColumns().map(s -> s.toList()).toList();
+            List<List<Sheet.Point>> cols = m.columnPoints().map(s -> s.toList()).toList();
             assertEquals(3, cols.size());
             assertEquals(2, cols.get(0).size());
         }
@@ -6206,7 +6206,7 @@ class ShortMatrixTest extends TestBase {
     public void testStreamIteratorAdvanceAndExhaustion_EdgeCase() {
         ShortMatrix matrix = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
 
-        var rowIterator = matrix.streamHorizontal(0, 2).iterator();
+        var rowIterator = matrix.horizontalStream(0, 2).iterator();
         assertTrue(rowIterator instanceof com.landawn.abacus.util.stream.ShortIteratorEx);
         com.landawn.abacus.util.stream.ShortIteratorEx rowEx = (com.landawn.abacus.util.stream.ShortIteratorEx) rowIterator;
         rowEx.advance(2);
@@ -6216,7 +6216,7 @@ class ShortMatrixTest extends TestBase {
         assertEquals(0L, rowEx.count());
         assertThrows(java.util.NoSuchElementException.class, rowEx::nextShort);
 
-        var columnIterator = matrix.streamVertical(0, 2).iterator();
+        var columnIterator = matrix.verticalStream(0, 2).iterator();
         assertTrue(columnIterator instanceof com.landawn.abacus.util.stream.ShortIteratorEx);
         com.landawn.abacus.util.stream.ShortIteratorEx columnEx = (com.landawn.abacus.util.stream.ShortIteratorEx) columnIterator;
         columnEx.advance(1);

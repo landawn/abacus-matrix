@@ -1045,14 +1045,14 @@ class CharMatrixTest extends TestBase {
         char[][] a = { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } };
         CharMatrix matrix = CharMatrix.of(a);
 
-        char[] diagonal = matrix.streamMainDiagonal().toArray();
+        char[] diagonal = matrix.mainDiagonalStream().toArray();
         Assertions.assertArrayEquals(new char[] { 'a', 'e', 'i' }, diagonal);
 
         CharMatrix empty = CharMatrix.empty();
-        Assertions.assertTrue(empty.streamMainDiagonal().toList().isEmpty());
+        Assertions.assertTrue(empty.mainDiagonalStream().toList().isEmpty());
 
         CharMatrix nonSquare = CharMatrix.of(new char[][] { { 'a', 'b' } });
-        Assertions.assertThrows(IllegalStateException.class, () -> nonSquare.streamMainDiagonal());
+        Assertions.assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalStream());
     }
 
     @Test
@@ -1060,7 +1060,7 @@ class CharMatrixTest extends TestBase {
         char[][] a = { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } };
         CharMatrix matrix = CharMatrix.of(a);
 
-        char[] diagonal = matrix.streamAntiDiagonal().toArray();
+        char[] diagonal = matrix.antiDiagonalStream().toArray();
         Assertions.assertArrayEquals(new char[] { 'c', 'e', 'g' }, diagonal);
     }
 
@@ -1069,11 +1069,11 @@ class CharMatrixTest extends TestBase {
         char[][] a = { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } };
         CharMatrix matrix = CharMatrix.of(a);
 
-        char[] all = matrix.streamHorizontal().toArray();
+        char[] all = matrix.horizontalStream().toArray();
         Assertions.assertArrayEquals(new char[] { 'a', 'b', 'c', 'd', 'e', 'f' }, all);
 
         CharMatrix empty = CharMatrix.empty();
-        Assertions.assertTrue(empty.streamHorizontal().toList().isEmpty());
+        Assertions.assertTrue(empty.horizontalStream().toList().isEmpty());
     }
 
     @Test
@@ -1081,7 +1081,7 @@ class CharMatrixTest extends TestBase {
         char[][] a = { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } };
         CharMatrix matrix = CharMatrix.of(a);
 
-        char[] row1 = matrix.streamHorizontal(1).toArray();
+        char[] row1 = matrix.horizontalStream(1).toArray();
         Assertions.assertArrayEquals(new char[] { 'd', 'e', 'f' }, row1);
     }
 
@@ -1090,11 +1090,11 @@ class CharMatrixTest extends TestBase {
         char[][] a = { { 'a', 'b' }, { 'c', 'd' }, { 'e', 'f' } };
         CharMatrix matrix = CharMatrix.of(a);
 
-        char[] range = matrix.streamHorizontal(1, 3).toArray();
+        char[] range = matrix.horizontalStream(1, 3).toArray();
         Assertions.assertArrayEquals(new char[] { 'c', 'd', 'e', 'f' }, range);
 
-        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamHorizontal(-1, 2));
-        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamHorizontal(0, 4));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.horizontalStream(-1, 2));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.horizontalStream(0, 4));
     }
 
     @Test
@@ -1102,7 +1102,7 @@ class CharMatrixTest extends TestBase {
         char[][] a = { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } };
         CharMatrix matrix = CharMatrix.of(a);
 
-        char[] all = matrix.streamVertical().toArray();
+        char[] all = matrix.verticalStream().toArray();
         Assertions.assertArrayEquals(new char[] { 'a', 'd', 'b', 'e', 'c', 'f' }, all);
     }
 
@@ -1111,7 +1111,7 @@ class CharMatrixTest extends TestBase {
         char[][] a = { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } };
         CharMatrix matrix = CharMatrix.of(a);
 
-        char[] col1 = matrix.streamVertical(1).toArray();
+        char[] col1 = matrix.verticalStream(1).toArray();
         Assertions.assertArrayEquals(new char[] { 'b', 'e' }, col1);
     }
 
@@ -1120,7 +1120,7 @@ class CharMatrixTest extends TestBase {
         char[][] a = { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } };
         CharMatrix matrix = CharMatrix.of(a);
 
-        char[] range = matrix.streamVertical(1, 3).toArray();
+        char[] range = matrix.verticalStream(1, 3).toArray();
         Assertions.assertArrayEquals(new char[] { 'b', 'e', 'c', 'f' }, range);
     }
 
@@ -1129,7 +1129,7 @@ class CharMatrixTest extends TestBase {
         char[][] a = { { 'a', 'b' }, { 'c', 'd' } };
         CharMatrix matrix = CharMatrix.of(a);
 
-        List<CharStream> rows = matrix.streamRows().toList();
+        List<CharStream> rows = matrix.rowStreams().toList();
         Assertions.assertEquals(2, rows.size());
         Assertions.assertArrayEquals(new char[] { 'a', 'b' }, rows.get(0).toArray());
         Assertions.assertArrayEquals(new char[] { 'c', 'd' }, rows.get(1).toArray());
@@ -1140,7 +1140,7 @@ class CharMatrixTest extends TestBase {
         char[][] a = { { 'a', 'b' }, { 'c', 'd' }, { 'e', 'f' } };
         CharMatrix matrix = CharMatrix.of(a);
 
-        List<CharStream> rows = matrix.streamRows(1, 3).toList();
+        List<CharStream> rows = matrix.rowStreams(1, 3).toList();
         Assertions.assertEquals(2, rows.size());
         Assertions.assertArrayEquals(new char[] { 'c', 'd' }, rows.get(0).toArray());
         Assertions.assertArrayEquals(new char[] { 'e', 'f' }, rows.get(1).toArray());
@@ -1151,7 +1151,7 @@ class CharMatrixTest extends TestBase {
         char[][] a = { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } };
         CharMatrix matrix = CharMatrix.of(a);
 
-        List<CharStream> columnCount = matrix.streamColumns().toList();
+        List<CharStream> columnCount = matrix.columnStreams().toList();
         Assertions.assertEquals(3, columnCount.size());
         Assertions.assertArrayEquals(new char[] { 'a', 'd' }, columnCount.get(0).toArray());
         Assertions.assertArrayEquals(new char[] { 'b', 'e' }, columnCount.get(1).toArray());
@@ -1163,7 +1163,7 @@ class CharMatrixTest extends TestBase {
         char[][] a = { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } };
         CharMatrix matrix = CharMatrix.of(a);
 
-        List<CharStream> columnCount = matrix.streamColumns(1, 3).toList();
+        List<CharStream> columnCount = matrix.columnStreams(1, 3).toList();
         Assertions.assertEquals(2, columnCount.size());
         Assertions.assertArrayEquals(new char[] { 'b', 'e' }, columnCount.get(0).toArray());
         Assertions.assertArrayEquals(new char[] { 'c', 'f' }, columnCount.get(1).toArray());
@@ -2478,129 +2478,129 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamLU2RD() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B', 'C' }, { 'D', 'E', 'F' }, { 'G', 'H', 'I' } });
-            char[] diagonal = m.streamMainDiagonal().toArray();
+            char[] diagonal = m.mainDiagonalStream().toArray();
             assertArrayEquals(new char[] { 'A', 'E', 'I' }, diagonal);
         }
 
         @Test
         public void testStreamLU2RD_empty() {
             CharMatrix empty = CharMatrix.empty();
-            assertEquals(0, empty.streamMainDiagonal().toArray().length);
+            assertEquals(0, empty.mainDiagonalStream().toArray().length);
         }
 
         @Test
         public void testStreamLU2RD_nonSquare() {
             CharMatrix nonSquare = CharMatrix.of(new char[][] { { 'A', 'B' } });
-            assertThrows(IllegalStateException.class, () -> nonSquare.streamMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalStream());
         }
 
         @Test
         public void testStreamRU2LD() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B', 'C' }, { 'D', 'E', 'F' }, { 'G', 'H', 'I' } });
-            char[] antiDiagonal = m.streamAntiDiagonal().toArray();
+            char[] antiDiagonal = m.antiDiagonalStream().toArray();
             assertArrayEquals(new char[] { 'C', 'E', 'G' }, antiDiagonal);
         }
 
         @Test
         public void testStreamRU2LD_empty() {
             CharMatrix empty = CharMatrix.empty();
-            assertEquals(0, empty.streamAntiDiagonal().toArray().length);
+            assertEquals(0, empty.antiDiagonalStream().toArray().length);
         }
 
         @Test
         public void testStreamRU2LD_nonSquare() {
             CharMatrix nonSquare = CharMatrix.of(new char[][] { { 'A', 'B' } });
-            assertThrows(IllegalStateException.class, () -> nonSquare.streamAntiDiagonal());
+            assertThrows(IllegalStateException.class, () -> nonSquare.antiDiagonalStream());
         }
 
         @Test
         public void testStreamH() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B', 'C' }, { 'D', 'E', 'F' } });
-            char[] all = m.streamHorizontal().toArray();
+            char[] all = m.horizontalStream().toArray();
             assertArrayEquals(new char[] { 'A', 'B', 'C', 'D', 'E', 'F' }, all);
         }
 
         @Test
         public void testStreamH_empty() {
             CharMatrix empty = CharMatrix.empty();
-            assertEquals(0, empty.streamHorizontal().toArray().length);
+            assertEquals(0, empty.horizontalStream().toArray().length);
         }
 
         @Test
         public void testStreamH_withRow() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B', 'C' }, { 'D', 'E', 'F' } });
-            char[] row1 = m.streamHorizontal(1).toArray();
+            char[] row1 = m.horizontalStream(1).toArray();
             assertArrayEquals(new char[] { 'D', 'E', 'F' }, row1);
         }
 
         @Test
         public void testStreamH_withRow_outOfBounds() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B' }, { 'C', 'D' } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamHorizontal(-1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamHorizontal(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.horizontalStream(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.horizontalStream(2));
         }
 
         @Test
         public void testStreamH_withRange() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B', 'C' }, { 'D', 'E', 'F' }, { 'G', 'H', 'I' } });
-            char[] rows = m.streamHorizontal(1, 3).toArray();
+            char[] rows = m.horizontalStream(1, 3).toArray();
             assertArrayEquals(new char[] { 'D', 'E', 'F', 'G', 'H', 'I' }, rows);
         }
 
         @Test
         public void testStreamH_withRange_outOfBounds() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B' }, { 'C', 'D' } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamHorizontal(-1, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamHorizontal(0, 3));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamHorizontal(2, 1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.horizontalStream(-1, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.horizontalStream(0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.horizontalStream(2, 1));
         }
 
         @Test
         public void testStreamV() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B', 'C' }, { 'D', 'E', 'F' } });
-            char[] all = m.streamVertical().toArray();
+            char[] all = m.verticalStream().toArray();
             assertArrayEquals(new char[] { 'A', 'D', 'B', 'E', 'C', 'F' }, all);
         }
 
         @Test
         public void testStreamV_empty() {
             CharMatrix empty = CharMatrix.empty();
-            assertEquals(0, empty.streamVertical().toArray().length);
+            assertEquals(0, empty.verticalStream().toArray().length);
         }
 
         @Test
         public void testStreamV_withColumn() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B', 'C' }, { 'D', 'E', 'F' } });
-            char[] col1 = m.streamVertical(1).toArray();
+            char[] col1 = m.verticalStream(1).toArray();
             assertArrayEquals(new char[] { 'B', 'E' }, col1);
         }
 
         @Test
         public void testStreamV_withColumn_outOfBounds() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B' }, { 'C', 'D' } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamVertical(-1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamVertical(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.verticalStream(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.verticalStream(2));
         }
 
         @Test
         public void testStreamV_withRange() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B', 'C' }, { 'D', 'E', 'F' }, { 'G', 'H', 'I' } });
-            char[] columnCount = m.streamVertical(1, 3).toArray();
+            char[] columnCount = m.verticalStream(1, 3).toArray();
             assertArrayEquals(new char[] { 'B', 'E', 'H', 'C', 'F', 'I' }, columnCount);
         }
 
         @Test
         public void testStreamV_withRange_outOfBounds() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B' }, { 'C', 'D' } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamVertical(-1, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamVertical(0, 3));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamVertical(2, 1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.verticalStream(-1, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.verticalStream(0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.verticalStream(2, 1));
         }
 
         @Test
         public void testStreamR() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B', 'C' }, { 'D', 'E', 'F' } });
-            List<char[]> rows = m.streamRows().map(CharStream::toArray).toList();
+            List<char[]> rows = m.rowStreams().map(CharStream::toArray).toList();
             assertEquals(2, rows.size());
             assertArrayEquals(new char[] { 'A', 'B', 'C' }, rows.get(0));
             assertArrayEquals(new char[] { 'D', 'E', 'F' }, rows.get(1));
@@ -2609,13 +2609,13 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamR_empty() {
             CharMatrix empty = CharMatrix.empty();
-            assertEquals(0, empty.streamRows().count());
+            assertEquals(0, empty.rowStreams().count());
         }
 
         @Test
         public void testStreamR_withRange() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B', 'C' }, { 'D', 'E', 'F' }, { 'G', 'H', 'I' } });
-            List<char[]> rows = m.streamRows(1, 3).map(CharStream::toArray).toList();
+            List<char[]> rows = m.rowStreams(1, 3).map(CharStream::toArray).toList();
             assertEquals(2, rows.size());
             assertArrayEquals(new char[] { 'D', 'E', 'F' }, rows.get(0));
             assertArrayEquals(new char[] { 'G', 'H', 'I' }, rows.get(1));
@@ -2624,14 +2624,14 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamR_withRange_outOfBounds() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B' }, { 'C', 'D' } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamRows(-1, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamRows(0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowStreams(-1, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowStreams(0, 3));
         }
 
         @Test
         public void testStreamC() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B', 'C' }, { 'D', 'E', 'F' } });
-            List<char[]> columnCount = m.streamColumns().map(CharStream::toArray).toList();
+            List<char[]> columnCount = m.columnStreams().map(CharStream::toArray).toList();
             assertEquals(3, columnCount.size());
             assertArrayEquals(new char[] { 'A', 'D' }, columnCount.get(0));
             assertArrayEquals(new char[] { 'B', 'E' }, columnCount.get(1));
@@ -2641,13 +2641,13 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamC_empty() {
             CharMatrix empty = CharMatrix.empty();
-            assertEquals(0, empty.streamColumns().count());
+            assertEquals(0, empty.columnStreams().count());
         }
 
         @Test
         public void testStreamC_withRange() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B', 'C' }, { 'D', 'E', 'F' }, { 'G', 'H', 'I' } });
-            List<char[]> columnCount = m.streamColumns(1, 3).map(CharStream::toArray).toList();
+            List<char[]> columnCount = m.columnStreams(1, 3).map(CharStream::toArray).toList();
             assertEquals(2, columnCount.size());
             assertArrayEquals(new char[] { 'B', 'E', 'H' }, columnCount.get(0));
             assertArrayEquals(new char[] { 'C', 'F', 'I' }, columnCount.get(1));
@@ -2656,8 +2656,8 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamC_withRange_outOfBounds() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B' }, { 'C', 'D' } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamColumns(-1, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamColumns(0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnStreams(-1, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnStreams(0, 3));
         }
 
         // ============ Object Methods Tests ============
@@ -3661,7 +3661,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamLU2RD() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } });
-            List<Character> diag = m.streamMainDiagonal().boxed().toList();
+            List<Character> diag = m.mainDiagonalStream().boxed().toList();
             assertEquals(3, diag.size());
             assertEquals('a', diag.get(0));
             assertEquals('e', diag.get(1));
@@ -3671,7 +3671,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamRU2LD() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } });
-            List<Character> diag = m.streamAntiDiagonal().boxed().toList();
+            List<Character> diag = m.antiDiagonalStream().boxed().toList();
             assertEquals(3, diag.size());
             assertEquals('c', diag.get(0));
             assertEquals('e', diag.get(1));
@@ -3681,7 +3681,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamH() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            List<Character> all = m.streamHorizontal().boxed().toList();
+            List<Character> all = m.horizontalStream().boxed().toList();
             assertEquals(4, all.size());
             assertEquals('a', all.get(0));
             assertEquals('b', all.get(1));
@@ -3690,7 +3690,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamH_singleRow() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } });
-            List<Character> row = m.streamHorizontal(0).boxed().toList();
+            List<Character> row = m.horizontalStream(0).boxed().toList();
             assertEquals(3, row.size());
             assertEquals('a', row.get(0));
             assertEquals('b', row.get(1));
@@ -3700,7 +3700,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamH_rowRange() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' }, { 'e', 'f' } });
-            List<Character> rows = m.streamHorizontal(1, 3).boxed().toList();
+            List<Character> rows = m.horizontalStream(1, 3).boxed().toList();
             assertEquals(4, rows.size());
             assertEquals('c', rows.get(0));
             assertEquals('d', rows.get(1));
@@ -3709,7 +3709,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamV() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            List<Character> all = m.streamVertical().boxed().toList();
+            List<Character> all = m.verticalStream().boxed().toList();
             assertEquals(4, all.size());
             assertEquals('a', all.get(0));
             assertEquals('c', all.get(1));
@@ -3718,7 +3718,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamV_singleColumn() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' }, { 'e', 'f' } });
-            List<Character> col = m.streamVertical(0).boxed().toList();
+            List<Character> col = m.verticalStream(0).boxed().toList();
             assertEquals(3, col.size());
             assertEquals('a', col.get(0));
             assertEquals('c', col.get(1));
@@ -3728,7 +3728,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamV_columnRange() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } });
-            List<Character> columnCount = m.streamVertical(1, 3).boxed().toList();
+            List<Character> columnCount = m.verticalStream(1, 3).boxed().toList();
             assertEquals(4, columnCount.size());
             assertEquals('b', columnCount.get(0));
             assertEquals('e', columnCount.get(1));
@@ -3737,7 +3737,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamR() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            List<CharStream> rows = m.streamRows().toList();
+            List<CharStream> rows = m.rowStreams().toList();
             assertEquals(2, rows.size());
             assertEquals(2, rows.get(0).count());
         }
@@ -3745,14 +3745,14 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamR_rowRange() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' }, { 'e', 'f' } });
-            List<CharStream> rows = m.streamRows(1, 3).toList();
+            List<CharStream> rows = m.rowStreams(1, 3).toList();
             assertEquals(2, rows.size());
         }
 
         @Test
         public void testStreamC() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            List<CharStream> columnCount = m.streamColumns().toList();
+            List<CharStream> columnCount = m.columnStreams().toList();
             assertEquals(2, columnCount.size());
             assertEquals(2, columnCount.get(0).count());
         }
@@ -3760,7 +3760,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamC_columnRange() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } });
-            List<CharStream> columnCount = m.streamColumns(1, 3).toList();
+            List<CharStream> columnCount = m.columnStreams(1, 3).toList();
             assertEquals(2, columnCount.size());
         }
 
@@ -3791,7 +3791,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testPointsLU2RD() {
             CharMatrix m = CharMatrix.of(new char[3][3]);
-            List<Point> points = m.pointsMainDiagonal().toList();
+            List<Point> points = m.mainDiagonalPoints().toList();
             assertEquals(3, points.size());
             assertEquals(Point.of(0, 0), points.get(0));
             assertEquals(Point.of(1, 1), points.get(1));
@@ -3801,7 +3801,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testPointsRU2LD() {
             CharMatrix m = CharMatrix.of(new char[3][3]);
-            List<Point> points = m.pointsAntiDiagonal().toList();
+            List<Point> points = m.antiDiagonalPoints().toList();
             assertEquals(3, points.size());
             assertEquals(Point.of(0, 2), points.get(0));
             assertEquals(Point.of(1, 1), points.get(1));
@@ -3811,7 +3811,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testPointsH() {
             CharMatrix m = CharMatrix.of(new char[2][2]);
-            List<Point> points = m.pointsHorizontal().toList();
+            List<Point> points = m.horizontalPoints().toList();
             assertEquals(4, points.size());
             assertEquals(Point.of(0, 0), points.get(0));
             assertEquals(Point.of(0, 1), points.get(1));
@@ -3821,7 +3821,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testPointsH_singleRow() {
             CharMatrix m = CharMatrix.of(new char[2][3]);
-            List<Point> points = m.pointsHorizontal(0).toList();
+            List<Point> points = m.horizontalPoints(0).toList();
             assertEquals(3, points.size());
             assertEquals(Point.of(0, 0), points.get(0));
             assertEquals(Point.of(0, 2), points.get(2));
@@ -3830,7 +3830,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testPointsV() {
             CharMatrix m = CharMatrix.of(new char[2][2]);
-            List<Point> points = m.pointsVertical().toList();
+            List<Point> points = m.verticalPoints().toList();
             assertEquals(4, points.size());
             assertEquals(Point.of(0, 0), points.get(0));
             assertEquals(Point.of(1, 0), points.get(1));
@@ -3839,7 +3839,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testPointsV_singleColumn() {
             CharMatrix m = CharMatrix.of(new char[3][2]);
-            List<Point> points = m.pointsVertical(0).toList();
+            List<Point> points = m.verticalPoints(0).toList();
             assertEquals(3, points.size());
             assertEquals(Point.of(0, 0), points.get(0));
             assertEquals(Point.of(2, 0), points.get(2));
@@ -3848,7 +3848,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testPointsR() {
             CharMatrix m = CharMatrix.of(new char[2][2]);
-            List<Stream<Point>> rows = m.pointsRows().toList();
+            List<Stream<Point>> rows = m.rowPoints().toList();
             assertEquals(2, rows.size());
             assertEquals(2, rows.get(0).count());
         }
@@ -3856,7 +3856,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testPointsC() {
             CharMatrix m = CharMatrix.of(new char[2][2]);
-            List<Stream<Point>> columnCount = m.pointsColumns().toList();
+            List<Stream<Point>> columnCount = m.columnPoints().toList();
             assertEquals(2, columnCount.size());
             assertEquals(2, columnCount.get(0).count());
         }
@@ -4820,7 +4820,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamLU2RD() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } });
-            List<Character> diagonal = m.streamMainDiagonal().boxed().toList();
+            List<Character> diagonal = m.mainDiagonalStream().boxed().toList();
             assertEquals(3, diagonal.size());
             assertEquals('a', diagonal.get(0).charValue());
             assertEquals('e', diagonal.get(1).charValue());
@@ -4830,7 +4830,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamRU2LD() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } });
-            List<Character> diagonal = m.streamAntiDiagonal().boxed().toList();
+            List<Character> diagonal = m.antiDiagonalStream().boxed().toList();
             assertEquals(3, diagonal.size());
             assertEquals('c', diagonal.get(0).charValue());
             assertEquals('e', diagonal.get(1).charValue());
@@ -4840,7 +4840,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamH() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            List<Character> elements = m.streamHorizontal().boxed().toList();
+            List<Character> elements = m.horizontalStream().boxed().toList();
             assertEquals(4, elements.size());
             assertEquals('a', elements.get(0).charValue());
             assertEquals('b', elements.get(1).charValue());
@@ -4849,7 +4849,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamH_withRowIndex() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            List<Character> row = m.streamHorizontal(1).boxed().toList();
+            List<Character> row = m.horizontalStream(1).boxed().toList();
             assertEquals(2, row.size());
             assertEquals('c', row.get(0).charValue());
             assertEquals('d', row.get(1).charValue());
@@ -4858,7 +4858,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamH_withRange() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' }, { 'e', 'f' } });
-            List<Character> elements = m.streamHorizontal(1, 3).boxed().toList();
+            List<Character> elements = m.horizontalStream(1, 3).boxed().toList();
             assertEquals(4, elements.size());
             assertEquals('c', elements.get(0).charValue());
             assertEquals('d', elements.get(1).charValue());
@@ -4867,7 +4867,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamV() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            List<Character> elements = m.streamVertical().boxed().toList();
+            List<Character> elements = m.verticalStream().boxed().toList();
             assertEquals(4, elements.size());
             assertEquals('a', elements.get(0).charValue());
             assertEquals('c', elements.get(1).charValue());
@@ -4876,7 +4876,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamV_withColumnIndex() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            List<Character> col = m.streamVertical(1).boxed().toList();
+            List<Character> col = m.verticalStream(1).boxed().toList();
             assertEquals(2, col.size());
             assertEquals('b', col.get(0).charValue());
             assertEquals('d', col.get(1).charValue());
@@ -4885,7 +4885,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamV_withRange() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } });
-            List<Character> elements = m.streamVertical(1, 3).boxed().toList();
+            List<Character> elements = m.verticalStream(1, 3).boxed().toList();
             assertEquals(4, elements.size());
             assertEquals('b', elements.get(0).charValue());
             assertEquals('e', elements.get(1).charValue());
@@ -4894,7 +4894,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamR() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            List<CharStream> rows = m.streamRows().toList();
+            List<CharStream> rows = m.rowStreams().toList();
             assertEquals(2, rows.size());
             assertEquals(2, rows.get(0).toArray().length);
         }
@@ -4902,7 +4902,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamC() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            List<CharStream> columnCount = m.streamColumns().toList();
+            List<CharStream> columnCount = m.columnStreams().toList();
             assertEquals(2, columnCount.size());
             assertEquals(2, columnCount.get(0).toArray().length);
         }
@@ -4911,7 +4911,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testPointsH() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            List<Point> points = m.pointsHorizontal().toList();
+            List<Point> points = m.horizontalPoints().toList();
             assertEquals(4, points.size());
             assertEquals(0, points.get(0).rowIndex());
             assertEquals(0, points.get(0).columnIndex());
@@ -4920,7 +4920,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testPointsV() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            List<Point> points = m.pointsVertical().toList();
+            List<Point> points = m.verticalPoints().toList();
             assertEquals(4, points.size());
             assertEquals(0, points.get(0).rowIndex());
             assertEquals(0, points.get(0).columnIndex());
@@ -4929,7 +4929,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testPointsLU2RD() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } });
-            List<Point> points = m.pointsMainDiagonal().toList();
+            List<Point> points = m.mainDiagonalPoints().toList();
             assertEquals(3, points.size());
             assertEquals(0, points.get(0).rowIndex());
             assertEquals(0, points.get(0).columnIndex());
@@ -4938,7 +4938,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testPointsRU2LD() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } });
-            List<Point> points = m.pointsAntiDiagonal().toList();
+            List<Point> points = m.antiDiagonalPoints().toList();
             assertEquals(3, points.size());
             assertEquals(0, points.get(0).rowIndex());
             assertEquals(2, points.get(0).columnIndex());
@@ -5800,65 +5800,65 @@ class CharMatrixTest extends TestBase {
         // ============ Stream Tests ============
 
         @Test
-        public void test_streamMainDiagonal() {
+        public void test_mainDiagonalStream() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } });
-            char[] diag = m.streamMainDiagonal().toArray();
+            char[] diag = m.mainDiagonalStream().toArray();
             assertArrayEquals(new char[] { 'a', 'e', 'i' }, diag);
         }
 
         @Test
-        public void test_streamAntiDiagonal() {
+        public void test_antiDiagonalStream() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } });
-            char[] diag = m.streamAntiDiagonal().toArray();
+            char[] diag = m.antiDiagonalStream().toArray();
             assertArrayEquals(new char[] { 'c', 'e', 'g' }, diag);
         }
 
         @Test
-        public void test_streamHorizontal() {
+        public void test_horizontalStream() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            char[] elements = m.streamHorizontal().toArray();
+            char[] elements = m.horizontalStream().toArray();
             assertArrayEquals(new char[] { 'a', 'b', 'c', 'd' }, elements);
         }
 
         @Test
         public void test_streamH_singleRow() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            char[] row = m.streamHorizontal(1).toArray();
+            char[] row = m.horizontalStream(1).toArray();
             assertArrayEquals(new char[] { 'c', 'd' }, row);
         }
 
         @Test
         public void test_streamH_rowRange() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' }, { 'e', 'f' } });
-            char[] elements = m.streamHorizontal(1, 3).toArray();
+            char[] elements = m.horizontalStream(1, 3).toArray();
             assertArrayEquals(new char[] { 'c', 'd', 'e', 'f' }, elements);
         }
 
         @Test
-        public void test_streamVertical() {
+        public void test_verticalStream() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            char[] elements = m.streamVertical().toArray();
+            char[] elements = m.verticalStream().toArray();
             assertArrayEquals(new char[] { 'a', 'c', 'b', 'd' }, elements);
         }
 
         @Test
         public void test_streamV_singleColumn() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            char[] col = m.streamVertical(0).toArray();
+            char[] col = m.verticalStream(0).toArray();
             assertArrayEquals(new char[] { 'a', 'c' }, col);
         }
 
         @Test
         public void test_streamV_columnRange() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } });
-            char[] elements = m.streamVertical(1, 3).toArray();
+            char[] elements = m.verticalStream(1, 3).toArray();
             assertArrayEquals(new char[] { 'b', 'e', 'c', 'f' }, elements);
         }
 
         @Test
-        public void test_streamRows() {
+        public void test_rowStreams() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            List<char[]> rows = m.streamRows().map(CharStream::toArray).toList();
+            List<char[]> rows = m.rowStreams().map(CharStream::toArray).toList();
             assertEquals(2, rows.size());
             assertArrayEquals(new char[] { 'a', 'b' }, rows.get(0));
         }
@@ -5866,14 +5866,14 @@ class CharMatrixTest extends TestBase {
         @Test
         public void test_streamR_rowRange() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' }, { 'e', 'f' } });
-            List<char[]> rows = m.streamRows(1, 3).map(CharStream::toArray).toList();
+            List<char[]> rows = m.rowStreams(1, 3).map(CharStream::toArray).toList();
             assertEquals(2, rows.size());
         }
 
         @Test
-        public void test_streamColumns() {
+        public void test_columnStreams() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            List<char[]> columnCount = m.streamColumns().map(CharStream::toArray).toList();
+            List<char[]> columnCount = m.columnStreams().map(CharStream::toArray).toList();
             assertEquals(2, columnCount.size());
             assertArrayEquals(new char[] { 'a', 'c' }, columnCount.get(0));
         }
@@ -5881,7 +5881,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void test_streamC_columnRange() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } });
-            List<char[]> columnCount = m.streamColumns(0, 2).map(CharStream::toArray).toList();
+            List<char[]> columnCount = m.columnStreams(0, 2).map(CharStream::toArray).toList();
             assertEquals(2, columnCount.size());
         }
 
@@ -6308,7 +6308,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testCharMatrixRowsForZeroColumnMatrix() {
             final CharMatrix matrix = CharMatrix.of(new char[][] { {}, {}, {} });
-            final List<char[]> rows = matrix.streamRows().map(CharStream::toArray).toList();
+            final List<char[]> rows = matrix.rowStreams().map(CharStream::toArray).toList();
 
             assertEquals(3, rows.size());
             assertArrayEquals(new char[0], rows.get(0));
@@ -6562,7 +6562,7 @@ class CharMatrixTest extends TestBase {
     @Test
     public void testStreamHorizontalIteratorAdvanceAndExhaustion_EdgeCase() {
         CharMatrix matrix = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-        var iterator = matrix.streamHorizontal(0, 2).iterator();
+        var iterator = matrix.horizontalStream(0, 2).iterator();
 
         assertTrue(iterator instanceof com.landawn.abacus.util.stream.CharIteratorEx);
 

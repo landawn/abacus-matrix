@@ -923,100 +923,100 @@ class IntMatrixTest extends TestBase {
 
     @Test
     public void testStreamLU2RD() {
-        int[] diagonal = matrix.streamMainDiagonal().toArray();
+        int[] diagonal = matrix.mainDiagonalStream().toArray();
         assertArrayEquals(new int[] { 1, 5, 9 }, diagonal);
 
         // Test empty matrix
-        assertTrue(emptyMatrix.streamMainDiagonal().toArray().length == 0);
+        assertTrue(emptyMatrix.mainDiagonalStream().toArray().length == 0);
 
         // Test non-square
         IntMatrix nonSquare = IntMatrix.of(new int[][] { { 1, 2 } });
-        assertThrows(IllegalStateException.class, () -> nonSquare.streamMainDiagonal());
+        assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalStream());
     }
 
     @Test
     public void testStreamRU2LD() {
-        int[] antiDiagonal = matrix.streamAntiDiagonal().toArray();
+        int[] antiDiagonal = matrix.antiDiagonalStream().toArray();
         assertArrayEquals(new int[] { 3, 5, 7 }, antiDiagonal);
 
         // Test empty matrix
-        assertTrue(emptyMatrix.streamAntiDiagonal().toArray().length == 0);
+        assertTrue(emptyMatrix.antiDiagonalStream().toArray().length == 0);
 
         // Test non-square
         IntMatrix nonSquare = IntMatrix.of(new int[][] { { 1, 2 } });
-        assertThrows(IllegalStateException.class, () -> nonSquare.streamAntiDiagonal());
+        assertThrows(IllegalStateException.class, () -> nonSquare.antiDiagonalStream());
     }
 
     @Test
     public void testStreamH() {
-        int[] all = matrix.streamHorizontal().toArray();
+        int[] all = matrix.horizontalStream().toArray();
         assertArrayEquals(new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, all);
 
         // Test empty matrix
-        assertTrue(emptyMatrix.streamHorizontal().toArray().length == 0);
+        assertTrue(emptyMatrix.horizontalStream().toArray().length == 0);
     }
 
     @Test
     public void testStreamHRow() {
-        int[] row1 = matrix.streamHorizontal(1).toArray();
+        int[] row1 = matrix.horizontalStream(1).toArray();
         assertArrayEquals(new int[] { 4, 5, 6 }, row1);
 
         // Test bounds
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamHorizontal(-1));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamHorizontal(3));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.horizontalStream(-1));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.horizontalStream(3));
     }
 
     @Test
     public void testStreamHRange() {
-        int[] rows = matrix.streamHorizontal(1, 3).toArray();
+        int[] rows = matrix.horizontalStream(1, 3).toArray();
         assertArrayEquals(new int[] { 4, 5, 6, 7, 8, 9 }, rows);
 
         // Test bounds
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamHorizontal(-1, 2));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamHorizontal(0, 4));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamHorizontal(2, 1));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.horizontalStream(-1, 2));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.horizontalStream(0, 4));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.horizontalStream(2, 1));
     }
 
     @Test
     public void testStreamV() {
-        int[] all = matrix.streamVertical().toArray();
+        int[] all = matrix.verticalStream().toArray();
         assertArrayEquals(new int[] { 1, 4, 7, 2, 5, 8, 3, 6, 9 }, all);
 
         // Test empty matrix
-        assertTrue(emptyMatrix.streamVertical().toArray().length == 0);
+        assertTrue(emptyMatrix.verticalStream().toArray().length == 0);
     }
 
     @Test
     public void testStreamVColumn() {
-        int[] col1 = matrix.streamVertical(1).toArray();
+        int[] col1 = matrix.verticalStream(1).toArray();
         assertArrayEquals(new int[] { 2, 5, 8 }, col1);
 
         // Test bounds
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamVertical(-1));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamVertical(3));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.verticalStream(-1));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.verticalStream(3));
     }
 
     @Test
     public void testStreamVRange() {
-        int[] columnCount = matrix.streamVertical(1, 3).toArray();
+        int[] columnCount = matrix.verticalStream(1, 3).toArray();
         assertArrayEquals(new int[] { 2, 5, 8, 3, 6, 9 }, columnCount);
 
         // Test bounds
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamVertical(-1, 2));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamVertical(0, 4));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamVertical(2, 1));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.verticalStream(-1, 2));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.verticalStream(0, 4));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.verticalStream(2, 1));
     }
 
     @Test
     public void testStreamR() {
-        List<int[]> rows = matrix.streamRows().map(IntStream::toArray).toList();
+        List<int[]> rows = matrix.rowStreams().map(IntStream::toArray).toList();
         assertEquals(3, rows.size());
         assertArrayEquals(new int[] { 1, 2, 3 }, rows.get(0));
         assertArrayEquals(new int[] { 4, 5, 6 }, rows.get(1));
         assertArrayEquals(new int[] { 7, 8, 9 }, rows.get(2));
 
         // Test empty matrix
-        assertTrue(emptyMatrix.streamRows().count() == 0);
+        assertTrue(emptyMatrix.rowStreams().count() == 0);
     }
 
     @Test
@@ -1027,7 +1027,7 @@ class IntMatrixTest extends TestBase {
         assertEquals(0, zeroColumnMatrix.columnCount());
         assertTrue(zeroColumnMatrix.isEmpty());
 
-        List<int[]> rows = zeroColumnMatrix.streamRows().map(IntStream::toArray).toList();
+        List<int[]> rows = zeroColumnMatrix.rowStreams().map(IntStream::toArray).toList();
         assertEquals(3, rows.size());
         assertArrayEquals(new int[0], rows.get(0));
         assertArrayEquals(new int[0], rows.get(1));
@@ -1036,38 +1036,38 @@ class IntMatrixTest extends TestBase {
 
     @Test
     public void testStreamRRange() {
-        List<int[]> rows = matrix.streamRows(1, 3).map(IntStream::toArray).toList();
+        List<int[]> rows = matrix.rowStreams(1, 3).map(IntStream::toArray).toList();
         assertEquals(2, rows.size());
         assertArrayEquals(new int[] { 4, 5, 6 }, rows.get(0));
         assertArrayEquals(new int[] { 7, 8, 9 }, rows.get(1));
 
         // Test bounds
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamRows(-1, 2));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamRows(0, 4));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowStreams(-1, 2));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowStreams(0, 4));
     }
 
     @Test
     public void testStreamC() {
-        List<int[]> columnCount = matrix.streamColumns().map(IntStream::toArray).toList();
+        List<int[]> columnCount = matrix.columnStreams().map(IntStream::toArray).toList();
         assertEquals(3, columnCount.size());
         assertArrayEquals(new int[] { 1, 4, 7 }, columnCount.get(0));
         assertArrayEquals(new int[] { 2, 5, 8 }, columnCount.get(1));
         assertArrayEquals(new int[] { 3, 6, 9 }, columnCount.get(2));
 
         // Test empty matrix
-        assertTrue(emptyMatrix.streamColumns().count() == 0);
+        assertTrue(emptyMatrix.columnStreams().count() == 0);
     }
 
     @Test
     public void testStreamCRange() {
-        List<int[]> columnCount = matrix.streamColumns(1, 3).map(IntStream::toArray).toList();
+        List<int[]> columnCount = matrix.columnStreams(1, 3).map(IntStream::toArray).toList();
         assertEquals(2, columnCount.size());
         assertArrayEquals(new int[] { 2, 5, 8 }, columnCount.get(0));
         assertArrayEquals(new int[] { 3, 6, 9 }, columnCount.get(1));
 
         // Test bounds
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamColumns(-1, 2));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.streamColumns(0, 4));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.columnStreams(-1, 2));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.columnStreams(0, 4));
     }
 
     @Test
@@ -1123,13 +1123,13 @@ class IntMatrixTest extends TestBase {
 
     @Test
     public void testIteratorNoSuchElement() {
-        // Test streamHorizontal iterator
-        IntStream stream = matrix.streamHorizontal(0, 1);
+        // Test horizontalStream iterator
+        IntStream stream = matrix.horizontalStream(0, 1);
         stream.toArray(); // Consume all
         assertThrows(IllegalStateException.class, () -> stream.iterator().next());
 
-        // Test streamMainDiagonal iterator
-        IntStream diagStream = matrix.streamMainDiagonal();
+        // Test mainDiagonalStream iterator
+        IntStream diagStream = matrix.mainDiagonalStream();
         diagStream.toArray(); // Consume all
         assertThrows(IllegalStateException.class, () -> diagStream.iterator().next());
     }
@@ -1151,59 +1151,59 @@ class IntMatrixTest extends TestBase {
     @Test
     public void testStatisticalOperations() {
         // Test sum operation on streams
-        int totalSum = matrix.streamHorizontal().sum();
+        int totalSum = matrix.horizontalStream().sum();
         assertEquals(45, totalSum); // 1+2+3+4+5+6+7+8+9 = 45
 
         // Test sum of specific row
-        int row1Sum = matrix.streamHorizontal(1).sum();
+        int row1Sum = matrix.horizontalStream(1).sum();
         assertEquals(15, row1Sum); // 4+5+6 = 15
 
         // Test sum of specific column
-        int col0Sum = matrix.streamVertical(0).sum();
+        int col0Sum = matrix.verticalStream(0).sum();
         assertEquals(12, col0Sum); // 1+4+7 = 12
 
         // Test min/max on streams
-        int min = matrix.streamHorizontal().min().orElse(0);
+        int min = matrix.horizontalStream().min().orElse(0);
         assertEquals(1, min);
 
-        int max = matrix.streamHorizontal().max().orElse(0);
+        int max = matrix.horizontalStream().max().orElse(0);
         assertEquals(9, max);
 
         // Test average
-        double avg = matrix.streamHorizontal().average().orElse(0.0);
+        double avg = matrix.horizontalStream().average().orElse(0.0);
         assertEquals(5.0, avg, 0.0001);
 
         // Test statistical operations on diagonal
-        int diagonalSum = matrix.streamMainDiagonal().sum();
+        int diagonalSum = matrix.mainDiagonalStream().sum();
         assertEquals(15, diagonalSum); // 1+5+9 = 15
 
-        int antiDiagonalSum = matrix.streamAntiDiagonal().sum();
+        int antiDiagonalSum = matrix.antiDiagonalStream().sum();
         assertEquals(15, antiDiagonalSum); // 3+5+7 = 15
     }
 
     @Test
     public void testRowColumnStatistics() {
         // Test statistics on individual rows
-        List<Integer> rowSums = matrix.streamRows().map(row -> row.sum()).toList();
+        List<Integer> rowSums = matrix.rowStreams().map(row -> row.sum()).toList();
         assertEquals(3, rowSums.size());
         assertEquals(6, rowSums.get(0).intValue()); // 1+2+3
         assertEquals(15, rowSums.get(1).intValue()); // 4+5+6
         assertEquals(24, rowSums.get(2).intValue()); // 7+8+9
 
         // Test statistics on individual columns
-        List<Integer> colSums = matrix.streamColumns().map(col -> col.sum()).toList();
+        List<Integer> colSums = matrix.columnStreams().map(col -> col.sum()).toList();
         assertEquals(3, colSums.size());
         assertEquals(12, colSums.get(0).intValue()); // 1+4+7
         assertEquals(15, colSums.get(1).intValue()); // 2+5+8
         assertEquals(18, colSums.get(2).intValue()); // 3+6+9
 
         // Test min/max per row
-        List<Integer> rowMins = matrix.streamRows().map(row -> row.min().orElse(0)).toList();
+        List<Integer> rowMins = matrix.rowStreams().map(row -> row.min().orElse(0)).toList();
         assertEquals(1, rowMins.get(0).intValue());
         assertEquals(4, rowMins.get(1).intValue());
         assertEquals(7, rowMins.get(2).intValue());
 
-        List<Integer> rowMaxs = matrix.streamRows().map(row -> row.max().orElse(0)).toList();
+        List<Integer> rowMaxs = matrix.rowStreams().map(row -> row.max().orElse(0)).toList();
         assertEquals(3, rowMaxs.get(0).intValue());
         assertEquals(6, rowMaxs.get(1).intValue());
         assertEquals(9, rowMaxs.get(2).intValue());
@@ -1287,7 +1287,7 @@ class IntMatrixTest extends TestBase {
         assertEquals(300, largeSum.get(9, 9)); // 100 + 200 = 300
 
         // Test that sum of all elements is correct
-        long totalSum = largeSum.streamHorizontal().asLongStream().sum();
+        long totalSum = largeSum.horizontalStream().asLongStream().sum();
         assertEquals(15150, totalSum); // (1+2+...+100) + 2*(1+2+...+100) = 3*(1+2+...+100) = 3*5050 = 15150
     }
 
@@ -2329,108 +2329,108 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testStreamLU2RD() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            int[] diagonal = m.streamMainDiagonal().toArray();
+            int[] diagonal = m.mainDiagonalStream().toArray();
             assertArrayEquals(new int[] { 1, 5, 9 }, diagonal);
         }
 
         @Test
         public void testStreamLU2RD_empty() {
             IntMatrix empty = IntMatrix.empty();
-            assertEquals(0, empty.streamMainDiagonal().toArray().length);
+            assertEquals(0, empty.mainDiagonalStream().toArray().length);
         }
 
         @Test
         public void testStreamLU2RD_nonSquare() {
             IntMatrix nonSquare = IntMatrix.of(new int[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> nonSquare.streamMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalStream());
         }
 
         @Test
         public void testStreamRU2LD() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            int[] antiDiagonal = m.streamAntiDiagonal().toArray();
+            int[] antiDiagonal = m.antiDiagonalStream().toArray();
             assertArrayEquals(new int[] { 3, 5, 7 }, antiDiagonal);
         }
 
         @Test
         public void testStreamRU2LD_empty() {
             IntMatrix empty = IntMatrix.empty();
-            assertEquals(0, empty.streamAntiDiagonal().toArray().length);
+            assertEquals(0, empty.antiDiagonalStream().toArray().length);
         }
 
         @Test
         public void testStreamRU2LD_nonSquare() {
             IntMatrix nonSquare = IntMatrix.of(new int[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> nonSquare.streamAntiDiagonal());
+            assertThrows(IllegalStateException.class, () -> nonSquare.antiDiagonalStream());
         }
 
         @Test
         public void testStreamH() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            int[] all = m.streamHorizontal().toArray();
+            int[] all = m.horizontalStream().toArray();
             assertArrayEquals(new int[] { 1, 2, 3, 4, 5, 6 }, all);
         }
 
         @Test
         public void testStreamH_empty() {
             IntMatrix empty = IntMatrix.empty();
-            assertEquals(0, empty.streamHorizontal().toArray().length);
+            assertEquals(0, empty.horizontalStream().toArray().length);
         }
 
         @Test
         public void testStreamH_withRow_outOfBounds() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamHorizontal(-1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamHorizontal(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.horizontalStream(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.horizontalStream(2));
         }
 
         @Test
         public void testStreamH_withRange_outOfBounds() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamHorizontal(-1, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamHorizontal(0, 3));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamHorizontal(2, 1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.horizontalStream(-1, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.horizontalStream(0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.horizontalStream(2, 1));
         }
 
         @Test
         public void testStreamV() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            int[] all = m.streamVertical().toArray();
+            int[] all = m.verticalStream().toArray();
             assertArrayEquals(new int[] { 1, 4, 2, 5, 3, 6 }, all);
         }
 
         @Test
         public void testStreamV_empty() {
             IntMatrix empty = IntMatrix.empty();
-            assertEquals(0, empty.streamVertical().toArray().length);
+            assertEquals(0, empty.verticalStream().toArray().length);
         }
 
         @Test
         public void testStreamV_withColumn_outOfBounds() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamVertical(-1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamVertical(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.verticalStream(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.verticalStream(2));
         }
 
         @Test
         public void testStreamV_withRange() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            int[] columnCount = m.streamVertical(1, 3).toArray();
+            int[] columnCount = m.verticalStream(1, 3).toArray();
             assertArrayEquals(new int[] { 2, 5, 8, 3, 6, 9 }, columnCount);
         }
 
         @Test
         public void testStreamV_withRange_outOfBounds() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamVertical(-1, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamVertical(0, 3));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamVertical(2, 1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.verticalStream(-1, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.verticalStream(0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.verticalStream(2, 1));
         }
 
         @Test
         public void testStreamR() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            List<int[]> rows = m.streamRows().map(IntStream::toArray).toList();
+            List<int[]> rows = m.rowStreams().map(IntStream::toArray).toList();
             assertEquals(2, rows.size());
             assertArrayEquals(new int[] { 1, 2, 3 }, rows.get(0));
             assertArrayEquals(new int[] { 4, 5, 6 }, rows.get(1));
@@ -2439,13 +2439,13 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testStreamR_empty() {
             IntMatrix empty = IntMatrix.empty();
-            assertEquals(0, empty.streamRows().count());
+            assertEquals(0, empty.rowStreams().count());
         }
 
         @Test
         public void testStreamR_withRange() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            List<int[]> rows = m.streamRows(1, 3).map(IntStream::toArray).toList();
+            List<int[]> rows = m.rowStreams(1, 3).map(IntStream::toArray).toList();
             assertEquals(2, rows.size());
             assertArrayEquals(new int[] { 4, 5, 6 }, rows.get(0));
             assertArrayEquals(new int[] { 7, 8, 9 }, rows.get(1));
@@ -2454,14 +2454,14 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testStreamR_withRange_outOfBounds() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamRows(-1, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamRows(0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowStreams(-1, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowStreams(0, 3));
         }
 
         @Test
         public void testStreamC() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            List<int[]> columnCount = m.streamColumns().map(IntStream::toArray).toList();
+            List<int[]> columnCount = m.columnStreams().map(IntStream::toArray).toList();
             assertEquals(3, columnCount.size());
             assertArrayEquals(new int[] { 1, 4 }, columnCount.get(0));
             assertArrayEquals(new int[] { 2, 5 }, columnCount.get(1));
@@ -2471,13 +2471,13 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testStreamC_empty() {
             IntMatrix empty = IntMatrix.empty();
-            assertEquals(0, empty.streamColumns().count());
+            assertEquals(0, empty.columnStreams().count());
         }
 
         @Test
         public void testStreamC_withRange() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            List<int[]> columnCount = m.streamColumns(1, 3).map(IntStream::toArray).toList();
+            List<int[]> columnCount = m.columnStreams(1, 3).map(IntStream::toArray).toList();
             assertEquals(2, columnCount.size());
             assertArrayEquals(new int[] { 2, 5, 8 }, columnCount.get(0));
             assertArrayEquals(new int[] { 3, 6, 9 }, columnCount.get(1));
@@ -2486,8 +2486,8 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testStreamC_withRange_outOfBounds() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamColumns(-1, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamColumns(0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnStreams(-1, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnStreams(0, 3));
         }
 
         // ============ ForEach Tests ============
@@ -2580,33 +2580,33 @@ class IntMatrixTest extends TestBase {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
 
             // Test sum
-            int totalSum = m.streamHorizontal().sum();
+            int totalSum = m.horizontalStream().sum();
             assertEquals(45, totalSum); // 1+2+3+4+5+6+7+8+9 = 45
 
             // Test sum of specific row
-            int row1Sum = m.streamHorizontal(1).sum();
+            int row1Sum = m.horizontalStream(1).sum();
             assertEquals(15, row1Sum); // 4+5+6 = 15
 
             // Test sum of specific column
-            int col0Sum = m.streamVertical(0).sum();
+            int col0Sum = m.verticalStream(0).sum();
             assertEquals(12, col0Sum); // 1+4+7 = 12
 
             // Test min/max
-            int min = m.streamHorizontal().min().orElse(0);
+            int min = m.horizontalStream().min().orElse(0);
             assertEquals(1, min);
 
-            int max = m.streamHorizontal().max().orElse(0);
+            int max = m.horizontalStream().max().orElse(0);
             assertEquals(9, max);
 
             // Test average
-            double avg = m.streamHorizontal().average().orElse(0.0);
+            double avg = m.horizontalStream().average().orElse(0.0);
             assertEquals(5.0, avg, 0.0001);
 
             // Test diagonal operations
-            int diagonalSum = m.streamMainDiagonal().sum();
+            int diagonalSum = m.mainDiagonalStream().sum();
             assertEquals(15, diagonalSum); // 1+5+9 = 15
 
-            int antiDiagonalSum = m.streamAntiDiagonal().sum();
+            int antiDiagonalSum = m.antiDiagonalStream().sum();
             assertEquals(15, antiDiagonalSum); // 3+5+7 = 15
         }
 
@@ -2955,34 +2955,34 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testStreamLU2RD_nonSquare() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.streamMainDiagonal().toArray());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalStream().toArray());
         }
 
         @Test
         public void testStreamRU2LD() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            int[] diagonal = m.streamAntiDiagonal().toArray();
+            int[] diagonal = m.antiDiagonalStream().toArray();
             assertArrayEquals(new int[] { 3, 5, 7 }, diagonal);
         }
 
         @Test
         public void testStreamRU2LD_nonSquare() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.streamAntiDiagonal().toArray());
+            assertThrows(IllegalStateException.class, () -> m.antiDiagonalStream().toArray());
         }
 
         @Test
         public void testStreamH_outOfBounds() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamHorizontal(-1, 1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamHorizontal(0, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.horizontalStream(-1, 1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.horizontalStream(0, 2));
         }
 
         @Test
         public void testStreamV_outOfBounds() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamVertical(-1, 1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.streamVertical(0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.verticalStream(-1, 1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.verticalStream(0, 3));
         }
 
         // ============ Stream of Streams Tests ============
@@ -2990,7 +2990,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testStreamR() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            List<int[]> rows = m.streamRows().map(IntStream::toArray).toList();
+            List<int[]> rows = m.rowStreams().map(IntStream::toArray).toList();
             assertEquals(2, rows.size());
             assertArrayEquals(new int[] { 1, 2 }, rows.get(0));
             assertArrayEquals(new int[] { 3, 4 }, rows.get(1));
@@ -2999,7 +2999,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testStreamC() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            List<int[]> columnCount = m.streamColumns().map(IntStream::toArray).toList();
+            List<int[]> columnCount = m.columnStreams().map(IntStream::toArray).toList();
             assertEquals(2, columnCount.size());
             assertArrayEquals(new int[] { 1, 3 }, columnCount.get(0));
             assertArrayEquals(new int[] { 2, 4 }, columnCount.get(1));
@@ -3709,28 +3709,28 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testStreamH_singleRow() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            int[] row1 = m.streamHorizontal(1).toArray();
+            int[] row1 = m.horizontalStream(1).toArray();
             assertArrayEquals(new int[] { 4, 5, 6 }, row1);
         }
 
         @Test
         public void testStreamH_rowRange() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            int[] rows = m.streamHorizontal(1, 3).toArray();
+            int[] rows = m.horizontalStream(1, 3).toArray();
             assertArrayEquals(new int[] { 3, 4, 5, 6 }, rows);
         }
 
         @Test
         public void testStreamV_singleColumn() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            int[] col1 = m.streamVertical(1).toArray();
+            int[] col1 = m.verticalStream(1).toArray();
             assertArrayEquals(new int[] { 2, 5 }, col1);
         }
 
         @Test
         public void testStreamV_columnRange() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            int[] columnCount = m.streamVertical(0, 2).toArray();
+            int[] columnCount = m.verticalStream(0, 2).toArray();
             assertArrayEquals(new int[] { 1, 4, 2, 5 }, columnCount);
         }
 
@@ -4878,86 +4878,86 @@ class IntMatrixTest extends TestBase {
         // ============ Stream Tests ============
 
         @Test
-        public void test_streamHorizontal() {
+        public void test_horizontalStream() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            long sum = m.streamHorizontal().sum();
+            long sum = m.horizontalStream().sum();
             assertEquals(10L, sum);
         }
 
         @Test
         public void test_streamH_byRowIndex() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            long sum = m.streamHorizontal(0).sum();
+            long sum = m.horizontalStream(0).sum();
             assertEquals(3L, sum);
         }
 
         @Test
         public void test_streamH_withRange() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            long sum = m.streamHorizontal(1, 3).sum();
+            long sum = m.horizontalStream(1, 3).sum();
             assertEquals(18L, sum);
         }
 
         @Test
-        public void test_streamVertical() {
+        public void test_verticalStream() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            long sum = m.streamVertical().sum();
+            long sum = m.verticalStream().sum();
             assertEquals(10L, sum);
         }
 
         @Test
         public void test_streamV_byColumnIndex() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            long sum = m.streamVertical(0).sum();
+            long sum = m.verticalStream(0).sum();
             assertEquals(4L, sum);
         }
 
         @Test
         public void test_streamV_withRange() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            long sum = m.streamVertical(1, 3).sum();
+            long sum = m.verticalStream(1, 3).sum();
             assertEquals(16L, sum);
         }
 
         @Test
-        public void test_streamMainDiagonal() {
+        public void test_mainDiagonalStream() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            long sum = m.streamMainDiagonal().sum();
+            long sum = m.mainDiagonalStream().sum();
             assertEquals(5L, sum);
         }
 
         @Test
-        public void test_streamAntiDiagonal() {
+        public void test_antiDiagonalStream() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            long sum = m.streamAntiDiagonal().sum();
+            long sum = m.antiDiagonalStream().sum();
             assertEquals(5L, sum);
         }
 
         @Test
-        public void test_streamRows() {
+        public void test_rowStreams() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            long count = m.streamRows().count();
+            long count = m.rowStreams().count();
             assertEquals(2, count);
         }
 
         @Test
         public void test_streamR_withRange() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            long count = m.streamRows(1, 3).count();
+            long count = m.rowStreams(1, 3).count();
             assertEquals(2, count);
         }
 
         @Test
-        public void test_streamColumns() {
+        public void test_columnStreams() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            long count = m.streamColumns().count();
+            long count = m.columnStreams().count();
             assertEquals(2, count);
         }
 
         @Test
         public void test_streamC_withRange() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 } });
-            long count = m.streamColumns(1, 3).count();
+            long count = m.columnStreams(1, 3).count();
             assertEquals(2, count);
         }
 
@@ -5433,64 +5433,64 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void testIntMatrix_streamHorizontalSum() {
+        public void testIntMatrix_horizontalStreamSum() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            int sum = matrix.streamHorizontal().sum();
+            int sum = matrix.horizontalStream().sum();
             assertEquals(10, sum);
-            int[] array = matrix.streamHorizontal().toArray();
+            int[] array = matrix.horizontalStream().toArray();
             assertArrayEquals(new int[] { 1, 2, 3, 4 }, array);
         }
 
         @Test
-        public void testIntMatrix_streamHorizontalRow() {
+        public void testIntMatrix_horizontalStreamRow() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            int rowSum = matrix.streamHorizontal(1).sum();
+            int rowSum = matrix.horizontalStream(1).sum();
             assertEquals(15, rowSum);
-            int[] firstRow = matrix.streamHorizontal(0).toArray();
+            int[] firstRow = matrix.horizontalStream(0).toArray();
             assertArrayEquals(new int[] { 1, 2, 3 }, firstRow);
         }
 
         @Test
-        public void testIntMatrix_streamHorizontalRange() {
+        public void testIntMatrix_horizontalStreamRange() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            int[] subset = matrix.streamHorizontal(0, 2).toArray();
+            int[] subset = matrix.horizontalStream(0, 2).toArray();
             assertArrayEquals(new int[] { 1, 2, 3, 4 }, subset);
         }
 
         @Test
-        public void testIntMatrix_streamVertical() {
+        public void testIntMatrix_verticalStream() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            int[] colMajor = matrix.streamVertical().toArray();
+            int[] colMajor = matrix.verticalStream().toArray();
             assertArrayEquals(new int[] { 1, 3, 2, 4 }, colMajor);
         }
 
         @Test
-        public void testIntMatrix_streamVerticalColumn() {
+        public void testIntMatrix_verticalStreamColumn() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            int colSum = matrix.streamVertical(0).sum();
+            int colSum = matrix.verticalStream(0).sum();
             assertEquals(5, colSum);
-            int[] secondCol = matrix.streamVertical(1).toArray();
+            int[] secondCol = matrix.verticalStream(1).toArray();
             assertArrayEquals(new int[] { 2, 5 }, secondCol);
         }
 
         @Test
-        public void testIntMatrix_streamVerticalRange() {
+        public void testIntMatrix_verticalStreamRange() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            int[] subset = matrix.streamVertical(0, 2).toArray();
+            int[] subset = matrix.verticalStream(0, 2).toArray();
             assertArrayEquals(new int[] { 1, 4, 2, 5 }, subset);
         }
 
         @Test
         public void testIntMatrix_streamRowSums() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            int[] rowSums = matrix.streamRows().mapToInt(row -> row.sum()).toArray();
+            int[] rowSums = matrix.rowStreams().mapToInt(row -> row.sum()).toArray();
             assertArrayEquals(new int[] { 6, 15, 24 }, rowSums);
         }
 
         @Test
         public void testIntMatrix_streamColumnSums() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            int[] colSums = matrix.streamColumns().mapToInt(col -> col.sum()).toArray();
+            int[] colSums = matrix.columnStreams().mapToInt(col -> col.sum()).toArray();
             assertArrayEquals(new int[] { 5, 7, 9 }, colSums);
         }
     }
@@ -5666,7 +5666,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testIntMatrixRowsForZeroColumnMatrix() {
             final IntMatrix matrix = IntMatrix.of(new int[][] { {}, {}, {} });
-            final List<int[]> rows = matrix.streamRows().map(IntStream::toArray).toList();
+            final List<int[]> rows = matrix.rowStreams().map(IntStream::toArray).toList();
 
             assertEquals(3, rows.size());
             assertArrayEquals(new int[0], rows.get(0));
@@ -5721,7 +5721,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testPointsMainDiagonal() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            List<Sheet.Point> points = m.pointsMainDiagonal().toList();
+            List<Sheet.Point> points = m.mainDiagonalPoints().toList();
             assertEquals(3, points.size());
             assertEquals(0, points.get(0).rowIndex());
             assertEquals(0, points.get(0).columnIndex());
@@ -5732,13 +5732,13 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testPointsMainDiagonal_NonSquareThrows() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.pointsMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalPoints());
         }
 
         @Test
         public void testPointsAntiDiagonal() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            List<Sheet.Point> points = m.pointsAntiDiagonal().toList();
+            List<Sheet.Point> points = m.antiDiagonalPoints().toList();
             assertEquals(3, points.size());
             assertEquals(0, points.get(0).rowIndex());
             assertEquals(2, points.get(0).columnIndex());
@@ -5749,13 +5749,13 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testPointsAntiDiagonal_NonSquareThrows() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.pointsAntiDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.antiDiagonalPoints());
         }
 
         @Test
         public void testPointsHorizontal() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            List<Sheet.Point> points = m.pointsHorizontal().toList();
+            List<Sheet.Point> points = m.horizontalPoints().toList();
             assertEquals(4, points.size());
             assertEquals(0, points.get(0).rowIndex());
             assertEquals(0, points.get(0).columnIndex());
@@ -5766,7 +5766,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testPointsHorizontal_SingleRow() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            List<Sheet.Point> points = m.pointsHorizontal(0).toList();
+            List<Sheet.Point> points = m.horizontalPoints(0).toList();
             assertEquals(2, points.size());
             assertEquals(0, points.get(0).rowIndex());
             assertEquals(0, points.get(0).columnIndex());
@@ -5775,7 +5775,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testPointsHorizontal_Range() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            List<Sheet.Point> points = m.pointsHorizontal(1, 3).toList();
+            List<Sheet.Point> points = m.horizontalPoints(1, 3).toList();
             assertEquals(4, points.size());
             assertEquals(1, points.get(0).rowIndex());
         }
@@ -5783,7 +5783,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testPointsVertical() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            List<Sheet.Point> points = m.pointsVertical().toList();
+            List<Sheet.Point> points = m.verticalPoints().toList();
             assertEquals(4, points.size());
             assertEquals(0, points.get(0).rowIndex());
             assertEquals(0, points.get(0).columnIndex());
@@ -5792,7 +5792,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testPointsVertical_SingleColumn() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            List<Sheet.Point> points = m.pointsVertical(1).toList();
+            List<Sheet.Point> points = m.verticalPoints(1).toList();
             assertEquals(2, points.size());
             assertEquals(1, points.get(0).columnIndex());
         }
@@ -5800,14 +5800,14 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testPointsVertical_Range() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            List<Sheet.Point> points = m.pointsVertical(0, 2).toList();
+            List<Sheet.Point> points = m.verticalPoints(0, 2).toList();
             assertEquals(4, points.size());
         }
 
         @Test
         public void testPointsRows() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            List<List<Sheet.Point>> rows = m.pointsRows().map(s -> s.toList()).toList();
+            List<List<Sheet.Point>> rows = m.rowPoints().map(s -> s.toList()).toList();
             assertEquals(3, rows.size());
             assertEquals(2, rows.get(0).size());
             assertEquals(0, rows.get(0).get(0).rowIndex());
@@ -5817,7 +5817,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testPointsRows_Range() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            List<List<Sheet.Point>> rows = m.pointsRows(1, 3).map(s -> s.toList()).toList();
+            List<List<Sheet.Point>> rows = m.rowPoints(1, 3).map(s -> s.toList()).toList();
             assertEquals(2, rows.size());
             assertEquals(1, rows.get(0).get(0).rowIndex());
         }
@@ -5825,7 +5825,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testPointsColumns() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            List<List<Sheet.Point>> cols = m.pointsColumns().map(s -> s.toList()).toList();
+            List<List<Sheet.Point>> cols = m.columnPoints().map(s -> s.toList()).toList();
             assertEquals(3, cols.size());
             assertEquals(2, cols.get(0).size());
             assertEquals(0, cols.get(0).get(0).columnIndex());
@@ -5834,7 +5834,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testPointsColumns_Range() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            List<List<Sheet.Point>> cols = m.pointsColumns(1, 3).map(s -> s.toList()).toList();
+            List<List<Sheet.Point>> cols = m.columnPoints(1, 3).map(s -> s.toList()).toList();
             assertEquals(2, cols.size());
             assertEquals(1, cols.get(0).get(0).columnIndex());
         }
@@ -5938,7 +5938,7 @@ class IntMatrixTest extends TestBase {
     @Test
     public void testStreamHorizontalIteratorAdvanceAndExhaustion_EdgeCase() {
         IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-        var iterator = matrix.streamHorizontal(0, 2).iterator();
+        var iterator = matrix.horizontalStream(0, 2).iterator();
 
         assertTrue(iterator instanceof com.landawn.abacus.util.stream.IntIteratorEx);
 

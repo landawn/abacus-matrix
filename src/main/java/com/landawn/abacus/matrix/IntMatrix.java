@@ -2549,14 +2549,14 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1,2,3},{4,5,6},{7,8,9}});
-     * IntStream diagonal = matrix.streamMainDiagonal();   // Stream of [1, 5, 9]
+     * IntStream diagonal = matrix.mainDiagonalStream();   // Stream of [1, 5, 9]
      * }</pre>
      *
      * @return an IntStream of diagonal elements
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
-    public IntStream streamMainDiagonal() {
+    public IntStream mainDiagonalStream() {
         checkIfRowAndColumnSizeAreSame();
 
         if (isEmpty()) {
@@ -2604,14 +2604,14 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1,2,3},{4,5,6},{7,8,9}});
-     * IntStream antiDiagonal = matrix.streamAntiDiagonal();   // Stream of [3, 5, 7]
+     * IntStream antiDiagonal = matrix.antiDiagonalStream();   // Stream of [3, 5, 7]
      * }</pre>
      *
      * @return an IntStream of anti-diagonal elements
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
-    public IntStream streamAntiDiagonal() {
+    public IntStream antiDiagonalStream() {
         checkIfRowAndColumnSizeAreSame();
 
         if (isEmpty()) {
@@ -2665,16 +2665,16 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * IntStream stream = matrix.streamHorizontal();        // Stream of [1, 2, 3, 4]
-     * int sum = matrix.streamHorizontal().sum();           // Returns 10
-     * int[] array = matrix.streamHorizontal().toArray();   // Returns [1, 2, 3, 4]
+     * IntStream stream = matrix.horizontalStream();        // Stream of [1, 2, 3, 4]
+     * int sum = matrix.horizontalStream().sum();           // Returns 10
+     * int[] array = matrix.horizontalStream().toArray();   // Returns [1, 2, 3, 4]
      * }</pre>
      *
      * @return an IntStream of all elements in row-major order, or an empty stream if the matrix is empty
      */
     @Override
-    public IntStream streamHorizontal() {
-        return streamHorizontal(0, rowCount);
+    public IntStream horizontalStream() {
+        return horizontalStream(0, rowCount);
     }
 
     /**
@@ -2688,9 +2688,9 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * IntStream rowStream = matrix.streamHorizontal(0);        // Stream of [1, 2, 3]
-     * int rowSum = matrix.streamHorizontal(1).sum();           // Returns 15 (sum of second row)
-     * int[] firstRow = matrix.streamHorizontal(0).toArray();   // Returns [1, 2, 3]
+     * IntStream rowStream = matrix.horizontalStream(0);        // Stream of [1, 2, 3]
+     * int rowSum = matrix.horizontalStream(1).sum();           // Returns 15 (sum of second row)
+     * int[] firstRow = matrix.horizontalStream(0).toArray();   // Returns [1, 2, 3]
      * }</pre>
      *
      * @param rowIndex the index of the row to stream (0-based)
@@ -2698,8 +2698,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @throws IndexOutOfBoundsException if rowIndex &lt; 0 or rowIndex &gt;= rowCount
      */
     @Override
-    public IntStream streamHorizontal(final int rowIndex) {
-        return streamHorizontal(rowIndex, rowIndex + 1);
+    public IntStream horizontalStream(final int rowIndex) {
+        return horizontalStream(rowIndex, rowIndex + 1);
     }
 
     /**
@@ -2714,8 +2714,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}, {5, 6}});
-     * IntStream stream = matrix.streamHorizontal(1, 3);         // Stream rows 1 and 2: [3, 4, 5, 6]
-     * int[] subset = matrix.streamHorizontal(0, 2).toArray();   // Returns [1, 2, 3, 4]
+     * IntStream stream = matrix.horizontalStream(1, 3);         // Stream rows 1 and 2: [3, 4, 5, 6]
+     * int[] subset = matrix.horizontalStream(0, 2).toArray();   // Returns [1, 2, 3, 4]
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -2724,7 +2724,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @throws IndexOutOfBoundsException if fromRowIndex &lt; 0, toRowIndex &gt; rowCount, or fromRowIndex &gt; toRowIndex
      */
     @Override
-    public IntStream streamHorizontal(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
+    public IntStream horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
         if (isEmpty()) {
@@ -2801,21 +2801,21 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * <p>This method is marked as @Beta, indicating it may be subject to change
      * in future versions. It provides an alternative way to iterate through matrix
-     * elements compared to the row-major order of {@link #streamHorizontal()}.</p>
+     * elements compared to the row-major order of {@link #horizontalStream()}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * IntStream stream = matrix.streamVertical();           // Stream of [1, 3, 2, 4]
-     * int[] colMajor = matrix.streamVertical().toArray();   // Returns [1, 3, 2, 4]
+     * IntStream stream = matrix.verticalStream();           // Stream of [1, 3, 2, 4]
+     * int[] colMajor = matrix.verticalStream().toArray();   // Returns [1, 3, 2, 4]
      * }</pre>
      *
      * @return an IntStream of all elements in column-major order, or an empty stream if the matrix is empty
      */
     @Override
     @Beta
-    public IntStream streamVertical() {
-        return streamVertical(0, columnCount);
+    public IntStream verticalStream() {
+        return verticalStream(0, columnCount);
     }
 
     /**
@@ -2828,9 +2828,9 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * IntStream colStream = matrix.streamVertical(1);         // Stream of [2, 5]
-     * int colSum = matrix.streamVertical(0).sum();            // Returns 5 (sum of first column)
-     * int[] secondCol = matrix.streamVertical(1).toArray();   // Returns [2, 5]
+     * IntStream colStream = matrix.verticalStream(1);         // Stream of [2, 5]
+     * int colSum = matrix.verticalStream(0).sum();            // Returns 5 (sum of first column)
+     * int[] secondCol = matrix.verticalStream(1).toArray();   // Returns [2, 5]
      * }</pre>
      *
      * @param columnIndex the index of the column to stream (0-based)
@@ -2838,8 +2838,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @throws IndexOutOfBoundsException if columnIndex &lt; 0 or columnIndex &gt;= columnCount
      */
     @Override
-    public IntStream streamVertical(final int columnIndex) {
-        return streamVertical(columnIndex, columnIndex + 1);
+    public IntStream verticalStream(final int columnIndex) {
+        return verticalStream(columnIndex, columnIndex + 1);
     }
 
     /**
@@ -2853,8 +2853,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * IntStream stream = matrix.streamVertical(1, 3);         // Stream columns 1 and 2: [2, 5, 3, 6]
-     * int[] subset = matrix.streamVertical(0, 2).toArray();   // Returns [1, 4, 2, 5]
+     * IntStream stream = matrix.verticalStream(1, 3);         // Stream columns 1 and 2: [2, 5, 3, 6]
+     * int[] subset = matrix.verticalStream(0, 2).toArray();   // Returns [1, 4, 2, 5]
      * }</pre>
      *
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
@@ -2866,7 +2866,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      */
     @Override
     @Beta
-    public IntStream streamVertical(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
+    public IntStream verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
         if (isEmpty()) {
@@ -2949,8 +2949,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}, {5, 6}});
-     * Stream<IntStream> rows = matrix.streamRows();
-     * int[] rowSums = matrix.streamRows()
+     * Stream<IntStream> rows = matrix.rowStreams();
+     * int[] rowSums = matrix.rowStreams()
      *     .mapToInt(row -> row.sum())
      *     .toArray();   // Returns [3, 7, 11]
      * }</pre>
@@ -2958,8 +2958,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @return a Stream of IntStream objects, one for each row in the matrix
      */
     @Override
-    public Stream<IntStream> streamRows() {
-        return streamRows(0, rowCount);
+    public Stream<IntStream> rowStreams() {
+        return rowStreams(0, rowCount);
     }
 
     /**
@@ -2972,8 +2972,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}, {5, 6}});
-     * Stream<IntStream> middleRows = matrix.streamRows(1, 3);   // Rows 1 and 2
-     * List<Integer> maxValues = matrix.streamRows(0, 2)
+     * Stream<IntStream> middleRows = matrix.rowStreams(1, 3);   // Rows 1 and 2
+     * List<Integer> maxValues = matrix.rowStreams(0, 2)
      *     .map(row -> row.max().orElse(0))
      *     .collect(Collectors.toList());   // [2, 4]
      * }</pre>
@@ -2985,7 +2985,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *         or fromRowIndex &gt; toRowIndex
      */
     @Override
-    public Stream<IntStream> streamRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
+    public Stream<IntStream> rowStreams(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
         return Stream.of(new ObjIteratorEx<>() {
@@ -3033,8 +3033,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * Stream<IntStream> columns = matrix.streamColumns();
-     * int[] colSums = matrix.streamColumns()
+     * Stream<IntStream> columns = matrix.columnStreams();
+     * int[] colSums = matrix.columnStreams()
      *     .mapToInt(col -> col.sum())
      *     .toArray();   // Returns [5, 7, 9]
      * }</pre>
@@ -3044,8 +3044,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      */
     @Override
     @Beta
-    public Stream<IntStream> streamColumns() {
-        return streamColumns(0, columnCount);
+    public Stream<IntStream> columnStreams() {
+        return columnStreams(0, columnCount);
     }
 
     /**
@@ -3058,8 +3058,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * Stream<IntStream> lastTwoCols = matrix.streamColumns(1, 3);   // Columns 1 and 2
-     * List<Double> avgValues = matrix.streamColumns(0, 2)
+     * Stream<IntStream> lastTwoCols = matrix.columnStreams(1, 3);   // Columns 1 and 2
+     * List<Double> avgValues = matrix.columnStreams(0, 2)
      *     .map(col -> col.average().orElse(0.0))
      *     .collect(Collectors.toList());   // [2.5, 3.5]
      * }</pre>
@@ -3073,7 +3073,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      */
     @Override
     @Beta
-    public Stream<IntStream> streamColumns(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
+    public Stream<IntStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
         if (isEmpty()) {
@@ -3180,7 +3180,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * matrix.forEach(value -> values.add(value));
      * // values now contains [1, 2, 3, 4]
      *
-     * // Calculate sum using forEach (though streamHorizontal().sum() is preferable)
+     * // Calculate sum using forEach (though horizontalStream().sum() is preferable)
      * int[] sum = {0};
      * matrix.forEach(value -> sum[0] += value);
      * // sum[0] is now 10

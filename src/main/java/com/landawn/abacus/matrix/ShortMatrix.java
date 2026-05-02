@@ -2412,7 +2412,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2, 3},
      *                                                   {4, 5, 6},
      *                                                   {7, 8, 9}});
-     * ShortStream diagonal = matrix.streamMainDiagonal();
+     * ShortStream diagonal = matrix.mainDiagonalStream();
      * // Stream contains: 1, 5, 9
      * }</pre>
      *
@@ -2420,7 +2420,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
-    public ShortStream streamMainDiagonal() {
+    public ShortStream mainDiagonalStream() {
         checkIfRowAndColumnSizeAreSame();
 
         if (isEmpty()) {
@@ -2473,7 +2473,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2, 3},
      *                                                   {4, 5, 6},
      *                                                   {7, 8, 9}});
-     * ShortStream diagonal = matrix.streamAntiDiagonal();
+     * ShortStream diagonal = matrix.antiDiagonalStream();
      * // Stream contains: 3, 5, 7
      * }</pre>
      *
@@ -2481,7 +2481,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
-    public ShortStream streamAntiDiagonal() {
+    public ShortStream antiDiagonalStream() {
         checkIfRowAndColumnSizeAreSame();
 
         if (isEmpty()) {
@@ -2534,27 +2534,27 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2, 3}, {4, 5, 6}});
-     * ShortStream stream = matrix.streamHorizontal();
+     * ShortStream stream = matrix.horizontalStream();
      * // Stream contains: 1, 2, 3, 4, 5, 6
      * }</pre>
      *
      * @return a ShortStream of all matrix elements in row-major order
      */
     @Override
-    public ShortStream streamHorizontal() {
-        return streamHorizontal(0, rowCount);
+    public ShortStream horizontalStream() {
+        return horizontalStream(0, rowCount);
     }
 
     /**
      * Returns a stream of elements from a specific row.
      *
      * <p>All elements in the specified row are streamed from left to right (column index 0 to columnCount-1).
-     * This is equivalent to calling {@code streamHorizontal(rowIndex, rowIndex + 1)}.</p>
+     * This is equivalent to calling {@code horizontalStream(rowIndex, rowIndex + 1)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2, 3}, {4, 5, 6}});
-     * ShortStream row = matrix.streamHorizontal(1);
+     * ShortStream row = matrix.horizontalStream(1);
      * // Stream contains: 4, 5, 6
      * }</pre>
      *
@@ -2563,8 +2563,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @throws IndexOutOfBoundsException if the row index is out of bounds
      */
     @Override
-    public ShortStream streamHorizontal(final int rowIndex) {
-        return streamHorizontal(rowIndex, rowIndex + 1);
+    public ShortStream horizontalStream(final int rowIndex) {
+        return horizontalStream(rowIndex, rowIndex + 1);
     }
 
     /**
@@ -2576,7 +2576,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2}, {3, 4}, {5, 6}});
-     * ShortStream stream = matrix.streamHorizontal(1, 3);
+     * ShortStream stream = matrix.horizontalStream(1, 3);
      * // Stream contains: 3, 4, 5, 6
      * }</pre>
      *
@@ -2586,7 +2586,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @throws IndexOutOfBoundsException if the row indices are out of bounds or fromRowIndex &gt; toRowIndex
      */
     @Override
-    public ShortStream streamHorizontal(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
+    public ShortStream horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
         if (isEmpty()) {
@@ -2662,12 +2662,12 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * <p>Elements are streamed column by column from top to bottom, left to right. This traversal
      * order processes all elements in the first column, then all elements in the second column, and so on.
-     * This is the opposite of the more common row-major order used by {@link #streamHorizontal()}.</p>
+     * This is the opposite of the more common row-major order used by {@link #horizontalStream()}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2, 3}, {4, 5, 6}});
-     * ShortStream stream = matrix.streamVertical();
+     * ShortStream stream = matrix.verticalStream();
      * // Stream contains: 1, 4, 2, 5, 3, 6
      * }</pre>
      *
@@ -2675,20 +2675,20 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      */
     @Override
     @Beta
-    public ShortStream streamVertical() {
-        return streamVertical(0, columnCount);
+    public ShortStream verticalStream() {
+        return verticalStream(0, columnCount);
     }
 
     /**
      * Returns a stream of elements from a specific column.
      *
      * <p>All elements in the specified column are streamed from top to bottom (row index 0 to rows-1).
-     * This is equivalent to calling {@code streamVertical(columnIndex, columnIndex + 1)}.</p>
+     * This is equivalent to calling {@code verticalStream(columnIndex, columnIndex + 1)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2, 3}, {4, 5, 6}});
-     * ShortStream column = matrix.streamVertical(1);
+     * ShortStream column = matrix.verticalStream(1);
      * // Stream contains: 2, 5
      * }</pre>
      *
@@ -2697,8 +2697,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @throws IndexOutOfBoundsException if the column index is out of bounds
      */
     @Override
-    public ShortStream streamVertical(final int columnIndex) {
-        return streamVertical(columnIndex, columnIndex + 1);
+    public ShortStream verticalStream(final int columnIndex) {
+        return verticalStream(columnIndex, columnIndex + 1);
     }
 
     /**
@@ -2710,7 +2710,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2, 3}, {4, 5, 6}});
-     * ShortStream stream = matrix.streamVertical(1, 3);
+     * ShortStream stream = matrix.verticalStream(1, 3);
      * // Stream contains: 2, 5, 3, 6
      * }</pre>
      *
@@ -2721,7 +2721,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      */
     @Override
     @Beta
-    public ShortStream streamVertical(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
+    public ShortStream verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
         if (isEmpty()) {
@@ -2803,7 +2803,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2, 3}, {4, 5, 6}});
-     * Stream<ShortStream> rows = matrix.streamRows();
+     * Stream<ShortStream> rows = matrix.rowStreams();
      * // First stream contains: 1, 2, 3
      * // Second stream contains: 4, 5, 6
      * }</pre>
@@ -2811,8 +2811,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @return a Stream of ShortStream objects, one for each row
      */
     @Override
-    public Stream<ShortStream> streamRows() {
-        return streamRows(0, rowCount);
+    public Stream<ShortStream> rowStreams() {
+        return rowStreams(0, rowCount);
     }
 
     /**
@@ -2825,7 +2825,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2}, {3, 4}, {5, 6}});
-     * Stream<ShortStream> rows = matrix.streamRows(1, 3);
+     * Stream<ShortStream> rows = matrix.rowStreams(1, 3);
      * // First stream contains: 3, 4
      * // Second stream contains: 5, 6
      * }</pre>
@@ -2836,7 +2836,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @throws IndexOutOfBoundsException if the row indices are out of bounds or fromRowIndex &gt; toRowIndex
      */
     @Override
-    public Stream<ShortStream> streamRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
+    public Stream<ShortStream> rowStreams(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
         return Stream.of(new ObjIteratorEx<>() {
@@ -2883,7 +2883,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2, 3}, {4, 5, 6}});
-     * Stream<ShortStream> columns = matrix.streamColumns();
+     * Stream<ShortStream> columns = matrix.columnStreams();
      * // First stream contains: 1, 4
      * // Second stream contains: 2, 5
      * // Third stream contains: 3, 6
@@ -2893,8 +2893,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      */
     @Override
     @Beta
-    public Stream<ShortStream> streamColumns() {
-        return streamColumns(0, columnCount);
+    public Stream<ShortStream> columnStreams() {
+        return columnStreams(0, columnCount);
     }
 
     /**
@@ -2907,7 +2907,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2, 3}, {4, 5, 6}});
-     * Stream<ShortStream> columns = matrix.streamColumns(1, 3);
+     * Stream<ShortStream> columns = matrix.columnStreams(1, 3);
      * // First stream contains: 2, 5
      * // Second stream contains: 3, 6
      * }</pre>
@@ -2919,7 +2919,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      */
     @Override
     @Beta
-    public Stream<ShortStream> streamColumns(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
+    public Stream<ShortStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
         if (isEmpty()) {

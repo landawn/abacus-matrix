@@ -2531,7 +2531,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1, 2, 3},
      *                                                 {4, 5, 6},
      *                                                 {7, 8, 9}});
-     * LongStream diagonal = matrix.streamMainDiagonal();
+     * LongStream diagonal = matrix.mainDiagonalStream();
      * // Stream contains: 1, 5, 9
      * }</pre>
      *
@@ -2539,7 +2539,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @throws IllegalStateException if the matrix is not square
      */
     @Override
-    public LongStream streamMainDiagonal() {
+    public LongStream mainDiagonalStream() {
         checkIfRowAndColumnSizeAreSame();
 
         if (isEmpty()) {
@@ -2589,7 +2589,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1, 2, 3},
      *                                                 {4, 5, 6},
      *                                                 {7, 8, 9}});
-     * LongStream diagonal = matrix.streamAntiDiagonal();
+     * LongStream diagonal = matrix.antiDiagonalStream();
      * // Stream contains: 3, 5, 7
      * }</pre>
      *
@@ -2597,7 +2597,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @throws IllegalStateException if the matrix is not square
      */
     @Override
-    public LongStream streamAntiDiagonal() {
+    public LongStream antiDiagonalStream() {
         checkIfRowAndColumnSizeAreSame();
 
         if (isEmpty()) {
@@ -2651,16 +2651,16 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1, 2, 3}, {4, 5, 6}});
-     * LongStream stream = matrix.streamHorizontal();
+     * LongStream stream = matrix.horizontalStream();
      * // Stream contains: 1, 2, 3, 4, 5, 6
-     * long sum = matrix.streamHorizontal().sum();   // Returns 21
+     * long sum = matrix.horizontalStream().sum();   // Returns 21
      * }</pre>
      *
      * @return a stream of all matrix elements in row-major order, or an empty stream if the matrix is empty
      */
     @Override
-    public LongStream streamHorizontal() {
-        return streamHorizontal(0, rowCount);
+    public LongStream horizontalStream() {
+        return horizontalStream(0, rowCount);
     }
 
     /**
@@ -2674,9 +2674,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1, 2, 3}, {4, 5, 6}});
-     * LongStream row = matrix.streamHorizontal(1);
+     * LongStream row = matrix.horizontalStream(1);
      * // Stream contains: 4, 5, 6
-     * long rowSum = matrix.streamHorizontal(1).sum();   // Returns 15
+     * long rowSum = matrix.horizontalStream(1).sum();   // Returns 15
      * }</pre>
      *
      * @param rowIndex the index of the row to stream (0-based)
@@ -2684,8 +2684,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @throws IndexOutOfBoundsException if rowIndex &lt; 0 or rowIndex &gt;= rowCount
      */
     @Override
-    public LongStream streamHorizontal(final int rowIndex) {
-        return streamHorizontal(rowIndex, rowIndex + 1);
+    public LongStream horizontalStream(final int rowIndex) {
+        return horizontalStream(rowIndex, rowIndex + 1);
     }
 
     /**
@@ -2700,9 +2700,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1, 2}, {3, 4}, {5, 6}});
-     * LongStream stream = matrix.streamHorizontal(1, 3);
+     * LongStream stream = matrix.horizontalStream(1, 3);
      * // Stream contains: 3, 4, 5, 6
-     * long[] subset = matrix.streamHorizontal(0, 2).toArray();   // Returns [1, 2, 3, 4]
+     * long[] subset = matrix.horizontalStream(0, 2).toArray();   // Returns [1, 2, 3, 4]
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -2711,7 +2711,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @throws IndexOutOfBoundsException if fromRowIndex &lt; 0, toRowIndex &gt; rowCount, or fromRowIndex &gt; toRowIndex
      */
     @Override
-    public LongStream streamHorizontal(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
+    public LongStream horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
         if (isEmpty()) {
@@ -2789,7 +2789,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1, 2, 3}, {4, 5, 6}});
-     * LongStream stream = matrix.streamVertical();
+     * LongStream stream = matrix.verticalStream();
      * // Stream contains: 1, 4, 2, 5, 3, 6
      * }</pre>
      *
@@ -2797,8 +2797,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     @Override
     @Beta
-    public LongStream streamVertical() {
-        return streamVertical(0, columnCount);
+    public LongStream verticalStream() {
+        return verticalStream(0, columnCount);
     }
 
     /**
@@ -2807,7 +2807,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1, 2, 3}, {4, 5, 6}});
-     * LongStream column = matrix.streamVertical(1);
+     * LongStream column = matrix.verticalStream(1);
      * // Stream contains: 2, 5
      * }</pre>
      *
@@ -2816,8 +2816,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @throws IndexOutOfBoundsException if the column index is out of bounds
      */
     @Override
-    public LongStream streamVertical(final int columnIndex) {
-        return streamVertical(columnIndex, columnIndex + 1);
+    public LongStream verticalStream(final int columnIndex) {
+        return verticalStream(columnIndex, columnIndex + 1);
     }
 
     /**
@@ -2827,7 +2827,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1, 2, 3}, {4, 5, 6}});
-     * LongStream stream = matrix.streamVertical(1, 3);
+     * LongStream stream = matrix.verticalStream(1, 3);
      * // Stream contains: 2, 5, 3, 6
      * }</pre>
      *
@@ -2838,7 +2838,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     @Override
     @Beta
-    public LongStream streamVertical(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
+    public LongStream verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
         if (isEmpty()) {
@@ -2917,7 +2917,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1, 2, 3}, {4, 5, 6}});
-     * Stream<LongStream> rows = matrix.streamRows();
+     * Stream<LongStream> rows = matrix.rowStreams();
      * // First stream contains: 1, 2, 3
      * // Second stream contains: 4, 5, 6
      * }</pre>
@@ -2925,8 +2925,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @return a stream of row streams
      */
     @Override
-    public Stream<LongStream> streamRows() {
-        return streamRows(0, rowCount);
+    public Stream<LongStream> rowStreams() {
+        return rowStreams(0, rowCount);
     }
 
     /**
@@ -2936,7 +2936,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1, 2}, {3, 4}, {5, 6}});
-     * Stream<LongStream> rows = matrix.streamRows(1, 3);
+     * Stream<LongStream> rows = matrix.rowStreams(1, 3);
      * // First stream contains: 3, 4
      * // Second stream contains: 5, 6
      * }</pre>
@@ -2947,7 +2947,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @throws IndexOutOfBoundsException if the row indices are out of bounds
      */
     @Override
-    public Stream<LongStream> streamRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
+    public Stream<LongStream> rowStreams(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
         return Stream.of(new ObjIteratorEx<>() {
@@ -2991,7 +2991,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1, 2, 3}, {4, 5, 6}});
-     * Stream<LongStream> columns = matrix.streamColumns();
+     * Stream<LongStream> columns = matrix.columnStreams();
      * // First stream contains: 1, 4
      * // Second stream contains: 2, 5
      * // Third stream contains: 3, 6
@@ -3001,8 +3001,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     @Override
     @Beta
-    public Stream<LongStream> streamColumns() {
-        return streamColumns(0, columnCount);
+    public Stream<LongStream> columnStreams() {
+        return columnStreams(0, columnCount);
     }
 
     /**
@@ -3012,7 +3012,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1, 2, 3}, {4, 5, 6}});
-     * Stream<LongStream> columns = matrix.streamColumns(1, 3);
+     * Stream<LongStream> columns = matrix.columnStreams(1, 3);
      * // First stream contains: 2, 5
      * // Second stream contains: 3, 6
      * }</pre>
@@ -3024,7 +3024,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     @Override
     @Beta
-    public Stream<LongStream> streamColumns(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
+    public Stream<LongStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
         if (isEmpty()) {
