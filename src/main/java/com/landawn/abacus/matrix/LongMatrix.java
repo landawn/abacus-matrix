@@ -407,6 +407,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * This method unboxes all {@code Long} wrapper objects to primitive {@code long} values for more efficient
      * storage and operations. This is particularly beneficial when working with large matrices, as primitive
      * arrays have less memory overhead and better cache locality than arrays of wrapper objects.
+     * Null values in the input matrix are converted to {@code 0L}.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -415,7 +416,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * // primitiveMatrix now uses primitive long[] arrays internally for better performance
      * }</pre>
      *
-     * @param x the boxed Long matrix to convert
+     * @param x the boxed Long matrix to convert (must not be null)
      * @return a new LongMatrix with unboxed primitive values
      * @see #boxed()
      */
@@ -889,6 +890,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param <E> the type of exception that the operator may throw
      * @param operator the operator to apply to each diagonal element; receives current element value and returns new value
      * @throws IllegalStateException if the matrix is not square
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateMainDiagonal(final Throwables.LongUnaryOperator<E> operator) throws IllegalStateException, E {
@@ -971,6 +973,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param <E> the type of exception that the operator may throw
      * @param operator the operator to apply to each anti-diagonal element; receives current element value and returns new value
      * @throws IllegalStateException if the matrix is not square
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateAntiDiagonal(final Throwables.LongUnaryOperator<E> operator) throws IllegalStateException, E {
@@ -999,6 +1002,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param <E> the type of exception that the operator may throw
      * @param operator the operator to apply to each element; receives the current element value
      *             and returns the new value
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateAll(final Throwables.LongUnaryOperator<E> operator) throws E {
@@ -1028,6 +1032,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param <E> the type of exception that the operator may throw
      * @param operator the operator that receives row index and column index (0-based) and returns
      *             the new value for that position
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<Long, E> operator) throws E {
@@ -1054,6 +1059,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param predicate the condition to test each element; elements for which this returns
      *                  {@code true} will be replaced
      * @param newValue the value to use for replacing matching elements
+     * @throws IllegalArgumentException if {@code predicate} is {@code null}
      * @throws E if the predicate throws an exception
      */
     public <E extends Exception> void replaceIf(final Throwables.LongPredicate<E> predicate, final long newValue) throws E {
@@ -1084,6 +1090,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param predicate the condition that tests row index and column index (0-based); elements
      *                  at positions for which this returns {@code true} will be replaced
      * @param newValue the value to use for replacing matching elements
+     * @throws IllegalArgumentException if {@code predicate} is {@code null}
      * @throws E if the predicate throws an exception
      */
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final long newValue) throws E {
@@ -1113,6 +1120,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param mapper the function to apply to each element; receives the current element value
      *             and returns the transformed value
      * @return a new LongMatrix with transformed values
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
      * @see #updateAll(Throwables.LongUnaryOperator)
      */
@@ -1142,6 +1150,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param <E> the exception type that the function may throw
      * @param mapper the mapping function that converts each long element to an int; must not be null
      * @return a new IntMatrix with the mapped values (same dimensions as the original)
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
      */
     public <E extends Exception> IntMatrix mapToInt(final Throwables.LongToIntFunction<E> mapper) throws E {
@@ -1170,6 +1179,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param <E> the exception type that the function may throw
      * @param mapper the mapping function that converts each long element to a double; must not be null
      * @return a new DoubleMatrix with the mapped values (same dimensions as the original)
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
      */
     public <E extends Exception> DoubleMatrix mapToDouble(final Throwables.LongToDoubleFunction<E> mapper) throws E {
@@ -1200,6 +1210,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param mapper the mapping function that converts each long element to type T; must not be null
      * @param targetElementType the class object representing the target element type (used for array creation); must not be null
      * @return a new Matrix&lt;T&gt; with the mapped values (same dimensions as the original)
+     * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null}
      * @throws E if the function throws an exception
      */
     public <T, E extends Exception> Matrix<T> mapToObj(final Throwables.LongFunction<? extends T, E> mapper, final Class<T> targetElementType) throws E {

@@ -113,7 +113,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.from(new char[][] {{'A', 'B'}, {'C', 'D'}});
-     * // Creates a matrix with ASCII values {{65, 66}, {67, 68}}
+     * // Creates a matrix with Unicode values {{65, 66}, {67, 68}}
      * // matrix.get(0, 0) returns 65
      * }</pre>
      *
@@ -813,7 +813,6 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param column the array of values to copy into the column; must have length equal to the number of rows
      * @throws NullPointerException if {@code column} is {@code null}
      * @throws IllegalArgumentException if columnIndex is out of bounds or column length does not match row count
-     * @throws ArrayIndexOutOfBoundsException if any row in this matrix has insufficient length for {@code columnIndex}
      */
     public void setColumn(final int columnIndex, final int[] column) throws IllegalArgumentException {
         N.checkArgument(columnIndex >= 0 && columnIndex < columnCount, MSG_COLUMN_INDEX_OUT_OF_BOUNDS, columnIndex, columnCount);
@@ -1273,9 +1272,9 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param <T> the type of elements in the resulting matrix
      * @param <E> the type of exception that the function may throw
      * @param mapper the function to convert int values to type T
-     * @param targetElementType the Class object for type T
+     * @param targetElementType the Class object for type T (used for array creation); must not be null
      * @return a new Matrix containing the converted values
-     * @throws IllegalArgumentException if {@code mapper} is {@code null}
+     * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null}
      * @throws E if the function throws an exception
      */
     public <T, E extends Exception> Matrix<T> mapToObj(final Throwables.IntFunction<? extends T, E> mapper, final Class<T> targetElementType) throws E {
@@ -2045,7 +2044,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param columnRepeats number of times to repeat each element in column direction
      * @return a new IntMatrix with repeated elements
      * @throws IllegalArgumentException if rowRepeats or columnRepeats is not positive
-     * @see <a href="https://www.mathworks.com/help/matlab/ref/repeatElements.html">MATLAB repeatElements function</a>
+     * @see <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">MATLAB repelem function</a>
      */
     @Override
     public IntMatrix repeatElements(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
@@ -2095,7 +2094,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param columnRepeats number of times to repeat the matrix horizontally
      * @return a new IntMatrix with the tiled pattern
      * @throws IllegalArgumentException if rowRepeats or columnRepeats is not positive
-     * @see <a href="https://www.mathworks.com/help/matlab/ref/repeatMatrix.html">MATLAB repeatMatrix function</a>
+     * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
     @Override
     public IntMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
@@ -2392,14 +2391,14 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
 
     /**
      * Converts this int matrix to a long matrix.
-     * Each int value is converted to long.
-     * 
+     * Each int value is widened to long; this conversion is always exact (no precision loss).
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix intMatrix = IntMatrix.of(new int[][] {{1, 2}});
      * LongMatrix longMatrix = intMatrix.toLongMatrix();
      * }</pre>
-     * 
+     *
      * @return a new LongMatrix with converted values
      */
     public LongMatrix toLongMatrix() {
@@ -2428,14 +2427,15 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
 
     /**
      * Converts this int matrix to a double matrix.
-     * Each int value is converted to double.
-     * 
+     * Each int value is widened to double; this conversion is always exact since {@code double}
+     * has 53 bits of mantissa precision and can exactly represent every {@code int} value.
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix intMatrix = IntMatrix.of(new int[][] {{1, 2}});
      * DoubleMatrix doubleMatrix = intMatrix.toDoubleMatrix();
      * }</pre>
-     * 
+     *
      * @return a new DoubleMatrix with converted values
      */
     public DoubleMatrix toDoubleMatrix() {

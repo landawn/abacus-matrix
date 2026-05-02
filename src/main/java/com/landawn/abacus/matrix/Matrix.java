@@ -387,6 +387,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param columnIndex the column index (0-based)
      * @param val the value to set
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @throws IllegalArgumentException if {@code val} is incompatible with the row's storage component type
      */
     public void set(final int rowIndex, final int columnIndex, final T val) {
         ensureRowCanStore(rowIndex, val);
@@ -407,7 +408,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param point the point containing row and column indices (must not be null)
      * @param val the value to set
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
-     * @throws IllegalArgumentException if {@code point} is {@code null}
+     * @throws IllegalArgumentException if {@code point} is {@code null}, or if {@code val} is incompatible with the row's storage component type
      */
     public void set(final Point point, final T val) {
         N.checkArgNotNull(point, "point");
@@ -509,7 +510,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Note:</b> This method returns a reference to the internal array, not a copy.
      * Modifications to the returned array will affect the matrix. If you need an independent
-     * copy, use {@code matrix.rowView(i).clone()}.</p>
+     * copy, use {@link #rowCopy(int)} or call {@code .clone()} on the returned array.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -774,7 +775,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param rowIndex the row index to replace (0-based)
      * @param row the new row data (must have exactly {@code columnCount} elements)
-     * @throws IllegalArgumentException if rowIndex is out of bounds or row length does not match column count
+     * @throws IllegalArgumentException if {@code row} is {@code null}, if {@code rowIndex} is out of bounds,
+     *         if {@code row.length} does not equal {@code columnCount}, or if any element is incompatible
+     *         with the row's storage component type
      */
     public void setRow(final int rowIndex, final T[] row) throws IllegalArgumentException {
         N.checkArgNotNull(row, "row");
@@ -802,7 +805,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param columnIndex the column index to replace (0-based)
      * @param column the new column data (must have exactly {@code rowCount} elements)
-     * @throws IllegalArgumentException if columnIndex is out of bounds or column length does not match row count
+     * @throws IllegalArgumentException if {@code column} is {@code null}, if {@code columnIndex} is out of bounds,
+     *         if {@code column.length} does not equal {@code rowCount}, or if any element is incompatible
+     *         with the corresponding row's storage component type
      */
     public void setColumn(final int columnIndex, final T[] column) throws IllegalArgumentException {
         N.checkArgNotNull(column, "column");
@@ -1077,9 +1082,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
     /**
      * Updates all elements in the matrix by applying the given operator.
-     * The operation may be performed in parallel for large matrices.
      * Each element is replaced by the result of applying the operator.
      * The matrix is modified in-place.
+     *
+     * <p>Iteration is performed sequentially in row-major order because the implementation
+     * may need to widen the underlying row storage to accept new value types.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1111,8 +1118,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Updates all elements in the matrix based on their position.
      * The operator receives the row and column indices (both 0-based) and returns the new value.
-     * This is useful for position-dependent transformations. The operation may be performed
-     * in parallel for large matrices. The matrix is modified in-place.
+     * This is useful for position-dependent transformations. The matrix is modified in-place.
+     *
+     * <p>Iteration is performed sequentially in row-major order because the implementation
+     * may need to widen the underlying row storage to accept new value types.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1145,8 +1154,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Replaces all elements that match the predicate with the new value.
      * The predicate is tested against each element's value, not its position.
-     * The operation may be performed in parallel for large matrices.
      * The matrix is modified in-place.
+     *
+     * <p>Iteration is performed sequentially in row-major order because the implementation
+     * may need to widen the underlying row storage to accept the replacement value's type.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1183,8 +1194,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Replaces elements based on their position using a predicate.
      * The predicate receives row and column indices (both 0-based), not the element value.
-     * This is useful for position-based replacements. The operation may be performed
-     * in parallel for large matrices. The matrix is modified in-place.
+     * This is useful for position-based replacements. The matrix is modified in-place.
+     *
+     * <p>Iteration is performed sequentially in row-major order because the implementation
+     * may need to widen the underlying row storage to accept the replacement value's type.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1730,7 +1743,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param newRowCount the row count of the returned matrix; must be {@code >= 0}
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
      * @return a new Matrix with the specified dimensions
-     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative
+     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         or if the resulting element count would overflow {@code Integer.MAX_VALUE}
      * @see #resize(int, int, Object)
      * @see #extend(int, int, int, int)
      */
@@ -1785,7 +1799,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
      * @param defaultValueForNewCell the value used to fill any newly created cells; may be {@code null}
      * @return a new Matrix with the specified dimensions
-     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative
+     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         or if the resulting element count would overflow {@code Integer.MAX_VALUE}
      * @see #resize(int, int)
      * @see #extend(int, int, int, int, Object)
      */
@@ -1854,7 +1869,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param toLeft number of columns to add to the left; must be {@code >= 0}
      * @param toRight number of columns to add to the right; must be {@code >= 0}
      * @return a new Matrix with dimensions {@code (toUp+rowCount+toDown) × (toLeft+columnCount+toRight)}
-     * @throws IllegalArgumentException if any padding parameter is negative
+     * @throws IllegalArgumentException if any padding parameter is negative,
+     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
      * @see #extend(int, int, int, int, Object)
      * @see #resize(int, int)
      */
@@ -2238,7 +2254,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param newRowCount the number of rows in the reshaped matrix (must be non-negative)
      * @param newColumnCount the number of columns in the reshaped matrix (must be non-negative)
      * @return a new Matrix with the specified dimensions
-     * @throws IllegalArgumentException if the new shape is too small to hold all elements
+     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         or if the new shape is too small to hold all elements
      */
     @SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG")
     @Override

@@ -184,8 +184,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
 
     /**
      * Creates a 1-row ByteMatrix containing a range of byte values from startInclusive to endExclusive.
-     * The range increments by 1 for each element.
-     * 
+     * The range increments by 1 for each element. If {@code startInclusive >= endExclusive}, a 1×0
+     * matrix is returned.
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix range = ByteMatrix.range((byte)1, (byte)5);
@@ -194,7 +195,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * @param startInclusive the starting value (inclusive)
      * @param endExclusive the ending value (exclusive)
-     * @return a new ByteMatrix containing the range of values
+     * @return a new 1×n ByteMatrix where n = max(0, endExclusive - startInclusive)
      */
     public static ByteMatrix range(final byte startInclusive, final byte endExclusive) {
         return new ByteMatrix(new byte[][] { Array.range(startInclusive, endExclusive) });
@@ -224,8 +225,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
 
     /**
      * Creates a 1-row ByteMatrix containing a closed range of byte values from startInclusive to endInclusive.
-     * The range increments by 1 for each element and includes the end value.
-     * 
+     * The range increments by 1 for each element and includes the end value. If
+     * {@code startInclusive > endInclusive}, a 1×0 matrix is returned.
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix range = ByteMatrix.rangeClosed((byte)1, (byte)4);
@@ -234,7 +236,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * @param startInclusive the starting value (inclusive)
      * @param endInclusive the ending value (inclusive)
-     * @return a new ByteMatrix containing the range of values
+     * @return a new 1×n ByteMatrix where n = max(0, endInclusive - startInclusive + 1)
      */
     public static ByteMatrix rangeClosed(final byte startInclusive, final byte endInclusive) {
         return new ByteMatrix(new byte[][] { Array.rangeClosed(startInclusive, endInclusive) });
@@ -369,6 +371,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * @param x the boxed Byte Matrix to convert; must not be null
      * @return a new ByteMatrix with primitive byte values
+     * @throws NullPointerException if {@code x} is {@code null}
      * @see #boxed()
      */
     public static ByteMatrix unbox(final Matrix<Byte> x) {
@@ -2128,14 +2131,18 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     /**
      * Multiplies this matrix by another matrix (matrix multiplication).
      * The number of columns in this matrix must equal the number of rows in the other matrix.
-     * The resulting matrix will have dimensions (this.rowCount x b.columnCount).
-     * 
+     * The resulting matrix will have dimensions {@code (this.rowCount x other.columnCount)}.
+     *
      * <p>This operation is computationally intensive and may be parallelized for large matrices.
      * Matrix multiplication is not commutative (A*B != B*A).</p>
      *
-     * <p><b>Important:</b> Byte overflow may occur during multiplication and summation.
-     * The internal calculations use int but are cast back to byte for the result matrix.</p>
-     * 
+     * <p><b>Important:</b> Byte overflow may occur during multiplication and accumulation. Each
+     * partial product {@code a[i][k] * other[k][j]} is computed as an {@code int} (via Java's numeric
+     * promotion), but it is then accumulated into the {@code byte} result cell with implicit narrowing,
+     * so intermediate sums wrap modulo 256 and the final result is always in the byte range
+     * {@code [-128, 127]}. If a non-wrapping product is required, widen via {@link #toIntMatrix()}
+     * (or {@link #toLongMatrix()}) and multiply there.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix a = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
@@ -2145,8 +2152,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * }</pre>
      *
      * @param other the matrix to multiply with; must have row count equal to this matrix's column count
-     * @return a new ByteMatrix containing the matrix product with dimensions (this.rowCount x other.columnCount)
-     * @throws IllegalArgumentException if this.columnCount != other.rowCount (incompatible dimensions for multiplication)
+     * @return a new ByteMatrix containing the matrix product with dimensions {@code (this.rowCount x other.columnCount)}
+     * @throws IllegalArgumentException if {@code this.columnCount != other.rowCount} (incompatible dimensions for multiplication)
      */
     public ByteMatrix multiply(final ByteMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");

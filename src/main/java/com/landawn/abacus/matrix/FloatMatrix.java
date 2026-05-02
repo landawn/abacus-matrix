@@ -171,6 +171,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @param size the number of columns in the new matrix
      * @return a new FloatMatrix of dimensions 1 x size filled with random values
+     * @throws IllegalArgumentException if {@code size} is negative
      */
     public static FloatMatrix random(final int size) {
         return random(1, size);
@@ -188,6 +189,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param rowCount the number of rows in the new matrix
      * @param columnCount the number of columns in the new matrix
      * @return a new FloatMatrix of dimensions rowCount x columnCount filled with random values
+     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative
      */
     public static FloatMatrix random(final int rowCount, final int columnCount) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -218,6 +220,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param columnCount the number of columns in the new matrix
      * @param element the float value to fill the matrix with
      * @return a new FloatMatrix of dimensions rowCount x columnCount filled with the specified element
+     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative
      */
     public static FloatMatrix repeat(final int rowCount, final int columnCount, final float element) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -339,6 +342,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @param x the boxed Float Matrix to convert; must not be null
      * @return a new FloatMatrix with primitive float values
+     * @throws NullPointerException if {@code x} is {@code null}
      * @see #boxed()
      */
     public static FloatMatrix unbox(final Matrix<Float> x) {
@@ -1105,6 +1109,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @param b the source array to copy values from (may be smaller or larger than the matrix)
+     * @throws IllegalArgumentException if {@code b} is {@code null}
      */
     public void copyFrom(final float[][] b) {
         copyFrom(0, 0, b);
@@ -1125,7 +1130,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param destRowIndex the target row index in this matrix (0-based)
      * @param destColumnIndex the target column index in this matrix (0-based)
      * @param b the source array to copy values from
-     * @throws IllegalArgumentException if the target indices are negative or exceed matrix dimensions
+     * @throws IllegalArgumentException if {@code b} is {@code null}, or the target indices are negative or exceed matrix dimensions
      */
     public void copyFrom(final int destRowIndex, final int destColumnIndex, final float[][] b) throws IllegalArgumentException {
         N.checkArgNotNull(b, "b");
@@ -1959,9 +1964,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * //          [7.0, 8.0]]
      * }</pre>
      * 
-     * @param other the matrix to stack below this matrix
+     * @param other the matrix to stack below this matrix; must not be null
      * @return a new FloatMatrix with other stacked vertically below this matrix
-     * @throws IllegalArgumentException if the matrices don't have the same number of columns
+     * @throws IllegalArgumentException if {@code other} is {@code null}, the matrices don't have the
+     *         same number of columns, or the merged row count would overflow {@code Integer.MAX_VALUE}
      * @see IntMatrix#stackVertically(IntMatrix)
      */
     public FloatMatrix stackVertically(final FloatMatrix other) throws IllegalArgumentException {
@@ -1997,9 +2003,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * //          [3.0, 4.0, 7.0, 8.0]]
      * }</pre>
      * 
-     * @param other the matrix to stack to the right of this matrix
+     * @param other the matrix to stack to the right of this matrix; must not be null
      * @return a new FloatMatrix with other stacked horizontally to the right
-     * @throws IllegalArgumentException if the matrices don't have the same number of rows
+     * @throws IllegalArgumentException if {@code other} is {@code null}, the matrices don't have the
+     *         same number of rows, or the merged column count would overflow {@code Integer.MAX_VALUE}
      * @see IntMatrix#stackHorizontally(IntMatrix)
      */
     public FloatMatrix stackHorizontally(final FloatMatrix other) throws IllegalArgumentException {
@@ -2033,9 +2040,13 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix sum = a.add(b);   // Result: [[6.0, 8.0], [10.0, 12.0]]
      * }</pre>
      *
-     * @param other the matrix to add to this matrix
+     * <p><b>Floating-point notes:</b> Adding {@code +Infinity} and {@code -Infinity} produces
+     * {@code NaN}. If either operand is {@code NaN}, the result at that position is {@code NaN}.
+     * No exception is thrown for these cases.</p>
+     *
+     * @param other the matrix to add to this matrix; must not be null
      * @return a new FloatMatrix containing the element-wise sum (same dimensions as inputs)
-     * @throws IllegalArgumentException if the matrices have different dimensions
+     * @throws IllegalArgumentException if {@code other} is {@code null} or the matrices have different dimensions
      */
     public FloatMatrix add(final FloatMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
@@ -2065,9 +2076,13 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix diff = a.subtract(b);   // Result: [[4.0, 4.0], [4.0, 4.0]]
      * }</pre>
      *
-     * @param other the matrix to subtract from this matrix
+     * <p><b>Floating-point notes:</b> Subtracting {@code +Infinity} from {@code +Infinity}
+     * (or {@code -Infinity} from {@code -Infinity}) produces {@code NaN}. If either operand is
+     * {@code NaN}, the result at that position is {@code NaN}. No exception is thrown for these cases.</p>
+     *
+     * @param other the matrix to subtract from this matrix; must not be null
      * @return a new FloatMatrix containing the element-wise difference (same dimensions as inputs)
-     * @throws IllegalArgumentException if the matrices have different dimensions
+     * @throws IllegalArgumentException if {@code other} is {@code null} or the matrices have different dimensions
      */
     public FloatMatrix subtract(final FloatMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
@@ -2102,9 +2117,14 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix product = a.multiply(b);   // Result: [[19.0, 22.0], [43.0, 50.0]]
      * }</pre>
      *
-     * @param other the matrix to multiply with this matrix
+     * <p><b>Floating-point notes:</b> Standard IEEE-754 arithmetic applies; {@code NaN} or
+     * {@code Infinity} operands propagate into the corresponding result cells, and intermediate
+     * sums of {@code +Infinity} and {@code -Infinity} produce {@code NaN}. No exception is
+     * thrown for these cases.</p>
+     *
+     * @param other the matrix to multiply with this matrix; must not be null
      * @return a new FloatMatrix containing the matrix product with dimensions (this.rowCount × other.columnCount)
-     * @throws IllegalArgumentException if the matrix dimensions are incompatible for multiplication
+     * @throws IllegalArgumentException if {@code other} is {@code null} or the matrix dimensions are incompatible for multiplication
      *         (i.e., this.columnCount != other.rowCount)
      */
     public FloatMatrix multiply(final FloatMatrix other) throws IllegalArgumentException {
@@ -2177,11 +2197,19 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
     /**
      * Converts this float matrix to an int matrix.
-     * Each float value is narrowed to int by casting, which truncates toward zero.
+     * Each float value is narrowed to int by Java's float-to-int casting rules:
+     * the fractional part is discarded (truncation toward zero) and special
+     * values are mapped as follows:
      *
-     * <p><b>Warning:</b> This is a narrowing conversion that may lose information.
-     * The fractional part is discarded, and values outside the int range
-     * ({@code Integer.MIN_VALUE} to {@code Integer.MAX_VALUE}) will overflow.</p>
+     * <ul>
+     *   <li>{@code NaN} becomes {@code 0}.</li>
+     *   <li>{@code +Infinity} and values greater than {@code Integer.MAX_VALUE}
+     *       saturate to {@code Integer.MAX_VALUE}.</li>
+     *   <li>{@code -Infinity} and values less than {@code Integer.MIN_VALUE}
+     *       saturate to {@code Integer.MIN_VALUE}.</li>
+     * </ul>
+     *
+     * <p><b>Warning:</b> This is a narrowing conversion that may lose information.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2218,11 +2246,19 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
     /**
      * Converts this float matrix to a long matrix.
-     * Each float value is narrowed to long by casting, which truncates toward zero.
+     * Each float value is narrowed to long by Java's float-to-long casting rules:
+     * the fractional part is discarded (truncation toward zero) and special
+     * values are mapped as follows:
      *
-     * <p><b>Warning:</b> This is a narrowing conversion that may lose information.
-     * The fractional part is discarded, and values outside the long range
-     * may overflow.</p>
+     * <ul>
+     *   <li>{@code NaN} becomes {@code 0L}.</li>
+     *   <li>{@code +Infinity} and values greater than {@code Long.MAX_VALUE}
+     *       saturate to {@code Long.MAX_VALUE}.</li>
+     *   <li>{@code -Infinity} and values less than {@code Long.MIN_VALUE}
+     *       saturate to {@code Long.MIN_VALUE}.</li>
+     * </ul>
+     *
+     * <p><b>Warning:</b> This is a narrowing conversion that may lose information.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2270,10 +2306,11 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @param <E> the type of exception that the zip function may throw
-     * @param matrixB the second matrix
-     * @param zipFunction the binary operator to apply element-wise
+     * @param matrixB the second matrix; must not be null
+     * @param zipFunction the binary operator to apply element-wise; must not be null
      * @return a new FloatMatrix with the results of the element-wise operation
-     * @throws IllegalArgumentException if the matrices have different dimensions
+     * @throws IllegalArgumentException if {@code zipFunction} is {@code null} or the matrices have different dimensions
+     * @throws NullPointerException if {@code matrixB} is {@code null}
      * @throws E if the zip function throws an exception
      */
     public <E extends Exception> FloatMatrix zipWith(final FloatMatrix matrixB, final Throwables.FloatBinaryOperator<E> zipFunction)
@@ -2306,11 +2343,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @param <E> the type of exception that the zip function may throw
-     * @param matrixB the second matrix
-     * @param matrixC the third matrix
-     * @param zipFunction the ternary operator to apply element-wise
+     * @param matrixB the second matrix; must not be null
+     * @param matrixC the third matrix; must not be null
+     * @param zipFunction the ternary operator to apply element-wise; must not be null
      * @return a new FloatMatrix with the results of the element-wise operation
-     * @throws IllegalArgumentException if the matrices have different dimensions
+     * @throws IllegalArgumentException if {@code zipFunction} is {@code null} or the matrices have different dimensions
+     * @throws NullPointerException if {@code matrixB} or {@code matrixC} is {@code null}
      * @throws E if the zip function throws an exception
      */
     public <E extends Exception> FloatMatrix zipWith(final FloatMatrix matrixB, final FloatMatrix matrixC, final Throwables.FloatTernaryOperator<E> zipFunction)
@@ -2895,8 +2933,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     /**
      * Performs the specified action for each element in this matrix.
      *
-     * <p>The action is performed on all elements in row-major order (left to right, top to bottom).
-     * For large matrices, the operation may be parallelized automatically to improve performance.
+     * <p>When executed sequentially, the action is performed on all elements in row-major order
+     * (left to right, top to bottom). For large matrices, the operation may be parallelized
+     * automatically; in that case the order in which the action observes elements is not guaranteed.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2918,10 +2957,11 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     /**
      * Performs the specified action for each element in a sub-region of this matrix.
      *
-     * <p>The action is performed on elements within the specified row and column ranges
-     * in row-major order. This allows you to operate on a rectangular portion of the matrix
-     * without affecting other elements. For large sub-regions, the operation may be parallelized
-     * automatically to improve performance.
+     * <p>When executed sequentially, the action is performed on elements within the specified row
+     * and column ranges in row-major order. This allows you to operate on a rectangular portion of
+     * the matrix without affecting other elements. For large sub-regions, the operation may be
+     * parallelized automatically; in that case the order in which the action observes elements is
+     * not guaranteed.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3041,6 +3081,11 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * Compares this matrix to the specified object for equality.
      * Returns {@code true} if the given object is also a FloatMatrix with the same dimensions
      * and all corresponding elements are equal.
+     *
+     * <p>Element comparison uses {@link Float#floatToIntBits(float)} semantics
+     * (the same rule used by {@link java.util.Arrays#equals(float[], float[])}):
+     * {@code NaN} is considered equal to {@code NaN}, and {@code +0.0f} is
+     * <em>not</em> considered equal to {@code -0.0f}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

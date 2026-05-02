@@ -2184,8 +2184,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
     /**
      * Converts this CharMatrix to an IntMatrix.
-     * Each char value is converted to its corresponding int value (Unicode code point).
-     * 
+     * Each char value is widened to its numeric int value (the unsigned 16-bit code unit, in the range 0..65535).
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix charMatrix = CharMatrix.of(new char[][] {{'a', 'b'}});
@@ -2200,8 +2200,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
     /**
      * Converts this CharMatrix to a LongMatrix.
-     * Each char value is converted to its corresponding long value (Unicode code point).
-     * 
+     * Each char value is widened to its numeric long value (the unsigned 16-bit code unit, in the range 0..65535).
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix charMatrix = CharMatrix.of(new char[][] {{'a', 'b'}});
@@ -2235,8 +2235,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
     /**
      * Converts this CharMatrix to a FloatMatrix.
-     * Each char value is converted to its corresponding float value (Unicode code point).
-     * 
+     * Each char value is widened to its numeric float value (the unsigned 16-bit code unit, in the range 0..65535).
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix charMatrix = CharMatrix.of(new char[][] {{'a', 'b'}});
@@ -2270,8 +2270,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
     /**
      * Converts this CharMatrix to a DoubleMatrix.
-     * Each char value is converted to its corresponding double value (Unicode code point).
-     * 
+     * Each char value is widened to its numeric double value (the unsigned 16-bit code unit, in the range 0..65535).
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix charMatrix = CharMatrix.of(new char[][] {{'a', 'b'}});

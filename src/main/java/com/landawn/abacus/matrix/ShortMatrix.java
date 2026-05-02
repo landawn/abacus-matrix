@@ -372,6 +372,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param x the boxed Short matrix to convert; must not be null
      * @return a new ShortMatrix with unboxed primitive values
+     * @throws NullPointerException if {@code x} is {@code null}
      * @see #boxed()
      */
     public static ShortMatrix unbox(final Matrix<Short> x) {
@@ -2121,10 +2122,15 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     /**
      * Performs standard matrix multiplication with another matrix.
      * The number of columns in this matrix must equal the number of rows in the specified matrix.
-     * The result is a new matrix with dimensions (this.rowCount × other.columnCount).
-     * The original matrices are not modified.
-     * <p><b>Note:</b> Short overflow may occur during multiplication. This performs standard matrix multiplication,
-     * not element-wise multiplication.</p>
+     * The result is a new matrix with dimensions {@code (this.rowCount × other.columnCount)}.
+     * The original matrices are not modified. This is standard matrix multiplication, not element-wise.
+     *
+     * <p><b>Note:</b> Short overflow may occur during multiplication and accumulation. Each partial
+     * product {@code a[i][k] * other[k][j]} is computed as an {@code int} (via Java's numeric promotion),
+     * but it is then accumulated into the {@code short} result cell with implicit narrowing, so
+     * intermediate sums wrap modulo 65536 and the final result is always in the short range
+     * {@code [-32768, 32767]}. If a non-wrapping product is required, widen via {@link #toIntMatrix()}
+     * (or {@link #toLongMatrix()}) and multiply there.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2135,9 +2141,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * // where result[i][j] = sum of (matrix1[i][k] * matrix2[k][j]) for all k
      * }</pre>
      *
-     * @param other the matrix to multiply with this matrix (this.columnCount must equal other.rowCount)
-     * @return a new matrix of dimension (this.rowCount × other.columnCount) containing the matrix product
-     * @throws IllegalArgumentException if this.columnCount != other.rowCount (incompatible dimensions for multiplication)
+     * @param other the matrix to multiply with this matrix ({@code this.columnCount} must equal {@code other.rowCount})
+     * @return a new matrix of dimension {@code (this.rowCount × other.columnCount)} containing the matrix product
+     * @throws IllegalArgumentException if {@code this.columnCount != other.rowCount} (incompatible dimensions for multiplication)
      */
     public ShortMatrix multiply(final ShortMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");

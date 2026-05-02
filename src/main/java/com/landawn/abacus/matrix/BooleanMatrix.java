@@ -2553,8 +2553,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * top-left corner and proceeding to the bottom-right corner.
      *
      * <p>This method is useful for processing all matrix elements sequentially
-     * without concern for their row/column positions. Unlike the primitive IntMatrix,
-     * this returns a Stream&lt;Boolean&gt; with boxed values.</p>
+     * without concern for their row/column positions. Because there is no primitive
+     * {@code BooleanStream}, this returns a {@code Stream<Boolean>} with boxed values.</p>
      * 
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

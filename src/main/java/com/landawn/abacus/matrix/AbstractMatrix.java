@@ -276,7 +276,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, X extends AbstractMat
      *
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return the specified row array (direct reference to internal storage)
-     * @throws IllegalArgumentException if rowIndex is out of bounds
+     * @throws IllegalArgumentException if {@code rowIndex} is negative or {@code >= rowCount}
      */
     public abstract A rowView(int rowIndex) throws IllegalArgumentException;
 
@@ -293,7 +293,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, X extends AbstractMat
      *
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return a new array containing the values from the specified row
-     * @throws IllegalArgumentException if rowIndex is out of bounds
+     * @throws IllegalArgumentException if {@code rowIndex} is negative or {@code >= rowCount}
      */
     public abstract A rowCopy(int rowIndex) throws IllegalArgumentException;
 
@@ -310,7 +310,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, X extends AbstractMat
      *
      * @param columnIndex the index of the column to retrieve (0-based)
      * @return a new array containing the values from the specified column
-     * @throws IllegalArgumentException if columnIndex is out of bounds
+     * @throws IllegalArgumentException if {@code columnIndex} is negative or {@code >= columnCount}
      */
     public abstract A columnCopy(int columnIndex) throws IllegalArgumentException;
 

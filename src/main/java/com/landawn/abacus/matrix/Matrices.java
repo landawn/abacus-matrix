@@ -315,7 +315,8 @@ public final class Matrices {
      * @param <X> the type of matrix, must extend {@link AbstractMatrix}
      * @param matrices the collection of matrices to check, may be {@code null} or empty
      * @return {@code true} if all matrices have the same number of rows and columns, or if the collection
-     *         is {@code null}, empty, or contains only one matrix; {@code false} if any matrix has different dimensions
+     *         is {@code null} or empty; {@code false} if any matrix has different dimensions or if any
+     *         element in the collection is {@code null}
      */
     public static <X extends AbstractMatrix<?, ?, ?, ?, ?>> boolean isSameShape(final Collection<? extends X> matrices) {
         if (N.isEmpty(matrices)) {
@@ -838,11 +839,13 @@ public final class Matrices {
      * maximize performance.</p>
      *
      * <p>The iteration order is determined by which dimension is smallest among:
-     * {@code a.rowCount}, {@code a.columnCount} (= {@code b.rowCount}), and {@code b.columnCount}. The smallest
-     * dimension is used for the outermost loop to optimize parallelization.</p>
+     * {@code a.rowCount}, {@code a.columnCount} (= {@code b.rowCount}), and {@code b.columnCount}. In sequential
+     * mode the smallest dimension is used for the outermost loop to maximize cache locality.</p>
      *
      * <p>When parallel execution is enabled, the outermost loop is parallelized while inner
-     * loops remain sequential for better performance.</p>
+     * loops remain sequential. To avoid concurrent writes to the same accumulator cell, the
+     * {@code k} loop (over {@code a.columnCount} = {@code b.rowCount}) is never parallelized; when {@code rowsA}
+     * is not the smallest dimension, the parallel loop is over {@code b.columnCount} ({@code j}) instead.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

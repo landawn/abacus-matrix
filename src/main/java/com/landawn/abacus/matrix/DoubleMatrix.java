@@ -211,7 +211,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     }
 
     /**
-     * Creates a DoubleMatrix from a two-dimensional float array by converting float values to double.
+     * Creates a DoubleMatrix from a two-dimensional float array by widening float values to double.
+     * The widening conversion is exact for finite values, {@code NaN}, and {@code +/-Infinity};
+     * no precision is lost since every {@code float} is representable as a {@code double}.
      *
      * <p>All rows must have the same length as the first row (rectangular array required).</p>
      *
@@ -434,8 +436,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * // primitive is [[1.0, 2.0], [3.0, 0.0]]
      * }</pre>
      *
-     * @param x the boxed Double matrix to convert
+     * @param x the boxed Double matrix to convert; must not be null
      * @return a new DoubleMatrix with unboxed values (nulls become 0.0)
+     * @throws NullPointerException if {@code x} is {@code null}
      * @see #boxed()
      */
     public static DoubleMatrix unbox(final Matrix<Double> x) {
@@ -2128,9 +2131,10 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * // Result: [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]
      * }</pre>
      *
-     * @param other the matrix to stack below this matrix
+     * @param other the matrix to stack below this matrix; must not be null
      * @return a new matrix with combined rows
-     * @throws IllegalArgumentException if the matrices have different number of columns
+     * @throws IllegalArgumentException if {@code other} is {@code null}, the matrices have different
+     *         number of columns, or the merged row count would overflow {@code Integer.MAX_VALUE}
      * @see IntMatrix#stackVertically(IntMatrix)
      */
     public DoubleMatrix stackVertically(final DoubleMatrix other) throws IllegalArgumentException {
@@ -2166,9 +2170,10 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * // Result: [[1.0, 2.0, 5.0], [3.0, 4.0, 6.0]]
      * }</pre>
      *
-     * @param other the matrix to stack to the right of this matrix
+     * @param other the matrix to stack to the right of this matrix; must not be null
      * @return a new matrix with combined columns
-     * @throws IllegalArgumentException if the matrices have different number of rows
+     * @throws IllegalArgumentException if {@code other} is {@code null}, the matrices have different
+     *         number of rows, or the merged column count would overflow {@code Integer.MAX_VALUE}
      * @see IntMatrix#stackHorizontally(IntMatrix)
      */
     public DoubleMatrix stackHorizontally(final DoubleMatrix other) throws IllegalArgumentException {
@@ -2199,9 +2204,13 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * DoubleMatrix sum = a.add(b);   // [[6.0, 8.0], [10.0, 12.0]]
      * }</pre>
      *
-     * @param other the matrix to add to this matrix
+     * <p><b>Floating-point notes:</b> Adding {@code +Infinity} and {@code -Infinity} produces
+     * {@code NaN}. If either operand is {@code NaN}, the result at that position is {@code NaN}.
+     * No exception is thrown for these cases.</p>
+     *
+     * @param other the matrix to add to this matrix; must not be null
      * @return a new matrix containing the element-wise sum
-     * @throws IllegalArgumentException if the matrices have different dimensions
+     * @throws IllegalArgumentException if {@code other} is {@code null} or the matrices have different dimensions
      */
     public DoubleMatrix add(final DoubleMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
@@ -2228,9 +2237,13 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * DoubleMatrix diff = a.subtract(b);   // [[4.0, 4.0], [4.0, 4.0]]
      * }</pre>
      *
-     * @param other the matrix to subtract from this matrix
+     * <p><b>Floating-point notes:</b> Subtracting {@code +Infinity} from {@code +Infinity}
+     * (or {@code -Infinity} from {@code -Infinity}) produces {@code NaN}. If either operand is
+     * {@code NaN}, the result at that position is {@code NaN}. No exception is thrown for these cases.</p>
+     *
+     * @param other the matrix to subtract from this matrix; must not be null
      * @return a new matrix containing the element-wise difference
-     * @throws IllegalArgumentException if the matrices have different dimensions
+     * @throws IllegalArgumentException if {@code other} is {@code null} or the matrices have different dimensions
      */
     public DoubleMatrix subtract(final DoubleMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
@@ -2258,9 +2271,15 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * DoubleMatrix product = a.multiply(b);   // [[19.0, 22.0], [43.0, 50.0]]
      * }</pre>
      *
-     * @param other the matrix to multiply with this matrix
-     * @return a new matrix containing the matrix product
-     * @throws IllegalArgumentException if the matrix dimensions are incompatible for multiplication
+     * <p><b>Floating-point notes:</b> Standard IEEE-754 arithmetic applies; {@code NaN} or
+     * {@code Infinity} operands propagate into the corresponding result cells, and intermediate
+     * sums of {@code +Infinity} and {@code -Infinity} produce {@code NaN}. No exception is
+     * thrown for these cases.</p>
+     *
+     * @param other the matrix to multiply with this matrix; must not be null
+     * @return a new matrix containing the matrix product with dimensions (this.rowCount × other.columnCount)
+     * @throws IllegalArgumentException if {@code other} is {@code null} or the matrix dimensions are incompatible for multiplication
+     *         (i.e., this.columnCount != other.rowCount)
      */
     public DoubleMatrix multiply(final DoubleMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
@@ -2316,11 +2335,19 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
 
     /**
      * Converts this double matrix to an int matrix.
-     * Each double value is narrowed to int by casting, which truncates toward zero.
+     * Each double value is narrowed to int by Java's double-to-int casting rules:
+     * the fractional part is discarded (truncation toward zero) and special
+     * values are mapped as follows:
      *
-     * <p><b>Warning:</b> This is a narrowing conversion that may lose information.
-     * The fractional part is discarded, and values outside the int range
-     * ({@code Integer.MIN_VALUE} to {@code Integer.MAX_VALUE}) will overflow.</p>
+     * <ul>
+     *   <li>{@code NaN} becomes {@code 0}.</li>
+     *   <li>{@code +Infinity} and values greater than {@code Integer.MAX_VALUE}
+     *       saturate to {@code Integer.MAX_VALUE}.</li>
+     *   <li>{@code -Infinity} and values less than {@code Integer.MIN_VALUE}
+     *       saturate to {@code Integer.MIN_VALUE}.</li>
+     * </ul>
+     *
+     * <p><b>Warning:</b> This is a narrowing conversion that may lose information.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2357,11 +2384,19 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
 
     /**
      * Converts this double matrix to a long matrix.
-     * Each double value is narrowed to long by casting, which truncates toward zero.
+     * Each double value is narrowed to long by Java's double-to-long casting rules:
+     * the fractional part is discarded (truncation toward zero) and special
+     * values are mapped as follows:
      *
-     * <p><b>Warning:</b> This is a narrowing conversion that may lose information.
-     * The fractional part is discarded, and values outside the long range
-     * may overflow.</p>
+     * <ul>
+     *   <li>{@code NaN} becomes {@code 0L}.</li>
+     *   <li>{@code +Infinity} and values greater than {@code Long.MAX_VALUE}
+     *       saturate to {@code Long.MAX_VALUE}.</li>
+     *   <li>{@code -Infinity} and values less than {@code Long.MIN_VALUE}
+     *       saturate to {@code Long.MIN_VALUE}.</li>
+     * </ul>
+     *
+     * <p><b>Warning:</b> This is a narrowing conversion that may lose information.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2402,8 +2437,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * <p><b>Warning:</b> This is a narrowing conversion that may lose precision.
      * Double values that cannot be exactly represented as float will be rounded
-     * to the nearest float value. Values outside the float range will result in
-     * positive or negative infinity.</p>
+     * to the nearest float value. Values whose magnitude exceeds {@link Float#MAX_VALUE}
+     * become {@code Float.POSITIVE_INFINITY} or {@code Float.NEGATIVE_INFINITY},
+     * and {@code NaN} doubles remain {@code NaN}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2456,7 +2492,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param matrixB the matrix to combine with this matrix; must have the same dimensions and must not be null
      * @param zipFunction the binary operation to apply to corresponding elements; must not be null
      * @return a new matrix with the operation applied element-wise (same dimensions as the input matrices)
-     * @throws IllegalArgumentException if the matrices have different dimensions
+     * @throws IllegalArgumentException if {@code zipFunction} is {@code null} or the matrices have different dimensions
+     * @throws NullPointerException if {@code matrixB} is {@code null}
      * @throws E if the zip function throws an exception
      */
     public <E extends Exception> DoubleMatrix zipWith(final DoubleMatrix matrixB, final Throwables.DoubleBinaryOperator<E> zipFunction)
@@ -2495,7 +2532,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param matrixC the third matrix to combine; must have the same dimensions and must not be null
      * @param zipFunction the ternary operation to apply to corresponding elements; must not be null
      * @return a new matrix with the operation applied element-wise (same dimensions as the input matrices)
-     * @throws IllegalArgumentException if the matrices have different dimensions
+     * @throws IllegalArgumentException if {@code zipFunction} is {@code null} or the matrices have different dimensions
+     * @throws NullPointerException if {@code matrixB} or {@code matrixC} is {@code null}
      * @throws E if the zip function throws an exception
      */
     public <E extends Exception> DoubleMatrix zipWith(final DoubleMatrix matrixB, final DoubleMatrix matrixC,
@@ -3129,10 +3167,10 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @param <E> the type of exception that the action may throw
-     * @param fromRowIndex the starting row index (inclusive, 0-based, must be &gt;= 0 and &lt; rowCount)
-     * @param toRowIndex the ending row index (exclusive, must be &gt; fromRowIndex and &lt;= rowCount)
-     * @param fromColumnIndex the starting column index (inclusive, 0-based, must be &gt;= 0 and &lt; columnCount)
-     * @param toColumnIndex the ending column index (exclusive, must be &gt; fromColumnIndex and &lt;= columnCount)
+     * @param fromRowIndex the starting row index (inclusive, 0-based, must be &gt;= 0 and &lt;= toRowIndex)
+     * @param toRowIndex the ending row index (exclusive, must be &gt;= fromRowIndex and &lt;= rowCount)
+     * @param fromColumnIndex the starting column index (inclusive, 0-based, must be &gt;= 0 and &lt;= toColumnIndex)
+     * @param toColumnIndex the ending column index (exclusive, must be &gt;= fromColumnIndex and &lt;= columnCount)
      * @param action the action to perform on each element in the sub-region; must not be null
      * @throws IndexOutOfBoundsException if the indices are out of bounds or invalid
      * @throws E if the action throws an exception
@@ -3228,6 +3266,11 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * Compares this matrix to the specified object for equality.
      * Returns {@code true} if the given object is also a DoubleMatrix with the same dimensions
      * and all corresponding elements are equal.
+     *
+     * <p>Element comparison uses {@link Double#doubleToLongBits(double)} semantics
+     * (the same rule used by {@link java.util.Arrays#equals(double[], double[])}):
+     * {@code NaN} is considered equal to {@code NaN}, and {@code +0.0} is
+     * <em>not</em> considered equal to {@code -0.0}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
