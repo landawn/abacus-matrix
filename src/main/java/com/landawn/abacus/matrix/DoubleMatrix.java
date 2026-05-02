@@ -1255,15 +1255,15 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[3][3]);
-     * matrix.assignFrom(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
+     * matrix.fill(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
      * // Top-left 2x2 region is filled: [[1.0, 2.0, 0.0], [3.0, 4.0, 0.0], [0.0, 0.0, 0.0]]
      * }</pre>
      *
      * @param source the source array to copy values from (may be smaller or larger than the matrix)
      * @throws IllegalArgumentException if {@code source} is {@code null}
      */
-    public void assignFrom(final double[][] source) {
-        assignFrom(0, 0, source);
+    public void fill(final double[][] source) {
+        fill(0, 0, source);
     }
 
     /**
@@ -1274,7 +1274,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[3][3]);
-     * matrix.assignFrom(1, 1, new double[][] {{9.0, 8.0}, {7.0, 6.0}});
+     * matrix.fill(1, 1, new double[][] {{9.0, 8.0}, {7.0, 6.0}});
      * // Result: [[0.0, 0.0, 0.0], [0.0, 9.0, 8.0], [0.0, 7.0, 6.0]]
      * }</pre>
      *
@@ -1283,7 +1283,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param source the source array to copy values from
      * @throws IllegalArgumentException if the target indices are negative or exceed matrix dimensions
      */
-    public void assignFrom(final int destRowIndex, final int destColumnIndex, final double[][] source) throws IllegalArgumentException {
+    public void fill(final int destRowIndex, final int destColumnIndex, final double[][] source) throws IllegalArgumentException {
         N.checkArgNotNull(source, "source");
         N.checkArgument(destRowIndex >= 0 && destRowIndex <= rowCount, "destRowIndex({}) must be between 0 and rowCount({})", destRowIndex, rowCount);
         N.checkArgument(destColumnIndex >= 0 && destColumnIndex <= columnCount, "destColumnIndex({}) must be between 0 and columnCount({})", destColumnIndex,

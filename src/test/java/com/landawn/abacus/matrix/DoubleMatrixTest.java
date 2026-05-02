@@ -545,7 +545,7 @@ class DoubleMatrixTest extends TestBase {
         DoubleMatrix matrix = DoubleMatrix.of(arr);
 
         double[][] fillArr = { { 5.0, 6.0 }, { 7.0, 8.0 } };
-        matrix.assignFrom(fillArr);
+        matrix.fill(fillArr);
         assertEquals(5.0, matrix.get(0, 0));
         assertEquals(6.0, matrix.get(0, 1));
         assertEquals(7.0, matrix.get(1, 0));
@@ -557,11 +557,11 @@ class DoubleMatrixTest extends TestBase {
         double[][] arr = { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 } };
         DoubleMatrix matrix = DoubleMatrix.of(arr);
         double[][] fillArr = { { 7.0, 8.0 } };
-        matrix.assignFrom(0, 1, fillArr);
+        matrix.fill(0, 1, fillArr);
         assertEquals(7.0, matrix.get(0, 1));
         assertEquals(8.0, matrix.get(0, 2));
 
-        assertThrows(IllegalArgumentException.class, () -> matrix.assignFrom(-1, 0, fillArr));
+        assertThrows(IllegalArgumentException.class, () -> matrix.fill(-1, 0, fillArr));
     }
 
     @Test
@@ -2073,7 +2073,7 @@ class DoubleMatrixTest extends TestBase {
         public void testFill_withArray() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } });
             double[][] patch = { { 1.5, 2.5 }, { 3.5, 4.5 } };
-            m.assignFrom(patch);
+            m.fill(patch);
             assertEquals(1.5, m.get(0, 0), DELTA);
             assertEquals(2.5, m.get(0, 1), DELTA);
             assertEquals(3.5, m.get(1, 0), DELTA);
@@ -2085,7 +2085,7 @@ class DoubleMatrixTest extends TestBase {
         public void testFill_withArrayAtPosition() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } });
             double[][] patch = { { 1.5, 2.5 }, { 3.5, 4.5 } };
-            m.assignFrom(1, 1, patch);
+            m.fill(1, 1, patch);
             assertEquals(0.0, m.get(0, 0), DELTA); // unchanged
             assertEquals(1.5, m.get(1, 1), DELTA);
             assertEquals(2.5, m.get(1, 2), DELTA);
@@ -2097,7 +2097,7 @@ class DoubleMatrixTest extends TestBase {
         public void testFill_outOfBounds() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             double[][] patch = { { 1.0, 2.0 }, { 3.0, 4.0 } };
-            assertThrows(IllegalArgumentException.class, () -> m.assignFrom(-1, 0, patch));
+            assertThrows(IllegalArgumentException.class, () -> m.fill(-1, 0, patch));
         }
 
         // ============ Copy Tests ============
@@ -3777,7 +3777,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testFill_array() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            m.assignFrom(new double[][] { { 7.0, 8.0 }, { 9.0, 10.0 } });
+            m.fill(new double[][] { { 7.0, 8.0 }, { 9.0, 10.0 } });
             assertEquals(7.0, m.get(0, 0));
             assertEquals(8.0, m.get(0, 1));
             assertEquals(9.0, m.get(1, 0));
@@ -3787,7 +3787,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testFill_withPosition() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
-            m.assignFrom(1, 1, new double[][] { { 11.0, 12.0 }, { 13.0, 14.0 } });
+            m.fill(1, 1, new double[][] { { 11.0, 12.0 }, { 13.0, 14.0 } });
             assertEquals(1.0, m.get(0, 0));
             assertEquals(11.0, m.get(1, 1));
             assertEquals(12.0, m.get(1, 2));
@@ -5149,7 +5149,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void test_fill_array() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            m.assignFrom(new double[][] { { 9.0, 8.0 }, { 7.0, 6.0 } });
+            m.fill(new double[][] { { 9.0, 8.0 }, { 7.0, 6.0 } });
             assertEquals(9.0, m.get(0, 0), 0.0);
             assertEquals(8.0, m.get(0, 1), 0.0);
             assertEquals(7.0, m.get(1, 0), 0.0);
@@ -5159,7 +5159,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void test_fill_withOffset() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
-            m.assignFrom(1, 1, new double[][] { { 99.0 } });
+            m.fill(1, 1, new double[][] { { 99.0 } });
             assertEquals(1.0, m.get(0, 0), 0.0);
             assertEquals(99.0, m.get(1, 1), 0.0);
             assertEquals(9.0, m.get(2, 2), 0.0);
@@ -5169,7 +5169,7 @@ class DoubleMatrixTest extends TestBase {
         public void test_fill_withOffset_clipsToFit() {
             // fill method clips data to fit within matrix bounds, doesn't throw exception
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 } });
-            m.assignFrom(0, 0, new double[][] { { 9.0, 8.0, 7.0 } }); // Source has 3 elements but matrix only has 2 columns
+            m.fill(0, 0, new double[][] { { 9.0, 8.0, 7.0 } }); // Source has 3 elements but matrix only has 2 columns
             assertEquals(9.0, m.get(0, 0), 0.0);
             assertEquals(8.0, m.get(0, 1), 0.0); // Only first 2 elements are copied
         }

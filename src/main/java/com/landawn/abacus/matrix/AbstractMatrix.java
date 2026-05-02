@@ -707,7 +707,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @throws IllegalArgumentException if {@code x} is {@code null}
      */
     public boolean isSameShape(final M m) {
-        N.checkArgNotNull(m, "x");
+        N.checkArgNotNull(m, "m");
         return rowCount == m.rowCount && columnCount == m.columnCount;
     }
 

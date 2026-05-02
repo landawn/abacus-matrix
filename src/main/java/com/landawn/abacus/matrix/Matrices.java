@@ -994,7 +994,7 @@ public final class Matrices {
      * IntMatrix a = IntMatrix.of(new int[][] {{1, 2}});
      * IntMatrix b = IntMatrix.of(new int[][] {{3, 4}});
      * IntMatrix c = IntMatrix.of(new int[][] {{5, 6}});
-     * IntMatrix stacked = Matrices.vstack(java.util.Arrays.asList(a, b, c));
+     * IntMatrix stacked = Matrices.stackVertically(Arrays.asList(a, b, c));
      * // stacked is [[1, 2], [3, 4], [5, 6]]
      * }</pre>
      *
@@ -1004,9 +1004,9 @@ public final class Matrices {
      * @throws IllegalArgumentException if {@code matrices} is {@code null}, empty, or contains
      *         matrices with mismatched column counts
      * @see AbstractMatrix#stackVertically(AbstractMatrix)
-     * @see #hstack(Collection)
+     * @see #stackHorizontally(Collection)
      */
-    public static <M extends AbstractMatrix<?, ?, ?, ?, M>> M vstack(final Collection<? extends M> matrices) {
+    public static <M extends AbstractMatrix<?, ?, ?, ?, M>> M stackVertically(final Collection<? extends M> matrices) {
         N.checkArgNotEmpty(matrices, "matrices");
 
         final Iterator<? extends M> it = matrices.iterator();
@@ -1036,7 +1036,7 @@ public final class Matrices {
      * IntMatrix a = IntMatrix.of(new int[][] {{1}, {2}});
      * IntMatrix b = IntMatrix.of(new int[][] {{3}, {4}});
      * IntMatrix c = IntMatrix.of(new int[][] {{5}, {6}});
-     * IntMatrix stacked = Matrices.hstack(java.util.Arrays.asList(a, b, c));
+     * IntMatrix stacked = Matrices.stackHorizontally(Arrays.asList(a, b, c));
      * // stacked is [[1, 3, 5], [2, 4, 6]]
      * }</pre>
      *
@@ -1046,9 +1046,9 @@ public final class Matrices {
      * @throws IllegalArgumentException if {@code matrices} is {@code null}, empty, or contains
      *         matrices with mismatched row counts
      * @see AbstractMatrix#stackHorizontally(AbstractMatrix)
-     * @see #vstack(Collection)
+     * @see #stackVertically(Collection)
      */
-    public static <M extends AbstractMatrix<?, ?, ?, ?, M>> M hstack(final Collection<? extends M> matrices) {
+    public static <M extends AbstractMatrix<?, ?, ?, ?, M>> M stackHorizontally(final Collection<? extends M> matrices) {
         N.checkArgNotEmpty(matrices, "matrices");
 
         final Iterator<? extends M> it = matrices.iterator();

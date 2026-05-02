@@ -554,7 +554,7 @@ class ByteMatrixTest extends TestBase {
         ByteMatrix matrix = ByteMatrix.of(a);
 
         byte[][] b = { { 1, 2 }, { 3, 4 } };
-        matrix.assignFrom(b);
+        matrix.fill(b);
         Assertions.assertEquals(1, matrix.get(0, 0));
         Assertions.assertEquals(2, matrix.get(0, 1));
         Assertions.assertEquals(3, matrix.get(1, 0));
@@ -568,13 +568,13 @@ class ByteMatrixTest extends TestBase {
         ByteMatrix matrix = ByteMatrix.of(a);
 
         byte[][] b = { { 1, 2 } };
-        matrix.assignFrom(1, 1, b);
+        matrix.fill(1, 1, b);
         Assertions.assertEquals(0, matrix.get(0, 0)); // unchanged
         Assertions.assertEquals(1, matrix.get(1, 1));
         Assertions.assertEquals(2, matrix.get(1, 2));
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.assignFrom(-1, 0, b));
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.assignFrom(0, -1, b));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.fill(-1, 0, b));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.fill(0, -1, b));
     }
 
     @Test
@@ -1945,7 +1945,7 @@ class ByteMatrixTest extends TestBase {
         public void testFill_withArray() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } });
             byte[][] patch = { { 1, 2 }, { 3, 4 } };
-            m.assignFrom(patch);
+            m.fill(patch);
             assertEquals(1, m.get(0, 0));
             assertEquals(2, m.get(0, 1));
             assertEquals(3, m.get(1, 0));
@@ -1957,7 +1957,7 @@ class ByteMatrixTest extends TestBase {
         public void testFill_withArrayAtPosition() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } });
             byte[][] patch = { { 1, 2 }, { 3, 4 } };
-            m.assignFrom(1, 1, patch);
+            m.fill(1, 1, patch);
             assertEquals(0, m.get(0, 0)); // unchanged
             assertEquals(1, m.get(1, 1));
             assertEquals(2, m.get(1, 2));
@@ -1969,7 +1969,7 @@ class ByteMatrixTest extends TestBase {
         public void testFill_outOfBounds() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
             byte[][] patch = { { 1, 2 }, { 3, 4 } };
-            assertThrows(IllegalArgumentException.class, () -> m.assignFrom(-1, 0, patch));
+            assertThrows(IllegalArgumentException.class, () -> m.fill(-1, 0, patch));
         }
 
         // ============ Copy Tests ============
@@ -3282,7 +3282,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testFill_withArray() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 0, 0 }, { 0, 0 } });
-            m.assignFrom(new byte[][] { { 1, 2 }, { 3, 4 } });
+            m.fill(new byte[][] { { 1, 2 }, { 3, 4 } });
             assertEquals(1, m.get(0, 0));
             assertEquals(4, m.get(1, 1));
         }
@@ -3290,7 +3290,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testFill_withOffset() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } });
-            m.assignFrom(1, 1, new byte[][] { { 1, 2 }, { 3, 4 } });
+            m.fill(1, 1, new byte[][] { { 1, 2 }, { 3, 4 } });
             assertEquals(0, m.get(0, 0));
             assertEquals(1, m.get(1, 1));
             assertEquals(4, m.get(2, 2));
@@ -3299,7 +3299,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testFill_withOffset_invalidPosition() {
             ByteMatrix m = ByteMatrix.of(new byte[2][2]);
-            assertThrows(IllegalArgumentException.class, () -> m.assignFrom(3, 3, new byte[][] { { 1, 2 }, { 3, 4 } }));
+            assertThrows(IllegalArgumentException.class, () -> m.fill(3, 3, new byte[][] { { 1, 2 }, { 3, 4 } }));
         }
 
         // ============ Copy Tests ============
@@ -4250,7 +4250,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testFill_withPartialArray() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } });
-            m.assignFrom(0, 0, new byte[][] { { 1, 2 } });
+            m.fill(0, 0, new byte[][] { { 1, 2 } });
             assertEquals(1, m.get(0, 0));
             assertEquals(2, m.get(0, 1));
             assertEquals(0, m.get(0, 2));
@@ -5161,7 +5161,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void test_fill_array() {
             ByteMatrix m = ByteMatrix.of(new byte[3][3]);
-            m.assignFrom(new byte[][] { { 1, 2 }, { 3, 4 } });
+            m.fill(new byte[][] { { 1, 2 }, { 3, 4 } });
             assertEquals(1, m.get(0, 0));
             assertEquals(2, m.get(0, 1));
             assertEquals(3, m.get(1, 0));
@@ -5172,7 +5172,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void test_fill_arrayWithPosition() {
             ByteMatrix m = ByteMatrix.of(new byte[4][4]);
-            m.assignFrom(1, 1, new byte[][] { { 1, 2 }, { 3, 4 } });
+            m.fill(1, 1, new byte[][] { { 1, 2 }, { 3, 4 } });
             assertEquals(0, m.get(0, 0));
             assertEquals(1, m.get(1, 1));
             assertEquals(2, m.get(1, 2));
@@ -5976,7 +5976,7 @@ class ByteMatrixTest extends TestBase {
         }
     }
 
-    // === Missing coverage: resize, assignFrom, flip*InPlace ===
+    // === Missing coverage: resize, fill, flip*InPlace ===
 
     @Test
     public void testResize_expand() {
@@ -6036,7 +6036,7 @@ class ByteMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_fullOverwrite() {
         ByteMatrix m = ByteMatrix.of(new byte[][] { { 0, 0 }, { 0, 0 } });
-        m.assignFrom(new byte[][] { { 10, 20 }, { 30, 40 } });
+        m.fill(new byte[][] { { 10, 20 }, { 30, 40 } });
         assertEquals(10, m.get(0, 0));
         assertEquals(20, m.get(0, 1));
         assertEquals(30, m.get(1, 0));
@@ -6046,7 +6046,7 @@ class ByteMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_partialOverwrite() {
         ByteMatrix m = ByteMatrix.of(new byte[][] { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } });
-        m.assignFrom(new byte[][] { { 1, 2 }, { 3, 4 } });
+        m.fill(new byte[][] { { 1, 2 }, { 3, 4 } });
         assertEquals(1, m.get(0, 0));
         assertEquals(2, m.get(0, 1));
         assertEquals(0, m.get(0, 2));
@@ -6058,7 +6058,7 @@ class ByteMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_withOffset() {
         ByteMatrix m = ByteMatrix.of(new byte[][] { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } });
-        m.assignFrom(1, 1, new byte[][] { { 5, 6 }, { 7, 8 } });
+        m.fill(1, 1, new byte[][] { { 5, 6 }, { 7, 8 } });
         assertEquals(0, m.get(0, 0));
         assertEquals(0, m.get(1, 0));
         assertEquals(5, m.get(1, 1));
@@ -6070,7 +6070,7 @@ class ByteMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_emptySource() {
         ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-        m.assignFrom(new byte[0][0]);
+        m.fill(new byte[0][0]);
         assertEquals(1, m.get(0, 0));
         assertEquals(4, m.get(1, 1));
     }
@@ -6078,8 +6078,8 @@ class ByteMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_negativeIndexThrows() {
         ByteMatrix m = ByteMatrix.of(new byte[][] { { 1 } });
-        assertThrows(IllegalArgumentException.class, () -> m.assignFrom(-1, 0, new byte[][] { { 1 } }));
-        assertThrows(IllegalArgumentException.class, () -> m.assignFrom(0, -1, new byte[][] { { 1 } }));
+        assertThrows(IllegalArgumentException.class, () -> m.fill(-1, 0, new byte[][] { { 1 } }));
+        assertThrows(IllegalArgumentException.class, () -> m.fill(0, -1, new byte[][] { { 1 } }));
     }
 
     @Test

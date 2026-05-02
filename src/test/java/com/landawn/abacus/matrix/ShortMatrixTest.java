@@ -511,7 +511,7 @@ class ShortMatrixTest extends TestBase {
     public void testFillWithArray() {
         ShortMatrix m = ShortMatrix.of(new short[][] { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } });
         short[][] patch = { { 1, 2 }, { 3, 4 } };
-        m.assignFrom(patch);
+        m.fill(patch);
         assertEquals((short) 1, m.get(0, 0));
         assertEquals((short) 2, m.get(0, 1));
         assertEquals((short) 3, m.get(1, 0));
@@ -523,7 +523,7 @@ class ShortMatrixTest extends TestBase {
     public void testFillWithArrayAtPosition() {
         ShortMatrix m = ShortMatrix.of(new short[][] { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } });
         short[][] patch = { { 1, 2 }, { 3, 4 } };
-        m.assignFrom(1, 1, patch);
+        m.fill(1, 1, patch);
         assertEquals((short) 0, m.get(0, 0)); // unchanged
         assertEquals((short) 1, m.get(1, 1));
         assertEquals((short) 2, m.get(1, 2));
@@ -531,9 +531,9 @@ class ShortMatrixTest extends TestBase {
         assertEquals((short) 4, m.get(2, 2));
 
         // Test bounds
-        assertThrows(IllegalArgumentException.class, () -> m.assignFrom(-1, 0, patch));
-        // assertThrows(IndexOutOfBoundsException.class, () -> m.assignFrom(3, 0, patch));
-        m.assignFrom(3, 0, patch);
+        assertThrows(IllegalArgumentException.class, () -> m.fill(-1, 0, patch));
+        // assertThrows(IndexOutOfBoundsException.class, () -> m.fill(3, 0, patch));
+        m.fill(3, 0, patch);
     }
 
     @Test
@@ -1245,9 +1245,9 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testShortMatrix_assignFrom() {
+        public void testIntMatrix_fill_02() {
             ShortMatrix matrix = ShortMatrix.of(new short[][] { { 0, 0, 0 }, { 0, 0, 0 } });
-            matrix.assignFrom(new short[][] { { 1, 2 }, { 3, 4 } });
+            matrix.fill(new short[][] { { 1, 2 }, { 3, 4 } });
             // Result: [[1, 2, 0], [3, 4, 0]]
             assertEquals((short) 1, matrix.get(0, 0));
             assertEquals((short) 2, matrix.get(0, 1));
@@ -1258,9 +1258,9 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testShortMatrix_assignFrom_offset() {
+        public void testShortMatrix_fill_offset() {
             ShortMatrix matrix = ShortMatrix.of(new short[][] { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } });
-            matrix.assignFrom(1, 1, new short[][] { { 1, 2 }, { 3, 4 } });
+            matrix.fill(1, 1, new short[][] { { 1, 2 }, { 3, 4 } });
             // Result: [[0, 0, 0], [0, 1, 2], [0, 3, 4]]
             assertEquals((short) 0, matrix.get(0, 0));
             assertEquals((short) 0, matrix.get(1, 0));
@@ -2260,7 +2260,7 @@ class ShortMatrixTest extends TestBase {
         public void testFill_withArray() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } });
             short[][] patch = { { 1, 2 }, { 3, 4 } };
-            m.assignFrom(patch);
+            m.fill(patch);
             assertEquals(1, m.get(0, 0));
             assertEquals(2, m.get(0, 1));
             assertEquals(3, m.get(1, 0));
@@ -2272,7 +2272,7 @@ class ShortMatrixTest extends TestBase {
         public void testFill_withArrayAtPosition() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } });
             short[][] patch = { { 1, 2 }, { 3, 4 } };
-            m.assignFrom(1, 1, patch);
+            m.fill(1, 1, patch);
             assertEquals(0, m.get(0, 0)); // unchanged
             assertEquals(1, m.get(1, 1));
             assertEquals(2, m.get(1, 2));
@@ -2284,7 +2284,7 @@ class ShortMatrixTest extends TestBase {
         public void testFill_outOfBounds() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
             short[][] patch = { { 1, 2 }, { 3, 4 } };
-            assertThrows(IllegalArgumentException.class, () -> m.assignFrom(-1, 0, patch));
+            assertThrows(IllegalArgumentException.class, () -> m.fill(-1, 0, patch));
         }
 
         // ============ Copy Tests ============
@@ -3201,7 +3201,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testFill_entireMatrixWithArray() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            m.assignFrom(new short[][] { { 9, 8 }, { 7, 6 } });
+            m.fill(new short[][] { { 9, 8 }, { 7, 6 } });
             assertEquals(9, m.get(0, 0));
             assertEquals(8, m.get(0, 1));
             assertEquals(7, m.get(1, 0));
@@ -3211,7 +3211,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testFill_withArrayAtOrigin() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            m.assignFrom(0, 0, new short[][] { { 99, 88 } });
+            m.fill(0, 0, new short[][] { { 99, 88 } });
             assertEquals(99, m.get(0, 0));
             assertEquals(88, m.get(0, 1));
             assertEquals(3, m.get(0, 2));
@@ -4360,7 +4360,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testFill_array() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            m.assignFrom(new short[][] { { 10, 20 }, { 30, 40 } });
+            m.fill(new short[][] { { 10, 20 }, { 30, 40 } });
             assertEquals((short) 10, m.get(0, 0));
             assertEquals((short) 20, m.get(0, 1));
             assertEquals((short) 30, m.get(1, 0));
@@ -4370,7 +4370,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testFill_arrayWithOffset() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            m.assignFrom(1, 1, new short[][] { { 99, 88 } });
+            m.fill(1, 1, new short[][] { { 99, 88 } });
             assertEquals((short) 1, m.get(0, 0));
             assertEquals((short) 99, m.get(1, 1));
             assertEquals((short) 88, m.get(1, 2));
@@ -5375,7 +5375,7 @@ class ShortMatrixTest extends TestBase {
             short[][] arr = { { 1, 2 }, { 3, 4 } };
             ShortMatrix m = new ShortMatrix(arr);
             short[][] b = { { 9, 8 }, { 7, 6 } };
-            m.assignFrom(b);
+            m.fill(b);
             assertEquals(9, m.get(0, 0));
             assertEquals(6, m.get(1, 1));
         }
@@ -5385,7 +5385,7 @@ class ShortMatrixTest extends TestBase {
             short[][] arr = { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } };
             ShortMatrix m = new ShortMatrix(arr);
             short[][] b = { { 99, 98 } };
-            m.assignFrom(1, 1, b);
+            m.fill(1, 1, b);
             assertEquals(1, m.get(0, 0));
             assertEquals(99, m.get(1, 1));
             assertEquals(98, m.get(1, 2));

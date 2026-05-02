@@ -1234,14 +1234,14 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{0, 0, 0}, {0, 0, 0}});
-     * matrix.assignFrom(new long[][] {{1, 2}, {3, 4}});
+     * matrix.fill(new long[][] {{1, 2}, {3, 4}});
      * // Result: [[1, 2, 0], [3, 4, 0]]
      * }</pre>
      *
      * @param source the two-dimensional array to copy values from
      */
-    public void assignFrom(final long[][] source) {
-        assignFrom(0, 0, source);
+    public void fill(final long[][] source) {
+        fill(0, 0, source);
     }
 
     /**
@@ -1252,7 +1252,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}});
-     * matrix.assignFrom(1, 1, new long[][] {{1, 2}, {3, 4}});
+     * matrix.fill(1, 1, new long[][] {{1, 2}, {3, 4}});
      * // Result: [[0, 0, 0], [0, 1, 2], [0, 3, 4]]
      * }</pre>
      *
@@ -1261,7 +1261,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param source the source array to copy values from
      * @throws IllegalArgumentException if destRowIndex &lt; 0 or &gt; rowCount, or if destColumnIndex &lt; 0 or &gt; columnCount
      */
-    public void assignFrom(final int destRowIndex, final int destColumnIndex, final long[][] source) throws IllegalArgumentException {
+    public void fill(final int destRowIndex, final int destColumnIndex, final long[][] source) throws IllegalArgumentException {
         N.checkArgNotNull(source, "source");
         N.checkArgument(destRowIndex >= 0 && destRowIndex <= rowCount, "destRowIndex({}) must be between 0 and rowCount({})", destRowIndex, rowCount);
         N.checkArgument(destColumnIndex >= 0 && destColumnIndex <= columnCount, "destColumnIndex({}) must be between 0 and columnCount({})", destColumnIndex,

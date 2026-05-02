@@ -470,7 +470,7 @@ class BooleanMatrixTest extends TestBase {
         BooleanMatrix matrix = BooleanMatrix.of(arr);
 
         boolean[][] fillArr = { { false, false }, { false, false } };
-        matrix.assignFrom(fillArr);
+        matrix.fill(fillArr);
         assertFalse(matrix.get(0, 0));
         assertFalse(matrix.get(0, 1));
         assertFalse(matrix.get(1, 0));
@@ -483,11 +483,11 @@ class BooleanMatrixTest extends TestBase {
         BooleanMatrix matrix = BooleanMatrix.of(arr);
 
         boolean[][] fillArr = { { false, false } };
-        matrix.assignFrom(0, 1, fillArr);
+        matrix.fill(0, 1, fillArr);
         assertFalse(matrix.get(0, 1));
         assertFalse(matrix.get(0, 2));
 
-        assertThrows(IllegalArgumentException.class, () -> matrix.assignFrom(-1, 0, fillArr));
+        assertThrows(IllegalArgumentException.class, () -> matrix.fill(-1, 0, fillArr));
     }
 
     @Test
@@ -1673,7 +1673,7 @@ class BooleanMatrixTest extends TestBase {
         public void testFill_withArray() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { false, false, false }, { false, false, false }, { false, false, false } });
             boolean[][] patch = { { true, false }, { false, true } };
-            m.assignFrom(patch);
+            m.fill(patch);
             assertTrue(m.get(0, 0));
             assertFalse(m.get(0, 1));
             assertFalse(m.get(1, 0));
@@ -1685,7 +1685,7 @@ class BooleanMatrixTest extends TestBase {
         public void testFill_withArrayAtPosition() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { false, false, false }, { false, false, false }, { false, false, false } });
             boolean[][] patch = { { true, false }, { false, true } };
-            m.assignFrom(1, 1, patch);
+            m.fill(1, 1, patch);
             assertFalse(m.get(0, 0)); // unchanged
             assertTrue(m.get(1, 1));
             assertFalse(m.get(1, 2));
@@ -1697,7 +1697,7 @@ class BooleanMatrixTest extends TestBase {
         public void testFill_outOfBounds() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
             boolean[][] patch = { { true, false }, { false, true } };
-            assertThrows(IllegalArgumentException.class, () -> m.assignFrom(-1, 0, patch));
+            assertThrows(IllegalArgumentException.class, () -> m.fill(-1, 0, patch));
         }
 
         // ============ Copy Tests ============
@@ -2521,7 +2521,7 @@ class BooleanMatrixTest extends TestBase {
         public void testFill_partialOverlap() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { false, false, false }, { false, false, false }, { false, false, false } });
             boolean[][] patch = { { true, true }, { true, true } };
-            m.assignFrom(2, 2, patch); // Only partial overlap
+            m.fill(2, 2, patch); // Only partial overlap
             assertFalse(m.get(0, 0));
             assertFalse(m.get(1, 1));
             assertTrue(m.get(2, 2)); // Only this one should be set
@@ -3155,7 +3155,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testFill_withArray() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { false, false }, { false, false } });
-            m.assignFrom(new boolean[][] { { true, true }, { true, true } });
+            m.fill(new boolean[][] { { true, true }, { true, true } });
             assertTrue(m.get(0, 0));
             assertTrue(m.get(1, 1));
         }
@@ -3163,7 +3163,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testFill_withOffset() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { false, false, false }, { false, false, false }, { false, false, false } });
-            m.assignFrom(1, 1, new boolean[][] { { true, true }, { true, true } });
+            m.fill(1, 1, new boolean[][] { { true, true }, { true, true } });
             assertFalse(m.get(0, 0));
             assertTrue(m.get(1, 1));
             assertTrue(m.get(2, 2));
@@ -3172,7 +3172,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testFill_withOffset_invalidPosition() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[2][2]);
-            assertThrows(IllegalArgumentException.class, () -> m.assignFrom(3, 3, new boolean[][] { { true, true }, { true, true } }));
+            assertThrows(IllegalArgumentException.class, () -> m.fill(3, 3, new boolean[][] { { true, true }, { true, true } }));
         }
 
         // ============ Copy Tests ============
@@ -4037,7 +4037,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testFill_withPartialArray() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { false, false, false }, { false, false, false }, { false, false, false } });
-            m.assignFrom(0, 0, new boolean[][] { { true, true } });
+            m.fill(0, 0, new boolean[][] { { true, true } });
             assertTrue(m.get(0, 0));
             assertTrue(m.get(0, 1));
             assertFalse(m.get(0, 2));
@@ -4870,7 +4870,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void test_fill_array() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[3][3]);
-            m.assignFrom(new boolean[][] { { true, true }, { true, true } });
+            m.fill(new boolean[][] { { true, true }, { true, true } });
             assertTrue(m.get(0, 0));
             assertTrue(m.get(0, 1));
             assertTrue(m.get(1, 0));
@@ -4881,7 +4881,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void test_fill_arrayWithPosition() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[4][4]);
-            m.assignFrom(1, 1, new boolean[][] { { true, true }, { true, true } });
+            m.fill(1, 1, new boolean[][] { { true, true }, { true, true } });
             assertFalse(m.get(0, 0));
             assertTrue(m.get(1, 1));
             assertTrue(m.get(1, 2));
@@ -5634,7 +5634,7 @@ class BooleanMatrixTest extends TestBase {
         }
     }
 
-    // === Missing coverage: resize, assignFrom, flip*InPlace, and/or/xor ===
+    // === Missing coverage: resize, fill, flip*InPlace, and/or/xor ===
 
     @Test
     public void testResize_expand() {
@@ -5704,7 +5704,7 @@ class BooleanMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_fullOverwrite() {
         BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { false, false }, { false, false } });
-        m.assignFrom(new boolean[][] { { true, true }, { true, true } });
+        m.fill(new boolean[][] { { true, true }, { true, true } });
         assertTrue(m.get(0, 0));
         assertTrue(m.get(0, 1));
         assertTrue(m.get(1, 0));
@@ -5714,7 +5714,7 @@ class BooleanMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_partialOverwrite() {
         BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { false, false, false }, { false, false, false }, { false, false, false } });
-        m.assignFrom(new boolean[][] { { true, true }, { true, true } });
+        m.fill(new boolean[][] { { true, true }, { true, true } });
         assertTrue(m.get(0, 0));
         assertTrue(m.get(0, 1));
         assertFalse(m.get(0, 2));
@@ -5727,7 +5727,7 @@ class BooleanMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_withOffset() {
         BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { false, false, false }, { false, false, false }, { false, false, false } });
-        m.assignFrom(1, 1, new boolean[][] { { true, true }, { true, true } });
+        m.fill(1, 1, new boolean[][] { { true, true }, { true, true } });
         assertFalse(m.get(0, 0));
         assertFalse(m.get(0, 1));
         assertFalse(m.get(1, 0));
@@ -5740,7 +5740,7 @@ class BooleanMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_emptySource() {
         BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
-        m.assignFrom(new boolean[0][0]);
+        m.fill(new boolean[0][0]);
         assertTrue(m.get(0, 0));
         assertFalse(m.get(0, 1));
     }
@@ -5748,8 +5748,8 @@ class BooleanMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_negativeIndexThrows() {
         BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true } });
-        assertThrows(IllegalArgumentException.class, () -> m.assignFrom(-1, 0, new boolean[][] { { true } }));
-        assertThrows(IllegalArgumentException.class, () -> m.assignFrom(0, -1, new boolean[][] { { true } }));
+        assertThrows(IllegalArgumentException.class, () -> m.fill(-1, 0, new boolean[][] { { true } }));
+        assertThrows(IllegalArgumentException.class, () -> m.fill(0, -1, new boolean[][] { { true } }));
     }
 
     @Test

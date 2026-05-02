@@ -511,7 +511,7 @@ class FloatMatrixTest extends TestBase {
     public void testFillWithArray() {
         FloatMatrix m = FloatMatrix.of(new float[][] { { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f } });
         float[][] patch = { { 1.0f, 2.0f }, { 3.0f, 4.0f } };
-        m.assignFrom(patch);
+        m.fill(patch);
         assertEquals(1.0f, m.get(0, 0), DELTA);
         assertEquals(2.0f, m.get(0, 1), DELTA);
         assertEquals(3.0f, m.get(1, 0), DELTA);
@@ -523,7 +523,7 @@ class FloatMatrixTest extends TestBase {
     public void testFillWithArrayAtPosition() {
         FloatMatrix m = FloatMatrix.of(new float[][] { { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f } });
         float[][] patch = { { 1.0f, 2.0f }, { 3.0f, 4.0f } };
-        m.assignFrom(1, 1, patch);
+        m.fill(1, 1, patch);
         assertEquals(0.0f, m.get(0, 0), DELTA); // unchanged
         assertEquals(1.0f, m.get(1, 1), DELTA);
         assertEquals(2.0f, m.get(1, 2), DELTA);
@@ -531,9 +531,9 @@ class FloatMatrixTest extends TestBase {
         assertEquals(4.0f, m.get(2, 2), DELTA);
 
         // Test bounds
-        assertThrows(IllegalArgumentException.class, () -> m.assignFrom(-1, 0, patch));
-        // assertThrows(IndexOutOfBoundsException.class, () -> m.assignFrom(3, 0, patch));
-        m.assignFrom(3, 0, patch);
+        assertThrows(IllegalArgumentException.class, () -> m.fill(-1, 0, patch));
+        // assertThrows(IndexOutOfBoundsException.class, () -> m.fill(3, 0, patch));
+        m.fill(3, 0, patch);
     }
 
     @Test
@@ -1768,7 +1768,7 @@ class FloatMatrixTest extends TestBase {
         public void testFill_withArray() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f } });
             float[][] patch = { { 1.5f, 2.5f }, { 3.5f, 4.5f } };
-            m.assignFrom(patch);
+            m.fill(patch);
             assertEquals(1.5f, m.get(0, 0), DELTA);
             assertEquals(2.5f, m.get(0, 1), DELTA);
             assertEquals(3.5f, m.get(1, 0), DELTA);
@@ -1780,7 +1780,7 @@ class FloatMatrixTest extends TestBase {
         public void testFill_withArrayAtPosition() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f } });
             float[][] patch = { { 1.5f, 2.5f }, { 3.5f, 4.5f } };
-            m.assignFrom(1, 1, patch);
+            m.fill(1, 1, patch);
             assertEquals(0.0f, m.get(0, 0), DELTA); // unchanged
             assertEquals(1.5f, m.get(1, 1), DELTA);
             assertEquals(2.5f, m.get(1, 2), DELTA);
@@ -1792,7 +1792,7 @@ class FloatMatrixTest extends TestBase {
         public void testFill_outOfBounds() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             float[][] patch = { { 1.0f, 2.0f }, { 3.0f, 4.0f } };
-            assertThrows(IllegalArgumentException.class, () -> m.assignFrom(-1, 0, patch));
+            assertThrows(IllegalArgumentException.class, () -> m.fill(-1, 0, patch));
         }
 
         // ============ Copy Tests ============
@@ -3311,7 +3311,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testFill_array() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            m.assignFrom(new float[][] { { 7.0f, 8.0f }, { 9.0f, 10.0f } });
+            m.fill(new float[][] { { 7.0f, 8.0f }, { 9.0f, 10.0f } });
             assertEquals(7.0f, m.get(0, 0));
             assertEquals(8.0f, m.get(0, 1));
             assertEquals(9.0f, m.get(1, 0));
@@ -3321,7 +3321,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testFill_withPosition() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
-            m.assignFrom(1, 1, new float[][] { { 11.0f, 12.0f }, { 13.0f, 14.0f } });
+            m.fill(1, 1, new float[][] { { 11.0f, 12.0f }, { 13.0f, 14.0f } });
             assertEquals(1.0f, m.get(0, 0));
             assertEquals(11.0f, m.get(1, 1));
             assertEquals(12.0f, m.get(1, 2));
@@ -4618,7 +4618,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void test_fill_array() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            m.assignFrom(new float[][] { { 9.0f, 8.0f }, { 7.0f, 6.0f } });
+            m.fill(new float[][] { { 9.0f, 8.0f }, { 7.0f, 6.0f } });
             assertEquals(9.0f, m.get(0, 0), 0.0f);
             assertEquals(8.0f, m.get(0, 1), 0.0f);
             assertEquals(7.0f, m.get(1, 0), 0.0f);
@@ -4628,7 +4628,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void test_fill_withOffset() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
-            m.assignFrom(1, 1, new float[][] { { 99.0f } });
+            m.fill(1, 1, new float[][] { { 99.0f } });
             assertEquals(1.0f, m.get(0, 0), 0.0f);
             assertEquals(99.0f, m.get(1, 1), 0.0f);
             assertEquals(9.0f, m.get(2, 2), 0.0f);
@@ -4638,7 +4638,7 @@ class FloatMatrixTest extends TestBase {
         public void test_fill_withOffset_oversizedArray() {
             // According to javadoc, fill() copies what fits - does not throw when source array is larger
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f } });
-            m.assignFrom(0, 0, new float[][] { { 9.0f, 8.0f, 7.0f } }); // Third element should be ignored
+            m.fill(0, 0, new float[][] { { 9.0f, 8.0f, 7.0f } }); // Third element should be ignored
             assertEquals(9.0f, m.get(0, 0), 0.0f);
             assertEquals(8.0f, m.get(0, 1), 0.0f); // Only copies what fits
         }

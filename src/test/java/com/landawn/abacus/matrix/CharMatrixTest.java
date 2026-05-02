@@ -543,7 +543,7 @@ class CharMatrixTest extends TestBase {
         CharMatrix matrix = CharMatrix.of(a);
 
         char[][] b = { { 'x', 'y' }, { 'z', 'w' } };
-        matrix.assignFrom(b);
+        matrix.fill(b);
         Assertions.assertEquals('x', matrix.get(0, 0));
         Assertions.assertEquals('y', matrix.get(0, 1));
         Assertions.assertEquals('z', matrix.get(1, 0));
@@ -557,13 +557,13 @@ class CharMatrixTest extends TestBase {
         CharMatrix matrix = CharMatrix.of(a);
 
         char[][] b = { { 'x', 'y' } };
-        matrix.assignFrom(1, 1, b);
+        matrix.fill(1, 1, b);
         Assertions.assertEquals('a', matrix.get(0, 0)); // unchanged
         Assertions.assertEquals('x', matrix.get(1, 1));
         Assertions.assertEquals('y', matrix.get(1, 2));
 
-        assertThrows(IllegalArgumentException.class, () -> matrix.assignFrom(-1, 0, b));
-        assertThrows(IllegalArgumentException.class, () -> matrix.assignFrom(0, -1, b));
+        assertThrows(IllegalArgumentException.class, () -> matrix.fill(-1, 0, b));
+        assertThrows(IllegalArgumentException.class, () -> matrix.fill(0, -1, b));
     }
 
     @Test
@@ -1885,7 +1885,7 @@ class CharMatrixTest extends TestBase {
         public void testFill_withArray() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'A', 'A' }, { 'A', 'A', 'A' }, { 'A', 'A', 'A' } });
             char[][] patch = { { 'X', 'Y' }, { 'Z', 'W' } };
-            m.assignFrom(patch);
+            m.fill(patch);
             assertEquals('X', m.get(0, 0));
             assertEquals('Y', m.get(0, 1));
             assertEquals('Z', m.get(1, 0));
@@ -1897,7 +1897,7 @@ class CharMatrixTest extends TestBase {
         public void testFill_withArrayAtPosition() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'A', 'A' }, { 'A', 'A', 'A' }, { 'A', 'A', 'A' } });
             char[][] patch = { { 'X', 'Y' }, { 'Z', 'W' } };
-            m.assignFrom(1, 1, patch);
+            m.fill(1, 1, patch);
             assertEquals('A', m.get(0, 0)); // unchanged
             assertEquals('X', m.get(1, 1));
             assertEquals('Y', m.get(1, 2));
@@ -1909,7 +1909,7 @@ class CharMatrixTest extends TestBase {
         public void testFill_outOfBounds() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B' }, { 'C', 'D' } });
             char[][] patch = { { 'X', 'Y' }, { 'Z', 'W' } };
-            assertThrows(IllegalArgumentException.class, () -> m.assignFrom(-1, 0, patch));
+            assertThrows(IllegalArgumentException.class, () -> m.fill(-1, 0, patch));
         }
 
         // ============ Copy Tests ============
@@ -3295,7 +3295,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testFill_withArray() {
             CharMatrix m = CharMatrix.of(new char[][] { { '\0', '\0' }, { '\0', '\0' } });
-            m.assignFrom(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
+            m.fill(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
             assertEquals('a', m.get(0, 0));
             assertEquals('d', m.get(1, 1));
         }
@@ -3303,7 +3303,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testFill_withOffset() {
             CharMatrix m = CharMatrix.of(new char[][] { { '\0', '\0', '\0' }, { '\0', '\0', '\0' }, { '\0', '\0', '\0' } });
-            m.assignFrom(1, 1, new char[][] { { 'a', 'b' }, { 'c', 'd' } });
+            m.fill(1, 1, new char[][] { { 'a', 'b' }, { 'c', 'd' } });
             assertEquals('\0', m.get(0, 0));
             assertEquals('a', m.get(1, 1));
             assertEquals('d', m.get(2, 2));
@@ -3312,7 +3312,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testFill_withOffset_invalidPosition() {
             CharMatrix m = CharMatrix.of(new char[2][2]);
-            assertThrows(IllegalArgumentException.class, () -> m.assignFrom(3, 3, new char[][] { { 'a', 'b' }, { 'c', 'd' } }));
+            assertThrows(IllegalArgumentException.class, () -> m.fill(3, 3, new char[][] { { 'a', 'b' }, { 'c', 'd' } }));
         }
 
         // ============ Copy Tests ============
@@ -4512,7 +4512,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testFill_withArray() {
             CharMatrix m = CharMatrix.of(new char[][] { { ' ', ' ' }, { ' ', ' ' } });
-            m.assignFrom(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
+            m.fill(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
             assertEquals('a', m.get(0, 0));
             assertEquals('d', m.get(1, 1));
         }
@@ -4520,7 +4520,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testFill_withOffset() {
             CharMatrix m = CharMatrix.of(new char[][] { { ' ', ' ', ' ' }, { ' ', ' ', ' ' }, { ' ', ' ', ' ' } });
-            m.assignFrom(1, 1, new char[][] { { 'a', 'b' }, { 'c', 'd' } });
+            m.fill(1, 1, new char[][] { { 'a', 'b' }, { 'c', 'd' } });
             assertEquals(' ', m.get(0, 0));
             assertEquals('a', m.get(1, 1));
             assertEquals('d', m.get(2, 2));
@@ -4529,7 +4529,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testFill_withPartialArray() {
             CharMatrix m = CharMatrix.of(new char[][] { { ' ', ' ', ' ' }, { ' ', ' ', ' ' }, { ' ', ' ', ' ' } });
-            m.assignFrom(0, 0, new char[][] { { 'a', 'b' } });
+            m.fill(0, 0, new char[][] { { 'a', 'b' } });
             assertEquals('a', m.get(0, 0));
             assertEquals('b', m.get(0, 1));
             assertEquals(' ', m.get(0, 2));
@@ -5482,7 +5482,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void test_fill_array() {
             CharMatrix m = CharMatrix.of(new char[3][3]);
-            m.assignFrom(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
+            m.fill(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
             assertEquals('a', m.get(0, 0));
             assertEquals('b', m.get(0, 1));
             assertEquals('c', m.get(1, 0));
@@ -5493,7 +5493,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void test_fill_arrayWithPosition() {
             CharMatrix m = CharMatrix.of(new char[4][4]);
-            m.assignFrom(1, 1, new char[][] { { 'a', 'b' }, { 'c', 'd' } });
+            m.fill(1, 1, new char[][] { { 'a', 'b' }, { 'c', 'd' } });
             assertEquals('\0', m.get(0, 0));
             assertEquals('a', m.get(1, 1));
             assertEquals('b', m.get(1, 2));
@@ -6004,9 +6004,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCharMatrix_assignFrom() {
+        public void testCharMatrix_fill() {
             CharMatrix matrix = CharMatrix.of(new char[3][3]);
-            matrix.assignFrom(1, 1, new char[][] { { 'a', 'b' }, { 'c', 'd' } });
+            matrix.fill(1, 1, new char[][] { { 'a', 'b' }, { 'c', 'd' } });
             // Result: [[0, 0, 0], [0, 'a', 'b'], [0, 'c', 'd']]
             assertEquals('\0', matrix.get(0, 0));
             assertEquals('\0', matrix.get(1, 0));
@@ -6347,7 +6347,7 @@ class CharMatrixTest extends TestBase {
         }
     }
 
-    // === Missing coverage: resize, assignFrom, flip*InPlace ===
+    // === Missing coverage: resize, fill, flip*InPlace ===
 
     @Test
     public void testResize_expand() {
@@ -6407,7 +6407,7 @@ class CharMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_fullOverwrite() {
         CharMatrix m = CharMatrix.of(new char[][] { { '\0', '\0' }, { '\0', '\0' } });
-        m.assignFrom(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
+        m.fill(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
         assertEquals('a', m.get(0, 0));
         assertEquals('b', m.get(0, 1));
         assertEquals('c', m.get(1, 0));
@@ -6417,7 +6417,7 @@ class CharMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_partialOverwrite() {
         CharMatrix m = CharMatrix.of(new char[][] { { '\0', '\0', '\0' }, { '\0', '\0', '\0' }, { '\0', '\0', '\0' } });
-        m.assignFrom(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
+        m.fill(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
         assertEquals('a', m.get(0, 0));
         assertEquals('b', m.get(0, 1));
         assertEquals('\0', m.get(0, 2));
@@ -6429,7 +6429,7 @@ class CharMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_withOffset() {
         CharMatrix m = CharMatrix.of(new char[][] { { '\0', '\0', '\0' }, { '\0', '\0', '\0' }, { '\0', '\0', '\0' } });
-        m.assignFrom(1, 1, new char[][] { { 'x', 'y' }, { 'z', 'w' } });
+        m.fill(1, 1, new char[][] { { 'x', 'y' }, { 'z', 'w' } });
         assertEquals('\0', m.get(0, 0));
         assertEquals('\0', m.get(1, 0));
         assertEquals('x', m.get(1, 1));
@@ -6441,7 +6441,7 @@ class CharMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_emptySource() {
         CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-        m.assignFrom(new char[0][0]);
+        m.fill(new char[0][0]);
         assertEquals('a', m.get(0, 0));
         assertEquals('d', m.get(1, 1));
     }
@@ -6449,8 +6449,8 @@ class CharMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_negativeIndexThrows() {
         CharMatrix m = CharMatrix.of(new char[][] { { 'a' } });
-        assertThrows(IllegalArgumentException.class, () -> m.assignFrom(-1, 0, new char[][] { { 'b' } }));
-        assertThrows(IllegalArgumentException.class, () -> m.assignFrom(0, -1, new char[][] { { 'b' } }));
+        assertThrows(IllegalArgumentException.class, () -> m.fill(-1, 0, new char[][] { { 'b' } }));
+        assertThrows(IllegalArgumentException.class, () -> m.fill(0, -1, new char[][] { { 'b' } }));
     }
 
     @Test

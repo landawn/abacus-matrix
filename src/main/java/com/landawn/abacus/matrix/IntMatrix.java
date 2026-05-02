@@ -1296,14 +1296,14 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{0, 0, 0}, {0, 0, 0}});
-     * matrix.assignFrom(new int[][] {{1, 2}, {3, 4}});
+     * matrix.fill(new int[][] {{1, 2}, {3, 4}});
      * // Result: [[1, 2, 0], [3, 4, 0]]
      * }</pre>
      *
      * @param source the two-dimensional array to copy values from
      */
-    public void assignFrom(final int[][] source) {
-        assignFrom(0, 0, source);
+    public void fill(final int[][] source) {
+        fill(0, 0, source);
     }
 
     /**
@@ -1314,7 +1314,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}});
-     * matrix.assignFrom(1, 1, new int[][] {{1, 2}, {3, 4}});
+     * matrix.fill(1, 1, new int[][] {{1, 2}, {3, 4}});
      * // Result: [[0, 0, 0], [0, 1, 2], [0, 3, 4]]
      * }</pre>
      *
@@ -1323,7 +1323,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param source the source array to copy values from
      * @throws IllegalArgumentException if destRowIndex &lt; 0 or &gt; rowCount, or if destColumnIndex &lt; 0 or &gt; columnCount
      */
-    public void assignFrom(final int destRowIndex, final int destColumnIndex, final int[][] source) throws IllegalArgumentException {
+    public void fill(final int destRowIndex, final int destColumnIndex, final int[][] source) throws IllegalArgumentException {
         N.checkArgNotNull(source, "source");
         N.checkArgument(destRowIndex >= 0 && destRowIndex <= rowCount, "destRowIndex out of bounds: {}. Valid range is [0, {}]", destRowIndex, rowCount);
         N.checkArgument(destColumnIndex >= 0 && destColumnIndex <= columnCount, "destColumnIndex out of bounds: {}. Valid range is [0, {}]", destColumnIndex,
