@@ -378,8 +378,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] {{true, false}, {false, true}});
-     * OptionalBoolean value = matrix.above(1, 0);   // Returns OptionalBoolean.of(true)
-     * OptionalBoolean empty = matrix.above(0, 0);   // Returns OptionalBoolean.empty() - no row above
+     * OptionalBoolean value = matrix.valueAbove(1, 0);   // Returns OptionalBoolean.of(true)
+     * OptionalBoolean empty = matrix.valueAbove(0, 0);   // Returns OptionalBoolean.empty() - no row above
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -387,7 +387,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @return an OptionalBoolean containing the element at position (rowIndex - 1, columnIndex), or empty if rowIndex == 0
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalBoolean above(final int rowIndex, final int columnIndex) {
+    public OptionalBoolean valueAbove(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return rowIndex == 0 ? OptionalBoolean.empty() : OptionalBoolean.of(a[rowIndex - 1][columnIndex]);
@@ -401,8 +401,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] {{true, false}, {false, true}});
-     * OptionalBoolean value = matrix.below(0, 0);   // Returns OptionalBoolean.of(false)
-     * OptionalBoolean empty = matrix.below(1, 0);   // Returns OptionalBoolean.empty() - no row below
+     * OptionalBoolean value = matrix.valueBelow(0, 0);   // Returns OptionalBoolean.of(false)
+     * OptionalBoolean empty = matrix.valueBelow(1, 0);   // Returns OptionalBoolean.empty() - no row below
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -410,7 +410,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @return an OptionalBoolean containing the element at position (rowIndex + 1, columnIndex), or empty if rowIndex == rowCount - 1
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalBoolean below(final int rowIndex, final int columnIndex) {
+    public OptionalBoolean valueBelow(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return rowIndex == rowCount - 1 ? OptionalBoolean.empty() : OptionalBoolean.of(a[rowIndex + 1][columnIndex]);
@@ -424,8 +424,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] {{true, false}, {false, true}});
-     * OptionalBoolean value = matrix.left(0, 1);   // Returns OptionalBoolean.of(true)
-     * OptionalBoolean empty = matrix.left(0, 0);   // Returns OptionalBoolean.empty() - no column to the left
+     * OptionalBoolean value = matrix.valueLeft(0, 1);   // Returns OptionalBoolean.of(true)
+     * OptionalBoolean empty = matrix.valueLeft(0, 0);   // Returns OptionalBoolean.empty() - no column to the left
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -433,7 +433,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @return an OptionalBoolean containing the element at position (rowIndex, columnIndex - 1), or empty if columnIndex == 0
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalBoolean left(final int rowIndex, final int columnIndex) {
+    public OptionalBoolean valueLeft(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return columnIndex == 0 ? OptionalBoolean.empty() : OptionalBoolean.of(a[rowIndex][columnIndex - 1]);
@@ -447,8 +447,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] {{true, false}, {false, true}});
-     * OptionalBoolean value = matrix.right(0, 0);   // Returns OptionalBoolean.of(false)
-     * OptionalBoolean empty = matrix.right(0, 1);   // Returns OptionalBoolean.empty() - no column to the right
+     * OptionalBoolean value = matrix.valueRight(0, 0);   // Returns OptionalBoolean.of(false)
+     * OptionalBoolean empty = matrix.valueRight(0, 1);   // Returns OptionalBoolean.empty() - no column to the right
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -456,7 +456,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @return an OptionalBoolean containing the element at position (rowIndex, columnIndex + 1), or empty if columnIndex == columnCount - 1
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalBoolean right(final int rowIndex, final int columnIndex) {
+    public OptionalBoolean valueRight(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return columnIndex == columnCount - 1 ? OptionalBoolean.empty() : OptionalBoolean.of(a[rowIndex][columnIndex + 1]);
@@ -1530,15 +1530,15 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] {{true, true, false}, {false, true, true}});
-     * matrix.flipInPlaceHorizontally();
+     * matrix.flipHorizontallyInPlace();
      * // matrix is now [[false, true, true], [true, true, false]]
      * }</pre>
      *
      * @see #flipHorizontally()
-     * @see #flipInPlaceVertically()
+     * @see #flipVerticallyInPlace()
      */
     @Override
-    public void flipInPlaceHorizontally() {
+    public void flipHorizontallyInPlace() {
         for (int i = 0; i < rowCount; i++) {
             N.reverse(a[i]);
         }
@@ -1555,15 +1555,15 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] {{true, false}, {true, true}, {false, true}});
-     * matrix.flipInPlaceVertically();
+     * matrix.flipVerticallyInPlace();
      * // matrix is now [[false, true], [true, true], [true, false]]
      * }</pre>
      *
      * @see #flipVertically()
-     * @see #flipInPlaceHorizontally()
+     * @see #flipHorizontallyInPlace()
      */
     @Override
-    public void flipInPlaceVertically() {
+    public void flipVerticallyInPlace() {
         for (int j = 0; j < columnCount; j++) {
             boolean tmp = false;
             for (int l = 0, h = rowCount - 1; l < h;) {
@@ -1587,14 +1587,14 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * }</pre>
      *
      * @return a new BooleanMatrix with each row reversed
-     * @see #flipInPlaceHorizontally()
+     * @see #flipHorizontallyInPlace()
      * @see #flipVertically()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
     @Override
     public BooleanMatrix flipHorizontally() {
         final BooleanMatrix res = this.copy();
-        res.flipInPlaceHorizontally();
+        res.flipHorizontallyInPlace();
         return res;
     }
 
@@ -1611,14 +1611,14 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * }</pre>
      *
      * @return a new BooleanMatrix with rows reversed
-     * @see #flipInPlaceVertically()
+     * @see #flipVerticallyInPlace()
      * @see #flipHorizontally()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
     @Override
     public BooleanMatrix flipVertically() {
         final BooleanMatrix res = this.copy();
-        res.flipInPlaceVertically();
+        res.flipVerticallyInPlace();
         return res;
     }
 

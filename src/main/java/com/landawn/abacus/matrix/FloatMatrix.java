@@ -437,8 +437,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
-     * u.OptionalFloat value = matrix.above(1, 0);   // Returns u.OptionalFloat.of(1.0f)
-     * u.OptionalFloat empty = matrix.above(0, 0);   // Returns u.OptionalFloat.empty() - no row above
+     * u.OptionalFloat value = matrix.valueAbove(1, 0);   // Returns u.OptionalFloat.of(1.0f)
+     * u.OptionalFloat empty = matrix.valueAbove(0, 0);   // Returns u.OptionalFloat.empty() - no row above
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -446,7 +446,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @return an u.OptionalFloat containing the element at position (rowIndex - 1, columnIndex), or empty if rowIndex == 0
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalFloat above(final int rowIndex, final int columnIndex) {
+    public OptionalFloat valueAbove(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return rowIndex == 0 ? OptionalFloat.empty() : OptionalFloat.of(a[rowIndex - 1][columnIndex]);
@@ -460,8 +460,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
-     * u.OptionalFloat value = matrix.below(0, 0);   // Returns u.OptionalFloat.of(3.0f)
-     * u.OptionalFloat empty = matrix.below(1, 0);   // Returns u.OptionalFloat.empty() - no row below
+     * u.OptionalFloat value = matrix.valueBelow(0, 0);   // Returns u.OptionalFloat.of(3.0f)
+     * u.OptionalFloat empty = matrix.valueBelow(1, 0);   // Returns u.OptionalFloat.empty() - no row below
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -469,7 +469,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @return an u.OptionalFloat containing the element at position (rowIndex + 1, columnIndex), or empty if rowIndex == rowCount - 1
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalFloat below(final int rowIndex, final int columnIndex) {
+    public OptionalFloat valueBelow(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return rowIndex == rowCount - 1 ? OptionalFloat.empty() : OptionalFloat.of(a[rowIndex + 1][columnIndex]);
@@ -483,8 +483,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
-     * u.OptionalFloat value = matrix.left(0, 1);   // Returns u.OptionalFloat.of(1.0f)
-     * u.OptionalFloat empty = matrix.left(0, 0);   // Returns u.OptionalFloat.empty() - no column to the left
+     * u.OptionalFloat value = matrix.valueLeft(0, 1);   // Returns u.OptionalFloat.of(1.0f)
+     * u.OptionalFloat empty = matrix.valueLeft(0, 0);   // Returns u.OptionalFloat.empty() - no column to the left
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -492,7 +492,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @return an u.OptionalFloat containing the element at position (rowIndex, columnIndex - 1), or empty if columnIndex == 0
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalFloat left(final int rowIndex, final int columnIndex) {
+    public OptionalFloat valueLeft(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return columnIndex == 0 ? OptionalFloat.empty() : OptionalFloat.of(a[rowIndex][columnIndex - 1]);
@@ -506,8 +506,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
-     * u.OptionalFloat value = matrix.right(0, 0);   // Returns u.OptionalFloat.of(2.0f)
-     * u.OptionalFloat empty = matrix.right(0, 1);   // Returns u.OptionalFloat.empty() - no column to the right
+     * u.OptionalFloat value = matrix.valueRight(0, 0);   // Returns u.OptionalFloat.of(2.0f)
+     * u.OptionalFloat empty = matrix.valueRight(0, 1);   // Returns u.OptionalFloat.empty() - no column to the right
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -515,7 +515,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @return an u.OptionalFloat containing the element at position (rowIndex, columnIndex + 1), or empty if columnIndex == columnCount - 1
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalFloat right(final int rowIndex, final int columnIndex) {
+    public OptionalFloat valueRight(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return columnIndex == columnCount - 1 ? OptionalFloat.empty() : OptionalFloat.of(a[rowIndex][columnIndex + 1]);
@@ -1509,13 +1509,13 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}});
-     * matrix.flipInPlaceHorizontally();   // [[1.0f, 2.0f, 3.0f]] becomes [[3.0f, 2.0f, 1.0f]]
+     * matrix.flipHorizontallyInPlace();   // [[1.0f, 2.0f, 3.0f]] becomes [[3.0f, 2.0f, 1.0f]]
      * }</pre>
      *
      * @see #flipHorizontally()
      */
     @Override
-    public void flipInPlaceHorizontally() {
+    public void flipHorizontallyInPlace() {
         for (int i = 0; i < rowCount; i++) {
             N.reverse(a[i]);
         }
@@ -1528,13 +1528,13 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f}, {2.0f}, {3.0f}});
-     * matrix.flipInPlaceVertically();   // [[1.0f], [2.0f], [3.0f]] becomes [[3.0f], [2.0f], [1.0f]]
+     * matrix.flipVerticallyInPlace();   // [[1.0f], [2.0f], [3.0f]] becomes [[3.0f], [2.0f], [1.0f]]
      * }</pre>
      *
      * @see #flipVertically()
      */
     @Override
-    public void flipInPlaceVertically() {
+    public void flipVerticallyInPlace() {
         for (int j = 0; j < columnCount; j++) {
             float tmp = 0;
             for (int l = 0, h = rowCount - 1; l < h;) {
@@ -1557,14 +1557,14 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @return a new FloatMatrix with each row reversed
-     * @see #flipInPlaceHorizontally() for an in-place version
+     * @see #flipHorizontallyInPlace() for an in-place version
      * @see #flipVertically()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
     @Override
     public FloatMatrix flipHorizontally() {
         final FloatMatrix res = this.copy();
-        res.flipInPlaceHorizontally();
+        res.flipHorizontallyInPlace();
         return res;
     }
 
@@ -1580,14 +1580,14 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @return a new matrix that is a vertical flip of this matrix (rows in reversed order)
-     * @see #flipInPlaceVertically() for an in-place version
+     * @see #flipVerticallyInPlace() for an in-place version
      * @see #flipHorizontally()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
     @Override
     public FloatMatrix flipVertically() {
         final FloatMatrix res = this.copy();
-        res.flipInPlaceVertically();
+        res.flipVerticallyInPlace();
         return res;
     }
 

@@ -333,6 +333,14 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Returns a defensive copy of the specified column.
      * Changes to the returned array do not affect this matrix.
      *
+     * <p><b>Note on the rowView/columnView asymmetry:</b> this class exposes
+     * {@link #rowView(int)} but no {@code columnView(int)} counterpart. Matrices store
+     * elements in row-major form, so a row corresponds to a contiguous slice of the
+     * backing storage and can be aliased directly. A column is interleaved across rows
+     * and cannot be returned as a live, single-array view without either copying or
+     * synthesising a wrapper. {@code columnCopy} is the supported accessor; for
+     * iteration without materialising a copy use {@link #verticalStream(int)}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
@@ -792,7 +800,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * in the result. This matrix is not modified.
      *
      * @return a new matrix with columns reversed within each row
-     * @see #flipInPlaceHorizontally()
+     * @see #flipHorizontallyInPlace()
      * @see #flipVertically()
      */
     public abstract M flipHorizontally();
@@ -803,7 +811,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * in the result. This matrix is not modified.
      *
      * @return a new matrix with rows reversed
-     * @see #flipInPlaceVertically()
+     * @see #flipVerticallyInPlace()
      * @see #flipHorizontally()
      */
     public abstract M flipVertically();
@@ -814,9 +822,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * This method modifies this matrix.
      *
      * @see #flipHorizontally()
-     * @see #flipInPlaceVertically()
+     * @see #flipVerticallyInPlace()
      */
-    public abstract void flipInPlaceHorizontally();
+    public abstract void flipHorizontallyInPlace();
 
     /**
      * Flips this matrix vertically in place (mirror across the horizontal axis).
@@ -824,9 +832,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * This method modifies this matrix.
      *
      * @see #flipVertically()
-     * @see #flipInPlaceHorizontally()
+     * @see #flipHorizontallyInPlace()
      */
-    public abstract void flipInPlaceVertically();
+    public abstract void flipVerticallyInPlace();
 
     /**
      * Vertically stacks this matrix with the specified matrix.

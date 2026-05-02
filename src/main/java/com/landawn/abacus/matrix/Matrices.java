@@ -982,6 +982,90 @@ public final class Matrices {
     }
 
     /**
+     * Stacks the given matrices vertically (row-wise concatenation), n-ary form.
+     *
+     * <p>All matrices must have the same column count. The result has the rows of the first
+     * matrix on top, followed by the rows of each subsequent matrix in iteration order.
+     * Equivalent to chaining {@link AbstractMatrix#stackVertically(AbstractMatrix)} calls,
+     * but avoids the boilerplate when stacking three or more matrices.</p>
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * IntMatrix a = IntMatrix.of(new int[][] {{1, 2}});
+     * IntMatrix b = IntMatrix.of(new int[][] {{3, 4}});
+     * IntMatrix c = IntMatrix.of(new int[][] {{5, 6}});
+     * IntMatrix stacked = Matrices.vstack(java.util.Arrays.asList(a, b, c));
+     * // stacked is [[1, 2], [3, 4], [5, 6]]
+     * }</pre>
+     *
+     * @param <M> the matrix type
+     * @param matrices the matrices to stack vertically, must not be {@code null} or empty
+     * @return a new matrix containing the rows of all input matrices, never {@code null}
+     * @throws IllegalArgumentException if {@code matrices} is {@code null}, empty, or contains
+     *         matrices with mismatched column counts
+     * @see AbstractMatrix#stackVertically(AbstractMatrix)
+     * @see #hstack(Collection)
+     */
+    public static <M extends AbstractMatrix<?, ?, ?, ?, M>> M vstack(final Collection<? extends M> matrices) {
+        N.checkArgNotEmpty(matrices, "matrices");
+
+        final Iterator<? extends M> it = matrices.iterator();
+        M result = it.next();
+
+        if (!it.hasNext()) {
+            return result.copy();
+        }
+
+        while (it.hasNext()) {
+            result = result.stackVertically(it.next());
+        }
+
+        return result;
+    }
+
+    /**
+     * Stacks the given matrices horizontally (column-wise concatenation), n-ary form.
+     *
+     * <p>All matrices must have the same row count. The result has the columns of the first
+     * matrix on the left, followed by the columns of each subsequent matrix in iteration order.
+     * Equivalent to chaining {@link AbstractMatrix#stackHorizontally(AbstractMatrix)} calls,
+     * but avoids the boilerplate when stacking three or more matrices.</p>
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * IntMatrix a = IntMatrix.of(new int[][] {{1}, {2}});
+     * IntMatrix b = IntMatrix.of(new int[][] {{3}, {4}});
+     * IntMatrix c = IntMatrix.of(new int[][] {{5}, {6}});
+     * IntMatrix stacked = Matrices.hstack(java.util.Arrays.asList(a, b, c));
+     * // stacked is [[1, 3, 5], [2, 4, 6]]
+     * }</pre>
+     *
+     * @param <M> the matrix type
+     * @param matrices the matrices to stack horizontally, must not be {@code null} or empty
+     * @return a new matrix containing the columns of all input matrices, never {@code null}
+     * @throws IllegalArgumentException if {@code matrices} is {@code null}, empty, or contains
+     *         matrices with mismatched row counts
+     * @see AbstractMatrix#stackHorizontally(AbstractMatrix)
+     * @see #vstack(Collection)
+     */
+    public static <M extends AbstractMatrix<?, ?, ?, ?, M>> M hstack(final Collection<? extends M> matrices) {
+        N.checkArgNotEmpty(matrices, "matrices");
+
+        final Iterator<? extends M> it = matrices.iterator();
+        M result = it.next();
+
+        if (!it.hasNext()) {
+            return result.copy();
+        }
+
+        while (it.hasNext()) {
+            result = result.stackHorizontally(it.next());
+        }
+
+        return result;
+    }
+
+    /**
      * Combines two {@link ByteMatrix} objects element-wise using a binary operator.
      *
      * <p>This method performs element-wise combination of two byte matrices using the provided

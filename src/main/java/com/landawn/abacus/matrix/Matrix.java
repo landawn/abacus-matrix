@@ -405,8 +405,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<String> matrix = Matrix.of(new String[][] {{"A", "B"}, {"C", "D"}});
-     * Nullable<String> value = matrix.above(1, 0);   // Returns Nullable.of("A")
-     * Nullable<String> empty = matrix.above(0, 0);   // Returns Nullable.empty() - no row above
+     * Nullable<String> value = matrix.valueAbove(1, 0);   // Returns Nullable.of("A")
+     * Nullable<String> empty = matrix.valueAbove(0, 0);   // Returns Nullable.empty() - no row above
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -414,7 +414,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @return a {@link Nullable} containing the element at position (rowIndex - 1, columnIndex), or empty if rowIndex == 0
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public Nullable<T> above(final int rowIndex, final int columnIndex) {
+    public Nullable<T> valueAbove(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return rowIndex == 0 ? Nullable.empty() : Nullable.of(a[rowIndex - 1][columnIndex]);
@@ -427,8 +427,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<String> matrix = Matrix.of(new String[][] {{"A", "B"}, {"C", "D"}});
-     * Nullable<String> value = matrix.below(0, 0);   // Returns Nullable.of("C")
-     * Nullable<String> empty = matrix.below(1, 0);   // Returns Nullable.empty() - no row below
+     * Nullable<String> value = matrix.valueBelow(0, 0);   // Returns Nullable.of("C")
+     * Nullable<String> empty = matrix.valueBelow(1, 0);   // Returns Nullable.empty() - no row below
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -436,7 +436,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @return a {@link Nullable} containing the element at position (rowIndex + 1, columnIndex), or empty if rowIndex == rowCount - 1
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public Nullable<T> below(final int rowIndex, final int columnIndex) {
+    public Nullable<T> valueBelow(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return rowIndex == rowCount - 1 ? Nullable.empty() : Nullable.of(a[rowIndex + 1][columnIndex]);
@@ -449,8 +449,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<String> matrix = Matrix.of(new String[][] {{"A", "B"}, {"C", "D"}});
-     * Nullable<String> value = matrix.left(0, 1);   // Returns Nullable.of("A")
-     * Nullable<String> empty = matrix.left(0, 0);   // Returns Nullable.empty() - no column to the left
+     * Nullable<String> value = matrix.valueLeft(0, 1);   // Returns Nullable.of("A")
+     * Nullable<String> empty = matrix.valueLeft(0, 0);   // Returns Nullable.empty() - no column to the left
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -458,7 +458,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @return a {@link Nullable} containing the element at position (rowIndex, columnIndex - 1), or empty if columnIndex == 0
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public Nullable<T> left(final int rowIndex, final int columnIndex) {
+    public Nullable<T> valueLeft(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return columnIndex == 0 ? Nullable.empty() : Nullable.of(a[rowIndex][columnIndex - 1]);
@@ -471,8 +471,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<String> matrix = Matrix.of(new String[][] {{"A", "B"}, {"C", "D"}});
-     * Nullable<String> value = matrix.right(0, 0);   // Returns Nullable.of("B")
-     * Nullable<String> empty = matrix.right(0, 1);   // Returns Nullable.empty() - no column to the right
+     * Nullable<String> value = matrix.valueRight(0, 0);   // Returns Nullable.of("B")
+     * Nullable<String> empty = matrix.valueRight(0, 1);   // Returns Nullable.empty() - no column to the right
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -480,7 +480,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @return a {@link Nullable} containing the element at position (rowIndex, columnIndex + 1), or empty if columnIndex == columnCount - 1
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public Nullable<T> right(final int rowIndex, final int columnIndex) {
+    public Nullable<T> valueRight(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return columnIndex == columnCount - 1 ? Nullable.empty() : Nullable.of(a[rowIndex][columnIndex + 1]);
@@ -1970,14 +1970,14 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Integer> matrix = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
-     * matrix.flipInPlaceHorizontally();
+     * matrix.flipHorizontallyInPlace();
      * // Matrix is now: [[3, 2, 1], [6, 5, 4]]
      * }</pre>
      *
      * @see #flipHorizontally()
      */
     @Override
-    public void flipInPlaceHorizontally() {
+    public void flipHorizontallyInPlace() {
         for (int i = 0; i < rowCount; i++) {
             N.reverse(a[i]);
         }
@@ -1991,14 +1991,14 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Integer> matrix = Matrix.of(new Integer[][] {{1, 2}, {3, 4}, {5, 6}});
-     * matrix.flipInPlaceVertically();
+     * matrix.flipVerticallyInPlace();
      * // Matrix is now: [[5, 6], [3, 4], [1, 2]]
      * }</pre>
      *
      * @see #flipVertically()
      */
     @Override
-    public void flipInPlaceVertically() {
+    public void flipVerticallyInPlace() {
         for (int j = 0; j < columnCount; j++) {
             T tmp = null;
             for (int l = 0, h = rowCount - 1; l < h;) {
@@ -2022,14 +2022,14 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @return a new horizontally flipped matrix
-     * @see #flipInPlaceHorizontally()
+     * @see #flipHorizontallyInPlace()
      * @see #flipVertically()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
     @Override
     public Matrix<T> flipHorizontally() {
         final Matrix<T> res = this.copy();
-        res.flipInPlaceHorizontally();
+        res.flipHorizontallyInPlace();
         return res;
     }
 
@@ -2046,14 +2046,14 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @return a new vertically flipped matrix
-     * @see #flipInPlaceVertically()
+     * @see #flipVerticallyInPlace()
      * @see #flipHorizontally()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
     @Override
     public Matrix<T> flipVertically() {
         final Matrix<T> res = this.copy();
-        res.flipInPlaceVertically();
+        res.flipVerticallyInPlace();
         return res;
     }
 

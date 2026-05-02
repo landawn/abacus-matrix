@@ -240,11 +240,11 @@ class LongMatrixTest extends TestBase {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
         LongMatrix matrix = LongMatrix.of(a);
 
-        OptionalLong up = matrix.above(1, 0);
+        OptionalLong up = matrix.valueAbove(1, 0);
         Assertions.assertTrue(up.isPresent());
         Assertions.assertEquals(1L, up.getAsLong());
 
-        OptionalLong empty = matrix.above(0, 0);
+        OptionalLong empty = matrix.valueAbove(0, 0);
         Assertions.assertFalse(empty.isPresent());
     }
 
@@ -253,11 +253,11 @@ class LongMatrixTest extends TestBase {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
         LongMatrix matrix = LongMatrix.of(a);
 
-        OptionalLong down = matrix.below(0, 0);
+        OptionalLong down = matrix.valueBelow(0, 0);
         Assertions.assertTrue(down.isPresent());
         Assertions.assertEquals(3L, down.getAsLong());
 
-        OptionalLong empty = matrix.below(1, 0);
+        OptionalLong empty = matrix.valueBelow(1, 0);
         Assertions.assertFalse(empty.isPresent());
     }
 
@@ -266,11 +266,11 @@ class LongMatrixTest extends TestBase {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
         LongMatrix matrix = LongMatrix.of(a);
 
-        OptionalLong left = matrix.left(0, 1);
+        OptionalLong left = matrix.valueLeft(0, 1);
         Assertions.assertTrue(left.isPresent());
         Assertions.assertEquals(1L, left.getAsLong());
 
-        OptionalLong empty = matrix.left(0, 0);
+        OptionalLong empty = matrix.valueLeft(0, 0);
         Assertions.assertFalse(empty.isPresent());
     }
 
@@ -279,11 +279,11 @@ class LongMatrixTest extends TestBase {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
         LongMatrix matrix = LongMatrix.of(a);
 
-        OptionalLong right = matrix.right(0, 0);
+        OptionalLong right = matrix.valueRight(0, 0);
         Assertions.assertTrue(right.isPresent());
         Assertions.assertEquals(2L, right.getAsLong());
 
-        OptionalLong empty = matrix.right(0, 1);
+        OptionalLong empty = matrix.valueRight(0, 1);
         Assertions.assertFalse(empty.isPresent());
     }
 
@@ -713,7 +713,7 @@ class LongMatrixTest extends TestBase {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
         LongMatrix matrix = LongMatrix.of(a);
 
-        matrix.flipInPlaceHorizontally();
+        matrix.flipHorizontallyInPlace();
         Assertions.assertEquals(3L, matrix.get(0, 0));
         Assertions.assertEquals(2L, matrix.get(0, 1));
         Assertions.assertEquals(1L, matrix.get(0, 2));
@@ -725,7 +725,7 @@ class LongMatrixTest extends TestBase {
         long[][] a = { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } };
         LongMatrix matrix = LongMatrix.of(a);
 
-        matrix.flipInPlaceVertically();
+        matrix.flipVerticallyInPlace();
         Assertions.assertEquals(5L, matrix.get(0, 0));
         Assertions.assertEquals(6L, matrix.get(0, 1));
         Assertions.assertEquals(3L, matrix.get(1, 0));
@@ -1330,36 +1330,36 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testLongMatrix_above() {
             LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            u.OptionalLong value = matrix.above(1, 0);
+            u.OptionalLong value = matrix.valueAbove(1, 0);
             assertEquals(1L, value.get());
-            u.OptionalLong empty = matrix.above(0, 0);
+            u.OptionalLong empty = matrix.valueAbove(0, 0);
             assertFalse(empty.isPresent());
         }
 
         @Test
         public void testLongMatrix_below() {
             LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            u.OptionalLong value = matrix.below(0, 0);
+            u.OptionalLong value = matrix.valueBelow(0, 0);
             assertEquals(3L, value.get());
-            u.OptionalLong empty = matrix.below(1, 0);
+            u.OptionalLong empty = matrix.valueBelow(1, 0);
             assertFalse(empty.isPresent());
         }
 
         @Test
         public void testLongMatrix_left() {
             LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            u.OptionalLong value = matrix.left(0, 1);
+            u.OptionalLong value = matrix.valueLeft(0, 1);
             assertEquals(1L, value.get());
-            u.OptionalLong empty = matrix.left(0, 0);
+            u.OptionalLong empty = matrix.valueLeft(0, 0);
             assertFalse(empty.isPresent());
         }
 
         @Test
         public void testLongMatrix_right() {
             LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            u.OptionalLong value = matrix.right(0, 0);
+            u.OptionalLong value = matrix.valueRight(0, 0);
             assertEquals(2L, value.get());
-            u.OptionalLong empty = matrix.right(0, 1);
+            u.OptionalLong empty = matrix.valueRight(0, 1);
             assertFalse(empty.isPresent());
         }
 
@@ -1484,17 +1484,17 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testLongMatrix_flipInPlaceHorizontally() {
+        public void testLongMatrix_flipHorizontallyInPlace() {
             LongMatrix matrix = LongMatrix.of(new long[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            matrix.flipInPlaceHorizontally();
+            matrix.flipHorizontallyInPlace();
             assertArrayEquals(new long[] { 3, 2, 1 }, matrix.rowView(0));
             assertArrayEquals(new long[] { 6, 5, 4 }, matrix.rowView(1));
         }
 
         @Test
-        public void testLongMatrix_flipInPlaceVertically() {
+        public void testLongMatrix_flipVerticallyInPlace() {
             LongMatrix matrix = LongMatrix.of(new long[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            matrix.flipInPlaceVertically();
+            matrix.flipVerticallyInPlace();
             assertArrayEquals(new long[] { 7, 8, 9 }, matrix.rowView(0));
             assertArrayEquals(new long[] { 4, 5, 6 }, matrix.rowView(1));
             assertArrayEquals(new long[] { 1, 2, 3 }, matrix.rowView(2));
@@ -1992,12 +1992,12 @@ class LongMatrixTest extends TestBase {
         public void testUpOf() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
 
-            OptionalLong up = m.above(1, 0);
+            OptionalLong up = m.valueAbove(1, 0);
             assertTrue(up.isPresent());
             assertEquals(1L, up.get());
 
             // Top row has no element above
-            OptionalLong empty = m.above(0, 0);
+            OptionalLong empty = m.valueAbove(0, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -2005,12 +2005,12 @@ class LongMatrixTest extends TestBase {
         public void testDownOf() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
 
-            OptionalLong down = m.below(0, 0);
+            OptionalLong down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertEquals(3L, down.get());
 
             // Bottom row has no element below
-            OptionalLong empty = m.below(1, 0);
+            OptionalLong empty = m.valueBelow(1, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -2018,12 +2018,12 @@ class LongMatrixTest extends TestBase {
         public void testLeftOf() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
 
-            OptionalLong left = m.left(0, 1);
+            OptionalLong left = m.valueLeft(0, 1);
             assertTrue(left.isPresent());
             assertEquals(1L, left.get());
 
             // Leftmost column has no element to the left
-            OptionalLong empty = m.left(0, 0);
+            OptionalLong empty = m.valueLeft(0, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -2031,12 +2031,12 @@ class LongMatrixTest extends TestBase {
         public void testRightOf() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
 
-            OptionalLong right = m.right(0, 0);
+            OptionalLong right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertEquals(2L, right.get());
 
             // Rightmost column has no element to the right
-            OptionalLong empty = m.right(0, 1);
+            OptionalLong empty = m.valueRight(0, 1);
             assertFalse(empty.isPresent());
         }
 
@@ -2472,7 +2472,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testReverseV() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertEquals(5L, m.get(0, 0));
             assertEquals(6L, m.get(0, 1));
             assertEquals(3L, m.get(1, 0));
@@ -3888,44 +3888,44 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testUpOf() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            OptionalLong up = m.above(1, 0);
+            OptionalLong up = m.valueAbove(1, 0);
             assertTrue(up.isPresent());
             assertEquals(1L, up.get());
 
-            OptionalLong noUp = m.above(0, 0);
+            OptionalLong noUp = m.valueAbove(0, 0);
             assertFalse(noUp.isPresent());
         }
 
         @Test
         public void testDownOf() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            OptionalLong down = m.below(0, 0);
+            OptionalLong down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertEquals(3L, down.get());
 
-            OptionalLong noDown = m.below(1, 0);
+            OptionalLong noDown = m.valueBelow(1, 0);
             assertFalse(noDown.isPresent());
         }
 
         @Test
         public void testLeftOf() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            OptionalLong left = m.left(0, 1);
+            OptionalLong left = m.valueLeft(0, 1);
             assertTrue(left.isPresent());
             assertEquals(1L, left.get());
 
-            OptionalLong noLeft = m.left(0, 0);
+            OptionalLong noLeft = m.valueLeft(0, 0);
             assertFalse(noLeft.isPresent());
         }
 
         @Test
         public void testRightOf() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            OptionalLong right = m.right(0, 0);
+            OptionalLong right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertEquals(2L, right.get());
 
-            OptionalLong noRight = m.right(0, 1);
+            OptionalLong noRight = m.valueRight(0, 1);
             assertFalse(noRight.isPresent());
         }
 
@@ -4180,7 +4180,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testReverseH() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertEquals(3L, m.get(0, 0));
             assertEquals(2L, m.get(0, 1));
             assertEquals(1L, m.get(0, 2));
@@ -4190,7 +4190,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testReverseV() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertEquals(5L, m.get(0, 0));
             assertEquals(6L, m.get(0, 1));
             assertEquals(1L, m.get(2, 0));
@@ -4850,7 +4850,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void test_upOf() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            OptionalLong up = m.above(1, 0);
+            OptionalLong up = m.valueAbove(1, 0);
             assertTrue(up.isPresent());
             assertEquals(1L, up.get());
         }
@@ -4858,14 +4858,14 @@ class LongMatrixTest extends TestBase {
         @Test
         public void test_upOf_firstRow() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            OptionalLong up = m.above(0, 0);
+            OptionalLong up = m.valueAbove(0, 0);
             assertFalse(up.isPresent());
         }
 
         @Test
         public void test_downOf() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            OptionalLong down = m.below(0, 0);
+            OptionalLong down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertEquals(3L, down.get());
         }
@@ -4873,14 +4873,14 @@ class LongMatrixTest extends TestBase {
         @Test
         public void test_downOf_lastRow() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            OptionalLong down = m.below(1, 0);
+            OptionalLong down = m.valueBelow(1, 0);
             assertFalse(down.isPresent());
         }
 
         @Test
         public void test_leftOf() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            OptionalLong left = m.left(0, 1);
+            OptionalLong left = m.valueLeft(0, 1);
             assertTrue(left.isPresent());
             assertEquals(1L, left.get());
         }
@@ -4888,14 +4888,14 @@ class LongMatrixTest extends TestBase {
         @Test
         public void test_leftOf_firstColumn() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            OptionalLong left = m.left(0, 0);
+            OptionalLong left = m.valueLeft(0, 0);
             assertFalse(left.isPresent());
         }
 
         @Test
         public void test_rightOf() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            OptionalLong right = m.right(0, 0);
+            OptionalLong right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertEquals(2L, right.get());
         }
@@ -4903,7 +4903,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void test_rightOf_lastColumn() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            OptionalLong right = m.right(0, 1);
+            OptionalLong right = m.valueRight(0, 1);
             assertFalse(right.isPresent());
         }
 
@@ -5266,18 +5266,18 @@ class LongMatrixTest extends TestBase {
         // ============ Reverse and Flip Tests ============
 
         @Test
-        public void test_flipInPlaceHorizontally() {
+        public void test_flipHorizontallyInPlace() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertEquals(3L, m.get(0, 0));
             assertEquals(2L, m.get(0, 1));
             assertEquals(1L, m.get(0, 2));
         }
 
         @Test
-        public void test_flipInPlaceVertically() {
+        public void test_flipVerticallyInPlace() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertEquals(5L, m.get(0, 0));
             assertEquals(3L, m.get(1, 0));
             assertEquals(1L, m.get(2, 0));

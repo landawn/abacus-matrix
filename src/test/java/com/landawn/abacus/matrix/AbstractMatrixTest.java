@@ -3959,10 +3959,10 @@ class AbstractMatrixTest extends TestBase {
     public void testAdjacencyChecks_InvalidColumnIndexEdgeCase() {
         IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
 
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.above(0, 2));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.below(1, -1));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.left(0, 2));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.right(1, -1));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.valueAbove(0, 2));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.valueBelow(1, -1));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.valueLeft(0, 2));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.valueRight(1, -1));
     }
 
 }

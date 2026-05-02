@@ -223,11 +223,11 @@ class CharMatrixTest extends TestBase {
         char[][] a = { { 'a', 'b' }, { 'c', 'd' } };
         CharMatrix matrix = CharMatrix.of(a);
 
-        OptionalChar up = matrix.above(1, 0);
+        OptionalChar up = matrix.valueAbove(1, 0);
         Assertions.assertTrue(up.isPresent());
         Assertions.assertEquals('a', up.get());
 
-        OptionalChar empty = matrix.above(0, 0);
+        OptionalChar empty = matrix.valueAbove(0, 0);
         Assertions.assertFalse(empty.isPresent());
     }
 
@@ -236,11 +236,11 @@ class CharMatrixTest extends TestBase {
         char[][] a = { { 'a', 'b' }, { 'c', 'd' } };
         CharMatrix matrix = CharMatrix.of(a);
 
-        OptionalChar down = matrix.below(0, 0);
+        OptionalChar down = matrix.valueBelow(0, 0);
         Assertions.assertTrue(down.isPresent());
         Assertions.assertEquals('c', down.get());
 
-        OptionalChar empty = matrix.below(1, 0);
+        OptionalChar empty = matrix.valueBelow(1, 0);
         Assertions.assertFalse(empty.isPresent());
     }
 
@@ -249,11 +249,11 @@ class CharMatrixTest extends TestBase {
         char[][] a = { { 'a', 'b' }, { 'c', 'd' } };
         CharMatrix matrix = CharMatrix.of(a);
 
-        OptionalChar left = matrix.left(0, 1);
+        OptionalChar left = matrix.valueLeft(0, 1);
         Assertions.assertTrue(left.isPresent());
         Assertions.assertEquals('a', left.get());
 
-        OptionalChar empty = matrix.left(0, 0);
+        OptionalChar empty = matrix.valueLeft(0, 0);
         Assertions.assertFalse(empty.isPresent());
     }
 
@@ -262,11 +262,11 @@ class CharMatrixTest extends TestBase {
         char[][] a = { { 'a', 'b' }, { 'c', 'd' } };
         CharMatrix matrix = CharMatrix.of(a);
 
-        OptionalChar right = matrix.right(0, 0);
+        OptionalChar right = matrix.valueRight(0, 0);
         Assertions.assertTrue(right.isPresent());
         Assertions.assertEquals('b', right.get());
 
-        OptionalChar empty = matrix.right(0, 1);
+        OptionalChar empty = matrix.valueRight(0, 1);
         Assertions.assertFalse(empty.isPresent());
     }
 
@@ -676,7 +676,7 @@ class CharMatrixTest extends TestBase {
         char[][] a = { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } };
         CharMatrix matrix = CharMatrix.of(a);
 
-        matrix.flipInPlaceHorizontally();
+        matrix.flipHorizontallyInPlace();
         Assertions.assertEquals('c', matrix.get(0, 0));
         Assertions.assertEquals('b', matrix.get(0, 1));
         Assertions.assertEquals('a', matrix.get(0, 2));
@@ -688,7 +688,7 @@ class CharMatrixTest extends TestBase {
         char[][] a = { { 'a', 'b' }, { 'c', 'd' }, { 'e', 'f' } };
         CharMatrix matrix = CharMatrix.of(a);
 
-        matrix.flipInPlaceVertically();
+        matrix.flipVerticallyInPlace();
         Assertions.assertEquals('e', matrix.get(0, 0));
         Assertions.assertEquals('f', matrix.get(0, 1));
         Assertions.assertEquals('c', matrix.get(1, 0));
@@ -1578,12 +1578,12 @@ class CharMatrixTest extends TestBase {
         public void testUpOf() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B' }, { 'C', 'D' } });
 
-            OptionalChar up = m.above(1, 0);
+            OptionalChar up = m.valueAbove(1, 0);
             assertTrue(up.isPresent());
             assertEquals('A', up.get());
 
             // Top row has no element above
-            OptionalChar empty = m.above(0, 0);
+            OptionalChar empty = m.valueAbove(0, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -1591,12 +1591,12 @@ class CharMatrixTest extends TestBase {
         public void testDownOf() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B' }, { 'C', 'D' } });
 
-            OptionalChar down = m.below(0, 0);
+            OptionalChar down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertEquals('C', down.get());
 
             // Bottom row has no element below
-            OptionalChar empty = m.below(1, 0);
+            OptionalChar empty = m.valueBelow(1, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -1604,12 +1604,12 @@ class CharMatrixTest extends TestBase {
         public void testLeftOf() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B' }, { 'C', 'D' } });
 
-            OptionalChar left = m.left(0, 1);
+            OptionalChar left = m.valueLeft(0, 1);
             assertTrue(left.isPresent());
             assertEquals('A', left.get());
 
             // Leftmost column has no element to the left
-            OptionalChar empty = m.left(0, 0);
+            OptionalChar empty = m.valueLeft(0, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -1617,12 +1617,12 @@ class CharMatrixTest extends TestBase {
         public void testRightOf() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B' }, { 'C', 'D' } });
 
-            OptionalChar right = m.right(0, 0);
+            OptionalChar right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertEquals('B', right.get());
 
             // Rightmost column has no element to the right
-            OptionalChar empty = m.right(0, 1);
+            OptionalChar empty = m.valueRight(0, 1);
             assertFalse(empty.isPresent());
         }
 
@@ -2044,7 +2044,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testReverseH() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B', 'C' }, { 'D', 'E', 'F' } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertEquals('C', m.get(0, 0));
             assertEquals('B', m.get(0, 1));
             assertEquals('A', m.get(0, 2));
@@ -2054,7 +2054,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testReverseV() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B' }, { 'C', 'D' }, { 'E', 'F' } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertEquals('E', m.get(0, 0));
             assertEquals('F', m.get(0, 1));
             assertEquals('C', m.get(1, 0));
@@ -3079,21 +3079,21 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testDownOf_atBottomEdge() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            OptionalChar down = m.below(1, 0);
+            OptionalChar down = m.valueBelow(1, 0);
             assertFalse(down.isPresent());
         }
 
         @Test
         public void testLeftOf_atLeftEdge() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            OptionalChar left = m.left(0, 0);
+            OptionalChar left = m.valueLeft(0, 0);
             assertFalse(left.isPresent());
         }
 
         @Test
         public void testRightOf_atRightEdge() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            OptionalChar right = m.right(0, 1);
+            OptionalChar right = m.valueRight(0, 1);
             assertFalse(right.isPresent());
         }
 
@@ -3415,7 +3415,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testReverseH() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertEquals('c', m.get(0, 0));
             assertEquals('b', m.get(0, 1));
             assertEquals('a', m.get(0, 2));
@@ -3424,7 +3424,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testReverseV() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertEquals('c', m.get(0, 0));
             assertEquals('d', m.get(0, 1));
             assertEquals('a', m.get(1, 0));
@@ -4203,7 +4203,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testUpOf_multipleRows() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' }, { 'e', 'f' } });
-            OptionalChar up = m.above(2, 1);
+            OptionalChar up = m.valueAbove(2, 1);
             assertTrue(up.isPresent());
             assertEquals('d', up.get());
         }
@@ -4211,7 +4211,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testDownOf_multipleRows() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' }, { 'e', 'f' } });
-            OptionalChar down = m.below(0, 0);
+            OptionalChar down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertEquals('c', down.get());
         }
@@ -4219,7 +4219,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testLeftOf_multipleColumns() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' } });
-            OptionalChar left = m.left(0, 2);
+            OptionalChar left = m.valueLeft(0, 2);
             assertTrue(left.isPresent());
             assertEquals('b', left.get());
         }
@@ -4227,7 +4227,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testRightOf_multipleColumns() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' } });
-            OptionalChar right = m.right(0, 0);
+            OptionalChar right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertEquals('b', right.get());
         }
@@ -4632,7 +4632,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testReverseH() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertArrayEquals(new char[] { 'c', 'b', 'a' }, m.rowView(0));
             assertArrayEquals(new char[] { 'f', 'e', 'd' }, m.rowView(1));
         }
@@ -4640,14 +4640,14 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testReverseH_singleRow() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertArrayEquals(new char[] { 'c', 'b', 'a' }, m.rowView(0));
         }
 
         @Test
         public void testReverseV() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' }, { 'e', 'f' } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertArrayEquals(new char[] { 'e', 'c', 'a' }, m.columnCopy(0));
             assertArrayEquals(new char[] { 'f', 'd', 'b' }, m.columnCopy(1));
         }
@@ -4655,7 +4655,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testReverseV_singleColumn() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a' }, { 'b' }, { 'c' } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertArrayEquals(new char[] { 'c', 'b', 'a' }, m.columnCopy(0));
         }
 
@@ -5235,7 +5235,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void test_upOf_exists() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            OptionalChar up = m.above(1, 0);
+            OptionalChar up = m.valueAbove(1, 0);
             assertTrue(up.isPresent());
             assertEquals('a', up.get());
         }
@@ -5243,14 +5243,14 @@ class CharMatrixTest extends TestBase {
         @Test
         public void test_upOf_notExists() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            OptionalChar up = m.above(0, 0);
+            OptionalChar up = m.valueAbove(0, 0);
             assertFalse(up.isPresent());
         }
 
         @Test
         public void test_downOf_exists() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            OptionalChar down = m.below(0, 0);
+            OptionalChar down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertEquals('c', down.get());
         }
@@ -5258,7 +5258,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void test_leftOf_exists() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            OptionalChar left = m.left(0, 1);
+            OptionalChar left = m.valueLeft(0, 1);
             assertTrue(left.isPresent());
             assertEquals('a', left.get());
         }
@@ -5266,7 +5266,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void test_rightOf_exists() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            OptionalChar right = m.right(0, 0);
+            OptionalChar right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertEquals('b', right.get());
         }
@@ -5584,17 +5584,17 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_flipInPlaceHorizontally() {
+        public void test_flipHorizontallyInPlace() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertEquals('b', m.get(0, 0));
             assertEquals('a', m.get(0, 1));
         }
 
         @Test
-        public void test_flipInPlaceVertically() {
+        public void test_flipVerticallyInPlace() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertEquals('c', m.get(0, 0));
             assertEquals('d', m.get(0, 1));
         }
@@ -6078,18 +6078,18 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCharMatrix_flipInPlaceHorizontally() {
+        public void testCharMatrix_flipHorizontallyInPlace() {
             CharMatrix matrix = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } });
-            matrix.flipInPlaceHorizontally();
+            matrix.flipHorizontallyInPlace();
             // matrix is now [['c', 'b', 'a'], ['f', 'e', 'd']]
             assertArrayEquals(new char[] { 'c', 'b', 'a' }, matrix.rowView(0));
             assertArrayEquals(new char[] { 'f', 'e', 'd' }, matrix.rowView(1));
         }
 
         @Test
-        public void testCharMatrix_flipInPlaceVertically() {
+        public void testCharMatrix_flipVerticallyInPlace() {
             CharMatrix matrix = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' }, { 'e', 'f' } });
-            matrix.flipInPlaceVertically();
+            matrix.flipVerticallyInPlace();
             // matrix is now [['e', 'f'], ['c', 'd'], ['a', 'b']]
             assertArrayEquals(new char[] { 'e', 'f' }, matrix.rowView(0));
             assertArrayEquals(new char[] { 'c', 'd' }, matrix.rowView(1));
@@ -6347,7 +6347,7 @@ class CharMatrixTest extends TestBase {
         }
     }
 
-    // === Missing coverage: resize, assignFrom, flipInPlace ===
+    // === Missing coverage: resize, assignFrom, flip*InPlace ===
 
     @Test
     public void testResize_expand() {
@@ -6456,7 +6456,7 @@ class CharMatrixTest extends TestBase {
     @Test
     public void testFlipInPlaceHorizontally() {
         CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } });
-        m.flipInPlaceHorizontally();
+        m.flipHorizontallyInPlace();
         assertEquals('c', m.get(0, 0));
         assertEquals('b', m.get(0, 1));
         assertEquals('a', m.get(0, 2));
@@ -6468,7 +6468,7 @@ class CharMatrixTest extends TestBase {
     @Test
     public void testFlipInPlaceHorizontally_singleColumn() {
         CharMatrix m = CharMatrix.of(new char[][] { { 'a' }, { 'b' } });
-        m.flipInPlaceHorizontally();
+        m.flipHorizontallyInPlace();
         assertEquals('a', m.get(0, 0));
         assertEquals('b', m.get(1, 0));
     }
@@ -6476,7 +6476,7 @@ class CharMatrixTest extends TestBase {
     @Test
     public void testFlipInPlaceVertically() {
         CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' }, { 'e', 'f' } });
-        m.flipInPlaceVertically();
+        m.flipVerticallyInPlace();
         assertEquals('e', m.get(0, 0));
         assertEquals('f', m.get(0, 1));
         assertEquals('c', m.get(1, 0));
@@ -6488,7 +6488,7 @@ class CharMatrixTest extends TestBase {
     @Test
     public void testFlipInPlaceVertically_singleRow() {
         CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' } });
-        m.flipInPlaceVertically();
+        m.flipVerticallyInPlace();
         assertEquals('a', m.get(0, 0));
         assertEquals('b', m.get(0, 1));
         assertEquals('c', m.get(0, 2));

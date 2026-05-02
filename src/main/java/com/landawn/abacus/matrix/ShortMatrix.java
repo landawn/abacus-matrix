@@ -467,8 +467,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2}, {3, 4}});
-     * OptionalShort value = matrix.above(1, 0);   // Returns OptionalShort.of((short)1)
-     * OptionalShort empty = matrix.above(0, 0);   // Returns OptionalShort.empty() - no row above
+     * OptionalShort value = matrix.valueAbove(1, 0);   // Returns OptionalShort.of((short)1)
+     * OptionalShort empty = matrix.valueAbove(0, 0);   // Returns OptionalShort.empty() - no row above
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -476,7 +476,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @return an OptionalShort containing the element at position (rowIndex - 1, columnIndex), or empty if rowIndex == 0
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalShort above(final int rowIndex, final int columnIndex) {
+    public OptionalShort valueAbove(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return rowIndex == 0 ? OptionalShort.empty() : OptionalShort.of(a[rowIndex - 1][columnIndex]);
@@ -490,8 +490,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2}, {3, 4}});
-     * OptionalShort value = matrix.below(0, 0);   // Returns OptionalShort.of((short)3)
-     * OptionalShort empty = matrix.below(1, 0);   // Returns OptionalShort.empty() - no row below
+     * OptionalShort value = matrix.valueBelow(0, 0);   // Returns OptionalShort.of((short)3)
+     * OptionalShort empty = matrix.valueBelow(1, 0);   // Returns OptionalShort.empty() - no row below
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -499,7 +499,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @return an OptionalShort containing the element at position (rowIndex + 1, columnIndex), or empty if rowIndex == rowCount - 1
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalShort below(final int rowIndex, final int columnIndex) {
+    public OptionalShort valueBelow(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return rowIndex == rowCount - 1 ? OptionalShort.empty() : OptionalShort.of(a[rowIndex + 1][columnIndex]);
@@ -513,8 +513,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2}, {3, 4}});
-     * OptionalShort value = matrix.left(0, 1);   // Returns OptionalShort.of((short)1)
-     * OptionalShort empty = matrix.left(0, 0);   // Returns OptionalShort.empty() - no column to the left
+     * OptionalShort value = matrix.valueLeft(0, 1);   // Returns OptionalShort.of((short)1)
+     * OptionalShort empty = matrix.valueLeft(0, 0);   // Returns OptionalShort.empty() - no column to the left
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -522,7 +522,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @return an OptionalShort containing the element at position (rowIndex, columnIndex - 1), or empty if columnIndex == 0
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalShort left(final int rowIndex, final int columnIndex) {
+    public OptionalShort valueLeft(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return columnIndex == 0 ? OptionalShort.empty() : OptionalShort.of(a[rowIndex][columnIndex - 1]);
@@ -536,8 +536,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2}, {3, 4}});
-     * OptionalShort value = matrix.right(0, 0);   // Returns OptionalShort.of((short)2)
-     * OptionalShort empty = matrix.right(0, 1);   // Returns OptionalShort.empty() - no column to the right
+     * OptionalShort value = matrix.valueRight(0, 0);   // Returns OptionalShort.of((short)2)
+     * OptionalShort empty = matrix.valueRight(0, 1);   // Returns OptionalShort.empty() - no column to the right
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -545,7 +545,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @return an OptionalShort containing the element at position (rowIndex, columnIndex + 1), or empty if columnIndex == columnCount - 1
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalShort right(final int rowIndex, final int columnIndex) {
+    public OptionalShort valueRight(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return columnIndex == columnCount - 1 ? OptionalShort.empty() : OptionalShort.of(a[rowIndex][columnIndex + 1]);
@@ -1494,14 +1494,14 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2, 3}, {4, 5, 6}});
-     * matrix.flipInPlaceHorizontally();
+     * matrix.flipHorizontallyInPlace();
      * // matrix is now [[3, 2, 1], [6, 5, 4]]
      * }</pre>
      *
      * @see #flipHorizontally()
      */
     @Override
-    public void flipInPlaceHorizontally() {
+    public void flipHorizontallyInPlace() {
         for (int i = 0; i < rowCount; i++) {
             N.reverse(a[i]);
         }
@@ -1514,14 +1514,14 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * matrix.flipInPlaceVertically();
+     * matrix.flipVerticallyInPlace();
      * // matrix is now [[7, 8, 9], [4, 5, 6], [1, 2, 3]]
      * }</pre>
      *
      * @see #flipVertically()
      */
     @Override
-    public void flipInPlaceVertically() {
+    public void flipVerticallyInPlace() {
         for (int j = 0; j < columnCount; j++) {
             short tmp = 0;
             for (int l = 0, h = rowCount - 1; l < h;) {
@@ -1545,14 +1545,14 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @return a new matrix with each row reversed
-     * @see #flipInPlaceHorizontally()
+     * @see #flipHorizontallyInPlace()
      * @see #flipVertically()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
     @Override
     public ShortMatrix flipHorizontally() {
         final ShortMatrix res = this.copy();
-        res.flipInPlaceHorizontally();
+        res.flipHorizontallyInPlace();
         return res;
     }
 
@@ -1569,14 +1569,14 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @return a new matrix with rows in reversed order
-     * @see #flipInPlaceVertically()
+     * @see #flipVerticallyInPlace()
      * @see #flipHorizontally()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
     @Override
     public ShortMatrix flipVertically() {
         final ShortMatrix res = this.copy();
-        res.flipInPlaceVertically();
+        res.flipVerticallyInPlace();
         return res;
     }
 

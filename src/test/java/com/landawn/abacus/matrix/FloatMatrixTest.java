@@ -229,45 +229,45 @@ class FloatMatrixTest extends TestBase {
 
     @Test
     public void testUpOf() {
-        OptionalFloat up = matrix.above(1, 1);
+        OptionalFloat up = matrix.valueAbove(1, 1);
         assertTrue(up.isPresent());
         assertEquals(2.0f, up.get(), DELTA);
 
         // Test top row
-        OptionalFloat empty = matrix.above(0, 1);
+        OptionalFloat empty = matrix.valueAbove(0, 1);
         assertFalse(empty.isPresent());
     }
 
     @Test
     public void testDownOf() {
-        OptionalFloat down = matrix.below(1, 1);
+        OptionalFloat down = matrix.valueBelow(1, 1);
         assertTrue(down.isPresent());
         assertEquals(8.0f, down.get(), DELTA);
 
         // Test bottom row
-        OptionalFloat empty = matrix.below(2, 1);
+        OptionalFloat empty = matrix.valueBelow(2, 1);
         assertFalse(empty.isPresent());
     }
 
     @Test
     public void testLeftOf() {
-        OptionalFloat left = matrix.left(1, 1);
+        OptionalFloat left = matrix.valueLeft(1, 1);
         assertTrue(left.isPresent());
         assertEquals(4.0f, left.get(), DELTA);
 
         // Test leftmost column
-        OptionalFloat empty = matrix.left(1, 0);
+        OptionalFloat empty = matrix.valueLeft(1, 0);
         assertFalse(empty.isPresent());
     }
 
     @Test
     public void testRightOf() {
-        OptionalFloat right = matrix.right(1, 1);
+        OptionalFloat right = matrix.valueRight(1, 1);
         assertTrue(right.isPresent());
         assertEquals(6.0f, right.get(), DELTA);
 
         // Test rightmost column
-        OptionalFloat empty = matrix.right(1, 2);
+        OptionalFloat empty = matrix.valueRight(1, 2);
         assertFalse(empty.isPresent());
     }
 
@@ -639,7 +639,7 @@ class FloatMatrixTest extends TestBase {
     @Test
     public void testReverseH() {
         FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f } });
-        m.flipInPlaceHorizontally();
+        m.flipHorizontallyInPlace();
         assertEquals(3.0f, m.get(0, 0), DELTA);
         assertEquals(2.0f, m.get(0, 1), DELTA);
         assertEquals(1.0f, m.get(0, 2), DELTA);
@@ -651,7 +651,7 @@ class FloatMatrixTest extends TestBase {
     @Test
     public void testReverseV() {
         FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f }, { 5.0f, 6.0f } });
-        m.flipInPlaceVertically();
+        m.flipVerticallyInPlace();
         assertEquals(5.0f, m.get(0, 0), DELTA);
         assertEquals(6.0f, m.get(0, 1), DELTA);
         assertEquals(3.0f, m.get(1, 0), DELTA);
@@ -1453,12 +1453,12 @@ class FloatMatrixTest extends TestBase {
         public void testUpOf() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
 
-            OptionalFloat up = m.above(1, 0);
+            OptionalFloat up = m.valueAbove(1, 0);
             assertTrue(up.isPresent());
             assertEquals(1.0f, up.get(), DELTA);
 
             // Top row has no element above
-            OptionalFloat empty = m.above(0, 0);
+            OptionalFloat empty = m.valueAbove(0, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -1466,12 +1466,12 @@ class FloatMatrixTest extends TestBase {
         public void testDownOf() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
 
-            OptionalFloat down = m.below(0, 0);
+            OptionalFloat down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertEquals(3.0f, down.get(), DELTA);
 
             // Bottom row has no element below
-            OptionalFloat empty = m.below(1, 0);
+            OptionalFloat empty = m.valueBelow(1, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -1479,12 +1479,12 @@ class FloatMatrixTest extends TestBase {
         public void testLeftOf() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
 
-            OptionalFloat left = m.left(0, 1);
+            OptionalFloat left = m.valueLeft(0, 1);
             assertTrue(left.isPresent());
             assertEquals(1.0f, left.get(), DELTA);
 
             // Leftmost column has no element to the left
-            OptionalFloat empty = m.left(0, 0);
+            OptionalFloat empty = m.valueLeft(0, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -1492,12 +1492,12 @@ class FloatMatrixTest extends TestBase {
         public void testRightOf() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
 
-            OptionalFloat right = m.right(0, 0);
+            OptionalFloat right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertEquals(2.0f, right.get(), DELTA);
 
             // Rightmost column has no element to the right
-            OptionalFloat empty = m.right(0, 1);
+            OptionalFloat empty = m.valueRight(0, 1);
             assertFalse(empty.isPresent());
         }
 
@@ -1948,7 +1948,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testReverseH() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertEquals(3.0f, m.get(0, 0), DELTA);
             assertEquals(2.0f, m.get(0, 1), DELTA);
             assertEquals(1.0f, m.get(0, 2), DELTA);
@@ -1958,7 +1958,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testReverseV() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f }, { 5.0f, 6.0f } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertEquals(5.0f, m.get(0, 0), DELTA);
             assertEquals(6.0f, m.get(0, 1), DELTA);
             assertEquals(3.0f, m.get(1, 0), DELTA);
@@ -3087,7 +3087,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testUpOf() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            OptionalFloat up = m.above(1, 0);
+            OptionalFloat up = m.valueAbove(1, 0);
             assertTrue(up.isPresent());
             assertEquals(1.0f, up.get());
         }
@@ -3095,7 +3095,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testDownOf() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            OptionalFloat down = m.below(0, 0);
+            OptionalFloat down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertEquals(3.0f, down.get());
         }
@@ -3103,7 +3103,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testLeftOf() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            OptionalFloat left = m.left(0, 1);
+            OptionalFloat left = m.valueLeft(0, 1);
             assertTrue(left.isPresent());
             assertEquals(1.0f, left.get());
         }
@@ -3111,7 +3111,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testRightOf() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            OptionalFloat right = m.right(0, 0);
+            OptionalFloat right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertEquals(2.0f, right.get());
         }
@@ -3408,7 +3408,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testReverseH() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertEquals(2.0f, m.get(0, 0));
             assertEquals(1.0f, m.get(0, 1));
             assertEquals(4.0f, m.get(1, 0));
@@ -3418,7 +3418,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testReverseV() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertEquals(3.0f, m.get(0, 0));
             assertEquals(4.0f, m.get(0, 1));
             assertEquals(1.0f, m.get(1, 0));
@@ -4330,7 +4330,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void test_upOf() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            OptionalFloat up = m.above(1, 0);
+            OptionalFloat up = m.valueAbove(1, 0);
             assertTrue(up.isPresent());
             assertEquals(1.0f, up.get(), 0.0f);
         }
@@ -4338,14 +4338,14 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void test_upOf_firstRow() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            OptionalFloat up = m.above(0, 0);
+            OptionalFloat up = m.valueAbove(0, 0);
             assertFalse(up.isPresent());
         }
 
         @Test
         public void test_downOf() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            OptionalFloat down = m.below(0, 0);
+            OptionalFloat down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertEquals(3.0f, down.get(), 0.0f);
         }
@@ -4353,14 +4353,14 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void test_downOf_lastRow() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            OptionalFloat down = m.below(1, 0);
+            OptionalFloat down = m.valueBelow(1, 0);
             assertFalse(down.isPresent());
         }
 
         @Test
         public void test_leftOf() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            OptionalFloat left = m.left(0, 1);
+            OptionalFloat left = m.valueLeft(0, 1);
             assertTrue(left.isPresent());
             assertEquals(1.0f, left.get(), 0.0f);
         }
@@ -4368,14 +4368,14 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void test_leftOf_firstColumn() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            OptionalFloat left = m.left(0, 0);
+            OptionalFloat left = m.valueLeft(0, 0);
             assertFalse(left.isPresent());
         }
 
         @Test
         public void test_rightOf() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            OptionalFloat right = m.right(0, 0);
+            OptionalFloat right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertEquals(2.0f, right.get(), 0.0f);
         }
@@ -4383,7 +4383,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void test_rightOf_lastColumn() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            OptionalFloat right = m.right(0, 1);
+            OptionalFloat right = m.valueRight(0, 1);
             assertFalse(right.isPresent());
         }
 
@@ -4736,18 +4736,18 @@ class FloatMatrixTest extends TestBase {
         // ============ Reverse and Flip Tests ============
 
         @Test
-        public void test_flipInPlaceHorizontally() {
+        public void test_flipHorizontallyInPlace() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertEquals(3.0f, m.get(0, 0), 0.0f);
             assertEquals(2.0f, m.get(0, 1), 0.0f);
             assertEquals(1.0f, m.get(0, 2), 0.0f);
         }
 
         @Test
-        public void test_flipInPlaceVertically() {
+        public void test_flipVerticallyInPlace() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f }, { 5.0f, 6.0f } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertEquals(5.0f, m.get(0, 0), 0.0f);
             assertEquals(3.0f, m.get(1, 0), 0.0f);
             assertEquals(1.0f, m.get(2, 0), 0.0f);
@@ -5272,18 +5272,18 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testFloatMatrix_above() {
             FloatMatrix matrix = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            u.OptionalFloat value = matrix.above(1, 0);
+            u.OptionalFloat value = matrix.valueAbove(1, 0);
             assertEquals(1.0f, value.get());
-            u.OptionalFloat empty = matrix.above(0, 0);
+            u.OptionalFloat empty = matrix.valueAbove(0, 0);
             assertFalse(empty.isPresent());
         }
 
         @Test
         public void testFloatMatrix_below() {
             FloatMatrix matrix = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            u.OptionalFloat value = matrix.below(0, 0);
+            u.OptionalFloat value = matrix.valueBelow(0, 0);
             assertEquals(3.0f, value.get());
-            u.OptionalFloat empty = matrix.below(1, 0);
+            u.OptionalFloat empty = matrix.valueBelow(1, 0);
             assertFalse(empty.isPresent());
         }
 

@@ -254,45 +254,45 @@ class IntMatrixTest extends TestBase {
 
     @Test
     public void testUpOf() {
-        OptionalInt up = matrix.above(1, 1);
+        OptionalInt up = matrix.valueAbove(1, 1);
         assertTrue(up.isPresent());
         assertEquals(2, up.get());
 
         // Test top row
-        OptionalInt empty = matrix.above(0, 1);
+        OptionalInt empty = matrix.valueAbove(0, 1);
         assertFalse(empty.isPresent());
     }
 
     @Test
     public void testDownOf() {
-        OptionalInt down = matrix.below(1, 1);
+        OptionalInt down = matrix.valueBelow(1, 1);
         assertTrue(down.isPresent());
         assertEquals(8, down.get());
 
         // Test bottom row
-        OptionalInt empty = matrix.below(2, 1);
+        OptionalInt empty = matrix.valueBelow(2, 1);
         assertFalse(empty.isPresent());
     }
 
     @Test
     public void testLeftOf() {
-        OptionalInt left = matrix.left(1, 1);
+        OptionalInt left = matrix.valueLeft(1, 1);
         assertTrue(left.isPresent());
         assertEquals(4, left.get());
 
         // Test leftmost column
-        OptionalInt empty = matrix.left(1, 0);
+        OptionalInt empty = matrix.valueLeft(1, 0);
         assertFalse(empty.isPresent());
     }
 
     @Test
     public void testRightOf() {
-        OptionalInt right = matrix.right(1, 1);
+        OptionalInt right = matrix.valueRight(1, 1);
         assertTrue(right.isPresent());
         assertEquals(6, right.get());
 
         // Test rightmost column
-        OptionalInt empty = matrix.right(1, 2);
+        OptionalInt empty = matrix.valueRight(1, 2);
         assertFalse(empty.isPresent());
     }
 
@@ -659,7 +659,7 @@ class IntMatrixTest extends TestBase {
     @Test
     public void testReverseH() {
         IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-        m.flipInPlaceHorizontally();
+        m.flipHorizontallyInPlace();
         assertEquals(3, m.get(0, 0));
         assertEquals(2, m.get(0, 1));
         assertEquals(1, m.get(0, 2));
@@ -671,7 +671,7 @@ class IntMatrixTest extends TestBase {
     @Test
     public void testReverseV() {
         IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-        m.flipInPlaceVertically();
+        m.flipVerticallyInPlace();
         assertEquals(5, m.get(0, 0));
         assertEquals(6, m.get(0, 1));
         assertEquals(3, m.get(1, 0));
@@ -1580,12 +1580,12 @@ class IntMatrixTest extends TestBase {
         public void testUpOf() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
 
-            OptionalInt up = m.above(1, 0);
+            OptionalInt up = m.valueAbove(1, 0);
             assertTrue(up.isPresent());
             assertEquals(1, up.get());
 
             // Top row has no element above
-            OptionalInt empty = m.above(0, 0);
+            OptionalInt empty = m.valueAbove(0, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -1593,12 +1593,12 @@ class IntMatrixTest extends TestBase {
         public void testDownOf() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
 
-            OptionalInt down = m.below(0, 0);
+            OptionalInt down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertEquals(3, down.get());
 
             // Bottom row has no element below
-            OptionalInt empty = m.below(1, 0);
+            OptionalInt empty = m.valueBelow(1, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -1606,12 +1606,12 @@ class IntMatrixTest extends TestBase {
         public void testLeftOf() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
 
-            OptionalInt left = m.left(0, 1);
+            OptionalInt left = m.valueLeft(0, 1);
             assertTrue(left.isPresent());
             assertEquals(1, left.get());
 
             // Leftmost column has no element to the left
-            OptionalInt empty = m.left(0, 0);
+            OptionalInt empty = m.valueLeft(0, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -1619,12 +1619,12 @@ class IntMatrixTest extends TestBase {
         public void testRightOf() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
 
-            OptionalInt right = m.right(0, 0);
+            OptionalInt right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertEquals(2, right.get());
 
             // Rightmost column has no element to the right
-            OptionalInt empty = m.right(0, 1);
+            OptionalInt empty = m.valueRight(0, 1);
             assertFalse(empty.isPresent());
         }
 
@@ -2027,7 +2027,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testReverseV() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertEquals(5, m.get(0, 0));
             assertEquals(6, m.get(0, 1));
             assertEquals(3, m.get(1, 0));
@@ -3140,44 +3140,44 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testUpOf() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            OptionalInt up = m.above(1, 0);
+            OptionalInt up = m.valueAbove(1, 0);
             assertTrue(up.isPresent());
             assertEquals(1, up.get());
 
-            OptionalInt noUp = m.above(0, 0);
+            OptionalInt noUp = m.valueAbove(0, 0);
             assertFalse(noUp.isPresent());
         }
 
         @Test
         public void testDownOf() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            OptionalInt down = m.below(0, 0);
+            OptionalInt down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertEquals(3, down.get());
 
-            OptionalInt noDown = m.below(1, 0);
+            OptionalInt noDown = m.valueBelow(1, 0);
             assertFalse(noDown.isPresent());
         }
 
         @Test
         public void testLeftOf() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            OptionalInt left = m.left(0, 1);
+            OptionalInt left = m.valueLeft(0, 1);
             assertTrue(left.isPresent());
             assertEquals(1, left.get());
 
-            OptionalInt noLeft = m.left(0, 0);
+            OptionalInt noLeft = m.valueLeft(0, 0);
             assertFalse(noLeft.isPresent());
         }
 
         @Test
         public void testRightOf() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            OptionalInt right = m.right(0, 0);
+            OptionalInt right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertEquals(2, right.get());
 
-            OptionalInt noRight = m.right(0, 1);
+            OptionalInt noRight = m.valueRight(0, 1);
             assertFalse(noRight.isPresent());
         }
 
@@ -3440,7 +3440,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testReverseH() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertEquals(3, m.get(0, 0));
             assertEquals(2, m.get(0, 1));
             assertEquals(1, m.get(0, 2));
@@ -3450,7 +3450,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testReverseV() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertEquals(5, m.get(0, 0));
             assertEquals(6, m.get(0, 1));
             assertEquals(1, m.get(2, 0));
@@ -4168,7 +4168,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void test_upOf() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            OptionalInt up = m.above(1, 0);
+            OptionalInt up = m.valueAbove(1, 0);
             assertTrue(up.isPresent());
             assertEquals(1, up.get());
         }
@@ -4176,14 +4176,14 @@ class IntMatrixTest extends TestBase {
         @Test
         public void test_upOf_firstRow() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            OptionalInt up = m.above(0, 0);
+            OptionalInt up = m.valueAbove(0, 0);
             assertFalse(up.isPresent());
         }
 
         @Test
         public void test_downOf() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            OptionalInt down = m.below(0, 0);
+            OptionalInt down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertEquals(3, down.get());
         }
@@ -4191,14 +4191,14 @@ class IntMatrixTest extends TestBase {
         @Test
         public void test_downOf_lastRow() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            OptionalInt down = m.below(1, 0);
+            OptionalInt down = m.valueBelow(1, 0);
             assertFalse(down.isPresent());
         }
 
         @Test
         public void test_leftOf() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            OptionalInt left = m.left(0, 1);
+            OptionalInt left = m.valueLeft(0, 1);
             assertTrue(left.isPresent());
             assertEquals(1, left.get());
         }
@@ -4206,14 +4206,14 @@ class IntMatrixTest extends TestBase {
         @Test
         public void test_leftOf_firstColumn() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            OptionalInt left = m.left(0, 0);
+            OptionalInt left = m.valueLeft(0, 0);
             assertFalse(left.isPresent());
         }
 
         @Test
         public void test_rightOf() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            OptionalInt right = m.right(0, 0);
+            OptionalInt right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertEquals(2, right.get());
         }
@@ -4221,7 +4221,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void test_rightOf_lastColumn() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            OptionalInt right = m.right(0, 1);
+            OptionalInt right = m.valueRight(0, 1);
             assertFalse(right.isPresent());
         }
 
@@ -4582,18 +4582,18 @@ class IntMatrixTest extends TestBase {
         // ============ Reverse and Flip Tests ============
 
         @Test
-        public void test_flipInPlaceHorizontally() {
+        public void test_flipHorizontallyInPlace() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertEquals(3, m.get(0, 0));
             assertEquals(2, m.get(0, 1));
             assertEquals(1, m.get(0, 2));
         }
 
         @Test
-        public void test_flipInPlaceVertically() {
+        public void test_flipVerticallyInPlace() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertEquals(5, m.get(0, 0));
             assertEquals(3, m.get(1, 0));
             assertEquals(1, m.get(2, 0));
@@ -5044,36 +5044,36 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testIntMatrix_above() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            u.OptionalInt value = matrix.above(1, 0);
+            u.OptionalInt value = matrix.valueAbove(1, 0);
             assertEquals(1, value.get());
-            u.OptionalInt empty = matrix.above(0, 0);
+            u.OptionalInt empty = matrix.valueAbove(0, 0);
             assertFalse(empty.isPresent());
         }
 
         @Test
         public void testIntMatrix_below() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            u.OptionalInt value = matrix.below(0, 0);
+            u.OptionalInt value = matrix.valueBelow(0, 0);
             assertEquals(3, value.get());
-            u.OptionalInt empty = matrix.below(1, 0);
+            u.OptionalInt empty = matrix.valueBelow(1, 0);
             assertFalse(empty.isPresent());
         }
 
         @Test
         public void testIntMatrix_left() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            u.OptionalInt value = matrix.left(0, 1);
+            u.OptionalInt value = matrix.valueLeft(0, 1);
             assertEquals(1, value.get());
-            u.OptionalInt empty = matrix.left(0, 0);
+            u.OptionalInt empty = matrix.valueLeft(0, 0);
             assertFalse(empty.isPresent());
         }
 
         @Test
         public void testIntMatrix_right() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            u.OptionalInt value = matrix.right(0, 0);
+            u.OptionalInt value = matrix.valueRight(0, 0);
             assertEquals(2, value.get());
-            u.OptionalInt empty = matrix.right(0, 1);
+            u.OptionalInt empty = matrix.valueRight(0, 1);
             assertFalse(empty.isPresent());
         }
 
@@ -5320,17 +5320,17 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void testIntMatrix_flipInPlaceHorizontally() {
+        public void testIntMatrix_flipHorizontallyInPlace() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            matrix.flipInPlaceHorizontally();
+            matrix.flipHorizontallyInPlace();
             assertArrayEquals(new int[] { 3, 2, 1 }, matrix.rowView(0));
             assertArrayEquals(new int[] { 6, 5, 4 }, matrix.rowView(1));
         }
 
         @Test
-        public void testIntMatrix_flipInPlaceVertically() {
+        public void testIntMatrix_flipVerticallyInPlace() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            matrix.flipInPlaceVertically();
+            matrix.flipVerticallyInPlace();
             assertArrayEquals(new int[] { 5, 6 }, matrix.rowView(0));
             assertArrayEquals(new int[] { 3, 4 }, matrix.rowView(1));
             assertArrayEquals(new int[] { 1, 2 }, matrix.rowView(2));

@@ -235,8 +235,8 @@ class MatrixTest extends TestBase {
         Integer[][] data = { { 1, 2 }, { 3, 4 } };
         Matrix<Integer> matrix = Matrix.of(data);
 
-        Assertions.assertEquals(1, matrix.above(1, 0).orElse(null));
-        Assertions.assertFalse(matrix.above(0, 0).isPresent());
+        Assertions.assertEquals(1, matrix.valueAbove(1, 0).orElse(null));
+        Assertions.assertFalse(matrix.valueAbove(0, 0).isPresent());
     }
 
     @Test
@@ -244,8 +244,8 @@ class MatrixTest extends TestBase {
         Integer[][] data = { { 1, 2 }, { 3, 4 } };
         Matrix<Integer> matrix = Matrix.of(data);
 
-        Assertions.assertEquals(3, matrix.below(0, 0).orElse(null));
-        Assertions.assertFalse(matrix.below(1, 0).isPresent());
+        Assertions.assertEquals(3, matrix.valueBelow(0, 0).orElse(null));
+        Assertions.assertFalse(matrix.valueBelow(1, 0).isPresent());
     }
 
     @Test
@@ -253,8 +253,8 @@ class MatrixTest extends TestBase {
         Integer[][] data = { { 1, 2 }, { 3, 4 } };
         Matrix<Integer> matrix = Matrix.of(data);
 
-        Assertions.assertEquals(1, matrix.left(0, 1).orElse(null));
-        Assertions.assertFalse(matrix.left(0, 0).isPresent());
+        Assertions.assertEquals(1, matrix.valueLeft(0, 1).orElse(null));
+        Assertions.assertFalse(matrix.valueLeft(0, 0).isPresent());
     }
 
     @Test
@@ -262,8 +262,8 @@ class MatrixTest extends TestBase {
         Integer[][] data = { { 1, 2 }, { 3, 4 } };
         Matrix<Integer> matrix = Matrix.of(data);
 
-        Assertions.assertEquals(2, matrix.right(0, 0).orElse(null));
-        Assertions.assertFalse(matrix.right(0, 1).isPresent());
+        Assertions.assertEquals(2, matrix.valueRight(0, 0).orElse(null));
+        Assertions.assertFalse(matrix.valueRight(0, 1).isPresent());
     }
 
     @Test
@@ -857,7 +857,7 @@ class MatrixTest extends TestBase {
     public void testReverseH() {
         Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 } });
 
-        matrix.flipInPlaceHorizontally();
+        matrix.flipHorizontallyInPlace();
         Assertions.assertEquals(3, matrix.get(0, 0));
         Assertions.assertEquals(2, matrix.get(0, 1));
         Assertions.assertEquals(1, matrix.get(0, 2));
@@ -868,7 +868,7 @@ class MatrixTest extends TestBase {
     public void testReverseV() {
         Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
 
-        matrix.flipInPlaceVertically();
+        matrix.flipVerticallyInPlace();
         Assertions.assertEquals(5, matrix.get(0, 0));
         Assertions.assertEquals(6, matrix.get(0, 1));
         Assertions.assertEquals(3, matrix.get(1, 0));
@@ -1696,36 +1696,36 @@ class MatrixTest extends TestBase {
         @Test
         public void testMatrix_above() {
             Matrix<String> matrix = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
-            u.Nullable<String> value = matrix.above(1, 0);
+            u.Nullable<String> value = matrix.valueAbove(1, 0);
             assertEquals("A", value.get());
-            u.Nullable<String> empty = matrix.above(0, 0);
+            u.Nullable<String> empty = matrix.valueAbove(0, 0);
             assertFalse(empty.isPresent());
         }
 
         @Test
         public void testMatrix_below() {
             Matrix<String> matrix = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
-            u.Nullable<String> value = matrix.below(0, 0);
+            u.Nullable<String> value = matrix.valueBelow(0, 0);
             assertEquals("C", value.get());
-            u.Nullable<String> empty = matrix.below(1, 0);
+            u.Nullable<String> empty = matrix.valueBelow(1, 0);
             assertFalse(empty.isPresent());
         }
 
         @Test
         public void testMatrix_left() {
             Matrix<String> matrix = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
-            u.Nullable<String> value = matrix.left(0, 1);
+            u.Nullable<String> value = matrix.valueLeft(0, 1);
             assertEquals("A", value.get());
-            u.Nullable<String> empty = matrix.left(0, 0);
+            u.Nullable<String> empty = matrix.valueLeft(0, 0);
             assertFalse(empty.isPresent());
         }
 
         @Test
         public void testMatrix_right() {
             Matrix<String> matrix = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
-            u.Nullable<String> value = matrix.right(0, 0);
+            u.Nullable<String> value = matrix.valueRight(0, 0);
             assertEquals("B", value.get());
-            u.Nullable<String> empty = matrix.right(0, 1);
+            u.Nullable<String> empty = matrix.valueRight(0, 1);
             assertFalse(empty.isPresent());
         }
 
@@ -2154,12 +2154,12 @@ class MatrixTest extends TestBase {
         public void testUpOf() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
 
-            Nullable<String> up = m.above(1, 0);
+            Nullable<String> up = m.valueAbove(1, 0);
             assertTrue(up.isPresent());
             assertEquals("A", up.get());
 
             // Top row has no element above
-            Nullable<String> empty = m.above(0, 0);
+            Nullable<String> empty = m.valueAbove(0, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -2167,12 +2167,12 @@ class MatrixTest extends TestBase {
         public void testDownOf() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
 
-            Nullable<String> down = m.below(0, 0);
+            Nullable<String> down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertEquals("C", down.get());
 
             // Bottom row has no element below
-            Nullable<String> empty = m.below(1, 0);
+            Nullable<String> empty = m.valueBelow(1, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -2180,12 +2180,12 @@ class MatrixTest extends TestBase {
         public void testLeftOf() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
 
-            Nullable<String> left = m.left(0, 1);
+            Nullable<String> left = m.valueLeft(0, 1);
             assertTrue(left.isPresent());
             assertEquals("A", left.get());
 
             // Leftmost column has no element to the left
-            Nullable<String> empty = m.left(0, 0);
+            Nullable<String> empty = m.valueLeft(0, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -2193,12 +2193,12 @@ class MatrixTest extends TestBase {
         public void testRightOf() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
 
-            Nullable<String> right = m.right(0, 0);
+            Nullable<String> right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertEquals("B", right.get());
 
             // Rightmost column has no element to the right
-            Nullable<String> empty = m.right(0, 1);
+            Nullable<String> empty = m.valueRight(0, 1);
             assertFalse(empty.isPresent());
         }
 
@@ -3444,7 +3444,7 @@ class MatrixTest extends TestBase {
         @Test
         public void testReverseH_singleColumn() {
             Matrix<String> m = Matrix.of(new String[][] { { "A" }, { "B" }, { "C" } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertEquals("A", m.get(0, 0));
             assertEquals("B", m.get(1, 0));
             assertEquals("C", m.get(2, 0));
@@ -3453,7 +3453,7 @@ class MatrixTest extends TestBase {
         @Test
         public void testReverseV_singleRow() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B", "C" } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertEquals("A", m.get(0, 0));
             assertEquals("B", m.get(0, 1));
             assertEquals("C", m.get(0, 2));
@@ -3831,7 +3831,7 @@ class MatrixTest extends TestBase {
         @Test
         public void testUpOf_validPosition() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
-            Nullable<String> up = m.above(1, 0);
+            Nullable<String> up = m.valueAbove(1, 0);
             assertTrue(up.isPresent());
             assertEquals("A", up.get());
         }
@@ -3839,14 +3839,14 @@ class MatrixTest extends TestBase {
         @Test
         public void testUpOf_topEdge() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
-            Nullable<String> up = m.above(0, 0);
+            Nullable<String> up = m.valueAbove(0, 0);
             assertFalse(up.isPresent());
         }
 
         @Test
         public void testDownOf_validPosition() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
-            Nullable<String> down = m.below(0, 0);
+            Nullable<String> down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertEquals("C", down.get());
         }
@@ -3854,14 +3854,14 @@ class MatrixTest extends TestBase {
         @Test
         public void testDownOf_bottomEdge() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
-            Nullable<String> down = m.below(1, 0);
+            Nullable<String> down = m.valueBelow(1, 0);
             assertFalse(down.isPresent());
         }
 
         @Test
         public void testLeftOf_validPosition() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
-            Nullable<String> left = m.left(0, 1);
+            Nullable<String> left = m.valueLeft(0, 1);
             assertTrue(left.isPresent());
             assertEquals("A", left.get());
         }
@@ -3869,14 +3869,14 @@ class MatrixTest extends TestBase {
         @Test
         public void testLeftOf_leftEdge() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
-            Nullable<String> left = m.left(0, 0);
+            Nullable<String> left = m.valueLeft(0, 0);
             assertFalse(left.isPresent());
         }
 
         @Test
         public void testRightOf_validPosition() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
-            Nullable<String> right = m.right(0, 0);
+            Nullable<String> right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertEquals("B", right.get());
         }
@@ -3884,7 +3884,7 @@ class MatrixTest extends TestBase {
         @Test
         public void testRightOf_rightEdge() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
-            Nullable<String> right = m.right(0, 1);
+            Nullable<String> right = m.valueRight(0, 1);
             assertFalse(right.isPresent());
         }
 
@@ -4513,10 +4513,10 @@ class MatrixTest extends TestBase {
         @Test
         public void testAdjacentMethods_withIntegers() {
             Matrix<Integer> m = Matrix.of(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            assertEquals(5, m.above(2, 1).get());
-            assertEquals(5, m.below(0, 1).get());
-            assertEquals(5, m.left(1, 2).get());
-            assertEquals(5, m.right(1, 0).get());
+            assertEquals(5, m.valueAbove(2, 1).get());
+            assertEquals(5, m.valueBelow(0, 1).get());
+            assertEquals(5, m.valueLeft(1, 2).get());
+            assertEquals(5, m.valueRight(1, 0).get());
         }
 
         @Test
@@ -5041,7 +5041,7 @@ class MatrixTest extends TestBase {
         @Test
         public void testReverseH_strings() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B", "C" }, { "D", "E", "F" } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertEquals("C", m.get(0, 0));
             assertEquals("B", m.get(0, 1));
             assertEquals("A", m.get(0, 2));
@@ -5051,7 +5051,7 @@ class MatrixTest extends TestBase {
         @Test
         public void testReverseH_integers() {
             Matrix<Integer> m = Matrix.of(new Integer[][] { { 1, 2 }, { 3, 4 } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertEquals(2, m.get(0, 0));
             assertEquals(1, m.get(0, 1));
             assertEquals(4, m.get(1, 0));
@@ -5061,7 +5061,7 @@ class MatrixTest extends TestBase {
         @Test
         public void testReverseV_strings() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" }, { "E", "F" } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertEquals("E", m.get(0, 0));
             assertEquals("F", m.get(0, 1));
             assertEquals("C", m.get(1, 0));
@@ -5071,7 +5071,7 @@ class MatrixTest extends TestBase {
         @Test
         public void testReverseV_integers() {
             Matrix<Integer> m = Matrix.of(new Integer[][] { { 1, 2 }, { 3, 4 } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertEquals(3, m.get(0, 0));
             assertEquals(4, m.get(0, 1));
             assertEquals(1, m.get(1, 0));
@@ -5983,7 +5983,7 @@ class MatrixTest extends TestBase {
         public void test_upOf_withElementAbove() {
             String[][] arr = { { "a", "b" }, { "c", "d" } };
             Matrix<String> m = new Matrix<>(arr);
-            Nullable<String> result = m.above(1, 0);
+            Nullable<String> result = m.valueAbove(1, 0);
             assertTrue(result.isPresent());
             assertEquals("a", result.get());
         }
@@ -5992,7 +5992,7 @@ class MatrixTest extends TestBase {
         public void test_upOf_atTopRow_returnsEmpty() {
             String[][] arr = { { "a", "b" }, { "c", "d" } };
             Matrix<String> m = new Matrix<>(arr);
-            Nullable<String> result = m.above(0, 0);
+            Nullable<String> result = m.valueAbove(0, 0);
             assertFalse(result.isPresent());
         }
 
@@ -6000,7 +6000,7 @@ class MatrixTest extends TestBase {
         public void test_downOf_withElementBelow() {
             String[][] arr = { { "a", "b" }, { "c", "d" } };
             Matrix<String> m = new Matrix<>(arr);
-            Nullable<String> result = m.below(0, 1);
+            Nullable<String> result = m.valueBelow(0, 1);
             assertTrue(result.isPresent());
             assertEquals("d", result.get());
         }
@@ -6009,7 +6009,7 @@ class MatrixTest extends TestBase {
         public void test_downOf_atBottomRow_returnsEmpty() {
             String[][] arr = { { "a", "b" }, { "c", "d" } };
             Matrix<String> m = new Matrix<>(arr);
-            Nullable<String> result = m.below(1, 1);
+            Nullable<String> result = m.valueBelow(1, 1);
             assertFalse(result.isPresent());
         }
 
@@ -6017,7 +6017,7 @@ class MatrixTest extends TestBase {
         public void test_leftOf_withElementToLeft() {
             String[][] arr = { { "a", "b" }, { "c", "d" } };
             Matrix<String> m = new Matrix<>(arr);
-            Nullable<String> result = m.left(0, 1);
+            Nullable<String> result = m.valueLeft(0, 1);
             assertTrue(result.isPresent());
             assertEquals("a", result.get());
         }
@@ -6026,7 +6026,7 @@ class MatrixTest extends TestBase {
         public void test_leftOf_atLeftColumn_returnsEmpty() {
             String[][] arr = { { "a", "b" }, { "c", "d" } };
             Matrix<String> m = new Matrix<>(arr);
-            Nullable<String> result = m.left(1, 0);
+            Nullable<String> result = m.valueLeft(1, 0);
             assertFalse(result.isPresent());
         }
 
@@ -6034,7 +6034,7 @@ class MatrixTest extends TestBase {
         public void test_rightOf_withElementToRight() {
             String[][] arr = { { "a", "b" }, { "c", "d" } };
             Matrix<String> m = new Matrix<>(arr);
-            Nullable<String> result = m.right(1, 0);
+            Nullable<String> result = m.valueRight(1, 0);
             assertTrue(result.isPresent());
             assertEquals("d", result.get());
         }
@@ -6043,7 +6043,7 @@ class MatrixTest extends TestBase {
         public void test_rightOf_atRightColumn_returnsEmpty() {
             String[][] arr = { { "a", "b" }, { "c", "d" } };
             Matrix<String> m = new Matrix<>(arr);
-            Nullable<String> result = m.right(0, 1);
+            Nullable<String> result = m.valueRight(0, 1);
             assertFalse(result.isPresent());
         }
 
@@ -6456,7 +6456,7 @@ class MatrixTest extends TestBase {
         public void test_reverseH_reversesHorizontally() {
             String[][] arr = { { "a", "b", "c" }, { "d", "e", "f" } };
             Matrix<String> m = new Matrix<>(arr);
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertEquals("c", m.get(0, 0));
             assertEquals("a", m.get(0, 2));
             assertEquals("f", m.get(1, 0));
@@ -6466,7 +6466,7 @@ class MatrixTest extends TestBase {
         public void test_reverseV_reversesVertically() {
             String[][] arr = { { "a", "b" }, { "c", "d" }, { "e", "f" } };
             Matrix<String> m = new Matrix<>(arr);
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertEquals("e", m.get(0, 0));
             assertEquals("f", m.get(0, 1));
             assertEquals("a", m.get(2, 0));
@@ -7012,7 +7012,7 @@ class MatrixTest extends TestBase {
         }
     }
 
-    // === Missing coverage: resize, assignFrom, flipInPlace ===
+    // === Missing coverage: resize, assignFrom, flip*InPlace ===
 
     @Test
     public void testResize_expand() {
@@ -7130,7 +7130,7 @@ class MatrixTest extends TestBase {
     @Test
     public void testFlipInPlaceHorizontally() {
         Matrix<String> m = Matrix.of(new String[][] { { "a", "b", "c" }, { "d", "e", "f" } });
-        m.flipInPlaceHorizontally();
+        m.flipHorizontallyInPlace();
         assertEquals("c", m.get(0, 0));
         assertEquals("b", m.get(0, 1));
         assertEquals("a", m.get(0, 2));
@@ -7142,7 +7142,7 @@ class MatrixTest extends TestBase {
     @Test
     public void testFlipInPlaceHorizontally_singleColumn() {
         Matrix<Integer> m = Matrix.of(new Integer[][] { { 1 }, { 2 } });
-        m.flipInPlaceHorizontally();
+        m.flipHorizontallyInPlace();
         assertEquals(1, m.get(0, 0));
         assertEquals(2, m.get(1, 0));
     }
@@ -7150,7 +7150,7 @@ class MatrixTest extends TestBase {
     @Test
     public void testFlipInPlaceVertically() {
         Matrix<String> m = Matrix.of(new String[][] { { "a", "b" }, { "c", "d" }, { "e", "f" } });
-        m.flipInPlaceVertically();
+        m.flipVerticallyInPlace();
         assertEquals("e", m.get(0, 0));
         assertEquals("f", m.get(0, 1));
         assertEquals("c", m.get(1, 0));
@@ -7162,7 +7162,7 @@ class MatrixTest extends TestBase {
     @Test
     public void testFlipInPlaceVertically_singleRow() {
         Matrix<String> m = Matrix.of(new String[][] { { "a", "b", "c" } });
-        m.flipInPlaceVertically();
+        m.flipVerticallyInPlace();
         assertEquals("a", m.get(0, 0));
         assertEquals("b", m.get(0, 1));
         assertEquals("c", m.get(0, 2));

@@ -463,8 +463,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * OptionalChar value = matrix.above(1, 0);   // Returns OptionalChar.of('a')
-     * OptionalChar empty = matrix.above(0, 0);   // Returns OptionalChar.empty() - no row above
+     * OptionalChar value = matrix.valueAbove(1, 0);   // Returns OptionalChar.of('a')
+     * OptionalChar empty = matrix.valueAbove(0, 0);   // Returns OptionalChar.empty() - no row above
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -472,7 +472,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @return an OptionalChar containing the element at position (rowIndex - 1, columnIndex), or empty if rowIndex == 0
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalChar above(final int rowIndex, final int columnIndex) {
+    public OptionalChar valueAbove(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return rowIndex == 0 ? OptionalChar.empty() : OptionalChar.of(a[rowIndex - 1][columnIndex]);
@@ -486,8 +486,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * OptionalChar value = matrix.below(0, 0);   // Returns OptionalChar.of('c')
-     * OptionalChar empty = matrix.below(1, 0);   // Returns OptionalChar.empty() - no row below
+     * OptionalChar value = matrix.valueBelow(0, 0);   // Returns OptionalChar.of('c')
+     * OptionalChar empty = matrix.valueBelow(1, 0);   // Returns OptionalChar.empty() - no row below
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -495,7 +495,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @return an OptionalChar containing the element at position (rowIndex + 1, columnIndex), or empty if rowIndex == rowCount - 1
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalChar below(final int rowIndex, final int columnIndex) {
+    public OptionalChar valueBelow(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return rowIndex == rowCount - 1 ? OptionalChar.empty() : OptionalChar.of(a[rowIndex + 1][columnIndex]);
@@ -509,8 +509,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * OptionalChar value = matrix.left(0, 1);   // Returns OptionalChar.of('a')
-     * OptionalChar empty = matrix.left(0, 0);   // Returns OptionalChar.empty() - no column to the left
+     * OptionalChar value = matrix.valueLeft(0, 1);   // Returns OptionalChar.of('a')
+     * OptionalChar empty = matrix.valueLeft(0, 0);   // Returns OptionalChar.empty() - no column to the left
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -518,7 +518,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @return an OptionalChar containing the element at position (rowIndex, columnIndex - 1), or empty if columnIndex == 0
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalChar left(final int rowIndex, final int columnIndex) {
+    public OptionalChar valueLeft(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return columnIndex == 0 ? OptionalChar.empty() : OptionalChar.of(a[rowIndex][columnIndex - 1]);
@@ -532,8 +532,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * OptionalChar value = matrix.right(0, 0);   // Returns OptionalChar.of('b')
-     * OptionalChar empty = matrix.right(0, 1);   // Returns OptionalChar.empty() - no column to the right
+     * OptionalChar value = matrix.valueRight(0, 0);   // Returns OptionalChar.of('b')
+     * OptionalChar empty = matrix.valueRight(0, 1);   // Returns OptionalChar.empty() - no column to the right
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -541,7 +541,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @return an OptionalChar containing the element at position (rowIndex, columnIndex + 1), or empty if columnIndex == columnCount - 1
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalChar right(final int rowIndex, final int columnIndex) {
+    public OptionalChar valueRight(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return columnIndex == columnCount - 1 ? OptionalChar.empty() : OptionalChar.of(a[rowIndex][columnIndex + 1]);
@@ -1528,14 +1528,14 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
-     * matrix.flipInPlaceHorizontally();
+     * matrix.flipHorizontallyInPlace();
      * // matrix is now [['c', 'b', 'a'], ['f', 'e', 'd']]
      * }</pre>
      *
      * @see #flipHorizontally() for a non-mutating version
      */
     @Override
-    public void flipInPlaceHorizontally() {
+    public void flipHorizontallyInPlace() {
         for (int i = 0; i < rowCount; i++) {
             N.reverse(a[i]);
         }
@@ -1548,14 +1548,14 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}, {'e', 'f'}});
-     * matrix.flipInPlaceVertically();
+     * matrix.flipVerticallyInPlace();
      * // matrix is now [['e', 'f'], ['c', 'd'], ['a', 'b']]
      * }</pre>
      *
      * @see #flipVertically() for a non-mutating version
      */
     @Override
-    public void flipInPlaceVertically() {
+    public void flipVerticallyInPlace() {
         for (int j = 0; j < columnCount; j++) {
             char tmp = 0;
             for (int l = 0, h = rowCount - 1; l < h;) {
@@ -1578,14 +1578,14 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * }</pre>
      *
      * @return a new CharMatrix with each row reversed
-     * @see #flipInPlaceHorizontally() for an in-place version
+     * @see #flipHorizontallyInPlace() for an in-place version
      * @see #flipVertically()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
     @Override
     public CharMatrix flipHorizontally() {
         final CharMatrix res = this.copy();
-        res.flipInPlaceHorizontally();
+        res.flipHorizontallyInPlace();
         return res;
     }
 
@@ -1601,14 +1601,14 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * }</pre>
      *
      * @return a new matrix that is a vertical flip of this matrix (rows in reversed order)
-     * @see #flipInPlaceVertically() for an in-place version
+     * @see #flipVerticallyInPlace() for an in-place version
      * @see #flipHorizontally()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
     @Override
     public CharMatrix flipVertically() {
         final CharMatrix res = this.copy();
-        res.flipInPlaceVertically();
+        res.flipVerticallyInPlace();
         return res;
     }
 

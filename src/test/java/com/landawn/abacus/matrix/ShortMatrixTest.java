@@ -223,45 +223,45 @@ class ShortMatrixTest extends TestBase {
 
     @Test
     public void testUpOf() {
-        OptionalShort up = matrix.above(1, 1);
+        OptionalShort up = matrix.valueAbove(1, 1);
         assertTrue(up.isPresent());
         assertEquals((short) 2, up.get());
 
         // Test top row
-        OptionalShort empty = matrix.above(0, 1);
+        OptionalShort empty = matrix.valueAbove(0, 1);
         assertFalse(empty.isPresent());
     }
 
     @Test
     public void testDownOf() {
-        OptionalShort down = matrix.below(1, 1);
+        OptionalShort down = matrix.valueBelow(1, 1);
         assertTrue(down.isPresent());
         assertEquals((short) 8, down.get());
 
         // Test bottom row
-        OptionalShort empty = matrix.below(2, 1);
+        OptionalShort empty = matrix.valueBelow(2, 1);
         assertFalse(empty.isPresent());
     }
 
     @Test
     public void testLeftOf() {
-        OptionalShort left = matrix.left(1, 1);
+        OptionalShort left = matrix.valueLeft(1, 1);
         assertTrue(left.isPresent());
         assertEquals((short) 4, left.get());
 
         // Test leftmost column
-        OptionalShort empty = matrix.left(1, 0);
+        OptionalShort empty = matrix.valueLeft(1, 0);
         assertFalse(empty.isPresent());
     }
 
     @Test
     public void testRightOf() {
-        OptionalShort right = matrix.right(1, 1);
+        OptionalShort right = matrix.valueRight(1, 1);
         assertTrue(right.isPresent());
         assertEquals((short) 6, right.get());
 
         // Test rightmost column
-        OptionalShort empty = matrix.right(1, 2);
+        OptionalShort empty = matrix.valueRight(1, 2);
         assertFalse(empty.isPresent());
     }
 
@@ -639,7 +639,7 @@ class ShortMatrixTest extends TestBase {
     @Test
     public void testReverseH() {
         ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-        m.flipInPlaceHorizontally();
+        m.flipHorizontallyInPlace();
         assertEquals((short) 3, m.get(0, 0));
         assertEquals((short) 2, m.get(0, 1));
         assertEquals((short) 1, m.get(0, 2));
@@ -651,7 +651,7 @@ class ShortMatrixTest extends TestBase {
     @Test
     public void testReverseV() {
         ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-        m.flipInPlaceVertically();
+        m.flipVerticallyInPlace();
         assertEquals((short) 5, m.get(0, 0));
         assertEquals((short) 6, m.get(0, 1));
         assertEquals((short) 3, m.get(1, 0));
@@ -1347,18 +1347,18 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testShortMatrix_flipInPlaceHorizontally() {
+        public void testShortMatrix_flipHorizontallyInPlace() {
             ShortMatrix matrix = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            matrix.flipInPlaceHorizontally();
+            matrix.flipHorizontallyInPlace();
             // matrix is now [[3, 2, 1], [6, 5, 4]]
             assertArrayEquals(new short[] { 3, 2, 1 }, matrix.rowView(0));
             assertArrayEquals(new short[] { 6, 5, 4 }, matrix.rowView(1));
         }
 
         @Test
-        public void testShortMatrix_flipInPlaceVertically() {
+        public void testShortMatrix_flipVerticallyInPlace() {
             ShortMatrix matrix = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            matrix.flipInPlaceVertically();
+            matrix.flipVerticallyInPlace();
             // matrix is now [[7, 8, 9], [4, 5, 6], [1, 2, 3]]
             assertArrayEquals(new short[] { 7, 8, 9 }, matrix.rowView(0));
             assertArrayEquals(new short[] { 4, 5, 6 }, matrix.rowView(1));
@@ -1953,12 +1953,12 @@ class ShortMatrixTest extends TestBase {
         public void testUpOf() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
 
-            OptionalShort up = m.above(1, 0);
+            OptionalShort up = m.valueAbove(1, 0);
             assertTrue(up.isPresent());
             assertEquals(1, up.get());
 
             // Top row has no element above
-            OptionalShort empty = m.above(0, 0);
+            OptionalShort empty = m.valueAbove(0, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -1966,12 +1966,12 @@ class ShortMatrixTest extends TestBase {
         public void testDownOf() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
 
-            OptionalShort down = m.below(0, 0);
+            OptionalShort down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertEquals(3, down.get());
 
             // Bottom row has no element below
-            OptionalShort empty = m.below(1, 0);
+            OptionalShort empty = m.valueBelow(1, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -1979,12 +1979,12 @@ class ShortMatrixTest extends TestBase {
         public void testLeftOf() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
 
-            OptionalShort left = m.left(0, 1);
+            OptionalShort left = m.valueLeft(0, 1);
             assertTrue(left.isPresent());
             assertEquals(1, left.get());
 
             // Leftmost column has no element to the left
-            OptionalShort empty = m.left(0, 0);
+            OptionalShort empty = m.valueLeft(0, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -1992,12 +1992,12 @@ class ShortMatrixTest extends TestBase {
         public void testRightOf() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
 
-            OptionalShort right = m.right(0, 0);
+            OptionalShort right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertEquals(2, right.get());
 
             // Rightmost column has no element to the right
-            OptionalShort empty = m.right(0, 1);
+            OptionalShort empty = m.valueRight(0, 1);
             assertFalse(empty.isPresent());
         }
 
@@ -2419,7 +2419,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testReverseH() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertEquals(3, m.get(0, 0));
             assertEquals(2, m.get(0, 1));
             assertEquals(1, m.get(0, 2));
@@ -2429,7 +2429,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testReverseV() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertEquals(5, m.get(0, 0));
             assertEquals(6, m.get(0, 1));
             assertEquals(3, m.get(1, 0));
@@ -3221,7 +3221,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testReverseH_singleColumn() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1 }, { 2 } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertEquals(1, m.get(0, 0));
             assertEquals(2, m.get(1, 0));
         }
@@ -3229,7 +3229,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testReverseV_singleRow() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertEquals(1, m.get(0, 0));
             assertEquals(2, m.get(0, 1));
         }
@@ -3560,28 +3560,28 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testUpOf_emptyMatrix() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            OptionalShort up = m.above(0, 1);
+            OptionalShort up = m.valueAbove(0, 1);
             assertFalse(up.isPresent());
         }
 
         @Test
         public void testDownOf_bottomRow() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            OptionalShort down = m.below(1, 1);
+            OptionalShort down = m.valueBelow(1, 1);
             assertFalse(down.isPresent());
         }
 
         @Test
         public void testLeftOf_leftmostColumn() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            OptionalShort left = m.left(1, 0);
+            OptionalShort left = m.valueLeft(1, 0);
             assertFalse(left.isPresent());
         }
 
         @Test
         public void testRightOf_rightmostColumn() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            OptionalShort right = m.right(1, 1);
+            OptionalShort right = m.valueRight(1, 1);
             assertFalse(right.isPresent());
         }
     }
@@ -4130,44 +4130,44 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testUpOf() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            OptionalShort up = m.above(1, 0);
+            OptionalShort up = m.valueAbove(1, 0);
             assertTrue(up.isPresent());
             assertEquals((short) 1, up.get());
 
-            OptionalShort noUp = m.above(0, 0);
+            OptionalShort noUp = m.valueAbove(0, 0);
             assertFalse(noUp.isPresent());
         }
 
         @Test
         public void testDownOf() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            OptionalShort down = m.below(0, 0);
+            OptionalShort down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertEquals((short) 3, down.get());
 
-            OptionalShort noDown = m.below(1, 0);
+            OptionalShort noDown = m.valueBelow(1, 0);
             assertFalse(noDown.isPresent());
         }
 
         @Test
         public void testLeftOf() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            OptionalShort left = m.left(0, 1);
+            OptionalShort left = m.valueLeft(0, 1);
             assertTrue(left.isPresent());
             assertEquals((short) 1, left.get());
 
-            OptionalShort noLeft = m.left(0, 0);
+            OptionalShort noLeft = m.valueLeft(0, 0);
             assertFalse(noLeft.isPresent());
         }
 
         @Test
         public void testRightOf() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            OptionalShort right = m.right(0, 0);
+            OptionalShort right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertEquals((short) 2, right.get());
 
-            OptionalShort noRight = m.right(0, 1);
+            OptionalShort noRight = m.valueRight(0, 1);
             assertFalse(noRight.isPresent());
         }
 
@@ -4460,7 +4460,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testReverseH() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertEquals((short) 3, m.get(0, 0));
             assertEquals((short) 2, m.get(0, 1));
             assertEquals((short) 1, m.get(0, 2));
@@ -4470,7 +4470,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testReverseV() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertEquals((short) 5, m.get(0, 0));
             assertEquals((short) 6, m.get(0, 1));
             assertEquals((short) 1, m.get(2, 0));
@@ -5075,7 +5075,7 @@ class ShortMatrixTest extends TestBase {
         public void test_upOf_withElementAbove() {
             short[][] arr = { { 1, 2 }, { 3, 4 } };
             ShortMatrix m = new ShortMatrix(arr);
-            OptionalShort result = m.above(1, 0);
+            OptionalShort result = m.valueAbove(1, 0);
             assertTrue(result.isPresent());
             assertEquals(1, result.getAsShort());
         }
@@ -5084,7 +5084,7 @@ class ShortMatrixTest extends TestBase {
         public void test_upOf_atTopRow_returnsEmpty() {
             short[][] arr = { { 1, 2 }, { 3, 4 } };
             ShortMatrix m = new ShortMatrix(arr);
-            OptionalShort result = m.above(0, 0);
+            OptionalShort result = m.valueAbove(0, 0);
             assertFalse(result.isPresent());
         }
 
@@ -5092,7 +5092,7 @@ class ShortMatrixTest extends TestBase {
         public void test_downOf_withElementBelow() {
             short[][] arr = { { 1, 2 }, { 3, 4 } };
             ShortMatrix m = new ShortMatrix(arr);
-            OptionalShort result = m.below(0, 1);
+            OptionalShort result = m.valueBelow(0, 1);
             assertTrue(result.isPresent());
             assertEquals(4, result.getAsShort());
         }
@@ -5101,7 +5101,7 @@ class ShortMatrixTest extends TestBase {
         public void test_downOf_atBottomRow_returnsEmpty() {
             short[][] arr = { { 1, 2 }, { 3, 4 } };
             ShortMatrix m = new ShortMatrix(arr);
-            OptionalShort result = m.below(1, 1);
+            OptionalShort result = m.valueBelow(1, 1);
             assertFalse(result.isPresent());
         }
 
@@ -5109,7 +5109,7 @@ class ShortMatrixTest extends TestBase {
         public void test_leftOf_withElementToLeft() {
             short[][] arr = { { 1, 2 }, { 3, 4 } };
             ShortMatrix m = new ShortMatrix(arr);
-            OptionalShort result = m.left(0, 1);
+            OptionalShort result = m.valueLeft(0, 1);
             assertTrue(result.isPresent());
             assertEquals(1, result.getAsShort());
         }
@@ -5118,7 +5118,7 @@ class ShortMatrixTest extends TestBase {
         public void test_leftOf_atLeftColumn_returnsEmpty() {
             short[][] arr = { { 1, 2 }, { 3, 4 } };
             ShortMatrix m = new ShortMatrix(arr);
-            OptionalShort result = m.left(1, 0);
+            OptionalShort result = m.valueLeft(1, 0);
             assertFalse(result.isPresent());
         }
 
@@ -5126,7 +5126,7 @@ class ShortMatrixTest extends TestBase {
         public void test_rightOf_withElementToRight() {
             short[][] arr = { { 1, 2 }, { 3, 4 } };
             ShortMatrix m = new ShortMatrix(arr);
-            OptionalShort result = m.right(1, 0);
+            OptionalShort result = m.valueRight(1, 0);
             assertTrue(result.isPresent());
             assertEquals(4, result.getAsShort());
         }
@@ -5135,7 +5135,7 @@ class ShortMatrixTest extends TestBase {
         public void test_rightOf_atRightColumn_returnsEmpty() {
             short[][] arr = { { 1, 2 }, { 3, 4 } };
             ShortMatrix m = new ShortMatrix(arr);
-            OptionalShort result = m.right(0, 1);
+            OptionalShort result = m.valueRight(0, 1);
             assertFalse(result.isPresent());
         }
 
@@ -5474,7 +5474,7 @@ class ShortMatrixTest extends TestBase {
         public void test_reverseH_reversesHorizontally() {
             short[][] arr = { { 1, 2, 3 }, { 4, 5, 6 } };
             ShortMatrix m = new ShortMatrix(arr);
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertEquals(3, m.get(0, 0));
             assertEquals(1, m.get(0, 2));
             assertEquals(6, m.get(1, 0));
@@ -5484,7 +5484,7 @@ class ShortMatrixTest extends TestBase {
         public void test_reverseV_reversesVertically() {
             short[][] arr = { { 1, 2 }, { 3, 4 }, { 5, 6 } };
             ShortMatrix m = new ShortMatrix(arr);
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertEquals(5, m.get(0, 0));
             assertEquals(6, m.get(0, 1));
             assertEquals(1, m.get(2, 0));

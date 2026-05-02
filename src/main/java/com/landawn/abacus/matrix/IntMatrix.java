@@ -594,8 +594,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * u.OptionalInt value = matrix.above(1, 0);   // Returns u.OptionalInt.of(1)
-     * u.OptionalInt empty = matrix.above(0, 0);   // Returns u.OptionalInt.empty() - no row above
+     * u.OptionalInt value = matrix.valueAbove(1, 0);   // Returns u.OptionalInt.of(1)
+     * u.OptionalInt empty = matrix.valueAbove(0, 0);   // Returns u.OptionalInt.empty() - no row above
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -603,7 +603,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @return an u.OptionalInt containing the element at position (rowIndex - 1, columnIndex), or empty if rowIndex == 0
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalInt above(final int rowIndex, final int columnIndex) {
+    public OptionalInt valueAbove(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return rowIndex == 0 ? OptionalInt.empty() : OptionalInt.of(a[rowIndex - 1][columnIndex]);
@@ -616,8 +616,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * u.OptionalInt value = matrix.below(0, 0);   // Returns u.OptionalInt.of(3)
-     * u.OptionalInt empty = matrix.below(1, 0);   // Returns u.OptionalInt.empty() - no row below
+     * u.OptionalInt value = matrix.valueBelow(0, 0);   // Returns u.OptionalInt.of(3)
+     * u.OptionalInt empty = matrix.valueBelow(1, 0);   // Returns u.OptionalInt.empty() - no row below
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -625,7 +625,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @return an u.OptionalInt containing the element at position (rowIndex + 1, columnIndex), or empty if rowIndex == rowCount - 1
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalInt below(final int rowIndex, final int columnIndex) {
+    public OptionalInt valueBelow(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return rowIndex == rowCount - 1 ? OptionalInt.empty() : OptionalInt.of(a[rowIndex + 1][columnIndex]);
@@ -638,8 +638,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * u.OptionalInt value = matrix.left(0, 1);   // Returns u.OptionalInt.of(1)
-     * u.OptionalInt empty = matrix.left(0, 0);   // Returns u.OptionalInt.empty() - no column to the left
+     * u.OptionalInt value = matrix.valueLeft(0, 1);   // Returns u.OptionalInt.of(1)
+     * u.OptionalInt empty = matrix.valueLeft(0, 0);   // Returns u.OptionalInt.empty() - no column to the left
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -647,7 +647,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @return an u.OptionalInt containing the element at position (rowIndex, columnIndex - 1), or empty if columnIndex == 0
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalInt left(final int rowIndex, final int columnIndex) {
+    public OptionalInt valueLeft(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return columnIndex == 0 ? OptionalInt.empty() : OptionalInt.of(a[rowIndex][columnIndex - 1]);
@@ -660,8 +660,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * u.OptionalInt value = matrix.right(0, 0);   // Returns u.OptionalInt.of(2)
-     * u.OptionalInt empty = matrix.right(0, 1);   // Returns u.OptionalInt.empty() - no column to the right
+     * u.OptionalInt value = matrix.valueRight(0, 0);   // Returns u.OptionalInt.of(2)
+     * u.OptionalInt empty = matrix.valueRight(0, 1);   // Returns u.OptionalInt.empty() - no column to the right
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -669,7 +669,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @return an u.OptionalInt containing the element at position (rowIndex, columnIndex + 1), or empty if columnIndex == columnCount - 1
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalInt right(final int rowIndex, final int columnIndex) {
+    public OptionalInt valueRight(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return columnIndex == columnCount - 1 ? OptionalInt.empty() : OptionalInt.of(a[rowIndex][columnIndex + 1]);
@@ -1709,15 +1709,15 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * matrix.flipInPlaceHorizontally();
+     * matrix.flipHorizontallyInPlace();
      * // matrix is now [[3, 2, 1], [6, 5, 4]]
      * }</pre>
      *
      * @see #flipHorizontally()
-     * @see #flipInPlaceVertically()
+     * @see #flipVerticallyInPlace()
      */
     @Override
-    public void flipInPlaceHorizontally() {
+    public void flipHorizontallyInPlace() {
         for (int i = 0; i < rowCount; i++) {
             N.reverse(a[i]);
         }
@@ -1734,15 +1734,15 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}, {5, 6}});
-     * matrix.flipInPlaceVertically();
+     * matrix.flipVerticallyInPlace();
      * // matrix is now [[5, 6], [3, 4], [1, 2]]
      * }</pre>
      *
      * @see #flipVertically()
-     * @see #flipInPlaceHorizontally()
+     * @see #flipHorizontallyInPlace()
      */
     @Override
-    public void flipInPlaceVertically() {
+    public void flipVerticallyInPlace() {
         for (int j = 0; j < columnCount; j++) {
             int tmp = 0;
             for (int l = 0, h = rowCount - 1; l < h;) {
@@ -1766,14 +1766,14 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * }</pre>
      *
      * @return a new IntMatrix with each row reversed
-     * @see #flipInPlaceHorizontally()
+     * @see #flipHorizontallyInPlace()
      * @see #flipVertically()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
     @Override
     public IntMatrix flipHorizontally() {
         final IntMatrix res = this.copy();
-        res.flipInPlaceHorizontally();
+        res.flipHorizontallyInPlace();
         return res;
     }
 
@@ -1790,14 +1790,14 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * }</pre>
      *
      * @return a new IntMatrix with rows reversed
-     * @see #flipInPlaceVertically()
+     * @see #flipVerticallyInPlace()
      * @see #flipHorizontally()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
     @Override
     public IntMatrix flipVertically() {
         final IntMatrix res = this.copy();
-        res.flipInPlaceVertically();
+        res.flipVerticallyInPlace();
         return res;
     }
 

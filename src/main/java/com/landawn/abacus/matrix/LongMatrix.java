@@ -513,8 +513,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
-     * OptionalLong value = matrix.above(1, 0);   // Returns OptionalLong.of(1L)
-     * OptionalLong empty = matrix.above(0, 0);   // Returns OptionalLong.empty() - no row above
+     * OptionalLong value = matrix.valueAbove(1, 0);   // Returns OptionalLong.of(1L)
+     * OptionalLong empty = matrix.valueAbove(0, 0);   // Returns OptionalLong.empty() - no row above
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -522,7 +522,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @return an OptionalLong containing the element at position (rowIndex - 1, columnIndex), or empty if rowIndex == 0
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalLong above(final int rowIndex, final int columnIndex) {
+    public OptionalLong valueAbove(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return rowIndex == 0 ? OptionalLong.empty() : OptionalLong.of(a[rowIndex - 1][columnIndex]);
@@ -536,8 +536,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
-     * OptionalLong value = matrix.below(0, 0);   // Returns OptionalLong.of(3L)
-     * OptionalLong empty = matrix.below(1, 0);   // Returns OptionalLong.empty() - no row below
+     * OptionalLong value = matrix.valueBelow(0, 0);   // Returns OptionalLong.of(3L)
+     * OptionalLong empty = matrix.valueBelow(1, 0);   // Returns OptionalLong.empty() - no row below
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -545,7 +545,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @return an OptionalLong containing the element at position (rowIndex + 1, columnIndex), or empty if rowIndex == rowCount - 1
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalLong below(final int rowIndex, final int columnIndex) {
+    public OptionalLong valueBelow(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return rowIndex == rowCount - 1 ? OptionalLong.empty() : OptionalLong.of(a[rowIndex + 1][columnIndex]);
@@ -559,8 +559,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
-     * OptionalLong value = matrix.left(0, 1);   // Returns OptionalLong.of(1L)
-     * OptionalLong empty = matrix.left(0, 0);   // Returns OptionalLong.empty() - no column to the left
+     * OptionalLong value = matrix.valueLeft(0, 1);   // Returns OptionalLong.of(1L)
+     * OptionalLong empty = matrix.valueLeft(0, 0);   // Returns OptionalLong.empty() - no column to the left
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -568,7 +568,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @return an OptionalLong containing the element at position (rowIndex, columnIndex - 1), or empty if columnIndex == 0
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalLong left(final int rowIndex, final int columnIndex) {
+    public OptionalLong valueLeft(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return columnIndex == 0 ? OptionalLong.empty() : OptionalLong.of(a[rowIndex][columnIndex - 1]);
@@ -582,8 +582,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
-     * OptionalLong value = matrix.right(0, 0);   // Returns OptionalLong.of(2L)
-     * OptionalLong empty = matrix.right(0, 1);   // Returns OptionalLong.empty() - no column to the right
+     * OptionalLong value = matrix.valueRight(0, 0);   // Returns OptionalLong.of(2L)
+     * OptionalLong empty = matrix.valueRight(0, 1);   // Returns OptionalLong.empty() - no column to the right
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -591,7 +591,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @return an OptionalLong containing the element at position (rowIndex, columnIndex + 1), or empty if columnIndex == columnCount - 1
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalLong right(final int rowIndex, final int columnIndex) {
+    public OptionalLong valueRight(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return columnIndex == columnCount - 1 ? OptionalLong.empty() : OptionalLong.of(a[rowIndex][columnIndex + 1]);
@@ -1648,15 +1648,15 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1, 2, 3}, {4, 5, 6}});
-     * matrix.flipInPlaceHorizontally();
+     * matrix.flipHorizontallyInPlace();
      * // matrix is now [[3, 2, 1], [6, 5, 4]]
      * }</pre>
      *
      * @see #flipHorizontally()
-     * @see #flipInPlaceVertically()
+     * @see #flipVerticallyInPlace()
      */
     @Override
-    public void flipInPlaceHorizontally() {
+    public void flipHorizontallyInPlace() {
         for (int i = 0; i < rowCount; i++) {
             N.reverse(a[i]);
         }
@@ -1669,15 +1669,15 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * matrix.flipInPlaceVertically();
+     * matrix.flipVerticallyInPlace();
      * // matrix is now [[7, 8, 9], [4, 5, 6], [1, 2, 3]]
      * }</pre>
      *
      * @see #flipVertically()
-     * @see #flipInPlaceHorizontally()
+     * @see #flipHorizontallyInPlace()
      */
     @Override
-    public void flipInPlaceVertically() {
+    public void flipVerticallyInPlace() {
         for (int j = 0; j < columnCount; j++) {
             long tmp = 0;
             for (int l = 0, h = rowCount - 1; l < h;) {
@@ -1701,14 +1701,14 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * }</pre>
      *
      * @return a new matrix with each row reversed
-     * @see #flipInPlaceHorizontally()
+     * @see #flipHorizontallyInPlace()
      * @see #flipVertically()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
     @Override
     public LongMatrix flipHorizontally() {
         final LongMatrix res = this.copy();
-        res.flipInPlaceHorizontally();
+        res.flipHorizontallyInPlace();
         return res;
     }
 
@@ -1725,14 +1725,14 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * }</pre>
      *
      * @return a new matrix with rows in reversed order
-     * @see #flipInPlaceVertically()
+     * @see #flipVerticallyInPlace()
      * @see #flipHorizontally()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
     @Override
     public LongMatrix flipVertically() {
         final LongMatrix res = this.copy();
-        res.flipInPlaceVertically();
+        res.flipVerticallyInPlace();
         return res;
     }
 

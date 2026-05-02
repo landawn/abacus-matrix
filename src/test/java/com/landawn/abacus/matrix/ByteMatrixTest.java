@@ -234,11 +234,11 @@ class ByteMatrixTest extends TestBase {
         byte[][] a = { { 1, 2 }, { 3, 4 } };
         ByteMatrix matrix = ByteMatrix.of(a);
 
-        OptionalByte up = matrix.above(1, 0);
+        OptionalByte up = matrix.valueAbove(1, 0);
         Assertions.assertTrue(up.isPresent());
         Assertions.assertEquals(1, up.get());
 
-        OptionalByte empty = matrix.above(0, 0);
+        OptionalByte empty = matrix.valueAbove(0, 0);
         Assertions.assertFalse(empty.isPresent());
     }
 
@@ -247,11 +247,11 @@ class ByteMatrixTest extends TestBase {
         byte[][] a = { { 1, 2 }, { 3, 4 } };
         ByteMatrix matrix = ByteMatrix.of(a);
 
-        OptionalByte down = matrix.below(0, 0);
+        OptionalByte down = matrix.valueBelow(0, 0);
         Assertions.assertTrue(down.isPresent());
         Assertions.assertEquals(3, down.get());
 
-        OptionalByte empty = matrix.below(1, 0);
+        OptionalByte empty = matrix.valueBelow(1, 0);
         Assertions.assertFalse(empty.isPresent());
     }
 
@@ -260,11 +260,11 @@ class ByteMatrixTest extends TestBase {
         byte[][] a = { { 1, 2 }, { 3, 4 } };
         ByteMatrix matrix = ByteMatrix.of(a);
 
-        OptionalByte left = matrix.left(0, 1);
+        OptionalByte left = matrix.valueLeft(0, 1);
         Assertions.assertTrue(left.isPresent());
         Assertions.assertEquals(1, left.get());
 
-        OptionalByte empty = matrix.left(0, 0);
+        OptionalByte empty = matrix.valueLeft(0, 0);
         Assertions.assertFalse(empty.isPresent());
     }
 
@@ -273,11 +273,11 @@ class ByteMatrixTest extends TestBase {
         byte[][] a = { { 1, 2 }, { 3, 4 } };
         ByteMatrix matrix = ByteMatrix.of(a);
 
-        OptionalByte right = matrix.right(0, 0);
+        OptionalByte right = matrix.valueRight(0, 0);
         Assertions.assertTrue(right.isPresent());
         Assertions.assertEquals(2, right.get());
 
-        OptionalByte empty = matrix.right(0, 1);
+        OptionalByte empty = matrix.valueRight(0, 1);
         Assertions.assertFalse(empty.isPresent());
     }
 
@@ -687,7 +687,7 @@ class ByteMatrixTest extends TestBase {
         byte[][] a = { { 1, 2, 3 }, { 4, 5, 6 } };
         ByteMatrix matrix = ByteMatrix.of(a);
 
-        matrix.flipInPlaceHorizontally();
+        matrix.flipHorizontallyInPlace();
         Assertions.assertEquals(3, matrix.get(0, 0));
         Assertions.assertEquals(2, matrix.get(0, 1));
         Assertions.assertEquals(1, matrix.get(0, 2));
@@ -699,7 +699,7 @@ class ByteMatrixTest extends TestBase {
         byte[][] a = { { 1, 2 }, { 3, 4 }, { 5, 6 } };
         ByteMatrix matrix = ByteMatrix.of(a);
 
-        matrix.flipInPlaceVertically();
+        matrix.flipVerticallyInPlace();
         Assertions.assertEquals(5, matrix.get(0, 0));
         Assertions.assertEquals(6, matrix.get(0, 1));
         Assertions.assertEquals(3, matrix.get(1, 0));
@@ -1656,12 +1656,12 @@ class ByteMatrixTest extends TestBase {
         public void testUpOf() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
 
-            OptionalByte up = m.above(1, 0);
+            OptionalByte up = m.valueAbove(1, 0);
             assertTrue(up.isPresent());
             assertEquals(1, up.get());
 
             // Top row has no element above
-            OptionalByte empty = m.above(0, 0);
+            OptionalByte empty = m.valueAbove(0, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -1669,12 +1669,12 @@ class ByteMatrixTest extends TestBase {
         public void testDownOf() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
 
-            OptionalByte down = m.below(0, 0);
+            OptionalByte down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertEquals(3, down.get());
 
             // Bottom row has no element below
-            OptionalByte empty = m.below(1, 0);
+            OptionalByte empty = m.valueBelow(1, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -1682,12 +1682,12 @@ class ByteMatrixTest extends TestBase {
         public void testLeftOf() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
 
-            OptionalByte left = m.left(0, 1);
+            OptionalByte left = m.valueLeft(0, 1);
             assertTrue(left.isPresent());
             assertEquals(1, left.get());
 
             // Leftmost column has no element to the left
-            OptionalByte empty = m.left(0, 0);
+            OptionalByte empty = m.valueLeft(0, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -1695,12 +1695,12 @@ class ByteMatrixTest extends TestBase {
         public void testRightOf() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
 
-            OptionalByte right = m.right(0, 0);
+            OptionalByte right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertEquals(2, right.get());
 
             // Rightmost column has no element to the right
-            OptionalByte empty = m.right(0, 1);
+            OptionalByte empty = m.valueRight(0, 1);
             assertFalse(empty.isPresent());
         }
 
@@ -2104,7 +2104,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testReverseH() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertEquals(3, m.get(0, 0));
             assertEquals(2, m.get(0, 1));
             assertEquals(1, m.get(0, 2));
@@ -2114,7 +2114,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testReverseV() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertEquals(5, m.get(0, 0));
             assertEquals(6, m.get(0, 1));
             assertEquals(3, m.get(1, 0));
@@ -3066,21 +3066,21 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testDownOf_atBottomEdge() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-            OptionalByte down = m.below(1, 0);
+            OptionalByte down = m.valueBelow(1, 0);
             assertFalse(down.isPresent());
         }
 
         @Test
         public void testLeftOf_atLeftEdge() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-            OptionalByte left = m.left(0, 0);
+            OptionalByte left = m.valueLeft(0, 0);
             assertFalse(left.isPresent());
         }
 
         @Test
         public void testRightOf_atRightEdge() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-            OptionalByte right = m.right(0, 1);
+            OptionalByte right = m.valueRight(0, 1);
             assertFalse(right.isPresent());
         }
 
@@ -3402,7 +3402,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testReverseH() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertEquals(3, m.get(0, 0));
             assertEquals(2, m.get(0, 1));
             assertEquals(1, m.get(0, 2));
@@ -3411,7 +3411,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testReverseV() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertEquals(3, m.get(0, 0));
             assertEquals(4, m.get(0, 1));
             assertEquals(1, m.get(1, 0));
@@ -4033,7 +4033,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testUpOf_multipleRows() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            OptionalByte up = m.above(2, 1);
+            OptionalByte up = m.valueAbove(2, 1);
             assertTrue(up.isPresent());
             assertEquals(4, up.get());
         }
@@ -4041,7 +4041,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testDownOf_multipleRows() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            OptionalByte down = m.below(0, 0);
+            OptionalByte down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertEquals(3, down.get());
         }
@@ -4049,7 +4049,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testLeftOf_multipleColumns() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2, 3 } });
-            OptionalByte left = m.left(0, 2);
+            OptionalByte left = m.valueLeft(0, 2);
             assertTrue(left.isPresent());
             assertEquals(2, left.get());
         }
@@ -4057,7 +4057,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testRightOf_multipleColumns() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2, 3 } });
-            OptionalByte right = m.right(0, 0);
+            OptionalByte right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertEquals(2, right.get());
         }
@@ -4321,7 +4321,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testReverseH() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertArrayEquals(new byte[] { 3, 2, 1 }, m.rowView(0));
             assertArrayEquals(new byte[] { 6, 5, 4 }, m.rowView(1));
         }
@@ -4329,14 +4329,14 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testReverseH_singleRow() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2, 3 } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertArrayEquals(new byte[] { 3, 2, 1 }, m.rowView(0));
         }
 
         @Test
         public void testReverseV() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertArrayEquals(new byte[] { 5, 3, 1 }, m.columnCopy(0));
             assertArrayEquals(new byte[] { 6, 4, 2 }, m.columnCopy(1));
         }
@@ -4344,7 +4344,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testReverseV_singleColumn() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1 }, { 2 }, { 3 } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertArrayEquals(new byte[] { 3, 2, 1 }, m.columnCopy(0));
         }
 
@@ -4914,7 +4914,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void test_upOf_exists() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-            OptionalByte up = m.above(1, 0);
+            OptionalByte up = m.valueAbove(1, 0);
             assertTrue(up.isPresent());
             assertEquals(1, up.get());
         }
@@ -4922,14 +4922,14 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void test_upOf_notExists() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-            OptionalByte up = m.above(0, 0);
+            OptionalByte up = m.valueAbove(0, 0);
             assertFalse(up.isPresent());
         }
 
         @Test
         public void test_downOf_exists() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-            OptionalByte down = m.below(0, 0);
+            OptionalByte down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertEquals(3, down.get());
         }
@@ -4937,7 +4937,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void test_leftOf_exists() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-            OptionalByte left = m.left(0, 1);
+            OptionalByte left = m.valueLeft(0, 1);
             assertTrue(left.isPresent());
             assertEquals(1, left.get());
         }
@@ -4945,7 +4945,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void test_rightOf_exists() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-            OptionalByte right = m.right(0, 0);
+            OptionalByte right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertEquals(2, right.get());
         }
@@ -5263,17 +5263,17 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_flipInPlaceHorizontally() {
+        public void test_flipHorizontallyInPlace() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertEquals(2, m.get(0, 0));
             assertEquals(1, m.get(0, 1));
         }
 
         @Test
-        public void test_flipInPlaceVertically() {
+        public void test_flipVerticallyInPlace() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertEquals(3, m.get(0, 0));
             assertEquals(4, m.get(0, 1));
         }
@@ -5722,18 +5722,18 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testByteMatrix_flipInPlaceHorizontally() {
+        public void testByteMatrix_flipHorizontallyInPlace() {
             ByteMatrix matrix = ByteMatrix.of(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            matrix.flipInPlaceHorizontally();
+            matrix.flipHorizontallyInPlace();
             // matrix is now: [[3, 2, 1], [6, 5, 4]]
             assertArrayEquals(new byte[] { 3, 2, 1 }, matrix.rowView(0));
             assertArrayEquals(new byte[] { 6, 5, 4 }, matrix.rowView(1));
         }
 
         @Test
-        public void testByteMatrix_flipInPlaceVertically() {
+        public void testByteMatrix_flipVerticallyInPlace() {
             ByteMatrix matrix = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            matrix.flipInPlaceVertically();
+            matrix.flipVerticallyInPlace();
             // matrix is now: [[5, 6], [3, 4], [1, 2]]
             assertArrayEquals(new byte[] { 5, 6 }, matrix.rowView(0));
             assertArrayEquals(new byte[] { 3, 4 }, matrix.rowView(1));
@@ -5976,7 +5976,7 @@ class ByteMatrixTest extends TestBase {
         }
     }
 
-    // === Missing coverage: resize, assignFrom, flipInPlace ===
+    // === Missing coverage: resize, assignFrom, flip*InPlace ===
 
     @Test
     public void testResize_expand() {
@@ -6085,7 +6085,7 @@ class ByteMatrixTest extends TestBase {
     @Test
     public void testFlipInPlaceHorizontally() {
         ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-        m.flipInPlaceHorizontally();
+        m.flipHorizontallyInPlace();
         assertEquals(3, m.get(0, 0));
         assertEquals(2, m.get(0, 1));
         assertEquals(1, m.get(0, 2));
@@ -6097,7 +6097,7 @@ class ByteMatrixTest extends TestBase {
     @Test
     public void testFlipInPlaceHorizontally_singleColumn() {
         ByteMatrix m = ByteMatrix.of(new byte[][] { { 1 }, { 2 } });
-        m.flipInPlaceHorizontally();
+        m.flipHorizontallyInPlace();
         assertEquals(1, m.get(0, 0));
         assertEquals(2, m.get(1, 0));
     }
@@ -6105,7 +6105,7 @@ class ByteMatrixTest extends TestBase {
     @Test
     public void testFlipInPlaceVertically() {
         ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-        m.flipInPlaceVertically();
+        m.flipVerticallyInPlace();
         assertEquals(5, m.get(0, 0));
         assertEquals(6, m.get(0, 1));
         assertEquals(3, m.get(1, 0));
@@ -6117,7 +6117,7 @@ class ByteMatrixTest extends TestBase {
     @Test
     public void testFlipInPlaceVertically_singleRow() {
         ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2, 3 } });
-        m.flipInPlaceVertically();
+        m.flipVerticallyInPlace();
         assertEquals(1, m.get(0, 0));
         assertEquals(2, m.get(0, 1));
         assertEquals(3, m.get(0, 2));

@@ -210,8 +210,8 @@ class DoubleMatrixTest extends TestBase {
         double[][] arr = { { 1.0, 2.0 }, { 3.0, 4.0 } };
         DoubleMatrix matrix = DoubleMatrix.of(arr);
 
-        assertTrue(matrix.above(0, 0).isEmpty());
-        assertEquals(1.0, matrix.above(1, 0).orElse(0.0));
+        assertTrue(matrix.valueAbove(0, 0).isEmpty());
+        assertEquals(1.0, matrix.valueAbove(1, 0).orElse(0.0));
     }
 
     @Test
@@ -219,8 +219,8 @@ class DoubleMatrixTest extends TestBase {
         double[][] arr = { { 1.0, 2.0 }, { 3.0, 4.0 } };
         DoubleMatrix matrix = DoubleMatrix.of(arr);
 
-        assertEquals(3.0, matrix.below(0, 0).orElse(0.0));
-        assertTrue(matrix.below(1, 0).isEmpty());
+        assertEquals(3.0, matrix.valueBelow(0, 0).orElse(0.0));
+        assertTrue(matrix.valueBelow(1, 0).isEmpty());
     }
 
     @Test
@@ -228,8 +228,8 @@ class DoubleMatrixTest extends TestBase {
         double[][] arr = { { 1.0, 2.0 }, { 3.0, 4.0 } };
         DoubleMatrix matrix = DoubleMatrix.of(arr);
 
-        assertTrue(matrix.left(0, 0).isEmpty());
-        assertEquals(1.0, matrix.left(0, 1).orElse(0.0));
+        assertTrue(matrix.valueLeft(0, 0).isEmpty());
+        assertEquals(1.0, matrix.valueLeft(0, 1).orElse(0.0));
     }
 
     @Test
@@ -237,8 +237,8 @@ class DoubleMatrixTest extends TestBase {
         double[][] arr = { { 1.0, 2.0 }, { 3.0, 4.0 } };
         DoubleMatrix matrix = DoubleMatrix.of(arr);
 
-        assertEquals(2.0, matrix.right(0, 0).orElse(0.0));
-        assertTrue(matrix.right(0, 1).isEmpty());
+        assertEquals(2.0, matrix.valueRight(0, 0).orElse(0.0));
+        assertTrue(matrix.valueRight(0, 1).isEmpty());
     }
 
     @Test
@@ -658,7 +658,7 @@ class DoubleMatrixTest extends TestBase {
         double[][] arr = { { 1.0, 2.0 }, { 3.0, 4.0 } };
         DoubleMatrix matrix = DoubleMatrix.of(arr);
 
-        matrix.flipInPlaceHorizontally();
+        matrix.flipHorizontallyInPlace();
         assertEquals(2.0, matrix.get(0, 0));
         assertEquals(1.0, matrix.get(0, 1));
     }
@@ -668,7 +668,7 @@ class DoubleMatrixTest extends TestBase {
         double[][] arr = { { 1.0, 2.0 }, { 3.0, 4.0 } };
         DoubleMatrix matrix = DoubleMatrix.of(arr);
 
-        matrix.flipInPlaceVertically();
+        matrix.flipVerticallyInPlace();
         assertEquals(3.0, matrix.get(0, 0));
         assertEquals(1.0, matrix.get(1, 0));
     }
@@ -1748,12 +1748,12 @@ class DoubleMatrixTest extends TestBase {
         public void testUpOf() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.5, 2.5 }, { 3.5, 4.5 } });
 
-            OptionalDouble up = m.above(1, 0);
+            OptionalDouble up = m.valueAbove(1, 0);
             assertTrue(up.isPresent());
             assertEquals(1.5, up.get(), DELTA);
 
             // Top row has no element above
-            OptionalDouble empty = m.above(0, 0);
+            OptionalDouble empty = m.valueAbove(0, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -1761,12 +1761,12 @@ class DoubleMatrixTest extends TestBase {
         public void testDownOf() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.5, 2.5 }, { 3.5, 4.5 } });
 
-            OptionalDouble down = m.below(0, 0);
+            OptionalDouble down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertEquals(3.5, down.get(), DELTA);
 
             // Bottom row has no element below
-            OptionalDouble empty = m.below(1, 0);
+            OptionalDouble empty = m.valueBelow(1, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -1774,12 +1774,12 @@ class DoubleMatrixTest extends TestBase {
         public void testLeftOf() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.5, 2.5 }, { 3.5, 4.5 } });
 
-            OptionalDouble left = m.left(0, 1);
+            OptionalDouble left = m.valueLeft(0, 1);
             assertTrue(left.isPresent());
             assertEquals(1.5, left.get(), DELTA);
 
             // Leftmost column has no element to the left
-            OptionalDouble empty = m.left(0, 0);
+            OptionalDouble empty = m.valueLeft(0, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -1787,12 +1787,12 @@ class DoubleMatrixTest extends TestBase {
         public void testRightOf() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.5, 2.5 }, { 3.5, 4.5 } });
 
-            OptionalDouble right = m.right(0, 0);
+            OptionalDouble right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertEquals(2.5, right.get(), DELTA);
 
             // Rightmost column has no element to the right
-            OptionalDouble empty = m.right(0, 1);
+            OptionalDouble empty = m.valueRight(0, 1);
             assertFalse(empty.isPresent());
         }
 
@@ -2232,7 +2232,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testReverseH() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertEquals(3.0, m.get(0, 0), DELTA);
             assertEquals(2.0, m.get(0, 1), DELTA);
             assertEquals(1.0, m.get(0, 2), DELTA);
@@ -2242,7 +2242,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testReverseV() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 }, { 5.0, 6.0 } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertEquals(5.0, m.get(0, 0), DELTA);
             assertEquals(6.0, m.get(0, 1), DELTA);
             assertEquals(3.0, m.get(1, 0), DELTA);
@@ -3537,7 +3537,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testUpOf() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            OptionalDouble up = m.above(1, 0);
+            OptionalDouble up = m.valueAbove(1, 0);
             assertTrue(up.isPresent());
             assertEquals(1.0, up.get());
         }
@@ -3545,7 +3545,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testDownOf() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            OptionalDouble down = m.below(0, 0);
+            OptionalDouble down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertEquals(3.0, down.get());
         }
@@ -3553,7 +3553,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testLeftOf() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            OptionalDouble left = m.left(0, 1);
+            OptionalDouble left = m.valueLeft(0, 1);
             assertTrue(left.isPresent());
             assertEquals(1.0, left.get());
         }
@@ -3561,7 +3561,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testRightOf() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            OptionalDouble right = m.right(0, 0);
+            OptionalDouble right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertEquals(2.0, right.get());
         }
@@ -3874,7 +3874,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testReverseH() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertEquals(2.0, m.get(0, 0));
             assertEquals(1.0, m.get(0, 1));
             assertEquals(4.0, m.get(1, 0));
@@ -3884,7 +3884,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testReverseV() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertEquals(3.0, m.get(0, 0));
             assertEquals(4.0, m.get(0, 1));
             assertEquals(1.0, m.get(1, 0));
@@ -4841,7 +4841,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void test_upOf() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            OptionalDouble up = m.above(1, 0);
+            OptionalDouble up = m.valueAbove(1, 0);
             assertTrue(up.isPresent());
             assertEquals(1.0, up.get(), 0.0);
         }
@@ -4849,14 +4849,14 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void test_upOf_firstRow() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            OptionalDouble up = m.above(0, 0);
+            OptionalDouble up = m.valueAbove(0, 0);
             assertFalse(up.isPresent());
         }
 
         @Test
         public void test_downOf() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            OptionalDouble down = m.below(0, 0);
+            OptionalDouble down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertEquals(3.0, down.get(), 0.0);
         }
@@ -4864,14 +4864,14 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void test_downOf_lastRow() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            OptionalDouble down = m.below(1, 0);
+            OptionalDouble down = m.valueBelow(1, 0);
             assertFalse(down.isPresent());
         }
 
         @Test
         public void test_leftOf() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            OptionalDouble left = m.left(0, 1);
+            OptionalDouble left = m.valueLeft(0, 1);
             assertTrue(left.isPresent());
             assertEquals(1.0, left.get(), 0.0);
         }
@@ -4879,14 +4879,14 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void test_leftOf_firstColumn() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            OptionalDouble left = m.left(0, 0);
+            OptionalDouble left = m.valueLeft(0, 0);
             assertFalse(left.isPresent());
         }
 
         @Test
         public void test_rightOf() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            OptionalDouble right = m.right(0, 0);
+            OptionalDouble right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertEquals(2.0, right.get(), 0.0);
         }
@@ -4894,7 +4894,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void test_rightOf_lastColumn() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            OptionalDouble right = m.right(0, 1);
+            OptionalDouble right = m.valueRight(0, 1);
             assertFalse(right.isPresent());
         }
 
@@ -5267,18 +5267,18 @@ class DoubleMatrixTest extends TestBase {
         // ============ Reverse and Flip Tests ============
 
         @Test
-        public void test_flipInPlaceHorizontally() {
+        public void test_flipHorizontallyInPlace() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertEquals(3.0, m.get(0, 0), 0.0);
             assertEquals(2.0, m.get(0, 1), 0.0);
             assertEquals(1.0, m.get(0, 2), 0.0);
         }
 
         @Test
-        public void test_flipInPlaceVertically() {
+        public void test_flipVerticallyInPlace() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 }, { 5.0, 6.0 } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertEquals(5.0, m.get(0, 0), 0.0);
             assertEquals(3.0, m.get(1, 0), 0.0);
             assertEquals(1.0, m.get(2, 0), 0.0);
@@ -5786,36 +5786,36 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testDoubleMatrix_above() {
             DoubleMatrix matrix = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            u.OptionalDouble value = matrix.above(1, 0);
+            u.OptionalDouble value = matrix.valueAbove(1, 0);
             assertEquals(1.0, value.get());
-            u.OptionalDouble empty = matrix.above(0, 0);
+            u.OptionalDouble empty = matrix.valueAbove(0, 0);
             assertFalse(empty.isPresent());
         }
 
         @Test
         public void testDoubleMatrix_below() {
             DoubleMatrix matrix = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            u.OptionalDouble value = matrix.below(0, 0);
+            u.OptionalDouble value = matrix.valueBelow(0, 0);
             assertEquals(3.0, value.get());
-            u.OptionalDouble empty = matrix.below(1, 0);
+            u.OptionalDouble empty = matrix.valueBelow(1, 0);
             assertFalse(empty.isPresent());
         }
 
         @Test
         public void testDoubleMatrix_left() {
             DoubleMatrix matrix = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            u.OptionalDouble value = matrix.left(0, 1);
+            u.OptionalDouble value = matrix.valueLeft(0, 1);
             assertEquals(1.0, value.get());
-            u.OptionalDouble empty = matrix.left(0, 0);
+            u.OptionalDouble empty = matrix.valueLeft(0, 0);
             assertFalse(empty.isPresent());
         }
 
         @Test
         public void testDoubleMatrix_right() {
             DoubleMatrix matrix = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            u.OptionalDouble value = matrix.right(0, 0);
+            u.OptionalDouble value = matrix.valueRight(0, 0);
             assertEquals(2.0, value.get());
-            u.OptionalDouble empty = matrix.right(0, 1);
+            u.OptionalDouble empty = matrix.valueRight(0, 1);
             assertFalse(empty.isPresent());
         }
 
@@ -5971,16 +5971,16 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testDoubleMatrix_flipInPlaceHorizontally() {
+        public void testDoubleMatrix_flipHorizontallyInPlace() {
             DoubleMatrix matrix = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 } });
-            matrix.flipInPlaceHorizontally();
+            matrix.flipHorizontallyInPlace();
             assertArrayEquals(new double[] { 3.0, 2.0, 1.0 }, matrix.rowView(0));
         }
 
         @Test
-        public void testDoubleMatrix_flipInPlaceVertically() {
+        public void testDoubleMatrix_flipVerticallyInPlace() {
             DoubleMatrix matrix = DoubleMatrix.of(new double[][] { { 1.0 }, { 2.0 }, { 3.0 } });
-            matrix.flipInPlaceVertically();
+            matrix.flipVerticallyInPlace();
             assertEquals(3.0, matrix.get(0, 0));
             assertEquals(2.0, matrix.get(1, 0));
             assertEquals(1.0, matrix.get(2, 0));

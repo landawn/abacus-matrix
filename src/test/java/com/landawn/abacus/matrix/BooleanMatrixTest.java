@@ -163,8 +163,8 @@ class BooleanMatrixTest extends TestBase {
         boolean[][] arr = { { true, false }, { false, true } };
         BooleanMatrix matrix = BooleanMatrix.of(arr);
 
-        assertTrue(matrix.above(0, 0).isEmpty());
-        assertEquals(true, matrix.above(1, 0).orElse(false));
+        assertTrue(matrix.valueAbove(0, 0).isEmpty());
+        assertEquals(true, matrix.valueAbove(1, 0).orElse(false));
     }
 
     @Test
@@ -172,8 +172,8 @@ class BooleanMatrixTest extends TestBase {
         boolean[][] arr = { { true, false }, { false, true } };
         BooleanMatrix matrix = BooleanMatrix.of(arr);
 
-        assertEquals(false, matrix.below(0, 0).orElse(true));
-        assertTrue(matrix.below(1, 0).isEmpty());
+        assertEquals(false, matrix.valueBelow(0, 0).orElse(true));
+        assertTrue(matrix.valueBelow(1, 0).isEmpty());
     }
 
     @Test
@@ -181,8 +181,8 @@ class BooleanMatrixTest extends TestBase {
         boolean[][] arr = { { true, false }, { false, true } };
         BooleanMatrix matrix = BooleanMatrix.of(arr);
 
-        assertTrue(matrix.left(0, 0).isEmpty());
-        assertEquals(true, matrix.left(0, 1).orElse(false));
+        assertTrue(matrix.valueLeft(0, 0).isEmpty());
+        assertEquals(true, matrix.valueLeft(0, 1).orElse(false));
     }
 
     @Test
@@ -190,8 +190,8 @@ class BooleanMatrixTest extends TestBase {
         boolean[][] arr = { { true, false }, { false, true } };
         BooleanMatrix matrix = BooleanMatrix.of(arr);
 
-        assertEquals(false, matrix.right(0, 0).orElse(true));
-        assertTrue(matrix.right(0, 1).isEmpty());
+        assertEquals(false, matrix.valueRight(0, 0).orElse(true));
+        assertTrue(matrix.valueRight(0, 1).isEmpty());
     }
 
     @Test
@@ -582,7 +582,7 @@ class BooleanMatrixTest extends TestBase {
         boolean[][] arr = { { true, false }, { false, true } };
         BooleanMatrix matrix = BooleanMatrix.of(arr);
 
-        matrix.flipInPlaceHorizontally();
+        matrix.flipHorizontallyInPlace();
         assertFalse(matrix.get(0, 0));
         assertTrue(matrix.get(0, 1));
     }
@@ -592,7 +592,7 @@ class BooleanMatrixTest extends TestBase {
         boolean[][] arr = { { true, false }, { false, true } };
         BooleanMatrix matrix = BooleanMatrix.of(arr);
 
-        matrix.flipInPlaceVertically();
+        matrix.flipVerticallyInPlace();
         assertFalse(matrix.get(0, 0));
         assertTrue(matrix.get(1, 0));
     }
@@ -1373,12 +1373,12 @@ class BooleanMatrixTest extends TestBase {
         public void testUpOf() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
 
-            OptionalBoolean up = m.above(1, 0);
+            OptionalBoolean up = m.valueAbove(1, 0);
             assertTrue(up.isPresent());
             assertTrue(up.get());
 
             // Top row has no element above
-            OptionalBoolean empty = m.above(0, 0);
+            OptionalBoolean empty = m.valueAbove(0, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -1386,12 +1386,12 @@ class BooleanMatrixTest extends TestBase {
         public void testDownOf() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
 
-            OptionalBoolean down = m.below(0, 0);
+            OptionalBoolean down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertFalse(down.get());
 
             // Bottom row has no element below
-            OptionalBoolean empty = m.below(1, 0);
+            OptionalBoolean empty = m.valueBelow(1, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -1399,12 +1399,12 @@ class BooleanMatrixTest extends TestBase {
         public void testLeftOf() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
 
-            OptionalBoolean left = m.left(0, 1);
+            OptionalBoolean left = m.valueLeft(0, 1);
             assertTrue(left.isPresent());
             assertTrue(left.get());
 
             // Leftmost column has no element to the left
-            OptionalBoolean empty = m.left(0, 0);
+            OptionalBoolean empty = m.valueLeft(0, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -1412,12 +1412,12 @@ class BooleanMatrixTest extends TestBase {
         public void testRightOf() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
 
-            OptionalBoolean right = m.right(0, 0);
+            OptionalBoolean right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertFalse(right.get());
 
             // Rightmost column has no element to the right
-            OptionalBoolean empty = m.right(0, 1);
+            OptionalBoolean empty = m.valueRight(0, 1);
             assertFalse(empty.isPresent());
         }
 
@@ -1832,7 +1832,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testReverseH() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false, true }, { false, true, false } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertTrue(m.get(0, 0));
             assertFalse(m.get(0, 1));
             assertTrue(m.get(0, 2));
@@ -1842,7 +1842,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testReverseV() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true }, { true, false } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertTrue(m.get(0, 0));
             assertFalse(m.get(0, 1));
             assertFalse(m.get(1, 0));
@@ -2930,21 +2930,21 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testDownOf_atBottomEdge() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
-            OptionalBoolean down = m.below(1, 0);
+            OptionalBoolean down = m.valueBelow(1, 0);
             assertFalse(down.isPresent());
         }
 
         @Test
         public void testLeftOf_atLeftEdge() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
-            OptionalBoolean left = m.left(0, 0);
+            OptionalBoolean left = m.valueLeft(0, 0);
             assertFalse(left.isPresent());
         }
 
         @Test
         public void testRightOf_atRightEdge() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
-            OptionalBoolean right = m.right(0, 1);
+            OptionalBoolean right = m.valueRight(0, 1);
             assertFalse(right.isPresent());
         }
 
@@ -3285,7 +3285,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testReverseH() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false, true }, { false, true, false } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertTrue(m.get(0, 2));
             assertFalse(m.get(0, 1));
             assertTrue(m.get(0, 0));
@@ -3294,7 +3294,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testReverseV() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertFalse(m.get(0, 0));
             assertTrue(m.get(0, 1));
             assertTrue(m.get(1, 0));
@@ -3884,7 +3884,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testUpOf_multipleRows() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true }, { true, true } });
-            OptionalBoolean up = m.above(2, 1);
+            OptionalBoolean up = m.valueAbove(2, 1);
             assertTrue(up.isPresent());
             assertTrue(up.get());
         }
@@ -3892,7 +3892,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testDownOf_multipleRows() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true }, { true, true } });
-            OptionalBoolean down = m.below(0, 0);
+            OptionalBoolean down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertFalse(down.get());
         }
@@ -3900,7 +3900,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testLeftOf_multipleColumns() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false, true } });
-            OptionalBoolean left = m.left(0, 2);
+            OptionalBoolean left = m.valueLeft(0, 2);
             assertTrue(left.isPresent());
             assertFalse(left.get());
         }
@@ -3908,7 +3908,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testRightOf_multipleColumns() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false, true } });
-            OptionalBoolean right = m.right(0, 0);
+            OptionalBoolean right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertFalse(right.get());
         }
@@ -4085,7 +4085,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testReverseH() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false, true }, { false, true, false } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertArrayEquals(new boolean[] { true, false, true }, m.rowView(0));
             assertArrayEquals(new boolean[] { false, true, false }, m.rowView(1));
         }
@@ -4093,14 +4093,14 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testReverseH_singleRow() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false, true } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertArrayEquals(new boolean[] { true, false, true }, m.rowView(0));
         }
 
         @Test
         public void testReverseV() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true }, { true, true } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertArrayEquals(new boolean[] { true, false, true }, m.columnCopy(0));
             assertArrayEquals(new boolean[] { true, true, false }, m.columnCopy(1));
         }
@@ -4108,7 +4108,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testReverseV_singleColumn() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true }, { false }, { true } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertArrayEquals(new boolean[] { true, false, true }, m.columnCopy(0));
         }
 
@@ -4633,7 +4633,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void test_upOf_exists() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
-            OptionalBoolean up = m.above(1, 0);
+            OptionalBoolean up = m.valueAbove(1, 0);
             assertTrue(up.isPresent());
             assertTrue(up.get());
         }
@@ -4641,14 +4641,14 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void test_upOf_notExists() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
-            OptionalBoolean up = m.above(0, 0);
+            OptionalBoolean up = m.valueAbove(0, 0);
             assertFalse(up.isPresent());
         }
 
         @Test
         public void test_downOf_exists() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
-            OptionalBoolean down = m.below(0, 0);
+            OptionalBoolean down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertFalse(down.get());
         }
@@ -4656,7 +4656,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void test_leftOf_exists() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
-            OptionalBoolean left = m.left(0, 1);
+            OptionalBoolean left = m.valueLeft(0, 1);
             assertTrue(left.isPresent());
             assertTrue(left.get());
         }
@@ -4664,7 +4664,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void test_rightOf_exists() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
-            OptionalBoolean right = m.right(0, 0);
+            OptionalBoolean right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertFalse(right.get());
         }
@@ -4972,17 +4972,17 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_flipInPlaceHorizontally() {
+        public void test_flipHorizontallyInPlace() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
-            m.flipInPlaceHorizontally();
+            m.flipHorizontallyInPlace();
             assertFalse(m.get(0, 0));
             assertTrue(m.get(0, 1));
         }
 
         @Test
-        public void test_flipInPlaceVertically() {
+        public void test_flipVerticallyInPlace() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
-            m.flipInPlaceVertically();
+            m.flipVerticallyInPlace();
             assertFalse(m.get(0, 0));
             assertTrue(m.get(0, 1));
         }
@@ -5414,9 +5414,9 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testBooleanMatrix_flipInPlaceHorizontally() {
+        public void testBooleanMatrix_flipHorizontallyInPlace() {
             BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] { { true, true, false }, { false, true, true } });
-            matrix.flipInPlaceHorizontally();
+            matrix.flipHorizontallyInPlace();
             // matrix is now [[false, true, true], [true, true, false]]
             assertFalse(matrix.get(0, 0));
             assertTrue(matrix.get(0, 1));
@@ -5427,9 +5427,9 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testBooleanMatrix_flipInPlaceVertically() {
+        public void testBooleanMatrix_flipVerticallyInPlace() {
             BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] { { true, false }, { true, true }, { false, true } });
-            matrix.flipInPlaceVertically();
+            matrix.flipVerticallyInPlace();
             // matrix is now [[false, true], [true, true], [true, false]]
             assertFalse(matrix.get(0, 0));
             assertTrue(matrix.get(0, 1));
@@ -5634,7 +5634,7 @@ class BooleanMatrixTest extends TestBase {
         }
     }
 
-    // === Missing coverage: resize, assignFrom, flipInPlace, and/or/xor ===
+    // === Missing coverage: resize, assignFrom, flip*InPlace, and/or/xor ===
 
     @Test
     public void testResize_expand() {
@@ -5755,7 +5755,7 @@ class BooleanMatrixTest extends TestBase {
     @Test
     public void testFlipInPlaceHorizontally() {
         BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false, false }, { false, true, true } });
-        m.flipInPlaceHorizontally();
+        m.flipHorizontallyInPlace();
         assertFalse(m.get(0, 0));
         assertFalse(m.get(0, 1));
         assertTrue(m.get(0, 2));
@@ -5767,7 +5767,7 @@ class BooleanMatrixTest extends TestBase {
     @Test
     public void testFlipInPlaceHorizontally_singleColumn() {
         BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true }, { false } });
-        m.flipInPlaceHorizontally();
+        m.flipHorizontallyInPlace();
         assertTrue(m.get(0, 0));
         assertFalse(m.get(1, 0));
     }
@@ -5775,7 +5775,7 @@ class BooleanMatrixTest extends TestBase {
     @Test
     public void testFlipInPlaceVertically() {
         BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true }, { true, true } });
-        m.flipInPlaceVertically();
+        m.flipVerticallyInPlace();
         assertTrue(m.get(0, 0));
         assertTrue(m.get(0, 1));
         assertFalse(m.get(1, 0));
@@ -5787,7 +5787,7 @@ class BooleanMatrixTest extends TestBase {
     @Test
     public void testFlipInPlaceVertically_singleRow() {
         BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false, true } });
-        m.flipInPlaceVertically();
+        m.flipVerticallyInPlace();
         assertTrue(m.get(0, 0));
         assertFalse(m.get(0, 1));
         assertTrue(m.get(0, 2));

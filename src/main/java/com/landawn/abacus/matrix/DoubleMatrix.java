@@ -533,8 +533,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
-     * u.OptionalDouble value = matrix.above(1, 0);   // Returns u.OptionalDouble.of(1.0)
-     * u.OptionalDouble empty = matrix.above(0, 0);   // Returns u.OptionalDouble.empty() - no row above
+     * u.OptionalDouble value = matrix.valueAbove(1, 0);   // Returns u.OptionalDouble.of(1.0)
+     * u.OptionalDouble empty = matrix.valueAbove(0, 0);   // Returns u.OptionalDouble.empty() - no row above
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -542,7 +542,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @return an u.OptionalDouble containing the element at position (rowIndex - 1, columnIndex), or empty if rowIndex == 0
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalDouble above(final int rowIndex, final int columnIndex) {
+    public OptionalDouble valueAbove(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return rowIndex == 0 ? OptionalDouble.empty() : OptionalDouble.of(a[rowIndex - 1][columnIndex]);
@@ -556,8 +556,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
-     * u.OptionalDouble value = matrix.below(0, 0);   // Returns u.OptionalDouble.of(3.0)
-     * u.OptionalDouble empty = matrix.below(1, 0);   // Returns u.OptionalDouble.empty() - no row below
+     * u.OptionalDouble value = matrix.valueBelow(0, 0);   // Returns u.OptionalDouble.of(3.0)
+     * u.OptionalDouble empty = matrix.valueBelow(1, 0);   // Returns u.OptionalDouble.empty() - no row below
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -565,7 +565,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @return an u.OptionalDouble containing the element at position (rowIndex + 1, columnIndex), or empty if rowIndex == rowCount - 1
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalDouble below(final int rowIndex, final int columnIndex) {
+    public OptionalDouble valueBelow(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return rowIndex == rowCount - 1 ? OptionalDouble.empty() : OptionalDouble.of(a[rowIndex + 1][columnIndex]);
@@ -579,8 +579,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
-     * u.OptionalDouble value = matrix.left(0, 1);   // Returns u.OptionalDouble.of(1.0)
-     * u.OptionalDouble empty = matrix.left(0, 0);   // Returns u.OptionalDouble.empty() - no column to the left
+     * u.OptionalDouble value = matrix.valueLeft(0, 1);   // Returns u.OptionalDouble.of(1.0)
+     * u.OptionalDouble empty = matrix.valueLeft(0, 0);   // Returns u.OptionalDouble.empty() - no column to the left
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -588,7 +588,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @return an u.OptionalDouble containing the element at position (rowIndex, columnIndex - 1), or empty if columnIndex == 0
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalDouble left(final int rowIndex, final int columnIndex) {
+    public OptionalDouble valueLeft(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return columnIndex == 0 ? OptionalDouble.empty() : OptionalDouble.of(a[rowIndex][columnIndex - 1]);
@@ -602,8 +602,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
-     * u.OptionalDouble value = matrix.right(0, 0);   // Returns u.OptionalDouble.of(2.0)
-     * u.OptionalDouble empty = matrix.right(0, 1);   // Returns u.OptionalDouble.empty() - no column to the right
+     * u.OptionalDouble value = matrix.valueRight(0, 0);   // Returns u.OptionalDouble.of(2.0)
+     * u.OptionalDouble empty = matrix.valueRight(0, 1);   // Returns u.OptionalDouble.empty() - no column to the right
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -611,7 +611,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @return an u.OptionalDouble containing the element at position (rowIndex, columnIndex + 1), or empty if columnIndex == columnCount - 1
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public OptionalDouble right(final int rowIndex, final int columnIndex) {
+    public OptionalDouble valueRight(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return columnIndex == columnCount - 1 ? OptionalDouble.empty() : OptionalDouble.of(a[rowIndex][columnIndex + 1]);
@@ -1671,13 +1671,13 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0, 3.0}});
-     * matrix.flipInPlaceHorizontally();   // matrix is now [[3.0, 2.0, 1.0]]
+     * matrix.flipHorizontallyInPlace();   // matrix is now [[3.0, 2.0, 1.0]]
      * }</pre>
      *
      * @see #flipHorizontally()
      */
     @Override
-    public void flipInPlaceHorizontally() {
+    public void flipHorizontallyInPlace() {
         for (int i = 0; i < rowCount; i++) {
             N.reverse(a[i]);
         }
@@ -1690,13 +1690,13 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0}, {2.0}, {3.0}});
-     * matrix.flipInPlaceVertically();   // matrix is now [[3.0], [2.0], [1.0]]
+     * matrix.flipVerticallyInPlace();   // matrix is now [[3.0], [2.0], [1.0]]
      * }</pre>
      *
      * @see #flipVertically()
      */
     @Override
-    public void flipInPlaceVertically() {
+    public void flipVerticallyInPlace() {
         for (int j = 0; j < columnCount; j++) {
             double tmp = 0;
             for (int l = 0, h = rowCount - 1; l < h;) {
@@ -1709,7 +1709,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
 
     /**
      * Returns a new matrix that is a horizontal flip of this matrix (columns in reversed order within each row).
-     * The original matrix is not modified. This is a non-mutating version of {@link #flipInPlaceHorizontally()}.
+     * The original matrix is not modified. This is a non-mutating version of {@link #flipHorizontallyInPlace()}.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1718,20 +1718,20 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @return a new matrix that is a horizontal flip of this matrix (columns in reversed order within each row)
-     * @see #flipInPlaceHorizontally()
+     * @see #flipHorizontallyInPlace()
      * @see #flipVertically()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
     @Override
     public DoubleMatrix flipHorizontally() {
         final DoubleMatrix res = this.copy();
-        res.flipInPlaceHorizontally();
+        res.flipHorizontallyInPlace();
         return res;
     }
 
     /**
      * Returns a new matrix that is a vertical flip of this matrix (rows in reversed order).
-     * The original matrix is not modified. This is a non-mutating version of {@link #flipInPlaceVertically()}.
+     * The original matrix is not modified. This is a non-mutating version of {@link #flipVerticallyInPlace()}.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1740,14 +1740,14 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @return a new matrix that is a vertical flip of this matrix (rows in reversed order)
-     * @see #flipInPlaceVertically()
+     * @see #flipVerticallyInPlace()
      * @see #flipHorizontally()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
     @Override
     public DoubleMatrix flipVertically() {
         final DoubleMatrix res = this.copy();
-        res.flipInPlaceVertically();
+        res.flipVerticallyInPlace();
         return res;
     }
 
