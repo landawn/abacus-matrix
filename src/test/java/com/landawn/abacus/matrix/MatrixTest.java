@@ -349,7 +349,7 @@ class MatrixTest extends TestBase {
     @Test
     public void testSetRowWithObjectArrayWidening_EdgeCase() {
         Matrix<Number> matrix = Matrix.diagonals(new Integer[] { 1, 2 }, new Double[] { 3.0, 4.0 });
-        Matrix raw = (Matrix) matrix;
+        Matrix raw = matrix;
 
         raw.setRow(0, new Object[] { 1L, 2.5d });
 
@@ -363,7 +363,7 @@ class MatrixTest extends TestBase {
     @Test
     public void testSetRowSupportsObjectArrayWhenMatrixStorageIsObject_EdgeCase() {
         Matrix<Number> matrix = Matrix.diagonals(new Integer[] { 1, 2 }, new Double[] { 3.0, 4.0 });
-        Matrix raw = (Matrix) matrix;
+        Matrix raw = matrix;
 
         raw.setRow(0, new Object[] { "x", 2 });
 
@@ -5772,7 +5772,7 @@ class MatrixTest extends TestBase {
         public void testForEach_biConsumer() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
             final int[] count = { 0 };
-            m.forEachIndex((i, j) -> count[0]++);
+            m.forEachIndices((i, j) -> count[0]++);
             assertEquals(4, count[0]);
         }
 
@@ -5780,7 +5780,7 @@ class MatrixTest extends TestBase {
         public void testForEach_biObjConsumer() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
             final int[] count = { 0 };
-            m.forEachIndex((i, j, matrix) -> count[0]++);
+            m.forEachIndices((i, j, matrix) -> count[0]++);
             assertEquals(4, count[0]);
         }
 

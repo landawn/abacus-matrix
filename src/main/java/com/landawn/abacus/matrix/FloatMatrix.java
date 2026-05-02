@@ -14,9 +14,7 @@
 
 package com.landawn.abacus.matrix;
 
-import java.security.SecureRandom;
 import java.util.NoSuchElementException;
-import java.util.Random;
 
 import com.landawn.abacus.annotation.Beta;
 import com.landawn.abacus.annotation.SuppressFBWarnings;
@@ -46,8 +44,7 @@ import com.landawn.abacus.util.stream.Stream;
  */
 public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatStream, Stream<FloatStream>, FloatMatrix> {
 
-    static final Random RAND = new SecureRandom();
-    static final FloatMatrix EMPTY_FLOAT_MATRIX = new FloatMatrix(new float[0][0]);
+    private static final FloatMatrix EMPTY_FLOAT_MATRIX = new FloatMatrix(new float[0][0]);
 
     /**
      * Constructs a {@code FloatMatrix} backed by the supplied two-dimensional array.
@@ -67,7 +64,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param a the two-dimensional float array to wrap, or {@code null} for an empty matrix
      */
     public FloatMatrix(final float[][] a) {
-        super(a == null ? new float[0][0] : a);
+        super(a == null ? new float[0][0] : a, float.class);
     }
 
     /**
@@ -347,25 +344,6 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     public static FloatMatrix unbox(final Matrix<Float> x) {
         return FloatMatrix.of(Array.unbox(x.a));
-    }
-
-    /**
-     * Returns the component type of the matrix elements, which is always {@code float.class}.
-     * This method is useful for reflection-based code that needs to determine the element type.
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
-     * Class<?> componentType = matrix.componentType();
-     * // componentType is float.class
-     * assert componentType == float.class;
-     * }</pre>
-     *
-     * @return {@code float.class}
-     */
-    @Override
-    public Class<?> componentType() {
-        return float.class;
     }
 
     /**
@@ -754,6 +732,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @return a new float array containing the main diagonal elements
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
+    @Override
     public float[] getMainDiagonal() throws IllegalStateException {
         checkIfRowAndColumnSizeAreSame();
 
@@ -784,6 +763,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      * @throws IllegalArgumentException if mainDiagonal array length does not equal rowCount
      */
+    @Override
     public void setMainDiagonal(final float[] mainDiagonal) throws IllegalStateException, IllegalArgumentException {
         checkIfRowAndColumnSizeAreSame();
         N.checkArgument(N.len(mainDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(mainDiagonal));
@@ -835,6 +815,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @return a new float array containing the anti-diagonal elements
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
+    @Override
     public float[] getAntiDiagonal() throws IllegalStateException {
         checkIfRowAndColumnSizeAreSame();
 
@@ -866,6 +847,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      * @throws IllegalArgumentException if antiDiagonal array length does not equal rowCount
      */
+    @Override
     public void setAntiDiagonal(final float[] antiDiagonal) throws IllegalStateException, IllegalArgumentException {
         checkIfRowAndColumnSizeAreSame();
         N.checkArgument(N.len(antiDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(antiDiagonal));
@@ -924,7 +906,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     public <E extends Exception> void updateAll(final Throwables.FloatUnaryOperator<E> operator) throws E {
         N.checkArgNotNull(operator, "operator");
         final Throwables.IntBiConsumer<E> operation = (i, j) -> a[i][j] = operator.applyAsFloat(a[i][j]);
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
     }
 
     /**
@@ -954,7 +936,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<Float, E> operator) throws E {
         N.checkArgNotNull(operator, "operator");
         final Throwables.IntBiConsumer<E> operation = (i, j) -> a[i][j] = operator.apply(i, j);
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
     }
 
     /**
@@ -984,7 +966,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     public <E extends Exception> void replaceIf(final Throwables.FloatPredicate<E> predicate, final float newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
         final Throwables.IntBiConsumer<E> operation = (i, j) -> a[i][j] = predicate.test(a[i][j]) ? newValue : a[i][j];
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
     }
 
     /**
@@ -1015,7 +997,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final float newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
         final Throwables.IntBiConsumer<E> operation = (i, j) -> a[i][j] = predicate.test(i, j) ? newValue : a[i][j];
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
     }
 
     /**
@@ -1042,7 +1024,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
         final float[][] result = new float[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = mapper.applyAsFloat(a[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return FloatMatrix.of(result);
     }
@@ -1075,7 +1057,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
         final T[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
         final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return Matrix.of(result);
     }
@@ -1116,11 +1098,11 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * // Top-left 2x2 region is filled: [[1.0f, 2.0f, 0.0f], [3.0f, 4.0f, 0.0f], [0.0f, 0.0f, 0.0f]]
      * }</pre>
      *
-     * @param b the source array to copy values from (may be smaller or larger than the matrix)
-     * @throws IllegalArgumentException if {@code b} is {@code null}
+     * @param source the source array to copy values from (may be smaller or larger than the matrix)
+     * @throws IllegalArgumentException if {@code source} is {@code null}
      */
-    public void copyFrom(final float[][] b) {
-        copyFrom(0, 0, b);
+    public void copyFrom(final float[][] source) {
+        copyFrom(0, 0, source);
     }
 
     /**
@@ -1137,18 +1119,18 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @param destRowIndex the target row index in this matrix (0-based)
      * @param destColumnIndex the target column index in this matrix (0-based)
-     * @param b the source array to copy values from
-     * @throws IllegalArgumentException if {@code b} is {@code null}, or the target indices are negative or exceed matrix dimensions
+     * @param source the source array to copy values from
+     * @throws IllegalArgumentException if {@code source} is {@code null}, or the target indices are negative or exceed matrix dimensions
      */
-    public void copyFrom(final int destRowIndex, final int destColumnIndex, final float[][] b) throws IllegalArgumentException {
-        N.checkArgNotNull(b, "b");
+    public void copyFrom(final int destRowIndex, final int destColumnIndex, final float[][] source) throws IllegalArgumentException {
+        N.checkArgNotNull(source, "source");
         N.checkArgument(destRowIndex >= 0 && destRowIndex <= rowCount, "destRowIndex({}) must be between 0 and rowCount({})", destRowIndex, rowCount);
         N.checkArgument(destColumnIndex >= 0 && destColumnIndex <= columnCount, "destColumnIndex({}) must be between 0 and columnCount({})", destColumnIndex,
                 columnCount);
 
-        for (int i = 0, minLen = N.min(rowCount - destRowIndex, b.length); i < minLen; i++) {
-            if (b[i] != null) {
-                N.copy(b[i], 0, a[i + destRowIndex], destColumnIndex, N.min(b[i].length, columnCount - destColumnIndex));
+        for (int i = 0, minLen = N.min(rowCount - destRowIndex, source.length); i < minLen; i++) {
+            if (source[i] != null) {
+                N.copy(source[i], 0, a[i + destRowIndex], destColumnIndex, N.min(source[i].length, columnCount - destColumnIndex));
             }
         }
     }
@@ -1810,7 +1792,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     /**
      * Repeats elements in both row and column directions.
      * Each element is repeated to form a block of size rowRepeats x columnRepeats.
-     * 
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}});
@@ -1818,7 +1800,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * // Result: [[1.0, 1.0, 1.0, 2.0, 2.0, 2.0],
      * //          [1.0, 1.0, 1.0, 2.0, 2.0, 2.0]]
      * }</pre>
-     * 
+     *
      * @param rowRepeats number of times to repeat each element in row direction
      * @param columnRepeats number of times to repeat each element in column direction
      * @return a new FloatMatrix with repeated elements
@@ -1858,7 +1840,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     /**
      * Repeats the entire matrix in a tiled pattern.
      * The matrix is repeated as a whole rowRepeats times vertically and columnRepeats times horizontally.
-     * 
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
@@ -1868,7 +1850,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * //          [1.0, 2.0, 1.0, 2.0, 1.0, 2.0],
      * //          [3.0, 4.0, 3.0, 4.0, 3.0, 4.0]]
      * }</pre>
-     * 
+     *
      * @param rowRepeats number of times to repeat the matrix vertically
      * @param columnRepeats number of times to repeat the matrix horizontally
      * @return a new FloatMatrix with the tiled pattern
@@ -1960,7 +1942,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     /**
      * Stacks this matrix vertically with another matrix.
      * The matrices must have the same number of columns.
-     * 
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix a = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
@@ -1971,7 +1953,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * //          [5.0, 6.0],
      * //          [7.0, 8.0]]
      * }</pre>
-     * 
+     *
      * @param other the matrix to stack below this matrix; must not be null
      * @return a new FloatMatrix with other stacked vertically below this matrix
      * @throws IllegalArgumentException if {@code other} is {@code null}, the matrices don't have the
@@ -2001,7 +1983,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     /**
      * Stacks this matrix horizontally with another matrix.
      * The matrices must have the same number of rows.
-     * 
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix a = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
@@ -2010,7 +1992,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * // Result: [[1.0, 2.0, 5.0, 6.0],
      * //          [3.0, 4.0, 7.0, 8.0]]
      * }</pre>
-     * 
+     *
      * @param other the matrix to stack to the right of this matrix; must not be null
      * @return a new FloatMatrix with other stacked horizontally to the right
      * @throws IllegalArgumentException if {@code other} is {@code null}, the matrices don't have the
@@ -2065,7 +2047,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
         final float[][] result = new float[rowCount][columnCount];
         final Throwables.IntBiConsumer<RuntimeException> operation = (i, j) -> result[i][j] = a[i][j] + otherMatrix[i][j];
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return FloatMatrix.of(result);
     }
@@ -2101,7 +2083,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
         final float[][] result = new float[rowCount][columnCount];
         final Throwables.IntBiConsumer<RuntimeException> operation = (i, j) -> result[i][j] = a[i][j] - otherMatrix[i][j];
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return FloatMatrix.of(result);
     }
@@ -2314,24 +2296,24 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @param <E> the type of exception that the zip function may throw
-     * @param matrixB the second matrix; must not be null
+     * @param other the second matrix; must not be null
      * @param zipFunction the binary operator to apply element-wise; must not be null
      * @return a new FloatMatrix with the results of the element-wise operation
-     * @throws IllegalArgumentException if {@code matrixB} or {@code zipFunction} is {@code null}, or the matrices have different dimensions
+     * @throws IllegalArgumentException if {@code other} or {@code zipFunction} is {@code null}, or the matrices have different dimensions
      * @throws E if the zip function throws an exception
      */
-    public <E extends Exception> FloatMatrix zipWith(final FloatMatrix matrixB, final Throwables.FloatBinaryOperator<E> zipFunction)
+    public <E extends Exception> FloatMatrix zipWith(final FloatMatrix other, final Throwables.FloatBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
-        N.checkArgument(isSameShape(matrixB), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
-                matrixB.rowCount, matrixB.columnCount);
+        N.checkArgument(isSameShape(other), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
+                other.rowCount, other.columnCount);
         N.checkArgNotNull(zipFunction, "zipFunction");
 
-        final float[][] secondMatrix = matrixB.a;
+        final float[][] secondMatrix = other.a;
         final float[][] result = new float[rowCount][columnCount];
 
         final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = zipFunction.applyAsFloat(a[i][j], secondMatrix[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return FloatMatrix.of(result);
     }
@@ -2350,26 +2332,26 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @param <E> the type of exception that the zip function may throw
-     * @param matrixB the second matrix; must not be null
-     * @param matrixC the third matrix; must not be null
+     * @param other the second matrix; must not be null
+     * @param third the third matrix; must not be null
      * @param zipFunction the ternary operator to apply element-wise; must not be null
      * @return a new FloatMatrix with the results of the element-wise operation
-     * @throws IllegalArgumentException if {@code matrixB}, {@code matrixC}, or {@code zipFunction} is {@code null}, or the matrices have different dimensions
+     * @throws IllegalArgumentException if {@code other}, {@code third}, or {@code zipFunction} is {@code null}, or the matrices have different dimensions
      * @throws E if the zip function throws an exception
      */
-    public <E extends Exception> FloatMatrix zipWith(final FloatMatrix matrixB, final FloatMatrix matrixC, final Throwables.FloatTernaryOperator<E> zipFunction)
+    public <E extends Exception> FloatMatrix zipWith(final FloatMatrix other, final FloatMatrix third, final Throwables.FloatTernaryOperator<E> zipFunction)
             throws E {
-        N.checkArgument(isSameShape(matrixB) && isSameShape(matrixC), "Cannot zip matrices with different shapes: all matrices must be {}x{}", rowCount,
+        N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: all matrices must be {}x{}", rowCount,
                 columnCount);
         N.checkArgNotNull(zipFunction, "zipFunction");
 
-        final float[][] secondMatrix = matrixB.a;
-        final float[][] thirdMatrix = matrixC.a;
+        final float[][] secondMatrix = other.a;
+        final float[][] thirdMatrix = third.a;
         final float[][] result = new float[rowCount][columnCount];
 
         final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = zipFunction.applyAsFloat(a[i][j], secondMatrix[i][j], thirdMatrix[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return FloatMatrix.of(result);
     }
@@ -2996,7 +2978,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
         if (Matrices.isParallelizable(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
             final Throwables.IntBiConsumer<E> operation = (i, j) -> action.accept(a[i][j]);
-            Matrices.forEachIndex(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, operation, true);
+            Matrices.forEachIndices(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, operation, true);
         } else {
             for (int i = fromRowIndex; i < toRowIndex; i++) {
                 final float[] row = a[i];
@@ -3021,7 +3003,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * // [1.0, 2.0, 3.0]
      * // [4.0, 5.0, 6.0]
      * }</pre>
-     * 
+     *
      * @return the formatted string representation of the matrix
      */
     @Override

@@ -248,13 +248,13 @@ public final class Matrices {
      * boolean same2 = Matrices.isSameShape(m1, m3);                      // false
      * }</pre>
      *
-     * @param <X> the type of matrix, must extend {@link AbstractMatrix}
+     * @param <M> the type of matrix, must extend {@link AbstractMatrix}
      * @param a the first matrix to compare, must not be {@code null}
      * @param b the second matrix to compare, must not be {@code null}
      * @return {@code true} if both matrices have the same number of rows and columns; {@code false} otherwise
      * @throws IllegalArgumentException if {@code a} or {@code b} is {@code null}
      */
-    public static <X extends AbstractMatrix<?, ?, ?, ?, ?>> boolean isSameShape(final X a, final X b) {
+    public static <M extends AbstractMatrix<?, ?, ?, ?, ?>> boolean isSameShape(final M a, final M b) {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
         return a.rowCount == b.rowCount && a.columnCount == b.columnCount;
@@ -275,14 +275,14 @@ public final class Matrices {
      * boolean same = Matrices.isSameShape(m1, m2, m3);   // true
      * }</pre>
      *
-     * @param <X> the type of matrix, must extend {@link AbstractMatrix}
+     * @param <M> the type of matrix, must extend {@link AbstractMatrix}
      * @param a the first matrix to compare, must not be {@code null}
      * @param b the second matrix to compare, must not be {@code null}
      * @param c the third matrix to compare, must not be {@code null}
      * @return {@code true} if all three matrices have the same number of rows and columns; {@code false} otherwise
      * @throws IllegalArgumentException if {@code a}, {@code b}, or {@code c} is {@code null}
      */
-    public static <X extends AbstractMatrix<?, ?, ?, ?, ?>> boolean isSameShape(final X a, final X b, final X c) {
+    public static <M extends AbstractMatrix<?, ?, ?, ?, ?>> boolean isSameShape(final M a, final M b, final M c) {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
         N.checkArgNotNull(c, "c");
@@ -312,19 +312,19 @@ public final class Matrices {
      * }
      * }</pre>
      *
-     * @param <X> the type of matrix, must extend {@link AbstractMatrix}
+     * @param <M> the type of matrix, must extend {@link AbstractMatrix}
      * @param matrices the collection of matrices to check, may be {@code null} or empty
      * @return {@code true} if all matrices have the same number of rows and columns, or if the collection
      *         is {@code null} or empty; {@code false} if any matrix has different dimensions or if any
      *         element in the collection is {@code null}
      */
-    public static <X extends AbstractMatrix<?, ?, ?, ?, ?>> boolean isSameShape(final Collection<? extends X> matrices) {
+    public static <M extends AbstractMatrix<?, ?, ?, ?, ?>> boolean isSameShape(final Collection<? extends M> matrices) {
         if (N.isEmpty(matrices)) {
             return true;
         }
 
-        final Iterator<? extends X> iterator = matrices.iterator();
-        final X first = iterator.next();
+        final Iterator<? extends M> iterator = matrices.iterator();
+        final M first = iterator.next();
 
         if (first == null) {
             return false;
@@ -332,7 +332,7 @@ public final class Matrices {
 
         final int rowCount = first.rowCount;
         final int columnCount = first.columnCount;
-        X next = null;
+        M next = null;
 
         while (iterator.hasNext()) {
             next = iterator.next();
@@ -423,20 +423,20 @@ public final class Matrices {
      *
      * @param <E> the type of exception that the command might throw
      * @param parallelMode the temporary {@link ParallelMode} setting to use during command execution, must not be {@code null}
-     * @param cmd the command to execute, must not be {@code null}
-     * @throws IllegalArgumentException if {@code parallelMode} or {@code cmd} is {@code null}
+     * @param action the command to execute, must not be {@code null}
+     * @throws IllegalArgumentException if {@code parallelMode} or {@code action} is {@code null}
      * @throws E if the command throws an exception during execution
      * @see #setParallelMode(ParallelMode)
      * @see #getParallelMode()
      */
-    public static <E extends Exception> void runWithParallelMode(final ParallelMode parallelMode, final Throwables.Runnable<E> cmd) throws E {
-        N.checkArgNotNull(cmd, "cmd");
+    public static <E extends Exception> void runWithParallelMode(final ParallelMode parallelMode, final Throwables.Runnable<E> action) throws E {
+        N.checkArgNotNull(action, "action");
 
         final ParallelMode original = Matrices.getParallelMode();
         Matrices.setParallelMode(parallelMode);
 
         try {
-            cmd.run();
+            action.run();
         } finally {
             Matrices.setParallelMode(original);
         }
@@ -451,37 +451,37 @@ public final class Matrices {
      * improve cache locality.</p>
      *
      * <p>This is a convenience method that delegates to
-     * {@link #forEachIndex(int, int, int, int, Throwables.IntBiConsumer, boolean)} with the full
+     * {@link #forEachIndices(int, int, int, int, Throwables.IntBiConsumer, boolean)} with the full
      * range of rows and columns (starting from 0).</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * // Print all positions in a 3×4 matrix
-     * Matrices.forEachIndex(3, 4, (i, j) ->
+     * Matrices.forEachIndices(3, 4, (i, j) ->
      *     System.out.println("(" + i + "," + j + ")"), false);
      *
      * // Initialize a result array in parallel
      * int[][] result = new int[100][100];
-     * Matrices.forEachIndex(100, 100, (i, j) ->
+     * Matrices.forEachIndices(100, 100, (i, j) ->
      *     result[i][j] = i * j, true);
      * }</pre>
      *
      * @param <E> the type of exception that the command might throw
      * @param rowCount the number of rows to iterate over, must be non-negative
      * @param columnCount the number of columns to iterate over, must be non-negative
-     * @param cmd the command to execute for each position (i, j), receives row index and column index, must not be {@code null}
+     * @param action the command to execute for each position (i, j), receives row index and column index, must not be {@code null}
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
-     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative, or if {@code cmd} is {@code null}
+     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative, or if {@code action} is {@code null}
      * @throws E if the command throws an exception during execution
-     * @see #forEachIndex(int, int, int, int, Throwables.IntBiConsumer, boolean)
+     * @see #forEachIndices(int, int, int, int, Throwables.IntBiConsumer, boolean)
      */
-    public static <E extends Exception> void forEachIndex(final int rowCount, final int columnCount, final Throwables.IntBiConsumer<E> cmd,
+    public static <E extends Exception> void forEachIndices(final int rowCount, final int columnCount, final Throwables.IntBiConsumer<E> action,
             final boolean inParallel) throws E {
         N.checkArgument(rowCount >= 0, "rowCount cannot be negative: {}", rowCount);
         N.checkArgument(columnCount >= 0, "columnCount cannot be negative: {}", columnCount);
-        N.checkArgNotNull(cmd, "cmd");
+        N.checkArgNotNull(action, "action");
 
-        forEachIndex(0, rowCount, 0, columnCount, cmd, inParallel);
+        forEachIndices(0, rowCount, 0, columnCount, action, inParallel);
     }
 
     /**
@@ -504,7 +504,7 @@ public final class Matrices {
      * <pre>{@code
      * // Process a subregion of a matrix
      * int[][] result = new int[10][10];
-     * Matrices.forEachIndex(2, 5, 3, 8, (i, j) -> result[i][j] = i + j, false);
+     * Matrices.forEachIndices(2, 5, 3, 8, (i, j) -> result[i][j] = i + j, false);
      * }</pre>
      *
      * @param <E> the type of exception that the command might throw
@@ -512,15 +512,15 @@ public final class Matrices {
      * @param toRowIndex the ending row index (exclusive), must be greater than or equal to fromRowIndex
      * @param fromColumnIndex the starting column index (inclusive), must be non-negative
      * @param toColumnIndex the ending column index (exclusive), must be greater than or equal to fromColumnIndex
-     * @param cmd the command to execute for each position (i, j), receives row index and column index, must not be {@code null}
+     * @param action the command to execute for each position (i, j), receives row index and column index, must not be {@code null}
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
      * @throws IndexOutOfBoundsException if any index is negative or if toRowIndex is less than fromRowIndex or toColumnIndex is less than fromColumnIndex
-     * @throws IllegalArgumentException if {@code cmd} is {@code null}
+     * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the command throws an exception during execution
      */
-    public static <E extends Exception> void forEachIndex(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
-            final Throwables.IntBiConsumer<E> cmd, final boolean inParallel) throws IndexOutOfBoundsException, E {
-        N.checkArgNotNull(cmd, "cmd");
+    public static <E extends Exception> void forEachIndices(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
+            final Throwables.IntBiConsumer<E> action, final boolean inParallel) throws IndexOutOfBoundsException, E {
+        N.checkArgNotNull(action, "action");
 
         N.checkFromToIndex(fromRowIndex, toRowIndex, Integer.MAX_VALUE);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, Integer.MAX_VALUE);
@@ -533,14 +533,14 @@ public final class Matrices {
                 //noinspection resource
                 IntStream.range(fromRowIndex, toRowIndex).parallel().forEach(i -> {
                     for (int j = fromColumnIndex; j < toColumnIndex; j++) {
-                        cmd.accept(i, j);
+                        action.accept(i, j);
                     }
                 });
             } else {
                 //noinspection resource
                 IntStream.range(fromColumnIndex, toColumnIndex).parallel().forEach(j -> {
                     for (int i = fromRowIndex; i < toRowIndex; i++) {
-                        cmd.accept(i, j);
+                        action.accept(i, j);
                     }
                 });
             }
@@ -548,13 +548,13 @@ public final class Matrices {
             if (rowCount <= columnCount) {
                 for (int i = fromRowIndex; i < toRowIndex; i++) {
                     for (int j = fromColumnIndex; j < toColumnIndex; j++) {
-                        cmd.accept(i, j);
+                        action.accept(i, j);
                     }
                 }
             } else {
                 for (int j = fromColumnIndex; j < toColumnIndex; j++) {
                     for (int i = fromRowIndex; i < toRowIndex; i++) {
-                        cmd.accept(i, j);
+                        action.accept(i, j);
                     }
                 }
             }
@@ -585,18 +585,18 @@ public final class Matrices {
      * @param <T> the type of elements in the result stream
      * @param rowCount the number of rows to iterate over, must be non-negative
      * @param columnCount the number of columns to iterate over, must be non-negative
-     * @param cmd the function to apply at each position (i, j), receives row index and column index, must not be {@code null}
+     * @param mapper the function to apply at each position (i, j), receives row index and column index, must not be {@code null}
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
      * @return a {@link Stream} of results from applying the function at each position, never {@code null}
-     * @throws IllegalArgumentException if {@code cmd} is {@code null}
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws IndexOutOfBoundsException if {@code rowCount} or {@code columnCount} is negative
      * @see #mapIndices(int, int, int, int, Throwables.IntBiFunction, boolean)
      */
-    public static <T> Stream<T> mapIndices(final int rowCount, final int columnCount, final Throwables.IntBiFunction<? extends T, ? extends Exception> cmd,
+    public static <T> Stream<T> mapIndices(final int rowCount, final int columnCount, final Throwables.IntBiFunction<? extends T, ? extends Exception> mapper,
             final boolean inParallel) {
-        N.checkArgNotNull(cmd, "cmd");
+        N.checkArgNotNull(mapper, "mapper");
 
-        return mapIndices(0, rowCount, 0, columnCount, cmd, inParallel);
+        return mapIndices(0, rowCount, 0, columnCount, mapper, inParallel);
     }
 
     /**
@@ -626,18 +626,18 @@ public final class Matrices {
      * @param toRowIndex the ending row index (exclusive), must be greater than or equal to fromRowIndex
      * @param fromColumnIndex the starting column index (inclusive), must be non-negative
      * @param toColumnIndex the ending column index (exclusive), must be greater than or equal to fromColumnIndex
-     * @param cmd the function to apply at each position (i, j), receives row index and column index, must not be {@code null}
+     * @param mapper the function to apply at each position (i, j), receives row index and column index, must not be {@code null}
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
      * @return a {@link Stream} of results from applying the function at each position, never {@code null}
-     * @throws IllegalArgumentException if {@code cmd} is {@code null}
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws IndexOutOfBoundsException if any index is negative or if toRowIndex is less than fromRowIndex or toColumnIndex is less than fromColumnIndex
      */
     @SuppressWarnings("resource")
     public static <T> Stream<T> mapIndices(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
-            final Throwables.IntBiFunction<? extends T, ? extends Exception> cmd, final boolean inParallel) throws IndexOutOfBoundsException {
+            final Throwables.IntBiFunction<? extends T, ? extends Exception> mapper, final boolean inParallel) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, Integer.MAX_VALUE);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, Integer.MAX_VALUE);
-        N.checkArgNotNull(cmd, "cmd");
+        N.checkArgNotNull(mapper, "mapper");
 
         final int rowCount = toRowIndex - fromRowIndex;
         final int columnCount = toColumnIndex - fromColumnIndex;
@@ -648,7 +648,7 @@ public final class Matrices {
 
                 try {
                     for (int j = fromColumnIndex; j < toColumnIndex; j++) {
-                        ret.add(cmd.apply(i, j));
+                        ret.add(mapper.apply(i, j));
                     }
                 } catch (final Exception e) {
                     throw ExceptionUtil.toRuntimeException(e, true);
@@ -662,7 +662,7 @@ public final class Matrices {
 
                 try {
                     for (int i = fromRowIndex; i < toRowIndex; i++) {
-                        ret.add(cmd.apply(i, j));
+                        ret.add(mapper.apply(i, j));
                     }
                 } catch (final Exception e) {
                     throw ExceptionUtil.toRuntimeException(e, true);
@@ -693,18 +693,18 @@ public final class Matrices {
      *
      * @param rowCount the number of rows to iterate over, must be non-negative
      * @param columnCount the number of columns to iterate over, must be non-negative
-     * @param cmd the function to apply at each position (i, j), receives row index and column index, must not be {@code null}
+     * @param mapper the function to apply at each position (i, j), receives row index and column index, must not be {@code null}
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
      * @return an {@link IntStream} of results from applying the function at each position, never {@code null}
-     * @throws IllegalArgumentException if {@code cmd} is {@code null}
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws IndexOutOfBoundsException if {@code rowCount} or {@code columnCount} is negative
      * @see #mapIndicesToInt(int, int, int, int, Throwables.IntBinaryOperator, boolean)
      */
-    public static IntStream mapIndicesToInt(final int rowCount, final int columnCount, final Throwables.IntBinaryOperator<? extends Exception> cmd,
+    public static IntStream mapIndicesToInt(final int rowCount, final int columnCount, final Throwables.IntBinaryOperator<? extends Exception> mapper,
             final boolean inParallel) {
-        N.checkArgNotNull(cmd, "cmd");
+        N.checkArgNotNull(mapper, "mapper");
 
-        return mapIndicesToInt(0, rowCount, 0, columnCount, cmd, inParallel);
+        return mapIndicesToInt(0, rowCount, 0, columnCount, mapper, inParallel);
     }
 
     /**
@@ -729,18 +729,18 @@ public final class Matrices {
      * @param toRowIndex the ending row index (exclusive), must be greater than or equal to fromRowIndex
      * @param fromColumnIndex the starting column index (inclusive), must be non-negative
      * @param toColumnIndex the ending column index (exclusive), must be greater than or equal to fromColumnIndex
-     * @param cmd the function to apply at each position (i, j), receives row index and column index, must not be {@code null}
+     * @param mapper the function to apply at each position (i, j), receives row index and column index, must not be {@code null}
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
      * @return an {@link IntStream} of results from applying the function at each position, never {@code null}
-     * @throws IllegalArgumentException if {@code cmd} is {@code null}
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws IndexOutOfBoundsException if any index is negative or if toRowIndex is less than fromRowIndex or toColumnIndex is less than fromColumnIndex
      */
     @SuppressWarnings("resource")
     public static IntStream mapIndicesToInt(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
-            final Throwables.IntBinaryOperator<? extends Exception> cmd, final boolean inParallel) throws IndexOutOfBoundsException {
+            final Throwables.IntBinaryOperator<? extends Exception> mapper, final boolean inParallel) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, Integer.MAX_VALUE);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, Integer.MAX_VALUE);
-        N.checkArgNotNull(cmd, "cmd");
+        N.checkArgNotNull(mapper, "mapper");
 
         final int rowCount = toRowIndex - fromRowIndex;
         final int columnCount = toColumnIndex - fromColumnIndex;
@@ -751,7 +751,7 @@ public final class Matrices {
 
                 try {
                     for (int j = fromColumnIndex; j < toColumnIndex; j++) {
-                        ret[j - fromColumnIndex] = cmd.applyAsInt(i, j);
+                        ret[j - fromColumnIndex] = mapper.applyAsInt(i, j);
                     }
                 } catch (final Exception e) {
                     throw ExceptionUtil.toRuntimeException(e, true);
@@ -765,7 +765,7 @@ public final class Matrices {
 
                 try {
                     for (int i = fromRowIndex; i < toRowIndex; i++) {
-                        ret[i - fromRowIndex] = cmd.applyAsInt(i, j);
+                        ret[i - fromRowIndex] = mapper.applyAsInt(i, j);
                     }
                 } catch (final Exception e) {
                     throw ExceptionUtil.toRuntimeException(e, true);
@@ -808,14 +808,14 @@ public final class Matrices {
      * });
      * }</pre>
      *
-     * @param <X> the type of matrix, must extend {@link AbstractMatrix}
+     * @param <M> the type of matrix, must extend {@link AbstractMatrix}
      * @param a the first matrix (left operand), must not be {@code null}
      * @param b the second matrix (right operand), must not be {@code null}
      * @param action the accumulator function called for each (i, j, k) triple in the multiplication, must not be {@code null}
      * @throws IllegalArgumentException if {@code a} or {@code b} is {@code null}, if matrix dimensions are incompatible ({@code a.columnCount != b.rowCount}), or if {@code action} is {@code null}
      * @see #forEachCartesianIndices(AbstractMatrix, AbstractMatrix, Throwables.IntTriConsumer, boolean)
      */
-    public static <X extends AbstractMatrix<?, ?, ?, ?, ?>> void forEachCartesianIndices(final X a, final X b,
+    public static <M extends AbstractMatrix<?, ?, ?, ?, ?>> void forEachCartesianIndices(final M a, final M b,
             final Throwables.IntTriConsumer<RuntimeException> action) throws IllegalArgumentException {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
@@ -854,7 +854,7 @@ public final class Matrices {
      *     result[i][j] += a.get(i, k) * b.get(k, j), true);
      * }</pre>
      *
-     * @param <X> the type of matrix, must extend {@link AbstractMatrix}
+     * @param <M> the type of matrix, must extend {@link AbstractMatrix}
      * @param a the first matrix (left operand), must not be {@code null}
      * @param b the second matrix (right operand), must not be {@code null}
      * @param action the accumulator function called for each (i, j, k) triple in the multiplication, must not be {@code null}
@@ -862,7 +862,7 @@ public final class Matrices {
      * @throws IllegalArgumentException if {@code a} or {@code b} is {@code null}, if matrix dimensions are incompatible ({@code a.columnCount != b.rowCount}), or if {@code action} is {@code null}
      * @see #forEachCartesianIndices(AbstractMatrix, AbstractMatrix, Throwables.IntTriConsumer)
      */
-    public static <X extends AbstractMatrix<?, ?, ?, ?, ?>> void forEachCartesianIndices(final X a, final X b,
+    public static <M extends AbstractMatrix<?, ?, ?, ?, ?>> void forEachCartesianIndices(final M a, final M b,
             final Throwables.IntTriConsumer<RuntimeException> action, // NOSONAR
             final boolean inParallel) throws IllegalArgumentException {
         N.checkArgNotNull(a, "a");
@@ -1119,7 +1119,7 @@ public final class Matrices {
         final int columnCount = matrices[0].columnCount;
         final byte[][] result = new byte[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> cmd = (i, j) -> {
+        final Throwables.IntBiConsumer<E> action = (i, j) -> {
             final byte[] ret = result[i];
             ret[j] = matrices[0].a[i][j];
 
@@ -1128,7 +1128,7 @@ public final class Matrices {
             }
         };
 
-        forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(matrices[0]));
+        forEachIndices(rowCount, columnCount, action, Matrices.isParallelizable(matrices[0]));
 
         return new ByteMatrix(result);
     }
@@ -1224,7 +1224,7 @@ public final class Matrices {
         final byte[] intermediateArray = new byte[size];
         final R[][] result = newMatrixArray(rowCount, columnCount, targetElementType);
 
-        final Throwables.IntBiConsumer<E> cmd = (i, j) -> {
+        final Throwables.IntBiConsumer<E> action = (i, j) -> {
             final byte[] tmp = shareArray ? intermediateArray : N.clone(intermediateArray);
 
             for (int k = 0; k < size; k++) {
@@ -1234,7 +1234,7 @@ public final class Matrices {
             result[i][j] = zipFunction.apply(tmp);
         };
 
-        forEachIndex(rowCount, columnCount, cmd, zipInParallel);
+        forEachIndices(rowCount, columnCount, action, zipInParallel);
 
         return new Matrix<>(result);
     }
@@ -1280,9 +1280,9 @@ public final class Matrices {
         final byte[][] ba = b.a;
         final int[][] result = new int[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> cmd = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j]);
+        final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j]);
 
-        forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(a));
+        forEachIndices(rowCount, columnCount, action, Matrices.isParallelizable(a));
 
         return new IntMatrix(result);
     }
@@ -1336,9 +1336,9 @@ public final class Matrices {
         final byte[][] ca = c.a;
         final int[][] result = new int[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> cmd = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j], ca[i][j]);
+        final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j], ca[i][j]);
 
-        forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(a));
+        forEachIndices(rowCount, columnCount, action, Matrices.isParallelizable(a));
 
         return new IntMatrix(result);
     }
@@ -1439,7 +1439,7 @@ public final class Matrices {
         final byte[] intermediateArray = new byte[size];
         final int[][] result = new int[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> cmd = (i, j) -> {
+        final Throwables.IntBiConsumer<E> action = (i, j) -> {
             final byte[] tmp = shareArray ? intermediateArray : N.clone(intermediateArray);
 
             for (int k = 0; k < size; k++) {
@@ -1449,7 +1449,7 @@ public final class Matrices {
             result[i][j] = zipFunction.apply(tmp);
         };
 
-        forEachIndex(rowCount, columnCount, cmd, zipInParallel);
+        forEachIndices(rowCount, columnCount, action, zipInParallel);
 
         return new IntMatrix(result);
     }
@@ -1593,7 +1593,7 @@ public final class Matrices {
         final int columnCount = matrices[0].columnCount;
         final int[][] result = new int[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> cmd = (i, j) -> {
+        final Throwables.IntBiConsumer<E> action = (i, j) -> {
             final int[] ret = result[i];
             ret[j] = matrices[0].a[i][j];
 
@@ -1602,7 +1602,7 @@ public final class Matrices {
             }
         };
 
-        forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(matrices[0]));
+        forEachIndices(rowCount, columnCount, action, Matrices.isParallelizable(matrices[0]));
 
         return new IntMatrix(result);
     }
@@ -1704,7 +1704,7 @@ public final class Matrices {
         final int[] intermediateArray = new int[size];
         final R[][] result = newMatrixArray(rowCount, columnCount, targetElementType);
 
-        final Throwables.IntBiConsumer<E> cmd = (i, j) -> {
+        final Throwables.IntBiConsumer<E> action = (i, j) -> {
             final int[] tmp = shareArray ? intermediateArray : N.clone(intermediateArray);
 
             for (int k = 0; k < size; k++) {
@@ -1714,7 +1714,7 @@ public final class Matrices {
             result[i][j] = zipFunction.apply(tmp);
         };
 
-        forEachIndex(rowCount, columnCount, cmd, zipInParallel);
+        forEachIndices(rowCount, columnCount, action, zipInParallel);
 
         return new Matrix<>(result);
     }
@@ -1757,9 +1757,9 @@ public final class Matrices {
         final int[][] ba = b.a;
         final long[][] result = new long[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> cmd = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j]);
+        final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j]);
 
-        forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(a));
+        forEachIndices(rowCount, columnCount, action, Matrices.isParallelizable(a));
 
         return new LongMatrix(result);
     }
@@ -1807,9 +1807,9 @@ public final class Matrices {
         final int[][] ca = c.a;
         final long[][] result = new long[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> cmd = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j], ca[i][j]);
+        final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j], ca[i][j]);
 
-        forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(a));
+        forEachIndices(rowCount, columnCount, action, Matrices.isParallelizable(a));
 
         return new LongMatrix(result);
     }
@@ -1896,7 +1896,7 @@ public final class Matrices {
         final int[] intermediateArray = new int[size];
         final long[][] result = new long[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> cmd = (i, j) -> {
+        final Throwables.IntBiConsumer<E> action = (i, j) -> {
             final int[] tmp = shareArray ? intermediateArray : N.clone(intermediateArray);
 
             for (int k = 0; k < size; k++) {
@@ -1906,7 +1906,7 @@ public final class Matrices {
             result[i][j] = zipFunction.apply(tmp);
         };
 
-        forEachIndex(rowCount, columnCount, cmd, zipInParallel);
+        forEachIndices(rowCount, columnCount, action, zipInParallel);
 
         return new LongMatrix(result);
     }
@@ -1947,9 +1947,9 @@ public final class Matrices {
         final int[][] ba = b.a;
         final double[][] result = new double[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> cmd = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j]);
+        final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j]);
 
-        forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(a));
+        forEachIndices(rowCount, columnCount, action, Matrices.isParallelizable(a));
 
         return new DoubleMatrix(result);
     }
@@ -1994,9 +1994,9 @@ public final class Matrices {
         final int[][] ca = c.a;
         final double[][] result = new double[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> cmd = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j], ca[i][j]);
+        final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j], ca[i][j]);
 
-        forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(a));
+        forEachIndices(rowCount, columnCount, action, Matrices.isParallelizable(a));
 
         return new DoubleMatrix(result);
     }
@@ -2077,7 +2077,7 @@ public final class Matrices {
         final int[] intermediateArray = new int[size];
         final double[][] result = new double[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> cmd = (i, j) -> {
+        final Throwables.IntBiConsumer<E> action = (i, j) -> {
             final int[] tmp = shareArray ? intermediateArray : N.clone(intermediateArray);
 
             for (int k = 0; k < size; k++) {
@@ -2087,7 +2087,7 @@ public final class Matrices {
             result[i][j] = zipFunction.apply(tmp);
         };
 
-        forEachIndex(rowCount, columnCount, cmd, zipInParallel);
+        forEachIndices(rowCount, columnCount, action, zipInParallel);
 
         return new DoubleMatrix(result);
     }
@@ -2218,7 +2218,7 @@ public final class Matrices {
         final int columnCount = matrices[0].columnCount;
         final long[][] result = new long[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> cmd = (i, j) -> {
+        final Throwables.IntBiConsumer<E> action = (i, j) -> {
             final long[] ret = result[i];
             ret[j] = matrices[0].a[i][j];
 
@@ -2227,7 +2227,7 @@ public final class Matrices {
             }
         };
 
-        forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(matrices[0]));
+        forEachIndices(rowCount, columnCount, action, Matrices.isParallelizable(matrices[0]));
 
         return new LongMatrix(result);
     }
@@ -2317,7 +2317,7 @@ public final class Matrices {
         final long[] intermediateArray = new long[size];
         final R[][] result = newMatrixArray(rowCount, columnCount, targetElementType);
 
-        final Throwables.IntBiConsumer<E> cmd = (i, j) -> {
+        final Throwables.IntBiConsumer<E> action = (i, j) -> {
             final long[] tmp = shareArray ? intermediateArray : N.clone(intermediateArray);
 
             for (int k = 0; k < size; k++) {
@@ -2327,7 +2327,7 @@ public final class Matrices {
             result[i][j] = zipFunction.apply(tmp);
         };
 
-        forEachIndex(rowCount, columnCount, cmd, zipInParallel);
+        forEachIndices(rowCount, columnCount, action, zipInParallel);
 
         return new Matrix<>(result);
     }
@@ -2370,9 +2370,9 @@ public final class Matrices {
         final long[][] ba = b.a;
         final double[][] result = new double[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> cmd = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j]);
+        final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j]);
 
-        forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(a));
+        forEachIndices(rowCount, columnCount, action, Matrices.isParallelizable(a));
 
         return new DoubleMatrix(result);
     }
@@ -2419,9 +2419,9 @@ public final class Matrices {
         final long[][] ca = c.a;
         final double[][] result = new double[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> cmd = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j], ca[i][j]);
+        final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j], ca[i][j]);
 
-        forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(a));
+        forEachIndices(rowCount, columnCount, action, Matrices.isParallelizable(a));
 
         return new DoubleMatrix(result);
     }
@@ -2502,7 +2502,7 @@ public final class Matrices {
         final long[] intermediateArray = new long[size];
         final double[][] result = new double[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> cmd = (i, j) -> {
+        final Throwables.IntBiConsumer<E> action = (i, j) -> {
             final long[] tmp = shareArray ? intermediateArray : N.clone(intermediateArray);
 
             for (int k = 0; k < size; k++) {
@@ -2512,7 +2512,7 @@ public final class Matrices {
             result[i][j] = zipFunction.apply(tmp);
         };
 
-        forEachIndex(rowCount, columnCount, cmd, zipInParallel);
+        forEachIndices(rowCount, columnCount, action, zipInParallel);
 
         return new DoubleMatrix(result);
     }
@@ -2644,7 +2644,7 @@ public final class Matrices {
         final int columnCount = matrices[0].columnCount;
         final double[][] result = new double[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> cmd = (i, j) -> {
+        final Throwables.IntBiConsumer<E> action = (i, j) -> {
             final double[] ret = result[i];
             ret[j] = matrices[0].a[i][j];
 
@@ -2653,7 +2653,7 @@ public final class Matrices {
             }
         };
 
-        forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(matrices[0]));
+        forEachIndices(rowCount, columnCount, action, Matrices.isParallelizable(matrices[0]));
 
         return new DoubleMatrix(result);
     }
@@ -2744,7 +2744,7 @@ public final class Matrices {
         final double[] intermediateArray = new double[size];
         final R[][] result = newMatrixArray(rowCount, columnCount, targetElementType);
 
-        final Throwables.IntBiConsumer<E> cmd = (i, j) -> {
+        final Throwables.IntBiConsumer<E> action = (i, j) -> {
             final double[] tmp = shareArray ? intermediateArray : N.clone(intermediateArray);
 
             for (int k = 0; k < size; k++) {
@@ -2754,7 +2754,7 @@ public final class Matrices {
             result[i][j] = zipFunction.apply(tmp);
         };
 
-        forEachIndex(rowCount, columnCount, cmd, zipInParallel);
+        forEachIndices(rowCount, columnCount, action, zipInParallel);
 
         return new Matrix<>(result);
     }
@@ -3004,7 +3004,7 @@ public final class Matrices {
         final Class<T> elementType = resolveCommonElementType(matrices);
         final T[][] result = newMatrixArray(rowCount, columnCount, elementType);
 
-        final Throwables.IntBiConsumer<E> cmd = (i, j) -> {
+        final Throwables.IntBiConsumer<E> action = (i, j) -> {
             final T[] ret = result[i];
             ret[j] = matrices[0].a[i][j];
 
@@ -3013,7 +3013,7 @@ public final class Matrices {
             }
         };
 
-        forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(matrices[0]));
+        forEachIndices(rowCount, columnCount, action, Matrices.isParallelizable(matrices[0]));
 
         return new Matrix<>(result);
     }
@@ -3127,7 +3127,7 @@ public final class Matrices {
         final T[] intermediateArray = N.newArray(elementType, size);
         final R[][] result = newMatrixArray(rowCount, columnCount, targetElementType);
 
-        final Throwables.IntBiConsumer<E> cmd = (i, j) -> {
+        final Throwables.IntBiConsumer<E> action = (i, j) -> {
             final T[] tmp = shareArray ? intermediateArray : N.clone(intermediateArray);
 
             for (int k = 0; k < size; k++) {
@@ -3137,7 +3137,7 @@ public final class Matrices {
             result[i][j] = zipFunction.apply(tmp);
         };
 
-        forEachIndex(rowCount, columnCount, cmd, zipInParallel);
+        forEachIndices(rowCount, columnCount, action, zipInParallel);
 
         return new Matrix<>(result);
     }
@@ -3157,11 +3157,7 @@ public final class Matrices {
             return right == null ? Object.class : right;
         }
 
-        if (right == null) {
-            return left;
-        }
-
-        if (left.isAssignableFrom(right)) {
+        if ((right == null) || left.isAssignableFrom(right)) {
             return left;
         }
 

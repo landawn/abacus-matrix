@@ -4988,7 +4988,7 @@ class CharMatrixTest extends TestBase {
         public void testForEach_biConsumer() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
             StringBuilder diagonalStr = new StringBuilder();
-            m.forEachIndex((i, j, val) -> {
+            m.forEachIndices((i, j, val) -> {
                 if (i == j) {
                     diagonalStr.append(val.get(i, j));
                 }

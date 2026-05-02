@@ -82,7 +82,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
     @SuppressWarnings("unchecked")
     private Matrix(final T[][] a, final Class<T> explicitElementType) {
-        super(a);
+        super(N.checkArgNotNull(a, "Matrix array cannot be null"),
+                explicitElementType == null ? (Class<T>) a.getClass().getComponentType().getComponentType() : explicitElementType);
         arrayType = (Class<T[]>) this.a.getClass().getComponentType();
         elementType = explicitElementType == null ? (Class<T>) arrayType.getComponentType() : explicitElementType;
     }
@@ -144,7 +145,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
     /**
      * Creates a new matrix of the specified dimensions where every element is the provided {@code element}.
-     * 
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<String> matrix = Matrix.repeat(2, 3, "a");
@@ -248,7 +249,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * runs from upper-right to lower-left. If diagonals intersect (odd dimension),
      * the main diagonal value takes precedence. At least one diagonal must be non-null,
      * and two non-empty diagonals must have the same length.
-     * 
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<String> diag = Matrix.diagonals(
@@ -258,7 +259,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * // Creates: [["A", null, "X"],
      * //           [null, "B", null],
      * //           ["Z", null, "C"]]
-     * 
+     *
      * // With intersection (odd dimension)
      * Matrix<Integer> numbers = Matrix.diagonals(
      *     new Integer[] {1, 2, 3},
@@ -306,26 +307,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         @SuppressWarnings("unchecked")
         final Class<T> resolvedElementType = (Class<T>) commonType;
         return new Matrix<>(c, resolvedElementType);
-    }
-
-    /**
-     * Returns the component type of the elements in this matrix.
-     *
-     * <p>For example, for a {@code Matrix<Integer>}, this returns {@code Integer.class}.
-     * This is useful for reflection-based operations or when creating new arrays
-     * of the same type as the matrix elements.</p>
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * Matrix<String> matrix = Matrix.of(new String[][] {{"a", "b"}});
-     * Class<?> type = matrix.componentType();   // Returns String.class
-     * }</pre>
-     *
-     * @return the Class object representing the element type
-     */
-    @Override
-    public Class<?> componentType() {
-        return elementType;
     }
 
     /**
@@ -909,6 +890,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @return a new array containing the diagonal elements from top-left to bottom-right
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
+    @Override
     public T[] getMainDiagonal() throws IllegalStateException {
         checkIfRowAndColumnSizeAreSame();
 
@@ -941,6 +923,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws IllegalArgumentException if {@code mainDiagonal} array length does not equal {@code rowCount},
      *         or if any element is incompatible with the row's storage component type
      */
+    @Override
     public void setMainDiagonal(final T[] mainDiagonal) throws IllegalStateException, IllegalArgumentException {
         checkIfRowAndColumnSizeAreSame();
         N.checkArgument(N.len(mainDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(mainDiagonal));
@@ -1002,6 +985,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @return a new array containing the anti-diagonal elements from top-right to bottom-left
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
+    @Override
     public T[] getAntiDiagonal() throws IllegalStateException {
         checkIfRowAndColumnSizeAreSame();
 
@@ -1035,6 +1019,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws IllegalArgumentException if {@code antiDiagonal} array length does not equal {@code rowCount},
      *         or if any element is incompatible with the row's storage component type
      */
+    @Override
     public void setAntiDiagonal(final T[] antiDiagonal) throws IllegalStateException, IllegalArgumentException {
         checkIfRowAndColumnSizeAreSame();
         N.checkArgument(N.len(antiDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(antiDiagonal));
@@ -1114,7 +1099,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             a[i][j] = updated;
         };
         // Must be sequential because ensureRowCanStore mutates shared matrix metadata/storage.
-        Matrices.forEachIndex(rowCount, columnCount, operation, false);
+        Matrices.forEachIndices(rowCount, columnCount, operation, false);
     }
 
     /**
@@ -1150,7 +1135,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             a[i][j] = updated;
         };
         // Must be sequential because ensureRowCanStore mutates shared matrix metadata/storage.
-        Matrices.forEachIndex(rowCount, columnCount, operation, false);
+        Matrices.forEachIndices(rowCount, columnCount, operation, false);
     }
 
     /**
@@ -1190,7 +1175,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             }
         };
         // Must be sequential because ensureRowCanStore mutates shared matrix metadata/storage.
-        Matrices.forEachIndex(rowCount, columnCount, operation, false);
+        Matrices.forEachIndices(rowCount, columnCount, operation, false);
     }
 
     /**
@@ -1227,14 +1212,14 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             }
         };
         // Must be sequential because ensureRowCanStore mutates shared matrix metadata/storage.
-        Matrices.forEachIndex(rowCount, columnCount, operation, false);
+        Matrices.forEachIndices(rowCount, columnCount, operation, false);
     }
 
     /**
      * Creates a new matrix by applying a transformation function to each element.
      * The result matrix has the same element type as the original.
      * This is a convenience method that uses the same element type for input and output.
-     * 
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<String> strMatrix = Matrix.of(new String[][] {{"a", "b"}, {"c", "d"}});
@@ -1290,7 +1275,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
         final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return Matrix.of(result);
     }
@@ -1321,7 +1306,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         final boolean[][] result = new boolean[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = mapper.applyAsBoolean(a[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return BooleanMatrix.of(result);
     }
@@ -1350,7 +1335,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         final byte[][] result = new byte[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = mapper.applyAsByte(a[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return ByteMatrix.of(result);
     }
@@ -1382,7 +1367,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         final char[][] result = new char[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = mapper.applyAsChar(a[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return CharMatrix.of(result);
     }
@@ -1411,7 +1396,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         final short[][] result = new short[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = mapper.applyAsShort(a[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return ShortMatrix.of(result);
     }
@@ -1441,7 +1426,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         final int[][] result = new int[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = mapper.applyAsInt(a[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return IntMatrix.of(result);
     }
@@ -1470,7 +1455,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         final long[][] result = new long[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = mapper.applyAsLong(a[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return LongMatrix.of(result);
     }
@@ -1499,7 +1484,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         final float[][] result = new float[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = mapper.applyAsFloat(a[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return FloatMatrix.of(result);
     }
@@ -1528,7 +1513,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         final double[][] result = new double[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = mapper.applyAsDouble(a[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return DoubleMatrix.of(result);
     }
@@ -1570,11 +1555,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * matrix.copyFrom(data);   // Copy from top-left
      * }</pre>
      *
-     * @param b the source two-dimensional array to copy values from (must not be null)
-     * @throws IllegalArgumentException if {@code b} is {@code null}
+     * @param source the source two-dimensional array to copy values from (must not be null)
+     * @throws IllegalArgumentException if {@code source} is {@code null}
      */
-    public void copyFrom(final T[][] b) {
-        copyFrom(0, 0, b);
+    public void copyFrom(final T[][] source) {
+        copyFrom(0, 0, source);
     }
 
     /**
@@ -1593,20 +1578,20 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param destRowIndex the target row index (0-based, must be between 0 and rowCount inclusive)
      * @param destColumnIndex the target column index (0-based, must be between 0 and columnCount inclusive)
-     * @param b the source two-dimensional array to copy values from (must not be null)
-     * @throws IllegalArgumentException if {@code b} is {@code null}, or if the target indices are negative or exceed matrix dimensions
+     * @param source the source two-dimensional array to copy values from (must not be null)
+     * @throws IllegalArgumentException if {@code source} is {@code null}, or if the target indices are negative or exceed matrix dimensions
      */
-    public void copyFrom(final int destRowIndex, final int destColumnIndex, final T[][] b) throws IllegalArgumentException {
-        N.checkArgNotNull(b, "b");
+    public void copyFrom(final int destRowIndex, final int destColumnIndex, final T[][] source) throws IllegalArgumentException {
+        N.checkArgNotNull(source, "source");
         N.checkArgument(destRowIndex >= 0 && destRowIndex <= rowCount, "destRowIndex({}) must be between 0 and rowCount({})", destRowIndex, rowCount);
         N.checkArgument(destColumnIndex >= 0 && destColumnIndex <= columnCount, "destColumnIndex({}) must be between 0 and columnCount({})", destColumnIndex,
                 columnCount);
 
-        for (int i = 0, minLen = N.min(rowCount - destRowIndex, b.length); i < minLen; i++) {
-            if (b[i] != null) {
-                final int copyLen = N.min(b[i].length, columnCount - destColumnIndex);
-                ensureRowCanStoreAny(i + destRowIndex, b[i], copyLen);
-                N.copy(b[i], 0, a[i + destRowIndex], destColumnIndex, copyLen);
+        for (int i = 0, minLen = N.min(rowCount - destRowIndex, source.length); i < minLen; i++) {
+            if (source[i] != null) {
+                final int copyLen = N.min(source[i].length, columnCount - destColumnIndex);
+                ensureRowCanStoreAny(i + destRowIndex, source[i], copyLen);
+                N.copy(source[i], 0, a[i + destRowIndex], destColumnIndex, copyLen);
             }
         }
     }
@@ -2562,14 +2547,14 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param <B> the element type of the other matrix
      * @param <E> the type of exception that the zip function may throw
-     * @param matrixB the other matrix to zip with (must have the same dimensions, must not be null)
+     * @param other the other matrix to zip with (must have the same dimensions, must not be null)
      * @param zipFunction the binary function to apply to corresponding elements (must not be null)
      * @return a new matrix with the results of the zip function
      * @throws IllegalArgumentException if the matrices don't have the same dimensions
      * @throws E if the zip function throws an exception
      */
-    public <B, E extends Exception> Matrix<T> zipWith(final Matrix<B> matrixB, final Throwables.BiFunction<? super T, ? super B, T, E> zipFunction) throws E {
-        return zipWith(matrixB, zipFunction, elementType);
+    public <B, E extends Exception> Matrix<T> zipWith(final Matrix<B> other, final Throwables.BiFunction<? super T, ? super B, T, E> zipFunction) throws E {
+        return zipWith(other, zipFunction, elementType);
     }
 
     /**
@@ -2589,26 +2574,26 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param <B> the element type of the other matrix
      * @param <R> the element type of the result matrix
      * @param <E> the type of exception that the zip function may throw
-     * @param matrixB the other matrix to zip with (must have the same dimensions, must not be null)
+     * @param other the other matrix to zip with (must have the same dimensions, must not be null)
      * @param zipFunction the function to apply to corresponding elements (must not be null)
      * @param targetElementType the class of the result element type (must not be null)
      * @return a new matrix with the results of the zip function
      * @throws IllegalArgumentException if the matrices don't have the same shape
      * @throws E if the zip function throws an exception
      */
-    public <B, R, E extends Exception> Matrix<R> zipWith(final Matrix<B> matrixB, final Throwables.BiFunction<? super T, ? super B, R, E> zipFunction,
+    public <B, R, E extends Exception> Matrix<R> zipWith(final Matrix<B> other, final Throwables.BiFunction<? super T, ? super B, R, E> zipFunction,
             final Class<R> targetElementType) throws IllegalArgumentException, E {
-        N.checkArgument(Matrices.isSameShape(this, matrixB), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount,
-                columnCount, matrixB.rowCount, matrixB.columnCount);
+        N.checkArgument(Matrices.isSameShape(this, other), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
+                other.rowCount, other.columnCount);
         N.checkArgNotNull(zipFunction, "zipFunction");
         N.checkArgNotNull(targetElementType, "targetElementType");
 
-        final B[][] b = matrixB.a;
+        final B[][] b = other.a;
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
 
         final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = zipFunction.apply(a[i][j], b[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return Matrix.of(result);
     }
@@ -2630,16 +2615,16 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param <B> the element type of the second matrix
      * @param <C> the element type of the third matrix
      * @param <E> the type of exception that the zip function may throw
-     * @param matrixB the second matrix to zip with (must have the same dimensions, must not be null)
-     * @param matrixC the third matrix to zip with (must have the same dimensions, must not be null)
+     * @param other the second matrix to zip with (must have the same dimensions, must not be null)
+     * @param third the third matrix to zip with (must have the same dimensions, must not be null)
      * @param zipFunction the function to apply to corresponding elements (must not be null)
      * @return a new matrix with the results of the zip function
      * @throws IllegalArgumentException if the matrices don't have the same dimensions
      * @throws E if the zip function throws an exception
      */
-    public <B, C, E extends Exception> Matrix<T> zipWith(final Matrix<B> matrixB, final Matrix<C> matrixC,
+    public <B, C, E extends Exception> Matrix<T> zipWith(final Matrix<B> other, final Matrix<C> third,
             final Throwables.TriFunction<? super T, ? super B, ? super C, T, E> zipFunction) throws E {
-        return zipWith(matrixB, matrixC, zipFunction, elementType);
+        return zipWith(other, third, zipFunction, elementType);
     }
 
     /**
@@ -2662,29 +2647,29 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param <C> the element type of the third matrix
      * @param <R> the element type of the result matrix
      * @param <E> the type of exception that the zip function may throw
-     * @param matrixB the second matrix to zip with (must have the same dimensions, must not be null)
-     * @param matrixC the third matrix to zip with (must have the same dimensions, must not be null)
+     * @param other the second matrix to zip with (must have the same dimensions, must not be null)
+     * @param third the third matrix to zip with (must have the same dimensions, must not be null)
      * @param zipFunction the function to apply to corresponding elements (must not be null)
      * @param targetElementType the class of the result element type (must not be null)
      * @return a new matrix with the results of the zip function
      * @throws IllegalArgumentException if the matrices don't have the same shape
      * @throws E if the zip function throws an exception
      */
-    public <B, C, R, E extends Exception> Matrix<R> zipWith(final Matrix<B> matrixB, final Matrix<C> matrixC,
+    public <B, C, R, E extends Exception> Matrix<R> zipWith(final Matrix<B> other, final Matrix<C> third,
             final Throwables.TriFunction<? super T, ? super B, ? super C, R, E> zipFunction, final Class<R> targetElementType)
             throws IllegalArgumentException, E {
-        N.checkArgument(Matrices.isSameShape(this, matrixB, matrixC), "Cannot zip matrices with different shapes: all matrices must be {}x{}", rowCount,
+        N.checkArgument(Matrices.isSameShape(this, other, third), "Cannot zip matrices with different shapes: all matrices must be {}x{}", rowCount,
                 columnCount);
         N.checkArgNotNull(zipFunction, "zipFunction");
         N.checkArgNotNull(targetElementType, "targetElementType");
 
-        final B[][] b = matrixB.a;
-        final C[][] c = matrixC.a;
+        final B[][] b = other.a;
+        final C[][] c = third.a;
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
 
         final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = zipFunction.apply(a[i][j], b[i][j], c[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return Matrix.of(result);
     }
@@ -3345,7 +3330,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
         if (Matrices.isParallelizable(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
             final Throwables.IntBiConsumer<E> cmd = (i, j) -> action.accept(a[i][j]);
-            Matrices.forEachIndex(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, cmd, true);
+            Matrices.forEachIndices(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, cmd, true);
         } else {
             for (int i = fromRowIndex; i < toRowIndex; i++) {
                 final T[] aa = a[i];

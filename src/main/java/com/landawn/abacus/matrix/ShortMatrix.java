@@ -14,9 +14,7 @@
 
 package com.landawn.abacus.matrix;
 
-import java.security.SecureRandom;
 import java.util.NoSuchElementException;
-import java.util.Random;
 
 import com.landawn.abacus.annotation.Beta;
 import com.landawn.abacus.annotation.SuppressFBWarnings;
@@ -46,9 +44,8 @@ import com.landawn.abacus.util.stream.Stream;
  */
 public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortStream, Stream<ShortStream>, ShortMatrix> {
 
-    static final Random RAND = new SecureRandom();
     static final int BOUND = Short.MAX_VALUE - Short.MIN_VALUE + 1;
-    static final ShortMatrix EMPTY_SHORT_MATRIX = new ShortMatrix(new short[0][0]);
+    private static final ShortMatrix EMPTY_SHORT_MATRIX = new ShortMatrix(new short[0][0]);
 
     /**
      * Constructs a {@code ShortMatrix} backed by the supplied two-dimensional array.
@@ -70,7 +67,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param a the two-dimensional short array to wrap, or {@code null} for an empty matrix
      */
     public ShortMatrix(final short[][] a) {
-        super(a == null ? new short[0][0] : a);
+        super(a == null ? new short[0][0] : a, short.class);
     }
 
     /**
@@ -377,26 +374,6 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      */
     public static ShortMatrix unbox(final Matrix<Short> x) {
         return ShortMatrix.of(Array.unbox(x.a));
-    }
-
-    /**
-     * Returns the component type of the matrix elements, which is always {@code short.class}.
-     *
-     * <p>This method returns the Class object representing the component type of the internal array,
-     * which is always {@code short.class} for ShortMatrix.
-     * This method is useful for reflection-based code that needs to determine the element type at runtime.</p>
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2}, {3, 4}});
-     * Class<?> type = matrix.componentType();   // Returns short.class
-     * }</pre>
-     *
-     * @return {@code short.class}
-     */
-    @Override
-    public Class<?> componentType() {
-        return short.class;
     }
 
     /**
@@ -786,6 +763,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @return a new short array containing the main diagonal elements
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
+    @Override
     public short[] getMainDiagonal() throws IllegalStateException {
         checkIfRowAndColumnSizeAreSame();
 
@@ -816,6 +794,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      * @throws IllegalArgumentException if mainDiagonal array length does not equal rowCount
      */
+    @Override
     public void setMainDiagonal(final short[] mainDiagonal) throws IllegalStateException, IllegalArgumentException {
         checkIfRowAndColumnSizeAreSame();
         N.checkArgument(N.len(mainDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(mainDiagonal));
@@ -866,6 +845,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @return a new short array containing the anti-diagonal elements
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
+    @Override
     public short[] getAntiDiagonal() throws IllegalStateException {
         checkIfRowAndColumnSizeAreSame();
 
@@ -897,6 +877,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      * @throws IllegalArgumentException if antiDiagonal array length does not equal rowCount
      */
+    @Override
     public void setAntiDiagonal(final short[] antiDiagonal) throws IllegalStateException, IllegalArgumentException {
         checkIfRowAndColumnSizeAreSame();
         N.checkArgument(N.len(antiDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(antiDiagonal));
@@ -949,7 +930,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     public <E extends Exception> void updateAll(final Throwables.ShortUnaryOperator<E> operator) throws E {
         N.checkArgNotNull(operator, "operator");
         final Throwables.IntBiConsumer<E> operation = (i, j) -> a[i][j] = operator.applyAsShort(a[i][j]);
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
     }
 
     /**
@@ -971,7 +952,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<Short, E> operator) throws E {
         N.checkArgNotNull(operator, "operator");
         final Throwables.IntBiConsumer<E> operation = (i, j) -> a[i][j] = operator.apply(i, j);
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
     }
 
     /**
@@ -994,7 +975,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     public <E extends Exception> void replaceIf(final Throwables.ShortPredicate<E> predicate, final short newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
         final Throwables.IntBiConsumer<E> operation = (i, j) -> a[i][j] = predicate.test(a[i][j]) ? newValue : a[i][j];
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
     }
 
     /**
@@ -1017,7 +998,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final short newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
         final Throwables.IntBiConsumer<E> operation = (i, j) -> a[i][j] = predicate.test(i, j) ? newValue : a[i][j];
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
     }
 
     /**
@@ -1041,7 +1022,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
         final short[][] result = new short[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = mapper.applyAsShort(a[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return ShortMatrix.of(result);
     }
@@ -1071,7 +1052,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
         final T[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
         final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return Matrix.of(result);
     }
@@ -1106,10 +1087,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * // Result: [[1, 2, 0], [3, 4, 0]]
      * }</pre>
      *
-     * @param b the two-dimensional array to copy values from
+     * @param source the two-dimensional array to copy values from
      */
-    public void copyFrom(final short[][] b) {
-        copyFrom(0, 0, b);
+    public void copyFrom(final short[][] source) {
+        copyFrom(0, 0, source);
     }
 
     /**
@@ -1126,18 +1107,18 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param destRowIndex the target row index in this matrix (0-based, must be 0 &lt;= destRowIndex &lt;= rowCount)
      * @param destColumnIndex the target column index in this matrix (0-based, must be 0 &lt;= destColumnIndex &lt;= columnCount)
-     * @param b the source array to copy values from
+     * @param source the source array to copy values from
      * @throws IllegalArgumentException if destRowIndex &lt; 0 or &gt; rowCount, or if destColumnIndex &lt; 0 or &gt; columnCount
      */
-    public void copyFrom(final int destRowIndex, final int destColumnIndex, final short[][] b) throws IllegalArgumentException {
-        N.checkArgNotNull(b, "b");
+    public void copyFrom(final int destRowIndex, final int destColumnIndex, final short[][] source) throws IllegalArgumentException {
+        N.checkArgNotNull(source, "source");
         N.checkArgument(destRowIndex >= 0 && destRowIndex <= rowCount, "destRowIndex({}) must be between 0 and rowCount({})", destRowIndex, rowCount);
         N.checkArgument(destColumnIndex >= 0 && destColumnIndex <= columnCount, "destColumnIndex({}) must be between 0 and columnCount({})", destColumnIndex,
                 columnCount);
 
-        for (int i = 0, minLen = N.min(rowCount - destRowIndex, b.length); i < minLen; i++) {
-            if (b[i] != null) {
-                N.copy(b[i], 0, a[i + destRowIndex], destColumnIndex, N.min(b[i].length, columnCount - destColumnIndex));
+        for (int i = 0, minLen = N.min(rowCount - destRowIndex, source.length); i < minLen; i++) {
+            if (source[i] != null) {
+                N.copy(source[i], 0, a[i + destRowIndex], destColumnIndex, N.min(source[i].length, columnCount - destColumnIndex));
             }
         }
     }
@@ -1558,7 +1539,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * // Result: [[3, 2, 1],
      * //          [6, 5, 4]]
      * }</pre>
-     * 
+     *
      * @return a new matrix with each row reversed
      * @see #flipInPlaceHorizontally()
      * @see #flipVertically()
@@ -2082,7 +2063,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
         final short[][] result = new short[rowCount][columnCount];
         final Throwables.IntBiConsumer<RuntimeException> operation = (i, j) -> result[i][j] = (short) (a[i][j] + otherArray[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return ShortMatrix.of(result);
     }
@@ -2114,7 +2095,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
         final short[][] result = new short[rowCount][columnCount];
         final Throwables.IntBiConsumer<RuntimeException> operation = (i, j) -> result[i][j] = (short) (a[i][j] - otherArray[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return ShortMatrix.of(result);
     }
@@ -2345,24 +2326,24 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @param <E> the type of exception that the zip function may throw
-     * @param matrixB the second matrix to zip with this matrix
+     * @param other the second matrix to zip with this matrix
      * @param zipFunction the binary operation to apply to corresponding elements
      * @return a new matrix with the results of the zip operation
      * @throws IllegalArgumentException if the matrices don't have the same shape
      * @throws E if the zip function throws an exception
      */
-    public <E extends Exception> ShortMatrix zipWith(final ShortMatrix matrixB, final Throwables.ShortBinaryOperator<E> zipFunction)
+    public <E extends Exception> ShortMatrix zipWith(final ShortMatrix other, final Throwables.ShortBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
-        N.checkArgument(isSameShape(matrixB), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
-                matrixB.rowCount, matrixB.columnCount);
+        N.checkArgument(isSameShape(other), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
+                other.rowCount, other.columnCount);
         N.checkArgNotNull(zipFunction, "zipFunction");
 
-        final short[][] arrayB = matrixB.a;
+        final short[][] arrayB = other.a;
         final short[][] result = new short[rowCount][columnCount];
 
         final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = zipFunction.applyAsShort(a[i][j], arrayB[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return ShortMatrix.of(result);
     }
@@ -2383,26 +2364,26 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @param <E> the type of exception that the zip function may throw
-     * @param matrixB the second matrix to zip with
-     * @param matrixC the third matrix to zip with
+     * @param other the second matrix to zip with
+     * @param third the third matrix to zip with
      * @param zipFunction the ternary operation to apply to corresponding elements from all three matrices
      * @return a new matrix with the results of the zip operation
      * @throws IllegalArgumentException if the matrices don't have the same shape
      * @throws E if the zip function throws an exception
      */
-    public <E extends Exception> ShortMatrix zipWith(final ShortMatrix matrixB, final ShortMatrix matrixC, final Throwables.ShortTernaryOperator<E> zipFunction)
+    public <E extends Exception> ShortMatrix zipWith(final ShortMatrix other, final ShortMatrix third, final Throwables.ShortTernaryOperator<E> zipFunction)
             throws E {
-        N.checkArgument(isSameShape(matrixB) && isSameShape(matrixC), "Cannot zip matrices with different shapes: all matrices must be {}x{}", rowCount,
+        N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: all matrices must be {}x{}", rowCount,
                 columnCount);
         N.checkArgNotNull(zipFunction, "zipFunction");
 
-        final short[][] arrayB = matrixB.a;
-        final short[][] arrayC = matrixC.a;
+        final short[][] arrayB = other.a;
+        final short[][] arrayC = third.a;
         final short[][] result = new short[rowCount][columnCount];
 
         final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = zipFunction.applyAsShort(a[i][j], arrayB[i][j], arrayC[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return ShortMatrix.of(result);
     }
@@ -3062,7 +3043,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
 
         if (Matrices.isParallelizable(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
             final Throwables.IntBiConsumer<E> operation = (i, j) -> action.accept(a[i][j]);
-            Matrices.forEachIndex(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, operation, true);
+            Matrices.forEachIndices(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, operation, true);
         } else {
             for (int i = fromRowIndex; i < toRowIndex; i++) {
                 final short[] aa = a[i];
@@ -3088,7 +3069,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * // [1, 2, 3]
      * // [4, 5, 6]
      * }</pre>
-     * 
+     *
      * @return the formatted string representation of the matrix
      */
     @Override

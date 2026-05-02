@@ -320,7 +320,7 @@ class AbstractMatrixTest extends TestBase {
         IntMatrix matrix = createTestMatrix2x3();
         List<String> positions = new ArrayList<>();
 
-        matrix.forEachIndex((i, j) -> positions.add(i + "," + j));
+        matrix.forEachIndices((i, j) -> positions.add(i + "," + j));
 
         Assertions.assertEquals(6, positions.size());
         Assertions.assertTrue(positions.contains("0,0"));
@@ -332,7 +332,7 @@ class AbstractMatrixTest extends TestBase {
         IntMatrix matrix = createTestMatrix();
         List<String> positions = new ArrayList<>();
 
-        matrix.forEachIndex(1, 3, 1, 3, (i, j) -> positions.add(i + "," + j));
+        matrix.forEachIndices(1, 3, 1, 3, (i, j) -> positions.add(i + "," + j));
 
         Assertions.assertEquals(4, positions.size());
         Assertions.assertTrue(positions.contains("1,1"));
@@ -346,7 +346,7 @@ class AbstractMatrixTest extends TestBase {
         IntMatrix matrix = createTestMatrix2x3();
         List<Integer> values = new ArrayList<>();
 
-        matrix.forEachIndex((i, j, m) -> values.add(m.get(i, j)));
+        matrix.forEachIndices((i, j, m) -> values.add(m.get(i, j)));
 
         Assertions.assertEquals(6, values.size());
         Assertions.assertEquals(1, values.get(0));
@@ -358,7 +358,7 @@ class AbstractMatrixTest extends TestBase {
         IntMatrix matrix = createTestMatrix();
         List<Integer> values = new ArrayList<>();
 
-        matrix.forEachIndex(0, 2, 0, 2, (i, j, m) -> values.add(m.get(i, j)));
+        matrix.forEachIndices(0, 2, 0, 2, (i, j, m) -> values.add(m.get(i, j)));
 
         Assertions.assertEquals(4, values.size());
         Assertions.assertEquals(1, values.get(0));
@@ -371,12 +371,12 @@ class AbstractMatrixTest extends TestBase {
     public void testForEachNullAction() {
         IntMatrix matrix = createTestMatrix();
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.forEachIndex((Throwables.IntBiConsumer<RuntimeException>) null));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.forEachIndices((Throwables.IntBiConsumer<RuntimeException>) null));
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> matrix.forEachIndex(0, matrix.rowCount(), 0, matrix.columnCount(), (Throwables.IntBiConsumer<RuntimeException>) null));
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.forEachIndex((Throwables.BiIntObjConsumer<IntMatrix, RuntimeException>) null));
+                () -> matrix.forEachIndices(0, matrix.rowCount(), 0, matrix.columnCount(), (Throwables.IntBiConsumer<RuntimeException>) null));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.forEachIndices((Throwables.BiIntObjConsumer<IntMatrix, RuntimeException>) null));
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> matrix.forEachIndex(0, matrix.rowCount(), 0, matrix.columnCount(), (Throwables.BiIntObjConsumer<IntMatrix, RuntimeException>) null));
+                () -> matrix.forEachIndices(0, matrix.rowCount(), 0, matrix.columnCount(), (Throwables.BiIntObjConsumer<IntMatrix, RuntimeException>) null));
     }
 
     @Test
@@ -1129,7 +1129,7 @@ class AbstractMatrixTest extends TestBase {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             List<String> positions = new ArrayList<>();
 
-            m.forEachIndex((i, j) -> positions.add(i + "," + j));
+            m.forEachIndices((i, j) -> positions.add(i + "," + j));
 
             assertEquals(4, positions.size());
             assertEquals("0,0", positions.get(0));
@@ -1143,7 +1143,7 @@ class AbstractMatrixTest extends TestBase {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             List<String> positions = new ArrayList<>();
 
-            m.forEachIndex(1, 3, 1, 3, (i, j) -> positions.add(i + "," + j));
+            m.forEachIndices(1, 3, 1, 3, (i, j) -> positions.add(i + "," + j));
 
             assertEquals(4, positions.size());
             assertEquals("1,1", positions.get(0));
@@ -1155,9 +1155,9 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void testForEach_withRange_outOfBounds() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.forEachIndex(-1, 2, 0, 2, (i, j) -> {
+            assertThrows(IndexOutOfBoundsException.class, () -> m.forEachIndices(-1, 2, 0, 2, (i, j) -> {
             }));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.forEachIndex(0, 3, 0, 2, (i, j) -> {
+            assertThrows(IndexOutOfBoundsException.class, () -> m.forEachIndices(0, 3, 0, 2, (i, j) -> {
             }));
         }
 
@@ -1166,7 +1166,7 @@ class AbstractMatrixTest extends TestBase {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             List<Integer> values = new ArrayList<>();
 
-            m.forEachIndex((i, j, matrix) -> values.add(matrix.get(i, j)));
+            m.forEachIndices((i, j, matrix) -> values.add(matrix.get(i, j)));
 
             assertEquals(4, values.size());
             assertEquals(1, values.get(0).intValue());
@@ -1180,7 +1180,7 @@ class AbstractMatrixTest extends TestBase {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             List<Integer> values = new ArrayList<>();
 
-            m.forEachIndex(1, 3, 1, 3, (i, j, matrix) -> values.add(matrix.get(i, j)));
+            m.forEachIndices(1, 3, 1, 3, (i, j, matrix) -> values.add(matrix.get(i, j)));
 
             assertEquals(4, values.size());
             assertEquals(5, values.get(0).intValue());
@@ -1605,7 +1605,7 @@ class AbstractMatrixTest extends TestBase {
             IntMatrix empty = IntMatrix.empty();
             List<String> positions = new ArrayList<>();
 
-            empty.forEachIndex((i, j) -> positions.add(i + "," + j));
+            empty.forEachIndices((i, j) -> positions.add(i + "," + j));
 
             assertTrue(positions.isEmpty());
         }
@@ -1615,7 +1615,7 @@ class AbstractMatrixTest extends TestBase {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             List<String> positions = new ArrayList<>();
 
-            m.forEachIndex(1, 1, 0, 2, (i, j) -> positions.add(i + "," + j));
+            m.forEachIndices(1, 1, 0, 2, (i, j) -> positions.add(i + "," + j));
 
             assertTrue(positions.isEmpty());
         }
@@ -1625,7 +1625,7 @@ class AbstractMatrixTest extends TestBase {
             IntMatrix empty = IntMatrix.empty();
             List<Integer> values = new ArrayList<>();
 
-            empty.forEachIndex((i, j, matrix) -> values.add(matrix.get(i, j)));
+            empty.forEachIndices((i, j, matrix) -> values.add(matrix.get(i, j)));
 
             assertTrue(values.isEmpty());
         }
@@ -1635,7 +1635,7 @@ class AbstractMatrixTest extends TestBase {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             List<Integer> values = new ArrayList<>();
 
-            m.forEachIndex(0, 0, 1, 1, (i, j, matrix) -> values.add(matrix.get(i, j)));
+            m.forEachIndices(0, 0, 1, 1, (i, j, matrix) -> values.add(matrix.get(i, j)));
 
             assertTrue(values.isEmpty());
         }
@@ -2297,7 +2297,7 @@ class AbstractMatrixTest extends TestBase {
         public void testForEach_biConsumer() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             AtomicInteger count = new AtomicInteger(0);
-            m.forEachIndex((i, j) -> count.incrementAndGet());
+            m.forEachIndices((i, j) -> count.incrementAndGet());
             assertEquals(4, count.get());
         }
 
@@ -2305,16 +2305,16 @@ class AbstractMatrixTest extends TestBase {
         public void testForEach_biConsumer_withRange() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             AtomicInteger count = new AtomicInteger(0);
-            m.forEachIndex(1, 3, 1, 3, (i, j) -> count.incrementAndGet());
+            m.forEachIndices(1, 3, 1, 3, (i, j) -> count.incrementAndGet());
             assertEquals(4, count.get());
         }
 
         @Test
         public void testForEach_biConsumer_outOfBounds() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.forEachIndex(-1, 2, 0, 2, (i, j) -> {
+            assertThrows(IndexOutOfBoundsException.class, () -> m.forEachIndices(-1, 2, 0, 2, (i, j) -> {
             }));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.forEachIndex(0, 3, 0, 2, (i, j) -> {
+            assertThrows(IndexOutOfBoundsException.class, () -> m.forEachIndices(0, 3, 0, 2, (i, j) -> {
             }));
         }
 
@@ -2322,7 +2322,7 @@ class AbstractMatrixTest extends TestBase {
         public void testForEach_withMatrix() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             AtomicInteger sum = new AtomicInteger(0);
-            m.forEachIndex((i, j, matrix) -> sum.addAndGet(matrix.get(i, j)));
+            m.forEachIndices((i, j, matrix) -> sum.addAndGet(matrix.get(i, j)));
             assertEquals(10, sum.get());
         }
 
@@ -2330,7 +2330,7 @@ class AbstractMatrixTest extends TestBase {
         public void testForEach_withMatrix_withRange() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             AtomicInteger sum = new AtomicInteger(0);
-            m.forEachIndex(1, 3, 1, 3, (i, j, matrix) -> sum.addAndGet(matrix.get(i, j)));
+            m.forEachIndices(1, 3, 1, 3, (i, j, matrix) -> sum.addAndGet(matrix.get(i, j)));
             assertEquals(28, sum.get()); // 5 + 6 + 8 + 9
         }
 
@@ -2859,7 +2859,7 @@ class AbstractMatrixTest extends TestBase {
         public void test_forEach_simpleIteration() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             AtomicInteger sum = new AtomicInteger(0);
-            matrix.forEachIndex((i, j) -> sum.addAndGet(matrix.get(i, j)));
+            matrix.forEachIndices((i, j) -> sum.addAndGet(matrix.get(i, j)));
             assertEquals(10, sum.get());
         }
 
@@ -2867,7 +2867,7 @@ class AbstractMatrixTest extends TestBase {
         public void test_forEach_withMatrix() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             AtomicInteger sum = new AtomicInteger(0);
-            matrix.forEachIndex((i, j, m) -> sum.addAndGet(m.get(i, j)));
+            matrix.forEachIndices((i, j, m) -> sum.addAndGet(m.get(i, j)));
             assertEquals(10, sum.get());
         }
 
@@ -2875,7 +2875,7 @@ class AbstractMatrixTest extends TestBase {
         public void test_forEach_withRegion() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             AtomicInteger sum = new AtomicInteger(0);
-            matrix.forEachIndex(0, 2, 0, 2, (i, j) -> sum.addAndGet(matrix.get(i, j)));
+            matrix.forEachIndices(0, 2, 0, 2, (i, j) -> sum.addAndGet(matrix.get(i, j)));
             assertEquals(12, sum.get()); // 1+2+4+5
         }
 
@@ -2883,7 +2883,7 @@ class AbstractMatrixTest extends TestBase {
         public void test_forEach_withRegionAndMatrix() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             AtomicInteger sum = new AtomicInteger(0);
-            matrix.forEachIndex(1, 3, 1, 3, (i, j, m) -> sum.addAndGet(m.get(i, j)));
+            matrix.forEachIndices(1, 3, 1, 3, (i, j, m) -> sum.addAndGet(m.get(i, j)));
             assertEquals(28, sum.get()); // 5+6+8+9
         }
 
@@ -2891,7 +2891,7 @@ class AbstractMatrixTest extends TestBase {
         public void test_forEach_emptyMatrix() {
             IntMatrix matrix = IntMatrix.of(new int[0][0]);
             AtomicInteger count = new AtomicInteger(0);
-            matrix.forEachIndex((i, j) -> count.incrementAndGet());
+            matrix.forEachIndices((i, j) -> count.incrementAndGet());
             assertEquals(0, count.get());
         }
 

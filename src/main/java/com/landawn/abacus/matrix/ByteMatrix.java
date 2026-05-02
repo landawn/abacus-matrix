@@ -14,9 +14,7 @@
 
 package com.landawn.abacus.matrix;
 
-import java.security.SecureRandom;
 import java.util.NoSuchElementException;
-import java.util.Random;
 
 import com.landawn.abacus.annotation.Beta;
 import com.landawn.abacus.annotation.SuppressFBWarnings;
@@ -46,9 +44,8 @@ import com.landawn.abacus.util.stream.Stream;
  */
 public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStream, Stream<ByteStream>, ByteMatrix> {
 
-    static final Random RAND = new SecureRandom();
     static final int BOUND = Byte.MAX_VALUE - Byte.MIN_VALUE + 1;
-    static final ByteMatrix EMPTY_BYTE_MATRIX = new ByteMatrix(new byte[0][0]);
+    private static final ByteMatrix EMPTY_BYTE_MATRIX = new ByteMatrix(new byte[0][0]);
 
     /**
      * Constructs a {@code ByteMatrix} backed by the supplied two-dimensional array.
@@ -70,7 +67,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param a the two-dimensional byte array to wrap, or {@code null} for an empty matrix
      */
     public ByteMatrix(final byte[][] a) {
-        super(a == null ? new byte[0][0] : a);
+        super(a == null ? new byte[0][0] : a, byte.class);
     }
 
     /**
@@ -376,23 +373,6 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      */
     public static ByteMatrix unbox(final Matrix<Byte> x) {
         return ByteMatrix.of(Array.unbox(x.a));
-    }
-
-    /**
-     * Returns the component type of the matrix elements, which is always {@code byte.class}.
-     * This method is useful for reflection-based code that needs to determine the element type.
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
-     * Class<?> type = matrix.componentType();   // Returns byte.class
-     * }</pre>
-     *
-     * @return {@code byte.class}
-     */
-    @Override
-    public Class<?> componentType() {
-        return byte.class;
     }
 
     /**
@@ -774,6 +754,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @return a new byte array containing the main diagonal elements
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
+    @Override
     public byte[] getMainDiagonal() throws IllegalStateException {
         checkIfRowAndColumnSizeAreSame();
 
@@ -804,6 +785,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      * @throws IllegalArgumentException if mainDiagonal array length does not equal rowCount
      */
+    @Override
     public void setMainDiagonal(final byte[] mainDiagonal) throws IllegalStateException, IllegalArgumentException {
         checkIfRowAndColumnSizeAreSame();
         N.checkArgument(N.len(mainDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(mainDiagonal));
@@ -855,6 +837,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @return a new byte array containing the anti-diagonal elements
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
+    @Override
     public byte[] getAntiDiagonal() throws IllegalStateException {
         checkIfRowAndColumnSizeAreSame();
 
@@ -886,6 +869,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      * @throws IllegalArgumentException if antiDiagonal array length does not equal rowCount
      */
+    @Override
     public void setAntiDiagonal(final byte[] antiDiagonal) throws IllegalStateException, IllegalArgumentException {
         checkIfRowAndColumnSizeAreSame();
         N.checkArgument(N.len(antiDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(antiDiagonal));
@@ -940,7 +924,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     public <E extends Exception> void updateAll(final Throwables.ByteUnaryOperator<E> operator) throws E {
         N.checkArgNotNull(operator, "operator");
         final Throwables.IntBiConsumer<E> cmd = (i, j) -> a[i][j] = operator.applyAsByte(a[i][j]);
-        Matrices.forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
     }
 
     /**
@@ -963,7 +947,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<Byte, E> operator) throws E {
         N.checkArgNotNull(operator, "operator");
         final Throwables.IntBiConsumer<E> cmd = (i, j) -> a[i][j] = operator.apply(i, j);
-        Matrices.forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
     }
 
     /**
@@ -987,7 +971,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     public <E extends Exception> void replaceIf(final Throwables.BytePredicate<E> predicate, final byte newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
         final Throwables.IntBiConsumer<E> cmd = (i, j) -> a[i][j] = predicate.test(a[i][j]) ? newValue : a[i][j];
-        Matrices.forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
     }
 
     /**
@@ -1011,7 +995,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final byte newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
         final Throwables.IntBiConsumer<E> cmd = (i, j) -> a[i][j] = predicate.test(i, j) ? newValue : a[i][j];
-        Matrices.forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
     }
 
     /**
@@ -1036,7 +1020,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         final byte[][] result = new byte[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> cmd = (i, j) -> result[i][j] = mapper.applyAsByte(a[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
 
         return ByteMatrix.of(result);
     }
@@ -1069,7 +1053,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         final T[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
         final Throwables.IntBiConsumer<E> cmd = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
 
         return Matrix.of(result);
     }
@@ -1106,18 +1090,18 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * // Matrix is now: [[1, 2, 0], [3, 4, 0]]
      * }</pre>
      *
-     * @param b the source array to copy values from
+     * @param source the source array to copy values from
      * @see #copyFrom(int, int, byte[][])
      */
-    public void copyFrom(final byte[][] b) {
-        copyFrom(0, 0, b);
+    public void copyFrom(final byte[][] source) {
+        copyFrom(0, 0, source);
     }
 
     /**
      * Fills a portion of this matrix with values from another two-dimensional byte array.
      * The filling starts at the specified position and copies as many values as possible
      * without exceeding the bounds of either array.
-     * 
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}});
@@ -1127,18 +1111,18 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * @param destRowIndex the target row index in this matrix
      * @param destColumnIndex the target column index in this matrix
-     * @param b the source array to copy values from
+     * @param source the source array to copy values from
      * @throws IllegalArgumentException if the target indices are negative or exceed matrix dimensions
      */
-    public void copyFrom(final int destRowIndex, final int destColumnIndex, final byte[][] b) throws IllegalArgumentException {
-        N.checkArgNotNull(b, "b");
+    public void copyFrom(final int destRowIndex, final int destColumnIndex, final byte[][] source) throws IllegalArgumentException {
+        N.checkArgNotNull(source, "source");
         N.checkArgument(destRowIndex >= 0 && destRowIndex <= rowCount, "destRowIndex({}) must be between 0 and rowCount({})", destRowIndex, rowCount);
         N.checkArgument(destColumnIndex >= 0 && destColumnIndex <= columnCount, "destColumnIndex({}) must be between 0 and columnCount({})", destColumnIndex,
                 columnCount);
 
-        for (int i = 0, minLen = N.min(rowCount - destRowIndex, b.length); i < minLen; i++) {
-            if (b[i] != null) {
-                N.copy(b[i], 0, a[i + destRowIndex], destColumnIndex, N.min(b[i].length, columnCount - destColumnIndex));
+        for (int i = 0, minLen = N.min(rowCount - destRowIndex, source.length); i < minLen; i++) {
+            if (source[i] != null) {
+                N.copy(source[i], 0, a[i + destRowIndex], destColumnIndex, N.min(source[i].length, columnCount - destColumnIndex));
             }
         }
     }
@@ -1171,7 +1155,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     /**
      * Creates a copy of a row range from this matrix.
      * The returned matrix contains only the specified rows and is completely independent from the original matrix.
-     * 
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}, {5, 6}});
@@ -1200,7 +1184,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
 
     /**
      * Creates a copy of a rectangular region from this matrix.
-     * 
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
@@ -1831,7 +1815,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     /**
      * Creates a new matrix by repeating each element multiple times.
      * Each element is repeated rowRepeats times vertically and columnRepeats times horizontally.
-     * 
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
@@ -1881,7 +1865,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     /**
      * Creates a new matrix by repeating the entire matrix multiple times.
      * The matrix is tiled rowRepeats times vertically and columnRepeats times horizontally.
-     * 
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
@@ -1988,7 +1972,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     /**
      * Stacks this matrix vertically with another matrix (row-wise concatenation).
      * The matrices must have the same number of columns.
-     * 
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix1 = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
@@ -2028,7 +2012,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     /**
      * Stacks this matrix horizontally with another matrix (column-wise concatenation).
      * The matrices must have the same number of rows.
-     * 
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix1 = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
@@ -2089,7 +2073,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         final byte[][] result = new byte[rowCount][columnCount];
         final Throwables.IntBiConsumer<RuntimeException> cmd = (i, j) -> result[i][j] = (byte) (a[i][j] + otherArray[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
 
         return ByteMatrix.of(result);
     }
@@ -2123,7 +2107,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         final byte[][] result = new byte[rowCount][columnCount];
         final Throwables.IntBiConsumer<RuntimeException> cmd = (i, j) -> result[i][j] = (byte) (a[i][j] - otherArray[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
 
         return ByteMatrix.of(result);
     }
@@ -2359,7 +2343,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     /**
      * Applies a binary operation element-wise to this matrix and another matrix of the same shape.
      * The operation is applied to corresponding elements from both matrices.
-     * 
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix1 = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
@@ -2369,24 +2353,24 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * }</pre>
      *
      * @param <E> the type of exception that may be thrown by the operation
-     * @param matrixB the second matrix
+     * @param other the second matrix
      * @param zipFunction the binary operation to apply to corresponding elements
      * @return a new ByteMatrix containing the results
      * @throws IllegalArgumentException if the matrices have different shapes
      * @throws E if the zip function throws an exception
      */
-    public <E extends Exception> ByteMatrix zipWith(final ByteMatrix matrixB, final Throwables.ByteBinaryOperator<E> zipFunction)
+    public <E extends Exception> ByteMatrix zipWith(final ByteMatrix other, final Throwables.ByteBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
-        N.checkArgument(isSameShape(matrixB), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
-                matrixB.rowCount, matrixB.columnCount);
+        N.checkArgument(isSameShape(other), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
+                other.rowCount, other.columnCount);
         N.checkArgNotNull(zipFunction, "zipFunction");
 
-        final byte[][] b = matrixB.a;
+        final byte[][] b = other.a;
         final byte[][] result = new byte[rowCount][columnCount];
 
         final Throwables.IntBiConsumer<E> cmd = (i, j) -> result[i][j] = zipFunction.applyAsByte(a[i][j], b[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
 
         return ByteMatrix.of(result);
     }
@@ -2394,38 +2378,38 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     /**
      * Applies a ternary operation element-wise to this matrix and two other matrices of the same shape.
      * The operation is applied to corresponding elements from all three matrices.
-     * 
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix1 = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
      * ByteMatrix matrix2 = ByteMatrix.of(new byte[][] {{5, 6}, {7, 8}});
      * ByteMatrix matrix3 = ByteMatrix.of(new byte[][] {{9, 10}, {11, 12}});
-     * ByteMatrix result = matrix1.zipWith(matrix2, matrix3, 
+     * ByteMatrix result = matrix1.zipWith(matrix2, matrix3,
      *     (a, b, c) -> (byte)(a + b + c));
      * // result is: [[15, 18], [21, 24]]
      * }</pre>
      *
      * @param <E> the type of exception that may be thrown by the operation
-     * @param matrixB the second matrix
-     * @param matrixC the third matrix
+     * @param other the second matrix
+     * @param third the third matrix
      * @param zipFunction the ternary operation to apply to corresponding elements
      * @return a new ByteMatrix containing the results
      * @throws E if the zip function throws an exception
      * @throws IllegalArgumentException if the matrices have different shapes
      */
-    public <E extends Exception> ByteMatrix zipWith(final ByteMatrix matrixB, final ByteMatrix matrixC, final Throwables.ByteTernaryOperator<E> zipFunction)
+    public <E extends Exception> ByteMatrix zipWith(final ByteMatrix other, final ByteMatrix third, final Throwables.ByteTernaryOperator<E> zipFunction)
             throws E {
-        N.checkArgument(isSameShape(matrixB) && isSameShape(matrixC), "Cannot zip matrices with different shapes: all matrices must be {}x{}", rowCount,
+        N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: all matrices must be {}x{}", rowCount,
                 columnCount);
         N.checkArgNotNull(zipFunction, "zipFunction");
 
-        final byte[][] b = matrixB.a;
-        final byte[][] c = matrixC.a;
+        final byte[][] b = other.a;
+        final byte[][] c = third.a;
         final byte[][] result = new byte[rowCount][columnCount];
 
         final Throwables.IntBiConsumer<E> cmd = (i, j) -> result[i][j] = zipFunction.applyAsByte(a[i][j], b[i][j], c[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
 
         return ByteMatrix.of(result);
     }
@@ -2433,13 +2417,13 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     /**
      * Returns a stream of elements on the main diagonal (upper-left to lower-right).
      * The matrix must be square (rowCount == columnCount) for this operation.
-     * 
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1,2,3},{4,5,6},{7,8,9}});
      * ByteStream diagonal = matrix.streamMainDiagonal();   // Stream of [1, 5, 9]
      * }</pre>
-     * 
+     *
      * @return a ByteStream of diagonal elements
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
@@ -2587,7 +2571,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
 
     /**
      * Returns a stream of elements from a range of rows in row-major order.
-     * 
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}, {5, 6}});
@@ -2720,7 +2704,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
 
     /**
      * Returns a stream of elements from a range of columns in column-major order.
-     * 
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2, 3}, {4, 5, 6}});
@@ -2837,7 +2821,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
 
     /**
      * Returns a stream where each element is a ByteStream representing a row from the specified range.
-     * 
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}, {5, 6}});
@@ -2924,7 +2908,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
 
     /**
      * Returns a stream where each element is a ByteStream representing a column from the specified range.
-     * 
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2, 3}, {4, 5, 6}});
@@ -3080,7 +3064,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
 
         if (Matrices.isParallelizable(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
             final Throwables.IntBiConsumer<E> cmd = (i, j) -> action.accept(a[i][j]);
-            Matrices.forEachIndex(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, cmd, true);
+            Matrices.forEachIndices(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, cmd, true);
         } else {
             for (int i = fromRowIndex; i < toRowIndex; i++) {
                 final byte[] aa = a[i];
@@ -3106,7 +3090,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * // [1, 2, 3]
      * // [4, 5, 6]
      * }</pre>
-     * 
+     *
      * @return the formatted string representation of the matrix
      */
     @Override

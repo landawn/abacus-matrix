@@ -5918,7 +5918,7 @@ class LongMatrixTest extends TestBase {
         public void testForEachIndex() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
             List<String> indices = new ArrayList<>();
-            m.forEachIndex((r, c) -> indices.add(r + "," + c));
+            m.forEachIndices((r, c) -> indices.add(r + "," + c));
             assertEquals(4, indices.size());
             assertTrue(indices.contains("0,0"));
             assertTrue(indices.contains("1,1"));

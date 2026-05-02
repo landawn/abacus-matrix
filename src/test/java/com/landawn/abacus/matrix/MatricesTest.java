@@ -232,8 +232,8 @@ class MatricesTest extends TestBase {
     @Test
     public void testRunWithNullCommand() {
         assertThrows(IllegalArgumentException.class, () -> Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, (Throwables.Runnable<RuntimeException>) null));
-        assertThrows(IllegalArgumentException.class, () -> Matrices.forEachIndex(2, 3, (Throwables.IntBiConsumer<RuntimeException>) null, false));
-        assertThrows(IllegalArgumentException.class, () -> Matrices.forEachIndex(0, 2, 0, 2, (Throwables.IntBiConsumer<RuntimeException>) null, false));
+        assertThrows(IllegalArgumentException.class, () -> Matrices.forEachIndices(2, 3, (Throwables.IntBiConsumer<RuntimeException>) null, false));
+        assertThrows(IllegalArgumentException.class, () -> Matrices.forEachIndices(0, 2, 0, 2, (Throwables.IntBiConsumer<RuntimeException>) null, false));
     }
 
     @SuppressWarnings("unchecked")
@@ -249,7 +249,7 @@ class MatricesTest extends TestBase {
     public void testRunWithRowsColsAndCommand() throws Exception {
         // Test sequential execution
         int[][] result = new int[2][3];
-        Matrices.forEachIndex(2, 3, (i, j) -> result[i][j] = i * 10 + j, false);
+        Matrices.forEachIndices(2, 3, (i, j) -> result[i][j] = i * 10 + j, false);
 
         assertEquals(0, result[0][0]);
         assertEquals(1, result[0][1]);
@@ -260,7 +260,7 @@ class MatricesTest extends TestBase {
 
         // Test parallel execution
         int[][] parallelResult = new int[2][3];
-        Matrices.forEachIndex(2, 3, (i, j) -> parallelResult[i][j] = i * 10 + j, true);
+        Matrices.forEachIndices(2, 3, (i, j) -> parallelResult[i][j] = i * 10 + j, true);
 
         assertEquals(0, parallelResult[0][0]);
         assertEquals(1, parallelResult[0][1]);
@@ -274,7 +274,7 @@ class MatricesTest extends TestBase {
     public void testRunWithIndicesAndCommand() throws Exception {
         // Test with subregion
         int[][] result = new int[4][4];
-        Matrices.forEachIndex(1, 3, 1, 3, (i, j) -> result[i][j] = i * 10 + j, false);
+        Matrices.forEachIndices(1, 3, 1, 3, (i, j) -> result[i][j] = i * 10 + j, false);
 
         assertEquals(0, result[0][0]); // Not touched
         assertEquals(11, result[1][1]);
@@ -284,7 +284,7 @@ class MatricesTest extends TestBase {
         assertEquals(0, result[3][3]); // Not touched
 
         // Test with invalid indices
-        assertThrows(IndexOutOfBoundsException.class, () -> Matrices.forEachIndex(2, 1, 0, 2, (i, j) -> {
+        assertThrows(IndexOutOfBoundsException.class, () -> Matrices.forEachIndices(2, 1, 0, 2, (i, j) -> {
         }, false));
     }
 
@@ -1256,7 +1256,7 @@ class MatricesTest extends TestBase {
         public void testRun_rowsAndCols_parallel() {
             List<String> positions = new ArrayList<>();
             Matrices.setParallelMode(ParallelMode.FORCE_OFF);
-            Matrices.forEachIndex(2, 2, (i, j) -> {
+            Matrices.forEachIndices(2, 2, (i, j) -> {
                 synchronized (positions) {
                     positions.add(i + "," + j);
                 }
@@ -1267,7 +1267,7 @@ class MatricesTest extends TestBase {
         @Test
         public void testRun_withRange() {
             List<String> positions = new ArrayList<>();
-            Matrices.forEachIndex(1, 3, 1, 3, (i, j) -> positions.add(i + "," + j), false);
+            Matrices.forEachIndices(1, 3, 1, 3, (i, j) -> positions.add(i + "," + j), false);
             assertEquals(4, positions.size());
             assertEquals("1,1", positions.get(0));
             assertEquals("1,2", positions.get(1));
@@ -1277,7 +1277,7 @@ class MatricesTest extends TestBase {
 
         @Test
         public void testRun_withRange_outOfBounds() {
-            assertThrows(IndexOutOfBoundsException.class, () -> Matrices.forEachIndex(-1, 2, 0, 2, (i, j) -> {
+            assertThrows(IndexOutOfBoundsException.class, () -> Matrices.forEachIndices(-1, 2, 0, 2, (i, j) -> {
             }, false));
         }
 
@@ -1679,10 +1679,10 @@ class MatricesTest extends TestBase {
         @Test
         public void testRun_zeroRowsOrCols() {
             List<String> positions = new ArrayList<>();
-            Matrices.forEachIndex(0, 3, (i, j) -> positions.add(i + "," + j), false);
+            Matrices.forEachIndices(0, 3, (i, j) -> positions.add(i + "," + j), false);
             assertEquals(0, positions.size());
 
-            Matrices.forEachIndex(3, 0, (i, j) -> positions.add(i + "," + j), false);
+            Matrices.forEachIndices(3, 0, (i, j) -> positions.add(i + "," + j), false);
             assertEquals(0, positions.size());
         }
 
@@ -1692,7 +1692,7 @@ class MatricesTest extends TestBase {
         public void testRun_withRange_moreRowsThanCols_sequential() {
             List<String> positions = new ArrayList<>();
             // 5 rows x 2 columnCount - should iterate by columns first
-            Matrices.forEachIndex(0, 5, 0, 2, (i, j) -> positions.add(i + "," + j), false);
+            Matrices.forEachIndices(0, 5, 0, 2, (i, j) -> positions.add(i + "," + j), false);
             assertEquals(10, positions.size());
             // Should start with all rows for first column
             assertEquals("0,0", positions.get(0));
@@ -1704,7 +1704,7 @@ class MatricesTest extends TestBase {
             List<String> positions = new ArrayList<>();
             Matrices.setParallelMode(ParallelMode.FORCE_OFF);
             // 5 rows x 2 columnCount - parallel should iterate by columns
-            Matrices.forEachIndex(0, 5, 0, 2, (i, j) -> {
+            Matrices.forEachIndices(0, 5, 0, 2, (i, j) -> {
                 synchronized (positions) {
                     positions.add(i + "," + j);
                 }
@@ -2441,7 +2441,7 @@ class MatricesTest extends TestBase {
         @Test
         public void testRun_intBiConsumer_basic() {
             List<String> positions = new ArrayList<>();
-            Matrices.forEachIndex(2, 3, (i, j) -> positions.add(i + "," + j), false);
+            Matrices.forEachIndices(2, 3, (i, j) -> positions.add(i + "," + j), false);
             assertEquals(6, positions.size());
             assertTrue(positions.contains("0,0"));
             assertTrue(positions.contains("1,2"));
@@ -2450,21 +2450,21 @@ class MatricesTest extends TestBase {
         @Test
         public void testRun_intBiConsumer_zeroRows() {
             AtomicInteger counter = new AtomicInteger(0);
-            Matrices.forEachIndex(0, 3, (i, j) -> counter.incrementAndGet(), false);
+            Matrices.forEachIndices(0, 3, (i, j) -> counter.incrementAndGet(), false);
             assertEquals(0, counter.get());
         }
 
         @Test
         public void testRun_intBiConsumer_zeroCols() {
             AtomicInteger counter = new AtomicInteger(0);
-            Matrices.forEachIndex(3, 0, (i, j) -> counter.incrementAndGet(), false);
+            Matrices.forEachIndices(3, 0, (i, j) -> counter.incrementAndGet(), false);
             assertEquals(0, counter.get());
         }
 
         @Test
         public void testRun_intBiConsumer_singleElement() {
             List<String> positions = new ArrayList<>();
-            Matrices.forEachIndex(1, 1, (i, j) -> positions.add(i + "," + j), false);
+            Matrices.forEachIndices(1, 1, (i, j) -> positions.add(i + "," + j), false);
             assertEquals(1, positions.size());
             assertEquals("0,0", positions.get(0));
         }
@@ -2472,7 +2472,7 @@ class MatricesTest extends TestBase {
         @Test
         public void testRun_intBiConsumer_withRange() {
             List<String> positions = new ArrayList<>();
-            Matrices.forEachIndex(1, 3, 2, 5, (i, j) -> positions.add(i + "," + j), false);
+            Matrices.forEachIndices(1, 3, 2, 5, (i, j) -> positions.add(i + "," + j), false);
             assertEquals(6, positions.size()); // 2 rows * 3 columnCount
             assertTrue(positions.contains("1,2"));
             assertTrue(positions.contains("2,4"));
@@ -2483,14 +2483,14 @@ class MatricesTest extends TestBase {
         @Test
         public void testRun_intBiConsumer_withRange_emptyRange() {
             AtomicInteger counter = new AtomicInteger(0);
-            Matrices.forEachIndex(2, 2, 3, 3, (i, j) -> counter.incrementAndGet(), false);
+            Matrices.forEachIndices(2, 2, 3, 3, (i, j) -> counter.incrementAndGet(), false);
             assertEquals(0, counter.get());
         }
 
         @Test
         public void testRun_intBiConsumer_withRange_invalidRowRange() {
             assertThrows(IndexOutOfBoundsException.class, () -> {
-                Matrices.forEachIndex(5, 3, 0, 2, (i, j) -> {
+                Matrices.forEachIndices(5, 3, 0, 2, (i, j) -> {
                 }, false);
             });
         }
@@ -2498,7 +2498,7 @@ class MatricesTest extends TestBase {
         @Test
         public void testRun_intBiConsumer_withRange_invalidColRange() {
             assertThrows(IndexOutOfBoundsException.class, () -> {
-                Matrices.forEachIndex(0, 2, 5, 3, (i, j) -> {
+                Matrices.forEachIndices(0, 2, 5, 3, (i, j) -> {
                 }, false);
             });
         }
@@ -2506,7 +2506,7 @@ class MatricesTest extends TestBase {
         @Test
         public void testRun_intBiConsumer_withRange_negativeIndex() {
             assertThrows(IndexOutOfBoundsException.class, () -> {
-                Matrices.forEachIndex(-1, 2, 0, 2, (i, j) -> {
+                Matrices.forEachIndices(-1, 2, 0, 2, (i, j) -> {
                 }, false);
             });
         }
@@ -3491,7 +3491,7 @@ class MatricesTest extends TestBase {
         @Test
         public void testRun_grid_sequential() throws Exception {
             int[][] grid = new int[3][4];
-            Matrices.forEachIndex(3, 4, (i, j) -> {
+            Matrices.forEachIndices(3, 4, (i, j) -> {
                 grid[i][j] = i * 4 + j;
             }, false);
 
@@ -3504,7 +3504,7 @@ class MatricesTest extends TestBase {
         @Test
         public void testRun_grid_sequential_verify_all_cells() throws Exception {
             int[][] grid = new int[5][5];
-            Matrices.forEachIndex(5, 5, (i, j) -> {
+            Matrices.forEachIndices(5, 5, (i, j) -> {
                 grid[i][j] = 1;
             }, false);
 
@@ -3518,7 +3518,7 @@ class MatricesTest extends TestBase {
         @Test
         public void testRun_grid_parallel() throws Exception {
             int[][] grid = new int[10][10];
-            Matrices.forEachIndex(10, 10, (i, j) -> {
+            Matrices.forEachIndices(10, 10, (i, j) -> {
                 grid[i][j] = 1;
             }, true);
 
@@ -3532,7 +3532,7 @@ class MatricesTest extends TestBase {
         @Test
         public void testRun_grid_singleRow() throws Exception {
             int[] row = new int[5];
-            Matrices.forEachIndex(1, 5, (i, j) -> {
+            Matrices.forEachIndices(1, 5, (i, j) -> {
                 row[j] = j * 2;
             }, false);
 
@@ -3542,7 +3542,7 @@ class MatricesTest extends TestBase {
         @Test
         public void testRun_grid_singleColumn() throws Exception {
             int[] col = new int[5];
-            Matrices.forEachIndex(5, 1, (i, j) -> {
+            Matrices.forEachIndices(5, 1, (i, j) -> {
                 col[i] = i * 3;
             }, false);
 
@@ -3552,7 +3552,7 @@ class MatricesTest extends TestBase {
         @Test
         public void testRun_grid_emptyGrid() throws Exception {
             final AtomicInteger count = new AtomicInteger(0);
-            Matrices.forEachIndex(0, 0, (i, j) -> {
+            Matrices.forEachIndices(0, 0, (i, j) -> {
                 count.incrementAndGet();
             }, false);
             assertEquals(0, count.get());
@@ -3563,7 +3563,7 @@ class MatricesTest extends TestBase {
         @Test
         public void testRun_region_sequential() throws Exception {
             int[][] grid = new int[10][10];
-            Matrices.forEachIndex(2, 5, 3, 8, (i, j) -> {
+            Matrices.forEachIndices(2, 5, 3, 8, (i, j) -> {
                 grid[i][j] = i * 10 + j;
             }, false);
 
@@ -3576,7 +3576,7 @@ class MatricesTest extends TestBase {
         @Test
         public void testRun_region_parallel() throws Exception {
             int[][] grid = new int[20][20];
-            Matrices.forEachIndex(5, 15, 5, 15, (i, j) -> {
+            Matrices.forEachIndices(5, 15, 5, 15, (i, j) -> {
                 grid[i][j] = 1;
             }, true);
 
@@ -3593,7 +3593,7 @@ class MatricesTest extends TestBase {
         @Test
         public void testRun_region_singleCell() throws Exception {
             int[][] grid = new int[10][10];
-            Matrices.forEachIndex(5, 6, 5, 6, (i, j) -> {
+            Matrices.forEachIndices(5, 6, 5, 6, (i, j) -> {
                 grid[i][j] = 42;
             }, false);
 
@@ -3605,7 +3605,7 @@ class MatricesTest extends TestBase {
         @Test
         public void testRun_region_fullGrid() throws Exception {
             int[][] grid = new int[5][5];
-            Matrices.forEachIndex(0, 5, 0, 5, (i, j) -> {
+            Matrices.forEachIndices(0, 5, 0, 5, (i, j) -> {
                 grid[i][j] = 1;
             }, false);
 
@@ -4116,7 +4116,7 @@ class MatricesTest extends TestBase {
         public void test_run_withRowsAndCols_iteratesAllPositions() {
             AtomicInteger count = new AtomicInteger(0);
 
-            Matrices.forEachIndex(3, 4, (i, j) -> {
+            Matrices.forEachIndices(3, 4, (i, j) -> {
                 count.incrementAndGet();
             }, false);
 
@@ -4127,7 +4127,7 @@ class MatricesTest extends TestBase {
         public void test_run_withRowsAndCols_passesCorrectIndices() {
             final int[][] visited = new int[2][3];
 
-            Matrices.forEachIndex(2, 3, (i, j) -> {
+            Matrices.forEachIndices(2, 3, (i, j) -> {
                 visited[i][j] = 1;
             }, false);
 
@@ -4143,7 +4143,7 @@ class MatricesTest extends TestBase {
         public void test_run_withRowsAndCols_parallel() {
             AtomicInteger count = new AtomicInteger(0);
 
-            Matrices.forEachIndex(10, 10, (i, j) -> {
+            Matrices.forEachIndices(10, 10, (i, j) -> {
                 count.incrementAndGet();
             }, true);
 
@@ -4154,7 +4154,7 @@ class MatricesTest extends TestBase {
         public void test_run_withRange_iteratesCorrectPositions() {
             final int[][] visited = new int[5][5];
 
-            Matrices.forEachIndex(1, 3, 1, 4, (i, j) -> {
+            Matrices.forEachIndices(1, 3, 1, 4, (i, j) -> {
                 visited[i][j] = 1;
             }, false);
 
@@ -4427,7 +4427,7 @@ class MatricesTest extends TestBase {
         public void test_run_withZeroRows() {
             AtomicInteger count = new AtomicInteger(0);
 
-            Matrices.forEachIndex(0, 5, (i, j) -> {
+            Matrices.forEachIndices(0, 5, (i, j) -> {
                 count.incrementAndGet();
             }, false);
 
@@ -4438,7 +4438,7 @@ class MatricesTest extends TestBase {
         public void test_run_withZeroCols() {
             AtomicInteger count = new AtomicInteger(0);
 
-            Matrices.forEachIndex(5, 0, (i, j) -> {
+            Matrices.forEachIndices(5, 0, (i, j) -> {
                 count.incrementAndGet();
             }, false);
 

@@ -14,9 +14,7 @@
 
 package com.landawn.abacus.matrix;
 
-import java.security.SecureRandom;
 import java.util.NoSuchElementException;
-import java.util.Random;
 
 import com.landawn.abacus.annotation.Beta;
 import com.landawn.abacus.annotation.SuppressFBWarnings;
@@ -46,8 +44,7 @@ import com.landawn.abacus.util.stream.Stream;
  */
 public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStream, Stream<LongStream>, LongMatrix> {
 
-    static final Random RAND = new SecureRandom();
-    static final LongMatrix EMPTY_LONG_MATRIX = new LongMatrix(new long[0][0]);
+    private static final LongMatrix EMPTY_LONG_MATRIX = new LongMatrix(new long[0][0]);
 
     /**
      * Constructs a {@code LongMatrix} backed by the supplied two-dimensional array.
@@ -67,7 +64,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param a the two-dimensional long array to wrap, or {@code null} for an empty matrix
      */
     public LongMatrix(final long[][] a) {
-        super(a == null ? new long[0][0] : a);
+        super(a == null ? new long[0][0] : a, long.class);
     }
 
     /**
@@ -423,23 +420,6 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     public static LongMatrix unbox(final Matrix<Long> x) {
         return LongMatrix.of(Array.unbox(x.a));
-    }
-
-    /**
-     * Returns the component type of the matrix elements, which is always {@code long.class}.
-     * This method is useful for reflection-based code that needs to determine the element type.
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
-     * Class<?> type = matrix.componentType();   // Returns long.class
-     * }</pre>
-     *
-     * @return {@code long.class}
-     */
-    @Override
-    public Class<?> componentType() {
-        return long.class;
     }
 
     /**
@@ -838,6 +818,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @return a new long array containing a copy of the main diagonal elements
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
+    @Override
     public long[] getMainDiagonal() throws IllegalStateException {
         checkIfRowAndColumnSizeAreSame();
 
@@ -868,6 +849,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      * @throws IllegalArgumentException if mainDiagonal array length does not equal rowCount
      */
+    @Override
     public void setMainDiagonal(final long[] mainDiagonal) throws IllegalStateException, IllegalArgumentException {
         checkIfRowAndColumnSizeAreSame();
         N.checkArgument(N.len(mainDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(mainDiagonal));
@@ -920,6 +902,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @return a new long array containing a copy of the anti-diagonal elements
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
+    @Override
     public long[] getAntiDiagonal() throws IllegalStateException {
         checkIfRowAndColumnSizeAreSame();
 
@@ -951,6 +934,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      * @throws IllegalArgumentException if antiDiagonal array length does not equal rowCount
      */
+    @Override
     public void setAntiDiagonal(final long[] antiDiagonal) throws IllegalStateException, IllegalArgumentException {
         checkIfRowAndColumnSizeAreSame();
         N.checkArgument(N.len(antiDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(antiDiagonal));
@@ -1009,7 +993,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     public <E extends Exception> void updateAll(final Throwables.LongUnaryOperator<E> operator) throws E {
         N.checkArgNotNull(operator, "operator");
         final Throwables.IntBiConsumer<E> operation = (i, j) -> a[i][j] = operator.applyAsLong(a[i][j]);
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
     }
 
     /**
@@ -1039,7 +1023,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<Long, E> operator) throws E {
         N.checkArgNotNull(operator, "operator");
         final Throwables.IntBiConsumer<E> operation = (i, j) -> a[i][j] = operator.apply(i, j);
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
     }
 
     /**
@@ -1066,7 +1050,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     public <E extends Exception> void replaceIf(final Throwables.LongPredicate<E> predicate, final long newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
         final Throwables.IntBiConsumer<E> operation = (i, j) -> a[i][j] = predicate.test(a[i][j]) ? newValue : a[i][j];
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
     }
 
     /**
@@ -1097,7 +1081,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final long newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
         final Throwables.IntBiConsumer<E> operation = (i, j) -> a[i][j] = predicate.test(i, j) ? newValue : a[i][j];
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
     }
 
     /**
@@ -1130,7 +1114,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         final long[][] result = new long[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = mapper.applyAsLong(a[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return LongMatrix.of(result);
     }
@@ -1159,7 +1143,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         final int[][] result = new int[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = mapper.applyAsInt(a[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return IntMatrix.of(result);
     }
@@ -1188,7 +1172,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         final double[][] result = new double[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = mapper.applyAsDouble(a[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return DoubleMatrix.of(result);
     }
@@ -1219,7 +1203,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         final T[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
         final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
 
         return Matrix.of(result);
     }
@@ -1254,10 +1238,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * // Result: [[1, 2, 0], [3, 4, 0]]
      * }</pre>
      *
-     * @param b the two-dimensional array to copy values from
+     * @param source the two-dimensional array to copy values from
      */
-    public void copyFrom(final long[][] b) {
-        copyFrom(0, 0, b);
+    public void copyFrom(final long[][] source) {
+        copyFrom(0, 0, source);
     }
 
     /**
@@ -1274,18 +1258,18 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * @param destRowIndex the target row index in this matrix (0-based, must be 0 &lt;= destRowIndex &lt;= rowCount)
      * @param destColumnIndex the target column index in this matrix (0-based, must be 0 &lt;= destColumnIndex &lt;= columnCount)
-     * @param b the source array to copy values from
+     * @param source the source array to copy values from
      * @throws IllegalArgumentException if destRowIndex &lt; 0 or &gt; rowCount, or if destColumnIndex &lt; 0 or &gt; columnCount
      */
-    public void copyFrom(final int destRowIndex, final int destColumnIndex, final long[][] b) throws IllegalArgumentException {
-        N.checkArgNotNull(b, "b");
+    public void copyFrom(final int destRowIndex, final int destColumnIndex, final long[][] source) throws IllegalArgumentException {
+        N.checkArgNotNull(source, "source");
         N.checkArgument(destRowIndex >= 0 && destRowIndex <= rowCount, "destRowIndex({}) must be between 0 and rowCount({})", destRowIndex, rowCount);
         N.checkArgument(destColumnIndex >= 0 && destColumnIndex <= columnCount, "destColumnIndex({}) must be between 0 and columnCount({})", destColumnIndex,
                 columnCount);
 
-        for (int i = 0, minLen = N.min(rowCount - destRowIndex, b.length); i < minLen; i++) {
-            if (b[i] != null) {
-                N.copy(b[i], 0, a[i + destRowIndex], destColumnIndex, N.min(b[i].length, columnCount - destColumnIndex));
+        for (int i = 0, minLen = N.min(rowCount - destRowIndex, source.length); i < minLen; i++) {
+            if (source[i] != null) {
+                N.copy(source[i], 0, a[i + destRowIndex], destColumnIndex, N.min(source[i].length, columnCount - destColumnIndex));
             }
         }
     }
@@ -1961,7 +1945,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
     /**
      * Repeats elements in the matrix by the specified factors in both row and column directions.
-     * Each element is repeated {@code rowRepeats} times in the row direction and {@code columnRepeats} 
+     * Each element is repeated {@code rowRepeats} times in the row direction and {@code columnRepeats}
      * times in the column direction.
      *
      * <p><b>Usage Examples:</b></p>
@@ -2013,7 +1997,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
     /**
      * Repeats the entire matrix as a tile pattern by the specified factors in both row and column directions.
-     * The whole matrix is repeated {@code rowRepeats} times in the row direction and {@code columnRepeats} 
+     * The whole matrix is repeated {@code rowRepeats} times in the row direction and {@code columnRepeats}
      * times in the column direction.
      *
      * <p><b>Usage Examples:</b></p>
@@ -2221,7 +2205,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         final long[][] result = new long[rowCount][columnCount];
         final Throwables.IntBiConsumer<RuntimeException> cmd = (i, j) -> result[i][j] = a[i][j] + otherArray[i][j];
 
-        Matrices.forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
 
         return LongMatrix.of(result);
     }
@@ -2253,7 +2237,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         final long[][] result = new long[rowCount][columnCount];
         final Throwables.IntBiConsumer<RuntimeException> cmd = (i, j) -> result[i][j] = a[i][j] - otherArray[i][j];
 
-        Matrices.forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
 
         return LongMatrix.of(result);
     }
@@ -2449,7 +2433,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     /**
      * Applies a binary operation element-wise to this matrix and another matrix.
      * The two matrices must have the same dimensions (same number of rows and columns).
-     * For each position (i, j), the result contains {@code zipFunction.applyAsLong(this.get(i,j), matrixB.get(i,j))}.
+     * For each position (i, j), the result contains {@code zipFunction.applyAsLong(this.get(i,j), other.get(i,j))}.
      * The operation may be performed in parallel for large matrices to improve performance.
      *
      * <p><b>Usage Examples:</b></p>
@@ -2462,24 +2446,24 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * }</pre>
      *
      * @param <E> the type of exception that the zip function may throw
-     * @param matrixB the second matrix to zip with this matrix; must have the same dimensions
-     * @param zipFunction the binary operation to apply to corresponding elements from this and matrixB
+     * @param other the second matrix to zip with this matrix; must have the same dimensions
+     * @param zipFunction the binary operation to apply to corresponding elements from this and other
      * @return a new LongMatrix with the results of the zip operation
      * @throws IllegalArgumentException if the matrices don't have the same shape (rows and columns)
      * @throws E if the zip function throws an exception
      */
-    public <E extends Exception> LongMatrix zipWith(final LongMatrix matrixB, final Throwables.LongBinaryOperator<E> zipFunction)
+    public <E extends Exception> LongMatrix zipWith(final LongMatrix other, final Throwables.LongBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
-        N.checkArgument(isSameShape(matrixB), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
-                matrixB.rowCount, matrixB.columnCount);
+        N.checkArgument(isSameShape(other), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
+                other.rowCount, other.columnCount);
         N.checkArgNotNull(zipFunction, "zipFunction");
 
-        final long[][] b = matrixB.a;
+        final long[][] b = other.a;
         final long[][] result = new long[rowCount][columnCount];
 
         final Throwables.IntBiConsumer<E> cmd = (i, j) -> result[i][j] = zipFunction.applyAsLong(a[i][j], b[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
 
         return LongMatrix.of(result);
     }
@@ -2488,7 +2472,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * Applies a ternary operation element-wise to this matrix and two other matrices.
      * All three matrices must have the same dimensions (same number of rows and columns).
      * The function receives corresponding elements from all three matrices at each position.
-     * For each position (i, j), the result contains {@code zipFunction.applyAsLong(this.get(i,j), matrixB.get(i,j), matrixC.get(i,j))}.
+     * For each position (i, j), the result contains {@code zipFunction.applyAsLong(this.get(i,j), other.get(i,j), third.get(i,j))}.
      * The operation may be performed in parallel for large matrices to improve performance.
      *
      * <p><b>Usage Examples:</b></p>
@@ -2503,26 +2487,26 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * }</pre>
      *
      * @param <E> the type of exception that the zip function may throw
-     * @param matrixB the second matrix to zip with; must have the same dimensions as this matrix
-     * @param matrixC the third matrix to zip with; must have the same dimensions as this matrix
-     * @param zipFunction the ternary operation to apply to corresponding elements from this, matrixB, and matrixC
+     * @param other the second matrix to zip with; must have the same dimensions as this matrix
+     * @param third the third matrix to zip with; must have the same dimensions as this matrix
+     * @param zipFunction the ternary operation to apply to corresponding elements from this, other, and third
      * @return a new LongMatrix with the results of the zip operation
      * @throws IllegalArgumentException if the matrices don't have the same shape (rows and columns)
      * @throws E if the zip function throws an exception
      */
-    public <E extends Exception> LongMatrix zipWith(final LongMatrix matrixB, final LongMatrix matrixC, final Throwables.LongTernaryOperator<E> zipFunction)
+    public <E extends Exception> LongMatrix zipWith(final LongMatrix other, final LongMatrix third, final Throwables.LongTernaryOperator<E> zipFunction)
             throws E {
-        N.checkArgument(isSameShape(matrixB) && isSameShape(matrixC), "Cannot zip matrices with different shapes: all matrices must be {}x{}", rowCount,
+        N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: all matrices must be {}x{}", rowCount,
                 columnCount);
         N.checkArgNotNull(zipFunction, "zipFunction");
 
-        final long[][] b = matrixB.a;
-        final long[][] c = matrixC.a;
+        final long[][] b = other.a;
+        final long[][] c = third.a;
         final long[][] result = new long[rowCount][columnCount];
 
         final Throwables.IntBiConsumer<E> cmd = (i, j) -> result[i][j] = zipFunction.applyAsLong(a[i][j], b[i][j], c[i][j]);
 
-        Matrices.forEachIndex(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
 
         return LongMatrix.of(result);
     }
@@ -2533,8 +2517,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * LongMatrix matrix = LongMatrix.of(new long[][] {{1, 2, 3}, 
-     *                                                 {4, 5, 6}, 
+     * LongMatrix matrix = LongMatrix.of(new long[][] {{1, 2, 3},
+     *                                                 {4, 5, 6},
      *                                                 {7, 8, 9}});
      * LongStream diagonal = matrix.streamMainDiagonal();
      * // Stream contains: 1, 5, 9
@@ -2591,8 +2575,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * LongMatrix matrix = LongMatrix.of(new long[][] {{1, 2, 3}, 
-     *                                                 {4, 5, 6}, 
+     * LongMatrix matrix = LongMatrix.of(new long[][] {{1, 2, 3},
+     *                                                 {4, 5, 6},
      *                                                 {7, 8, 9}});
      * LongStream diagonal = matrix.streamAntiDiagonal();
      * // Stream contains: 3, 5, 7
@@ -3166,7 +3150,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
         if (Matrices.isParallelizable(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
             final Throwables.IntBiConsumer<E> cmd = (i, j) -> action.accept(a[i][j]);
-            Matrices.forEachIndex(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, cmd, true);
+            Matrices.forEachIndices(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, cmd, true);
         } else {
             for (int i = fromRowIndex; i < toRowIndex; i++) {
                 final long[] aa = a[i];
@@ -3191,7 +3175,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * // [1, 2, 3]
      * // [4, 5, 6]
      * }</pre>
-     * 
+     *
      * @return the formatted string representation of the matrix
      */
     @Override
