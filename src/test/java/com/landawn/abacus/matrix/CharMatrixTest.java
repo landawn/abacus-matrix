@@ -938,13 +938,13 @@ class CharMatrixTest extends TestBase {
         CharMatrix matrixA = CharMatrix.of(a);
         CharMatrix matrixB = CharMatrix.of(b);
 
-        CharMatrix product = matrixA.multiply(matrixB);
+        CharMatrix product = matrixA.matmul(matrixB);
         Assertions.assertEquals(2, product.rowCount());
         Assertions.assertEquals(2, product.columnCount());
         // Results will be char values from multiplication
 
         CharMatrix incompatible = CharMatrix.of(new char[][] { { 'x', 'y', 'z' } });
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrixA.multiply(incompatible));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrixA.matmul(incompatible));
     }
 
     @Test
@@ -2353,7 +2353,7 @@ class CharMatrixTest extends TestBase {
         public void testMultiply() {
             CharMatrix m1 = CharMatrix.of(new char[][] { { 1, 2 }, { 3, 4 } });
             CharMatrix m2 = CharMatrix.of(new char[][] { { 5, 6 }, { 7, 8 } });
-            CharMatrix product = m1.multiply(m2);
+            CharMatrix product = m1.matmul(m2);
 
             assertEquals(19, product.get(0, 0)); // 1*5 + 2*7
             assertEquals(22, product.get(0, 1)); // 1*6 + 2*8
@@ -2365,14 +2365,14 @@ class CharMatrixTest extends TestBase {
         public void testMultiply_incompatibleDimensions() {
             CharMatrix m1 = CharMatrix.of(new char[][] { { 1, 2 }, { 3, 4 } });
             CharMatrix m2 = CharMatrix.of(new char[][] { { 1, 2, 3 } });
-            assertThrows(IllegalArgumentException.class, () -> m1.multiply(m2));
+            assertThrows(IllegalArgumentException.class, () -> m1.matmul(m2));
         }
 
         @Test
         public void testMultiply_rectangularMatrices() {
             CharMatrix m1 = CharMatrix.of(new char[][] { { 1, 2, 3 } }); // 1x3
             CharMatrix m2 = CharMatrix.of(new char[][] { { 4 }, { 5 }, { 6 } }); // 3x1
-            CharMatrix product = m1.multiply(m2);
+            CharMatrix product = m1.matmul(m2);
 
             assertEquals(1, product.rowCount());
             assertEquals(1, product.columnCount());
@@ -5724,10 +5724,10 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_multiply() {
+        public void test_matmul() {
             CharMatrix m1 = CharMatrix.of(new char[][] { { '\2', '\3' }, { '\4', '\5' } });
             CharMatrix m2 = CharMatrix.of(new char[][] { { '\2', '\2' }, { '\2', '\2' } });
-            CharMatrix result = m1.multiply(m2);
+            CharMatrix result = m1.matmul(m2);
             assertEquals('\12', result.get(0, 0)); // 2*2 + 3*2 = 10
             assertEquals('\12', result.get(0, 1)); // 2*2 + 3*2 = 10
             assertEquals('\22', result.get(1, 0)); // 4*2 + 5*2 = 18
@@ -6343,7 +6343,7 @@ class CharMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> matrix.stackHorizontally(null));
             assertThrows(IllegalArgumentException.class, () -> matrix.add(null));
             assertThrows(IllegalArgumentException.class, () -> matrix.subtract(null));
-            assertThrows(IllegalArgumentException.class, () -> matrix.multiply(null));
+            assertThrows(IllegalArgumentException.class, () -> matrix.matmul(null));
         }
     }
 
@@ -6498,13 +6498,13 @@ class CharMatrixTest extends TestBase {
 
     @Test
     public void testMultiply_noIntermediateCharCast() {
-        // Bug fix: CharMatrix.multiply() had an unnecessary (char) cast on each intermediate
+        // Bug fix: CharMatrix.matmul() had an unnecessary (char) cast on each intermediate
         // product, inconsistent with ByteMatrix and ShortMatrix. The fix removes it.
         // Verify that matrix multiplication still produces correct results.
         CharMatrix a = CharMatrix.of(new char[][] { { 2, 3 }, { 4, 5 } });
         CharMatrix b = CharMatrix.of(new char[][] { { 1, 2 }, { 3, 4 } });
 
-        CharMatrix product = a.multiply(b);
+        CharMatrix product = a.matmul(b);
 
         // product[0][0] = 2*1 + 3*3 = 11
         // product[0][1] = 2*2 + 3*4 = 16
@@ -6524,7 +6524,7 @@ class CharMatrixTest extends TestBase {
         CharMatrix a = CharMatrix.of(new char[][] { { 300, 300 } });
         CharMatrix b = CharMatrix.of(new char[][] { { 300 }, { 300 } });
 
-        CharMatrix product = a.multiply(b);
+        CharMatrix product = a.matmul(b);
 
         // 300*300 + 300*300 = 180000
         // (char) 180000 = 180000 % 65536 = 49928 -- but wait, let's compute step by step
@@ -6540,7 +6540,7 @@ class CharMatrixTest extends TestBase {
         CharMatrix a = CharMatrix.of(new char[][] { { 'a', 'b', 'c' } });
         CharMatrix b = CharMatrix.of(new char[][] { { 'x', 'y' } });
 
-        assertThrows(IllegalArgumentException.class, () -> a.multiply(b));
+        assertThrows(IllegalArgumentException.class, () -> a.matmul(b));
     }
 
     @Test

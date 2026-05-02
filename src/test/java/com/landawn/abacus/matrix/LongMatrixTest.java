@@ -977,7 +977,7 @@ class LongMatrixTest extends TestBase {
         LongMatrix matrixA = LongMatrix.of(a);
         LongMatrix matrixB = LongMatrix.of(b);
 
-        LongMatrix product = matrixA.multiply(matrixB);
+        LongMatrix product = matrixA.matmul(matrixB);
         Assertions.assertEquals(2, product.rowCount());
         Assertions.assertEquals(2, product.columnCount());
         Assertions.assertEquals(19L, product.get(0, 0));
@@ -986,7 +986,7 @@ class LongMatrixTest extends TestBase {
         Assertions.assertEquals(50L, product.get(1, 1));
 
         LongMatrix incompatible = LongMatrix.of(new long[][] { { 1L, 2L, 3L } });
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrixA.multiply(incompatible));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrixA.matmul(incompatible));
     }
 
     @Test
@@ -1584,10 +1584,10 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testLongMatrix_multiply() {
+        public void testLongMatrix_matmul() {
             LongMatrix m1 = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
             LongMatrix m2 = LongMatrix.of(new long[][] { { 5, 6 }, { 7, 8 } });
-            LongMatrix product = m1.multiply(m2);
+            LongMatrix product = m1.matmul(m2);
             assertEquals(19L, product.get(0, 0));
             assertEquals(22L, product.get(0, 1));
             assertEquals(43L, product.get(1, 0));
@@ -2788,7 +2788,7 @@ class LongMatrixTest extends TestBase {
         public void testMultiply() {
             LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix m2 = LongMatrix.of(new long[][] { { 5L, 6L }, { 7L, 8L } });
-            LongMatrix product = m1.multiply(m2);
+            LongMatrix product = m1.matmul(m2);
 
             assertEquals(19L, product.get(0, 0)); // 1*5 + 2*7
             assertEquals(22L, product.get(0, 1)); // 1*6 + 2*8
@@ -2800,14 +2800,14 @@ class LongMatrixTest extends TestBase {
         public void testMultiply_incompatibleDimensions() {
             LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix m2 = LongMatrix.of(new long[][] { { 1L, 2L, 3L } });
-            assertThrows(IllegalArgumentException.class, () -> m1.multiply(m2));
+            assertThrows(IllegalArgumentException.class, () -> m1.matmul(m2));
         }
 
         @Test
         public void testMultiply_rectangularMatrices() {
             LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L, 3L } }); // 1x3
             LongMatrix m2 = LongMatrix.of(new long[][] { { 4L }, { 5L }, { 6L } }); // 3x1
-            LongMatrix product = m1.multiply(m2);
+            LongMatrix product = m1.matmul(m2);
 
             assertEquals(1, product.rowCount());
             assertEquals(1, product.columnCount());
@@ -2818,7 +2818,7 @@ class LongMatrixTest extends TestBase {
         public void testMultiply_withLargeValues() {
             LongMatrix m1 = LongMatrix.of(new long[][] { { 1000000L, 2000000L } });
             LongMatrix m2 = LongMatrix.of(new long[][] { { 3000000L }, { 4000000L } });
-            LongMatrix product = m1.multiply(m2);
+            LongMatrix product = m1.matmul(m2);
             assertEquals(11000000000000L, product.get(0, 0)); // 1000000*3000000 + 2000000*4000000
         }
 
@@ -3279,7 +3279,7 @@ class LongMatrixTest extends TestBase {
             assertEquals(m, subtractZero);
 
             // Test multiplication with zero matrix
-            LongMatrix multiplyZero = m.multiply(zeros);
+            LongMatrix multiplyZero = m.matmul(zeros);
             assertEquals(zeros, multiplyZero);
 
             // Test addition commutativity
@@ -3564,7 +3564,7 @@ class LongMatrixTest extends TestBase {
         public void testMultiply() {
             LongMatrix m1 = LongMatrix.of(new long[][] { { 2L, 3L }, { 4L, 5L } });
             LongMatrix m2 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix result = m1.multiply(m2);
+            LongMatrix result = m1.matmul(m2);
             assertEquals(11L, result.get(0, 0));
             assertEquals(16L, result.get(0, 1));
             assertEquals(19L, result.get(1, 0));
@@ -4371,7 +4371,7 @@ class LongMatrixTest extends TestBase {
         public void testMultiply() {
             LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix m2 = LongMatrix.of(new long[][] { { 10L, 20L }, { 30L, 40L } });
-            LongMatrix result = m1.multiply(m2);
+            LongMatrix result = m1.matmul(m2);
             assertEquals(70, result.get(0, 0));
             assertEquals(100, result.get(0, 1));
             assertEquals(150, result.get(1, 0));
@@ -5527,10 +5527,10 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_multiply() {
+        public void test_matmul() {
             LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix m2 = LongMatrix.of(new long[][] { { 2L, 0L }, { 1L, 2L } });
-            LongMatrix result = m1.multiply(m2);
+            LongMatrix result = m1.matmul(m2);
             assertEquals(4L, result.get(0, 0));
             assertEquals(4L, result.get(0, 1));
             assertEquals(10L, result.get(1, 0));
@@ -5538,10 +5538,10 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_multiply_incompatibleDimensions() {
+        public void test_matmul_incompatibleDimensions() {
             LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L } });
             LongMatrix m2 = LongMatrix.of(new long[][] { { 3L } });
-            assertThrows(IllegalArgumentException.class, () -> m1.multiply(m2));
+            assertThrows(IllegalArgumentException.class, () -> m1.matmul(m2));
         }
 
         // ============ Boxed Test ============
@@ -5763,7 +5763,7 @@ class LongMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> matrix.stackHorizontally(null));
             assertThrows(IllegalArgumentException.class, () -> matrix.add(null));
             assertThrows(IllegalArgumentException.class, () -> matrix.subtract(null));
-            assertThrows(IllegalArgumentException.class, () -> matrix.multiply(null));
+            assertThrows(IllegalArgumentException.class, () -> matrix.matmul(null));
         }
     }
 

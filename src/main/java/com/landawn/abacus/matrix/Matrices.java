@@ -122,7 +122,7 @@ public final class Matrices {
      * Matrices.setParallelMode(ParallelMode.FORCE_ON);
      * try {
      *     // All matrix operations here will use parallel processing
-     *     matrix1.multiply(matrix2);
+     *     matrix1.matmul(matrix2);
      *     matrix3.add(matrix4);
      * } finally {
      *     // Always reset to default to avoid affecting other code
@@ -165,12 +165,12 @@ public final class Matrices {
      *
      * @param m the matrix to evaluate for parallelization, must not be {@code null}
      * @return {@code true} if parallel processing should be used for this matrix; {@code false} for sequential processing
-     * @throws IllegalArgumentException if {@code x} is {@code null}
+     * @throws IllegalArgumentException if {@code m} is {@code null}
      * @see #isParallelizable(AbstractMatrix, long)
      * @see #setParallelMode(ParallelMode)
      */
     public static boolean isParallelizable(final AbstractMatrix<?, ?, ?, ?, ?> m) {
-        N.checkArgNotNull(m, "x");
+        N.checkArgNotNull(m, "m");
         return isParallelizable(m, m.elementCount);
     }
 
@@ -201,15 +201,15 @@ public final class Matrices {
      * // Returns true only if settings allow and count >= 8192
      * }</pre>
      *
-     * @param m the matrix being evaluated (not used in the parallelization decision, but validated for non-null)
+     * @param m the matrix being evaluated; validated for non-null but otherwise not consulted by the decision
      * @param count the number of elements to process; typically the total element count or a subset being operated on
      * @return {@code true} if parallel processing should be used; {@code false} for sequential processing
-     * @throws IllegalArgumentException if {@code x} is {@code null}
+     * @throws IllegalArgumentException if {@code m} is {@code null}
      * @see #setParallelMode(ParallelMode)
      * @see ParallelMode
      */
-    public static boolean isParallelizable(@SuppressWarnings("unused") final AbstractMatrix<?, ?, ?, ?, ?> m, final long count) { // NOSONAR
-        N.checkArgNotNull(m, "x");
+    public static boolean isParallelizable(final AbstractMatrix<?, ?, ?, ?, ?> m, final long count) {
+        N.checkArgNotNull(m, "m");
         return IS_PARALLEL_STREAM_SUPPORTED && (Matrices.PARALLEL_MODE_TL.get() == ParallelMode.FORCE_ON
                 || (Matrices.PARALLEL_MODE_TL.get() == ParallelMode.AUTO && count >= MIN_COUNT_FOR_PARALLEL));
     }
@@ -409,7 +409,7 @@ public final class Matrices {
      * // Force parallel execution for specific operations
      * Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> {
      *     // This operation will use parallel processing
-     *     matrix1.multiply(matrix2);
+     *     matrix1.matmul(matrix2);
      *     matrix3.add(matrix4);
      * });
      *
@@ -1092,26 +1092,26 @@ public final class Matrices {
      * }</pre>
      *
      * @param <E> the type of exception that the zip function might throw
-     * @param c the collection of matrices to combine, must not be {@code null} or empty
+     * @param coll the collection of matrices to combine, must not be {@code null} or empty
      * @param zipFunction the binary operator to combine elements sequentially, must not be {@code null}
      * @return a new {@link ByteMatrix} containing the combined results, never {@code null}
-     * @throws IllegalArgumentException if {@code c} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception during execution
      * @see #zip(ByteMatrix, ByteMatrix, Throwables.ByteBinaryOperator)
      * @see #zip(ByteMatrix, ByteMatrix, ByteMatrix, Throwables.ByteTernaryOperator)
      * @see #zip(Collection, Throwables.ByteNFunction, Class)
      */
-    public static <E extends Exception> ByteMatrix zip(final Collection<ByteMatrix> c, final Throwables.ByteBinaryOperator<E> zipFunction)
+    public static <E extends Exception> ByteMatrix zip(final Collection<ByteMatrix> coll, final Throwables.ByteBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
-        checkShapeForZip(c);
+        checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, "zipFunction");
 
-        final int size = c.size();
-        final ByteMatrix[] matrices = c.toArray(new ByteMatrix[size]);
+        final int size = coll.size();
+        final ByteMatrix[] matrices = coll.toArray(new ByteMatrix[size]);
 
-        if (c.size() == 1) {
+        if (coll.size() == 1) {
             return matrices[0].copy();
-        } else if (c.size() == 2) {
+        } else if (coll.size() == 2) {
             return matrices[0].zipWith(matrices[1], zipFunction);
         }
 
@@ -1157,18 +1157,18 @@ public final class Matrices {
      *
      * @param <R> the type of elements in the result matrix
      * @param <E> the type of exception that the zip function might throw
-     * @param c the collection of matrices to combine, must not be {@code null} or empty
+     * @param coll the collection of matrices to combine, must not be {@code null} or empty
      * @param zipFunction the function that takes an array of bytes (one from each matrix) and returns a result of type R, must not be {@code null}
      * @param targetElementType the class of the result element type, must not be {@code null}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
-     * @throws IllegalArgumentException if {@code c} is {@code null}, empty, if matrices have different shapes, or if any argument is {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if any argument is {@code null}
      * @throws E if the zip function throws an exception during execution
      * @see #zip(Collection, Throwables.ByteNFunction, boolean, Class)
      * @see #zip(Collection, Throwables.ByteBinaryOperator)
      */
-    public static <R, E extends Exception> Matrix<R> zip(final Collection<ByteMatrix> c, final Throwables.ByteNFunction<? extends R, E> zipFunction,
+    public static <R, E extends Exception> Matrix<R> zip(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction,
             final Class<R> targetElementType) throws E {
-        return zip(c, zipFunction, false, targetElementType);
+        return zip(coll, zipFunction, false, targetElementType);
     }
 
     /**
@@ -1197,25 +1197,25 @@ public final class Matrices {
      *
      * @param <R> the type of elements in the result matrix
      * @param <E> the type of exception that the zip function might throw
-     * @param c the collection of matrices to combine, must not be {@code null} or empty
+     * @param coll the collection of matrices to combine, must not be {@code null} or empty
      * @param zipFunction the function that takes an array of bytes (one from each matrix) and returns a result of type R, must not be {@code null}
      * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
      *                               {@code false} to create new arrays for each position
      * @param targetElementType the class of the result element type, must not be {@code null}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
-     * @throws IllegalArgumentException if {@code c} is {@code null}, empty, if matrices have different shapes, or if any argument is {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if any argument is {@code null}
      * @throws E if the zip function throws an exception during execution
      * @see #zip(Collection, Throwables.ByteNFunction, Class)
      * @see #zip(Collection, Throwables.ByteBinaryOperator)
      */
-    public static <R, E extends Exception> Matrix<R> zip(final Collection<ByteMatrix> c, final Throwables.ByteNFunction<? extends R, E> zipFunction,
+    public static <R, E extends Exception> Matrix<R> zip(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction,
             final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E {
-        checkShapeForZip(c);
+        checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, "zipFunction");
         N.checkArgNotNull(targetElementType, "targetElementType");
 
-        final int size = c.size();
-        final ByteMatrix[] matrices = c.toArray(new ByteMatrix[size]);
+        final int size = coll.size();
+        final ByteMatrix[] matrices = coll.toArray(new ByteMatrix[size]);
 
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
@@ -1371,16 +1371,16 @@ public final class Matrices {
      * }</pre>
      *
      * @param <E> the type of exception that the zip function might throw
-     * @param c the collection of matrices to combine, must not be {@code null} or empty
+     * @param coll the collection of matrices to combine, must not be {@code null} or empty
      * @param zipFunction the function that takes an array of bytes and returns an Integer, must not be {@code null}
      * @return a new {@link IntMatrix} with the combined values, never {@code null}
-     * @throws IllegalArgumentException if {@code c} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception during execution
      * @see #zipToInt(Collection, Throwables.ByteNFunction, boolean)
      * @see #zipToInt(ByteMatrix, ByteMatrix, Throwables.ByteBiFunction)
      */
-    public static <E extends Exception> IntMatrix zipToInt(final Collection<ByteMatrix> c, final Throwables.ByteNFunction<Integer, E> zipFunction) throws E {
-        return zipToInt(c, zipFunction, false);
+    public static <E extends Exception> IntMatrix zipToInt(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<Integer, E> zipFunction) throws E {
+        return zipToInt(coll, zipFunction, false);
     }
 
     /**
@@ -1415,22 +1415,22 @@ public final class Matrices {
      * }</pre>
      *
      * @param <E> the type of exception that the zip function might throw
-     * @param c the collection of matrices to combine, must not be {@code null} or empty
+     * @param coll the collection of matrices to combine, must not be {@code null} or empty
      * @param zipFunction the function that takes an array of bytes and returns an Integer, must not be {@code null}
      * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
      *                               {@code false} to create new arrays for each position
      * @return a new {@link IntMatrix} with the combined values, never {@code null}
-     * @throws IllegalArgumentException if {@code c} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception during execution
      * @see #zipToInt(Collection, Throwables.ByteNFunction)
      */
-    public static <E extends Exception> IntMatrix zipToInt(final Collection<ByteMatrix> c, final Throwables.ByteNFunction<Integer, E> zipFunction,
+    public static <E extends Exception> IntMatrix zipToInt(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<Integer, E> zipFunction,
             final boolean shareIntermediateArray) throws IllegalArgumentException, E {
-        checkShapeForZip(c);
+        checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, "zipFunction");
 
-        final int size = c.size();
-        final ByteMatrix[] matrices = c.toArray(new ByteMatrix[size]);
+        final int size = coll.size();
+        final ByteMatrix[] matrices = coll.toArray(new ByteMatrix[size]);
 
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
@@ -1566,26 +1566,26 @@ public final class Matrices {
      * }</pre>
      *
      * @param <E> the type of exception that the zip function might throw
-     * @param c the collection of matrices to combine, must not be {@code null} or empty
+     * @param coll the collection of matrices to combine, must not be {@code null} or empty
      * @param zipFunction the binary operator to combine elements sequentially, must not be {@code null}
      * @return a new {@link IntMatrix} containing the combined results, never {@code null}
-     * @throws IllegalArgumentException if {@code c} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception during execution
      * @see #zip(IntMatrix, IntMatrix, Throwables.IntBinaryOperator)
      * @see #zip(IntMatrix, IntMatrix, IntMatrix, Throwables.IntTernaryOperator)
      * @see #zip(Collection, Throwables.IntNFunction, Class)
      */
-    public static <E extends Exception> IntMatrix zip(final Collection<IntMatrix> c, final Throwables.IntBinaryOperator<E> zipFunction)
+    public static <E extends Exception> IntMatrix zip(final Collection<IntMatrix> coll, final Throwables.IntBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
-        checkShapeForZip(c);
+        checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, "zipFunction");
 
-        final int size = c.size();
-        final IntMatrix[] matrices = c.toArray(new IntMatrix[size]);
+        final int size = coll.size();
+        final IntMatrix[] matrices = coll.toArray(new IntMatrix[size]);
 
-        if (c.size() == 1) {
+        if (coll.size() == 1) {
             return matrices[0].copy();
-        } else if (c.size() == 2) {
+        } else if (coll.size() == 2) {
             return matrices[0].zipWith(matrices[1], zipFunction);
         }
 
@@ -1633,17 +1633,17 @@ public final class Matrices {
      *
      * @param <R> the type of elements in the result matrix
      * @param <E> the type of exception that the zip function might throw
-     * @param c the collection of matrices to combine, must not be {@code null} or empty
+     * @param coll the collection of matrices to combine, must not be {@code null} or empty
      * @param zipFunction the function that takes an array of integers (one from each matrix) and returns a result of type R, must not be {@code null}
      * @param targetElementType the class of the result element type, must not be {@code null}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
-     * @throws IllegalArgumentException if {@code c} is {@code null}, empty, if matrices have different shapes, or if any argument is {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if any argument is {@code null}
      * @throws E if the zip function throws an exception during execution
      * @see #zip(Collection, Throwables.IntNFunction, boolean, Class)
      */
-    public static <R, E extends Exception> Matrix<R> zip(final Collection<IntMatrix> c, final Throwables.IntNFunction<? extends R, E> zipFunction,
+    public static <R, E extends Exception> Matrix<R> zip(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction,
             final Class<R> targetElementType) throws E {
-        return zip(c, zipFunction, false, targetElementType);
+        return zip(coll, zipFunction, false, targetElementType);
     }
 
     /**
@@ -1679,23 +1679,23 @@ public final class Matrices {
      *
      * @param <R> the type of elements in the result matrix
      * @param <E> the type of exception that the zip function might throw
-     * @param c the collection of matrices to combine, must not be {@code null} or empty
+     * @param coll the collection of matrices to combine, must not be {@code null} or empty
      * @param zipFunction the function that takes an array of integers (one from each matrix) and returns a result of type R, must not be {@code null}
      * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
      *                               {@code false} to create new arrays for each position
      * @param targetElementType the class of the result element type, must not be {@code null}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
-     * @throws IllegalArgumentException if {@code c} is {@code null}, empty, if matrices have different shapes, or if any argument is {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if any argument is {@code null}
      * @throws E if the zip function throws an exception during execution
      */
-    public static <R, E extends Exception> Matrix<R> zip(final Collection<IntMatrix> c, final Throwables.IntNFunction<? extends R, E> zipFunction,
+    public static <R, E extends Exception> Matrix<R> zip(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction,
             final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E {
-        checkShapeForZip(c);
+        checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, "zipFunction");
         N.checkArgNotNull(targetElementType, "targetElementType");
 
-        final int size = c.size();
-        final IntMatrix[] matrices = c.toArray(new IntMatrix[size]);
+        final int size = coll.size();
+        final IntMatrix[] matrices = coll.toArray(new IntMatrix[size]);
 
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
@@ -1838,15 +1838,15 @@ public final class Matrices {
      * }</pre>
      *
      * @param <E> the type of exception that the zip function might throw
-     * @param c the collection of matrices to combine, must not be {@code null} or empty
+     * @param coll the collection of matrices to combine, must not be {@code null} or empty
      * @param zipFunction the function that takes an array of integers and returns a Long, must not be {@code null}
      * @return a new {@link LongMatrix} with the combined values, never {@code null}
-     * @throws IllegalArgumentException if {@code c} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception during execution
      * @see #zipToLong(Collection, Throwables.IntNFunction, boolean)
      */
-    public static <E extends Exception> LongMatrix zipToLong(final Collection<IntMatrix> c, final Throwables.IntNFunction<Long, E> zipFunction) throws E {
-        return zipToLong(c, zipFunction, false);
+    public static <E extends Exception> LongMatrix zipToLong(final Collection<IntMatrix> coll, final Throwables.IntNFunction<Long, E> zipFunction) throws E {
+        return zipToLong(coll, zipFunction, false);
     }
 
     /**
@@ -1873,21 +1873,21 @@ public final class Matrices {
      * }</pre>
      *
      * @param <E> the type of exception that the zip function might throw
-     * @param c the collection of matrices to combine, must not be {@code null} or empty
+     * @param coll the collection of matrices to combine, must not be {@code null} or empty
      * @param zipFunction the function that takes an array of integers and returns a Long, must not be {@code null}
      * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
      *                               {@code false} to create new arrays for each position
      * @return a new {@link LongMatrix} with the combined values, never {@code null}
-     * @throws IllegalArgumentException if {@code c} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception during execution
      */
-    public static <E extends Exception> LongMatrix zipToLong(final Collection<IntMatrix> c, final Throwables.IntNFunction<Long, E> zipFunction,
+    public static <E extends Exception> LongMatrix zipToLong(final Collection<IntMatrix> coll, final Throwables.IntNFunction<Long, E> zipFunction,
             final boolean shareIntermediateArray) throws IllegalArgumentException, E {
-        checkShapeForZip(c);
+        checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, "zipFunction");
 
-        final int size = c.size();
-        final IntMatrix[] matrices = c.toArray(new IntMatrix[size]);
+        final int size = coll.size();
+        final IntMatrix[] matrices = coll.toArray(new IntMatrix[size]);
 
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
@@ -2018,16 +2018,16 @@ public final class Matrices {
      * }</pre>
      *
      * @param <E> the type of exception that the zip function might throw
-     * @param c the collection of matrices to combine, must not be {@code null} or empty
+     * @param coll the collection of matrices to combine, must not be {@code null} or empty
      * @param zipFunction the function that takes an array of integers and returns a Double, must not be {@code null}
      * @return a new {@link DoubleMatrix} with the combined values, never {@code null}
-     * @throws IllegalArgumentException if {@code c} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception during execution
      * @see #zipToDouble(Collection, Throwables.IntNFunction, boolean)
      */
-    public static <E extends Exception> DoubleMatrix zipToDouble(final Collection<IntMatrix> c, final Throwables.IntNFunction<Double, E> zipFunction)
+    public static <E extends Exception> DoubleMatrix zipToDouble(final Collection<IntMatrix> coll, final Throwables.IntNFunction<Double, E> zipFunction)
             throws IllegalArgumentException, E {
-        return zipToDouble(c, zipFunction, false);
+        return zipToDouble(coll, zipFunction, false);
     }
 
     /**
@@ -2054,21 +2054,21 @@ public final class Matrices {
      * }</pre>
      *
      * @param <E> the type of exception that the zip function might throw
-     * @param c the collection of matrices to combine, must not be {@code null} or empty
+     * @param coll the collection of matrices to combine, must not be {@code null} or empty
      * @param zipFunction the function that takes an array of integers and returns a Double, must not be {@code null}
      * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
      *                               {@code false} to create new arrays for each position
      * @return a new {@link DoubleMatrix} with the combined values, never {@code null}
-     * @throws IllegalArgumentException if {@code c} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception during execution
      */
-    public static <E extends Exception> DoubleMatrix zipToDouble(final Collection<IntMatrix> c, final Throwables.IntNFunction<Double, E> zipFunction,
+    public static <E extends Exception> DoubleMatrix zipToDouble(final Collection<IntMatrix> coll, final Throwables.IntNFunction<Double, E> zipFunction,
             final boolean shareIntermediateArray) throws IllegalArgumentException, E {
-        checkShapeForZip(c);
+        checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, "zipFunction");
 
-        final int size = c.size();
-        final IntMatrix[] matrices = c.toArray(new IntMatrix[size]);
+        final int size = coll.size();
+        final IntMatrix[] matrices = coll.toArray(new IntMatrix[size]);
 
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
@@ -2191,26 +2191,26 @@ public final class Matrices {
      * }</pre>
      *
      * @param <E> the type of exception that the zip function might throw
-     * @param c the collection of matrices to combine, must not be {@code null} or empty
+     * @param coll the collection of matrices to combine, must not be {@code null} or empty
      * @param zipFunction the binary operator to combine elements sequentially, must not be {@code null}
      * @return a new {@link LongMatrix} containing the combined results, never {@code null}
-     * @throws IllegalArgumentException if {@code c} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception during execution
      * @see #zip(LongMatrix, LongMatrix, Throwables.LongBinaryOperator)
      * @see #zip(LongMatrix, LongMatrix, LongMatrix, Throwables.LongTernaryOperator)
      * @see #zip(Collection, Throwables.LongNFunction, Class)
      */
-    public static <E extends Exception> LongMatrix zip(final Collection<LongMatrix> c, final Throwables.LongBinaryOperator<E> zipFunction)
+    public static <E extends Exception> LongMatrix zip(final Collection<LongMatrix> coll, final Throwables.LongBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
-        checkShapeForZip(c);
+        checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, "zipFunction");
 
-        final int size = c.size();
-        final LongMatrix[] matrices = c.toArray(new LongMatrix[size]);
+        final int size = coll.size();
+        final LongMatrix[] matrices = coll.toArray(new LongMatrix[size]);
 
-        if (c.size() == 1) {
+        if (coll.size() == 1) {
             return matrices[0].copy();
-        } else if (c.size() == 2) {
+        } else if (coll.size() == 2) {
             return matrices[0].zipWith(matrices[1], zipFunction);
         }
 
@@ -2253,18 +2253,18 @@ public final class Matrices {
      *
      * @param <R> the type of elements in the result matrix
      * @param <E> the type of exception that the zip function might throw
-     * @param c the collection of matrices to combine, must not be {@code null} or empty
+     * @param coll the collection of matrices to combine, must not be {@code null} or empty
      * @param zipFunction the function that takes an array of longs (one from each matrix) and returns a result of type R, must not be {@code null}
      * @param targetElementType the class of the result element type, must not be {@code null}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
-     * @throws IllegalArgumentException if {@code c} is {@code null}, empty, if matrices have different shapes, or if any argument is {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if any argument is {@code null}
      * @throws E if the zip function throws an exception during execution
      * @see #zip(Collection, Throwables.LongNFunction, boolean, Class)
      * @see #zip(Collection, Throwables.LongBinaryOperator)
      */
-    public static <R, E extends Exception> Matrix<R> zip(final Collection<LongMatrix> c, final Throwables.LongNFunction<? extends R, E> zipFunction,
+    public static <R, E extends Exception> Matrix<R> zip(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction,
             final Class<R> targetElementType) throws E {
-        return zip(c, zipFunction, false, targetElementType);
+        return zip(coll, zipFunction, false, targetElementType);
     }
 
     /**
@@ -2290,25 +2290,25 @@ public final class Matrices {
      *
      * @param <R> the type of elements in the result matrix
      * @param <E> the type of exception that the zip function might throw
-     * @param c the collection of matrices to combine, must not be {@code null} or empty
+     * @param coll the collection of matrices to combine, must not be {@code null} or empty
      * @param zipFunction the function that takes an array of longs (one from each matrix) and returns a result of type R, must not be {@code null}
      * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
      *                               {@code false} to create new arrays for each position
      * @param targetElementType the class of the result element type, must not be {@code null}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
-     * @throws IllegalArgumentException if {@code c} is {@code null}, empty, if matrices have different shapes, or if any argument is {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if any argument is {@code null}
      * @throws E if the zip function throws an exception during execution
      * @see #zip(Collection, Throwables.LongNFunction, Class)
      * @see #zip(Collection, Throwables.LongBinaryOperator)
      */
-    public static <R, E extends Exception> Matrix<R> zip(final Collection<LongMatrix> c, final Throwables.LongNFunction<? extends R, E> zipFunction,
+    public static <R, E extends Exception> Matrix<R> zip(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction,
             final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E {
-        checkShapeForZip(c);
+        checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, "zipFunction");
         N.checkArgNotNull(targetElementType, "targetElementType");
 
-        final int size = c.size();
-        final LongMatrix[] matrices = c.toArray(new LongMatrix[size]);
+        final int size = coll.size();
+        final LongMatrix[] matrices = coll.toArray(new LongMatrix[size]);
 
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
@@ -2443,17 +2443,17 @@ public final class Matrices {
      * }</pre>
      *
      * @param <E> the type of exception that the zip function might throw
-     * @param c the collection of matrices to combine, must not be {@code null} or empty
+     * @param coll the collection of matrices to combine, must not be {@code null} or empty
      * @param zipFunction the function that takes an array of longs and returns a Double, must not be {@code null}
      * @return a new {@link DoubleMatrix} with the combined values, never {@code null}
-     * @throws IllegalArgumentException if {@code c} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception during execution
      * @see #zipToDouble(Collection, Throwables.LongNFunction, boolean)
      * @see #zipToDouble(LongMatrix, LongMatrix, Throwables.LongBiFunction)
      */
-    public static <E extends Exception> DoubleMatrix zipToDouble(final Collection<LongMatrix> c, final Throwables.LongNFunction<Double, E> zipFunction)
+    public static <E extends Exception> DoubleMatrix zipToDouble(final Collection<LongMatrix> coll, final Throwables.LongNFunction<Double, E> zipFunction)
             throws E {
-        return zipToDouble(c, zipFunction, false);
+        return zipToDouble(coll, zipFunction, false);
     }
 
     /**
@@ -2477,23 +2477,23 @@ public final class Matrices {
      * }</pre>
      *
      * @param <E> the type of exception that the zip function might throw
-     * @param c the collection of matrices to combine, must not be {@code null} or empty
+     * @param coll the collection of matrices to combine, must not be {@code null} or empty
      * @param zipFunction the function that takes an array of longs and returns a Double, must not be {@code null}
      * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
      *                               {@code false} to create new arrays for each position
      * @return a new {@link DoubleMatrix} with the combined values, never {@code null}
-     * @throws IllegalArgumentException if {@code c} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception during execution
      * @see #zipToDouble(Collection, Throwables.LongNFunction)
      * @see #zipToDouble(LongMatrix, LongMatrix, Throwables.LongBiFunction)
      */
-    public static <E extends Exception> DoubleMatrix zipToDouble(final Collection<LongMatrix> c, final Throwables.LongNFunction<Double, E> zipFunction,
+    public static <E extends Exception> DoubleMatrix zipToDouble(final Collection<LongMatrix> coll, final Throwables.LongNFunction<Double, E> zipFunction,
             final boolean shareIntermediateArray) throws IllegalArgumentException, E {
-        checkShapeForZip(c);
+        checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, "zipFunction");
 
-        final int size = c.size();
-        final LongMatrix[] matrices = c.toArray(new LongMatrix[size]);
+        final int size = coll.size();
+        final LongMatrix[] matrices = coll.toArray(new LongMatrix[size]);
 
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
@@ -2617,26 +2617,26 @@ public final class Matrices {
      * }</pre>
      *
      * @param <E> the type of exception that the zip function might throw
-     * @param c the collection of matrices to combine, must not be {@code null} or empty
+     * @param coll the collection of matrices to combine, must not be {@code null} or empty
      * @param zipFunction the binary operator to combine elements sequentially, must not be {@code null}
      * @return a new {@link DoubleMatrix} containing the combined results, never {@code null}
-     * @throws IllegalArgumentException if {@code c} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception during execution
      * @see #zip(DoubleMatrix, DoubleMatrix, Throwables.DoubleBinaryOperator)
      * @see #zip(DoubleMatrix, DoubleMatrix, DoubleMatrix, Throwables.DoubleTernaryOperator)
      * @see #zip(Collection, Throwables.DoubleNFunction, Class)
      */
-    public static <E extends Exception> DoubleMatrix zip(final Collection<DoubleMatrix> c, final Throwables.DoubleBinaryOperator<E> zipFunction)
+    public static <E extends Exception> DoubleMatrix zip(final Collection<DoubleMatrix> coll, final Throwables.DoubleBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
-        checkShapeForZip(c);
+        checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, "zipFunction");
 
-        final int size = c.size();
-        final DoubleMatrix[] matrices = c.toArray(new DoubleMatrix[size]);
+        final int size = coll.size();
+        final DoubleMatrix[] matrices = coll.toArray(new DoubleMatrix[size]);
 
-        if (c.size() == 1) {
+        if (coll.size() == 1) {
             return matrices[0].copy();
-        } else if (c.size() == 2) {
+        } else if (coll.size() == 2) {
             return matrices[0].zipWith(matrices[1], zipFunction);
         }
 
@@ -2678,18 +2678,18 @@ public final class Matrices {
      *
      * @param <R> the type of elements in the result matrix
      * @param <E> the type of exception that the zip function might throw
-     * @param c the collection of matrices to combine, must not be {@code null} or empty
+     * @param coll the collection of matrices to combine, must not be {@code null} or empty
      * @param zipFunction the function that takes an array of doubles (one from each matrix) and returns a result of type R, must not be {@code null}
      * @param targetElementType the class of the result element type, must not be {@code null}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
-     * @throws IllegalArgumentException if {@code c} is {@code null}, empty, if matrices have different shapes, or if any argument is {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if any argument is {@code null}
      * @throws E if the zip function throws an exception during execution
      * @see #zip(Collection, Throwables.DoubleNFunction, boolean, Class)
      * @see #zip(Collection, Throwables.DoubleBinaryOperator)
      */
-    public static <R, E extends Exception> Matrix<R> zip(final Collection<DoubleMatrix> c, final Throwables.DoubleNFunction<? extends R, E> zipFunction,
+    public static <R, E extends Exception> Matrix<R> zip(final Collection<DoubleMatrix> coll, final Throwables.DoubleNFunction<? extends R, E> zipFunction,
             final Class<R> targetElementType) throws E {
-        return zip(c, zipFunction, false, targetElementType);
+        return zip(coll, zipFunction, false, targetElementType);
     }
 
     /**
@@ -2717,25 +2717,25 @@ public final class Matrices {
      *
      * @param <R> the type of elements in the result matrix
      * @param <E> the type of exception that the zip function might throw
-     * @param c the collection of matrices to combine, must not be {@code null} or empty
+     * @param coll the collection of matrices to combine, must not be {@code null} or empty
      * @param zipFunction the function that takes an array of doubles (one from each matrix) and returns a result of type R, must not be {@code null}
      * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
      *                               {@code false} to create new arrays for each position
      * @param targetElementType the class of the result element type, must not be {@code null}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
-     * @throws IllegalArgumentException if {@code c} is {@code null}, empty, if matrices have different shapes, or if any argument is {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if any argument is {@code null}
      * @throws E if the zip function throws an exception during execution
      * @see #zip(Collection, Throwables.DoubleNFunction, Class)
      * @see #zip(Collection, Throwables.DoubleBinaryOperator)
      */
-    public static <R, E extends Exception> Matrix<R> zip(final Collection<DoubleMatrix> c, final Throwables.DoubleNFunction<? extends R, E> zipFunction,
+    public static <R, E extends Exception> Matrix<R> zip(final Collection<DoubleMatrix> coll, final Throwables.DoubleNFunction<? extends R, E> zipFunction,
             final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E {
-        checkShapeForZip(c);
+        checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, "zipFunction");
         N.checkArgNotNull(targetElementType, "targetElementType");
 
-        final int size = c.size();
-        final DoubleMatrix[] matrices = c.toArray(new DoubleMatrix[size]);
+        final int size = coll.size();
+        final DoubleMatrix[] matrices = coll.toArray(new DoubleMatrix[size]);
 
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
@@ -2977,25 +2977,25 @@ public final class Matrices {
      *
      * @param <T> the element type of the matrices
      * @param <E> the type of exception that the zip function might throw
-     * @param c the collection of matrices to combine, must not be {@code null} or empty
+     * @param coll the collection of matrices to combine, must not be {@code null} or empty
      * @param zipFunction the binary operator to combine elements sequentially, must not be {@code null}
      * @return a new {@link Matrix} of type T containing the combined results, never {@code null}
-     * @throws IllegalArgumentException if {@code c} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception during execution
      * @see #zip(Matrix, Matrix, Throwables.BiFunction)
      * @see #zip(Collection, Throwables.Function, Class)
      */
-    public static <T, E extends Exception> Matrix<T> zip(final Collection<Matrix<T>> c, final Throwables.BinaryOperator<T, E> zipFunction)
+    public static <T, E extends Exception> Matrix<T> zip(final Collection<Matrix<T>> coll, final Throwables.BinaryOperator<T, E> zipFunction)
             throws IllegalArgumentException, E {
-        checkShapeForZip(c);
+        checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, "zipFunction");
 
-        final int size = c.size();
-        final Matrix<T>[] matrices = c.toArray(new Matrix[size]);
+        final int size = coll.size();
+        final Matrix<T>[] matrices = coll.toArray(new Matrix[size]);
 
-        if (c.size() == 1) {
+        if (coll.size() == 1) {
             return matrices[0].copy();
-        } else if (c.size() == 2) {
+        } else if (coll.size() == 2) {
             return matrices[0].zipWith(matrices[1], zipFunction);
         }
 
@@ -3047,18 +3047,18 @@ public final class Matrices {
      * @param <T> the element type of the input matrices
      * @param <R> the element type of the result matrix
      * @param <E> the type of exception that the zip function might throw
-     * @param c the collection of matrices to combine, must not be {@code null} or empty
+     * @param coll the collection of matrices to combine, must not be {@code null} or empty
      * @param zipFunction the function that takes an array of values (one from each matrix) and returns a result of type R, must not be {@code null}
      * @param targetElementType the class of the result element type, must not be {@code null}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
-     * @throws IllegalArgumentException if {@code c} is {@code null}, empty, if matrices have different shapes, or if any argument is {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if any argument is {@code null}
      * @throws E if the zip function throws an exception during execution
      * @see #zip(Collection, Throwables.Function, boolean, Class)
      * @see #zip(Collection, Throwables.BinaryOperator)
      */
-    public static <T, R, E extends Exception> Matrix<R> zip(final Collection<Matrix<T>> c, final Throwables.Function<? super T[], R, E> zipFunction,
+    public static <T, R, E extends Exception> Matrix<R> zip(final Collection<Matrix<T>> coll, final Throwables.Function<? super T[], R, E> zipFunction,
             final Class<R> targetElementType) throws E {
-        return zip(c, zipFunction, false, targetElementType);
+        return zip(coll, zipFunction, false, targetElementType);
     }
 
     /**
@@ -3099,25 +3099,25 @@ public final class Matrices {
      * @param <T> the element type of the input matrices
      * @param <R> the element type of the result matrix
      * @param <E> the type of exception that the zip function might throw
-     * @param c the collection of matrices to combine, must not be {@code null} or empty
+     * @param coll the collection of matrices to combine, must not be {@code null} or empty
      * @param zipFunction the function that takes an array of values (one from each matrix) and returns a result of type R, must not be {@code null}
      * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
      *                               {@code false} to create new arrays for each position
      * @param targetElementType the class of the result element type, must not be {@code null}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
-     * @throws IllegalArgumentException if {@code c} is {@code null}, empty, if matrices have different shapes, or if any argument is {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if any argument is {@code null}
      * @throws E if the zip function throws an exception during execution
      * @see #zip(Collection, Throwables.Function, Class)
      * @see #zip(Collection, Throwables.BinaryOperator)
      */
-    public static <T, R, E extends Exception> Matrix<R> zip(final Collection<Matrix<T>> c, final Throwables.Function<? super T[], R, E> zipFunction,
+    public static <T, R, E extends Exception> Matrix<R> zip(final Collection<Matrix<T>> coll, final Throwables.Function<? super T[], R, E> zipFunction,
             final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E {
-        checkShapeForZip(c);
+        checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, "zipFunction");
         N.checkArgNotNull(targetElementType, "targetElementType");
 
-        final int size = c.size();
-        final Matrix<T>[] matrices = c.toArray(new Matrix[size]);
+        final int size = coll.size();
+        final Matrix<T>[] matrices = coll.toArray(new Matrix[size]);
 
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
@@ -3250,9 +3250,9 @@ public final class Matrices {
         N.checkArgument(isSameShape(a, b), "Cannot zip matrices with different shapes");
     }
 
-    private static void checkShapeForZip(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> c) {
-        N.checkArgNotEmpty(c, "matrices");
+    private static void checkShapeForZip(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> coll) {
+        N.checkArgNotEmpty(coll, "matrices");
 
-        N.checkArgument(isSameShape(c), "Cannot zip matrices with different shapes");
+        N.checkArgument(isSameShape(coll), "Cannot zip matrices with different shapes");
     }
 }

@@ -949,7 +949,7 @@ class ByteMatrixTest extends TestBase {
         ByteMatrix matrixA = ByteMatrix.of(a);
         ByteMatrix matrixB = ByteMatrix.of(b);
 
-        ByteMatrix product = matrixA.multiply(matrixB);
+        ByteMatrix product = matrixA.matmul(matrixB);
         Assertions.assertEquals(2, product.rowCount());
         Assertions.assertEquals(2, product.columnCount());
         Assertions.assertEquals(19, product.get(0, 0));
@@ -958,7 +958,7 @@ class ByteMatrixTest extends TestBase {
         Assertions.assertEquals(50, product.get(1, 1));
 
         ByteMatrix incompatible = ByteMatrix.of(new byte[][] { { 1, 2, 3 } });
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrixA.multiply(incompatible));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrixA.matmul(incompatible));
     }
 
     @Test
@@ -2414,7 +2414,7 @@ class ByteMatrixTest extends TestBase {
         public void testMultiply() {
             ByteMatrix m1 = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
             ByteMatrix m2 = ByteMatrix.of(new byte[][] { { 5, 6 }, { 7, 8 } });
-            ByteMatrix product = m1.multiply(m2);
+            ByteMatrix product = m1.matmul(m2);
 
             assertEquals(19, product.get(0, 0)); // 1*5 + 2*7
             assertEquals(22, product.get(0, 1)); // 1*6 + 2*8
@@ -2426,14 +2426,14 @@ class ByteMatrixTest extends TestBase {
         public void testMultiply_incompatibleDimensions() {
             ByteMatrix m1 = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
             ByteMatrix m2 = ByteMatrix.of(new byte[][] { { 1, 2, 3 } });
-            assertThrows(IllegalArgumentException.class, () -> m1.multiply(m2));
+            assertThrows(IllegalArgumentException.class, () -> m1.matmul(m2));
         }
 
         @Test
         public void testMultiply_rectangularMatrices() {
             ByteMatrix m1 = ByteMatrix.of(new byte[][] { { 1, 2, 3 } }); // 1x3
             ByteMatrix m2 = ByteMatrix.of(new byte[][] { { 4 }, { 5 }, { 6 } }); // 3x1
-            ByteMatrix product = m1.multiply(m2);
+            ByteMatrix product = m1.matmul(m2);
 
             assertEquals(1, product.rowCount());
             assertEquals(1, product.columnCount());
@@ -5403,10 +5403,10 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_multiply() {
+        public void test_matmul() {
             ByteMatrix m1 = ByteMatrix.of(new byte[][] { { 2, 3 }, { 4, 5 } });
             ByteMatrix m2 = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-            ByteMatrix result = m1.multiply(m2);
+            ByteMatrix result = m1.matmul(m2);
             assertEquals(11, result.get(0, 0)); // 2*1 + 3*3 = 11
             assertEquals(16, result.get(0, 1)); // 2*2 + 3*4 = 16
             assertEquals(19, result.get(1, 0)); // 4*1 + 5*3 = 19
@@ -5972,7 +5972,7 @@ class ByteMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> matrix.stackHorizontally(null));
             assertThrows(IllegalArgumentException.class, () -> matrix.add(null));
             assertThrows(IllegalArgumentException.class, () -> matrix.subtract(null));
-            assertThrows(IllegalArgumentException.class, () -> matrix.multiply(null));
+            assertThrows(IllegalArgumentException.class, () -> matrix.matmul(null));
         }
     }
 

@@ -1104,7 +1104,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
     /**
      * Updates all elements in the matrix based on their position.
-     * The operator receives the row and column indices (both 0-based) and returns the new value.
+     * The mapper receives the row and column indices (both 0-based) and returns the new value.
      * This is useful for position-dependent transformations. The matrix is modified in-place.
      *
      * <p>Iteration is performed sequentially in row-major order because the implementation
@@ -1122,15 +1122,15 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * // numMatrix is now {{0, 1}, {10, 11}}
      * }</pre>
      *
-     * @param <E> the type of exception that might be thrown by the operator
-     * @param operator the operator that takes row and column indices and returns the new value (must not be null)
-     * @throws E if the operator throws an exception
-     * @throws IllegalArgumentException if {@code operator} is {@code null}
+     * @param <E> the type of exception that might be thrown by the mapper
+     * @param mapper the function that takes row and column indices and returns the new value (must not be null)
+     * @throws E if the mapper throws an exception
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
      */
-    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends T, E> operator) throws E {
-        N.checkArgNotNull(operator, "operator");
+    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends T, E> mapper) throws E {
+        N.checkArgNotNull(mapper, "mapper");
         final Throwables.IntBiConsumer<E> operation = (i, j) -> {
-            final T updated = operator.apply(i, j);
+            final T updated = mapper.apply(i, j);
             ensureRowCanStore(i, updated);
             a[i][j] = updated;
         };
@@ -1921,7 +1921,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             return copy();
         } else {
             if ((long) padTop + rowCount + padBottom > Integer.MAX_VALUE) {
-                throw new IllegalArgumentException("Result row count overflow: " + padTop + " + " + rowCount + " + " + padBottom + " exceeds Integer.MAX_VALUE");
+                throw new IllegalArgumentException(
+                        "Result row count overflow: " + padTop + " + " + rowCount + " + " + padBottom + " exceeds Integer.MAX_VALUE");
             }
 
             if ((long) padLeft + columnCount + padRight > Integer.MAX_VALUE) {
@@ -1975,6 +1976,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @see #flipHorizontally()
      */
+    @Override
     public void flipInPlaceHorizontally() {
         for (int i = 0; i < rowCount; i++) {
             N.reverse(a[i]);
@@ -1995,6 +1997,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @see #flipVertically()
      */
+    @Override
     public void flipInPlaceVertically() {
         for (int j = 0; j < columnCount; j++) {
             T tmp = null;
@@ -2023,6 +2026,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @see #flipVertically()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
+    @Override
     public Matrix<T> flipHorizontally() {
         final Matrix<T> res = this.copy();
         res.flipInPlaceHorizontally();
@@ -2046,6 +2050,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @see #flipHorizontally()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
+    @Override
     public Matrix<T> flipVertically() {
         final Matrix<T> res = this.copy();
         res.flipInPlaceVertically();
@@ -2461,7 +2466,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @see #stackHorizontally(Matrix)
      * @see IntMatrix#stackVertically(IntMatrix)
      */
-    public Matrix<T> stackVertically(final Matrix<? extends T> other) throws IllegalArgumentException {
+    @Override
+    public Matrix<T> stackVertically(final Matrix<T> other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(columnCount == other.columnCount, MSG_VSTACK_COLUMN_MISMATCH, columnCount, other.columnCount);
         final long mergedRowCount = (long) rowCount + other.rowCount;
@@ -2510,7 +2516,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @see #stackVertically(Matrix)
      * @see IntMatrix#stackHorizontally(IntMatrix)
      */
-    public Matrix<T> stackHorizontally(final Matrix<? extends T> other) throws IllegalArgumentException {
+    @Override
+    public Matrix<T> stackHorizontally(final Matrix<T> other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(rowCount == other.rowCount, MSG_HSTACK_ROW_MISMATCH, rowCount, other.rowCount);
         final long mergedColumnCount = (long) columnCount + other.columnCount;

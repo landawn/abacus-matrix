@@ -884,14 +884,14 @@ class DoubleMatrixTest extends TestBase {
         DoubleMatrix a = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
         DoubleMatrix b = DoubleMatrix.of(new double[][] { { 5.0, 6.0 }, { 7.0, 8.0 } });
 
-        DoubleMatrix product = a.multiply(b);
+        DoubleMatrix product = a.matmul(b);
         assertEquals(19.0, product.get(0, 0));
         assertEquals(22.0, product.get(0, 1));
         assertEquals(43.0, product.get(1, 0));
         assertEquals(50.0, product.get(1, 1));
 
         DoubleMatrix c = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 } });
-        assertThrows(IllegalArgumentException.class, () -> a.multiply(c));
+        assertThrows(IllegalArgumentException.class, () -> a.matmul(c));
     }
 
     @Test
@@ -1319,7 +1319,7 @@ class DoubleMatrixTest extends TestBase {
         assertEquals(m.get(1, 1), subtractZero.get(1, 1), 0.0001);
 
         // Test multiplication with zero matrix
-        DoubleMatrix multiplyZero = m.multiply(zeros);
+        DoubleMatrix multiplyZero = m.matmul(zeros);
         assertEquals(0.0, multiplyZero.get(0, 0), 0.0001);
         assertEquals(0.0, multiplyZero.get(1, 1), 0.0001);
 
@@ -2542,7 +2542,7 @@ class DoubleMatrixTest extends TestBase {
         public void testMultiply() {
             DoubleMatrix m1 = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             DoubleMatrix m2 = DoubleMatrix.of(new double[][] { { 5.0, 6.0 }, { 7.0, 8.0 } });
-            DoubleMatrix product = m1.multiply(m2);
+            DoubleMatrix product = m1.matmul(m2);
 
             assertEquals(19.0, product.get(0, 0), DELTA); // 1*5 + 2*7
             assertEquals(22.0, product.get(0, 1), DELTA); // 1*6 + 2*8
@@ -2554,14 +2554,14 @@ class DoubleMatrixTest extends TestBase {
         public void testMultiply_incompatibleDimensions() {
             DoubleMatrix m1 = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             DoubleMatrix m2 = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 } });
-            assertThrows(IllegalArgumentException.class, () -> m1.multiply(m2));
+            assertThrows(IllegalArgumentException.class, () -> m1.matmul(m2));
         }
 
         @Test
         public void testMultiply_rectangularMatrices() {
             DoubleMatrix m1 = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 } }); // 1x3
             DoubleMatrix m2 = DoubleMatrix.of(new double[][] { { 4.0 }, { 5.0 }, { 6.0 } }); // 3x1
-            DoubleMatrix product = m1.multiply(m2);
+            DoubleMatrix product = m1.matmul(m2);
 
             assertEquals(1, product.rowCount());
             assertEquals(1, product.columnCount());
@@ -2959,7 +2959,7 @@ class DoubleMatrixTest extends TestBase {
             assertEquals(m, subtractZero);
 
             // Test multiplication with zero matrix
-            DoubleMatrix multiplyZero = m.multiply(zeros);
+            DoubleMatrix multiplyZero = m.matmul(zeros);
             assertEquals(zeros, multiplyZero);
 
             // Test addition commutativity
@@ -4119,7 +4119,7 @@ class DoubleMatrixTest extends TestBase {
         public void testMultiply() {
             DoubleMatrix m1 = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             DoubleMatrix m2 = DoubleMatrix.of(new double[][] { { 2.0, 0.0 }, { 1.0, 2.0 } });
-            DoubleMatrix result = m1.multiply(m2);
+            DoubleMatrix result = m1.matmul(m2);
             assertEquals(4.0, result.get(0, 0));
             assertEquals(4.0, result.get(0, 1));
             assertEquals(10.0, result.get(1, 0));
@@ -4130,7 +4130,7 @@ class DoubleMatrixTest extends TestBase {
         public void testMultiply_incompatibleSize() {
             DoubleMatrix m1 = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             DoubleMatrix m2 = DoubleMatrix.of(new double[][] { { 1.0 } });
-            assertThrows(IllegalArgumentException.class, () -> m1.multiply(m2));
+            assertThrows(IllegalArgumentException.class, () -> m1.matmul(m2));
         }
 
         // ============ Conversion Tests ============
@@ -5536,10 +5536,10 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_multiply() {
+        public void test_matmul() {
             DoubleMatrix m1 = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             DoubleMatrix m2 = DoubleMatrix.of(new double[][] { { 2.0, 0.0 }, { 1.0, 2.0 } });
-            DoubleMatrix result = m1.multiply(m2);
+            DoubleMatrix result = m1.matmul(m2);
             assertEquals(4.0, result.get(0, 0), 0.0);
             assertEquals(4.0, result.get(0, 1), 0.0);
             assertEquals(10.0, result.get(1, 0), 0.0);
@@ -5547,10 +5547,10 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_multiply_incompatibleDimensions() {
+        public void test_matmul_incompatibleDimensions() {
             DoubleMatrix m1 = DoubleMatrix.of(new double[][] { { 1.0, 2.0 } });
             DoubleMatrix m2 = DoubleMatrix.of(new double[][] { { 3.0 } });
-            assertThrows(IllegalArgumentException.class, () -> m1.multiply(m2));
+            assertThrows(IllegalArgumentException.class, () -> m1.matmul(m2));
         }
 
         // ============ Boxed Test ============
@@ -6186,7 +6186,7 @@ class DoubleMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> matrix.stackHorizontally(null));
             assertThrows(IllegalArgumentException.class, () -> matrix.add(null));
             assertThrows(IllegalArgumentException.class, () -> matrix.subtract(null));
-            assertThrows(IllegalArgumentException.class, () -> matrix.multiply(null));
+            assertThrows(IllegalArgumentException.class, () -> matrix.matmul(null));
         }
     }
 

@@ -913,7 +913,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * Updates all elements in the matrix in-place based on their position (row and column indices).
      * This modifies the matrix directly.
      *
-     * <p>The operator receives the row and column indices for each element and returns the new value
+     * <p>The mapper receives the row and column indices for each element and returns the new value
      * for that position. This is useful for initializing matrices based on position patterns or
      * mathematical formulas. The operation may be performed in parallel for large matrices.</p>
      *
@@ -927,15 +927,15 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * // matrix is now [[0.0f, 1.0f, 2.0f], [10.0f, 11.0f, 12.0f]]
      * }</pre>
      *
-     * @param <E> the type of exception that the operator may throw
-     * @param operator the operator that receives row index and column index (0-based) and returns
+     * @param <E> the type of exception that the mapper may throw
+     * @param mapper the function that receives row index and column index (0-based) and returns
      *             the new value for that position
-     * @throws IllegalArgumentException if {@code operator} is {@code null}
-     * @throws E if the operator throws an exception
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
+     * @throws E if the mapper throws an exception
      */
-    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<Float, E> operator) throws E {
-        N.checkArgNotNull(operator, "operator");
-        final Throwables.IntBiConsumer<E> operation = (i, j) -> a[i][j] = operator.apply(i, j);
+    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Float, E> mapper) throws E {
+        N.checkArgNotNull(mapper, "mapper");
+        final Throwables.IntBiConsumer<E> operation = (i, j) -> a[i][j] = mapper.apply(i, j);
         Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
     }
 
@@ -1463,7 +1463,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
             return copy();
         } else {
             if ((long) padTop + rowCount + padBottom > Integer.MAX_VALUE) {
-                throw new IllegalArgumentException("Result row count overflow: " + padTop + " + " + rowCount + " + " + padBottom + " exceeds Integer.MAX_VALUE");
+                throw new IllegalArgumentException(
+                        "Result row count overflow: " + padTop + " + " + rowCount + " + " + padBottom + " exceeds Integer.MAX_VALUE");
             }
 
             if ((long) padLeft + columnCount + padRight > Integer.MAX_VALUE) {
@@ -1513,6 +1514,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @see #flipHorizontally()
      */
+    @Override
     public void flipInPlaceHorizontally() {
         for (int i = 0; i < rowCount; i++) {
             N.reverse(a[i]);
@@ -1531,6 +1533,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @see #flipVertically()
      */
+    @Override
     public void flipInPlaceVertically() {
         for (int j = 0; j < columnCount; j++) {
             float tmp = 0;
@@ -1558,6 +1561,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @see #flipVertically()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
+    @Override
     public FloatMatrix flipHorizontally() {
         final FloatMatrix res = this.copy();
         res.flipInPlaceHorizontally();
@@ -1580,6 +1584,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @see #flipHorizontally()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
+    @Override
     public FloatMatrix flipVertically() {
         final FloatMatrix res = this.copy();
         res.flipInPlaceVertically();
@@ -1961,6 +1966,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *         same number of columns, or the merged row count would overflow {@code Integer.MAX_VALUE}
      * @see IntMatrix#stackVertically(IntMatrix)
      */
+    @Override
     public FloatMatrix stackVertically(final FloatMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(columnCount == other.columnCount, MSG_VSTACK_COLUMN_MISMATCH, columnCount, other.columnCount);
@@ -2000,6 +2006,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *         same number of rows, or the merged column count would overflow {@code Integer.MAX_VALUE}
      * @see IntMatrix#stackHorizontally(IntMatrix)
      */
+    @Override
     public FloatMatrix stackHorizontally(final FloatMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(rowCount == other.rowCount, MSG_HSTACK_ROW_MISMATCH, rowCount, other.rowCount);
@@ -2105,8 +2112,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <pre>{@code
      * FloatMatrix a = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
      * FloatMatrix b = FloatMatrix.of(new float[][] {{5.0f, 6.0f}, {7.0f, 8.0f}});
-     * FloatMatrix product = a.multiply(b);   // Result: [[19.0, 22.0], [43.0, 50.0]]
+     * FloatMatrix product = a.matmul(b);   // Result: [[19.0, 22.0], [43.0, 50.0]]
      * }</pre>
+     *
+     * <p><b>Note:</b> This is the linear-algebra matrix product, not element-wise multiplication.
+     * For element-wise multiplication use
+     * {@link #zipWith(FloatMatrix, com.landawn.abacus.util.Throwables.FloatBinaryOperator)}.</p>
      *
      * <p><b>Floating-point notes:</b> Standard IEEE-754 arithmetic applies; {@code NaN} or
      * {@code Infinity} operands propagate into the corresponding result cells, and intermediate
@@ -2118,7 +2129,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IllegalArgumentException if {@code other} is {@code null} or the matrix dimensions are incompatible for multiplication
      *         (i.e., this.columnCount != other.rowCount)
      */
-    public FloatMatrix multiply(final FloatMatrix other) throws IllegalArgumentException {
+    public FloatMatrix matmul(final FloatMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(columnCount == other.rowCount,
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,

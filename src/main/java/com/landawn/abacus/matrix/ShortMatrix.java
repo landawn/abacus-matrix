@@ -934,8 +934,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     }
 
     /**
-     * Updates all elements in the matrix based on their position by applying the given operator.
-     * The operator receives the row and column indices (0-based) and returns the new value for that position.
+     * Updates all elements in the matrix based on their position by applying the given mapper.
+     * The mapper receives the row and column indices (0-based) and returns the new value for that position.
      * The matrix is modified in-place. This operation may be performed in parallel for large matrices
      * to improve performance.
      *
@@ -945,13 +945,13 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * matrix.updateAll((i, j) -> (short)(i + j));   // Element at (i,j) becomes i+j: [[0, 1], [1, 2]]
      * }</pre>
      *
-     * @param <E> the type of exception that the operator may throw
-     * @param operator the bi-function that takes (rowIndex, columnIndex) and returns the new short value
-     * @throws E if the operator throws an exception
+     * @param <E> the type of exception that the mapper may throw
+     * @param mapper the bi-function that takes (rowIndex, columnIndex) and returns the new short value
+     * @throws E if the mapper throws an exception
      */
-    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<Short, E> operator) throws E {
-        N.checkArgNotNull(operator, "operator");
-        final Throwables.IntBiConsumer<E> operation = (i, j) -> a[i][j] = operator.apply(i, j);
+    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Short, E> mapper) throws E {
+        N.checkArgNotNull(mapper, "mapper");
+        final Throwables.IntBiConsumer<E> operation = (i, j) -> a[i][j] = mapper.apply(i, j);
         Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
     }
 
@@ -1448,7 +1448,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             return copy();
         } else {
             if ((long) padTop + rowCount + padBottom > Integer.MAX_VALUE) {
-                throw new IllegalArgumentException("Result row count overflow: " + padTop + " + " + rowCount + " + " + padBottom + " exceeds Integer.MAX_VALUE");
+                throw new IllegalArgumentException(
+                        "Result row count overflow: " + padTop + " + " + rowCount + " + " + padBottom + " exceeds Integer.MAX_VALUE");
             }
 
             if ((long) padLeft + columnCount + padRight > Integer.MAX_VALUE) {
@@ -1499,6 +1500,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @see #flipHorizontally()
      */
+    @Override
     public void flipInPlaceHorizontally() {
         for (int i = 0; i < rowCount; i++) {
             N.reverse(a[i]);
@@ -1518,6 +1520,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @see #flipVertically()
      */
+    @Override
     public void flipInPlaceVertically() {
         for (int j = 0; j < columnCount; j++) {
             short tmp = 0;
@@ -1546,6 +1549,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @see #flipVertically()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
+    @Override
     public ShortMatrix flipHorizontally() {
         final ShortMatrix res = this.copy();
         res.flipInPlaceHorizontally();
@@ -1569,6 +1573,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @see #flipHorizontally()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
+    @Override
     public ShortMatrix flipVertically() {
         final ShortMatrix res = this.copy();
         res.flipInPlaceVertically();
@@ -1981,6 +1986,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @throws IllegalArgumentException if the matrices don't have the same number of columns
      * @see IntMatrix#stackVertically(IntMatrix)
      */
+    @Override
     public ShortMatrix stackVertically(final ShortMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(columnCount == other.columnCount, MSG_VSTACK_COLUMN_MISMATCH, columnCount, other.columnCount);
@@ -2020,6 +2026,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @throws IllegalArgumentException if the matrices don't have the same number of rows
      * @see IntMatrix#stackHorizontally(IntMatrix)
      */
+    @Override
     public ShortMatrix stackHorizontally(final ShortMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(rowCount == other.rowCount, MSG_HSTACK_ROW_MISMATCH, rowCount, other.rowCount);
@@ -2118,16 +2125,20 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <pre>{@code
      * ShortMatrix matrix1 = ShortMatrix.of(new short[][] {{1, 2}, {3, 4}});
      * ShortMatrix matrix2 = ShortMatrix.of(new short[][] {{5, 6}, {7, 8}});
-     * ShortMatrix product = matrix1.multiply(matrix2);
+     * ShortMatrix product = matrix1.matmul(matrix2);
      * // Result: [[19, 22], [43, 50]]
      * // where result[i][j] = sum of (matrix1[i][k] * matrix2[k][j]) for all k
      * }</pre>
+     *
+     * <p><b>Note:</b> This is the linear-algebra matrix product, not element-wise multiplication.
+     * For element-wise multiplication use
+     * {@link #zipWith(ShortMatrix, com.landawn.abacus.util.Throwables.ShortBinaryOperator)}.</p>
      *
      * @param other the matrix to multiply with this matrix ({@code this.columnCount} must equal {@code other.rowCount})
      * @return a new matrix of dimension {@code (this.rowCount × other.columnCount)} containing the matrix product
      * @throws IllegalArgumentException if {@code this.columnCount != other.rowCount} (incompatible dimensions for multiplication)
      */
-    public ShortMatrix multiply(final ShortMatrix other) throws IllegalArgumentException {
+    public ShortMatrix matmul(final ShortMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(columnCount == other.rowCount,
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,

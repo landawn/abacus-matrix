@@ -928,8 +928,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     }
 
     /**
-     * Updates all elements in the matrix based on their position by applying the given operator.
-     * The operator receives the row and column indices (0-based) and returns the new value for that position.
+     * Updates all elements in the matrix based on their position by applying the given mapper.
+     * The mapper receives the row and column indices (0-based) and returns the new value for that position.
      * The matrix is modified in-place. This operation may be performed in parallel for large matrices
      * to improve performance.
      *
@@ -940,13 +940,13 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * // Matrix is now: [[0, 1], [1, 2]]
      * }</pre>
      *
-     * @param <E> the type of exception that the operator may throw
-     * @param operator the bi-function that takes (rowIndex, columnIndex) and returns the new byte value
-     * @throws E if the operator throws an exception
+     * @param <E> the type of exception that the mapper may throw
+     * @param mapper the bi-function that takes (rowIndex, columnIndex) and returns the new byte value
+     * @throws E if the mapper throws an exception
      */
-    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<Byte, E> operator) throws E {
-        N.checkArgNotNull(operator, "operator");
-        final Throwables.IntBiConsumer<E> cmd = (i, j) -> a[i][j] = operator.apply(i, j);
+    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Byte, E> mapper) throws E {
+        N.checkArgNotNull(mapper, "mapper");
+        final Throwables.IntBiConsumer<E> cmd = (i, j) -> a[i][j] = mapper.apply(i, j);
         Matrices.forEachIndices(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
     }
 
@@ -1447,7 +1447,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
             return copy();
         } else {
             if ((long) padTop + rowCount + padBottom > Integer.MAX_VALUE) {
-                throw new IllegalArgumentException("Result row count overflow: " + padTop + " + " + rowCount + " + " + padBottom + " exceeds Integer.MAX_VALUE");
+                throw new IllegalArgumentException(
+                        "Result row count overflow: " + padTop + " + " + rowCount + " + " + padBottom + " exceeds Integer.MAX_VALUE");
             }
 
             if ((long) padLeft + columnCount + padRight > Integer.MAX_VALUE) {
@@ -1498,6 +1499,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * @see #flipHorizontally()
      */
+    @Override
     public void flipInPlaceHorizontally() {
         for (int i = 0; i < rowCount; i++) {
             N.reverse(a[i]);
@@ -1517,6 +1519,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * @see #flipVertically()
      */
+    @Override
     public void flipInPlaceVertically() {
         for (int j = 0; j < columnCount; j++) {
             byte tmp = 0;
@@ -1545,6 +1548,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @see #flipVertically()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
+    @Override
     public ByteMatrix flipHorizontally() {
         final ByteMatrix res = this.copy();
         res.flipInPlaceHorizontally();
@@ -1568,6 +1572,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @see #flipHorizontally()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
+    @Override
     public ByteMatrix flipVertically() {
         final ByteMatrix res = this.copy();
         res.flipInPlaceVertically();
@@ -1990,6 +1995,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @throws IllegalArgumentException if the matrices have different column counts
      * @see IntMatrix#stackVertically(IntMatrix)
      */
+    @Override
     public ByteMatrix stackVertically(final ByteMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(columnCount == other.columnCount, MSG_VSTACK_COLUMN_MISMATCH, columnCount, other.columnCount);
@@ -2028,6 +2034,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @throws IllegalArgumentException if the matrices have different row counts
      * @see IntMatrix#stackHorizontally(IntMatrix)
      */
+    @Override
     public ByteMatrix stackHorizontally(final ByteMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(rowCount == other.rowCount, MSG_HSTACK_ROW_MISMATCH, rowCount, other.rowCount);
@@ -2132,15 +2139,19 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <pre>{@code
      * ByteMatrix a = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
      * ByteMatrix b = ByteMatrix.of(new byte[][] {{5, 6}, {7, 8}});
-     * ByteMatrix product = a.multiply(b);
+     * ByteMatrix product = a.matmul(b);
      * // product is: [[19, 22], [43, 50]]
      * }</pre>
+     *
+     * <p><b>Note:</b> This is the linear-algebra matrix product, not element-wise multiplication.
+     * For element-wise multiplication use
+     * {@link #zipWith(ByteMatrix, com.landawn.abacus.util.Throwables.ByteBinaryOperator)}.</p>
      *
      * @param other the matrix to multiply with; must have row count equal to this matrix's column count
      * @return a new ByteMatrix containing the matrix product with dimensions {@code (this.rowCount x other.columnCount)}
      * @throws IllegalArgumentException if {@code this.columnCount != other.rowCount} (incompatible dimensions for multiplication)
      */
-    public ByteMatrix multiply(final ByteMatrix other) throws IllegalArgumentException {
+    public ByteMatrix matmul(final ByteMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(columnCount == other.rowCount,
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,

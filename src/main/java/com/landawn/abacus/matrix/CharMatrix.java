@@ -942,9 +942,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     }
 
     /**
-     * Updates all elements in the matrix based on their position using a position-aware operator.
+     * Updates all elements in the matrix based on their position using a position-aware mapper.
      *
-     * <p>The operator receives the row and column indices and returns the new value for that position.
+     * <p>The mapper receives the row and column indices and returns the new value for that position.
      * This is useful when the new value depends on the element's location in the matrix.
      * For large matrices, this operation may be performed in parallel.
      *
@@ -958,14 +958,14 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * //          ['i', 'j', 'k', 'l']]
      * }</pre>
      *
-     * @param <E> the exception type that the operator may throw
-     * @param operator the operator that takes (rowIndex, columnIndex) and returns the new char value
-     * @throws IllegalArgumentException if {@code operator} is {@code null}
-     * @throws E if the operator throws an exception
+     * @param <E> the exception type that the mapper may throw
+     * @param mapper the function that takes (rowIndex, columnIndex) and returns the new char value
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
+     * @throws E if the mapper throws an exception
      */
-    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<Character, E> operator) throws E {
-        N.checkArgNotNull(operator, "operator");
-        final Throwables.IntBiConsumer<E> cmd = (i, j) -> a[i][j] = operator.apply(i, j);
+    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Character, E> mapper) throws E {
+        N.checkArgNotNull(mapper, "mapper");
+        final Throwables.IntBiConsumer<E> cmd = (i, j) -> a[i][j] = mapper.apply(i, j);
         Matrices.forEachIndices(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
     }
 
@@ -1534,6 +1534,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * @see #flipHorizontally() for a non-mutating version
      */
+    @Override
     public void flipInPlaceHorizontally() {
         for (int i = 0; i < rowCount; i++) {
             N.reverse(a[i]);
@@ -1553,6 +1554,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * @see #flipVertically() for a non-mutating version
      */
+    @Override
     public void flipInPlaceVertically() {
         for (int j = 0; j < columnCount; j++) {
             char tmp = 0;
@@ -1580,6 +1582,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @see #flipVertically()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
+    @Override
     public CharMatrix flipHorizontally() {
         final CharMatrix res = this.copy();
         res.flipInPlaceHorizontally();
@@ -1602,6 +1605,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @see #flipHorizontally()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
+    @Override
     public CharMatrix flipVertically() {
         final CharMatrix res = this.copy();
         res.flipInPlaceVertically();
@@ -1988,6 +1992,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @throws IllegalArgumentException if the matrices have different column counts
      * @see IntMatrix#stackVertically(IntMatrix)
      */
+    @Override
     public CharMatrix stackVertically(final CharMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(columnCount == other.columnCount, MSG_VSTACK_COLUMN_MISMATCH, columnCount, other.columnCount);
@@ -2024,6 +2029,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @throws IllegalArgumentException if the matrices have different row counts
      * @see IntMatrix#stackHorizontally(IntMatrix)
      */
+    @Override
     public CharMatrix stackHorizontally(final CharMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(rowCount == other.rowCount, MSG_HSTACK_ROW_MISMATCH, rowCount, other.rowCount);
@@ -2113,14 +2119,18 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix a = CharMatrix.of(new char[][] {{2, 3}, {4, 5}});
      * CharMatrix b = CharMatrix.of(new char[][] {{1, 2}, {3, 4}});
-     * CharMatrix product = a.multiply(b);   // Standard matrix multiplication
+     * CharMatrix product = a.matmul(b);   // Standard matrix multiplication
      * }</pre>
+     *
+     * <p><b>Note:</b> This is the linear-algebra matrix product, not element-wise multiplication.
+     * For element-wise multiplication use
+     * {@link #zipWith(CharMatrix, com.landawn.abacus.util.Throwables.CharBinaryOperator)}.</p>
      *
      * @param other the matrix to multiply with this matrix
      * @return a new CharMatrix containing the matrix product
      * @throws IllegalArgumentException if this.columnCount != other.rowCount
      */
-    public CharMatrix multiply(final CharMatrix other) throws IllegalArgumentException {
+    public CharMatrix matmul(final CharMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(columnCount == other.rowCount,
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,

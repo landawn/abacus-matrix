@@ -1068,7 +1068,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * Updates all elements in the matrix in-place based on their position (row and column indices).
      * This modifies the matrix directly.
      *
-     * <p>The operator receives the row and column indices for each element and returns the new value
+     * <p>The mapper receives the row and column indices for each element and returns the new value
      * for that position. This is useful for initializing matrices based on position patterns or
      * mathematical formulas. The operation may be performed in parallel for large matrices.</p>
      *
@@ -1082,15 +1082,15 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * // matrix is now [[0, 1, 2], [10, 11, 12]]
      * }</pre>
      *
-     * @param <E> the type of exception that the operator may throw
-     * @param operator the operator that receives row index and column index (0-based) and returns
+     * @param <E> the type of exception that the mapper may throw
+     * @param mapper the function that receives row index and column index (0-based) and returns
      *             the new value for that position
-     * @throws IllegalArgumentException if {@code operator} is {@code null}
-     * @throws E if the operator throws an exception
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
+     * @throws E if the mapper throws an exception
      */
-    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<Integer, E> operator) throws E {
-        N.checkArgNotNull(operator, "operator");
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.apply(i, j);
+    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Integer, E> mapper) throws E {
+        N.checkArgNotNull(mapper, "mapper");
+        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
     }
 
@@ -1660,7 +1660,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             return copy();
         } else {
             if ((long) padTop + rowCount + padBottom > Integer.MAX_VALUE) {
-                throw new IllegalArgumentException("Result row count overflow: " + padTop + " + " + rowCount + " + " + padBottom + " exceeds Integer.MAX_VALUE");
+                throw new IllegalArgumentException(
+                        "Result row count overflow: " + padTop + " + " + rowCount + " + " + padBottom + " exceeds Integer.MAX_VALUE");
             }
 
             if ((long) padLeft + columnCount + padRight > Integer.MAX_VALUE) {
@@ -1715,6 +1716,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @see #flipHorizontally()
      * @see #flipInPlaceVertically()
      */
+    @Override
     public void flipInPlaceHorizontally() {
         for (int i = 0; i < rowCount; i++) {
             N.reverse(a[i]);
@@ -1739,6 +1741,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @see #flipVertically()
      * @see #flipInPlaceHorizontally()
      */
+    @Override
     public void flipInPlaceVertically() {
         for (int j = 0; j < columnCount; j++) {
             int tmp = 0;
@@ -1767,6 +1770,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @see #flipVertically()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
+    @Override
     public IntMatrix flipHorizontally() {
         final IntMatrix res = this.copy();
         res.flipInPlaceHorizontally();
@@ -1790,6 +1794,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @see #flipHorizontally()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
+    @Override
     public IntMatrix flipVertically() {
         final IntMatrix res = this.copy();
         res.flipInPlaceVertically();
@@ -2191,6 +2196,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *         or if the merged row count would exceed {@code Integer.MAX_VALUE}
      * @see #stackHorizontally(IntMatrix)
      */
+    @Override
     public IntMatrix stackVertically(final IntMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(columnCount == other.columnCount, MSG_VSTACK_COLUMN_MISMATCH, columnCount, other.columnCount);
@@ -2234,6 +2240,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *         or if the merged column count would exceed {@code Integer.MAX_VALUE}
      * @see #stackVertically(IntMatrix)
      */
+    @Override
     public IntMatrix stackHorizontally(final IntMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(rowCount == other.rowCount, MSG_HSTACK_ROW_MISMATCH, rowCount, other.rowCount);
@@ -2312,22 +2319,24 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     }
 
     /**
-     * Performs matrix multiplication with another matrix.
+     * Performs matrix multiplication (Cayley product) with another matrix.
      * The number of columns in this matrix must equal the number of rows in the other matrix.
-     * <p><b>Note:</b> Integer overflow may occur during multiplication.</p>
+     * <p><b>Note:</b> This is the linear-algebra matrix product, not element-wise multiplication.
+     * For element-wise multiplication use {@link #zipWith(IntMatrix, com.landawn.abacus.util.Throwables.IntBinaryOperator)}.
+     * Integer overflow may occur during multiplication.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix a = IntMatrix.of(new int[][] {{1,2},{3,4}});
      * IntMatrix b = IntMatrix.of(new int[][] {{5,6},{7,8}});
-     * IntMatrix product = a.multiply(b);   // Result: [[19,22],[43,50]]
+     * IntMatrix product = a.matmul(b);   // Result: [[19,22],[43,50]]
      * }</pre>
      *
      * @param other the matrix to multiply with
      * @return a new IntMatrix containing the matrix product
      * @throws IllegalArgumentException if the matrix dimensions are incompatible for multiplication
      */
-    public IntMatrix multiply(final IntMatrix other) throws IllegalArgumentException {
+    public IntMatrix matmul(final IntMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(columnCount == other.rowCount,
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
@@ -2438,7 +2447,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * <p>This is a generalized element-wise operation. For specific operations like addition,
      * subtraction, or multiplication, consider using the dedicated methods {@link #add(IntMatrix)},
-     * {@link #subtract(IntMatrix)}, or {@link #multiply(IntMatrix)}.</p>
+     * {@link #subtract(IntMatrix)}, or {@link #matmul(IntMatrix)}.</p>
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance.
      * Creates a new matrix; the original matrices are not modified.</p>

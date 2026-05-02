@@ -39,6 +39,14 @@ import com.landawn.abacus.util.stream.Stream;
  * {@link #applyOnFlattened(Throwables.Consumer)}. Callers that need isolation should prefer
  * copy-producing operations such as {@link #copy()}, {@link #flatten()}, and {@link #rowCopy(int)}.</p>
  *
+ * <p>Per-element iteration uses two complementary entry points. The index-only
+ * {@link #forEachIndices(Throwables.IntBiConsumer)} is declared here because its action signature
+ * is the same for every matrix type. The value-receiving {@code forEach(Consumer)} variant is
+ * declared on each concrete subclass instead, because the consumer type is primitive-specialized
+ * (for example {@link IntMatrix#forEach(Throwables.IntConsumer)},
+ * {@link Matrix#forEach(Throwables.Consumer)}). When iterating by element use the subclass
+ * {@code forEach}; when iterating by position use {@code forEachIndices}.</p>
+ *
  * @param <A> the array type used for internal row storage (for example {@code int[]}, {@code double[]}, or {@code Object[]})
  * @param <PL> the flattened-view list type
  * @param <ES> the element stream type
@@ -777,6 +785,74 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @throws IllegalArgumentException if any pad value is negative or if the resulting dimensions overflow {@code Integer.MAX_VALUE}
      */
     public abstract M extend(int padTop, int padBottom, int padLeft, int padRight);
+
+    /**
+     * Returns a new matrix that is a horizontal flip (mirror across the vertical axis) of this matrix.
+     * Element at position {@code (i, j)} in this matrix appears at position {@code (i, columnCount - 1 - j)}
+     * in the result. This matrix is not modified.
+     *
+     * @return a new matrix with columns reversed within each row
+     * @see #flipInPlaceHorizontally()
+     * @see #flipVertically()
+     */
+    public abstract M flipHorizontally();
+
+    /**
+     * Returns a new matrix that is a vertical flip (mirror across the horizontal axis) of this matrix.
+     * Element at position {@code (i, j)} in this matrix appears at position {@code (rowCount - 1 - i, j)}
+     * in the result. This matrix is not modified.
+     *
+     * @return a new matrix with rows reversed
+     * @see #flipInPlaceVertically()
+     * @see #flipHorizontally()
+     */
+    public abstract M flipVertically();
+
+    /**
+     * Flips this matrix horizontally in place (mirror across the vertical axis).
+     * Element at position {@code (i, j)} is moved to position {@code (i, columnCount - 1 - j)}.
+     * This method modifies this matrix.
+     *
+     * @see #flipHorizontally()
+     * @see #flipInPlaceVertically()
+     */
+    public abstract void flipInPlaceHorizontally();
+
+    /**
+     * Flips this matrix vertically in place (mirror across the horizontal axis).
+     * Element at position {@code (i, j)} is moved to position {@code (rowCount - 1 - i, j)}.
+     * This method modifies this matrix.
+     *
+     * @see #flipVertically()
+     * @see #flipInPlaceHorizontally()
+     */
+    public abstract void flipInPlaceVertically();
+
+    /**
+     * Vertically stacks this matrix with the specified matrix.
+     * The matrices must have the same number of columns. The result has rows from this matrix
+     * followed by rows from the other matrix. Creates a new matrix; neither input is modified.
+     *
+     * @param other the matrix to stack below this matrix (must not be {@code null})
+     * @return a new matrix with combined rows and the same column count
+     * @throws IllegalArgumentException if {@code other} is {@code null}, has a different column count,
+     *         or the merged row count would overflow {@code Integer.MAX_VALUE}
+     * @see #stackHorizontally(AbstractMatrix)
+     */
+    public abstract M stackVertically(M other);
+
+    /**
+     * Horizontally stacks this matrix with the specified matrix.
+     * The matrices must have the same number of rows. The result has columns from this matrix
+     * followed by columns from the other matrix. Creates a new matrix; neither input is modified.
+     *
+     * @param other the matrix to stack to the right of this matrix (must not be {@code null})
+     * @return a new matrix with combined columns and the same row count
+     * @throws IllegalArgumentException if {@code other} is {@code null}, has a different row count,
+     *         or the merged column count would overflow {@code Integer.MAX_VALUE}
+     * @see #stackVertically(AbstractMatrix)
+     */
+    public abstract M stackHorizontally(M other);
 
     /**
      * Flattens this matrix into a one-dimensional list.

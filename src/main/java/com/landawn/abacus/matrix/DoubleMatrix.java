@@ -1012,7 +1012,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * Updates all elements in the matrix in-place based on their position (row and column indices).
      * This modifies the matrix directly.
      *
-     * <p>The operator receives the row and column indices for each element and returns the new value
+     * <p>The mapper receives the row and column indices for each element and returns the new value
      * for that position. This is useful for initializing matrices based on position patterns or
      * mathematical formulas. The operation may be performed in parallel for large matrices.</p>
      *
@@ -1026,15 +1026,15 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * // matrix is now [[0.0, 1.0, 2.0], [10.0, 11.0, 12.0]]
      * }</pre>
      *
-     * @param <E> the type of exception that the operator may throw
-     * @param operator the operator that receives row index and column index (0-based) and returns
+     * @param <E> the type of exception that the mapper may throw
+     * @param mapper the function that receives row index and column index (0-based) and returns
      *             the new value for that position
-     * @throws IllegalArgumentException if {@code operator} is {@code null}
-     * @throws E if the operator throws an exception
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
+     * @throws E if the mapper throws an exception
      */
-    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<Double, E> operator) throws E {
-        N.checkArgNotNull(operator, "operator");
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.apply(i, j);
+    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Double, E> mapper) throws E {
+        N.checkArgNotNull(mapper, "mapper");
+        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
     }
 
@@ -1625,7 +1625,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
             return copy();
         } else {
             if ((long) padTop + rowCount + padBottom > Integer.MAX_VALUE) {
-                throw new IllegalArgumentException("Result row count overflow: " + padTop + " + " + rowCount + " + " + padBottom + " exceeds Integer.MAX_VALUE");
+                throw new IllegalArgumentException(
+                        "Result row count overflow: " + padTop + " + " + rowCount + " + " + padBottom + " exceeds Integer.MAX_VALUE");
             }
 
             if ((long) padLeft + columnCount + padRight > Integer.MAX_VALUE) {
@@ -1675,6 +1676,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * @see #flipHorizontally()
      */
+    @Override
     public void flipInPlaceHorizontally() {
         for (int i = 0; i < rowCount; i++) {
             N.reverse(a[i]);
@@ -1693,6 +1695,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * @see #flipVertically()
      */
+    @Override
     public void flipInPlaceVertically() {
         for (int j = 0; j < columnCount; j++) {
             double tmp = 0;
@@ -1719,6 +1722,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @see #flipVertically()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
+    @Override
     public DoubleMatrix flipHorizontally() {
         final DoubleMatrix res = this.copy();
         res.flipInPlaceHorizontally();
@@ -1740,6 +1744,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @see #flipHorizontally()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
+    @Override
     public DoubleMatrix flipVertically() {
         final DoubleMatrix res = this.copy();
         res.flipInPlaceVertically();
@@ -2130,6 +2135,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *         number of columns, or the merged row count would overflow {@code Integer.MAX_VALUE}
      * @see IntMatrix#stackVertically(IntMatrix)
      */
+    @Override
     public DoubleMatrix stackVertically(final DoubleMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(columnCount == other.columnCount, MSG_VSTACK_COLUMN_MISMATCH, columnCount, other.columnCount);
@@ -2169,6 +2175,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *         number of rows, or the merged column count would overflow {@code Integer.MAX_VALUE}
      * @see IntMatrix#stackHorizontally(IntMatrix)
      */
+    @Override
     public DoubleMatrix stackHorizontally(final DoubleMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(rowCount == other.rowCount, MSG_HSTACK_ROW_MISMATCH, rowCount, other.rowCount);
@@ -2253,15 +2260,19 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     }
 
     /**
-     * Performs matrix multiplication with another matrix.
+     * Performs matrix multiplication (Cayley product) with another matrix.
      * The number of columns in this matrix must equal the number of rows in the other matrix.
      * Results in a matrix of dimensions (this.rowCount × other.columnCount).
+     *
+     * <p><b>Note:</b> This is the linear-algebra matrix product, not element-wise multiplication.
+     * For element-wise multiplication use
+     * {@link #zipWith(DoubleMatrix, com.landawn.abacus.util.Throwables.DoubleBinaryOperator)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix a = DoubleMatrix.of(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
      * DoubleMatrix b = DoubleMatrix.of(new double[][] {{5.0, 6.0}, {7.0, 8.0}});
-     * DoubleMatrix product = a.multiply(b);   // [[19.0, 22.0], [43.0, 50.0]]
+     * DoubleMatrix product = a.matmul(b);   // [[19.0, 22.0], [43.0, 50.0]]
      * }</pre>
      *
      * <p><b>Floating-point notes:</b> Standard IEEE-754 arithmetic applies; {@code NaN} or
@@ -2274,7 +2285,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws IllegalArgumentException if {@code other} is {@code null} or the matrix dimensions are incompatible for multiplication
      *         (i.e., this.columnCount != other.rowCount)
      */
-    public DoubleMatrix multiply(final DoubleMatrix other) throws IllegalArgumentException {
+    public DoubleMatrix matmul(final DoubleMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(columnCount == other.rowCount,
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,

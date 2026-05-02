@@ -1000,7 +1000,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * Updates all elements in the matrix in-place based on their position (row and column indices).
      * This modifies the matrix directly.
      *
-     * <p>The operator receives the row and column indices for each element and returns the new value
+     * <p>The mapper receives the row and column indices for each element and returns the new value
      * for that position. This is useful for initializing matrices based on position patterns or
      * mathematical formulas. The operation may be performed in parallel for large matrices.</p>
      *
@@ -1014,15 +1014,15 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * // matrix is now [[0L, 1L, 2L], [10L, 11L, 12L]]
      * }</pre>
      *
-     * @param <E> the type of exception that the operator may throw
-     * @param operator the operator that receives row index and column index (0-based) and returns
+     * @param <E> the type of exception that the mapper may throw
+     * @param mapper the function that receives row index and column index (0-based) and returns
      *             the new value for that position
-     * @throws IllegalArgumentException if {@code operator} is {@code null}
-     * @throws E if the operator throws an exception
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
+     * @throws E if the mapper throws an exception
      */
-    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<Long, E> operator) throws E {
-        N.checkArgNotNull(operator, "operator");
-        final Throwables.IntBiConsumer<E> operation = (i, j) -> a[i][j] = operator.apply(i, j);
+    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Long, E> mapper) throws E {
+        N.checkArgNotNull(mapper, "mapper");
+        final Throwables.IntBiConsumer<E> operation = (i, j) -> a[i][j] = mapper.apply(i, j);
         Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
     }
 
@@ -1602,7 +1602,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
             return copy();
         } else {
             if ((long) padTop + rowCount + padBottom > Integer.MAX_VALUE) {
-                throw new IllegalArgumentException("Result row count overflow: " + padTop + " + " + rowCount + " + " + padBottom + " exceeds Integer.MAX_VALUE");
+                throw new IllegalArgumentException(
+                        "Result row count overflow: " + padTop + " + " + rowCount + " + " + padBottom + " exceeds Integer.MAX_VALUE");
             }
 
             if ((long) padLeft + columnCount + padRight > Integer.MAX_VALUE) {
@@ -1654,6 +1655,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @see #flipHorizontally()
      * @see #flipInPlaceVertically()
      */
+    @Override
     public void flipInPlaceHorizontally() {
         for (int i = 0; i < rowCount; i++) {
             N.reverse(a[i]);
@@ -1674,6 +1676,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @see #flipVertically()
      * @see #flipInPlaceHorizontally()
      */
+    @Override
     public void flipInPlaceVertically() {
         for (int j = 0; j < columnCount; j++) {
             long tmp = 0;
@@ -1702,6 +1705,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @see #flipVertically()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
+    @Override
     public LongMatrix flipHorizontally() {
         final LongMatrix res = this.copy();
         res.flipInPlaceHorizontally();
@@ -1725,6 +1729,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @see #flipHorizontally()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
+    @Override
     public LongMatrix flipVertically() {
         final LongMatrix res = this.copy();
         res.flipInPlaceVertically();
@@ -2122,6 +2127,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *         or if the merged row count would exceed {@code Integer.MAX_VALUE}
      * @see IntMatrix#stackVertically(IntMatrix)
      */
+    @Override
     public LongMatrix stackVertically(final LongMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(columnCount == other.columnCount, MSG_VSTACK_COLUMN_MISMATCH, columnCount, other.columnCount);
@@ -2162,6 +2168,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *         or if the merged column count would exceed {@code Integer.MAX_VALUE}
      * @see IntMatrix#stackHorizontally(IntMatrix)
      */
+    @Override
     public LongMatrix stackHorizontally(final LongMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(rowCount == other.rowCount, MSG_HSTACK_ROW_MISMATCH, rowCount, other.rowCount);
@@ -2244,18 +2251,21 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     }
 
     /**
-     * Performs matrix multiplication with another matrix.
+     * Performs matrix multiplication (Cayley product) with another matrix.
      * The number of columns in this matrix must equal the number of rows in the specified matrix.
      * The result is a new matrix with dimensions (this.rowCount × other.columnCount).
      * This implements standard matrix multiplication where each element (i,j) of the result is the
      * dot product of row i from this matrix and column j from matrix b.
-     * <p><b>Note:</b> Long overflow may occur during multiplication.</p>
+     * <p><b>Note:</b> This is the linear-algebra matrix product, not element-wise multiplication.
+     * For element-wise multiplication use
+     * {@link #zipWith(LongMatrix, com.landawn.abacus.util.Throwables.LongBinaryOperator)}.
+     * Long overflow may occur during multiplication.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix1 = LongMatrix.of(new long[][] {{1, 2}, {3, 4}});
      * LongMatrix matrix2 = LongMatrix.of(new long[][] {{5, 6}, {7, 8}});
-     * LongMatrix product = matrix1.multiply(matrix2);
+     * LongMatrix product = matrix1.matmul(matrix2);
      * // Result: [[19, 22],   // 1*5+2*7=19, 1*6+2*8=22
      * //          [43, 50]]   // 3*5+4*7=43, 3*6+4*8=50
      * }</pre>
@@ -2264,7 +2274,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @return a new matrix containing the matrix product
      * @throws IllegalArgumentException if the matrix dimensions are incompatible (this.columnCount != other.rowCount)
      */
-    public LongMatrix multiply(final LongMatrix other) throws IllegalArgumentException {
+    public LongMatrix matmul(final LongMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(columnCount == other.rowCount,
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,

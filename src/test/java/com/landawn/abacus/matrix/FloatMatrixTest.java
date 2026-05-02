@@ -858,7 +858,7 @@ class FloatMatrixTest extends TestBase {
     public void testMultiply() {
         FloatMatrix m1 = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
         FloatMatrix m2 = FloatMatrix.of(new float[][] { { 5.0f, 6.0f }, { 7.0f, 8.0f } });
-        FloatMatrix product = m1.multiply(m2);
+        FloatMatrix product = m1.matmul(m2);
 
         assertEquals(19.0f, product.get(0, 0), DELTA); // 1*5 + 2*7
         assertEquals(22.0f, product.get(0, 1), DELTA); // 1*6 + 2*8
@@ -867,7 +867,7 @@ class FloatMatrixTest extends TestBase {
 
         // Test incompatible dimensions
         FloatMatrix m3 = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f } });
-        assertThrows(IllegalArgumentException.class, () -> m1.multiply(m3));
+        assertThrows(IllegalArgumentException.class, () -> m1.matmul(m3));
     }
 
     @Test
@@ -2303,14 +2303,14 @@ class FloatMatrixTest extends TestBase {
         public void testMultiply_incompatibleDimensions() {
             FloatMatrix m1 = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             FloatMatrix m2 = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f } });
-            assertThrows(IllegalArgumentException.class, () -> m1.multiply(m2));
+            assertThrows(IllegalArgumentException.class, () -> m1.matmul(m2));
         }
 
         @Test
         public void testMultiply_rectangularMatrices() {
             FloatMatrix m1 = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f } }); // 1x3
             FloatMatrix m2 = FloatMatrix.of(new float[][] { { 4.0f }, { 5.0f }, { 6.0f } }); // 3x1
-            FloatMatrix product = m1.multiply(m2);
+            FloatMatrix product = m1.matmul(m2);
 
             assertEquals(1, product.rowCount());
             assertEquals(1, product.columnCount());
@@ -2761,7 +2761,7 @@ class FloatMatrixTest extends TestBase {
             assertEquals(m, subtractZero);
 
             // Test multiplication with zero matrix
-            FloatMatrix multiplyZero = m.multiply(zeros);
+            FloatMatrix multiplyZero = m.matmul(zeros);
             assertEquals(zeros, multiplyZero);
 
             // Test addition commutativity
@@ -3642,7 +3642,7 @@ class FloatMatrixTest extends TestBase {
         public void testMultiply() {
             FloatMatrix m1 = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             FloatMatrix m2 = FloatMatrix.of(new float[][] { { 2.0f, 0.0f }, { 1.0f, 2.0f } });
-            FloatMatrix result = m1.multiply(m2);
+            FloatMatrix result = m1.matmul(m2);
             assertEquals(4.0f, result.get(0, 0));
             assertEquals(4.0f, result.get(0, 1));
             assertEquals(10.0f, result.get(1, 0));
@@ -3653,7 +3653,7 @@ class FloatMatrixTest extends TestBase {
         public void testMultiply_incompatibleSize() {
             FloatMatrix m1 = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             FloatMatrix m2 = FloatMatrix.of(new float[][] { { 1.0f } });
-            assertThrows(IllegalArgumentException.class, () -> m1.multiply(m2));
+            assertThrows(IllegalArgumentException.class, () -> m1.matmul(m2));
         }
 
         // ============ Conversion Tests ============
@@ -5010,10 +5010,10 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_multiply() {
+        public void test_matmul() {
             FloatMatrix m1 = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             FloatMatrix m2 = FloatMatrix.of(new float[][] { { 2.0f, 0.0f }, { 1.0f, 2.0f } });
-            FloatMatrix result = m1.multiply(m2);
+            FloatMatrix result = m1.matmul(m2);
             assertEquals(4.0f, result.get(0, 0), 0.0f);
             assertEquals(4.0f, result.get(0, 1), 0.0f);
             assertEquals(10.0f, result.get(1, 0), 0.0f);
@@ -5021,10 +5021,10 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_multiply_incompatibleDimensions() {
+        public void test_matmul_incompatibleDimensions() {
             FloatMatrix m1 = FloatMatrix.of(new float[][] { { 1.0f, 2.0f } });
             FloatMatrix m2 = FloatMatrix.of(new float[][] { { 3.0f } });
-            assertThrows(IllegalArgumentException.class, () -> m1.multiply(m2));
+            assertThrows(IllegalArgumentException.class, () -> m1.matmul(m2));
         }
 
         // ============ Boxed Test ============
@@ -5363,10 +5363,10 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFloatMatrix_multiply() {
+        public void testFloatMatrix_matmul() {
             FloatMatrix a = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             FloatMatrix b = FloatMatrix.of(new float[][] { { 5.0f, 6.0f }, { 7.0f, 8.0f } });
-            FloatMatrix product = a.multiply(b);
+            FloatMatrix product = a.matmul(b);
             assertEquals(19.0f, product.get(0, 0));
             assertEquals(22.0f, product.get(0, 1));
             assertEquals(43.0f, product.get(1, 0));
@@ -5587,7 +5587,7 @@ class FloatMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> matrix.stackHorizontally(null));
             assertThrows(IllegalArgumentException.class, () -> matrix.add(null));
             assertThrows(IllegalArgumentException.class, () -> matrix.subtract(null));
-            assertThrows(IllegalArgumentException.class, () -> matrix.multiply(null));
+            assertThrows(IllegalArgumentException.class, () -> matrix.matmul(null));
         }
     }
 

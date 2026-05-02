@@ -891,7 +891,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * Updates all elements in the matrix in-place based on their position (row and column indices).
      * This modifies the matrix directly.
      *
-     * <p>The operator receives the row and column indices for each element and returns the new value
+     * <p>The mapper receives the row and column indices for each element and returns the new value
      * for that position. This is useful for initializing matrices based on position patterns or
      * mathematical formulas. The operation may be performed in parallel for large matrices.</p>
      *
@@ -906,15 +906,15 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * // Matrix is now [[true, false, true], [false, true, false], [true, false, true]]
      * }</pre>
      *
-     * @param <E> the type of exception that the operator may throw
-     * @param operator the operator that receives row index and column index (0-based) and returns
+     * @param <E> the type of exception that the mapper may throw
+     * @param mapper the function that receives row index and column index (0-based) and returns
      *             the new value for that position
-     * @throws IllegalArgumentException if {@code operator} is {@code null}
-     * @throws E if the operator throws an exception
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
+     * @throws E if the mapper throws an exception
      */
-    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<Boolean, E> operator) throws E {
-        N.checkArgNotNull(operator, "operator");
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.apply(i, j);
+    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Boolean, E> mapper) throws E {
+        N.checkArgNotNull(mapper, "mapper");
+        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
     }
 
@@ -1481,7 +1481,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
             return copy();
         } else {
             if ((long) padTop + rowCount + padBottom > Integer.MAX_VALUE) {
-                throw new IllegalArgumentException("Result row count overflow: " + padTop + " + " + rowCount + " + " + padBottom + " exceeds Integer.MAX_VALUE");
+                throw new IllegalArgumentException(
+                        "Result row count overflow: " + padTop + " + " + rowCount + " + " + padBottom + " exceeds Integer.MAX_VALUE");
             }
 
             if ((long) padLeft + columnCount + padRight > Integer.MAX_VALUE) {
@@ -1536,6 +1537,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @see #flipHorizontally()
      * @see #flipInPlaceVertically()
      */
+    @Override
     public void flipInPlaceHorizontally() {
         for (int i = 0; i < rowCount; i++) {
             N.reverse(a[i]);
@@ -1560,6 +1562,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @see #flipVertically()
      * @see #flipInPlaceHorizontally()
      */
+    @Override
     public void flipInPlaceVertically() {
         for (int j = 0; j < columnCount; j++) {
             boolean tmp = false;
@@ -1588,6 +1591,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @see #flipVertically()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
+    @Override
     public BooleanMatrix flipHorizontally() {
         final BooleanMatrix res = this.copy();
         res.flipInPlaceHorizontally();
@@ -1611,6 +1615,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @see #flipHorizontally()
      * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
+    @Override
     public BooleanMatrix flipVertically() {
         final BooleanMatrix res = this.copy();
         res.flipInPlaceVertically();
@@ -2181,6 +2186,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @throws IllegalArgumentException if {@code other} is {@code null} or {@code this.columnCount != other.columnCount}
      * @see #stackHorizontally(BooleanMatrix)
      */
+    @Override
     public BooleanMatrix stackVertically(final BooleanMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(columnCount == other.columnCount, MSG_VSTACK_COLUMN_MISMATCH, columnCount, other.columnCount);
@@ -2228,6 +2234,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @throws IllegalArgumentException if {@code other} is {@code null} or {@code this.rowCount != other.rowCount}
      * @see #stackVertically(BooleanMatrix)
      */
+    @Override
     public BooleanMatrix stackHorizontally(final BooleanMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(rowCount == other.rowCount, MSG_HSTACK_ROW_MISMATCH, rowCount, other.rowCount);
