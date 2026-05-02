@@ -428,11 +428,11 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @param val the value to set
+     * @param value the value to set
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public void set(final int rowIndex, final int columnIndex, final short val) {
-        a[rowIndex][columnIndex] = val;
+    public void set(final int rowIndex, final int columnIndex, final short value) {
+        a[rowIndex][columnIndex] = value;
     }
 
     /**
@@ -448,15 +448,15 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @param point the point containing row and column indices (must not be null)
-     * @param val the new short value to set at the specified point
+     * @param value the new short value to set at the specified point
      * @throws IllegalArgumentException if {@code point} is {@code null}
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
      * @see #set(int, int, short)
      */
-    public void set(final Point point, final short val) {
+    public void set(final Point point, final short value) {
         N.checkArgNotNull(point, "point");
 
-        a[point.rowIndex()][point.columnIndex()] = val;
+        a[point.rowIndex()][point.columnIndex()] = value;
     }
 
     /**
@@ -1040,16 +1040,16 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * // Result: [["Value: 1", "Value: 2"], ["Value: 3", "Value: 4"]]
      * }</pre>
      *
-     * @param <T> the type of elements in the resulting matrix
+     * @param <R> the type of elements in the resulting matrix
      * @param <E> the type of exception that the function may throw
-     * @param mapper the function to transform each short to an object of type T
+     * @param mapper the function to transform each short to an object of type R
      * @param targetElementType the class of the target element type (used for array creation)
-     * @return a new Matrix&lt;T&gt; with the transformed object values; the original matrix is unchanged
+     * @return a new Matrix&lt;R&gt; with the transformed object values; the original matrix is unchanged
      * @throws E if the function throws an exception
      */
-    public <T, E extends Exception> Matrix<T> mapToObj(final Throwables.ShortFunction<? extends T, E> mapper, final Class<T> targetElementType) throws E {
+    public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.ShortFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E {
         N.checkArgNotNull(mapper, "mapper");
-        final T[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
+        final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
         final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
 
         Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
@@ -1067,11 +1067,11 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * matrix.fill((short)5);   // Result: [[5, 5], [5, 5]]
      * }</pre>
      *
-     * @param val the value to fill the matrix with
+     * @param value the value to fill the matrix with
      */
-    public void fill(final short val) {
+    public void fill(final short value) {
         for (int i = 0; i < rowCount; i++) {
-            N.fill(a[i], val);
+            N.fill(a[i], value);
         }
     }
 
@@ -1274,8 +1274,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * <ul>
      *   <li><b>If a dimension shrinks</b> — elements beyond the new boundary are discarded.
-     *       {@code defaultValueForNewCell} is <em>not</em> used in this case.</li>
-     *   <li><b>If a dimension grows</b> — new cells are filled with {@code defaultValueForNewCell}.</li>
+     *       {@code defaultValue} is <em>not</em> used in this case.</li>
+     *   <li><b>If a dimension grows</b> — new cells are filled with {@code defaultValue}.</li>
      *   <li><b>Mixed case</b> — each dimension is treated independently, so it is valid
      *       to grow rows while truncating columns, or vice versa.</li>
      * </ul>
@@ -1298,7 +1298,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * //          [7, 8, 9, 9],
      * //          [9, 9, 9, 9]]
      *
-     * // Truncate: defaultValueForNewCell is ignored when shrinking
+     * // Truncate: defaultValue is ignored when shrinking
      * ShortMatrix truncated = matrix.resize(2, 2, (short) 9);
      * // Result: [[1, 2],
      * //          [4, 5]]
@@ -1306,7 +1306,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param newRowCount the row count of the returned matrix; must be {@code >= 0}
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
-     * @param defaultValueForNewCell the value used to fill cells that are added when a dimension grows;
+     * @param defaultValue the value used to fill cells that are added when a dimension grows;
      *        ignored when a dimension shrinks
      * @return a new ShortMatrix with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
@@ -1314,7 +1314,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @see #resize(int, int)
      * @see #extend(int, int, int, int, short)
      */
-    public ShortMatrix resize(final int newRowCount, final int newColumnCount, final short defaultValueForNewCell) throws IllegalArgumentException {
+    public ShortMatrix resize(final int newRowCount, final int newColumnCount, final short defaultValue) throws IllegalArgumentException {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
         checkRepresentableShape(newRowCount, newColumnCount);
@@ -1326,7 +1326,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
         if (newRowCount <= rowCount && newColumnCount <= columnCount) {
             return copy(0, newRowCount, 0, newColumnCount);
         } else {
-            final boolean fillDefaultValue = defaultValueForNewCell != SHORT_0;
+            final boolean fillDefaultValue = defaultValue != SHORT_0;
             final short[][] result = new short[newRowCount][];
 
             for (int i = 0; i < newRowCount; i++) {
@@ -1334,9 +1334,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
 
                 if (fillDefaultValue) {
                     if (i >= rowCount) {
-                        N.fill(result[i], defaultValueForNewCell);
+                        N.fill(result[i], defaultValue);
                     } else if (columnCount < newColumnCount) {
-                        N.fill(result[i], columnCount, newColumnCount, defaultValueForNewCell);
+                        N.fill(result[i], columnCount, newColumnCount, defaultValue);
                     }
                 }
             }
@@ -1352,12 +1352,12 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p>Unlike {@link #resize(int, int)}, this method <b>never truncates</b>: the entire content
      * of this matrix is always present in the result. Each parameter specifies how many rows or
      * columns of padding to add on that edge. The original matrix occupies the interior starting
-     * at row {@code toUp}, column {@code toLeft}.</p>
+     * at row {@code padTop}, column {@code padLeft}.</p>
      *
      * <p>Result dimensions:
      * <ul>
-     *   <li>Rows: {@code toUp + this.rowCount + toDown}</li>
-     *   <li>Columns: {@code toLeft + this.columnCount + toRight}</li>
+     *   <li>Rows: {@code padTop + this.rowCount + padBottom}</li>
+     *   <li>Columns: {@code padLeft + this.columnCount + padRight}</li>
      * </ul>
      *
      * <p><b>Usage Examples:</b></p>
@@ -1377,32 +1377,33 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * //          [0, 0, 3, 4]]
      * }</pre>
      *
-     * @param toUp number of padding rows to add above the original matrix; must be {@code >= 0}
-     * @param toDown number of padding rows to add below the original matrix; must be {@code >= 0}
-     * @param toLeft number of padding columns to add to the left of the original matrix; must be {@code >= 0}
-     * @param toRight number of padding columns to add to the right of the original matrix; must be {@code >= 0}
-     * @return a new ShortMatrix with dimensions {@code (toUp + rowCount + toDown) × (toLeft + columnCount + toRight)}
+     * @param padTop number of padding rows to add above the original matrix; must be {@code >= 0}
+     * @param padBottom number of padding rows to add below the original matrix; must be {@code >= 0}
+     * @param padLeft number of padding columns to add to the left of the original matrix; must be {@code >= 0}
+     * @param padRight number of padding columns to add to the right of the original matrix; must be {@code >= 0}
+     * @return a new ShortMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
      * @throws IllegalArgumentException if any parameter is negative
      * @see #extend(int, int, int, int, short)
      * @see #resize(int, int)
      */
-    public ShortMatrix extend(final int toUp, final int toDown, final int toLeft, final int toRight) {
-        return extend(toUp, toDown, toLeft, toRight, SHORT_0);
+    @Override
+    public ShortMatrix extend(final int padTop, final int padBottom, final int padLeft, final int padRight) {
+        return extend(padTop, padBottom, padLeft, padRight, SHORT_0);
     }
 
     /**
      * Returns a new matrix formed by surrounding this matrix with padding on all four edges.
-     * New cells are filled with {@code defaultValueForNewCell}.
+     * New cells are filled with {@code defaultValue}.
      *
      * <p>Unlike {@link #resize(int, int, short)}, this method <b>never truncates</b>: the entire
      * content of this matrix is always present in the result. Each parameter specifies how many
      * rows or columns of padding to add on that edge. The original matrix occupies the interior
-     * starting at row {@code toUp}, column {@code toLeft}.</p>
+     * starting at row {@code padTop}, column {@code padLeft}.</p>
      *
      * <p>Result dimensions:
      * <ul>
-     *   <li>Rows: {@code toUp + this.rowCount + toDown}</li>
-     *   <li>Columns: {@code toLeft + this.columnCount + toRight}</li>
+     *   <li>Rows: {@code padTop + this.rowCount + padBottom}</li>
+     *   <li>Columns: {@code padLeft + this.columnCount + padRight}</li>
      * </ul>
      *
      * <p><b>Typical uses:</b> border padding in image/grid processing, adding margins around
@@ -1425,57 +1426,57 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * //          [0, 0, 3, 4]]
      * }</pre>
      *
-     * @param toUp number of padding rows to add above the original matrix; must be {@code >= 0}
-     * @param toDown number of padding rows to add below the original matrix; must be {@code >= 0}
-     * @param toLeft number of padding columns to add to the left of the original matrix; must be {@code >= 0}
-     * @param toRight number of padding columns to add to the right of the original matrix; must be {@code >= 0}
-     * @param defaultValueForNewCell the value to fill all new padding cells with
-     * @return a new ShortMatrix with dimensions {@code (toUp + rowCount + toDown) × (toLeft + columnCount + toRight)}
+     * @param padTop number of padding rows to add above the original matrix; must be {@code >= 0}
+     * @param padBottom number of padding rows to add below the original matrix; must be {@code >= 0}
+     * @param padLeft number of padding columns to add to the left of the original matrix; must be {@code >= 0}
+     * @param padRight number of padding columns to add to the right of the original matrix; must be {@code >= 0}
+     * @param defaultValue the value to fill all new padding cells with
+     * @return a new ShortMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
      * @throws IllegalArgumentException if any padding parameter is negative,
      *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
      * @see #extend(int, int, int, int)
      * @see #resize(int, int, short)
      */
-    public ShortMatrix extend(final int toUp, final int toDown, final int toLeft, final int toRight, final short defaultValueForNewCell)
+    public ShortMatrix extend(final int padTop, final int padBottom, final int padLeft, final int padRight, final short defaultValue)
             throws IllegalArgumentException {
-        N.checkArgument(toUp >= 0, MSG_NEGATIVE_DIMENSION, "toUp", toUp);
-        N.checkArgument(toDown >= 0, MSG_NEGATIVE_DIMENSION, "toDown", toDown);
-        N.checkArgument(toLeft >= 0, MSG_NEGATIVE_DIMENSION, "toLeft", toLeft);
-        N.checkArgument(toRight >= 0, MSG_NEGATIVE_DIMENSION, "toRight", toRight);
+        N.checkArgument(padTop >= 0, MSG_NEGATIVE_DIMENSION, "padTop", padTop);
+        N.checkArgument(padBottom >= 0, MSG_NEGATIVE_DIMENSION, "padBottom", padBottom);
+        N.checkArgument(padLeft >= 0, MSG_NEGATIVE_DIMENSION, "padLeft", padLeft);
+        N.checkArgument(padRight >= 0, MSG_NEGATIVE_DIMENSION, "padRight", padRight);
 
-        if (toUp == 0 && toDown == 0 && toLeft == 0 && toRight == 0) {
+        if (padTop == 0 && padBottom == 0 && padLeft == 0 && padRight == 0) {
             return copy();
         } else {
-            if ((long) toUp + rowCount + toDown > Integer.MAX_VALUE) {
-                throw new IllegalArgumentException("Result row count overflow: " + toUp + " + " + rowCount + " + " + toDown + " exceeds Integer.MAX_VALUE");
+            if ((long) padTop + rowCount + padBottom > Integer.MAX_VALUE) {
+                throw new IllegalArgumentException("Result row count overflow: " + padTop + " + " + rowCount + " + " + padBottom + " exceeds Integer.MAX_VALUE");
             }
 
-            if ((long) toLeft + columnCount + toRight > Integer.MAX_VALUE) {
+            if ((long) padLeft + columnCount + padRight > Integer.MAX_VALUE) {
                 throw new IllegalArgumentException(
-                        "Result column count overflow: " + toLeft + " + " + columnCount + " + " + toRight + " exceeds Integer.MAX_VALUE");
+                        "Result column count overflow: " + padLeft + " + " + columnCount + " + " + padRight + " exceeds Integer.MAX_VALUE");
             }
 
-            final int newRowCount = toUp + rowCount + toDown;
-            final int newColumnCount = toLeft + columnCount + toRight;
+            final int newRowCount = padTop + rowCount + padBottom;
+            final int newColumnCount = padLeft + columnCount + padRight;
             checkRepresentableShape(newRowCount, newColumnCount);
-            final boolean fillDefaultValue = defaultValueForNewCell != SHORT_0;
+            final boolean fillDefaultValue = defaultValue != SHORT_0;
             final short[][] result = new short[newRowCount][newColumnCount];
 
             for (int i = 0; i < newRowCount; i++) {
-                if (i >= toUp && i < toUp + rowCount) {
-                    N.copy(a[i - toUp], 0, result[i], toLeft, columnCount);
+                if (i >= padTop && i < padTop + rowCount) {
+                    N.copy(a[i - padTop], 0, result[i], padLeft, columnCount);
                 }
 
                 if (fillDefaultValue) {
-                    if (i < toUp || i >= toUp + rowCount) {
-                        N.fill(result[i], defaultValueForNewCell);
+                    if (i < padTop || i >= padTop + rowCount) {
+                        N.fill(result[i], defaultValue);
                     } else if (columnCount < newColumnCount) {
-                        if (toLeft > 0) {
-                            N.fill(result[i], 0, toLeft, defaultValueForNewCell);
+                        if (padLeft > 0) {
+                            N.fill(result[i], 0, padLeft, defaultValue);
                         }
 
-                        if (toRight > 0) {
-                            N.fill(result[i], columnCount + toLeft, newColumnCount, defaultValueForNewCell);
+                        if (padRight > 0) {
+                            N.fill(result[i], columnCount + padLeft, newColumnCount, defaultValue);
                         }
                     }
                 }

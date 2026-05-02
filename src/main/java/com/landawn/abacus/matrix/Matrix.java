@@ -366,13 +366,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @param val the value to set
+     * @param value the value to set
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
-     * @throws IllegalArgumentException if {@code val} is incompatible with the row's storage component type
+     * @throws IllegalArgumentException if {@code value} is incompatible with the row's storage component type
      */
-    public void set(final int rowIndex, final int columnIndex, final T val) {
-        ensureRowCanStore(rowIndex, val);
-        a[rowIndex][columnIndex] = val;
+    public void set(final int rowIndex, final int columnIndex, final T value) {
+        ensureRowCanStore(rowIndex, value);
+        a[rowIndex][columnIndex] = value;
     }
 
     /**
@@ -387,15 +387,15 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @param point the point containing row and column indices (must not be null)
-     * @param val the value to set
+     * @param value the value to set
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
-     * @throws IllegalArgumentException if {@code point} is {@code null}, or if {@code val} is incompatible with the row's storage component type
+     * @throws IllegalArgumentException if {@code point} is {@code null}, or if {@code value} is incompatible with the row's storage component type
      */
-    public void set(final Point point, final T val) {
+    public void set(final Point point, final T value) {
         N.checkArgNotNull(point, "point");
 
-        ensureRowCanStore(point.rowIndex(), val);
-        a[point.rowIndex()][point.columnIndex()] = val;
+        ensureRowCanStore(point.rowIndex(), value);
+        a[point.rowIndex()][point.columnIndex()] = value;
     }
 
     /**
@@ -1531,12 +1531,12 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * matrix.fill("default");      // Reset to default
      * }</pre>
      *
-     * @param val the value to fill the matrix with (can be null)
+     * @param value the value to fill the matrix with (can be null)
      */
-    public void fill(final T val) {
+    public void fill(final T value) {
         for (int i = 0; i < rowCount; i++) {
-            ensureRowCanStore(i, val);
-            N.fill(a[i], val);
+            ensureRowCanStore(i, value);
+            N.fill(a[i], value);
         }
     }
 
@@ -1741,12 +1741,12 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
     /**
      * Returns a new matrix whose dimensions are exactly {@code newRowCount × newColumnCount},
-     * anchored at the top-left corner of this matrix. New cells are filled with {@code defaultValueForNewCell}.
+     * anchored at the top-left corner of this matrix. New cells are filled with {@code defaultValue}.
      *
      * <ul>
      *   <li><b>If a dimension shrinks</b> — elements beyond the new boundary are discarded
      *       (excess rows removed from the bottom, excess columns removed from the right).</li>
-     *   <li><b>If a dimension grows</b> — new cells are filled with {@code defaultValueForNewCell}.</li>
+     *   <li><b>If a dimension grows</b> — new cells are filled with {@code defaultValue}.</li>
      *   <li><b>Mixed case</b> — each dimension is treated independently, so it is valid
      *       to grow rows while truncating columns, or vice versa.</li>
      * </ul>
@@ -1784,14 +1784,14 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param newRowCount the row count of the returned matrix; must be {@code >= 0}
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
-     * @param defaultValueForNewCell the value used to fill any newly created cells; may be {@code null}
+     * @param defaultValue the value used to fill any newly created cells; may be {@code null}
      * @return a new Matrix with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
      *         or if the resulting element count would overflow {@code Integer.MAX_VALUE}
      * @see #resize(int, int)
      * @see #extend(int, int, int, int, Object)
      */
-    public Matrix<T> resize(final int newRowCount, final int newColumnCount, final T defaultValueForNewCell) throws IllegalArgumentException {
+    public Matrix<T> resize(final int newRowCount, final int newColumnCount, final T defaultValue) throws IllegalArgumentException {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
         checkRepresentableShape(newRowCount, newColumnCount);
@@ -1803,7 +1803,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         if (newRowCount <= rowCount && newColumnCount <= columnCount) {
             return copy(0, newRowCount, 0, newColumnCount);
         } else {
-            final boolean fillDefaultValue = defaultValueForNewCell != null;
+            final boolean fillDefaultValue = defaultValue != null;
             final T[][] b = N.newArray(arrayType, newRowCount);
 
             for (int i = 0; i < newRowCount; i++) {
@@ -1811,9 +1811,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
                 if (fillDefaultValue) {
                     if (i >= rowCount) {
-                        N.fill(b[i], defaultValueForNewCell);
+                        N.fill(b[i], defaultValue);
                     } else if (columnCount < newColumnCount) {
-                        N.fill(b[i], columnCount, newColumnCount, defaultValueForNewCell);
+                        N.fill(b[i], columnCount, newColumnCount, defaultValue);
                     }
                 }
             }
@@ -1828,8 +1828,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p>The result dimensions are:
      * <ul>
-     *   <li>Rows: {@code toUp + this.rowCount + toDown}</li>
-     *   <li>Columns: {@code toLeft + this.columnCount + toRight}</li>
+     *   <li>Rows: {@code padTop + this.rowCount + padBottom}</li>
+     *   <li>Columns: {@code padLeft + this.columnCount + padRight}</li>
      * </ul>
      *
      * <p><b>Unlike {@link #resize(int, int)}, this method never truncates existing content.</b>
@@ -1851,28 +1851,29 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * //          [null, null, null, null]]
      * }</pre>
      *
-     * @param toUp number of rows to add above; must be {@code >= 0}
-     * @param toDown number of rows to add below; must be {@code >= 0}
-     * @param toLeft number of columns to add to the left; must be {@code >= 0}
-     * @param toRight number of columns to add to the right; must be {@code >= 0}
-     * @return a new Matrix with dimensions {@code (toUp+rowCount+toDown) × (toLeft+columnCount+toRight)}
+     * @param padTop number of rows to add above; must be {@code >= 0}
+     * @param padBottom number of rows to add below; must be {@code >= 0}
+     * @param padLeft number of columns to add to the left; must be {@code >= 0}
+     * @param padRight number of columns to add to the right; must be {@code >= 0}
+     * @return a new Matrix with dimensions {@code (padTop+rowCount+padBottom) × (padLeft+columnCount+padRight)}
      * @throws IllegalArgumentException if any padding parameter is negative,
      *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
      * @see #extend(int, int, int, int, Object)
      * @see #resize(int, int)
      */
-    public Matrix<T> extend(final int toUp, final int toDown, final int toLeft, final int toRight) {
-        return extend(toUp, toDown, toLeft, toRight, null);
+    @Override
+    public Matrix<T> extend(final int padTop, final int padBottom, final int padLeft, final int padRight) {
+        return extend(padTop, padBottom, padLeft, padRight, null);
     }
 
     /**
-     * Returns a new matrix formed by adding {@code defaultValueForNewCell}-filled padding around every edge
+     * Returns a new matrix formed by adding {@code defaultValue}-filled padding around every edge
      * of this matrix. The original content is preserved in its entirety at the interior of the result.
      *
      * <p>The result dimensions are:
      * <ul>
-     *   <li>Rows: {@code toUp + this.rowCount + toDown}</li>
-     *   <li>Columns: {@code toLeft + this.columnCount + toRight}</li>
+     *   <li>Rows: {@code padTop + this.rowCount + padBottom}</li>
+     *   <li>Columns: {@code padLeft + this.columnCount + padRight}</li>
      * </ul>
      *
      * <p><b>Unlike {@link #resize(int, int, Object)}, this method never truncates existing content.</b>
@@ -1898,59 +1899,59 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * //          [null, null, null, null]]
      * }</pre>
      *
-     * @param toUp number of rows to add above; must be {@code >= 0}
-     * @param toDown number of rows to add below; must be {@code >= 0}
-     * @param toLeft number of columns to add to the left; must be {@code >= 0}
-     * @param toRight number of columns to add to the right; must be {@code >= 0}
-     * @param defaultValueForNewCell the value used to fill all newly added cells; may be {@code null}
-     * @return a new Matrix with dimensions {@code (toUp+rowCount+toDown) × (toLeft+columnCount+toRight)}
+     * @param padTop number of rows to add above; must be {@code >= 0}
+     * @param padBottom number of rows to add below; must be {@code >= 0}
+     * @param padLeft number of columns to add to the left; must be {@code >= 0}
+     * @param padRight number of columns to add to the right; must be {@code >= 0}
+     * @param defaultValue the value used to fill all newly added cells; may be {@code null}
+     * @return a new Matrix with dimensions {@code (padTop+rowCount+padBottom) × (padLeft+columnCount+padRight)}
      * @throws IllegalArgumentException if any padding parameter is negative,
      *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
      * @see #extend(int, int, int, int)
      * @see #resize(int, int, Object)
      */
-    public Matrix<T> extend(final int toUp, final int toDown, final int toLeft, final int toRight, final T defaultValueForNewCell)
+    public Matrix<T> extend(final int padTop, final int padBottom, final int padLeft, final int padRight, final T defaultValue)
             throws IllegalArgumentException {
-        N.checkArgument(toUp >= 0, MSG_NEGATIVE_DIMENSION, "toUp", toUp);
-        N.checkArgument(toDown >= 0, MSG_NEGATIVE_DIMENSION, "toDown", toDown);
-        N.checkArgument(toLeft >= 0, MSG_NEGATIVE_DIMENSION, "toLeft", toLeft);
-        N.checkArgument(toRight >= 0, MSG_NEGATIVE_DIMENSION, "toRight", toRight);
+        N.checkArgument(padTop >= 0, MSG_NEGATIVE_DIMENSION, "padTop", padTop);
+        N.checkArgument(padBottom >= 0, MSG_NEGATIVE_DIMENSION, "padBottom", padBottom);
+        N.checkArgument(padLeft >= 0, MSG_NEGATIVE_DIMENSION, "padLeft", padLeft);
+        N.checkArgument(padRight >= 0, MSG_NEGATIVE_DIMENSION, "padRight", padRight);
 
-        if (toUp == 0 && toDown == 0 && toLeft == 0 && toRight == 0) {
+        if (padTop == 0 && padBottom == 0 && padLeft == 0 && padRight == 0) {
             return copy();
         } else {
-            if ((long) toUp + rowCount + toDown > Integer.MAX_VALUE) {
-                throw new IllegalArgumentException("Result row count overflow: " + toUp + " + " + rowCount + " + " + toDown + " exceeds Integer.MAX_VALUE");
+            if ((long) padTop + rowCount + padBottom > Integer.MAX_VALUE) {
+                throw new IllegalArgumentException("Result row count overflow: " + padTop + " + " + rowCount + " + " + padBottom + " exceeds Integer.MAX_VALUE");
             }
 
-            if ((long) toLeft + columnCount + toRight > Integer.MAX_VALUE) {
+            if ((long) padLeft + columnCount + padRight > Integer.MAX_VALUE) {
                 throw new IllegalArgumentException(
-                        "Result column count overflow: " + toLeft + " + " + columnCount + " + " + toRight + " exceeds Integer.MAX_VALUE");
+                        "Result column count overflow: " + padLeft + " + " + columnCount + " + " + padRight + " exceeds Integer.MAX_VALUE");
             }
 
-            final int newRowCount = toUp + rowCount + toDown;
-            final int newColumnCount = toLeft + columnCount + toRight;
+            final int newRowCount = padTop + rowCount + padBottom;
+            final int newColumnCount = padLeft + columnCount + padRight;
             checkRepresentableShape(newRowCount, newColumnCount);
-            final boolean fillDefaultValue = defaultValueForNewCell != null;
+            final boolean fillDefaultValue = defaultValue != null;
             final T[][] b = N.newArray(arrayType, newRowCount);
 
             for (int i = 0; i < newRowCount; i++) {
                 b[i] = N.newArray(elementType, newColumnCount);
 
-                if (i >= toUp && i < toUp + rowCount) {
-                    N.copy(a[i - toUp], 0, b[i], toLeft, columnCount);
+                if (i >= padTop && i < padTop + rowCount) {
+                    N.copy(a[i - padTop], 0, b[i], padLeft, columnCount);
                 }
 
                 if (fillDefaultValue) {
-                    if (i < toUp || i >= toUp + rowCount) {
-                        N.fill(b[i], defaultValueForNewCell);
+                    if (i < padTop || i >= padTop + rowCount) {
+                        N.fill(b[i], defaultValue);
                     } else if (columnCount < newColumnCount) {
-                        if (toLeft > 0) {
-                            N.fill(b[i], 0, toLeft, defaultValueForNewCell);
+                        if (padLeft > 0) {
+                            N.fill(b[i], 0, padLeft, defaultValue);
                         }
 
-                        if (toRight > 0) {
-                            N.fill(b[i], columnCount + toLeft, newColumnCount, defaultValueForNewCell);
+                        if (padRight > 0) {
+                            N.fill(b[i], columnCount + padLeft, newColumnCount, defaultValue);
                         }
                     }
                 }

@@ -43,10 +43,10 @@ public final class Matrices {
 
     static final Logger logger = LoggerFactory.getLogger(Matrices.class);
 
-    static final int MIN_COUNT_FOR_DOUBLE_PIPE = 8192;
+    static final int MIN_COUNT_FOR_PARALLEL = 8192;
 
-    static final boolean IS_DOUBLE_PIPE_STREAM_SUPPORTED;
-    static final ThreadLocal<ParallelMode> DOUBLE_PIPE_MODE_TL = ThreadLocal.withInitial(() -> ParallelMode.AUTO);
+    static final boolean IS_PARALLEL_STREAM_SUPPORTED;
+    static final ThreadLocal<ParallelMode> PARALLEL_MODE_TL = ThreadLocal.withInitial(() -> ParallelMode.AUTO);
 
     static {
         boolean tmp = false;
@@ -60,7 +60,7 @@ public final class Matrices {
             // ignore.
         }
 
-        IS_DOUBLE_PIPE_STREAM_SUPPORTED = tmp;
+        IS_PARALLEL_STREAM_SUPPORTED = tmp;
     }
 
     private Matrices() {
@@ -96,7 +96,7 @@ public final class Matrices {
      * @see ParallelMode
      */
     public static ParallelMode getParallelMode() {
-        return DOUBLE_PIPE_MODE_TL.get();
+        return PARALLEL_MODE_TL.get();
     }
 
     /**
@@ -138,7 +138,7 @@ public final class Matrices {
     public static void setParallelMode(final ParallelMode parallelMode) throws IllegalArgumentException {
         N.checkArgNotNull(parallelMode);
 
-        DOUBLE_PIPE_MODE_TL.set(parallelMode);
+        PARALLEL_MODE_TL.set(parallelMode);
     }
 
     /**
@@ -163,15 +163,15 @@ public final class Matrices {
      * }
      * }</pre>
      *
-     * @param x the matrix to evaluate for parallelization, must not be {@code null}
+     * @param m the matrix to evaluate for parallelization, must not be {@code null}
      * @return {@code true} if parallel processing should be used for this matrix; {@code false} for sequential processing
      * @throws IllegalArgumentException if {@code x} is {@code null}
      * @see #isParallelizable(AbstractMatrix, long)
      * @see #setParallelMode(ParallelMode)
      */
-    public static boolean isParallelizable(final AbstractMatrix<?, ?, ?, ?, ?> x) {
-        N.checkArgNotNull(x, "x");
-        return isParallelizable(x, x.elementCount);
+    public static boolean isParallelizable(final AbstractMatrix<?, ?, ?, ?, ?> m) {
+        N.checkArgNotNull(m, "x");
+        return isParallelizable(m, m.elementCount);
     }
 
     /**
@@ -201,17 +201,17 @@ public final class Matrices {
      * // Returns true only if settings allow and count >= 8192
      * }</pre>
      *
-     * @param x the matrix being evaluated (not used in the parallelization decision, but validated for non-null)
+     * @param m the matrix being evaluated (not used in the parallelization decision, but validated for non-null)
      * @param count the number of elements to process; typically the total element count or a subset being operated on
      * @return {@code true} if parallel processing should be used; {@code false} for sequential processing
      * @throws IllegalArgumentException if {@code x} is {@code null}
      * @see #setParallelMode(ParallelMode)
      * @see ParallelMode
      */
-    public static boolean isParallelizable(@SuppressWarnings("unused") final AbstractMatrix<?, ?, ?, ?, ?> x, final long count) { // NOSONAR
-        N.checkArgNotNull(x, "x");
-        return IS_DOUBLE_PIPE_STREAM_SUPPORTED && (Matrices.DOUBLE_PIPE_MODE_TL.get() == ParallelMode.FORCE_ON
-                || (Matrices.DOUBLE_PIPE_MODE_TL.get() == ParallelMode.AUTO && count >= MIN_COUNT_FOR_DOUBLE_PIPE));
+    public static boolean isParallelizable(@SuppressWarnings("unused") final AbstractMatrix<?, ?, ?, ?, ?> m, final long count) { // NOSONAR
+        N.checkArgNotNull(m, "x");
+        return IS_PARALLEL_STREAM_SUPPORTED && (Matrices.PARALLEL_MODE_TL.get() == ParallelMode.FORCE_ON
+                || (Matrices.PARALLEL_MODE_TL.get() == ParallelMode.AUTO && count >= MIN_COUNT_FOR_PARALLEL));
     }
 
     private static long saturatedMultiply(final long left, final long right) {

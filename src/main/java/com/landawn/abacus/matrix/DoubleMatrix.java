@@ -494,11 +494,11 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @param val the value to set
+     * @param value the value to set
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
-    public void set(final int rowIndex, final int columnIndex, final double val) {
-        a[rowIndex][columnIndex] = val;
+    public void set(final int rowIndex, final int columnIndex, final double value) {
+        a[rowIndex][columnIndex] = value;
     }
 
     /**
@@ -514,15 +514,15 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @param point the point containing row and column indices (must not be null)
-     * @param val the new double value to set at the specified point
+     * @param value the new double value to set at the specified point
      * @throws IllegalArgumentException if {@code point} is {@code null}
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
      * @see #set(int, int, double)
      */
-    public void set(final Point point, final double val) {
+    public void set(final Point point, final double value) {
         N.checkArgNotNull(point, "point");
 
-        a[point.rowIndex()][point.columnIndex()] = val;
+        a[point.rowIndex()][point.columnIndex()] = value;
     }
 
     /**
@@ -1205,17 +1205,17 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * // stringMatrix is [["1.23", "4.56"], ["7.89", "0.12"]]
      * }</pre>
      *
-     * @param <T> the type of elements in the resulting matrix
+     * @param <R> the type of elements in the resulting matrix
      * @param <E> the exception type that the function may throw
-     * @param mapper the mapping function that converts each double element to type T; must not be null
+     * @param mapper the mapping function that converts each double element to type R; must not be null
      * @param targetElementType the class object representing the target element type (used for array creation); must not be null
-     * @return a new Matrix&lt;T&gt; with the mapped values (same dimensions as the original)
+     * @return a new Matrix&lt;R&gt; with the mapped values (same dimensions as the original)
      * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null}
      * @throws E if the function throws an exception
      */
-    public <T, E extends Exception> Matrix<T> mapToObj(final Throwables.DoubleFunction<? extends T, E> mapper, final Class<T> targetElementType) throws E {
+    public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.DoubleFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E {
         N.checkArgNotNull(mapper, "mapper");
-        final T[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
+        final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
@@ -1238,11 +1238,11 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * // Creates a matrix filled with 1.0: [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]
      * }</pre>
      *
-     * @param val the value to fill the matrix with
+     * @param value the value to fill the matrix with
      */
-    public void fill(final double val) {
+    public void fill(final double value) {
         for (int i = 0; i < rowCount; i++) {
-            N.fill(a[i], val);
+            N.fill(a[i], value);
         }
     }
 
@@ -1447,12 +1447,12 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
 
     /**
      * Returns a new matrix whose dimensions are exactly {@code newRowCount × newColumnCount},
-     * anchored at the top-left corner of this matrix. New cells are filled with {@code defaultValueForNewCell}.
+     * anchored at the top-left corner of this matrix. New cells are filled with {@code defaultValue}.
      *
      * <ul>
      *   <li><b>If a dimension shrinks</b> — elements beyond the new boundary are discarded
      *       (excess rows removed from the bottom, excess columns removed from the right).</li>
-     *   <li><b>If a dimension grows</b> — new cells are filled with {@code defaultValueForNewCell}.</li>
+     *   <li><b>If a dimension grows</b> — new cells are filled with {@code defaultValue}.</li>
      *   <li><b>Mixed case</b> — each dimension is treated independently, so it is valid
      *       to grow rows while truncating columns, or vice versa.</li>
      * </ul>
@@ -1490,13 +1490,13 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * @param newRowCount the row count of the returned matrix; must be {@code >= 0}
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
-     * @param defaultValueForNewCell the double value used to fill any newly created cells
+     * @param defaultValue the double value used to fill any newly created cells
      * @return a new DoubleMatrix with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative
      * @see #resize(int, int)
      * @see #extend(int, int, int, int, double)
      */
-    public DoubleMatrix resize(final int newRowCount, final int newColumnCount, final double defaultValueForNewCell) throws IllegalArgumentException {
+    public DoubleMatrix resize(final int newRowCount, final int newColumnCount, final double defaultValue) throws IllegalArgumentException {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
         checkRepresentableShape(newRowCount, newColumnCount);
@@ -1508,7 +1508,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
         if (newRowCount <= rowCount && newColumnCount <= columnCount) {
             return copy(0, newRowCount, 0, newColumnCount);
         } else {
-            final boolean fillDefaultValue = Double.doubleToRawLongBits(defaultValueForNewCell) != 0;
+            final boolean fillDefaultValue = Double.doubleToRawLongBits(defaultValue) != 0;
             final double[][] b = new double[newRowCount][];
 
             for (int i = 0; i < newRowCount; i++) {
@@ -1516,9 +1516,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
 
                 if (fillDefaultValue) {
                     if (i >= rowCount) {
-                        N.fill(b[i], defaultValueForNewCell);
+                        N.fill(b[i], defaultValue);
                     } else if (columnCount < newColumnCount) {
-                        N.fill(b[i], columnCount, newColumnCount, defaultValueForNewCell);
+                        N.fill(b[i], columnCount, newColumnCount, defaultValue);
                     }
                 }
             }
@@ -1533,8 +1533,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * <p>The result dimensions are:
      * <ul>
-     *   <li>Rows: {@code toUp + this.rowCount + toDown}</li>
-     *   <li>Columns: {@code toLeft + this.columnCount + toRight}</li>
+     *   <li>Rows: {@code padTop + this.rowCount + padBottom}</li>
+     *   <li>Columns: {@code padLeft + this.columnCount + padRight}</li>
      * </ul>
      *
      * <p><b>Unlike {@link #resize(int, int)}, this method never truncates existing content.</b>
@@ -1556,27 +1556,28 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * //          [0.0, 0.0, 0.0, 0.0]]
      * }</pre>
      *
-     * @param toUp number of rows to add above; must be {@code >= 0}
-     * @param toDown number of rows to add below; must be {@code >= 0}
-     * @param toLeft number of columns to add to the left; must be {@code >= 0}
-     * @param toRight number of columns to add to the right; must be {@code >= 0}
-     * @return a new DoubleMatrix with dimensions {@code (toUp+rowCount+toDown) × (toLeft+columnCount+toRight)}
+     * @param padTop number of rows to add above; must be {@code >= 0}
+     * @param padBottom number of rows to add below; must be {@code >= 0}
+     * @param padLeft number of columns to add to the left; must be {@code >= 0}
+     * @param padRight number of columns to add to the right; must be {@code >= 0}
+     * @return a new DoubleMatrix with dimensions {@code (padTop+rowCount+padBottom) × (padLeft+columnCount+padRight)}
      * @throws IllegalArgumentException if any padding parameter is negative
      * @see #extend(int, int, int, int, double)
      * @see #resize(int, int)
      */
-    public DoubleMatrix extend(final int toUp, final int toDown, final int toLeft, final int toRight) {
-        return extend(toUp, toDown, toLeft, toRight, 0);
+    @Override
+    public DoubleMatrix extend(final int padTop, final int padBottom, final int padLeft, final int padRight) {
+        return extend(padTop, padBottom, padLeft, padRight, 0);
     }
 
     /**
-     * Returns a new matrix formed by adding {@code defaultValueForNewCell}-filled padding around every edge
+     * Returns a new matrix formed by adding {@code defaultValue}-filled padding around every edge
      * of this matrix. The original content is preserved in its entirety at the interior of the result.
      *
      * <p>The result dimensions are:
      * <ul>
-     *   <li>Rows: {@code toUp + this.rowCount + toDown}</li>
-     *   <li>Columns: {@code toLeft + this.columnCount + toRight}</li>
+     *   <li>Rows: {@code padTop + this.rowCount + padBottom}</li>
+     *   <li>Columns: {@code padLeft + this.columnCount + padRight}</li>
      * </ul>
      *
      * <p><b>Unlike {@link #resize(int, int, double)}, this method never truncates existing content.</b>
@@ -1602,57 +1603,57 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * //          [0.0, 0.0, 0.0, 0.0]]
      * }</pre>
      *
-     * @param toUp number of rows to add above; must be {@code >= 0}
-     * @param toDown number of rows to add below; must be {@code >= 0}
-     * @param toLeft number of columns to add to the left; must be {@code >= 0}
-     * @param toRight number of columns to add to the right; must be {@code >= 0}
-     * @param defaultValueForNewCell the double value used to fill all newly added cells
-     * @return a new DoubleMatrix with dimensions {@code (toUp+rowCount+toDown) × (toLeft+columnCount+toRight)}
+     * @param padTop number of rows to add above; must be {@code >= 0}
+     * @param padBottom number of rows to add below; must be {@code >= 0}
+     * @param padLeft number of columns to add to the left; must be {@code >= 0}
+     * @param padRight number of columns to add to the right; must be {@code >= 0}
+     * @param defaultValue the double value used to fill all newly added cells
+     * @return a new DoubleMatrix with dimensions {@code (padTop+rowCount+padBottom) × (padLeft+columnCount+padRight)}
      * @throws IllegalArgumentException if any padding parameter is negative,
      *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
      * @see #extend(int, int, int, int)
      * @see #resize(int, int, double)
      */
-    public DoubleMatrix extend(final int toUp, final int toDown, final int toLeft, final int toRight, final double defaultValueForNewCell)
+    public DoubleMatrix extend(final int padTop, final int padBottom, final int padLeft, final int padRight, final double defaultValue)
             throws IllegalArgumentException {
-        N.checkArgument(toUp >= 0, MSG_NEGATIVE_DIMENSION, "toUp", toUp);
-        N.checkArgument(toDown >= 0, MSG_NEGATIVE_DIMENSION, "toDown", toDown);
-        N.checkArgument(toLeft >= 0, MSG_NEGATIVE_DIMENSION, "toLeft", toLeft);
-        N.checkArgument(toRight >= 0, MSG_NEGATIVE_DIMENSION, "toRight", toRight);
+        N.checkArgument(padTop >= 0, MSG_NEGATIVE_DIMENSION, "padTop", padTop);
+        N.checkArgument(padBottom >= 0, MSG_NEGATIVE_DIMENSION, "padBottom", padBottom);
+        N.checkArgument(padLeft >= 0, MSG_NEGATIVE_DIMENSION, "padLeft", padLeft);
+        N.checkArgument(padRight >= 0, MSG_NEGATIVE_DIMENSION, "padRight", padRight);
 
-        if (toUp == 0 && toDown == 0 && toLeft == 0 && toRight == 0) {
+        if (padTop == 0 && padBottom == 0 && padLeft == 0 && padRight == 0) {
             return copy();
         } else {
-            if ((long) toUp + rowCount + toDown > Integer.MAX_VALUE) {
-                throw new IllegalArgumentException("Result row count overflow: " + toUp + " + " + rowCount + " + " + toDown + " exceeds Integer.MAX_VALUE");
+            if ((long) padTop + rowCount + padBottom > Integer.MAX_VALUE) {
+                throw new IllegalArgumentException("Result row count overflow: " + padTop + " + " + rowCount + " + " + padBottom + " exceeds Integer.MAX_VALUE");
             }
 
-            if ((long) toLeft + columnCount + toRight > Integer.MAX_VALUE) {
+            if ((long) padLeft + columnCount + padRight > Integer.MAX_VALUE) {
                 throw new IllegalArgumentException(
-                        "Result column count overflow: " + toLeft + " + " + columnCount + " + " + toRight + " exceeds Integer.MAX_VALUE");
+                        "Result column count overflow: " + padLeft + " + " + columnCount + " + " + padRight + " exceeds Integer.MAX_VALUE");
             }
 
-            final int newRowCount = toUp + rowCount + toDown;
-            final int newColumnCount = toLeft + columnCount + toRight;
+            final int newRowCount = padTop + rowCount + padBottom;
+            final int newColumnCount = padLeft + columnCount + padRight;
             checkRepresentableShape(newRowCount, newColumnCount);
-            final boolean fillDefaultValue = Double.doubleToRawLongBits(defaultValueForNewCell) != 0;
+            final boolean fillDefaultValue = Double.doubleToRawLongBits(defaultValue) != 0;
             final double[][] b = new double[newRowCount][newColumnCount];
 
             for (int i = 0; i < newRowCount; i++) {
-                if (i >= toUp && i < toUp + rowCount) {
-                    N.copy(a[i - toUp], 0, b[i], toLeft, columnCount);
+                if (i >= padTop && i < padTop + rowCount) {
+                    N.copy(a[i - padTop], 0, b[i], padLeft, columnCount);
                 }
 
                 if (fillDefaultValue) {
-                    if (i < toUp || i >= toUp + rowCount) {
-                        N.fill(b[i], defaultValueForNewCell);
+                    if (i < padTop || i >= padTop + rowCount) {
+                        N.fill(b[i], defaultValue);
                     } else if (columnCount < newColumnCount) {
-                        if (toLeft > 0) {
-                            N.fill(b[i], 0, toLeft, defaultValueForNewCell);
+                        if (padLeft > 0) {
+                            N.fill(b[i], 0, padLeft, defaultValue);
                         }
 
-                        if (toRight > 0) {
-                            N.fill(b[i], columnCount + toLeft, newColumnCount, defaultValueForNewCell);
+                        if (padRight > 0) {
+                            N.fill(b[i], columnCount + padLeft, newColumnCount, defaultValue);
                         }
                     }
                 }

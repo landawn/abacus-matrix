@@ -767,39 +767,39 @@ class BooleanMatrixTest extends TestBase {
     }
 
     @Test
-    public void testAll() {
+    public void testAllTrue() {
         BooleanMatrix allTrue = BooleanMatrix.of(new boolean[][] { { true, true }, { true, true } });
-        assertTrue(allTrue.all());
+        assertTrue(allTrue.allTrue());
     }
 
     @Test
-    public void testAll_WithFalse() {
+    public void testAllTrue_WithFalse() {
         BooleanMatrix mixed = BooleanMatrix.of(new boolean[][] { { true, false }, { true, true } });
-        assertFalse(mixed.all());
+        assertFalse(mixed.allTrue());
     }
 
     @Test
-    public void testAll_Empty() {
+    public void testAllTrue_Empty() {
         BooleanMatrix empty = BooleanMatrix.empty();
-        assertTrue(empty.all());
+        assertTrue(empty.allTrue());
     }
 
     @Test
-    public void testAny() {
+    public void testAnyTrue() {
         BooleanMatrix mixed = BooleanMatrix.of(new boolean[][] { { false, true }, { false, false } });
-        assertTrue(mixed.any());
+        assertTrue(mixed.anyTrue());
     }
 
     @Test
-    public void testAny_AllFalse() {
+    public void testAnyTrue_AllFalse() {
         BooleanMatrix allFalse = BooleanMatrix.of(new boolean[][] { { false, false }, { false, false } });
-        assertFalse(allFalse.any());
+        assertFalse(allFalse.anyTrue());
     }
 
     @Test
-    public void testAny_Empty() {
+    public void testAnyTrue_Empty() {
         BooleanMatrix empty = BooleanMatrix.empty();
-        assertFalse(empty.any());
+        assertFalse(empty.anyTrue());
     }
 
     @Test

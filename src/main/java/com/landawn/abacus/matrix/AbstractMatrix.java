@@ -43,9 +43,9 @@ import com.landawn.abacus.util.stream.Stream;
  * @param <PL> the flattened-view list type
  * @param <ES> the element stream type
  * @param <RS> the row or column stream type
- * @param <X> the concrete matrix type used for fluent return values
+ * @param <M> the concrete matrix type used for fluent return values
  */
-public abstract sealed class AbstractMatrix<A, PL, ES, RS, X extends AbstractMatrix<A, PL, ES, RS, X>>
+public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMatrix<A, PL, ES, RS, M>>
         permits BooleanMatrix, CharMatrix, ByteMatrix, ShortMatrix, DoubleMatrix, FloatMatrix, IntMatrix, LongMatrix, Matrix {
 
     protected static final String ARRAY_PRINT_SEPARATOR = IOUtil.LINE_SEPARATOR_UNIX;
@@ -449,7 +449,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, X extends AbstractMat
      *
      * @return a new matrix that is a copy of this matrix with the same dimensions and values
      */
-    public abstract X copy();
+    public abstract M copy();
 
     /**
      * Returns a copy of a row range from this matrix.
@@ -473,7 +473,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, X extends AbstractMat
      * @return a new matrix containing the specified rows with dimensions (toRowIndex - fromRowIndex) × columnCount
      * @throws IndexOutOfBoundsException if fromRowIndex &lt; 0, toRowIndex &gt; rowCount, or fromRowIndex &gt; toRowIndex
      */
-    public abstract X copy(int fromRowIndex, int toRowIndex);
+    public abstract M copy(int fromRowIndex, int toRowIndex);
 
     /**
      * Returns a copy of a rectangular region from this matrix.
@@ -500,7 +500,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, X extends AbstractMat
      *         (toRowIndex - fromRowIndex) × (toColumnIndex - fromColumnIndex)
      * @throws IndexOutOfBoundsException if any index is out of bounds, fromRowIndex &gt; toRowIndex, or fromColumnIndex &gt; toColumnIndex
      */
-    public abstract X copy(int fromRowIndex, int toRowIndex, int fromColumnIndex, int toColumnIndex);
+    public abstract M copy(int fromRowIndex, int toRowIndex, int fromColumnIndex, int toColumnIndex);
 
     /**
      * Returns a new matrix that is this matrix rotated 90 degrees clockwise.
@@ -524,7 +524,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, X extends AbstractMat
      *
      * @return a new matrix that is this matrix rotated 90 degrees clockwise, with dimensions columnCount x rowCount
      */
-    public abstract X rotate90();
+    public abstract M rotate90();
 
     /**
      * Returns a new matrix that is this matrix rotated 180 degrees clockwise.
@@ -550,7 +550,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, X extends AbstractMat
      *
      * @return a new matrix that is this matrix rotated 180 degrees clockwise, with the same dimensions (rowCount x columnCount)
      */
-    public abstract X rotate180();
+    public abstract M rotate180();
 
     /**
      * Returns a new matrix that is this matrix rotated 270 degrees clockwise (or equivalently, 90 degrees counter-clockwise).
@@ -576,7 +576,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, X extends AbstractMat
      *
      * @return a new matrix that is this matrix rotated 270 degrees clockwise, with dimensions columnCount x rowCount
      */
-    public abstract X rotate270();
+    public abstract M rotate270();
 
     /**
      * Returns a new matrix that is the transpose of this matrix.
@@ -604,7 +604,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, X extends AbstractMat
      *
      * @return a new matrix that is the transpose of this matrix, with dimensions columnCount x rowCount
      */
-    public abstract X transpose();
+    public abstract M transpose();
 
     /**
      * Returns a new matrix with the elements of this matrix rearranged into the specified number of columns.
@@ -629,7 +629,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, X extends AbstractMat
      * @return a new matrix with the specified number of columns
      * @throws IllegalArgumentException if newColumnCount &lt;= 0
      */
-    public X reshape(final int newColumnCount) {
+    public M reshape(final int newColumnCount) {
         N.checkArgument(newColumnCount > 0, "newColumnCount must be positive, but got: {}", newColumnCount);
 
         final long newRowCount = elementCount % newColumnCount == 0 ? elementCount / newColumnCount : elementCount / newColumnCount + 1;
@@ -666,7 +666,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, X extends AbstractMat
      * @return a new matrix with the specified dimensions (newRowCount × newColumnCount)
      * @throws IllegalArgumentException if newRowCount &lt; 0 or newColumnCount &lt; 0, or if the new shape is too small to hold all elements
      */
-    public abstract X reshape(int newRowCount, int newColumnCount);
+    public abstract M reshape(int newRowCount, int newColumnCount);
 
     /**
      * Returns {@code true} if this matrix has the same shape (dimensions) as the specified matrix.
@@ -686,13 +686,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, X extends AbstractMat
      * boolean sameShape2 = m1.isSameShape(m3);   // Returns false (2×2 vs 2×3)
      * }</pre>
      *
-     * @param x the matrix to compare with
+     * @param m the matrix to compare with
      * @return {@code true} if both matrices have the same dimensions, {@code false} otherwise
      * @throws IllegalArgumentException if {@code x} is {@code null}
      */
-    public boolean isSameShape(final X x) {
-        N.checkArgNotNull(x, "x");
-        return rowCount == x.rowCount && columnCount == x.columnCount;
+    public boolean isSameShape(final M m) {
+        N.checkArgNotNull(m, "x");
+        return rowCount == m.rowCount && columnCount == m.columnCount;
     }
 
     /**
@@ -723,7 +723,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, X extends AbstractMat
      * @throws IllegalArgumentException if rowRepeats &lt; 1 or columnRepeats &lt; 1
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">MATLAB repelem function</a>
      */
-    public abstract X repeatElements(int rowRepeats, int columnRepeats);
+    public abstract M repeatElements(int rowRepeats, int columnRepeats);
 
     /**
      * Returns a new matrix formed by tiling this matrix the specified number of times in both dimensions.
@@ -752,7 +752,31 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, X extends AbstractMat
      * @throws IllegalArgumentException if rowRepeats &lt; 1 or columnRepeats &lt; 1
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
-    public abstract X repeatMatrix(int rowRepeats, int columnRepeats);
+    public abstract M repeatMatrix(int rowRepeats, int columnRepeats);
+
+    /**
+     * Returns a new matrix grown by the specified non-negative pad widths on each side.
+     * Newly introduced cells are filled with the type's default value (e.g. {@code 0} for primitives,
+     * {@code null} for object matrices). The original matrix is not modified.
+     *
+     * <p>The resulting matrix has dimensions
+     * {@code (padTop + rowCount + padBottom) x (padLeft + columnCount + padRight)}.</p>
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
+     * IntMatrix padded = matrix.extend(1, 1, 1, 1);
+     * // padded is 4x4 with original 2x2 in the center, surrounded by 0s
+     * }</pre>
+     *
+     * @param padTop number of rows to add above the matrix (must be &gt;= 0)
+     * @param padBottom number of rows to add below the matrix (must be &gt;= 0)
+     * @param padLeft number of columns to add to the left of the matrix (must be &gt;= 0)
+     * @param padRight number of columns to add to the right of the matrix (must be &gt;= 0)
+     * @return a new matrix grown by the specified pad widths, with new cells filled with the type's default value
+     * @throws IllegalArgumentException if any pad value is negative or if the resulting dimensions overflow {@code Integer.MAX_VALUE}
+     */
+    public abstract M extend(int padTop, int padBottom, int padLeft, int padRight);
 
     /**
      * Flattens this matrix into a one-dimensional list.
@@ -925,8 +949,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, X extends AbstractMat
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the action throws an exception
      */
-    public <E extends Exception> void forEachIndices(final Throwables.BiIntObjConsumer<X, E> action) throws E {
-        final X matrix = (X) this;
+    public <E extends Exception> void forEachIndices(final Throwables.BiIntObjConsumer<M, E> action) throws E {
+        final M matrix = (M) this;
         N.checkArgNotNull(action, "action");
 
         if (Matrices.isParallelizable(this)) {
@@ -978,12 +1002,12 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, X extends AbstractMat
      * @throws E if the action throws an exception
      */
     public <E extends Exception> void forEachIndices(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
-            final Throwables.BiIntObjConsumer<X, E> action) throws IndexOutOfBoundsException, E {
+            final Throwables.BiIntObjConsumer<M, E> action) throws IndexOutOfBoundsException, E {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
         N.checkArgNotNull(action, "action");
 
-        final X matrix = (X) this;
+        final M matrix = (M) this;
 
         if (Matrices.isParallelizable(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
             final Throwables.IntBiConsumer<E> elementAction = (i, j) -> action.accept(i, j, matrix);
@@ -1714,9 +1738,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, X extends AbstractMat
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the action throws an exception
      */
-    public <E extends Exception> void accept(final Throwables.Consumer<? super X, E> action) throws E {
+    public <E extends Exception> void accept(final Throwables.Consumer<? super M, E> action) throws E {
         N.checkArgNotNull(action, "action");
-        action.accept((X) this);
+        action.accept((M) this);
     }
 
     /**
@@ -1739,14 +1763,14 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, X extends AbstractMat
      *
      * @param <R> the result type of the function
      * @param <E> the type of exception that the function might throw
-     * @param func the function to apply to this matrix
+     * @param mapper the function to apply to this matrix
      * @return the result of applying the function to this matrix
-     * @throws IllegalArgumentException if {@code func} is {@code null}
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
      */
-    public <R, E extends Exception> R apply(final Throwables.Function<? super X, R, E> func) throws E {
-        N.checkArgNotNull(func, "func");
-        return func.apply((X) this);
+    public <R, E extends Exception> R apply(final Throwables.Function<? super M, R, E> mapper) throws E {
+        N.checkArgNotNull(mapper, "mapper");
+        return mapper.apply((M) this);
     }
 
     /**
@@ -1767,7 +1791,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, X extends AbstractMat
      * @param x the matrix to compare shape with
      * @throws IllegalArgumentException if the matrices have different row counts or column counts
      */
-    protected void checkSameShape(final X x) {
+    protected void checkSameShape(final M x) {
         N.checkArgument(this.isSameShape(x), MSG_SHAPE_MISMATCH, rowCount, columnCount, x.rowCount, x.columnCount);
     }
 
