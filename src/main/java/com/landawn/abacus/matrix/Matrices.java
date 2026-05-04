@@ -746,7 +746,7 @@ public final class Matrices {
         final int columnCount = toColumnIndex - fromColumnIndex;
 
         if (rowCount <= columnCount) {
-            return IntStream.range(fromRowIndex, toRowIndex).transform(s -> inParallel ? s.parallel() : s).flatmap(i -> {
+            return IntStream.range(fromRowIndex, toRowIndex).transform(s -> inParallel ? s.parallel() : s).flatMapArray(i -> {
                 final int[] ret = new int[columnCount];
 
                 try {
@@ -760,7 +760,7 @@ public final class Matrices {
                 return ret;
             });
         } else {
-            return IntStream.range(fromColumnIndex, toColumnIndex).transform(s -> inParallel ? s.parallel() : s).flatmap(j -> {
+            return IntStream.range(fromColumnIndex, toColumnIndex).transform(s -> inParallel ? s.parallel() : s).flatMapArray(j -> {
                 final int[] ret = new int[rowCount];
 
                 try {
