@@ -533,13 +533,13 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
-     * u.OptionalDouble value = matrix.valueAbove(1, 0);   // Returns u.OptionalDouble.of(1.0)
-     * u.OptionalDouble empty = matrix.valueAbove(0, 0);   // Returns u.OptionalDouble.empty() - no row above
+     * OptionalDouble value = matrix.valueAbove(1, 0);   // Returns OptionalDouble.of(1.0)
+     * OptionalDouble empty = matrix.valueAbove(0, 0);   // Returns OptionalDouble.empty() - no row above
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @return an u.OptionalDouble containing the element at position (rowIndex - 1, columnIndex), or empty if rowIndex == 0
+     * @return an {@code OptionalDouble} containing the element at position (rowIndex - 1, columnIndex), or empty if rowIndex == 0
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     public OptionalDouble valueAbove(final int rowIndex, final int columnIndex) {
@@ -556,13 +556,13 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
-     * u.OptionalDouble value = matrix.valueBelow(0, 0);   // Returns u.OptionalDouble.of(3.0)
-     * u.OptionalDouble empty = matrix.valueBelow(1, 0);   // Returns u.OptionalDouble.empty() - no row below
+     * OptionalDouble value = matrix.valueBelow(0, 0);   // Returns OptionalDouble.of(3.0)
+     * OptionalDouble empty = matrix.valueBelow(1, 0);   // Returns OptionalDouble.empty() - no row below
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @return an u.OptionalDouble containing the element at position (rowIndex + 1, columnIndex), or empty if rowIndex == rowCount - 1
+     * @return an {@code OptionalDouble} containing the element at position (rowIndex + 1, columnIndex), or empty if rowIndex == rowCount - 1
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     public OptionalDouble valueBelow(final int rowIndex, final int columnIndex) {
@@ -579,13 +579,13 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
-     * u.OptionalDouble value = matrix.valueLeft(0, 1);   // Returns u.OptionalDouble.of(1.0)
-     * u.OptionalDouble empty = matrix.valueLeft(0, 0);   // Returns u.OptionalDouble.empty() - no column to the left
+     * OptionalDouble value = matrix.valueLeft(0, 1);   // Returns OptionalDouble.of(1.0)
+     * OptionalDouble empty = matrix.valueLeft(0, 0);   // Returns OptionalDouble.empty() - no column to the left
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @return an u.OptionalDouble containing the element at position (rowIndex, columnIndex - 1), or empty if columnIndex == 0
+     * @return an {@code OptionalDouble} containing the element at position (rowIndex, columnIndex - 1), or empty if columnIndex == 0
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     public OptionalDouble valueLeft(final int rowIndex, final int columnIndex) {
@@ -602,13 +602,13 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
-     * u.OptionalDouble value = matrix.valueRight(0, 0);   // Returns u.OptionalDouble.of(2.0)
-     * u.OptionalDouble empty = matrix.valueRight(0, 1);   // Returns u.OptionalDouble.empty() - no column to the right
+     * OptionalDouble value = matrix.valueRight(0, 0);   // Returns OptionalDouble.of(2.0)
+     * OptionalDouble empty = matrix.valueRight(0, 1);   // Returns OptionalDouble.empty() - no column to the right
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @return an u.OptionalDouble containing the element at position (rowIndex, columnIndex + 1), or empty if columnIndex == columnCount - 1
+     * @return an {@code OptionalDouble} containing the element at position (rowIndex, columnIndex + 1), or empty if columnIndex == columnCount - 1
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     public OptionalDouble valueRight(final int rowIndex, final int columnIndex) {
@@ -1437,7 +1437,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param newRowCount the row count of the returned matrix; must be {@code >= 0}
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
      * @return a new DoubleMatrix with the specified dimensions
-     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative
+     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         or if {@code newRowCount * newColumnCount} would overflow {@code Integer.MAX_VALUE}
      * @see #resize(int, int, double)
      * @see #extend(int, int, int, int)
      */
@@ -1492,7 +1493,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
      * @param defaultValue the double value used to fill any newly created cells
      * @return a new DoubleMatrix with the specified dimensions
-     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative
+     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         or if {@code newRowCount * newColumnCount} would overflow {@code Integer.MAX_VALUE}
      * @see #resize(int, int)
      * @see #extend(int, int, int, int, double)
      */
@@ -1561,7 +1563,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param padLeft number of columns to add to the left; must be {@code >= 0}
      * @param padRight number of columns to add to the right; must be {@code >= 0}
      * @return a new DoubleMatrix with dimensions {@code (padTop+rowCount+padBottom) × (padLeft+columnCount+padRight)}
-     * @throws IllegalArgumentException if any padding parameter is negative
+     * @throws IllegalArgumentException if any padding parameter is negative,
+     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
      * @see #extend(int, int, int, int, double)
      * @see #resize(int, int)
      */

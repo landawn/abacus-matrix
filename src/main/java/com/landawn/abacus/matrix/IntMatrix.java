@@ -594,13 +594,13 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * u.OptionalInt value = matrix.valueAbove(1, 0);   // Returns u.OptionalInt.of(1)
-     * u.OptionalInt empty = matrix.valueAbove(0, 0);   // Returns u.OptionalInt.empty() - no row above
+     * OptionalInt value = matrix.valueAbove(1, 0);   // Returns OptionalInt.of(1)
+     * OptionalInt empty = matrix.valueAbove(0, 0);   // Returns OptionalInt.empty() - no row above
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @return an u.OptionalInt containing the element at position (rowIndex - 1, columnIndex), or empty if rowIndex == 0
+     * @return an {@link OptionalInt} containing the element at position {@code (rowIndex - 1, columnIndex)}, or empty if {@code rowIndex == 0}
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     public OptionalInt valueAbove(final int rowIndex, final int columnIndex) {
@@ -616,13 +616,13 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * u.OptionalInt value = matrix.valueBelow(0, 0);   // Returns u.OptionalInt.of(3)
-     * u.OptionalInt empty = matrix.valueBelow(1, 0);   // Returns u.OptionalInt.empty() - no row below
+     * OptionalInt value = matrix.valueBelow(0, 0);   // Returns OptionalInt.of(3)
+     * OptionalInt empty = matrix.valueBelow(1, 0);   // Returns OptionalInt.empty() - no row below
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @return an u.OptionalInt containing the element at position (rowIndex + 1, columnIndex), or empty if rowIndex == rowCount - 1
+     * @return an {@link OptionalInt} containing the element at position {@code (rowIndex + 1, columnIndex)}, or empty if {@code rowIndex == rowCount - 1}
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     public OptionalInt valueBelow(final int rowIndex, final int columnIndex) {
@@ -638,13 +638,13 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * u.OptionalInt value = matrix.valueLeft(0, 1);   // Returns u.OptionalInt.of(1)
-     * u.OptionalInt empty = matrix.valueLeft(0, 0);   // Returns u.OptionalInt.empty() - no column to the left
+     * OptionalInt value = matrix.valueLeft(0, 1);   // Returns OptionalInt.of(1)
+     * OptionalInt empty = matrix.valueLeft(0, 0);   // Returns OptionalInt.empty() - no column to the left
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @return an u.OptionalInt containing the element at position (rowIndex, columnIndex - 1), or empty if columnIndex == 0
+     * @return an {@link OptionalInt} containing the element at position {@code (rowIndex, columnIndex - 1)}, or empty if {@code columnIndex == 0}
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     public OptionalInt valueLeft(final int rowIndex, final int columnIndex) {
@@ -660,13 +660,13 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * u.OptionalInt value = matrix.valueRight(0, 0);   // Returns u.OptionalInt.of(2)
-     * u.OptionalInt empty = matrix.valueRight(0, 1);   // Returns u.OptionalInt.empty() - no column to the right
+     * OptionalInt value = matrix.valueRight(0, 0);   // Returns OptionalInt.of(2)
+     * OptionalInt empty = matrix.valueRight(0, 1);   // Returns OptionalInt.empty() - no column to the right
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @return an u.OptionalInt containing the element at position (rowIndex, columnIndex + 1), or empty if columnIndex == columnCount - 1
+     * @return an {@link OptionalInt} containing the element at position {@code (rowIndex, columnIndex + 1)}, or empty if {@code columnIndex == columnCount - 1}
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     public OptionalInt valueRight(final int rowIndex, final int columnIndex) {
@@ -2508,7 +2508,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * // sum is [[15, 18], [21, 24]]
      *
      * IntMatrix weighted = a.zipWith(b, c, (x, y, z) -> x * 2 + y * 3 + z * 5);
-     * // weighted is [[62, 74], [86, 98]]
+     * // weighted is [[62, 72], [82, 92]]
      * }</pre>
      *
      * @param <E> the type of exception that the zip function may throw

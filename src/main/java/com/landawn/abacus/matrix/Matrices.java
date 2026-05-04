@@ -201,7 +201,8 @@ public final class Matrices {
      * // Returns true only if settings allow and count >= 8192
      * }</pre>
      *
-     * @param m the matrix being evaluated; validated for non-null but otherwise not consulted by the decision
+     * @param m the matrix being evaluated; only checked for {@code null}, the matrix's own
+     *          element count is not consulted (the supplied {@code count} drives the decision)
      * @param count the number of elements to process; typically the total element count or a subset being operated on
      * @return {@code true} if parallel processing should be used; {@code false} for sequential processing
      * @throws IllegalArgumentException if {@code m} is {@code null}

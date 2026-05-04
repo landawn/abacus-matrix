@@ -437,13 +437,13 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
-     * u.OptionalFloat value = matrix.valueAbove(1, 0);   // Returns u.OptionalFloat.of(1.0f)
-     * u.OptionalFloat empty = matrix.valueAbove(0, 0);   // Returns u.OptionalFloat.empty() - no row above
+     * OptionalFloat value = matrix.valueAbove(1, 0);   // Returns OptionalFloat.of(1.0f)
+     * OptionalFloat empty = matrix.valueAbove(0, 0);   // Returns OptionalFloat.empty() - no row above
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @return an u.OptionalFloat containing the element at position (rowIndex - 1, columnIndex), or empty if rowIndex == 0
+     * @return an {@link OptionalFloat} containing the element at position (rowIndex - 1, columnIndex), or empty if rowIndex == 0
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     public OptionalFloat valueAbove(final int rowIndex, final int columnIndex) {
@@ -460,13 +460,13 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
-     * u.OptionalFloat value = matrix.valueBelow(0, 0);   // Returns u.OptionalFloat.of(3.0f)
-     * u.OptionalFloat empty = matrix.valueBelow(1, 0);   // Returns u.OptionalFloat.empty() - no row below
+     * OptionalFloat value = matrix.valueBelow(0, 0);   // Returns OptionalFloat.of(3.0f)
+     * OptionalFloat empty = matrix.valueBelow(1, 0);   // Returns OptionalFloat.empty() - no row below
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @return an u.OptionalFloat containing the element at position (rowIndex + 1, columnIndex), or empty if rowIndex == rowCount - 1
+     * @return an {@link OptionalFloat} containing the element at position (rowIndex + 1, columnIndex), or empty if rowIndex == rowCount - 1
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     public OptionalFloat valueBelow(final int rowIndex, final int columnIndex) {
@@ -483,13 +483,13 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
-     * u.OptionalFloat value = matrix.valueLeft(0, 1);   // Returns u.OptionalFloat.of(1.0f)
-     * u.OptionalFloat empty = matrix.valueLeft(0, 0);   // Returns u.OptionalFloat.empty() - no column to the left
+     * OptionalFloat value = matrix.valueLeft(0, 1);   // Returns OptionalFloat.of(1.0f)
+     * OptionalFloat empty = matrix.valueLeft(0, 0);   // Returns OptionalFloat.empty() - no column to the left
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @return an u.OptionalFloat containing the element at position (rowIndex, columnIndex - 1), or empty if columnIndex == 0
+     * @return an {@link OptionalFloat} containing the element at position (rowIndex, columnIndex - 1), or empty if columnIndex == 0
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     public OptionalFloat valueLeft(final int rowIndex, final int columnIndex) {
@@ -506,13 +506,13 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
-     * u.OptionalFloat value = matrix.valueRight(0, 0);   // Returns u.OptionalFloat.of(2.0f)
-     * u.OptionalFloat empty = matrix.valueRight(0, 1);   // Returns u.OptionalFloat.empty() - no column to the right
+     * OptionalFloat value = matrix.valueRight(0, 0);   // Returns OptionalFloat.of(2.0f)
+     * OptionalFloat empty = matrix.valueRight(0, 1);   // Returns OptionalFloat.empty() - no column to the right
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @return an u.OptionalFloat containing the element at position (rowIndex, columnIndex + 1), or empty if columnIndex == columnCount - 1
+     * @return an {@link OptionalFloat} containing the element at position (rowIndex, columnIndex + 1), or empty if columnIndex == columnCount - 1
      * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     public OptionalFloat valueRight(final int rowIndex, final int columnIndex) {
@@ -526,7 +526,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * <p><b>Note:</b> This method returns a reference to the internal array, not a copy.
      * Modifications to the returned array will affect the matrix. If you need an independent
-     * copy, use {@code Arrays.copyOf(matrix.rowView(rowIndex), matrix.columnCount())}.
+     * copy, use {@link #rowCopy(int)}.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -538,6 +538,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return the specified row array (direct reference to internal storage)
      * @throws IllegalArgumentException if rowIndex &lt; 0 or rowIndex &gt;= rowCount
+     * @see #rowCopy(int)
      */
     @Override
     public float[] rowView(final int rowIndex) throws IllegalArgumentException {

@@ -1259,7 +1259,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param newRowCount the row count of the returned matrix; must be {@code >= 0}
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
      * @return a new ByteMatrix with the specified dimensions
-     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative
+     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
      * @see #resize(int, int, byte)
      * @see #extend(int, int, int, int)
      */
@@ -1381,7 +1382,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param padLeft number of padding columns to add to the left of the original matrix; must be {@code >= 0}
      * @param padRight number of padding columns to add to the right of the original matrix; must be {@code >= 0}
      * @return a new ByteMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
-     * @throws IllegalArgumentException if any parameter is negative
+     * @throws IllegalArgumentException if any parameter is negative,
+     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
      * @see #extend(int, int, int, int, byte)
      * @see #resize(int, int)
      */
@@ -1832,7 +1834,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param rowRepeats number of times to repeat each element vertically
      * @param columnRepeats number of times to repeat each element horizontally
      * @return a new matrix with repeated elements
-     * @throws IllegalArgumentException if rowRepeats or columnRepeats is not positive
+     * @throws IllegalArgumentException if rowRepeats or columnRepeats is not positive,
+     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
      * @see IntMatrix#repeatElements(int, int)
      */
     @Override
@@ -1882,7 +1885,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param rowRepeats number of times to repeat the matrix vertically
      * @param columnRepeats number of times to repeat the matrix horizontally
      * @return a new matrix with the original matrix repeated
-     * @throws IllegalArgumentException if rowRepeats or columnRepeats is not positive
+     * @throws IllegalArgumentException if rowRepeats or columnRepeats is not positive,
+     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
      * @see IntMatrix#repeatMatrix(int, int)
      */
     @Override
@@ -1989,7 +1993,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * @param other the matrix to stack below this matrix
      * @return a new ByteMatrix with other appended below this matrix
-     * @throws IllegalArgumentException if the matrices have different column counts
+     * @throws IllegalArgumentException if {@code other} is {@code null}, has a different column count,
+     *         or if the merged row count would overflow {@code Integer.MAX_VALUE}
      * @see IntMatrix#stackVertically(IntMatrix)
      */
     @Override
@@ -2028,7 +2033,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * @param other the matrix to concatenate to the right of this matrix
      * @return a new ByteMatrix with other appended to the right of this matrix
-     * @throws IllegalArgumentException if the matrices have different row counts
+     * @throws IllegalArgumentException if {@code other} is {@code null}, has a different row count,
+     *         or if the merged column count would overflow {@code Integer.MAX_VALUE}
      * @see IntMatrix#stackHorizontally(IntMatrix)
      */
     @Override
@@ -2066,7 +2072,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * @param other the matrix to add to this matrix; must have the same dimensions
      * @return a new ByteMatrix containing the element-wise sum
-     * @throws IllegalArgumentException if the matrices have different dimensions (rows or columns don't match)
+     * @throws IllegalArgumentException if {@code other} is {@code null} or has different dimensions (rows or columns don't match)
      * @see #subtract(ByteMatrix)
      */
     public ByteMatrix add(final ByteMatrix other) throws IllegalArgumentException {
@@ -2100,7 +2106,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * @param other the matrix to subtract from this matrix; must have the same dimensions
      * @return a new ByteMatrix containing the element-wise difference
-     * @throws IllegalArgumentException if the matrices have different dimensions (rows or columns don't match)
+     * @throws IllegalArgumentException if {@code other} is {@code null} or has different dimensions (rows or columns don't match)
      * @see #add(ByteMatrix)
      */
     public ByteMatrix subtract(final ByteMatrix other) throws IllegalArgumentException {
@@ -2146,7 +2152,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * @param other the matrix to multiply with; must have row count equal to this matrix's column count
      * @return a new ByteMatrix containing the matrix product with dimensions {@code (this.rowCount x other.columnCount)}
-     * @throws IllegalArgumentException if {@code this.columnCount != other.rowCount} (incompatible dimensions for multiplication)
+     * @throws IllegalArgumentException if {@code other} is {@code null}, or if {@code this.columnCount != other.rowCount} (incompatible dimensions for multiplication)
      */
     public ByteMatrix matmul(final ByteMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
@@ -3035,7 +3041,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * }</pre>
      *
      * @param <E> the type of exception that may be thrown by the action
-     * @param action the consumer to apply to each element
+     * @param action the consumer to apply to each element; must not be {@code null}
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the action throws an exception
      */

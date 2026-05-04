@@ -114,8 +114,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * // Result: a 1x5 matrix with random short values
      * }</pre>
      *
-     * @param size the number of columns in the new matrix
+     * @param size the number of columns in the new matrix; must be {@code >= 0}
      * @return a new ShortMatrix of dimensions 1 x size filled with random values
+     * @throws IllegalArgumentException if {@code size} is negative
      */
     public static ShortMatrix random(final int size) {
         return random(1, size);
@@ -130,9 +131,11 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * // Result: a 2x3 matrix with random short values
      * }</pre>
      *
-     * @param rowCount the number of rows in the new matrix
-     * @param columnCount the number of columns in the new matrix
+     * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
+     * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
      * @return a new ShortMatrix of dimensions rowCount x columnCount filled with random values
+     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
+     *         or if the resulting shape cannot be represented
      */
     public static ShortMatrix random(final int rowCount, final int columnCount) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -159,10 +162,12 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * // Result: [[1, 1, 1], [1, 1, 1]]
      * }</pre>
      *
-     * @param rowCount the number of rows in the new matrix
-     * @param columnCount the number of columns in the new matrix
+     * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
+     * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
      * @param element the short value to fill the matrix with
      * @return a new ShortMatrix of dimensions rowCount x columnCount filled with the specified element
+     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
+     *         or if the resulting shape cannot be represented
      */
     public static ShortMatrix repeat(final int rowCount, final int columnCount, final short element) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -925,6 +930,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param <E> the type of exception that the operator may throw
      * @param operator the unary operator to apply to each element, taking a short and returning a short
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateAll(final Throwables.ShortUnaryOperator<E> operator) throws E {
@@ -947,6 +953,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param <E> the type of exception that the mapper may throw
      * @param mapper the bi-function that takes (rowIndex, columnIndex) and returns the new short value
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
+     * @throws NullPointerException if the mapper returns {@code null} for any cell
      * @throws E if the mapper throws an exception
      */
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Short, E> mapper) throws E {
@@ -1015,6 +1023,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param <E> the type of exception that the function may throw
      * @param mapper the unary operator to apply to each element, taking a short and returning a short
      * @return a new ShortMatrix with the transformed values; the original matrix is unchanged
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
      */
     public <E extends Exception> ShortMatrix map(final Throwables.ShortUnaryOperator<E> mapper) throws E {
@@ -1045,6 +1054,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param mapper the function to transform each short to an object of type R
      * @param targetElementType the class of the target element type (used for array creation)
      * @return a new Matrix&lt;R&gt; with the transformed object values; the original matrix is unchanged
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
      */
     public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.ShortFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E {
@@ -1088,6 +1098,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @param source the two-dimensional array to copy values from
+     * @throws IllegalArgumentException if {@code source} is {@code null}
      */
     public void fill(final short[][] source) {
         fill(0, 0, source);
@@ -1107,8 +1118,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param destRowIndex the target row index in this matrix (0-based, must be 0 &lt;= destRowIndex &lt;= rowCount)
      * @param destColumnIndex the target column index in this matrix (0-based, must be 0 &lt;= destColumnIndex &lt;= columnCount)
-     * @param source the source array to copy values from
-     * @throws IllegalArgumentException if destRowIndex &lt; 0 or &gt; rowCount, or if destColumnIndex &lt; 0 or &gt; columnCount
+     * @param source the source array to copy values from; must not be {@code null}
+     * @throws IllegalArgumentException if {@code source} is {@code null}, if destRowIndex &lt; 0 or &gt; rowCount,
+     *         or if destColumnIndex &lt; 0 or &gt; columnCount
      */
     public void fill(final int destRowIndex, final int destColumnIndex, final short[][] source) throws IllegalArgumentException {
         N.checkArgNotNull(source, "source");
@@ -1260,7 +1272,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param newRowCount the row count of the returned matrix; must be {@code >= 0}
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
      * @return a new ShortMatrix with the specified dimensions
-     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative
+     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
      * @see #resize(int, int, short)
      * @see #extend(int, int, int, int)
      */
@@ -1978,9 +1991,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * //          [7, 8, 9]]
      * }</pre>
      *
-     * @param other the matrix to stack below this matrix
+     * @param other the matrix to stack below this matrix; must not be {@code null}
      * @return a new matrix with rows from both matrices stacked vertically
-     * @throws IllegalArgumentException if the matrices don't have the same number of columns
+     * @throws IllegalArgumentException if {@code other} is {@code null}, if the matrices don't have
+     *         the same number of columns, or if the merged row count would overflow {@code Integer.MAX_VALUE}
      * @see IntMatrix#stackVertically(IntMatrix)
      */
     @Override
@@ -2018,9 +2032,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * //          [3, 4, 6]]
      * }</pre>
      *
-     * @param other the matrix to stack to the right of this matrix
+     * @param other the matrix to stack to the right of this matrix; must not be {@code null}
      * @return a new matrix with columns from both matrices stacked horizontally
-     * @throws IllegalArgumentException if the matrices don't have the same number of rows
+     * @throws IllegalArgumentException if {@code other} is {@code null}, if the matrices don't have
+     *         the same number of rows, or if the merged column count would overflow {@code Integer.MAX_VALUE}
      * @see IntMatrix#stackHorizontally(IntMatrix)
      */
     @Override
@@ -2055,9 +2070,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * // Result: [[6, 8], [10, 12]]
      * }</pre>
      *
-     * @param other the matrix to add to this matrix (must have same dimensions)
+     * @param other the matrix to add to this matrix (must have same dimensions and not be {@code null})
      * @return a new matrix containing the element-wise sum
-     * @throws IllegalArgumentException if the matrices don't have the same shape (same rows and columns)
+     * @throws IllegalArgumentException if {@code other} is {@code null}, or if the matrices don't have
+     *         the same shape (same rows and columns)
      */
     public ShortMatrix add(final ShortMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
@@ -2087,9 +2103,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * // Result: [[4, 4], [4, 4]]
      * }</pre>
      *
-     * @param other the matrix to subtract from this matrix (must have same dimensions)
+     * @param other the matrix to subtract from this matrix (must have same dimensions and not be {@code null})
      * @return a new matrix containing the element-wise difference (this - other)
-     * @throws IllegalArgumentException if the matrices don't have the same shape (same rows and columns)
+     * @throws IllegalArgumentException if {@code other} is {@code null}, or if the matrices don't have
+     *         the same shape (same rows and columns)
      */
     public ShortMatrix subtract(final ShortMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
@@ -2131,9 +2148,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * For element-wise multiplication use
      * {@link #zipWith(ShortMatrix, com.landawn.abacus.util.Throwables.ShortBinaryOperator)}.</p>
      *
-     * @param other the matrix to multiply with this matrix ({@code this.columnCount} must equal {@code other.rowCount})
+     * @param other the matrix to multiply with this matrix ({@code this.columnCount} must equal {@code other.rowCount}); must not be {@code null}
      * @return a new matrix of dimension {@code (this.rowCount × other.columnCount)} containing the matrix product
-     * @throws IllegalArgumentException if {@code this.columnCount != other.rowCount} (incompatible dimensions for multiplication)
+     * @throws IllegalArgumentException if {@code other} is {@code null}, or if
+     *         {@code this.columnCount != other.rowCount} (incompatible dimensions for multiplication)
      */
     public ShortMatrix matmul(final ShortMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
@@ -2338,7 +2356,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param other the second matrix to zip with this matrix
      * @param zipFunction the binary operation to apply to corresponding elements
      * @return a new matrix with the results of the zip operation
-     * @throws IllegalArgumentException if the matrices don't have the same shape
+     * @throws IllegalArgumentException if the matrices don't have the same shape, or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception
      */
     public <E extends Exception> ShortMatrix zipWith(final ShortMatrix other, final Throwables.ShortBinaryOperator<E> zipFunction)
@@ -2377,7 +2395,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param third the third matrix to zip with
      * @param zipFunction the ternary operation to apply to corresponding elements from all three matrices
      * @return a new matrix with the results of the zip operation
-     * @throws IllegalArgumentException if the matrices don't have the same shape
+     * @throws IllegalArgumentException if the matrices don't have the same shape, or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception
      */
     public <E extends Exception> ShortMatrix zipWith(final ShortMatrix other, final ShortMatrix third, final Throwables.ShortTernaryOperator<E> zipFunction)

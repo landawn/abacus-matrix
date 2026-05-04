@@ -147,20 +147,20 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     /**
      * The component type of elements in this matrix. For primitive matrices this is the matching
      * primitive class (e.g. {@code int.class}); for {@link Matrix} it is the runtime element class.
-     * Read via {@link #componentType()}; subclasses with dynamic component types may override the
-     * accessor.
+     * Read via {@link #componentType()}.
      */
     final Class<?> componentType;
 
     /**
      * Constructs a new AbstractMatrix with the specified two-dimensional array.
-     * The constructor validates that all rows have the same length.
+     * The constructor validates that all rows are non-null and have the same length.
      *
-     * @param a the two-dimensional array containing matrix data
-     * @param componentType the component type of matrix elements (e.g. {@code int.class}); may be
-     *        {@code null} for subclasses that compute the type dynamically and override
-     *        {@link #componentType()}
-     * @throws IllegalArgumentException if the array is null or if rows have different lengths (not rectangular)
+     * @param a the two-dimensional array containing matrix data; must not be {@code null}
+     * @param componentType the component type of matrix elements (e.g. {@code int.class});
+     *        must not be {@code null}
+     * @throws IllegalArgumentException if {@code a} or {@code componentType} is {@code null},
+     *         if any row of {@code a} is {@code null}, or if the rows have different lengths
+     *         (i.e. the array is not rectangular)
      */
     @SuppressFBWarnings("CT_CONSTRUCTOR_THROW")
     protected AbstractMatrix(final A[] a, final Class<?> componentType) {
@@ -704,7 +704,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * @param m the matrix to compare with
      * @return {@code true} if both matrices have the same dimensions, {@code false} otherwise
-     * @throws IllegalArgumentException if {@code x} is {@code null}
+     * @throws IllegalArgumentException if {@code m} is {@code null}
      */
     public boolean isSameShape(final M m) {
         N.checkArgNotNull(m, "m");

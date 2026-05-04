@@ -60,6 +60,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * }</pre>
      *
      * @param a the two-dimensional boolean array to wrap, or {@code null} for an empty matrix
+     * @throws IllegalArgumentException if {@code a} contains a {@code null} row or rows of differing lengths
      */
     public BooleanMatrix(final boolean[][] a) {
         super(a == null ? new boolean[0][0] : a, boolean.class);
@@ -95,6 +96,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * @param a the two-dimensional boolean array to create the matrix from, or null/empty for an empty matrix
      * @return a new BooleanMatrix containing the provided data, or an empty BooleanMatrix if input is null or empty
+     * @throws IllegalArgumentException if {@code a} contains a {@code null} row or rows of differing lengths
      */
     public static BooleanMatrix of(final boolean[]... a) {
         return N.isEmpty(a) ? EMPTY_BOOLEAN_MATRIX : new BooleanMatrix(a);
@@ -125,9 +127,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * // Result: a 2x3 matrix with random boolean values
      * }</pre>
      *
-     * @param rowCount the number of rows in the new matrix
-     * @param columnCount the number of columns in the new matrix
+     * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
+     * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
      * @return a new BooleanMatrix of dimensions rowCount x columnCount filled with random values
+     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative
      */
     public static BooleanMatrix random(final int rowCount, final int columnCount) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -154,10 +157,11 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * // Result: [[true, true, true], [true, true, true]]
      * }</pre>
      *
-     * @param rowCount the number of rows in the new matrix
-     * @param columnCount the number of columns in the new matrix
+     * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
+     * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
      * @param element the boolean value to fill the matrix with
      * @return a new BooleanMatrix of dimensions rowCount x columnCount filled with the specified element
+     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative
      */
     public static BooleanMatrix repeat(final int rowCount, final int columnCount, final boolean element) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -281,6 +285,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * @param x the boxed Boolean Matrix to convert; must not be null
      * @return a new BooleanMatrix with primitive boolean values
+     * @throws NullPointerException if {@code x} is {@code null}
      * @see #boxed()
      */
     public static BooleanMatrix unbox(final Matrix<Boolean> x) {
@@ -1799,7 +1804,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param newRowCount the number of rows in the reshaped matrix; must be non-negative
      * @param newColumnCount the number of columns in the reshaped matrix; must be non-negative
      * @return a new BooleanMatrix with the specified shape
-     * @throws IllegalArgumentException if the new shape is too small to hold all elements
+     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         or if the new shape is too small to hold all elements
      */
     @SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG")
     @Override

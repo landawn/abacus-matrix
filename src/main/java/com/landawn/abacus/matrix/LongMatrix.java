@@ -68,7 +68,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     }
 
     /**
-     * Creates an empty matrix with zero rows and zero columns.
+     * Returns a shared empty matrix with zero rows and zero columns.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -77,7 +77,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * // matrix.columnCount() returns 0
      * }</pre>
      *
-     * @return an empty long matrix
+     * @return a shared empty {@code LongMatrix} singleton
      */
     public static LongMatrix empty() {
         return EMPTY_LONG_MATRIX;
@@ -121,7 +121,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * @param a the two-dimensional int array to convert to a long matrix, or null/empty for an empty matrix
      * @return a new LongMatrix with converted values, or an empty LongMatrix if input is null or empty
-     * @throws IllegalArgumentException if the first row is null or if rows have different lengths (non-rectangular array)
+     * @throws IllegalArgumentException if the first row is {@code null}, or if any subsequent row is
+     *         {@code null} or has a length different from the first row (non-rectangular array)
      */
     public static LongMatrix from(final int[]... a) {
         if (N.isEmpty(a)) {
@@ -1127,9 +1128,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * LongMatrix matrix = LongMatrix.of(new long[][] {{100L, 200L}, {300L, 400L}});
+     * LongMatrix matrix = LongMatrix.of(new long[][] {{123L, 256L}, {300L, 401L}});
      * IntMatrix intMatrix = matrix.mapToInt(x -> (int)(x % 100));
-     * // intMatrix is [[0, 0], [0, 0]]
+     * // intMatrix is [[23, 56], [0, 1]]
      * }</pre>
      *
      * @param <E> the exception type that the function may throw

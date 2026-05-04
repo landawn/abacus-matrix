@@ -489,9 +489,16 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Returns the specified row as an array.
      *
-     * <p><b>Note:</b> This method returns a reference to the internal array, not a copy.
-     * Modifications to the returned array will affect the matrix. If you need an independent
-     * copy, use {@link #rowCopy(int)} or call {@code .clone()} on the returned array.</p>
+     * <p><b>Note:</b> The returned array is the live internal row, so subsequent modifications
+     * are mirrored in the matrix. If you need an independent copy, use {@link #rowCopy(int)}
+     * or call {@code .clone()} on the returned array.</p>
+     *
+     * <p><b>Object-row promotion:</b> If this matrix advertises a more specific element type
+     * (e.g. {@code String}) but the underlying row is currently {@code Object[]} (which can
+     * happen for matrices created by {@link #repeat(int, int, Object)}, {@link #diagonals}
+     * and similar factories), the row is promoted to the narrower runtime type before being
+     * returned. The promoted array replaces the internal row reference, so callers always
+     * see a row whose runtime component type is assignable to {@code T[]}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -506,8 +513,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @param rowIndex the index of the row to retrieve (0-based)
-     * @return the specified row array (direct reference to internal storage)
-     * @throws IllegalArgumentException if rowIndex is negative or greater than or equal to the number of rows
+     * @return the live internal row array (possibly after promotion to the matrix's element type)
+     * @throws IllegalArgumentException if {@code rowIndex} is negative or greater than or equal to {@code rowCount}
      */
     @Override
     public T[] rowView(final int rowIndex) throws IllegalArgumentException {
@@ -3501,9 +3508,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
     /**
      * Returns a hash code value for this matrix.
-     * The hash code is computed based on the deep contents of the internal two-dimensional array.
-     * Matrices with the same dimensions and element values will have equal hash codes,
-     * consistent with the {@link #equals(Object)} method.
+     * The hash code is computed via {@link N#deepHashCode(Object[])} over the internal
+     * two-dimensional array, so each element contributes through its own {@code hashCode()}
+     * (with {@code null} contributing {@code 0}). Matrices that compare equal via
+     * {@link #equals(Object)} are guaranteed to produce the same hash code.
      *
      * @return a hash code value for this matrix
      */
@@ -3514,8 +3522,16 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
     /**
      * Compares this matrix to the specified object for equality.
-     * Returns {@code true} if the given object is also a Matrix with the same dimensions
-     * and all corresponding elements are equal.
+     * Returns {@code true} if the given object is also a {@code Matrix} with the same
+     * dimensions and equal contents. Element comparison uses
+     * {@link N#deepEquals(Object[], Object[])} semantics, which means each pair of
+     * corresponding elements is compared with {@code Objects.equals(a, b)}
+     * (i.e. value equality, with {@code null} equal only to {@code null}); element arrays,
+     * if any, are compared deeply.
+     *
+     * <p>Because of generic-type erasure, the runtime check is {@code instanceof Matrix},
+     * not {@code instanceof Matrix<T>}. Two matrices with different declared element types
+     * may compare equal if their concrete elements are pairwise {@code equals}-equal.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
