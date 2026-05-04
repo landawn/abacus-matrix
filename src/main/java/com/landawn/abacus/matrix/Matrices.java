@@ -219,6 +219,14 @@ public final class Matrices {
             return 0;
         }
 
+        // Special case: Long.MIN_VALUE / -1 silently overflows to Long.MIN_VALUE in Java,
+        // so the divide-back overflow check below would falsely report no overflow when
+        // computing (-1) * Long.MIN_VALUE. Detect this case explicitly. The mathematical
+        // result is +2^63 which saturates to Long.MAX_VALUE.
+        if ((left == -1 && right == Long.MIN_VALUE) || (right == -1 && left == Long.MIN_VALUE)) {
+            return Long.MAX_VALUE;
+        }
+
         final long result = left * right;
 
         // Check for overflow: if dividing the result back by one operand doesn't give the other, overflow occurred

@@ -1743,13 +1743,10 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      */
     @Override
     public void flipVerticallyInPlace() {
-        for (int j = 0; j < columnCount; j++) {
-            int tmp = 0;
-            for (int l = 0, h = rowCount - 1; l < h;) {
-                tmp = a[l][j];
-                a[l++][j] = a[h][j];
-                a[h--][j] = tmp;
-            }
+        for (int l = 0, h = rowCount - 1; l < h; l++, h--) {
+            final int[] tmp = a[l];
+            a[l] = a[h];
+            a[h] = tmp;
         }
     }
 

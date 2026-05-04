@@ -1521,13 +1521,10 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      */
     @Override
     public void flipVerticallyInPlace() {
-        for (int j = 0; j < columnCount; j++) {
-            byte tmp = 0;
-            for (int l = 0, h = rowCount - 1; l < h;) {
-                tmp = a[l][j];
-                a[l++][j] = a[h][j];
-                a[h--][j] = tmp;
-            }
+        for (int l = 0, h = rowCount - 1; l < h; l++, h--) {
+            final byte[] tmp = a[l];
+            a[l] = a[h];
+            a[h] = tmp;
         }
     }
 

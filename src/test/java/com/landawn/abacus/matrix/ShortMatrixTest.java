@@ -6227,4 +6227,187 @@ class ShortMatrixTest extends TestBase {
         assertThrows(java.util.NoSuchElementException.class, columnEx::nextShort);
     }
 
+    // ============ Additional edge-case verifications (defensive tests) ============
+
+    @Test
+    public void testToIntMatrix_signExtensionForNegativeShorts() {
+        // Verify that short -> int widening uses sign extension when converting to IntMatrix.
+        ShortMatrix m = ShortMatrix.of(new short[][] { { (short) -1, Short.MIN_VALUE }, { (short) 0, Short.MAX_VALUE } });
+        IntMatrix asInt = m.toIntMatrix();
+        assertEquals(-1, asInt.get(0, 0));
+        assertEquals(Short.MIN_VALUE, asInt.get(0, 1));
+        assertEquals(0, asInt.get(1, 0));
+        assertEquals(Short.MAX_VALUE, asInt.get(1, 1));
+    }
+
+    @Test
+    public void testToLongMatrix_signExtensionForNegativeShorts() {
+        ShortMatrix m = ShortMatrix.of(new short[][] { { (short) -1, Short.MIN_VALUE } });
+        com.landawn.abacus.matrix.LongMatrix asLong = m.toLongMatrix();
+        assertEquals(-1L, asLong.get(0, 0));
+        assertEquals((long) Short.MIN_VALUE, asLong.get(0, 1));
+    }
+
+    @Test
+    public void testReshape_singleRowSourceMultipleStrides() {
+        // Reshape a 1xN matrix into multiple smaller rows; covers the a.length == 1 branch.
+        ShortMatrix src = ShortMatrix.of(new short[][] { { 1, 2, 3, 4, 5, 6, 7 } });
+        ShortMatrix r = src.reshape(3, 3);
+        assertEquals(3, r.rowCount());
+        assertEquals(3, r.columnCount());
+        assertArrayEquals(new short[] { 1, 2, 3 }, r.rowCopy(0));
+        assertArrayEquals(new short[] { 4, 5, 6 }, r.rowCopy(1));
+        // Last cell of source goes into row 2; the extra cells should be zero-padded.
+        assertArrayEquals(new short[] { 7, 0, 0 }, r.rowCopy(2));
+    }
+
+    @Test
+    public void testReshape_multiRowSourceRowMajorOrder() {
+        // Reshape exercises the cnt-based branch (a.length > 1).
+        ShortMatrix src = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+        ShortMatrix r = src.reshape(2, 4);
+        assertArrayEquals(new short[] { 1, 2, 3, 4 }, r.rowCopy(0));
+        assertArrayEquals(new short[] { 5, 6, 0, 0 }, r.rowCopy(1));
+    }
+
+    @Test
+    public void testReshape_overshootFillsTrailingRowsWithZeros() {
+        ShortMatrix src = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+        ShortMatrix r = src.reshape(4, 2);
+        assertArrayEquals(new short[] { 1, 2 }, r.rowCopy(0));
+        assertArrayEquals(new short[] { 3, 4 }, r.rowCopy(1));
+        assertArrayEquals(new short[] { 5, 6 }, r.rowCopy(2));
+        assertArrayEquals(new short[] { 0, 0 }, r.rowCopy(3));
+    }
+
+    @Test
+    public void testEqualsHashCode_consistencyAndShape() {
+        ShortMatrix a1 = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
+        ShortMatrix a2 = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
+        ShortMatrix b = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+
+        assertEquals(a1, a2);
+        assertEquals(a1.hashCode(), a2.hashCode());
+        assertNotEquals(a1, b);
+
+        ShortMatrix differentValue = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 99 } });
+        assertNotEquals(a1, differentValue);
+
+        assertEquals(a1, a1);
+        assertNotEquals(a1, null);
+        assertNotEquals(a1, "not a matrix");
+    }
+
+    @Test
+    public void testMatmul_mathematicalCorrectness() {
+        ShortMatrix m = ShortMatrix.of(new short[][] { { 2, 3 }, { 4, 5 } });
+        ShortMatrix id = ShortMatrix.of(new short[][] { { 1, 0 }, { 0, 1 } });
+        assertEquals(m, m.matmul(id));
+        assertEquals(m, id.matmul(m));
+
+        // 2x3 * 3x4 -> 2x4
+        ShortMatrix a = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+        ShortMatrix b = ShortMatrix.of(new short[][] { { 1, 0, 1, 1 }, { 0, 1, 1, 1 }, { 1, 1, 0, 1 } });
+        ShortMatrix product = a.matmul(b);
+        assertEquals(2, product.rowCount());
+        assertEquals(4, product.columnCount());
+        // row 0 = [4, 5, 3, 6]
+        assertArrayEquals(new short[] { 4, 5, 3, 6 }, product.rowCopy(0));
+        // row 1 = [10, 11, 9, 15]
+        assertArrayEquals(new short[] { 10, 11, 9, 15 }, product.rowCopy(1));
+    }
+
+    @Test
+    public void testMatmul_incompatibleShapesThrows() {
+        ShortMatrix a = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
+        ShortMatrix b = ShortMatrix.of(new short[][] { { 1, 2, 3 } });
+        assertThrows(IllegalArgumentException.class, () -> a.matmul(b));
+    }
+
+    @Test
+    public void testTranspose_inverseProperty() {
+        ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3, 4 }, { 5, 6, 7, 8 } });
+        ShortMatrix t = m.transpose();
+        assertEquals(4, t.rowCount());
+        assertEquals(2, t.columnCount());
+        for (int i = 0; i < m.rowCount(); i++) {
+            for (int j = 0; j < m.columnCount(); j++) {
+                assertEquals(m.get(i, j), t.get(j, i));
+            }
+        }
+        assertEquals(m, t.transpose());
+    }
+
+    @Test
+    public void testRotate_compositionEqualsRotate180() {
+        ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+        assertEquals(m.rotate180(), m.rotate90().rotate90());
+        assertEquals(m.rotate270(), m.rotate90().rotate90().rotate90());
+        assertEquals(m, m.rotate90().rotate90().rotate90().rotate90());
+    }
+
+    @Test
+    public void testFlipVerticallyInPlace_oddRowCount() {
+        ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
+        m.flipVerticallyInPlace();
+        assertArrayEquals(new short[] { 5, 6 }, m.rowCopy(0));
+        assertArrayEquals(new short[] { 3, 4 }, m.rowCopy(1));
+        assertArrayEquals(new short[] { 1, 2 }, m.rowCopy(2));
+    }
+
+    @Test
+    public void testExtend_emptyMatrixWithPaddingFillsFully() {
+        ShortMatrix empty = ShortMatrix.empty();
+        ShortMatrix padded = empty.extend(1, 1, 1, 1, (short) 9);
+        assertEquals(2, padded.rowCount());
+        assertEquals(2, padded.columnCount());
+        assertArrayEquals(new short[] { 9, 9 }, padded.rowCopy(0));
+        assertArrayEquals(new short[] { 9, 9 }, padded.rowCopy(1));
+    }
+
+    @Test
+    public void testMainDiagonalStream_iteratesEachDiagonalElementOnce() {
+        ShortMatrix m = ShortMatrix.of(new short[][] { { 11, 12, 13 }, { 21, 22, 23 }, { 31, 32, 33 } });
+        short[] diag = m.mainDiagonalStream().toArray();
+        assertArrayEquals(new short[] { 11, 22, 33 }, diag);
+    }
+
+    @Test
+    public void testAntiDiagonalStream_iteratesEachAntiDiagonalElementOnce() {
+        ShortMatrix m = ShortMatrix.of(new short[][] { { 11, 12, 13 }, { 21, 22, 23 }, { 31, 32, 33 } });
+        short[] antiDiag = m.antiDiagonalStream().toArray();
+        assertArrayEquals(new short[] { 13, 22, 31 }, antiDiag);
+    }
+
+    @Test
+    public void testHorizontalAndVerticalStream_traverseAllElementsExactlyOnce() {
+        ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+        short[] h = m.horizontalStream().toArray();
+        assertArrayEquals(new short[] { 1, 2, 3, 4, 5, 6 }, h);
+        short[] v = m.verticalStream().toArray();
+        assertArrayEquals(new short[] { 1, 4, 2, 5, 3, 6 }, v);
+    }
+
+    @Test
+    public void testCopyRegion_independentOfOriginal() {
+        ShortMatrix src = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+        ShortMatrix region = src.copy(0, 2, 1, 3);
+        region.set(0, 0, (short) 999);
+        assertEquals((short) 2, src.get(0, 1));
+        src.set(0, 1, (short) 888);
+        assertEquals((short) 999, region.get(0, 0));
+    }
+
+    @Test
+    public void testMatmul_negativeShortAccumulationStaysInRange() {
+        // Verify that the matmul result wraps to short range as documented.
+        ShortMatrix a = ShortMatrix.of(new short[][] { { Short.MAX_VALUE, Short.MAX_VALUE } });
+        ShortMatrix b = ShortMatrix.of(new short[][] { { 1 }, { 1 } });
+        ShortMatrix product = a.matmul(b);
+        // Short.MAX_VALUE + Short.MAX_VALUE = 65534, narrowed via short cast to -2.
+        assertEquals(1, product.rowCount());
+        assertEquals(1, product.columnCount());
+        assertEquals((short) -2, product.get(0, 0));
+    }
+
 }

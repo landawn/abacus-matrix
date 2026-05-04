@@ -1697,13 +1697,10 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     @Override
     public void flipVerticallyInPlace() {
-        for (int j = 0; j < columnCount; j++) {
-            double tmp = 0;
-            for (int l = 0, h = rowCount - 1; l < h;) {
-                tmp = a[l][j];
-                a[l++][j] = a[h][j];
-                a[h--][j] = tmp;
-            }
+        for (int l = 0, h = rowCount - 1; l < h; l++, h--) {
+            final double[] tmp = a[l];
+            a[l] = a[h];
+            a[h] = tmp;
         }
     }
 

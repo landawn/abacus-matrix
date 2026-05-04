@@ -5958,4 +5958,207 @@ class LongMatrixTest extends TestBase {
         assertThrows(java.util.NoSuchElementException.class, ex::nextLong);
     }
 
+    // =====================================================================
+    // Additional bug-hunt regression tests (Long-specific edge cases)
+    // =====================================================================
+
+    @Test
+    public void testRange_emptyAndStepWrongDirection() {
+        // Per Javadoc, range with start >= end returns a 1x0 matrix (1 row, 0 columns).
+        LongMatrix r = LongMatrix.range(0L, 0L);
+        assertEquals(1, r.rowCount());
+        assertEquals(0, r.columnCount());
+        assertTrue(r.isEmpty());
+
+        LongMatrix r2 = LongMatrix.range(5L, 0L);
+        assertEquals(1, r2.rowCount());
+        assertEquals(0, r2.columnCount());
+        assertTrue(r2.isEmpty());
+
+        LongMatrix r3 = LongMatrix.range(0L, 10L, -1L);
+        assertEquals(1, r3.rowCount());
+        assertEquals(0, r3.columnCount());
+    }
+
+    @Test
+    public void testRotate90_nonSquare_3x2() {
+        // 3x2 rotated 90° CW must yield a 2x3 with first column = last row reading upward.
+        LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
+        LongMatrix rotated = m.rotate90();
+        assertEquals(2, rotated.rowCount());
+        assertEquals(3, rotated.columnCount());
+        assertArrayEquals(new long[] { 5L, 3L, 1L }, rotated.rowCopy(0));
+        assertArrayEquals(new long[] { 6L, 4L, 2L }, rotated.rowCopy(1));
+    }
+
+    @Test
+    public void testRotate270_nonSquare_3x2() {
+        // 3x2 rotated 270° CW (= 90° CCW) must yield a 2x3 with first row = original column 1.
+        LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
+        LongMatrix rotated = m.rotate270();
+        assertEquals(2, rotated.rowCount());
+        assertEquals(3, rotated.columnCount());
+        assertArrayEquals(new long[] { 2L, 4L, 6L }, rotated.rowCopy(0));
+        assertArrayEquals(new long[] { 1L, 3L, 5L }, rotated.rowCopy(1));
+    }
+
+    @Test
+    public void testTranspose_nonSquare_3x2() {
+        // Verify transpose for the rowCount > columnCount branch.
+        LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
+        LongMatrix t = m.transpose();
+        assertEquals(2, t.rowCount());
+        assertEquals(3, t.columnCount());
+        assertArrayEquals(new long[] { 1L, 3L, 5L }, t.rowCopy(0));
+        assertArrayEquals(new long[] { 2L, 4L, 6L }, t.rowCopy(1));
+    }
+
+    @Test
+    public void testReshape_growLargerThanInput_padsWithZeros() {
+        // 2x3 reshaped to 2x4 should preserve order and pad the trailing slots with 0L.
+        LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+        LongMatrix reshaped = m.reshape(2, 4);
+        assertEquals(2, reshaped.rowCount());
+        assertEquals(4, reshaped.columnCount());
+        assertArrayEquals(new long[] { 1L, 2L, 3L, 4L }, reshaped.rowCopy(0));
+        assertArrayEquals(new long[] { 5L, 6L, 0L, 0L }, reshaped.rowCopy(1));
+    }
+
+    @Test
+    public void testReshape_singleRowToMultiRow_preservesOrder() {
+        // Exercise the `a.length == 1` branch of reshape.
+        LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L, 4L, 5L, 6L } });
+        LongMatrix reshaped = m.reshape(3, 2);
+        assertEquals(3, reshaped.rowCount());
+        assertEquals(2, reshaped.columnCount());
+        assertArrayEquals(new long[] { 1L, 2L }, reshaped.rowCopy(0));
+        assertArrayEquals(new long[] { 3L, 4L }, reshaped.rowCopy(1));
+        assertArrayEquals(new long[] { 5L, 6L }, reshaped.rowCopy(2));
+    }
+
+    @Test
+    public void testMainDiagonalStream_iteratorAdvanceAndCount() {
+        // Exercise advance() boundary around the `a[cursor][cursor++]` access pattern.
+        LongMatrix m = LongMatrix.of(new long[][] {
+                { 1L, 0L, 0L, 0L },
+                { 0L, 2L, 0L, 0L },
+                { 0L, 0L, 3L, 0L },
+                { 0L, 0L, 0L, 4L } });
+
+        var it = (com.landawn.abacus.util.stream.LongIteratorEx) m.mainDiagonalStream().iterator();
+        assertEquals(4L, it.count());
+        assertEquals(1L, it.nextLong());
+        it.advance(2);
+        assertEquals(1L, it.count());
+        assertEquals(4L, it.nextLong());
+        assertFalse(it.hasNext());
+    }
+
+    @Test
+    public void testAntiDiagonalStream_iteratorAdvanceAndCount() {
+        // Anti-diagonal of 4x4: (0,3)=4, (1,2)=3, (2,1)=2, (3,0)=1.
+        LongMatrix m = LongMatrix.of(new long[][] {
+                { 0L, 0L, 0L, 4L },
+                { 0L, 0L, 3L, 0L },
+                { 0L, 2L, 0L, 0L },
+                { 1L, 0L, 0L, 0L } });
+
+        long[] anti = m.antiDiagonalStream().toArray();
+        assertArrayEquals(new long[] { 4L, 3L, 2L, 1L }, anti);
+
+        var it = (com.landawn.abacus.util.stream.LongIteratorEx) m.antiDiagonalStream().iterator();
+        it.advance(1);
+        assertEquals(3L, it.count());
+        assertEquals(3L, it.nextLong());
+    }
+
+    @Test
+    public void testVerticalStream_advanceCrossesColumnBoundary() {
+        // Verify advance crosses column boundaries for verticalStream.
+        LongMatrix m = LongMatrix.of(new long[][] {
+                { 1L, 4L, 7L },
+                { 2L, 5L, 8L },
+                { 3L, 6L, 9L } });
+
+        var it = (com.landawn.abacus.util.stream.LongIteratorEx) m.verticalStream().iterator();
+        // verticalStream() → 1,2,3 (col 0) | 4,5,6 (col 1) | 7,8,9 (col 2)
+        assertEquals(9L, it.count());
+        it.advance(4);
+        // After advancing 4 elements we have skipped 1,2,3,4; next should be 5.
+        assertEquals(5L, it.count());
+        assertEquals(5L, it.nextLong());
+        it.advance(2);
+        // After advancing 2 more (6, 7) the next element is 8.
+        assertEquals(2L, it.count());
+        assertEquals(8L, it.nextLong());
+    }
+
+    @Test
+    public void testFlipVerticallyInPlace_singleRow_isNoOp() {
+        LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L } });
+        m.flipVerticallyInPlace();
+        assertArrayEquals(new long[] { 1L, 2L, 3L }, m.rowCopy(0));
+    }
+
+    @Test
+    public void testFlipHorizontallyInPlace_singleColumn_isNoOp() {
+        LongMatrix m = LongMatrix.of(new long[][] { { 1L }, { 2L }, { 3L } });
+        m.flipHorizontallyInPlace();
+        assertEquals(1L, m.get(0, 0));
+        assertEquals(2L, m.get(1, 0));
+        assertEquals(3L, m.get(2, 0));
+    }
+
+    @Test
+    public void testCopy_modificationsAreIndependent() {
+        // Verify that copy() returns a fully independent matrix (no shared row arrays).
+        LongMatrix orig = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+        LongMatrix copy = orig.copy();
+        copy.set(0, 0, 99L);
+        assertEquals(1L, orig.get(0, 0));
+        assertEquals(99L, copy.get(0, 0));
+    }
+
+    @Test
+    public void testStackVertically_clonesRows_independent() {
+        // Verify that stackVertically uses cloned rows, so modifying source after the call
+        // does not affect the stacked result.
+        long[][] aData = { { 1L, 2L } };
+        long[][] bData = { { 3L, 4L } };
+        LongMatrix a = LongMatrix.of(aData);
+        LongMatrix b = LongMatrix.of(bData);
+        LongMatrix stacked = a.stackVertically(b);
+
+        // Mutate source data after stacking; stacked should NOT change.
+        aData[0][0] = -1L;
+        bData[0][1] = -1L;
+        assertEquals(1L, stacked.get(0, 0));
+        assertEquals(4L, stacked.get(1, 1));
+    }
+
+    @Test
+    public void testToFloatMatrix_preservesValuesWithinPrecision() {
+        // Long values with absolute value <= 2^24 are exact in float.
+        LongMatrix lm = LongMatrix.of(new long[][] { { 0L, 1L, 16777216L }, { -16777216L, 100L, -100L } });
+        FloatMatrix fm = lm.toFloatMatrix();
+        assertEquals(2, fm.rowCount());
+        assertEquals(3, fm.columnCount());
+        assertEquals(0.0f, fm.get(0, 0));
+        assertEquals(1.0f, fm.get(0, 1));
+        assertEquals(16777216.0f, fm.get(0, 2));
+        assertEquals(-16777216.0f, fm.get(1, 0));
+    }
+
+    @Test
+    public void testMatmul_largeLongValues_doesNotTruncateToInt() {
+        // Verify matrix multiplication keeps values in long domain (no int truncation).
+        long large = 1_000_000_000L;
+        LongMatrix a = LongMatrix.of(new long[][] { { large, large }, { 0L, 0L } });
+        LongMatrix b = LongMatrix.of(new long[][] { { 2L, 0L }, { 3L, 0L } });
+        LongMatrix product = a.matmul(b);
+        // (1e9 * 2) + (1e9 * 3) = 5e9, which exceeds Integer.MAX_VALUE.
+        assertEquals(5_000_000_000L, product.get(0, 0));
+        assertEquals(0L, product.get(0, 1));
+    }
+
 }

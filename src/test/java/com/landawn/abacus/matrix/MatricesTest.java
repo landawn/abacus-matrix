@@ -2192,6 +2192,15 @@ class MatricesTest extends TestBase {
             assertEquals(Long.MAX_VALUE, invokeSaturatedMultiply(Long.MIN_VALUE, -1));
         }
 
+        @Test
+        public void test_saturatedMultiply_minValueEdge_argsSwapped() throws Exception {
+            // (-1) * Long.MIN_VALUE: same overflow as the symmetric case, must saturate to Long.MAX_VALUE.
+            // Regression: the divide-back overflow check was unable to detect this because
+            // Long.MIN_VALUE / -1 silently overflows to Long.MIN_VALUE in two's complement,
+            // which equals the right operand, falsely indicating no overflow.
+            assertEquals(Long.MAX_VALUE, invokeSaturatedMultiply(-1, Long.MIN_VALUE));
+        }
+
     }
 
     @Nested

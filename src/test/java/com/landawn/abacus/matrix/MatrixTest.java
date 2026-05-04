@@ -7197,4 +7197,33 @@ class MatrixTest extends TestBase {
         assertEquals(Arrays.asList("a", null), matrix.flatten());
     }
 
+    // Regression test for bug: flipVerticallyInPlace previously swapped individual elements
+    // between rows, which threw ArrayStoreException when rows had different runtime
+    // component types (a state allowed by the constructor — only rectangularity is enforced).
+    // The fix swaps row references instead.
+    @Test
+    public void testFlipVerticallyInPlace_HeterogeneousRowTypes_DoesNotThrow() {
+        Object[][] data = new Object[][] { new Integer[] { 1, 2 }, new String[] { "a", "b" } };
+        Matrix<Object> matrix = Matrix.of(data);
+
+        matrix.flipVerticallyInPlace();
+
+        // Row references are swapped, so values move with their original storage type.
+        assertEquals("a", matrix.get(0, 0));
+        assertEquals("b", matrix.get(0, 1));
+        assertEquals(1, matrix.get(1, 0));
+        assertEquals(2, matrix.get(1, 1));
+    }
+
+    // Sanity test confirming flipVerticallyInPlace still works for ordinary homogeneous matrices.
+    @Test
+    public void testFlipVerticallyInPlace_HomogeneousRows_StillCorrect() {
+        Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+
+        matrix.flipVerticallyInPlace();
+
+        assertArrayEquals(new Integer[] { 7, 8, 9 }, matrix.rowView(0));
+        assertArrayEquals(new Integer[] { 4, 5, 6 }, matrix.rowView(1));
+        assertArrayEquals(new Integer[] { 1, 2, 3 }, matrix.rowView(2));
+    }
 }

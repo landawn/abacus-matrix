@@ -1999,13 +1999,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     @Override
     public void flipVerticallyInPlace() {
-        for (int j = 0; j < columnCount; j++) {
-            T tmp = null;
-            for (int l = 0, h = rowCount - 1; l < h;) {
-                tmp = a[l][j];
-                a[l++][j] = a[h][j];
-                a[h--][j] = tmp;
-            }
+        // Swap row references rather than individual elements. This is correct even when
+        // rows have different runtime component types (which is permitted by the constructor),
+        // and avoids ArrayStoreException when assigning a value into an incompatibly-typed row.
+        for (int l = 0, h = rowCount - 1; l < h; l++, h--) {
+            final T[] tmp = a[l];
+            a[l] = a[h];
+            a[h] = tmp;
         }
     }
 

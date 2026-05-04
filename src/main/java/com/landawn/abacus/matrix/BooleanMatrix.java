@@ -1564,13 +1564,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     @Override
     public void flipVerticallyInPlace() {
-        for (int j = 0; j < columnCount; j++) {
-            boolean tmp = false;
-            for (int l = 0, h = rowCount - 1; l < h;) {
-                tmp = a[l][j];
-                a[l++][j] = a[h][j];
-                a[h--][j] = tmp;
-            }
+        for (int l = 0, h = rowCount - 1; l < h; l++, h--) {
+            final boolean[] tmp = a[l];
+            a[l] = a[h];
+            a[h] = tmp;
         }
     }
 

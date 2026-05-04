@@ -5951,4 +5951,205 @@ class IntMatrixTest extends TestBase {
         assertThrows(java.util.NoSuchElementException.class, ex::nextInt);
     }
 
+    // ============ Additional edge-case verifications (defensive tests) ============
+
+    @Test
+    public void testFromShortArray_signExtensionForNegativeValues() {
+        // Verify that short -> int widening uses sign extension (not zero extension)
+        short[][] src = { { (short) -1, Short.MIN_VALUE }, { (short) 0, Short.MAX_VALUE } };
+        IntMatrix m = IntMatrix.from(src);
+        assertEquals(-1, m.get(0, 0));
+        assertEquals(Short.MIN_VALUE, m.get(0, 1));
+        assertEquals(0, m.get(1, 0));
+        assertEquals(Short.MAX_VALUE, m.get(1, 1));
+    }
+
+    @Test
+    public void testFromByteArray_signExtensionForNegativeValues() {
+        // Verify that byte -> int widening uses sign extension
+        byte[][] src = { { (byte) -1, Byte.MIN_VALUE }, { (byte) 0, Byte.MAX_VALUE } };
+        IntMatrix m = IntMatrix.from(src);
+        assertEquals(-1, m.get(0, 0));
+        assertEquals(Byte.MIN_VALUE, m.get(0, 1));
+        assertEquals(0, m.get(1, 0));
+        assertEquals(Byte.MAX_VALUE, m.get(1, 1));
+    }
+
+    @Test
+    public void testFromCharArray_zeroExtensionForHighChars() {
+        // Verify that char -> int widening uses zero extension (chars are unsigned)
+        char[][] src = { { '￿', ' ' }, { '耀', 'A' } };
+        IntMatrix m = IntMatrix.from(src);
+        assertEquals(0xFFFF, m.get(0, 0));
+        assertEquals(0, m.get(0, 1));
+        assertEquals(0x8000, m.get(1, 0));
+        assertEquals(65, m.get(1, 1));
+    }
+
+    @Test
+    public void testReshape_singleRowSourceMultipleStrides() {
+        // Reshape a 1xN matrix into multiple smaller rows; covers the a.length == 1 branch.
+        IntMatrix src = IntMatrix.of(new int[][] { { 1, 2, 3, 4, 5, 6, 7 } });
+        IntMatrix r = src.reshape(3, 3);
+        assertEquals(3, r.rowCount());
+        assertEquals(3, r.columnCount());
+        assertArrayEquals(new int[] { 1, 2, 3 }, r.rowCopy(0));
+        assertArrayEquals(new int[] { 4, 5, 6 }, r.rowCopy(1));
+        // Last cell of the source goes into row 2; the extra cells should be zero-padded.
+        assertArrayEquals(new int[] { 7, 0, 0 }, r.rowCopy(2));
+    }
+
+    @Test
+    public void testReshape_multiRowSourceRowMajorOrder() {
+        // Reshape exercises the cnt-based branch (a.length > 1).
+        IntMatrix src = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+        IntMatrix r = src.reshape(2, 4);
+        assertArrayEquals(new int[] { 1, 2, 3, 4 }, r.rowCopy(0));
+        assertArrayEquals(new int[] { 5, 6, 0, 0 }, r.rowCopy(1));
+    }
+
+    @Test
+    public void testReshape_overshootFillsTrailingRowsWithZeros() {
+        // newRowCount * newColumnCount > elementCount: trailing rows should be all zeros.
+        IntMatrix src = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+        IntMatrix r = src.reshape(4, 2);
+        assertArrayEquals(new int[] { 1, 2 }, r.rowCopy(0));
+        assertArrayEquals(new int[] { 3, 4 }, r.rowCopy(1));
+        assertArrayEquals(new int[] { 5, 6 }, r.rowCopy(2));
+        assertArrayEquals(new int[] { 0, 0 }, r.rowCopy(3));
+    }
+
+    @Test
+    public void testEqualsHashCode_consistencyAndShape() {
+        IntMatrix a1 = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
+        IntMatrix a2 = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
+        IntMatrix b = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+
+        assertEquals(a1, a2);
+        assertEquals(a1.hashCode(), a2.hashCode());
+        assertNotEquals(a1, b);
+
+        // Different content yields not-equal.
+        IntMatrix differentValue = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 99 } });
+        assertNotEquals(a1, differentValue);
+
+        // Self-equality, null, other type.
+        assertEquals(a1, a1);
+        assertNotEquals(a1, null);
+        assertNotEquals(a1, "not a matrix");
+    }
+
+    @Test
+    public void testMatmul_mathematicalCorrectness() {
+        // Identity multiplication.
+        IntMatrix m = IntMatrix.of(new int[][] { { 2, 3 }, { 4, 5 } });
+        IntMatrix id = IntMatrix.of(new int[][] { { 1, 0 }, { 0, 1 } });
+        assertEquals(m, m.matmul(id));
+        assertEquals(m, id.matmul(m));
+
+        // Non-square shapes: 2x3 * 3x4 -> 2x4
+        IntMatrix a = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+        IntMatrix b = IntMatrix.of(new int[][] { { 1, 0, 1, 1 }, { 0, 1, 1, 1 }, { 1, 1, 0, 1 } });
+        IntMatrix product = a.matmul(b);
+        assertEquals(2, product.rowCount());
+        assertEquals(4, product.columnCount());
+        // row 0 = [1*1+2*0+3*1, 1*0+2*1+3*1, 1*1+2*1+3*0, 1*1+2*1+3*1] = [4, 5, 3, 6]
+        assertArrayEquals(new int[] { 4, 5, 3, 6 }, product.rowCopy(0));
+        // row 1 = [4+0+6, 0+5+6, 4+5+0, 4+5+6] = [10, 11, 9, 15]
+        assertArrayEquals(new int[] { 10, 11, 9, 15 }, product.rowCopy(1));
+    }
+
+    @Test
+    public void testMatmul_incompatibleShapesThrows() {
+        IntMatrix a = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
+        IntMatrix b = IntMatrix.of(new int[][] { { 1, 2, 3 } });
+        // a is 2x2 and b is 1x3; columnCount(a)=2 != rowCount(b)=1
+        assertThrows(IllegalArgumentException.class, () -> a.matmul(b));
+    }
+
+    @Test
+    public void testTranspose_inverseProperty() {
+        IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3, 4 }, { 5, 6, 7, 8 } });
+        IntMatrix t = m.transpose();
+        assertEquals(4, t.rowCount());
+        assertEquals(2, t.columnCount());
+        // (i,j) in m -> (j,i) in t
+        for (int i = 0; i < m.rowCount(); i++) {
+            for (int j = 0; j < m.columnCount(); j++) {
+                assertEquals(m.get(i, j), t.get(j, i));
+            }
+        }
+        // Transpose-of-transpose returns to original.
+        assertEquals(m, t.transpose());
+    }
+
+    @Test
+    public void testRotate_compositionEqualsRotate180() {
+        IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+        // 90 + 90 = 180
+        assertEquals(m.rotate180(), m.rotate90().rotate90());
+        // 90 + 90 + 90 = 270
+        assertEquals(m.rotate270(), m.rotate90().rotate90().rotate90());
+        // 90 * 4 = identity
+        assertEquals(m, m.rotate90().rotate90().rotate90().rotate90());
+    }
+
+    @Test
+    public void testFlipVerticallyInPlace_oddRowCount() {
+        // The middle row should remain untouched; outer rows should be swapped.
+        IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
+        m.flipVerticallyInPlace();
+        assertArrayEquals(new int[] { 5, 6 }, m.rowCopy(0));
+        assertArrayEquals(new int[] { 3, 4 }, m.rowCopy(1));
+        assertArrayEquals(new int[] { 1, 2 }, m.rowCopy(2));
+    }
+
+    @Test
+    public void testExtend_emptyMatrixWithPaddingFillsFully() {
+        // Padding an empty matrix should produce a matrix entirely filled with defaultValue.
+        IntMatrix empty = IntMatrix.empty();
+        IntMatrix padded = empty.extend(1, 1, 1, 1, 9);
+        assertEquals(2, padded.rowCount());
+        assertEquals(2, padded.columnCount());
+        assertArrayEquals(new int[] { 9, 9 }, padded.rowCopy(0));
+        assertArrayEquals(new int[] { 9, 9 }, padded.rowCopy(1));
+    }
+
+    @Test
+    public void testMainDiagonalStream_iteratesEachDiagonalElementOnce() {
+        IntMatrix m = IntMatrix.of(new int[][] { { 11, 12, 13 }, { 21, 22, 23 }, { 31, 32, 33 } });
+        int[] diag = m.mainDiagonalStream().toArray();
+        assertArrayEquals(new int[] { 11, 22, 33 }, diag);
+    }
+
+    @Test
+    public void testAntiDiagonalStream_iteratesEachAntiDiagonalElementOnce() {
+        IntMatrix m = IntMatrix.of(new int[][] { { 11, 12, 13 }, { 21, 22, 23 }, { 31, 32, 33 } });
+        int[] antiDiag = m.antiDiagonalStream().toArray();
+        assertArrayEquals(new int[] { 13, 22, 31 }, antiDiag);
+    }
+
+    @Test
+    public void testHorizontalAndVerticalStream_traverseAllElementsExactlyOnce() {
+        IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+        // Horizontal: row-major order; element count must equal elementCount.
+        int[] h = m.horizontalStream().toArray();
+        assertArrayEquals(new int[] { 1, 2, 3, 4, 5, 6 }, h);
+        // Vertical: column-major order.
+        int[] v = m.verticalStream().toArray();
+        assertArrayEquals(new int[] { 1, 4, 2, 5, 3, 6 }, v);
+    }
+
+    @Test
+    public void testCopyRegion_independentOfOriginal() {
+        IntMatrix src = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+        IntMatrix region = src.copy(0, 2, 1, 3);
+        // Mutating the region must NOT change the original.
+        region.set(0, 0, 999);
+        assertEquals(2, src.get(0, 1));
+        // Mutating the original must NOT change the region.
+        src.set(0, 1, 888);
+        assertEquals(999, region.get(0, 0));
+    }
+
 }

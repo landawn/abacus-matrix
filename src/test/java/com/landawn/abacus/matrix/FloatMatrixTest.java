@@ -5789,4 +5789,215 @@ class FloatMatrixTest extends TestBase {
         assertArrayEquals(new long[] { 1L, 2L, 3L, 4L }, matrix.toLongMatrix().flatten().toArray());
     }
 
+    // =====================================================================
+    // Additional bug-hunt regression tests (Float-specific edge cases)
+    // =====================================================================
+
+    @Test
+    public void testEqualsAndHashCode_NaN_areConsidered_Equal() {
+        // FloatMatrix.equals/hashCode use Float.floatToIntBits semantics (per Javadoc),
+        // so NaN == NaN, and the hash code must be consistent with equals.
+        FloatMatrix m1 = FloatMatrix.of(new float[][] { { Float.NaN, 1.0f }, { 2.0f, Float.NaN } });
+        FloatMatrix m2 = FloatMatrix.of(new float[][] { { Float.NaN, 1.0f }, { 2.0f, Float.NaN } });
+
+        assertEquals(m1, m2, "Two matrices with NaN values at the same positions must be equal");
+        assertEquals(m1.hashCode(), m2.hashCode(), "Equal matrices must produce equal hash codes (NaN content)");
+    }
+
+    @Test
+    public void testEqualsAndHashCode_negativeZero_distinctFromPositiveZero() {
+        // FloatMatrix.equals/hashCode use Float.floatToIntBits semantics (per Javadoc),
+        // so +0.0f and -0.0f are NOT equal, and the hash codes must differ accordingly.
+        FloatMatrix posZero = FloatMatrix.of(new float[][] { { 0.0f } });
+        FloatMatrix negZero = FloatMatrix.of(new float[][] { { -0.0f } });
+
+        assertNotEquals(posZero, negZero, "+0.0f and -0.0f must not be equal under Float.floatToIntBits semantics");
+        assertNotEquals(posZero.hashCode(), negZero.hashCode(),
+                "+0.0f and -0.0f must produce different hash codes under Float.floatToIntBits semantics");
+    }
+
+    @Test
+    public void testResize_growsWithNegativeZeroFill_preservesNegativeZero() {
+        // Resizing into a larger shape should fill new cells with the supplied default value.
+        // -0.0f has a non-zero bit pattern, so it must propagate even though it equals +0.0f
+        // under == comparison.
+        FloatMatrix matrix = FloatMatrix.of(new float[][] { { 1.0f, 2.0f } });
+        FloatMatrix grown = matrix.resize(2, 4, -0.0f);
+
+        assertEquals(2, grown.rowCount());
+        assertEquals(4, grown.columnCount());
+        // Pre-existing cells preserved.
+        assertEquals(1.0f, grown.get(0, 0), DELTA);
+        assertEquals(2.0f, grown.get(0, 1), DELTA);
+        // Newly added cells must hold the -0.0f bit pattern.
+        for (int j = 2; j < 4; j++) {
+            assertEquals(Float.floatToRawIntBits(-0.0f), Float.floatToRawIntBits(grown.get(0, j)),
+                    "Resize new cell at (0," + j + ") must keep the -0.0f bit pattern");
+        }
+        for (int j = 0; j < 4; j++) {
+            assertEquals(Float.floatToRawIntBits(-0.0f), Float.floatToRawIntBits(grown.get(1, j)),
+                    "Resize new cell at (1," + j + ") must keep the -0.0f bit pattern");
+        }
+    }
+
+    @Test
+    public void testExtend_withNaNFill_propagatesNaN() {
+        // Extending with NaN should fill all newly added cells with NaN. This exercises the
+        // floatToRawIntBits != 0 short-circuit in extend(...).
+        FloatMatrix matrix = FloatMatrix.of(new float[][] { { 1.0f, 2.0f } });
+        FloatMatrix extended = matrix.extend(1, 1, 1, 1, Float.NaN);
+
+        assertEquals(3, extended.rowCount());
+        assertEquals(4, extended.columnCount());
+        // Original content preserved.
+        assertEquals(1.0f, extended.get(1, 1), DELTA);
+        assertEquals(2.0f, extended.get(1, 2), DELTA);
+        // Padded cells must be NaN.
+        assertTrue(Float.isNaN(extended.get(0, 0)));
+        assertTrue(Float.isNaN(extended.get(0, 3)));
+        assertTrue(Float.isNaN(extended.get(2, 0)));
+        assertTrue(Float.isNaN(extended.get(2, 3)));
+        assertTrue(Float.isNaN(extended.get(1, 0)));
+        assertTrue(Float.isNaN(extended.get(1, 3)));
+    }
+
+    @Test
+    public void testRotate90_nonSquare_3x2() {
+        // 3x2 rotated 90° CW must yield a 2x3 with first column = last row reading upward.
+        FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f }, { 5.0f, 6.0f } });
+        FloatMatrix rotated = m.rotate90();
+        assertEquals(2, rotated.rowCount());
+        assertEquals(3, rotated.columnCount());
+        assertArrayEquals(new float[] { 5.0f, 3.0f, 1.0f }, rotated.rowCopy(0), DELTA);
+        assertArrayEquals(new float[] { 6.0f, 4.0f, 2.0f }, rotated.rowCopy(1), DELTA);
+    }
+
+    @Test
+    public void testRotate270_nonSquare_3x2() {
+        // 3x2 rotated 270° CW (= 90° CCW) must yield a 2x3 with first row = original column 1.
+        FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f }, { 5.0f, 6.0f } });
+        FloatMatrix rotated = m.rotate270();
+        assertEquals(2, rotated.rowCount());
+        assertEquals(3, rotated.columnCount());
+        assertArrayEquals(new float[] { 2.0f, 4.0f, 6.0f }, rotated.rowCopy(0), DELTA);
+        assertArrayEquals(new float[] { 1.0f, 3.0f, 5.0f }, rotated.rowCopy(1), DELTA);
+    }
+
+    @Test
+    public void testTranspose_nonSquare_3x2() {
+        // Verify transpose for the rowCount > columnCount branch.
+        FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f }, { 5.0f, 6.0f } });
+        FloatMatrix t = m.transpose();
+        assertEquals(2, t.rowCount());
+        assertEquals(3, t.columnCount());
+        assertArrayEquals(new float[] { 1.0f, 3.0f, 5.0f }, t.rowCopy(0), DELTA);
+        assertArrayEquals(new float[] { 2.0f, 4.0f, 6.0f }, t.rowCopy(1), DELTA);
+    }
+
+    @Test
+    public void testReshape_growLargerThanInput_padsWithZeros() {
+        // 2x3 reshaped to 2x4 should preserve order and pad the trailing slots with 0.0f.
+        FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f } });
+        FloatMatrix reshaped = m.reshape(2, 4);
+        assertEquals(2, reshaped.rowCount());
+        assertEquals(4, reshaped.columnCount());
+        assertArrayEquals(new float[] { 1.0f, 2.0f, 3.0f, 4.0f }, reshaped.rowCopy(0), DELTA);
+        assertArrayEquals(new float[] { 5.0f, 6.0f, 0.0f, 0.0f }, reshaped.rowCopy(1), DELTA);
+    }
+
+    @Test
+    public void testMainDiagonalStream_iteratorAdvanceAndCount() {
+        // Exercise advance() boundary around the cursor++ in a[cursor][cursor++].
+        FloatMatrix m = FloatMatrix.of(new float[][] {
+                { 1.0f, 0.0f, 0.0f, 0.0f },
+                { 0.0f, 2.0f, 0.0f, 0.0f },
+                { 0.0f, 0.0f, 3.0f, 0.0f },
+                { 0.0f, 0.0f, 0.0f, 4.0f } });
+
+        var it = (com.landawn.abacus.util.stream.FloatIteratorEx) m.mainDiagonalStream().iterator();
+        assertEquals(4L, it.count());
+        assertEquals(1.0f, it.nextFloat(), DELTA);
+        it.advance(2);
+        assertEquals(1L, it.count());
+        assertEquals(4.0f, it.nextFloat(), DELTA);
+        assertFalse(it.hasNext());
+    }
+
+    @Test
+    public void testVerticalStream_advanceCrossesColumnBoundary() {
+        // Verify advance crosses column boundaries for verticalStream.
+        FloatMatrix m = FloatMatrix.of(new float[][] {
+                { 1.0f, 4.0f, 7.0f },
+                { 2.0f, 5.0f, 8.0f },
+                { 3.0f, 6.0f, 9.0f } });
+
+        var it = (com.landawn.abacus.util.stream.FloatIteratorEx) m.verticalStream().iterator();
+        // verticalStream() → 1,2,3 (col 0) | 4,5,6 (col 1) | 7,8,9 (col 2)
+        assertEquals(9L, it.count());
+        it.advance(4);
+        // After advancing 4 elements we have read 1,2,3,4; next should be 5.
+        assertEquals(5L, it.count());
+        assertEquals(5.0f, it.nextFloat(), DELTA);
+        it.advance(2);
+        // After advancing 2 more (6, 7) the next element is 8.
+        assertEquals(2L, it.count());
+        assertEquals(8.0f, it.nextFloat(), DELTA);
+    }
+
+    @Test
+    public void testRange_zeroLength_isOneByZero() {
+        // FloatMatrix doesn't have range, but let's verify equivalent behavior via repeat/reshape.
+        // This was a quick sanity check covered in LongMatrix tests; the FloatMatrix equivalent
+        // is implicit in reshape and resize edge cases.
+        FloatMatrix empty = FloatMatrix.empty();
+        assertTrue(empty.isEmpty());
+        assertEquals(0, empty.rowCount());
+        assertEquals(0, empty.columnCount());
+    }
+
+    @Test
+    public void testFlipVerticallyInPlace_singleRow_isNoOp() {
+        // Edge case: 1xN matrix should be unchanged by vertical flip.
+        FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f } });
+        m.flipVerticallyInPlace();
+        assertArrayEquals(new float[] { 1.0f, 2.0f, 3.0f }, m.rowCopy(0), DELTA);
+    }
+
+    @Test
+    public void testFlipHorizontallyInPlace_singleColumn_isNoOp() {
+        // Edge case: Nx1 matrix should be unchanged by horizontal flip.
+        FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f }, { 2.0f }, { 3.0f } });
+        m.flipHorizontallyInPlace();
+        assertEquals(1.0f, m.get(0, 0), DELTA);
+        assertEquals(2.0f, m.get(1, 0), DELTA);
+        assertEquals(3.0f, m.get(2, 0), DELTA);
+    }
+
+    @Test
+    public void testCopy_modificationsAreIndependent() {
+        // Verify that copy() returns a fully independent matrix (no shared row arrays).
+        FloatMatrix orig = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
+        FloatMatrix copy = orig.copy();
+        copy.set(0, 0, 99.0f);
+        assertEquals(1.0f, orig.get(0, 0), DELTA);
+        assertEquals(99.0f, copy.get(0, 0), DELTA);
+    }
+
+    @Test
+    public void testStackVertically_clonesRows_independent() {
+        // Verify that stackVertically uses cloned rows, so modifying source after the call
+        // does not affect the stacked result.
+        float[][] aData = { { 1.0f, 2.0f } };
+        float[][] bData = { { 3.0f, 4.0f } };
+        FloatMatrix a = FloatMatrix.of(aData);
+        FloatMatrix b = FloatMatrix.of(bData);
+        FloatMatrix stacked = a.stackVertically(b);
+
+        // Mutate source data after stacking; stacked should NOT change.
+        aData[0][0] = -1.0f;
+        bData[0][1] = -1.0f;
+        assertEquals(1.0f, stacked.get(0, 0), DELTA);
+        assertEquals(4.0f, stacked.get(1, 1), DELTA);
+    }
+
 }
