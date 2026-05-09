@@ -35,8 +35,8 @@ import com.landawn.abacus.util.stream.Stream;
  * coordinate navigation, row and column access, reshaping, and stream-oriented traversal.</p>
  *
  * <p>Several APIs intentionally expose live storage for performance-sensitive code, notably
- * {@link #backingArray()}, {@link #rowView(int)}, and
- * {@link #applyOnFlattened(Throwables.Consumer)}. Callers that need isolation should prefer
+ * {@link #internalArray()}, {@link #rowView(int)}, and
+ * {@link #mutateAsFlat(Throwables.Consumer)}. Callers that need isolation should prefer
  * copy-producing operations such as {@link #copy()}, {@link #flatten()}, and {@link #rowCopy(int)}.</p>
  *
  * <p>Per-element iteration uses two complementary entry points. The index-only
@@ -145,30 +145,30 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     final A[] a;
 
     /**
-     * The component type of elements in this matrix. For primitive matrices this is the matching
+     * The element type of this matrix. For primitive matrices this is the matching
      * primitive class (e.g. {@code int.class}); for {@link Matrix} it is the runtime element class.
-     * Read via {@link #componentType()}.
+     * Read via {@link #elementType()}.
      */
-    final Class<?> componentType;
+    final Class<?> elementType;
 
     /**
      * Constructs a new AbstractMatrix with the specified two-dimensional array.
      * The constructor validates that all rows are non-null and have the same length.
      *
      * @param a the two-dimensional array containing matrix data; must not be {@code null}
-     * @param componentType the component type of matrix elements (e.g. {@code int.class});
+     * @param elementType the element type of the matrix (e.g. {@code int.class});
      *        must not be {@code null}
-     * @throws IllegalArgumentException if {@code a} or {@code componentType} is {@code null},
+     * @throws IllegalArgumentException if {@code a} or {@code elementType} is {@code null},
      *         if any row of {@code a} is {@code null}, or if the rows have different lengths
      *         (i.e. the array is not rectangular)
      */
     @SuppressFBWarnings("CT_CONSTRUCTOR_THROW")
-    protected AbstractMatrix(final A[] a, final Class<?> componentType) {
+    protected AbstractMatrix(final A[] a, final Class<?> elementType) {
         N.checkArgNotNull(a, "Matrix array cannot be null");
-        N.checkArgNotNull(componentType, "Component type cannot be null");
+        N.checkArgNotNull(elementType, "Element type cannot be null");
 
         this.a = a;
-        this.componentType = componentType;
+        this.elementType = elementType;
         rowCount = a.length;
 
         if (rowCount > 0) {
@@ -247,7 +247,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     }
 
     /**
-     * Returns the component type of the elements in this matrix.
+     * Returns the element type of this matrix.
      * For primitive matrices, this returns the corresponding primitive class (e.g., {@code int.class} for {@link IntMatrix}).
      * For object matrices, this returns the element's class type.
      *
@@ -256,16 +256,16 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix intMatrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * Class<?> type = intMatrix.componentType();   // Returns int.class
+     * Class<?> type = intMatrix.elementType();   // Returns int.class
      *
      * Matrix<String> stringMatrix = Matrix.of(new String[][] {{"a", "b"}, {"c", "d"}});
-     * Class<?> strType = stringMatrix.componentType();   // Returns String.class
+     * Class<?> strType = stringMatrix.elementType();   // Returns String.class
      * }</pre>
      *
-     * @return the Class object representing the component type of matrix elements
+     * @return the Class object representing the element type of this matrix
      */
-    public Class<?> componentType() {
-        return componentType;
+    public Class<?> elementType() {
+        return elementType;
     }
 
     /**
@@ -280,7 +280,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * int[][] array = matrix.backingArray();
+     * int[][] array = matrix.internalArray();
      * array[0][0] = 10;  // This WILL modify the matrix!
      * // matrix now contains {{10, 2}, {3, 4}}
      * }</pre>
@@ -288,7 +288,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @return the underlying two-dimensional array (not a copy)
      */
     @SuppressFBWarnings("EI_EXPOSE_REP")
-    public A[] backingArray() {
+    public A[] internalArray() {
         return a;
     }
 
@@ -897,10 +897,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{3, 1, 4}, {1, 5, 9}});
-     * matrix.applyOnFlattened(a -> java.util.Arrays.sort(a));   // Sorts all elements
+     * matrix.mutateAsFlat(a -> java.util.Arrays.sort(a));   // Sorts all elements
      * // Matrix becomes [[1, 1, 3], [4, 5, 9]] (elements sorted in row-major order)
      *
-     * matrix.applyOnFlattened(a -> { for (int i = 0; i < a.length; i++) a[i] *= 2; });
+     * matrix.mutateAsFlat(a -> { for (int i = 0; i < a.length; i++) a[i] *= 2; });
      * // Doubles all elements
      * }</pre>
      *
@@ -908,7 +908,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param action the operation to apply to the flattened array (receives array type A, not A[])
      * @throws E if the operation throws an exception
      */
-    public abstract <E extends Exception> void applyOnFlattened(Throwables.Consumer<? super A, E> action) throws E;
+    public abstract <E extends Exception> void mutateAsFlat(Throwables.Consumer<? super A, E> action) throws E;
 
     /**
      * Performs the specified action for each element position in the matrix.
@@ -1236,7 +1236,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     public Stream<Point> mainDiagonalPoints() {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
 
         //noinspection resource
         return IntStream.range(0, rowCount).mapToObj(i -> Point.of(i, i));
@@ -1260,7 +1260,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     public Stream<Point> antiDiagonalPoints() {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
 
         //noinspection resource
         return IntStream.range(0, rowCount).mapToObj(i -> Point.of(i, columnCount - i - 1));
@@ -1906,7 +1906,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
-    protected void checkIfRowAndColumnSizeAreSame() {
+    protected void checkIsSquare() {
         N.checkState(rowCount == columnCount, MSG_MATRIX_NOT_SQUARE, rowCount, columnCount);
     }
 

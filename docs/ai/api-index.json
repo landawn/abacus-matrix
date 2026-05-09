@@ -587,13 +587,13 @@
               "see_also": []
             },
             {
-              "name": "applyOnFlattened",
+              "name": "mutateAsFlat",
               "kind": "instance",
               "modifiers": [
                 "public",
                 "abstract"
               ],
-              "signature": "public abstract <E extends Exception> void applyOnFlattened(Throwables.Consumer<? super A, E> action) throws E",
+              "signature": "public abstract <E extends Exception> void mutateAsFlat(Throwables.Consumer<? super A, E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -3366,12 +3366,12 @@
               "see_also": []
             },
             {
-              "name": "applyOnFlattened",
+              "name": "mutateAsFlat",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void applyOnFlattened(final Throwables.Consumer<? super boolean[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super boolean[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -3399,7 +3399,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "Arrays#applyOnFlattened(boolean[][], Throwables.Consumer)"
+                "Arrays#mutateAsFlat(boolean[][], Throwables.Consumer)"
               ]
             },
             {
@@ -6208,12 +6208,12 @@
               ]
             },
             {
-              "name": "applyOnFlattened",
+              "name": "mutateAsFlat",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void applyOnFlattened(final Throwables.Consumer<? super byte[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super byte[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -6241,7 +6241,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "Arrays#applyOnFlattened(byte[][], Throwables.Consumer)"
+                "Arrays#mutateAsFlat(byte[][], Throwables.Consumer)"
               ]
             },
             {
@@ -9064,12 +9064,12 @@
               "see_also": []
             },
             {
-              "name": "applyOnFlattened",
+              "name": "mutateAsFlat",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void applyOnFlattened(final Throwables.Consumer<? super char[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super char[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -9097,7 +9097,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "Arrays#applyOnFlattened(char[][], Throwables.Consumer)"
+                "Arrays#mutateAsFlat(char[][], Throwables.Consumer)"
               ]
             },
             {
@@ -11897,12 +11897,12 @@
               "see_also": []
             },
             {
-              "name": "applyOnFlattened",
+              "name": "mutateAsFlat",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void applyOnFlattened(final Throwables.Consumer<? super double[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super double[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -11930,7 +11930,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "Arrays#applyOnFlattened(double[][], Throwables.Consumer)"
+                "Arrays#mutateAsFlat(double[][], Throwables.Consumer)"
               ]
             },
             {
@@ -14591,12 +14591,12 @@
               "see_also": []
             },
             {
-              "name": "applyOnFlattened",
+              "name": "mutateAsFlat",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void applyOnFlattened(final Throwables.Consumer<? super float[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super float[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -14624,7 +14624,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "Arrays#applyOnFlattened(float[][], Throwables.Consumer)"
+                "Arrays#mutateAsFlat(float[][], Throwables.Consumer)"
               ]
             },
             {
@@ -17540,12 +17540,12 @@
               "see_also": []
             },
             {
-              "name": "applyOnFlattened",
+              "name": "mutateAsFlat",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void applyOnFlattened(final Throwables.Consumer<? super int[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super int[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -17573,7 +17573,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "Arrays#applyOnFlattened(int[][], Throwables.Consumer)"
+                "Arrays#mutateAsFlat(int[][], Throwables.Consumer)"
               ]
             },
             {
@@ -20460,12 +20460,12 @@
               "see_also": []
             },
             {
-              "name": "applyOnFlattened",
+              "name": "mutateAsFlat",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void applyOnFlattened(final Throwables.Consumer<? super long[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super long[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -20493,7 +20493,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "Arrays#applyOnFlattened(long[][], Throwables.Consumer)"
+                "Arrays#mutateAsFlat(long[][], Throwables.Consumer)"
               ]
             },
             {
@@ -26738,12 +26738,12 @@
               "see_also": []
             },
             {
-              "name": "applyOnFlattened",
+              "name": "mutateAsFlat",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void applyOnFlattened(final Throwables.Consumer<? super T[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super T[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -26771,7 +26771,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "Arrays.ff#applyOnFlattened(Object[][], Throwables.Consumer)"
+                "Arrays.ff#mutateAsFlat(Object[][], Throwables.Consumer)"
               ]
             },
             {
@@ -29661,12 +29661,12 @@
               "see_also": []
             },
             {
-              "name": "applyOnFlattened",
+              "name": "mutateAsFlat",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void applyOnFlattened(final Throwables.Consumer<? super short[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super short[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -29694,7 +29694,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "Arrays#applyOnFlattened(short[][], Throwables.Consumer)"
+                "Arrays#mutateAsFlat(short[][], Throwables.Consumer)"
               ]
             },
             {

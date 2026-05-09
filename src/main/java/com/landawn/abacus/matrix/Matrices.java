@@ -3346,6 +3346,14 @@ public final class Matrices {
     private static void checkShapeForZip(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> coll) {
         N.checkArgNotEmpty(coll, "matrices");
 
+        int idx = 0;
+        for (final AbstractMatrix<?, ?, ?, ?, ?> m : coll) {
+            if (m == null) {
+                throw new IllegalArgumentException("matrices[" + idx + "] is null");
+            }
+            idx++;
+        }
+
         N.checkArgument(isSameShape(coll), "Cannot zip matrices with different shapes");
     }
 }

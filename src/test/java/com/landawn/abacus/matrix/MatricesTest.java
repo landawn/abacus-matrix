@@ -519,6 +519,20 @@ class MatricesTest extends TestBase {
     }
 
     @Test
+    public void testZipCollection_nullElement_reportsNullNotShape() {
+        // Regression: a null entry inside the collection must surface as a "matrices[N] is null"
+        // diagnostic, not the misleading "Cannot zip matrices with different shapes".
+        List<IntMatrix> withNull = Arrays.asList(intMatrix1, null, intMatrix3);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> Matrices.zip(withNull, (a, b) -> a + b));
+        assertTrue(ex.getMessage().contains("null"),
+                "Expected message to mention null, got: " + ex.getMessage());
+        assertFalse(ex.getMessage().contains("different shapes"),
+                "Expected null-not-shape message, got: " + ex.getMessage());
+    }
+
+    @Test
     public void testZipIntMatrixToGeneric() throws Exception {
         List<IntMatrix> matrices = N.asList(intMatrix1, intMatrix2);
 

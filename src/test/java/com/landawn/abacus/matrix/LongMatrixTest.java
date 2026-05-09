@@ -193,7 +193,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testComponentType() {
         LongMatrix matrix = LongMatrix.empty();
-        Assertions.assertEquals(long.class, matrix.componentType());
+        Assertions.assertEquals(long.class, matrix.elementType());
     }
 
     @Test
@@ -649,6 +649,24 @@ class LongMatrixTest extends TestBase {
     }
 
     @Test
+    public void testCopyEmptyRange_returnsEmptyMatrix() {
+        // Regression: copy(from, from) on a matrix with columns > 0 must not throw.
+        LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+
+        LongMatrix empty = m.copy(0, 0);
+        Assertions.assertEquals(0, empty.rowCount());
+        Assertions.assertEquals(0, empty.columnCount());
+
+        LongMatrix emptyRows = m.copy(1, 1, 0, 3);
+        Assertions.assertEquals(0, emptyRows.rowCount());
+        Assertions.assertEquals(0, emptyRows.columnCount());
+
+        LongMatrix emptyCols = m.copy(0, 3, 1, 1);
+        Assertions.assertEquals(3, emptyCols.rowCount());
+        Assertions.assertEquals(0, emptyCols.columnCount());
+    }
+
+    @Test
     public void testExtend() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
         LongMatrix matrix = LongMatrix.of(a);
@@ -889,7 +907,7 @@ class LongMatrixTest extends TestBase {
         LongMatrix matrix = LongMatrix.of(a);
 
         List<Long> collected = new ArrayList<>();
-        matrix.applyOnFlattened(row -> {
+        matrix.mutateAsFlat(row -> {
             for (long val : row) {
                 collected.add(val);
             }
@@ -1530,9 +1548,9 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testLongMatrix_applyOnFlattened() {
+        public void testLongMatrix_mutateAsFlat() {
             LongMatrix matrix = LongMatrix.of(new long[][] { { 5, 3 }, { 4, 1 } });
-            matrix.applyOnFlattened(arr -> java.util.Arrays.sort(arr));
+            matrix.mutateAsFlat(arr -> java.util.Arrays.sort(arr));
             assertEquals(1L, matrix.get(0, 0));
             assertEquals(3L, matrix.get(0, 1));
             assertEquals(4L, matrix.get(1, 0));
@@ -1923,7 +1941,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testComponentType() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L } });
-            assertEquals(long.class, m.componentType());
+            assertEquals(long.class, m.elementType());
         }
 
         // ============ Get/Set Tests ============
@@ -2682,7 +2700,7 @@ class LongMatrixTest extends TestBase {
         public void testFlatOp() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             List<Long> sums = new ArrayList<>();
-            m.applyOnFlattened(row -> {
+            m.mutateAsFlat(row -> {
                 long sum = 0;
                 for (long val : row) {
                     sum += val;
@@ -3500,7 +3518,7 @@ class LongMatrixTest extends TestBase {
         public void testFlatOp() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
             final int[] count = { 0 };
-            m.applyOnFlattened(row -> count[0] += row.length);
+            m.mutateAsFlat(row -> count[0] += row.length);
             assertEquals(4, count[0]);
         }
 
@@ -4304,7 +4322,7 @@ class LongMatrixTest extends TestBase {
         public void testFlatOp() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
             final long[] sum = { 0L };
-            m.applyOnFlattened(row -> {
+            m.mutateAsFlat(row -> {
                 for (long val : row) {
                     sum[0] += val;
                 }
@@ -4494,7 +4512,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testToArray() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            long[][] arr = m.backingArray();
+            long[][] arr = m.internalArray();
             assertEquals(2, arr.length);
             assertEquals(2, arr[0].length);
             assertArrayEquals(new long[] { 1L, 2L }, arr[0]);
@@ -5443,10 +5461,10 @@ class LongMatrixTest extends TestBase {
         // ============ FlatOp Test ============
 
         @Test
-        public void test_applyOnFlattened() {
+        public void test_mutateAsFlat() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
             AtomicInteger count = new AtomicInteger(0);
-            m.applyOnFlattened(row -> count.addAndGet(row.length));
+            m.mutateAsFlat(row -> count.addAndGet(row.length));
             assertEquals(4, count.get());
         }
 

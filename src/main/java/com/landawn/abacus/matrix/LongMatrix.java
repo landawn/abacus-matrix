@@ -154,7 +154,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     }
 
     /**
-     * Creates a new {@code 1 x size} matrix filled with random long values.
+     * Creates a new {@code 1 x length} matrix filled with random long values.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -162,11 +162,11 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * // Result: a 1x5 matrix with random long values
      * }</pre>
      *
-     * @param size the number of columns in the new matrix
-     * @return a new LongMatrix of dimensions 1 x size filled with random values
+     * @param length the number of columns in the new matrix
+     * @return a new LongMatrix of dimensions 1 x length filled with random values
      */
-    public static LongMatrix random(final int size) {
-        return random(1, size);
+    public static LongMatrix random(final int length) {
+        return random(1, length);
     }
 
     /**
@@ -821,7 +821,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     @Override
     public long[] getMainDiagonal() throws IllegalStateException {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
 
         final long[] res = new long[rowCount];
 
@@ -852,7 +852,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     @Override
     public void setMainDiagonal(final long[] mainDiagonal) throws IllegalStateException, IllegalArgumentException {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
         N.checkArgument(N.len(mainDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(mainDiagonal));
 
         for (int i = 0; i < rowCount; i++) {
@@ -878,7 +878,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateMainDiagonal(final Throwables.LongUnaryOperator<E> operator) throws IllegalStateException, E {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
         N.checkArgNotNull(operator, "operator");
 
         for (int i = 0; i < rowCount; i++) {
@@ -905,7 +905,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     @Override
     public long[] getAntiDiagonal() throws IllegalStateException {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
 
         final long[] res = new long[rowCount];
 
@@ -937,7 +937,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     @Override
     public void setAntiDiagonal(final long[] antiDiagonal) throws IllegalStateException, IllegalArgumentException {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
         N.checkArgument(N.len(antiDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(antiDiagonal));
 
         for (int i = 0; i < rowCount; i++) {
@@ -963,7 +963,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateAntiDiagonal(final Throwables.LongUnaryOperator<E> operator) throws IllegalStateException, E {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
         N.checkArgNotNull(operator, "operator");
 
         for (int i = 0; i < rowCount; i++) {
@@ -1325,7 +1325,6 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     @Override
     public LongMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
-        checkRepresentableShape(toRowIndex - fromRowIndex, columnCount);
 
         final long[][] c = new long[toRowIndex - fromRowIndex][];
 
@@ -1357,7 +1356,6 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     public LongMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
-        checkRepresentableShape(toRowIndex - fromRowIndex, toColumnIndex - fromColumnIndex);
         final long[][] c = new long[toRowIndex - fromRowIndex][];
 
         for (int i = fromRowIndex; i < toRowIndex; i++) {
@@ -2090,18 +2088,18 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{5, 3}, {4, 1}});
-     * matrix.applyOnFlattened(arr -> java.util.Arrays.sort(arr));
+     * matrix.mutateAsFlat(arr -> java.util.Arrays.sort(arr));
      * // matrix is now [[1, 3], [4, 5]] (all elements sorted globally, then placed back row by row)
      * }</pre>
      *
      * @param <E> the type of exception that the operation may throw
      * @param action the operation to apply to the flattened array
      * @throws E if the operation throws an exception
-     * @see Arrays#applyOnFlattened(long[][], Throwables.Consumer)
+     * @see Arrays#mutateAsFlat(long[][], Throwables.Consumer)
      */
     @Override
-    public <E extends Exception> void applyOnFlattened(final Throwables.Consumer<? super long[], E> action) throws E {
-        Arrays.applyOnFlattened(a, action);
+    public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super long[], E> action) throws E {
+        Arrays.mutateAsFlat(a, action);
     }
 
     /**
@@ -2538,7 +2536,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     @Override
     public LongStream mainDiagonalStream() {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
 
         if (isEmpty()) {
             return LongStream.empty();
@@ -2596,7 +2594,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     @Override
     public LongStream antiDiagonalStream() {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
 
         if (isEmpty()) {
             return LongStream.empty();

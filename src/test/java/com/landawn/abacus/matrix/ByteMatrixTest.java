@@ -187,7 +187,7 @@ class ByteMatrixTest extends TestBase {
     @Test
     public void testComponentType() {
         ByteMatrix matrix = ByteMatrix.empty();
-        Assertions.assertEquals(byte.class, matrix.componentType());
+        Assertions.assertEquals(byte.class, matrix.elementType());
     }
 
     @Test
@@ -623,6 +623,24 @@ class ByteMatrixTest extends TestBase {
     }
 
     @Test
+    public void testCopyEmptyRange_returnsEmptyMatrix() {
+        // Regression: copy(from, from) on a matrix with columns > 0 must not throw.
+        ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+
+        ByteMatrix empty = m.copy(0, 0);
+        Assertions.assertEquals(0, empty.rowCount());
+        Assertions.assertEquals(0, empty.columnCount());
+
+        ByteMatrix emptyRows = m.copy(1, 1, 0, 3);
+        Assertions.assertEquals(0, emptyRows.rowCount());
+        Assertions.assertEquals(0, emptyRows.columnCount());
+
+        ByteMatrix emptyCols = m.copy(0, 3, 1, 1);
+        Assertions.assertEquals(3, emptyCols.rowCount());
+        Assertions.assertEquals(0, emptyCols.columnCount());
+    }
+
+    @Test
     public void testExtend() {
         byte[][] a = { { 1, 2 }, { 3, 4 } };
         ByteMatrix matrix = ByteMatrix.of(a);
@@ -863,7 +881,7 @@ class ByteMatrixTest extends TestBase {
         ByteMatrix matrix = ByteMatrix.of(a);
 
         List<Byte> collected = new ArrayList<>();
-        matrix.applyOnFlattened(row -> {
+        matrix.mutateAsFlat(row -> {
             for (byte b : row) {
                 collected.add(b);
             }
@@ -1596,7 +1614,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testComponentType() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1 } });
-            assertEquals(byte.class, m.componentType());
+            assertEquals(byte.class, m.elementType());
         }
 
         // ============ Get/Set Tests ============
@@ -2317,7 +2335,7 @@ class ByteMatrixTest extends TestBase {
         public void testFlatOp() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             List<Integer> sums = new ArrayList<>();
-            m.applyOnFlattened(row -> {
+            m.mutateAsFlat(row -> {
                 int sum = 0;
                 for (byte val : row) {
                     sum += val;
@@ -3505,7 +3523,7 @@ class ByteMatrixTest extends TestBase {
         public void testFlatOp() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
             AtomicInteger count = new AtomicInteger(0);
-            m.applyOnFlattened(row -> count.addAndGet(row.length));
+            m.mutateAsFlat(row -> count.addAndGet(row.length));
             assertEquals(4, count.get());
         }
 
@@ -3817,7 +3835,7 @@ class ByteMatrixTest extends TestBase {
         public void testArray() {
             byte[][] arr = { { 1, 2 }, { 3, 4 } };
             ByteMatrix m = ByteMatrix.of(arr);
-            byte[][] result = m.backingArray();
+            byte[][] result = m.internalArray();
             assertSame(arr, result);
         }
 
@@ -4000,7 +4018,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testComponentType_emptyMatrix() {
             ByteMatrix m = ByteMatrix.empty();
-            assertEquals(byte.class, m.componentType());
+            assertEquals(byte.class, m.elementType());
         }
 
         @Test
@@ -4694,7 +4712,7 @@ class ByteMatrixTest extends TestBase {
         public void testArray() {
             byte[][] arr = { { 1, 2 }, { 3, 4 } };
             ByteMatrix m = ByteMatrix.of(arr);
-            byte[][] result = m.backingArray();
+            byte[][] result = m.internalArray();
             assertArrayEquals(arr, result);
         }
 
@@ -5329,9 +5347,9 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_applyOnFlattened() {
+        public void test_mutateAsFlat() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-            m.applyOnFlattened(arr -> {
+            m.mutateAsFlat(arr -> {
                 for (int i = 0; i < arr.length; i++) {
                     arr[i] = (byte) (arr[i] * 2);
                 }
@@ -5753,9 +5771,9 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testByteMatrix_applyOnFlattened() {
+        public void testByteMatrix_mutateAsFlat() {
             ByteMatrix matrix = ByteMatrix.of(new byte[][] { { 5, 3 }, { 4, 1 } });
-            matrix.applyOnFlattened(arr -> java.util.Arrays.sort(arr));
+            matrix.mutateAsFlat(arr -> java.util.Arrays.sort(arr));
             // matrix is now [[1, 3], [4, 5]]
             assertEquals((byte) 1, matrix.get(0, 0));
             assertEquals((byte) 3, matrix.get(0, 1));

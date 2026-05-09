@@ -255,7 +255,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     }
 
     /**
-     * Creates a new {@code 1 x size} matrix filled with random double values.
+     * Creates a new {@code 1 x length} matrix filled with random double values.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -263,12 +263,12 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * // Result: a 1x5 matrix with random double values
      * }</pre>
      *
-     * @param size the number of columns in the new matrix
-     * @return a new DoubleMatrix of dimensions 1 x size filled with random values
-     * @throws IllegalArgumentException if {@code size} is negative
+     * @param length the number of columns in the new matrix
+     * @return a new DoubleMatrix of dimensions 1 x length filled with random values
+     * @throws IllegalArgumentException if {@code length} is negative
      */
-    public static DoubleMatrix random(final int size) {
-        return random(1, size);
+    public static DoubleMatrix random(final int length) {
+        return random(1, length);
     }
 
     /**
@@ -832,7 +832,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     @Override
     public double[] getMainDiagonal() throws IllegalStateException {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
 
         final double[] res = new double[rowCount];
 
@@ -863,7 +863,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     @Override
     public void setMainDiagonal(final double[] mainDiagonal) throws IllegalStateException, IllegalArgumentException {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
         N.checkArgument(N.len(mainDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(mainDiagonal));
 
         for (int i = 0; i < rowCount; i++) {
@@ -889,7 +889,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateMainDiagonal(final Throwables.DoubleUnaryOperator<E> operator) throws IllegalStateException, E {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
         N.checkArgNotNull(operator, "operator");
 
         for (int i = 0; i < rowCount; i++) {
@@ -916,7 +916,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     @Override
     public double[] getAntiDiagonal() throws IllegalStateException {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
 
         final double[] res = new double[rowCount];
 
@@ -948,7 +948,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     @Override
     public void setAntiDiagonal(final double[] antiDiagonal) throws IllegalStateException, IllegalArgumentException {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
         N.checkArgument(N.len(antiDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(antiDiagonal));
 
         for (int i = 0; i < rowCount; i++) {
@@ -974,7 +974,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateAntiDiagonal(final Throwables.DoubleUnaryOperator<E> operator) throws IllegalStateException, E {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
         N.checkArgNotNull(operator, "operator");
 
         for (int i = 0; i < rowCount; i++) {
@@ -1345,7 +1345,6 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     @Override
     public DoubleMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
-        checkRepresentableShape(toRowIndex - fromRowIndex, columnCount);
 
         final double[][] c = new double[toRowIndex - fromRowIndex][];
 
@@ -1381,7 +1380,6 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
             throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
-        checkRepresentableShape(toRowIndex - fromRowIndex, toColumnIndex - fromColumnIndex);
         final double[][] c = new double[toRowIndex - fromRowIndex][];
 
         for (int i = fromRowIndex; i < toRowIndex; i++) {
@@ -2102,18 +2100,18 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{5.0, 3.0}, {4.0, 1.0}});
-     * matrix.applyOnFlattened(arr -> java.util.Arrays.sort(arr));
+     * matrix.mutateAsFlat(arr -> java.util.Arrays.sort(arr));
      * // matrix is now [[1.0, 3.0], [4.0, 5.0]] (all elements sorted globally, then placed back row by row)
      * }</pre>
      *
      * @param <E> the type of exception that the operation may throw
      * @param action the operation to apply to the flattened array
      * @throws E if the operation throws an exception
-     * @see Arrays#applyOnFlattened(double[][], Throwables.Consumer)
+     * @see Arrays#mutateAsFlat(double[][], Throwables.Consumer)
      */
     @Override
-    public <E extends Exception> void applyOnFlattened(final Throwables.Consumer<? super double[], E> action) throws E {
-        Arrays.applyOnFlattened(a, action);
+    public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super double[], E> action) throws E {
+        Arrays.mutateAsFlat(a, action);
     }
 
     /**
@@ -2570,7 +2568,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     @Override
     public DoubleStream mainDiagonalStream() {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
 
         if (isEmpty()) {
             return DoubleStream.empty();
@@ -2625,7 +2623,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     @Override
     public DoubleStream antiDiagonalStream() {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
 
         if (isEmpty()) {
             return DoubleStream.empty();

@@ -103,7 +103,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Creates a new {@code 1 x size} matrix filled with random boolean values.
+     * Creates a new {@code 1 x length} matrix filled with random boolean values.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -111,11 +111,11 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * // Result: a 1x5 matrix with random boolean values
      * }</pre>
      *
-     * @param size the number of columns in the new matrix
-     * @return a new BooleanMatrix of dimensions 1 x size filled with random values
+     * @param length the number of columns in the new matrix
+     * @return a new BooleanMatrix of dimensions 1 x length filled with random values
      */
-    public static BooleanMatrix random(final int size) {
-        return random(1, size);
+    public static BooleanMatrix random(final int length) {
+        return random(1, length);
     }
 
     /**
@@ -692,7 +692,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     @Override
     public boolean[] getMainDiagonal() throws IllegalStateException {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
 
         final boolean[] res = new boolean[rowCount];
 
@@ -727,7 +727,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     @Override
     public void setMainDiagonal(final boolean[] mainDiagonal) throws IllegalStateException, IllegalArgumentException {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
         N.checkArgument(N.len(mainDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(mainDiagonal));
 
         for (int i = 0; i < rowCount; i++) {
@@ -757,7 +757,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateMainDiagonal(final Throwables.BooleanUnaryOperator<E> operator) throws IllegalStateException, E {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
         N.checkArgNotNull(operator, "operator");
 
         for (int i = 0; i < rowCount; i++) {
@@ -788,7 +788,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     @Override
     public boolean[] getAntiDiagonal() throws IllegalStateException {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
 
         final boolean[] res = new boolean[rowCount];
 
@@ -824,7 +824,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     @Override
     public void setAntiDiagonal(final boolean[] antiDiagonal) throws IllegalStateException, IllegalArgumentException {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
         N.checkArgument(N.len(antiDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(antiDiagonal));
 
         for (int i = 0; i < rowCount; i++) {
@@ -854,7 +854,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateAntiDiagonal(final Throwables.BooleanUnaryOperator<E> operator) throws IllegalStateException, E {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
         N.checkArgNotNull(operator, "operator");
 
         for (int i = 0; i < rowCount; i++) {
@@ -1185,7 +1185,6 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     @Override
     public BooleanMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
-        checkRepresentableShape(toRowIndex - fromRowIndex, columnCount);
 
         final boolean[][] c = new boolean[toRowIndex - fromRowIndex][];
 
@@ -1234,7 +1233,6 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
             throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
-        checkRepresentableShape(toRowIndex - fromRowIndex, toColumnIndex - fromColumnIndex);
         final boolean[][] c = new boolean[toRowIndex - fromRowIndex][];
 
         for (int i = fromRowIndex; i < toRowIndex; i++) {
@@ -1975,18 +1973,18 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] {{true, false}, {false, true}});
-     * matrix.applyOnFlattened(arr -> java.util.Arrays.fill(arr, true));
+     * matrix.mutateAsFlat(arr -> java.util.Arrays.fill(arr, true));
      * // matrix is now [[true, true], [true, true]] (all elements set globally, then placed back row by row)
      * }</pre>
      *
      * @param <E> the type of exception that the operation may throw
      * @param action the operation to apply to the flattened array
      * @throws E if the operation throws an exception
-     * @see Arrays#applyOnFlattened(boolean[][], Throwables.Consumer)
+     * @see Arrays#mutateAsFlat(boolean[][], Throwables.Consumer)
      */
     @Override
-    public <E extends Exception> void applyOnFlattened(final Throwables.Consumer<? super boolean[], E> action) throws E {
-        Arrays.applyOnFlattened(a, action);
+    public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super boolean[], E> action) throws E {
+        Arrays.mutateAsFlat(a, action);
     }
 
     /**
@@ -2432,7 +2430,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     @Override
     public Stream<Boolean> mainDiagonalStream() {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
 
         if (isEmpty()) {
             return Stream.empty();
@@ -2498,7 +2496,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     @Override
     public Stream<Boolean> antiDiagonalStream() {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
 
         if (isEmpty()) {
             return Stream.empty();

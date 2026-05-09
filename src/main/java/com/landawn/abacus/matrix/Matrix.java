@@ -899,7 +899,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     @Override
     public T[] getMainDiagonal() throws IllegalStateException {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
 
         final T[] res = N.newArray(elementType, rowCount);
 
@@ -932,7 +932,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     @Override
     public void setMainDiagonal(final T[] mainDiagonal) throws IllegalStateException, IllegalArgumentException {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
         N.checkArgument(N.len(mainDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(mainDiagonal));
 
         for (int i = 0; i < rowCount; i++) {
@@ -966,7 +966,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      */
     public <E extends Exception> void updateMainDiagonal(final Throwables.UnaryOperator<T, E> operator) throws IllegalStateException, E {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
         N.checkArgNotNull(operator, "operator");
 
         for (int i = 0; i < rowCount; i++) {
@@ -994,7 +994,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     @Override
     public T[] getAntiDiagonal() throws IllegalStateException {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
 
         final T[] res = N.newArray(elementType, rowCount);
 
@@ -1028,7 +1028,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     @Override
     public void setAntiDiagonal(final T[] antiDiagonal) throws IllegalStateException, IllegalArgumentException {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
         N.checkArgument(N.len(antiDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(antiDiagonal));
 
         for (int i = 0; i < rowCount; i++) {
@@ -1062,7 +1062,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      */
     public <E extends Exception> void updateAntiDiagonal(final Throwables.UnaryOperator<T, E> operator) throws IllegalStateException, E {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
         N.checkArgNotNull(operator, "operator");
 
         for (int i = 0; i < rowCount; i++) {
@@ -1649,7 +1649,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     @Override
     public Matrix<T> copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
-        checkRepresentableShape(toRowIndex - fromRowIndex, columnCount);
 
         final T[][] c = N.newArray(arrayType, toRowIndex - fromRowIndex);
 
@@ -1681,7 +1680,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     public Matrix<T> copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
-        checkRepresentableShape(toRowIndex - fromRowIndex, toColumnIndex - fromColumnIndex);
         final T[][] c = N.newArray(arrayType, toRowIndex - fromRowIndex);
 
         for (int i = fromRowIndex; i < toRowIndex; i++) {
@@ -2438,18 +2436,18 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Integer> matrix = Matrix.of(new Integer[][] {{3, 1, 2}, {6, 4, 5}});
-     * matrix.applyOnFlattened(arr -> java.util.Arrays.sort(arr));
+     * matrix.mutateAsFlat(arr -> java.util.Arrays.sort(arr));
      * // Matrix becomes: [[1, 2, 3], [4, 5, 6]] (all elements sorted in row-major order)
      * }</pre>
      *
      * @param <E> the type of exception that the operation may throw
      * @param action the operation to apply to the flattened array
      * @throws E if the operation throws an exception
-     * @see Arrays.ff#applyOnFlattened(Object[][], Throwables.Consumer)
+     * @see Arrays.ff#mutateAsFlat(Object[][], Throwables.Consumer)
      */
     @Override
-    public <E extends Exception> void applyOnFlattened(final Throwables.Consumer<? super T[], E> action) throws E {
-        ff.applyOnFlattened(a, action);
+    public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super T[], E> action) throws E {
+        ff.mutateAsFlat(a, action);
     }
 
     /**
@@ -2705,7 +2703,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     @Override
     public Stream<T> mainDiagonalStream() {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
 
         if (isEmpty()) {
             return Stream.empty();
@@ -2761,7 +2759,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     @Override
     public Stream<T> antiDiagonalStream() {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
 
         if (isEmpty()) {
             return Stream.empty();

@@ -164,7 +164,7 @@ class DoubleMatrixTest extends TestBase {
     @Test
     public void testComponentType() {
         DoubleMatrix matrix = DoubleMatrix.of(new double[][] { { 1.0 } });
-        assertEquals(double.class, matrix.componentType());
+        assertEquals(double.class, matrix.elementType());
     }
 
     @Test
@@ -606,6 +606,24 @@ class DoubleMatrixTest extends TestBase {
     }
 
     @Test
+    public void testCopyEmptyRange_returnsEmptyMatrix() {
+        // Regression: copy(from, from) on a matrix with columns > 0 must not throw.
+        DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 } });
+
+        DoubleMatrix empty = m.copy(0, 0);
+        assertEquals(0, empty.rowCount());
+        assertEquals(0, empty.columnCount());
+
+        DoubleMatrix emptyRows = m.copy(1, 1, 0, 3);
+        assertEquals(0, emptyRows.rowCount());
+        assertEquals(0, emptyRows.columnCount());
+
+        DoubleMatrix emptyCols = m.copy(0, 2, 1, 1);
+        assertEquals(2, emptyCols.rowCount());
+        assertEquals(0, emptyCols.columnCount());
+    }
+
+    @Test
     public void testExtend() {
         double[][] arr = { { 1.0, 2.0 }, { 3.0, 4.0 } };
         DoubleMatrix matrix = DoubleMatrix.of(arr);
@@ -815,7 +833,7 @@ class DoubleMatrixTest extends TestBase {
         DoubleMatrix matrix = DoubleMatrix.of(arr);
 
         int[] count = { 0 };
-        matrix.applyOnFlattened(array -> count[0] += array.length);
+        matrix.mutateAsFlat(array -> count[0] += array.length);
         assertEquals(4, count[0]);
     }
 
@@ -1688,7 +1706,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testComponentType() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0 } });
-            assertEquals(double.class, m.componentType());
+            assertEquals(double.class, m.elementType());
         }
 
         // ============ Get/Set Tests ============
@@ -2445,7 +2463,7 @@ class DoubleMatrixTest extends TestBase {
         public void testFlatOp() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
             List<Double> sums = new ArrayList<>();
-            m.applyOnFlattened(row -> {
+            m.mutateAsFlat(row -> {
                 double sum = 0.0;
                 for (double val : row) {
                     sum += val;
@@ -4038,7 +4056,7 @@ class DoubleMatrixTest extends TestBase {
         public void testFlatOp() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             final double[] sum = { 0.0 };
-            m.applyOnFlattened(row -> {
+            m.mutateAsFlat(row -> {
                 for (double val : row) {
                     sum[0] += val;
                 }
@@ -4330,7 +4348,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testArray() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            double[][] array = m.backingArray();
+            double[][] array = m.internalArray();
             assertArrayEquals(new double[] { 1.0, 2.0 }, array[0]);
             assertArrayEquals(new double[] { 3.0, 4.0 }, array[1]);
         }
@@ -5452,10 +5470,10 @@ class DoubleMatrixTest extends TestBase {
         // ============ FlatOp Test ============
 
         @Test
-        public void test_applyOnFlattened() {
+        public void test_mutateAsFlat() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             AtomicInteger count = new AtomicInteger(0);
-            m.applyOnFlattened(row -> count.addAndGet(row.length));
+            m.mutateAsFlat(row -> count.addAndGet(row.length));
             assertEquals(4, count.get());
         }
 
@@ -5916,9 +5934,9 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testDoubleMatrix_applyOnFlattened() {
+        public void testDoubleMatrix_mutateAsFlat() {
             DoubleMatrix matrix = DoubleMatrix.of(new double[][] { { 5.0, 3.0 }, { 4.0, 1.0 } });
-            matrix.applyOnFlattened(arr -> java.util.Arrays.sort(arr));
+            matrix.mutateAsFlat(arr -> java.util.Arrays.sort(arr));
             assertEquals(1.0, matrix.get(0, 0));
             assertEquals(3.0, matrix.get(0, 1));
             assertEquals(4.0, matrix.get(1, 0));

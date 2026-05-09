@@ -158,7 +158,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Creates a new {@code 1 x size} matrix filled with random float values.
+     * Creates a new {@code 1 x length} matrix filled with random float values.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -166,12 +166,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * // Result: a 1x5 matrix with random float values
      * }</pre>
      *
-     * @param size the number of columns in the new matrix
-     * @return a new FloatMatrix of dimensions 1 x size filled with random values
-     * @throws IllegalArgumentException if {@code size} is negative
+     * @param length the number of columns in the new matrix
+     * @return a new FloatMatrix of dimensions 1 x length filled with random values
+     * @throws IllegalArgumentException if {@code length} is negative
      */
-    public static FloatMatrix random(final int size) {
-        return random(1, size);
+    public static FloatMatrix random(final int length) {
+        return random(1, length);
     }
 
     /**
@@ -735,7 +735,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     @Override
     public float[] getMainDiagonal() throws IllegalStateException {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
 
         final float[] diagonal = new float[rowCount];
 
@@ -766,7 +766,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     @Override
     public void setMainDiagonal(final float[] mainDiagonal) throws IllegalStateException, IllegalArgumentException {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
         N.checkArgument(N.len(mainDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(mainDiagonal));
 
         for (int i = 0; i < rowCount; i++) {
@@ -792,7 +792,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateMainDiagonal(final Throwables.FloatUnaryOperator<E> operator) throws IllegalStateException, E {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
         N.checkArgNotNull(operator, "operator");
 
         for (int i = 0; i < rowCount; i++) {
@@ -818,7 +818,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     @Override
     public float[] getAntiDiagonal() throws IllegalStateException {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
 
         final float[] diagonal = new float[rowCount];
 
@@ -850,7 +850,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     @Override
     public void setAntiDiagonal(final float[] antiDiagonal) throws IllegalStateException, IllegalArgumentException {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
         N.checkArgument(N.len(antiDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(antiDiagonal));
 
         for (int i = 0; i < rowCount; i++) {
@@ -876,7 +876,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateAntiDiagonal(final Throwables.FloatUnaryOperator<E> operator) throws IllegalStateException, E {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
         N.checkArgNotNull(operator, "operator");
 
         for (int i = 0; i < rowCount; i++) {
@@ -1185,7 +1185,6 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     @Override
     public FloatMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
-        checkRepresentableShape(toRowIndex - fromRowIndex, columnCount);
 
         final float[][] c = new float[toRowIndex - fromRowIndex][];
 
@@ -1220,7 +1219,6 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     public FloatMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
-        checkRepresentableShape(toRowIndex - fromRowIndex, toColumnIndex - fromColumnIndex);
         final float[][] c = new float[toRowIndex - fromRowIndex][];
 
         for (int i = fromRowIndex; i < toRowIndex; i++) {
@@ -1929,18 +1927,18 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{5.0f, 3.0f}, {4.0f, 1.0f}});
-     * matrix.applyOnFlattened(arr -> java.util.Arrays.sort(arr));
+     * matrix.mutateAsFlat(arr -> java.util.Arrays.sort(arr));
      * // matrix is now [[1.0f, 3.0f], [4.0f, 5.0f]] (all elements sorted globally, then placed back row by row)
      * }</pre>
      *
      * @param <E> the type of exception that the operation may throw
      * @param action the operation to apply to the flattened array
      * @throws E if the operation throws an exception
-     * @see Arrays#applyOnFlattened(float[][], Throwables.Consumer)
+     * @see Arrays#mutateAsFlat(float[][], Throwables.Consumer)
      */
     @Override
-    public <E extends Exception> void applyOnFlattened(final Throwables.Consumer<? super float[], E> action) throws E {
-        Arrays.applyOnFlattened(a, action);
+    public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super float[], E> action) throws E {
+        Arrays.mutateAsFlat(a, action);
     }
 
     /**
@@ -2383,7 +2381,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     @Override
     public FloatStream mainDiagonalStream() {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
 
         if (isEmpty()) {
             return FloatStream.empty();
@@ -2440,7 +2438,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     @Override
     public FloatStream antiDiagonalStream() {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
 
         if (isEmpty()) {
             return FloatStream.empty();

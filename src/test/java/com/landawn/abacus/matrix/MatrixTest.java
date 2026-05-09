@@ -154,7 +154,7 @@ class MatrixTest extends TestBase {
         Number[] antiDiag = new Double[] { 3.0, 4.0 };
 
         Matrix<Number> matrix = Matrix.diagonals(mainDiag, antiDiag);
-        Assertions.assertEquals(Number.class, matrix.componentType());
+        Assertions.assertEquals(Number.class, matrix.elementType());
         Assertions.assertEquals(1, matrix.get(0, 0));
         Assertions.assertEquals(2, matrix.get(1, 1));
         Assertions.assertEquals(3.0d, matrix.get(0, 1).doubleValue());
@@ -174,13 +174,13 @@ class MatrixTest extends TestBase {
     @Test
     public void testComponentType() {
         Matrix<String> matrix = Matrix.of(new String[][] { { "a", "b" } });
-        Assertions.assertEquals(String.class, matrix.componentType());
+        Assertions.assertEquals(String.class, matrix.elementType());
 
         Matrix<Integer> intMatrix = Matrix.of(new Integer[][] { { 1, 2 } });
-        Assertions.assertEquals(Integer.class, intMatrix.componentType());
+        Assertions.assertEquals(Integer.class, intMatrix.elementType());
 
         Matrix<String> repeated = Matrix.repeat(1, 2, "x");
-        Assertions.assertEquals(String.class, repeated.componentType());
+        Assertions.assertEquals(String.class, repeated.elementType());
     }
 
     @Test
@@ -815,6 +815,24 @@ class MatrixTest extends TestBase {
     }
 
     @Test
+    public void testCopyEmptyRange_returnsEmptyMatrix() {
+        // Regression: copy(from, from) on a matrix with columns > 0 must not throw.
+        Matrix<Integer> m = Matrix.of(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+
+        Matrix<Integer> empty = m.copy(0, 0);
+        Assertions.assertEquals(0, empty.rowCount());
+        Assertions.assertEquals(0, empty.columnCount());
+
+        Matrix<Integer> emptyRows = m.copy(1, 1, 0, 3);
+        Assertions.assertEquals(0, emptyRows.rowCount());
+        Assertions.assertEquals(0, emptyRows.columnCount());
+
+        Matrix<Integer> emptyCols = m.copy(0, 3, 1, 1);
+        Assertions.assertEquals(3, emptyCols.rowCount());
+        Assertions.assertEquals(0, emptyCols.columnCount());
+    }
+
+    @Test
     public void testExtend() {
         Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2 }, { 3, 4 } });
 
@@ -1013,7 +1031,7 @@ class MatrixTest extends TestBase {
     public void testFlatOp() throws Exception {
         Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 3, 1, 4 }, { 1, 5, 9 } });
 
-        matrix.applyOnFlattened(arrays -> {
+        matrix.mutateAsFlat(arrays -> {
             Arrays.sort(arrays);
         });
 
@@ -1615,19 +1633,19 @@ class MatrixTest extends TestBase {
         Matrix<String> matrix = Matrix.repeat(1, 2, "x");
 
         Matrix<String> copied = matrix.copy();
-        Assertions.assertEquals(String.class, copied.componentType());
+        Assertions.assertEquals(String.class, copied.elementType());
         Assertions.assertEquals(String.class, copied.rowView(0).getClass().getComponentType());
 
         Matrix<String> transposed = matrix.transpose();
-        Assertions.assertEquals(String.class, transposed.componentType());
+        Assertions.assertEquals(String.class, transposed.elementType());
         Assertions.assertEquals(String.class, transposed.rowView(0).getClass().getComponentType());
 
         Matrix<String> reshaped = matrix.reshape(2, 1);
-        Assertions.assertEquals(String.class, reshaped.componentType());
+        Assertions.assertEquals(String.class, reshaped.elementType());
         Assertions.assertEquals(String.class, reshaped.rowView(0).getClass().getComponentType());
 
         Matrix<String> repeated = matrix.repeatElements(2, 2);
-        Assertions.assertEquals(String.class, repeated.componentType());
+        Assertions.assertEquals(String.class, repeated.elementType());
         Assertions.assertEquals(String.class, repeated.rowView(0).getClass().getComponentType());
     }
 
@@ -1637,13 +1655,13 @@ class MatrixTest extends TestBase {
         Matrix<Integer> bottom = Matrix.repeat(1, 2, 2);
 
         Matrix<Integer> vstacked = top.stackVertically(bottom);
-        Assertions.assertEquals(Integer.class, vstacked.componentType());
+        Assertions.assertEquals(Integer.class, vstacked.elementType());
         Assertions.assertEquals(Integer.class, vstacked.rowView(0).getClass().getComponentType());
         vstacked.set(0, 0, 3);
         Assertions.assertEquals(3, vstacked.get(0, 0));
 
         Matrix<Integer> hstacked = top.stackHorizontally(bottom);
-        Assertions.assertEquals(Integer.class, hstacked.componentType());
+        Assertions.assertEquals(Integer.class, hstacked.elementType());
         Assertions.assertEquals(Integer.class, hstacked.rowView(0).getClass().getComponentType());
         hstacked.set(0, 3, 4);
         Assertions.assertEquals(4, hstacked.get(0, 3));
@@ -2089,13 +2107,13 @@ class MatrixTest extends TestBase {
         @Test
         public void testComponentType() {
             Matrix<String> m = Matrix.of(new String[][] { { "A" } });
-            assertEquals(String.class, m.componentType());
+            assertEquals(String.class, m.elementType());
         }
 
         @Test
         public void testComponentType_withInteger() {
             Matrix<Integer> m = Matrix.of(new Integer[][] { { 1 } });
-            assertEquals(Integer.class, m.componentType());
+            assertEquals(Integer.class, m.elementType());
         }
 
         // ============ Get/Set Tests ============
@@ -2853,7 +2871,7 @@ class MatrixTest extends TestBase {
         public void testFlatOp() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B", "C" }, { "D", "E", "F" }, { "G", "H", "I" } });
             List<Integer> rowLengths = new ArrayList<>();
-            m.applyOnFlattened(row -> {
+            m.mutateAsFlat(row -> {
                 rowLengths.add(row.length);
             });
             assertEquals(1, rowLengths.size());
@@ -3701,7 +3719,7 @@ class MatrixTest extends TestBase {
         public void testFlatOp_emptyMatrix() {
             Matrix<String> empty = Matrix.of(new String[0][0]);
             List<Integer> lengths = new ArrayList<>();
-            empty.applyOnFlattened(row -> lengths.add(row.length));
+            empty.mutateAsFlat(row -> lengths.add(row.length));
             assertEquals(0, lengths.size());
         }
     }
@@ -3783,7 +3801,7 @@ class MatrixTest extends TestBase {
         @Test
         public void testComponentType_integer() {
             Matrix<Integer> m = Matrix.of(new Integer[][] { { 1, 2 } });
-            assertEquals(Integer.class, m.componentType());
+            assertEquals(Integer.class, m.elementType());
         }
 
         @Test
@@ -4493,7 +4511,7 @@ class MatrixTest extends TestBase {
         @Test
         public void testComponentType_bigDecimal() {
             Matrix<BigDecimal> m = Matrix.of(new BigDecimal[][] { { BigDecimal.ONE, BigDecimal.TEN } });
-            assertEquals(BigDecimal.class, m.componentType());
+            assertEquals(BigDecimal.class, m.elementType());
         }
 
         @Test
@@ -5352,7 +5370,7 @@ class MatrixTest extends TestBase {
         public void testFlatOp_strings() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
             List<String> captured = new java.util.ArrayList<>();
-            m.applyOnFlattened(arr -> {
+            m.mutateAsFlat(arr -> {
                 for (String val : arr) {
                     captured.add(val);
                 }
@@ -5365,7 +5383,7 @@ class MatrixTest extends TestBase {
         public void testFlatOp_integers() {
             Matrix<Integer> m = Matrix.of(new Integer[][] { { 3, 1 }, { 4, 2 } });
             List<Integer> captured = new java.util.ArrayList<>();
-            m.applyOnFlattened(arr -> {
+            m.mutateAsFlat(arr -> {
                 for (Integer val : arr) {
                     captured.add(val);
                 }
@@ -5685,7 +5703,7 @@ class MatrixTest extends TestBase {
         @Test
         public void testArray_strings() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
-            String[][] array = m.backingArray();
+            String[][] array = m.internalArray();
             assertArrayEquals(new String[] { "A", "B" }, array[0]);
             assertArrayEquals(new String[] { "C", "D" }, array[1]);
         }
@@ -5693,7 +5711,7 @@ class MatrixTest extends TestBase {
         @Test
         public void testArray_integers() {
             Matrix<Integer> m = Matrix.of(new Integer[][] { { 1, 2 }, { 3, 4 } });
-            Integer[][] array = m.backingArray();
+            Integer[][] array = m.internalArray();
             assertArrayEquals(new Integer[] { 1, 2 }, array[0]);
             assertArrayEquals(new Integer[] { 3, 4 }, array[1]);
         }
@@ -5917,12 +5935,12 @@ class MatrixTest extends TestBase {
         // ============ Component Type Test ============
 
         @Test
-        public void test_componentType_returnsElementClass() {
+        public void test_elementType_returnsElementClass() {
             Matrix<String> m = Matrix.of(new String[][] { { "a" } });
-            assertEquals(String.class, m.componentType());
+            assertEquals(String.class, m.elementType());
 
             Matrix<Integer> m2 = Matrix.of(new Integer[][] { { 1 } });
-            assertEquals(Integer.class, m2.componentType());
+            assertEquals(Integer.class, m2.elementType());
         }
 
         // ============ Get/Set Tests ============
@@ -6607,11 +6625,11 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void test_applyOnFlattened_appliesOperationToEachRow() {
+        public void test_mutateAsFlat_appliesOperationToEachRow() {
             Integer[][] arr = { { 1, 2 }, { 3, 4 } };
             Matrix<Integer> m = new Matrix<>(arr);
             final int[] sum = { 0 };
-            m.applyOnFlattened(row -> {
+            m.mutateAsFlat(row -> {
                 for (Integer val : row) {
                     sum[0] += val;
                 }

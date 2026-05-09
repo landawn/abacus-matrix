@@ -59,13 +59,13 @@ class AbstractMatrixTest extends TestBase {
     @Test
     public void testComponentType() {
         IntMatrix matrix = createTestMatrix();
-        Assertions.assertEquals(int.class, matrix.componentType());
+        Assertions.assertEquals(int.class, matrix.elementType());
     }
 
     @Test
     public void testArray() {
         IntMatrix matrix = createTestMatrix();
-        int[][] array = matrix.backingArray();
+        int[][] array = matrix.internalArray();
         Assertions.assertEquals(3, array.length);
         Assertions.assertEquals(3, array[0].length);
         Assertions.assertEquals(1, array[0][0]);
@@ -308,7 +308,7 @@ class AbstractMatrixTest extends TestBase {
     public void testFlatOp() throws Exception {
         IntMatrix matrix = IntMatrix.of(new int[][] { { 3, 1, 4 }, { 1, 5, 9 } });
 
-        matrix.applyOnFlattened(arrays -> java.util.Arrays.sort(arrays));
+        matrix.mutateAsFlat(arrays -> java.util.Arrays.sort(arrays));
 
         Assertions.assertEquals(1, matrix.get(0, 0));
         Assertions.assertEquals(1, matrix.get(0, 1));
@@ -706,16 +706,16 @@ class AbstractMatrixTest extends TestBase {
     }
 
     @Test
-    public void testCheckIfRowAndColumnSizeAreSame() {
+    public void testCheckIsSquare() {
         IntMatrix squareMatrix = createTestMatrix();
         IntMatrix nonSquareMatrix = createTestMatrix2x3();
 
         // This should not throw
-        squareMatrix.checkIfRowAndColumnSizeAreSame();
+        squareMatrix.checkIsSquare();
 
         // This should throw
         Assertions.assertThrows(IllegalStateException.class, () -> {
-            nonSquareMatrix.checkIfRowAndColumnSizeAreSame();
+            nonSquareMatrix.checkIsSquare();
         });
     }
 
@@ -816,13 +816,13 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void testComponentType_doubleMatrix() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 } });
-            assertEquals(double.class, m.componentType());
+            assertEquals(double.class, m.elementType());
         }
 
         @Test
         public void testComponentType_objectMatrix() {
             Matrix<String> m = Matrix.of(new String[][] { { "a", "b" } });
-            assertEquals(String.class, m.componentType());
+            assertEquals(String.class, m.elementType());
         }
         // ============ isEmpty Tests ============
 
@@ -1112,7 +1112,7 @@ class AbstractMatrixTest extends TestBase {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             List<Integer> values = new ArrayList<>();
 
-            m.applyOnFlattened(arr -> {
+            m.mutateAsFlat(arr -> {
                 for (int val : arr) {
                     values.add(val);
                 }
@@ -1694,14 +1694,20 @@ class AbstractMatrixTest extends TestBase {
 
         @Test
         public void testCopy_emptyRowRange() {
+            // copy with from == to is a valid empty slice and must return an empty matrix.
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            assertThrows(IllegalArgumentException.class, () -> m.copy(1, 1));
+            IntMatrix empty = m.copy(1, 1);
+            assertEquals(0, empty.rowCount());
+            assertEquals(0, empty.columnCount());
         }
 
         @Test
         public void testCopy_emptyRegion() {
+            // copy with an empty row sub-range is a valid empty slice and must return an empty matrix.
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            assertThrows(IllegalArgumentException.class, () -> m.copy(1, 1, 0, 2));
+            IntMatrix empty = m.copy(1, 1, 0, 2);
+            assertEquals(0, empty.rowCount());
+            assertEquals(0, empty.columnCount());
         }
 
         @Test
@@ -1768,43 +1774,43 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void testComponentType_intMatrix() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 } });
-            assertEquals(int.class, m.componentType());
+            assertEquals(int.class, m.elementType());
         }
 
         @Test
         public void testComponentType_longMatrix() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
-            assertEquals(long.class, m.componentType());
+            assertEquals(long.class, m.elementType());
         }
 
         @Test
         public void testComponentType_floatMatrix() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f } });
-            assertEquals(float.class, m.componentType());
+            assertEquals(float.class, m.elementType());
         }
 
         @Test
         public void testComponentType_byteMatrix() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 } });
-            assertEquals(byte.class, m.componentType());
+            assertEquals(byte.class, m.elementType());
         }
 
         @Test
         public void testComponentType_shortMatrix() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 } });
-            assertEquals(short.class, m.componentType());
+            assertEquals(short.class, m.elementType());
         }
 
         @Test
         public void testComponentType_charMatrix() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B' } });
-            assertEquals(char.class, m.componentType());
+            assertEquals(char.class, m.elementType());
         }
 
         @Test
         public void testComponentType_booleanMatrix() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false } });
-            assertEquals(boolean.class, m.componentType());
+            assertEquals(boolean.class, m.elementType());
         }
         // ============ Array Access Tests ============
 
@@ -1812,7 +1818,7 @@ class AbstractMatrixTest extends TestBase {
         public void testArray_intMatrix() {
             int[][] arr = { { 1, 2 }, { 3, 4 } };
             IntMatrix m = IntMatrix.of(arr);
-            int[][] returnedArray = m.backingArray();
+            int[][] returnedArray = m.internalArray();
 
             assertNotNull(returnedArray);
             assertEquals(2, returnedArray.length);
@@ -1824,7 +1830,7 @@ class AbstractMatrixTest extends TestBase {
         public void testArray_doubleMatrix() {
             double[][] arr = { { 1.5, 2.5 }, { 3.5, 4.5 } };
             DoubleMatrix m = DoubleMatrix.of(arr);
-            double[][] returnedArray = m.backingArray();
+            double[][] returnedArray = m.internalArray();
 
             assertNotNull(returnedArray);
             assertEquals(2, returnedArray.length);
@@ -1836,7 +1842,7 @@ class AbstractMatrixTest extends TestBase {
         public void testArray_objectMatrix() {
             String[][] arr = { { "A", "B" }, { "C", "D" } };
             Matrix<String> m = Matrix.of(arr);
-            String[][] returnedArray = m.backingArray();
+            String[][] returnedArray = m.internalArray();
 
             assertNotNull(returnedArray);
             assertEquals(2, returnedArray.length);
@@ -2259,7 +2265,7 @@ class AbstractMatrixTest extends TestBase {
         public void testFlatOp_intMatrix() {
             IntMatrix m = IntMatrix.of(new int[][] { { 3, 1 }, { 4, 2 } });
             AtomicInteger sum = new AtomicInteger(0);
-            m.applyOnFlattened(arr -> {
+            m.mutateAsFlat(arr -> {
                 for (int val : arr) {
                     sum.addAndGet(val);
                 }
@@ -2271,7 +2277,7 @@ class AbstractMatrixTest extends TestBase {
         public void testFlatOp_doubleMatrix() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.5, 2.5 }, { 3.5, 4.5 } });
             final double[] sum = { 0.0 };
-            m.applyOnFlattened(arr -> {
+            m.mutateAsFlat(arr -> {
                 for (double val : arr) {
                     sum[0] += val;
                 }
@@ -2283,7 +2289,7 @@ class AbstractMatrixTest extends TestBase {
         public void testFlatOp_objectMatrix() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
             StringBuilder sb = new StringBuilder();
-            m.applyOnFlattened(arr -> {
+            m.mutateAsFlat(arr -> {
                 for (String val : arr) {
                     sb.append(val);
                 }
@@ -3143,21 +3149,21 @@ class AbstractMatrixTest extends TestBase {
         // ============ Component Type Test ============
 
         @Test
-        public void test_componentType_intMatrix() {
+        public void test_elementType_intMatrix() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            assertEquals(int.class, matrix.componentType());
+            assertEquals(int.class, matrix.elementType());
         }
 
         @Test
-        public void test_componentType_doubleMatrix() {
+        public void test_elementType_doubleMatrix() {
             DoubleMatrix matrix = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            assertEquals(double.class, matrix.componentType());
+            assertEquals(double.class, matrix.elementType());
         }
 
         @Test
-        public void test_componentType_booleanMatrix() {
+        public void test_elementType_booleanMatrix() {
             BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
-            assertEquals(boolean.class, matrix.componentType());
+            assertEquals(boolean.class, matrix.elementType());
         }
 
         // ============ Array Method Test ============
@@ -3166,7 +3172,7 @@ class AbstractMatrixTest extends TestBase {
         public void test_array_returnsInternalArray() {
             int[][] arr = { { 1, 2 }, { 3, 4 } };
             IntMatrix matrix = IntMatrix.of(arr);
-            int[][] returned = matrix.backingArray();
+            int[][] returned = matrix.internalArray();
             assertEquals(arr, returned); // Same reference
             returned[0][0] = 999;
             assertEquals(999, matrix.get(0, 0)); // Modification affects matrix
@@ -3224,10 +3230,10 @@ class AbstractMatrixTest extends TestBase {
         // ==================== AbstractMatrix (via IntMatrix) Javadoc Examples ====================
 
         @Test
-        public void testAbstractMatrix_componentType() {
-            // From componentType Javadoc
+        public void testAbstractMatrix_elementType() {
+            // From elementType Javadoc
             IntMatrix intMatrix = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            assertEquals(int.class, intMatrix.componentType()); // Returns int.class
+            assertEquals(int.class, intMatrix.elementType()); // Returns int.class
         }
 
         @Test
@@ -3292,10 +3298,10 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testAbstractMatrix_backingArray() {
-            // From backingArray Javadoc
+        public void testAbstractMatrix_internalArray() {
+            // From internalArray Javadoc
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            int[][] array = matrix.backingArray();
+            int[][] array = matrix.internalArray();
             array[0][0] = 10; // This WILL modify the matrix!
             assertEquals(10, matrix.get(0, 0));
         }
@@ -3561,10 +3567,10 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testAbstractMatrix_applyOnFlattened() {
-            // From applyOnFlattened Javadoc
+        public void testAbstractMatrix_mutateAsFlat() {
+            // From mutateAsFlat Javadoc
             IntMatrix matrix = IntMatrix.of(new int[][] { { 3, 1, 4 }, { 1, 5, 9 } });
-            matrix.applyOnFlattened(a -> java.util.Arrays.sort(a)); // Sorts all elements
+            matrix.mutateAsFlat(a -> java.util.Arrays.sort(a)); // Sorts all elements
             // Matrix becomes [[1, 1, 3], [4, 5, 9]] (elements sorted in row-major order)
             assertEquals(1, matrix.get(0, 0));
             assertEquals(1, matrix.get(0, 1));
@@ -3787,7 +3793,9 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopyRejectsUnrepresentableZeroRowNonZeroColumnShape() {
+        public void testCopyEmptyRangeReturnsEmptyMatrix() {
+            // copy with an empty row range is a valid empty slice across every matrix type.
+            // It must return an empty (0x0) matrix rather than throw, even when columnCount > 0.
             Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2 } });
             BooleanMatrix booleanMatrix = BooleanMatrix.of(new boolean[][] { { true, false } });
             ByteMatrix byteMatrix = ByteMatrix.of(new byte[][] { { 1, 2 } });
@@ -3798,25 +3806,25 @@ class AbstractMatrixTest extends TestBase {
             FloatMatrix floatMatrix = FloatMatrix.of(new float[][] { { 1F, 2F } });
             DoubleMatrix doubleMatrix = DoubleMatrix.of(new double[][] { { 1D, 2D } });
 
-            assertThrows(IllegalArgumentException.class, () -> matrix.copy(0, 0));
-            assertThrows(IllegalArgumentException.class, () -> booleanMatrix.copy(0, 0));
-            assertThrows(IllegalArgumentException.class, () -> byteMatrix.copy(0, 0));
-            assertThrows(IllegalArgumentException.class, () -> charMatrix.copy(0, 0));
-            assertThrows(IllegalArgumentException.class, () -> shortMatrix.copy(0, 0));
-            assertThrows(IllegalArgumentException.class, () -> intMatrix.copy(0, 0));
-            assertThrows(IllegalArgumentException.class, () -> longMatrix.copy(0, 0));
-            assertThrows(IllegalArgumentException.class, () -> floatMatrix.copy(0, 0));
-            assertThrows(IllegalArgumentException.class, () -> doubleMatrix.copy(0, 0));
+            assertEquals(0, matrix.copy(0, 0).rowCount());
+            assertEquals(0, booleanMatrix.copy(0, 0).rowCount());
+            assertEquals(0, byteMatrix.copy(0, 0).rowCount());
+            assertEquals(0, charMatrix.copy(0, 0).rowCount());
+            assertEquals(0, shortMatrix.copy(0, 0).rowCount());
+            assertEquals(0, intMatrix.copy(0, 0).rowCount());
+            assertEquals(0, longMatrix.copy(0, 0).rowCount());
+            assertEquals(0, floatMatrix.copy(0, 0).rowCount());
+            assertEquals(0, doubleMatrix.copy(0, 0).rowCount());
 
-            assertThrows(IllegalArgumentException.class, () -> matrix.copy(0, 0, 0, 1));
-            assertThrows(IllegalArgumentException.class, () -> booleanMatrix.copy(0, 0, 0, 1));
-            assertThrows(IllegalArgumentException.class, () -> byteMatrix.copy(0, 0, 0, 1));
-            assertThrows(IllegalArgumentException.class, () -> charMatrix.copy(0, 0, 0, 1));
-            assertThrows(IllegalArgumentException.class, () -> shortMatrix.copy(0, 0, 0, 1));
-            assertThrows(IllegalArgumentException.class, () -> intMatrix.copy(0, 0, 0, 1));
-            assertThrows(IllegalArgumentException.class, () -> longMatrix.copy(0, 0, 0, 1));
-            assertThrows(IllegalArgumentException.class, () -> floatMatrix.copy(0, 0, 0, 1));
-            assertThrows(IllegalArgumentException.class, () -> doubleMatrix.copy(0, 0, 0, 1));
+            assertEquals(0, matrix.copy(0, 0, 0, 1).rowCount());
+            assertEquals(0, booleanMatrix.copy(0, 0, 0, 1).rowCount());
+            assertEquals(0, byteMatrix.copy(0, 0, 0, 1).rowCount());
+            assertEquals(0, charMatrix.copy(0, 0, 0, 1).rowCount());
+            assertEquals(0, shortMatrix.copy(0, 0, 0, 1).rowCount());
+            assertEquals(0, intMatrix.copy(0, 0, 0, 1).rowCount());
+            assertEquals(0, longMatrix.copy(0, 0, 0, 1).rowCount());
+            assertEquals(0, floatMatrix.copy(0, 0, 0, 1).rowCount());
+            assertEquals(0, doubleMatrix.copy(0, 0, 0, 1).rowCount());
         }
 
         @Test
@@ -3864,7 +3872,7 @@ class AbstractMatrixTest extends TestBase {
         }
     }
 
-    // === Missing coverage: elementCount, backingArray identity, reshape edge cases ===
+    // === Missing coverage: elementCount, internalArray identity, reshape edge cases ===
 
     @Nested
     class ElementCountAndBackingArrayTests extends TestBase {
@@ -3897,7 +3905,7 @@ class AbstractMatrixTest extends TestBase {
         public void testBackingArray_isSameReference() {
             int[][] data = { { 1, 2 }, { 3, 4 } };
             IntMatrix m = IntMatrix.of(data);
-            assertTrue(data == m.backingArray());
+            assertTrue(data == m.internalArray());
         }
 
         @Test

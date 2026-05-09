@@ -202,7 +202,7 @@ class IntMatrixTest extends TestBase {
 
     @Test
     public void testComponentType() {
-        assertEquals(int.class, matrix.componentType());
+        assertEquals(int.class, matrix.elementType());
     }
 
     @Test
@@ -599,6 +599,34 @@ class IntMatrixTest extends TestBase {
     }
 
     @Test
+    public void testCopyEmptyRowRange_returnsEmptyMatrix() {
+        // Regression: copy(from, from) on a matrix with columns > 0 must not throw.
+        IntMatrix empty = matrix.copy(0, 0);
+        assertEquals(0, empty.rowCount());
+        assertEquals(0, empty.columnCount());
+
+        IntMatrix emptyAtEnd = matrix.copy(matrix.rowCount(), matrix.rowCount());
+        assertEquals(0, emptyAtEnd.rowCount());
+        assertEquals(0, emptyAtEnd.columnCount());
+    }
+
+    @Test
+    public void testCopyEmptySubMatrix_returnsEmptyMatrix() {
+        // Regression: copy with an empty range in either dimension must not throw.
+        IntMatrix emptyRows = matrix.copy(1, 1, 0, 3);
+        assertEquals(0, emptyRows.rowCount());
+        assertEquals(0, emptyRows.columnCount());
+
+        IntMatrix emptyCols = matrix.copy(0, 3, 1, 1);
+        assertEquals(3, emptyCols.rowCount());
+        assertEquals(0, emptyCols.columnCount());
+
+        IntMatrix bothEmpty = matrix.copy(0, 0, 0, 0);
+        assertEquals(0, bothEmpty.rowCount());
+        assertEquals(0, bothEmpty.columnCount());
+    }
+
+    @Test
     public void testExtend() {
         IntMatrix extended = matrix.resize(5, 5);
         assertEquals(5, extended.rowCount());
@@ -785,7 +813,7 @@ class IntMatrixTest extends TestBase {
     @Test
     public void testFlatOp() {
         List<Integer> sums = new ArrayList<>();
-        matrix.applyOnFlattened(row -> {
+        matrix.mutateAsFlat(row -> {
             int sum = 0;
             for (int val : row) {
                 sum += val;
@@ -1520,7 +1548,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testComponentType() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1 } });
-            assertEquals(int.class, m.componentType());
+            assertEquals(int.class, m.elementType());
         }
 
         // ============ Get/Set Tests ============
@@ -2154,7 +2182,7 @@ class IntMatrixTest extends TestBase {
         public void testFlatOp() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             List<Integer> sums = new ArrayList<>();
-            m.applyOnFlattened(row -> {
+            m.mutateAsFlat(row -> {
                 int sum = 0;
                 for (int val : row) {
                     sum += val;
@@ -2744,11 +2772,11 @@ class IntMatrixTest extends TestBase {
 
         @Test
         public void testFlatOpWithMultipleRows() {
-            // Test applyOnFlattened to ensure it processes the flattened array correctly
+            // Test mutateAsFlat to ensure it processes the flattened array correctly
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
             List<Integer> maxValues = new ArrayList<>();
 
-            m.applyOnFlattened(flatArray -> {
+            m.mutateAsFlat(flatArray -> {
                 int max = Integer.MIN_VALUE;
                 for (int val : flatArray) {
                     if (val > max)
@@ -2757,7 +2785,7 @@ class IntMatrixTest extends TestBase {
                 maxValues.add(max);
             });
 
-            // applyOnFlattened flattens all rows into one array, so there's only 1 result
+            // mutateAsFlat flattens all rows into one array, so there's only 1 result
             assertEquals(1, maxValues.size());
             assertEquals(6, maxValues.get(0).intValue()); // max of [1,2,3,4,5,6] is 6
         }
@@ -2807,7 +2835,7 @@ class IntMatrixTest extends TestBase {
         public void testFlatOp() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             final int[] count = { 0 };
-            m.applyOnFlattened(row -> count[0] += row.length);
+            m.mutateAsFlat(row -> count[0] += row.length);
             assertEquals(4, count[0]);
         }
 
@@ -3564,7 +3592,7 @@ class IntMatrixTest extends TestBase {
         public void testFlatOp() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             final int[] sum = { 0 };
-            m.applyOnFlattened(row -> {
+            m.mutateAsFlat(row -> {
                 for (int val : row) {
                     sum[0] += val;
                 }
@@ -3768,7 +3796,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testToArray() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            int[][] arr = m.backingArray();
+            int[][] arr = m.internalArray();
             assertEquals(2, arr.length);
             assertEquals(2, arr[0].length);
             assertArrayEquals(new int[] { 1, 2 }, arr[0]);
@@ -4720,10 +4748,10 @@ class IntMatrixTest extends TestBase {
         // ============ FlatOp Test ============
 
         @Test
-        public void test_applyOnFlattened() {
+        public void test_mutateAsFlat() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             AtomicInteger count = new AtomicInteger(0);
-            m.applyOnFlattened(row -> count.addAndGet(row.length));
+            m.mutateAsFlat(row -> count.addAndGet(row.length));
             assertEquals(4, count.get());
         }
 
@@ -5366,9 +5394,9 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void testIntMatrix_applyOnFlattened() {
+        public void testIntMatrix_mutateAsFlat() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 5, 3 }, { 4, 1 } });
-            matrix.applyOnFlattened(arr -> java.util.Arrays.sort(arr));
+            matrix.mutateAsFlat(arr -> java.util.Arrays.sort(arr));
             assertEquals(1, matrix.get(0, 0));
             assertEquals(3, matrix.get(0, 1));
             assertEquals(4, matrix.get(1, 0));

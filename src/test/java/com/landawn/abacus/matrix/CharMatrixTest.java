@@ -176,7 +176,7 @@ class CharMatrixTest extends TestBase {
     @Test
     public void testComponentType() {
         CharMatrix matrix = CharMatrix.empty();
-        Assertions.assertEquals(char.class, matrix.componentType());
+        Assertions.assertEquals(char.class, matrix.elementType());
     }
 
     @Test
@@ -612,6 +612,24 @@ class CharMatrixTest extends TestBase {
     }
 
     @Test
+    public void testCopyEmptyRange_returnsEmptyMatrix() {
+        // Regression: copy(from, from) on a matrix with columns > 0 must not throw.
+        CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } });
+
+        CharMatrix empty = m.copy(0, 0);
+        Assertions.assertEquals(0, empty.rowCount());
+        Assertions.assertEquals(0, empty.columnCount());
+
+        CharMatrix emptyRows = m.copy(1, 1, 0, 3);
+        Assertions.assertEquals(0, emptyRows.rowCount());
+        Assertions.assertEquals(0, emptyRows.columnCount());
+
+        CharMatrix emptyCols = m.copy(0, 3, 1, 1);
+        Assertions.assertEquals(3, emptyCols.rowCount());
+        Assertions.assertEquals(0, emptyCols.columnCount());
+    }
+
+    @Test
     public void testExtend() {
         char[][] a = { { 'a', 'b' }, { 'c', 'd' } };
         CharMatrix matrix = CharMatrix.of(a);
@@ -852,7 +870,7 @@ class CharMatrixTest extends TestBase {
         CharMatrix matrix = CharMatrix.of(a);
 
         List<Character> collected = new ArrayList<>();
-        matrix.applyOnFlattened(row -> {
+        matrix.mutateAsFlat(row -> {
             for (char c : row) {
                 collected.add(c);
             }
@@ -1518,7 +1536,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testComponentType() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A' } });
-            assertEquals(char.class, m.componentType());
+            assertEquals(char.class, m.elementType());
         }
 
         // ============ Get/Set Tests ============
@@ -2256,7 +2274,7 @@ class CharMatrixTest extends TestBase {
         public void testFlatOp() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B', 'C' }, { 'D', 'E', 'F' }, { 'G', 'H', 'I' } });
             List<Integer> sums = new ArrayList<>();
-            m.applyOnFlattened(row -> {
+            m.mutateAsFlat(row -> {
                 int sum = 0;
                 for (char val : row) {
                     sum += val;
@@ -3030,7 +3048,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testComponentType() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a' } });
-            assertEquals(char.class, m.componentType());
+            assertEquals(char.class, m.elementType());
         }
 
         // ============ Get/Set Tests ============
@@ -3577,7 +3595,7 @@ class CharMatrixTest extends TestBase {
         public void testFlatOp() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
             AtomicInteger count = new AtomicInteger(0);
-            m.applyOnFlattened(row -> count.addAndGet(row.length));
+            m.mutateAsFlat(row -> count.addAndGet(row.length));
             assertEquals(4, count.get());
         }
 
@@ -3887,7 +3905,7 @@ class CharMatrixTest extends TestBase {
         public void testArray() {
             char[][] arr = { { 'a', 'b' }, { 'c', 'd' } };
             CharMatrix m = CharMatrix.of(arr);
-            char[][] result = m.backingArray();
+            char[][] result = m.internalArray();
             assertSame(arr, result);
         }
 
@@ -4149,7 +4167,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testComponentType_emptyMatrix() {
             CharMatrix m = CharMatrix.empty();
-            assertEquals(char.class, m.componentType());
+            assertEquals(char.class, m.elementType());
         }
 
         @Test
@@ -5017,7 +5035,7 @@ class CharMatrixTest extends TestBase {
         public void testArray() {
             char[][] arr = { { 'a', 'b' }, { 'c', 'd' } };
             CharMatrix m = CharMatrix.of(arr);
-            char[][] result = m.backingArray();
+            char[][] result = m.internalArray();
             assertArrayEquals(arr, result);
         }
 
@@ -5195,9 +5213,9 @@ class CharMatrixTest extends TestBase {
         // ============ Element Access Tests ============
 
         @Test
-        public void test_componentType() {
+        public void test_elementType() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' } });
-            assertEquals(char.class, m.componentType());
+            assertEquals(char.class, m.elementType());
         }
 
         @Test
@@ -5650,9 +5668,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_applyOnFlattened() {
+        public void test_mutateAsFlat() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            m.applyOnFlattened(arr -> {
+            m.mutateAsFlat(arr -> {
                 for (int i = 0; i < arr.length; i++) {
                     arr[i] = (char) (arr[i] + 1);
                 }
@@ -6183,9 +6201,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCharMatrix_applyOnFlattened() {
+        public void testCharMatrix_mutateAsFlat() {
             CharMatrix matrix = CharMatrix.of(new char[][] { { 'd', 'b' }, { 'c', 'a' } });
-            matrix.applyOnFlattened(arr -> java.util.Arrays.sort(arr));
+            matrix.mutateAsFlat(arr -> java.util.Arrays.sort(arr));
             // matrix is now [['a', 'b'], ['c', 'd']]
             assertEquals('a', matrix.get(0, 0));
             assertEquals('b', matrix.get(0, 1));

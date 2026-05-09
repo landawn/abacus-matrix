@@ -106,7 +106,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     }
 
     /**
-     * Creates a new {@code 1 x size} matrix filled with random char values.
+     * Creates a new {@code 1 x length} matrix filled with random char values.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -114,11 +114,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * // Result: a 1x5 matrix with random char values
      * }</pre>
      *
-     * @param size the number of columns in the new matrix
-     * @return a new CharMatrix of dimensions 1 x size filled with random values
+     * @param length the number of columns in the new matrix
+     * @return a new CharMatrix of dimensions 1 x length filled with random values
      */
-    public static CharMatrix random(final int size) {
-        return random(1, size);
+    public static CharMatrix random(final int length) {
+        return random(1, length);
     }
 
     /**
@@ -761,7 +761,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      */
     @Override
     public char[] getMainDiagonal() throws IllegalStateException {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
 
         final char[] res = new char[rowCount];
 
@@ -794,7 +794,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      */
     @Override
     public void setMainDiagonal(final char[] mainDiagonal) throws IllegalStateException, IllegalArgumentException {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
         N.checkArgument(N.len(mainDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(mainDiagonal));
 
         for (int i = 0; i < rowCount; i++) {
@@ -820,7 +820,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateMainDiagonal(final Throwables.CharUnaryOperator<E> operator) throws IllegalStateException, E {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
         N.checkArgNotNull(operator, "operator");
 
         for (int i = 0; i < rowCount; i++) {
@@ -848,7 +848,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      */
     @Override
     public char[] getAntiDiagonal() throws IllegalStateException {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
 
         final char[] res = new char[rowCount];
 
@@ -882,7 +882,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      */
     @Override
     public void setAntiDiagonal(final char[] antiDiagonal) throws IllegalStateException, IllegalArgumentException {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
         N.checkArgument(N.len(antiDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(antiDiagonal));
 
         for (int i = 0; i < rowCount; i++) {
@@ -909,7 +909,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateAntiDiagonal(final Throwables.CharUnaryOperator<E> operator) throws IllegalStateException, E {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
         N.checkArgNotNull(operator, "operator");
 
         for (int i = 0; i < rowCount; i++) {
@@ -1206,7 +1206,6 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     @Override
     public CharMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
-        checkRepresentableShape(toRowIndex - fromRowIndex, columnCount);
 
         final char[][] c = new char[toRowIndex - fromRowIndex][];
 
@@ -1239,7 +1238,6 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     public CharMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
-        checkRepresentableShape(toRowIndex - fromRowIndex, toColumnIndex - fromColumnIndex);
         final char[][] c = new char[toRowIndex - fromRowIndex][];
 
         for (int i = fromRowIndex; i < toRowIndex; i++) {
@@ -1959,18 +1957,18 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'d', 'b'}, {'c', 'a'}});
-     * matrix.applyOnFlattened(arr -> java.util.Arrays.sort(arr));
+     * matrix.mutateAsFlat(arr -> java.util.Arrays.sort(arr));
      * // matrix is now [['a', 'b'], ['c', 'd']] (all elements sorted globally, then placed back row by row)
      * }</pre>
      *
      * @param <E> the exception type that the operation may throw
      * @param action the operation to apply to the flattened array
      * @throws E if the operation throws an exception
-     * @see Arrays#applyOnFlattened(char[][], Throwables.Consumer)
+     * @see Arrays#mutateAsFlat(char[][], Throwables.Consumer)
      */
     @Override
-    public <E extends Exception> void applyOnFlattened(final Throwables.Consumer<? super char[], E> action) throws E {
-        Arrays.applyOnFlattened(a, action);
+    public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super char[], E> action) throws E {
+        Arrays.mutateAsFlat(a, action);
     }
 
     /**
@@ -2393,7 +2391,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      */
     @Override
     public CharStream mainDiagonalStream() {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
 
         if (isEmpty()) {
             return CharStream.empty();
@@ -2450,7 +2448,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      */
     @Override
     public CharStream antiDiagonalStream() {
-        checkIfRowAndColumnSizeAreSame();
+        checkIsSquare();
 
         if (isEmpty()) {
             return CharStream.empty();

@@ -117,7 +117,7 @@ class BooleanMatrixTest extends TestBase {
     @Test
     public void testComponentType() {
         BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] { { true } });
-        assertEquals(boolean.class, matrix.componentType());
+        assertEquals(boolean.class, matrix.elementType());
     }
 
     @Test
@@ -530,6 +530,24 @@ class BooleanMatrixTest extends TestBase {
     }
 
     @Test
+    public void testCopyEmptyRange_returnsEmptyMatrix() {
+        // Regression: copy(from, from) on a matrix with columns > 0 must not throw.
+        BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false, true }, { false, true, false } });
+
+        BooleanMatrix empty = m.copy(0, 0);
+        assertEquals(0, empty.rowCount());
+        assertEquals(0, empty.columnCount());
+
+        BooleanMatrix emptyRows = m.copy(1, 1, 0, 3);
+        assertEquals(0, emptyRows.rowCount());
+        assertEquals(0, emptyRows.columnCount());
+
+        BooleanMatrix emptyCols = m.copy(0, 2, 1, 1);
+        assertEquals(2, emptyCols.rowCount());
+        assertEquals(0, emptyCols.columnCount());
+    }
+
+    @Test
     public void testExtend() {
         boolean[][] arr = { { true, false }, { false, true } };
         BooleanMatrix matrix = BooleanMatrix.of(arr);
@@ -737,7 +755,7 @@ class BooleanMatrixTest extends TestBase {
         BooleanMatrix matrix = BooleanMatrix.of(arr);
 
         int[] count = { 0 };
-        matrix.applyOnFlattened(array -> count[0] += array.length);
+        matrix.mutateAsFlat(array -> count[0] += array.length);
         assertEquals(4, count[0]);
     }
 
@@ -1313,7 +1331,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testComponentType() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true } });
-            assertEquals(boolean.class, m.componentType());
+            assertEquals(boolean.class, m.elementType());
         }
 
         // ============ Get/Set Tests ============
@@ -2047,7 +2065,7 @@ class BooleanMatrixTest extends TestBase {
         public void testFlatOp() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false, true }, { false, true, false }, { true, false, true } });
             List<Integer> trueCounts = new ArrayList<>();
-            m.applyOnFlattened(row -> {
+            m.mutateAsFlat(row -> {
                 int count = 0;
                 for (boolean val : row) {
                     if (val) {
@@ -3398,7 +3416,7 @@ class BooleanMatrixTest extends TestBase {
         public void testFlatOp() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
             AtomicInteger count = new AtomicInteger(0);
-            m.applyOnFlattened(row -> count.addAndGet(row.length));
+            m.mutateAsFlat(row -> count.addAndGet(row.length));
             assertEquals(4, count.get());
         }
 
@@ -3687,7 +3705,7 @@ class BooleanMatrixTest extends TestBase {
         public void testArray() {
             boolean[][] arr = { { true, false }, { false, true } };
             BooleanMatrix m = BooleanMatrix.of(arr);
-            boolean[][] result = m.backingArray();
+            boolean[][] result = m.internalArray();
             assertSame(arr, result);
         }
 
@@ -3858,7 +3876,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testComponentType_emptyMatrix() {
             BooleanMatrix m = BooleanMatrix.empty();
-            assertEquals(boolean.class, m.componentType());
+            assertEquals(boolean.class, m.elementType());
         }
 
         @Test
@@ -4443,7 +4461,7 @@ class BooleanMatrixTest extends TestBase {
         public void testArray() {
             boolean[][] arr = { { true, false }, { false, true } };
             BooleanMatrix m = BooleanMatrix.of(arr);
-            boolean[][] result = m.backingArray();
+            boolean[][] result = m.internalArray();
             assertArrayEquals(arr, result);
         }
 
@@ -5038,9 +5056,9 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_applyOnFlattened() {
+        public void test_mutateAsFlat() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
-            m.applyOnFlattened(arr -> {
+            m.mutateAsFlat(arr -> {
                 for (int i = 0; i < arr.length; i++) {
                     arr[i] = !arr[i];
                 }
@@ -5547,9 +5565,9 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testBooleanMatrix_applyOnFlattened() {
+        public void testBooleanMatrix_mutateAsFlat() {
             BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
-            matrix.applyOnFlattened(arr -> java.util.Arrays.fill(arr, true));
+            matrix.mutateAsFlat(arr -> java.util.Arrays.fill(arr, true));
             // matrix is now [[true, true], [true, true]]
             assertTrue(matrix.get(0, 0));
             assertTrue(matrix.get(0, 1));

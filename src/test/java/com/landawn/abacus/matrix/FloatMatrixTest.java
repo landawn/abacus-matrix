@@ -177,7 +177,7 @@ class FloatMatrixTest extends TestBase {
 
     @Test
     public void testComponentType() {
-        assertEquals(float.class, matrix.componentType());
+        assertEquals(float.class, matrix.elementType());
     }
 
     @Test
@@ -579,6 +579,22 @@ class FloatMatrixTest extends TestBase {
     }
 
     @Test
+    public void testCopyEmptyRange_returnsEmptyMatrix() {
+        // Regression: copy(from, from) on a matrix with columns > 0 must not throw.
+        FloatMatrix empty = matrix.copy(0, 0);
+        assertEquals(0, empty.rowCount());
+        assertEquals(0, empty.columnCount());
+
+        FloatMatrix emptyRows = matrix.copy(1, 1, 0, 3);
+        assertEquals(0, emptyRows.rowCount());
+        assertEquals(0, emptyRows.columnCount());
+
+        FloatMatrix emptyCols = matrix.copy(0, 3, 1, 1);
+        assertEquals(3, emptyCols.rowCount());
+        assertEquals(0, emptyCols.columnCount());
+    }
+
+    @Test
     public void testExtend() {
         FloatMatrix extended = matrix.resize(5, 5);
         assertEquals(5, extended.rowCount());
@@ -777,7 +793,7 @@ class FloatMatrixTest extends TestBase {
     @Test
     public void testFlatOp() {
         List<Float> sums = new ArrayList<>();
-        matrix.applyOnFlattened(row -> {
+        matrix.mutateAsFlat(row -> {
             float sum = 0.0f;
             for (float val : row) {
                 sum += val;
@@ -1380,7 +1396,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testComponentType() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f } });
-            assertEquals(float.class, m.componentType());
+            assertEquals(float.class, m.elementType());
         }
 
         // ============ Get/Set Tests ============
@@ -2206,7 +2222,7 @@ class FloatMatrixTest extends TestBase {
         public void testFlatOp() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
             List<Float> sums = new ArrayList<>();
-            m.applyOnFlattened(row -> {
+            m.mutateAsFlat(row -> {
                 float sum = 0.0f;
                 for (float val : row) {
                     sum += val;
@@ -3561,7 +3577,7 @@ class FloatMatrixTest extends TestBase {
         public void testFlatOp() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             final float[] sum = { 0.0f };
-            m.applyOnFlattened(row -> {
+            m.mutateAsFlat(row -> {
                 for (float val : row) {
                     sum[0] += val;
                 }
@@ -3863,7 +3879,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testArray() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            float[][] array = m.backingArray();
+            float[][] array = m.internalArray();
             assertArrayEquals(new float[] { 1.0f, 2.0f }, array[0]);
             assertArrayEquals(new float[] { 3.0f, 4.0f }, array[1]);
         }
@@ -4926,10 +4942,10 @@ class FloatMatrixTest extends TestBase {
         // ============ FlatOp Test ============
 
         @Test
-        public void test_applyOnFlattened() {
+        public void test_mutateAsFlat() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             AtomicInteger count = new AtomicInteger(0);
-            m.applyOnFlattened(row -> count.addAndGet(row.length));
+            m.mutateAsFlat(row -> count.addAndGet(row.length));
             assertEquals(4, count.get());
         }
 
@@ -5331,9 +5347,9 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFloatMatrix_applyOnFlattened() {
+        public void testFloatMatrix_mutateAsFlat() {
             FloatMatrix matrix = FloatMatrix.of(new float[][] { { 5.0f, 3.0f }, { 4.0f, 1.0f } });
-            matrix.applyOnFlattened(arr -> java.util.Arrays.sort(arr));
+            matrix.mutateAsFlat(arr -> java.util.Arrays.sort(arr));
             assertEquals(1.0f, matrix.get(0, 0));
             assertEquals(3.0f, matrix.get(0, 1));
             assertEquals(4.0f, matrix.get(1, 0));

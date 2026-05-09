@@ -171,7 +171,7 @@ class ShortMatrixTest extends TestBase {
 
     @Test
     public void testComponentType() {
-        assertEquals(short.class, matrix.componentType());
+        assertEquals(short.class, matrix.elementType());
     }
 
     @Test
@@ -579,6 +579,22 @@ class ShortMatrixTest extends TestBase {
     }
 
     @Test
+    public void testCopyEmptyRange_returnsEmptyMatrix() {
+        // Regression: copy(from, from) on a matrix with columns > 0 must not throw.
+        ShortMatrix empty = matrix.copy(0, 0);
+        assertEquals(0, empty.rowCount());
+        assertEquals(0, empty.columnCount());
+
+        ShortMatrix emptyRows = matrix.copy(1, 1, 0, 3);
+        assertEquals(0, emptyRows.rowCount());
+        assertEquals(0, emptyRows.columnCount());
+
+        ShortMatrix emptyCols = matrix.copy(0, 3, 1, 1);
+        assertEquals(3, emptyCols.rowCount());
+        assertEquals(0, emptyCols.columnCount());
+    }
+
+    @Test
     public void testExtend() {
         ShortMatrix extended = matrix.resize(5, 5);
         assertEquals(5, extended.rowCount());
@@ -813,7 +829,7 @@ class ShortMatrixTest extends TestBase {
     @Test
     public void testFlatOp() {
         List<Short> sums = new ArrayList<>();
-        matrix.applyOnFlattened(row -> {
+        matrix.mutateAsFlat(row -> {
             short sum = 0;
             for (short val : row) {
                 sum += val;
@@ -1459,9 +1475,9 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testShortMatrix_applyOnFlattened() {
+        public void testShortMatrix_mutateAsFlat() {
             ShortMatrix matrix = ShortMatrix.of(new short[][] { { 5, 3 }, { 4, 1 } });
-            matrix.applyOnFlattened(arr -> java.util.Arrays.sort(arr));
+            matrix.mutateAsFlat(arr -> java.util.Arrays.sort(arr));
             // matrix is now [[1, 3], [4, 5]]
             assertEquals((short) 1, matrix.get(0, 0));
             assertEquals((short) 3, matrix.get(0, 1));
@@ -2594,7 +2610,7 @@ class ShortMatrixTest extends TestBase {
         public void testFlatOp() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             List<Integer> sums = new ArrayList<>();
-            m.applyOnFlattened(row -> {
+            m.mutateAsFlat(row -> {
                 int sum = 0;
                 for (short val : row) {
                     sum += val;
@@ -3432,7 +3448,7 @@ class ShortMatrixTest extends TestBase {
         public void testFlatOp_empty() {
             ShortMatrix empty = ShortMatrix.empty();
             List<Integer> results = new ArrayList<>();
-            empty.applyOnFlattened(row -> results.add(row.length));
+            empty.mutateAsFlat(row -> results.add(row.length));
             assertTrue(results.isEmpty());
         }
 
@@ -3613,7 +3629,7 @@ class ShortMatrixTest extends TestBase {
         public void testFlatOp() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
             final int[] count = { 0 };
-            m.applyOnFlattened(row -> count[0] += row.length);
+            m.mutateAsFlat(row -> count[0] += row.length);
             assertEquals(4, count[0]);
         }
 
@@ -4584,7 +4600,7 @@ class ShortMatrixTest extends TestBase {
         public void testFlatOp() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
             final int[] sum = { 0 };
-            m.applyOnFlattened(row -> {
+            m.mutateAsFlat(row -> {
                 for (short val : row) {
                     sum[0] += val;
                 }
@@ -4780,7 +4796,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testToArray() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            short[][] arr = m.backingArray();
+            short[][] arr = m.internalArray();
             assertEquals(2, arr.length);
             assertEquals(2, arr[0].length);
             assertArrayEquals(new short[] { 1, 2 }, arr[0]);
@@ -5028,9 +5044,9 @@ class ShortMatrixTest extends TestBase {
         // ============ Component Type Test ============
 
         @Test
-        public void test_componentType_returnsShortClass() {
+        public void test_elementType_returnsShortClass() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1 } });
-            assertEquals(short.class, m.componentType());
+            assertEquals(short.class, m.elementType());
         }
 
         // ============ Get/Set Tests ============
@@ -5629,11 +5645,11 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_applyOnFlattened_appliesOperationToEachRow() {
+        public void test_mutateAsFlat_appliesOperationToEachRow() {
             short[][] arr = { { 1, 2 }, { 3, 4 } };
             ShortMatrix m = new ShortMatrix(arr);
             final int[] sum = { 0 };
-            m.applyOnFlattened(row -> {
+            m.mutateAsFlat(row -> {
                 for (short val : row) {
                     sum[0] += val;
                 }
