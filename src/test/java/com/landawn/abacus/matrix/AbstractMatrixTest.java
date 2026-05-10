@@ -2791,11 +2791,11 @@ class AbstractMatrixTest extends TestBase {
 
         @Test
         public void testPrintln_objectMatrix() {
-            Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
+            Matrix<String> m = Matrix.of(new String[][] { { "Bob海😀洋", "B" }, { "C", "Bob海😀洋" } });
             String output = m.println();
             assertNotNull(output);
-            assertTrue(output.contains("A"));
-            assertTrue(output.contains("D"));
+            assertTrue(output.contains("😀"));
+            assertTrue(output.contains("😀"));
         }
 
         @Test
