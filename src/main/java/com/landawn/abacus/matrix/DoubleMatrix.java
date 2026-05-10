@@ -41,6 +41,13 @@ import com.landawn.abacus.util.stream.Stream;
  *
  * <p>Cells introduced by growth or reshaping default to {@code 0.0d} unless an overload accepts an
  * explicit fill value.</p>
+ *
+ * <p><b>IEEE 754 semantics:</b> Arithmetic operations follow standard IEEE 754 rules. {@code NaN}
+ * propagates through arithmetic, comparisons against {@code NaN} are always {@code false} (use
+ * {@link Double#isNaN(double)} to test), and {@code +0.0} and {@code -0.0} compare equal under
+ * {@code ==} but are distinguished by {@link Double#doubleToLongBits(double)}. {@link #equals(Object)}
+ * and {@link #hashCode()} use {@code doubleToLongBits} semantics, so {@code NaN} equals {@code NaN}
+ * and {@code +0.0} is not equal to {@code -0.0} for matrix-level comparison.</p>
  */
 public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, DoubleStream, Stream<DoubleStream>, DoubleMatrix> {
 
@@ -125,9 +132,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * // matrix.get(0, 1) returns 2.0
      * }</pre>
      *
-     * @param a the two-dimensional int array to convert to a double matrix, or null/empty for an empty matrix
-     * @return a new DoubleMatrix with converted values, or an empty DoubleMatrix if input is null or empty
-     * @throws IllegalArgumentException if the first row is null or if rows have different lengths (non-rectangular array)
+     * @param a the two-dimensional int array to convert to a double matrix, or {@code null}/empty for an empty matrix
+     * @return a new DoubleMatrix with converted values, or an empty DoubleMatrix if input is {@code null} or empty
+     * @throws IllegalArgumentException if any row is {@code null} or if rows have different lengths (non-rectangular array)
      */
     public static DoubleMatrix from(final int[]... a) {
         if (N.isEmpty(a)) {
@@ -174,9 +181,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * // matrix.get(1, 0) returns 3.0
      * }</pre>
      *
-     * @param a the two-dimensional long array to convert to a double matrix, or null/empty for an empty matrix
-     * @return a new DoubleMatrix with converted values, or an empty DoubleMatrix if input is null or empty
-     * @throws IllegalArgumentException if the first row is null or if rows have different lengths (non-rectangular array)
+     * @param a the two-dimensional long array to convert to a double matrix, or {@code null}/empty for an empty matrix
+     * @return a new DoubleMatrix with converted values, or an empty DoubleMatrix if input is {@code null} or empty
+     * @throws IllegalArgumentException if any row is {@code null} or if rows have different lengths (non-rectangular array)
      */
     public static DoubleMatrix from(final long[]... a) {
         if (N.isEmpty(a)) {
@@ -221,9 +228,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * // matrix.get(1, 1) returns 4.0
      * }</pre>
      *
-     * @param a the two-dimensional float array to convert to a double matrix, or null/empty for an empty matrix
-     * @return a new DoubleMatrix with converted values, or an empty DoubleMatrix if input is null or empty
-     * @throws IllegalArgumentException if the first row is null or if rows have different lengths (non-rectangular array)
+     * @param a the two-dimensional float array to convert to a double matrix, or {@code null}/empty for an empty matrix
+     * @return a new DoubleMatrix with converted values, or an empty DoubleMatrix if input is {@code null} or empty
+     * @throws IllegalArgumentException if any row is {@code null} or if rows have different lengths (non-rectangular array)
      */
     public static DoubleMatrix from(final float[]... a) {
         if (N.isEmpty(a)) {
@@ -255,16 +262,17 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     }
 
     /**
-     * Creates a new {@code 1 x length} matrix filled with random double values.
+     * Creates a new {@code 1 x length} matrix filled with random double values uniformly distributed
+     * in {@code [0.0, 1.0)} (as produced by {@link java.util.Random#nextDouble()}).
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.random(5);
-     * // Result: a 1x5 matrix with random double values
+     * // Result: a 1x5 matrix with random double values in [0.0, 1.0)
      * }</pre>
      *
      * @param length the number of columns in the new matrix
-     * @return a new DoubleMatrix of dimensions 1 x length filled with random values
+     * @return a new DoubleMatrix of dimensions {@code 1 x length} filled with random values
      * @throws IllegalArgumentException if {@code length} is negative
      */
     public static DoubleMatrix random(final int length) {
@@ -272,17 +280,18 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     }
 
     /**
-     * Creates a new matrix of the specified dimensions filled with random double values.
+     * Creates a new matrix of the specified dimensions filled with random double values uniformly
+     * distributed in {@code [0.0, 1.0)} (as produced by {@link java.util.Random#nextDouble()}).
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.random(2, 3);
-     * // Result: a 2x3 matrix with random double values
+     * // Result: a 2x3 matrix with random double values in [0.0, 1.0)
      * }</pre>
      *
      * @param rowCount the number of rows in the new matrix
      * @param columnCount the number of columns in the new matrix
-     * @return a new DoubleMatrix of dimensions rowCount x columnCount filled with random values
+     * @return a new DoubleMatrix of dimensions {@code rowCount x columnCount} filled with random values
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative
      */
     public static DoubleMatrix random(final int rowCount, final int columnCount) {
@@ -312,8 +321,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * @param rowCount the number of rows in the new matrix
      * @param columnCount the number of columns in the new matrix
-     * @param element the double value to fill the matrix with
-     * @return a new DoubleMatrix of dimensions rowCount x columnCount filled with the specified element
+     * @param element the double value to fill the matrix with (may be {@code NaN}, {@code +/-Infinity},
+     *                or any other {@code double} value)
+     * @return a new DoubleMatrix of dimensions {@code rowCount x columnCount} filled with the specified element
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative
      */
     public static DoubleMatrix repeat(final int rowCount, final int columnCount, final double element) {
@@ -1280,8 +1290,10 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * @param destRowIndex the target row index in this matrix (0-based)
      * @param destColumnIndex the target column index in this matrix (0-based)
-     * @param source the source array to copy values from
-     * @throws IllegalArgumentException if the target indices are negative or exceed matrix dimensions
+     * @param source the source array to copy values from; must not be {@code null}.
+     *               Individual {@code null} sub-arrays in {@code source} are skipped.
+     * @throws IllegalArgumentException if {@code source} is {@code null}, or if the target
+     *         indices are negative or exceed matrix dimensions
      */
     public void fill(final int destRowIndex, final int destColumnIndex, final double[][] source) throws IllegalArgumentException {
         N.checkArgNotNull(source, "source");
@@ -1922,10 +1934,10 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * DoubleMatrix extended = matrix.reshape(2, 4);   // Becomes [[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 0.0, 0.0]]
      * }</pre>
      *
-     * @param newRowCount the number of rows in the reshaped matrix
-     * @param newColumnCount the number of columns in the reshaped matrix
+     * @param newRowCount the number of rows in the reshaped matrix; must be {@code >= 0}
+     * @param newColumnCount the number of columns in the reshaped matrix; must be {@code >= 0}
      * @return a new DoubleMatrix with the specified shape containing this matrix's elements
-     * @throws IllegalArgumentException if the new shape is too small to hold all elements
+     * @throws IllegalArgumentException if either dimension is negative or if the new shape is too small to hold all elements
      */
     @SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG")
     @Override
@@ -1975,10 +1987,13 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * //          [3.0, 3.0, 3.0, 4.0, 4.0, 4.0]]
      * }</pre>
      *
-     * @param rowRepeats the number of times to repeat each element in the row direction
-     * @param columnRepeats the number of times to repeat each element in the column direction
-     * @return a new matrix with repeated elements
-     * @throws IllegalArgumentException if rowRepeats or columnRepeats is not positive
+     * @param rowRepeats the number of times each element is duplicated vertically (along the row axis);
+     *                   must be positive
+     * @param columnRepeats the number of times each element is duplicated horizontally (along the column axis);
+     *                      must be positive
+     * @return a new matrix with dimensions {@code (rowCount * rowRepeats) x (columnCount * columnRepeats)}
+     * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is not positive,
+     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
      * @see IntMatrix#repeatElements(int, int)
      */
     @Override
@@ -2025,10 +2040,13 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * //          [3.0, 4.0, 3.0, 4.0, 3.0, 4.0]]
      * }</pre>
      *
-     * @param rowRepeats the number of times to repeat the matrix in the row direction
-     * @param columnRepeats the number of times to repeat the matrix in the column direction
-     * @return a new matrix with the tiled pattern
-     * @throws IllegalArgumentException if rowRepeats or columnRepeats is not positive
+     * @param rowRepeats the number of times to tile the whole matrix vertically (along the row axis);
+     *                   must be positive
+     * @param columnRepeats the number of times to tile the whole matrix horizontally (along the column axis);
+     *                      must be positive
+     * @return a new matrix with dimensions {@code (rowCount * rowRepeats) x (columnCount * columnRepeats)}
+     * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is not positive,
+     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
      * @see IntMatrix#repeatMatrix(int, int)
      */
     @Override

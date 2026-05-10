@@ -65,6 +65,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * }</pre>
      *
      * @param a the two-dimensional byte array to wrap, or {@code null} for an empty matrix
+     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     *         different lengths (i.e. the array is not rectangular)
      */
     public ByteMatrix(final byte[][] a) {
         super(a == null ? new byte[0][0] : a, byte.class);
@@ -99,15 +101,18 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * // matrix.get(1, 2) returns 6
      * }</pre>
      *
-     * @param a the two-dimensional byte array to create the matrix from, or null/empty for an empty matrix
-     * @return a new ByteMatrix containing the provided data, or an empty ByteMatrix if input is null or empty
+     * @param a the two-dimensional byte array to create the matrix from, or {@code null}/empty for an empty matrix
+     * @return a new {@code ByteMatrix} containing the provided data, or an empty {@code ByteMatrix} if input is {@code null} or empty
+     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     *         different lengths (i.e. the array is not rectangular)
      */
     public static ByteMatrix of(final byte[]... a) {
         return N.isEmpty(a) ? EMPTY_BYTE_MATRIX : new ByteMatrix(a);
     }
 
     /**
-     * Creates a new {@code 1 x length} matrix filled with random byte values.
+     * Creates a new {@code 1 x length} matrix filled with random byte values uniformly distributed
+     * across the full byte range {@code [Byte.MIN_VALUE, Byte.MAX_VALUE]}.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -115,15 +120,17 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * // Result: a 1x5 matrix with random byte values
      * }</pre>
      *
-     * @param length the number of columns in the new matrix
-     * @return a new ByteMatrix of dimensions 1 x length filled with random values
+     * @param length the number of columns in the new matrix; must be {@code >= 0}
+     * @return a new {@code ByteMatrix} of dimensions {@code 1 x length} filled with random values
+     * @throws IllegalArgumentException if {@code length} is negative
      */
     public static ByteMatrix random(final int length) {
         return random(1, length);
     }
 
     /**
-     * Creates a new matrix of the specified dimensions filled with random byte values.
+     * Creates a new matrix of the specified dimensions filled with random byte values uniformly
+     * distributed across the full byte range {@code [Byte.MIN_VALUE, Byte.MAX_VALUE]}.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -131,9 +138,11 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * // Result: a 2x3 matrix with random byte values
      * }</pre>
      *
-     * @param rowCount the number of rows in the new matrix
-     * @param columnCount the number of columns in the new matrix
-     * @return a new ByteMatrix of dimensions rowCount x columnCount filled with random values
+     * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
+     * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
+     * @return a new {@code ByteMatrix} of dimensions {@code rowCount x columnCount} filled with random values
+     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
+     *         or if {@code (long) rowCount * columnCount} overflows {@code Integer.MAX_VALUE}
      */
     public static ByteMatrix random(final int rowCount, final int columnCount) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -160,10 +169,12 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * // Result: [[1, 1, 1], [1, 1, 1]]
      * }</pre>
      *
-     * @param rowCount the number of rows in the new matrix
-     * @param columnCount the number of columns in the new matrix
+     * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
+     * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
      * @param element the byte value to fill the matrix with
-     * @return a new ByteMatrix of dimensions rowCount x columnCount filled with the specified element
+     * @return a new {@code ByteMatrix} of dimensions {@code rowCount x columnCount} with every cell set to {@code element}
+     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
+     *         or if {@code (long) rowCount * columnCount} overflows {@code Integer.MAX_VALUE}
      */
     public static ByteMatrix repeat(final int rowCount, final int columnCount, final byte element) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -273,8 +284,11 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * // Creates 3x3 matrix with diagonal [1, 2, 3] and zeros elsewhere
      * }</pre>
      *
-     * @param mainDiagonal the array of diagonal elements
-     * @return a square n×n matrix with the specified main diagonal, where n is the array length
+     * @param mainDiagonal the array of diagonal elements; may be {@code null} or empty
+     * @return a square {@code n×n} matrix with the specified main diagonal, where {@code n} is the
+     *         array length, or an empty matrix if {@code mainDiagonal} is {@code null} or empty
+     * @see #antiDiagonal(byte[])
+     * @see #diagonals(byte[], byte[])
      */
     public static ByteMatrix mainDiagonal(final byte[] mainDiagonal) {
         return diagonals(mainDiagonal, null);
@@ -295,8 +309,11 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * //   {3, 0, 0}
      * }</pre>
      *
-     * @param antiDiagonal the array of anti-diagonal elements
-     * @return a square matrix with the specified anti-diagonal (n×n where n = diagonal length)
+     * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} or empty
+     * @return a square {@code n×n} matrix with the specified anti-diagonal, where {@code n} is the
+     *         array length, or an empty matrix if {@code antiDiagonal} is {@code null} or empty
+     * @see #mainDiagonal(byte[])
+     * @see #diagonals(byte[], byte[])
      */
     public static ByteMatrix antiDiagonal(final byte[] antiDiagonal) {
         return diagonals(null, antiDiagonal);
@@ -352,12 +369,12 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     }
 
     /**
-     * Converts a boxed Byte Matrix to a primitive ByteMatrix.
-     * Null values in the input matrix are converted to {@code 0}.
+     * Converts a boxed {@code Matrix<Byte>} to a primitive {@code ByteMatrix}.
+     * {@code null} entries in the input matrix are converted to {@code 0}.
      *
      * <p>This method performs the opposite operation of {@link #boxed()}, converting
-     * from object-based Byte values to primitive byte values. This conversion
-     * improves memory efficiency and performance when working with large matrices.
+     * from object-based {@code Byte} values to primitive {@code byte} values. This conversion
+     * improves memory efficiency and performance when working with large matrices.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -366,8 +383,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * // null is converted to 0: [[1, 2], [0, 4]]
      * }</pre>
      *
-     * @param x the boxed Byte Matrix to convert; must not be null
-     * @return a new ByteMatrix with primitive byte values
+     * @param x the boxed {@code Matrix<Byte>} to convert; must not be {@code null}
+     * @return a new {@code ByteMatrix} with primitive byte values
      * @throws NullPointerException if {@code x} is {@code null}
      * @see #boxed()
      */
@@ -918,7 +935,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * }</pre>
      *
      * @param <E> the type of exception that the operator may throw
-     * @param operator the unary operator to apply to each element, taking a byte and returning a byte
+     * @param operator the unary operator to apply to each element, taking a byte and returning a byte; must not be {@code null}
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateAll(final Throwables.ByteUnaryOperator<E> operator) throws E {
@@ -941,7 +959,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * }</pre>
      *
      * @param <E> the type of exception that the mapper may throw
-     * @param mapper the bi-function that takes (rowIndex, columnIndex) and returns the new byte value
+     * @param mapper the bi-function that takes {@code (rowIndex, columnIndex)} and returns the new byte value; must not be {@code null}
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
+     * @throws NullPointerException if {@code mapper} returns {@code null} for any cell
      * @throws E if the mapper throws an exception
      */
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Byte, E> mapper) throws E {
@@ -964,8 +984,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * }</pre>
      *
      * @param <E> the type of exception that may be thrown by the predicate
-     * @param predicate the condition to test each element; returns {@code true} if the element should be replaced
+     * @param predicate the condition to test each element; returns {@code true} if the element should be replaced; must not be {@code null}
      * @param newValue the value to use as replacement
+     * @throws IllegalArgumentException if {@code predicate} is {@code null}
      * @throws E if the predicate throws an exception
      */
     public <E extends Exception> void replaceIf(final Throwables.BytePredicate<E> predicate, final byte newValue) throws E {
@@ -988,8 +1009,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * }</pre>
      *
      * @param <E> the type of exception that may be thrown by the predicate
-     * @param predicate the bi-predicate that takes (rowIndex, columnIndex) and returns {@code true} if element should be replaced
+     * @param predicate the bi-predicate that takes {@code (rowIndex, columnIndex)} and returns {@code true} if the element should be replaced; must not be {@code null}
      * @param newValue the value to use as replacement
+     * @throws IllegalArgumentException if {@code predicate} is {@code null}
      * @throws E if the predicate throws an exception
      */
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final byte newValue) throws E {
@@ -1011,8 +1033,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * }</pre>
      *
      * @param <E> the type of exception that may be thrown by the function
-     * @param mapper the unary operator to apply to each element, taking a byte and returning a byte
-     * @return a new ByteMatrix with the transformed values; the original matrix is unchanged
+     * @param mapper the unary operator to apply to each element, taking a byte and returning a byte; must not be {@code null}
+     * @return a new {@code ByteMatrix} with the transformed values; the original matrix is unchanged
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
      */
     public <E extends Exception> ByteMatrix map(final Throwables.ByteUnaryOperator<E> mapper) throws E {
@@ -1043,9 +1066,10 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * @param <R> the type of elements in the resulting matrix
      * @param <E> the type of exception that may be thrown by the function
-     * @param mapper the function to transform each byte to an object of type R
-     * @param targetElementType the class of the target element type (used for array creation)
-     * @return a new Matrix&lt;R&gt; with the transformed object values; the original matrix is unchanged
+     * @param mapper the function to transform each byte to an object of type {@code R}; must not be {@code null}
+     * @param targetElementType the class of the target element type (used for array creation); must not be {@code null}
+     * @return a new {@code Matrix<R>} with the transformed object values; the original matrix is unchanged
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
      */
     public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.ByteFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E {
@@ -1078,10 +1102,11 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     }
 
     /**
-     * Fills this matrix with values from another two-dimensional byte array, starting from position [0,0].
-     * Only the overlapping region is filled. If the source array is smaller than this matrix,
-     * only the overlapping portion is modified. If the source array is larger, only the portion
-     * that fits within this matrix is copied.
+     * Fills this matrix with values from another two-dimensional byte array, starting from position {@code [0,0]}.
+     * Only the overlapping region is written. If the source array is smaller than this matrix,
+     * only the overlapping portion is modified (cells outside the source remain unchanged).
+     * If the source array is larger, only the portion that fits within this matrix is copied.
+     * Source rows that are {@code null} are skipped (the corresponding destination row is left untouched).
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1090,7 +1115,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * // Matrix is now: [[1, 2, 0], [3, 4, 0]]
      * }</pre>
      *
-     * @param source the source array to copy values from
+     * @param source the source array to copy values from; must not be {@code null}
+     * @throws IllegalArgumentException if {@code source} is {@code null}
      * @see #fill(int, int, byte[][])
      */
     public void fill(final byte[][] source) {
@@ -1100,7 +1126,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     /**
      * Fills a portion of this matrix with values from another two-dimensional byte array.
      * The filling starts at the specified position and copies as many values as possible
-     * without exceeding the bounds of either array.
+     * without exceeding the bounds of either array. Source rows that are {@code null} are
+     * skipped (the corresponding destination row is left untouched).
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1109,10 +1136,11 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * // Matrix is now: [[0, 0, 0], [0, 1, 2], [0, 3, 4]]
      * }</pre>
      *
-     * @param destRowIndex the target row index in this matrix
-     * @param destColumnIndex the target column index in this matrix
-     * @param source the source array to copy values from
-     * @throws IllegalArgumentException if the target indices are negative or exceed matrix dimensions
+     * @param destRowIndex the target row index in this matrix; must be in {@code [0, rowCount]}
+     * @param destColumnIndex the target column index in this matrix; must be in {@code [0, columnCount]}
+     * @param source the source array to copy values from; must not be {@code null}
+     * @throws IllegalArgumentException if {@code source} is {@code null}, or if {@code destRowIndex}
+     *         or {@code destColumnIndex} is negative or exceeds the corresponding matrix dimension
      */
     public void fill(final int destRowIndex, final int destColumnIndex, final byte[][] source) throws IllegalArgumentException {
         N.checkArgNotNull(source, "source");
@@ -1594,7 +1622,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * // rotated is {{3, 1}, {4, 2}}
      * }</pre>
      *
-     * @return a new matrix rotated 90 degrees clockwise with dimensions (columnCount x rowCount)
+     * @return a new matrix rotated 90 degrees clockwise with dimensions {@code (columnCount x rowCount)}
+     * @throws IllegalArgumentException if {@code (long) columnCount * rowCount} overflows {@code Integer.MAX_VALUE}
      * @see #rotate180()
      * @see #rotate270()
      */
@@ -1678,7 +1707,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * // rotated is {{2, 4}, {1, 3}}
      * }</pre>
      *
-     * @return a new matrix rotated 270 degrees clockwise with dimensions (columnCount x rowCount)
+     * @return a new matrix rotated 270 degrees clockwise with dimensions {@code (columnCount x rowCount)}
+     * @throws IllegalArgumentException if {@code (long) columnCount * rowCount} overflows {@code Integer.MAX_VALUE}
      * @see #rotate90()
      * @see #rotate180()
      */
@@ -1727,7 +1757,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * ByteMatrix transposed = matrix.transpose();   // 2×3 becomes 3×2
      * }</pre>
      *
-     * @return a new matrix that is the transpose of this matrix with dimensions columnCount × rowCount
+     * @return a new matrix that is the transpose of this matrix with dimensions {@code columnCount × rowCount}
+     * @throws IllegalArgumentException if {@code (long) columnCount * rowCount} overflows {@code Integer.MAX_VALUE}
      */
     @Override
     public ByteMatrix transpose() {
@@ -1775,10 +1806,12 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * ByteMatrix extended = matrix.reshape(2, 4);    // Becomes [[1, 2, 3, 4], [5, 6, 0, 0]]
      * }</pre>
      *
-     * @param newRowCount the number of rows in the reshaped matrix (must be non-negative)
-     * @param newColumnCount the number of columns in the reshaped matrix (must be non-negative)
-     * @return a new ByteMatrix with the specified shape containing this matrix's elements
-     * @throws IllegalArgumentException if the new shape is too small to hold all elements
+     * @param newRowCount the number of rows in the reshaped matrix; must be {@code >= 0}
+     * @param newColumnCount the number of columns in the reshaped matrix; must be {@code >= 0}
+     * @return a new {@code ByteMatrix} with the specified shape containing this matrix's elements
+     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE},
+     *         or if the new shape is too small to hold all elements of this matrix
      * @see #resize(int, int)
      */
     @SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG")
@@ -2368,8 +2401,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param <E> the type of exception that may be thrown by the operation
      * @param other the second matrix
      * @param zipFunction the binary operation to apply to corresponding elements
-     * @return a new ByteMatrix containing the results
-     * @throws IllegalArgumentException if the matrices have different shapes
+     * @return a new {@code ByteMatrix} containing the results
+     * @throws IllegalArgumentException if {@code other} has a different shape than this matrix,
+     *         or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception
      */
     public <E extends Exception> ByteMatrix zipWith(final ByteMatrix other, final Throwables.ByteBinaryOperator<E> zipFunction)
@@ -2406,9 +2440,10 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param other the second matrix
      * @param third the third matrix
      * @param zipFunction the ternary operation to apply to corresponding elements
-     * @return a new ByteMatrix containing the results
+     * @return a new {@code ByteMatrix} containing the results
+     * @throws IllegalArgumentException if {@code other} or {@code third} has a different shape than this matrix,
+     *         or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception
-     * @throws IllegalArgumentException if the matrices have different shapes
      */
     public <E extends Exception> ByteMatrix zipWith(final ByteMatrix other, final ByteMatrix third, final Throwables.ByteTernaryOperator<E> zipFunction)
             throws E {

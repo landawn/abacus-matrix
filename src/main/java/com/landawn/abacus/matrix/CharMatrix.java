@@ -39,8 +39,19 @@ import com.landawn.abacus.util.stream.Stream;
  * validated backing array. Constructors and {@code of(...)} generally wrap the supplied storage
  * directly, while factories, conversions, and mapping operations allocate new arrays.</p>
  *
- * <p>Cells introduced by growth or reshaping default to {@code '\0'} unless an overload accepts an
+ * <p>Cells introduced by growth or reshaping default to {@code '\u0000'} (the NUL character) unless an overload accepts an
  * explicit fill value.</p>
+ *
+ * <p>Each element is a Java {@code char}, an unsigned 16-bit UTF-16 code unit in the range
+ * {@code [0, 65535]}. Arithmetic operations such as {@link #add(CharMatrix)},
+ * {@link #subtract(CharMatrix)}, and {@link #matmul(CharMatrix)} compute results as {@code int}
+ * and cast back to {@code char}, so values wrap modulo {@code 65536}. Ordering and comparisons
+ * use the unsigned numeric value, not Unicode collation. Surrogate pairs are not interpreted; a
+ * supplementary code point occupies two adjacent cells.</p>
+ *
+ * @see IntMatrix
+ * @see ByteMatrix
+ * @see ShortMatrix
  */
 public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStream, Stream<CharStream>, CharMatrix> {
 
@@ -106,7 +117,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     }
 
     /**
-     * Creates a new {@code 1 x length} matrix filled with random char values.
+     * Creates a new {@code 1 x length} matrix filled with random char values drawn uniformly from
+     * the full unsigned 16-bit range {@code [0, 65535]}. Values are not constrained to printable
+     * characters and may include surrogates and control codes.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -114,15 +127,18 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * // Result: a 1x5 matrix with random char values
      * }</pre>
      *
-     * @param length the number of columns in the new matrix
+     * @param length the number of columns in the new matrix; must be {@code >= 0}
      * @return a new CharMatrix of dimensions 1 x length filled with random values
+     * @throws IllegalArgumentException if {@code length} is negative
      */
     public static CharMatrix random(final int length) {
         return random(1, length);
     }
 
     /**
-     * Creates a new matrix of the specified dimensions filled with random char values.
+     * Creates a new matrix of the specified dimensions filled with random char values drawn
+     * uniformly from the full unsigned 16-bit range {@code [0, 65535]}. Values are not
+     * constrained to printable characters and may include surrogates and control codes.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -130,9 +146,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * // Result: a 2x3 matrix with random characters
      * }</pre>
      *
-     * @param rowCount the number of rows in the new matrix
-     * @param columnCount the number of columns in the new matrix
+     * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
+     * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
      * @return a new CharMatrix of dimensions rowCount x columnCount filled with random values
+     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative
      */
     public static CharMatrix random(final int rowCount, final int columnCount) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -159,10 +176,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * // Result: [['a', 'a', 'a'], ['a', 'a', 'a']]
      * }</pre>
      *
-     * @param rowCount the number of rows in the new matrix
-     * @param columnCount the number of columns in the new matrix
+     * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
+     * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
      * @param element the char value to fill the matrix with
      * @return a new CharMatrix of dimensions rowCount x columnCount filled with the specified element
+     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative
      */
     public static CharMatrix repeat(final int rowCount, final int columnCount, final char element) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -364,8 +382,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * // null is converted to '\u0000': [['a', 'b'], ['\u0000', 'c']]
      * }</pre>
      *
-     * @param x the boxed Character Matrix to convert; must not be null
+     * @param x the boxed Character Matrix to convert; must not be {@code null}
      * @return a new CharMatrix with primitive char values
+     * @throws NullPointerException if {@code x} is {@code null}
      * @see #boxed()
      */
     public static CharMatrix unbox(final Matrix<Character> x) {
@@ -1079,7 +1098,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param <R> the type of elements in the resulting matrix
      * @param <E> the exception type that the function may throw
      * @param mapper the mapping function that converts each char to an object of type R
-     * @param targetElementType the class object representing the target element type (required for array creation)
+     * @param targetElementType the class object representing the target element type (required for array creation;
+     *        must not be {@code null})
      * @return a new Matrix&lt;R&gt; with the mapped object values
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
@@ -1146,10 +1166,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * // Result: [[0, 0, 0], [0, 'a', 'b'], [0, 'c', 'd']]
      * }</pre>
      *
-     * @param destRowIndex the target row index in this matrix (0-based)
-     * @param destColumnIndex the target column index in this matrix (0-based)
-     * @param source the source array to copy values from
-     * @throws IllegalArgumentException if the target indices are negative or exceed matrix dimensions
+     * @param destRowIndex the target row index in this matrix (0-based); must satisfy {@code 0 <= destRowIndex <= rowCount}
+     * @param destColumnIndex the target column index in this matrix (0-based); must satisfy {@code 0 <= destColumnIndex <= columnCount}
+     * @param source the source array to copy values from; must not be {@code null} (individual rows may be {@code null} and are skipped)
+     * @throws IllegalArgumentException if {@code source} is {@code null} or the target indices are out of range
      */
     public void fill(final int destRowIndex, final int destColumnIndex, final char[][] source) throws IllegalArgumentException {
         N.checkArgNotNull(source, "source");
@@ -1829,10 +1849,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * //          ['a', 'a', 'a', 'b', 'b', 'b']]
      * }</pre>
      *
-     * @param rowRepeats the number of times to repeat each element in the row direction
-     * @param columnRepeats the number of times to repeat each element in the column direction
+     * @param rowRepeats the number of times to repeat each element in the row direction; must be {@code > 0}
+     * @param columnRepeats the number of times to repeat each element in the column direction; must be {@code > 0}
      * @return a new CharMatrix with repeated elements
-     * @throws IllegalArgumentException if rowRepeats or columnRepeats is not positive
+     * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is not positive,
+     *         or the resulting dimensions would exceed {@link Integer#MAX_VALUE}
      * @see IntMatrix#repeatElements(int, int)
      */
     @Override
@@ -1879,10 +1900,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * //          ['c', 'd', 'c', 'd', 'c', 'd']]
      * }</pre>
      *
-     * @param rowRepeats number of times to repeat the matrix vertically
-     * @param columnRepeats number of times to repeat the matrix horizontally
+     * @param rowRepeats number of times to repeat the matrix vertically; must be {@code > 0}
+     * @param columnRepeats number of times to repeat the matrix horizontally; must be {@code > 0}
      * @return a new CharMatrix with the repeated pattern
-     * @throws IllegalArgumentException if rowRepeats or columnRepeats is not positive
+     * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is not positive,
+     *         or the resulting dimensions would exceed {@link Integer#MAX_VALUE}
      * @see IntMatrix#repeatMatrix(int, int)
      */
     @Override
@@ -1982,9 +2004,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * CharMatrix stacked = a.stackVertically(b);   // Result: [['a', 'b'], ['c', 'd']]
      * }</pre>
      *
-     * @param other the matrix to stack below this matrix
+     * @param other the matrix to stack below this matrix; must not be {@code null}
      * @return a new CharMatrix with other appended below this matrix
-     * @throws IllegalArgumentException if the matrices have different column counts
+     * @throws IllegalArgumentException if {@code other} is {@code null}, the matrices have different
+     *         column counts, or the merged row count would exceed {@link Integer#MAX_VALUE}
      * @see IntMatrix#stackVertically(IntMatrix)
      */
     @Override
@@ -2019,9 +2042,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * CharMatrix stacked = a.stackHorizontally(b);   // Result: [['a', 'c'], ['b', 'd']]
      * }</pre>
      *
-     * @param other the matrix to stack to the right of this matrix
+     * @param other the matrix to stack to the right of this matrix; must not be {@code null}
      * @return a new CharMatrix with other appended to the right of this matrix
-     * @throws IllegalArgumentException if the matrices have different row counts
+     * @throws IllegalArgumentException if {@code other} is {@code null}, the matrices have different
+     *         row counts, or the merged column count would exceed {@link Integer#MAX_VALUE}
      * @see IntMatrix#stackHorizontally(IntMatrix)
      */
     @Override
@@ -2044,7 +2068,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
     /**
      * Performs element-wise addition with another matrix.
-     * Both matrices must have the same dimensions.
+     * Both matrices must have the same dimensions. Each result element is computed as
+     * {@code (char) (a[i][j] + other[i][j])}, so values wrap modulo {@code 65536} on overflow.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2053,9 +2078,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * CharMatrix sum = a.add(b);   // Result: [['b', 'd']] (a+1, b+2)
      * }</pre>
      *
-     * @param other the matrix to add to this matrix
+     * @param other the matrix to add to this matrix; must not be {@code null} and must have the same shape
      * @return a new CharMatrix containing the element-wise sum
-     * @throws IllegalArgumentException if the matrices have different dimensions
+     * @throws IllegalArgumentException if {@code other} is {@code null} or has different dimensions
      */
     public CharMatrix add(final CharMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
@@ -2073,8 +2098,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
     /**
      * Performs element-wise subtraction of another matrix from this matrix.
-     * Both matrices must have the same dimensions. The operation performs
-     * this[i][j] - b[i][j] for each element.
+     * Both matrices must have the same dimensions. Each result element is computed as
+     * {@code (char) (this[i][j] - other[i][j])}, so values wrap modulo {@code 65536} on
+     * underflow (a negative {@code int} difference becomes a large {@code char}).
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2083,9 +2109,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * CharMatrix diff = a.subtract(b);   // Result: [['c', 'c']] (d-1, e-2)
      * }</pre>
      *
-     * @param other the matrix to subtract from this matrix
+     * @param other the matrix to subtract from this matrix; must not be {@code null} and must have the same shape
      * @return a new CharMatrix containing the element-wise difference
-     * @throws IllegalArgumentException if the matrices have different dimensions
+     * @throws IllegalArgumentException if {@code other} is {@code null} or has different dimensions
      */
     public CharMatrix subtract(final CharMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
@@ -2104,11 +2130,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     /**
      * Performs matrix multiplication with another matrix.
      * The number of columns in this matrix must equal the number of rows in the other matrix.
-     * The resulting matrix will have dimensions [this.rowCount x b.columnCount].
+     * The resulting matrix has dimensions {@code this.rowCount x other.columnCount}.
      *
-     * <p>Note: Since char values are used, the multiplication may result in overflow
-     * or unexpected character values. Consider using IntMatrix or DoubleMatrix for
-     * numerical computations.
+     * <p>Each accumulation step is performed with {@code char +=}, which promotes to {@code int}
+     * for the multiply-add and then casts the running sum back to {@code char}. As a result,
+     * any intermediate or final value outside {@code [0, 65535]} wraps modulo {@code 65536}.
+     * Consider {@link IntMatrix} or {@link DoubleMatrix} for numerical computations where
+     * truncation/wraparound is undesirable.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2121,9 +2149,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * For element-wise multiplication use
      * {@link #zipWith(CharMatrix, com.landawn.abacus.util.Throwables.CharBinaryOperator)}.</p>
      *
-     * @param other the matrix to multiply with this matrix
+     * @param other the matrix to multiply with this matrix; must not be {@code null}
      * @return a new CharMatrix containing the matrix product
-     * @throws IllegalArgumentException if this.columnCount != other.rowCount
+     * @throws IllegalArgumentException if {@code other} is {@code null} or {@code this.columnCount != other.rowCount}
      */
     public CharMatrix matmul(final CharMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");

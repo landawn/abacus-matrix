@@ -36,11 +36,23 @@ import com.landawn.abacus.util.stream.Stream;
  * Matrix implementation backed by a rectangular {@code short[][]}.
  *
  * <p>This type specializes {@link AbstractMatrix} for {@code short} values while keeping the data in
- * a validated backing array. Constructors and {@code of(...)} generally wrap the supplied storage
- * directly, while factories, conversions, and mapping operations allocate new arrays.</p>
+ * a validated backing array. The {@link #ShortMatrix(short[][]) constructor} and {@link #of(short[][]) of(...)}
+ * wrap the supplied storage directly (no defensive copy), so later mutations to either the input
+ * array or the matrix remain visible through the other view; call {@link #copy()} to obtain an
+ * independently owned matrix. Factories, conversions, and mapping operations always allocate new arrays.</p>
  *
  * <p>Cells introduced by growth or reshaping default to {@code 0} unless an overload accepts an
  * explicit fill value.</p>
+ *
+ * <p><b>Short arithmetic:</b> all element-wise arithmetic ({@link #add}, {@link #subtract},
+ * {@link #matmul}, and {@code zipWith}/{@code map} variants) is performed using Java's standard
+ * numeric promotion to {@code int} and the result is narrowed back to {@code short} via an explicit
+ * cast, so values outside {@code [Short.MIN_VALUE, Short.MAX_VALUE]} wrap modulo 65536. To preserve
+ * the full magnitude, widen first via {@link #toIntMatrix()} or {@link #toLongMatrix()}.</p>
+ *
+ * @see IntMatrix
+ * @see ByteMatrix
+ * @see LongMatrix
  */
 public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortStream, Stream<ShortStream>, ShortMatrix> {
 
@@ -65,6 +77,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @param a the two-dimensional short array to wrap, or {@code null} for an empty matrix
+     * @throws IllegalArgumentException if {@code a} is non-rectangular (rows have differing lengths)
      */
     public ShortMatrix(final short[][] a) {
         super(a == null ? new short[0][0] : a, short.class);
@@ -280,8 +293,11 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * //  [0, 0, 3]]
      * }</pre>
      *
-     * @param mainDiagonal the array of diagonal elements
-     * @return a square matrix with the specified main diagonal
+     * @param mainDiagonal the array of diagonal elements; may be {@code null} or empty
+     * @return a square {@code n x n} matrix with the specified main diagonal,
+     *         or an empty matrix if {@code mainDiagonal} is {@code null} or empty
+     * @see #antiDiagonal(short[])
+     * @see #diagonals(short[], short[])
      */
     public static ShortMatrix mainDiagonal(final short[] mainDiagonal) {
         return diagonals(mainDiagonal, null);
@@ -301,8 +317,11 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * //  [3, 0, 0]]
      * }</pre>
      *
-     * @param antiDiagonal the array of anti-diagonal elements
-     * @return a square matrix with the specified anti-diagonal
+     * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} or empty
+     * @return a square {@code n x n} matrix with the specified anti-diagonal,
+     *         or an empty matrix if {@code antiDiagonal} is {@code null} or empty
+     * @see #mainDiagonal(short[])
+     * @see #diagonals(short[], short[])
      */
     public static ShortMatrix antiDiagonal(final short[] antiDiagonal) {
         return diagonals(null, antiDiagonal);
@@ -359,7 +378,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
 
     /**
      * Converts a boxed {@code Matrix<Short>} to a primitive {@code ShortMatrix}.
-     * Null values in the input matrix are converted to {@code 0}.
+     * {@code null} cell values in the input matrix are converted to {@code 0}.
      *
      * <p>This method unboxes all {@code Short} wrapper objects to primitive {@code short} values for more efficient
      * storage and operations. This is particularly beneficial when working with large matrices, as primitive
@@ -372,7 +391,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * // primitiveMatrix now uses primitive short[] arrays internally for better performance
      * }</pre>
      *
-     * @param x the boxed Short matrix to convert; must not be null
+     * @param x the boxed Short matrix to convert; must not be {@code null}
      * @return a new ShortMatrix with unboxed primitive values
      * @throws NullPointerException if {@code x} is {@code null}
      * @see #boxed()
@@ -823,6 +842,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param <E> the type of exception that the operator may throw
      * @param operator the operator to apply to each diagonal element
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateMainDiagonal(final Throwables.ShortUnaryOperator<E> operator) throws IllegalStateException, E {
@@ -906,6 +926,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param <E> the type of exception that the operator may throw
      * @param operator the operator to apply to each anti-diagonal element
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateAntiDiagonal(final Throwables.ShortUnaryOperator<E> operator) throws IllegalStateException, E {
@@ -978,6 +999,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param <E> the type of exception that the predicate may throw
      * @param predicate the condition to test each element; returns {@code true} if the element should be replaced
      * @param newValue the value to replace matching elements with
+     * @throws IllegalArgumentException if {@code predicate} is {@code null}
      * @throws E if the predicate throws an exception
      */
     public <E extends Exception> void replaceIf(final Throwables.ShortPredicate<E> predicate, final short newValue) throws E {
@@ -1001,6 +1023,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param <E> the type of exception that the predicate may throw
      * @param predicate the bi-predicate that takes (rowIndex, columnIndex) and returns {@code true} if element should be replaced
      * @param newValue the value to replace matching elements with
+     * @throws IllegalArgumentException if {@code predicate} is {@code null}
      * @throws E if the predicate throws an exception
      */
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final short newValue) throws E {
@@ -1393,7 +1416,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param padLeft number of padding columns to add to the left of the original matrix; must be {@code >= 0}
      * @param padRight number of padding columns to add to the right of the original matrix; must be {@code >= 0}
      * @return a new ShortMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
-     * @throws IllegalArgumentException if any parameter is negative
+     * @throws IllegalArgumentException if any padding parameter is negative,
+     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
      * @see #extend(int, int, int, int, short)
      * @see #resize(int, int)
      */
@@ -2058,7 +2082,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * Performs element-wise addition of this matrix with another matrix.
      * The two matrices must have the same dimensions (same number of rows and columns).
      * The original matrices are not modified.
-     * <p><b>Note:</b> Short overflow may occur during addition. Values exceeding Short.MAX_VALUE will wrap around.</p>
+     * <p><b>Note:</b> Each pair of elements is added as {@code int} (Java numeric promotion) and the
+     * result is narrowed back to {@code short} via an explicit cast, so values overflowing the short
+     * range {@code [-32768, 32767]} wrap modulo 65536. If non-wrapping arithmetic is required, widen
+     * via {@link #toIntMatrix()} (or {@link #toLongMatrix()}) before adding.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2091,7 +2118,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * Performs element-wise subtraction of another matrix from this matrix.
      * The two matrices must have the same dimensions (same number of rows and columns).
      * The original matrices are not modified.
-     * <p><b>Note:</b> Short underflow may occur during subtraction. Values below Short.MIN_VALUE will wrap around.</p>
+     * <p><b>Note:</b> Each pair of elements is subtracted as {@code int} (Java numeric promotion) and
+     * the result is narrowed back to {@code short} via an explicit cast, so values outside the short
+     * range {@code [-32768, 32767]} wrap modulo 65536. If non-wrapping arithmetic is required, widen
+     * via {@link #toIntMatrix()} (or {@link #toLongMatrix()}) before subtracting.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

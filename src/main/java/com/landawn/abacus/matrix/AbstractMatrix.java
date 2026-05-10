@@ -274,8 +274,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * as modifications to the returned array will directly affect the matrix.
      *
      * <p><strong>Unsafe API boundary:</strong> This method returns the actual internal array, not a copy.
-     * Any changes made to the returned array will be reflected in the matrix.
-     * If you need an independent copy, use {@link #copy()} instead.</p>
+     * Any changes made to the returned array (including reassigning row references or mutating row contents)
+     * will be reflected in this matrix. If you need an independent matrix instance, use {@link #copy()}.
+     * If you only need the data flattened into a single one-dimensional array, use {@link #flatten()}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -285,7 +286,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * // matrix now contains {{10, 2}, {3, 4}}
      * }</pre>
      *
-     * @return the underlying two-dimensional array (not a copy)
+     * @return the underlying two-dimensional array (not a copy); for an empty matrix this is a zero-length array
      */
     @SuppressFBWarnings("EI_EXPOSE_REP")
     public A[] internalArray() {
@@ -643,7 +644,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * @param newColumnCount the number of columns in the reshaped matrix (must be positive)
      * @return a new matrix with the specified number of columns
-     * @throws IllegalArgumentException if newColumnCount &lt;= 0
+     * @throws IllegalArgumentException if {@code newColumnCount <= 0}, or if the implied row count
+     *         {@code ceil(elementCount / newColumnCount)} exceeds {@code Integer.MAX_VALUE}
      */
     public M reshape(final int newColumnCount) {
         N.checkArgument(newColumnCount > 0, "newColumnCount must be positive, but got: {}", newColumnCount);
@@ -736,7 +738,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param rowRepeats number of times to repeat each element in the row direction (must be &gt;= 1)
      * @param columnRepeats number of times to repeat each element in the column direction (must be &gt;= 1)
      * @return a new matrix with repeated elements, with dimensions (rowCount x rowRepeats) x (columnCount x columnRepeats)
-     * @throws IllegalArgumentException if rowRepeats &lt; 1 or columnRepeats &lt; 1
+     * @throws IllegalArgumentException if {@code rowRepeats < 1} or {@code columnRepeats < 1},
+     *         or if either resulting dimension would overflow {@code Integer.MAX_VALUE}
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">MATLAB repelem function</a>
      */
     public abstract M repeatElements(int rowRepeats, int columnRepeats);
@@ -765,7 +768,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param rowRepeats number of times to repeat the matrix in the row direction (must be &gt;= 1)
      * @param columnRepeats number of times to repeat the matrix in the column direction (must be &gt;= 1)
      * @return a new matrix with this matrix tiled, with dimensions (rowCount x rowRepeats) x (columnCount x columnRepeats)
-     * @throws IllegalArgumentException if rowRepeats &lt; 1 or columnRepeats &lt; 1
+     * @throws IllegalArgumentException if {@code rowRepeats < 1} or {@code columnRepeats < 1},
+     *         or if either resulting dimension would overflow {@code Integer.MAX_VALUE}
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
     public abstract M repeatMatrix(int rowRepeats, int columnRepeats);
@@ -880,6 +884,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * }</pre>
      *
      * @return a new list containing all elements in row-major order with size equal to {@code elementCount}
+     * @throws IllegalStateException if the element count exceeds {@code Integer.MAX_VALUE} and therefore
+     *         cannot be materialized into a flat array
      */
     public abstract PL flatten();
 
@@ -1872,8 +1878,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * This is a helper method used internally to enforce shape compatibility before
      * operations that require matrices of the same dimensions (e.g., element-wise addition).
      *
-     * @param x the matrix to compare shape with
-     * @throws IllegalArgumentException if the matrices have different row counts or column counts
+     * @param x the matrix to compare shape with; must not be {@code null}
+     * @throws IllegalArgumentException if {@code x} is {@code null}, or if the matrices have
+     *         different row counts or column counts
      */
     protected void checkSameShape(final M x) {
         N.checkArgument(this.isSameShape(x), MSG_SHAPE_MISMATCH, rowCount, columnCount, x.rowCount, x.columnCount);

@@ -40,13 +40,18 @@ import com.landawn.abacus.util.stream.Stream;
  * Object matrix backed by a rectangular {@code T[][]}.
  *
  * <p>This type provides the same shape, traversal, and transformation operations as the primitive
- * matrix variants while preserving reference semantics. Constructors and {@code of(...)} generally
- * wrap the supplied backing array directly, while builders, conversions, and mapping methods
- * allocate fresh storage.</p>
+ * matrix variants ({@link IntMatrix}, {@link LongMatrix}, {@link DoubleMatrix}, etc.) while
+ * preserving reference semantics. Constructors and {@code of(...)} generally wrap the supplied
+ * backing array directly, while builders, conversions, and mapping methods allocate fresh
+ * storage.</p>
  *
- * <p>{@code null} elements are permitted. When a new backing array must be created, the
- * implementation tracks either an explicit target type or the runtime component type so array-typed
- * results remain reifiable where possible.</p>
+ * <p>{@code null} elements are permitted. {@link #equals(Object)} and {@link #hashCode()} use
+ * value equality on elements (i.e. {@code Objects.equals}, with {@code null} equal only to
+ * {@code null}), not reference identity.</p>
+ *
+ * <p>When a new backing array must be created, the implementation tracks either an explicit
+ * target type or the runtime component type so array-typed results remain reifiable where
+ * possible.</p>
  *
  * @param <T> the element type stored in the matrix
  */
@@ -90,6 +95,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
     /**
      * Creates an empty matrix with zero rows and zero columns.
+     * The underlying backing array is an {@code Object[][]}, so the element type is tracked
+     * as {@link Object}; subsequent operations that allocate fresh storage may therefore widen
+     * to {@code Object[]} rather than the static type {@code T}.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -146,6 +154,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Creates a new matrix of the specified dimensions where every element is the provided {@code element}.
      *
+     * <p>The matrix's element type is resolved from {@code element.getClass()}, so the result
+     * may have a more specific component type than the static {@code T}. Because {@code element}
+     * must be non-{@code null}, this factory cannot be used to produce an empty-but-typed
+     * placeholder matrix.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<String> matrix = Matrix.repeat(2, 3, "a");
@@ -153,11 +166,12 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @param <T> the type of elements in the matrix
-     * @param rowCount the number of rows in the new matrix
-     * @param columnCount the number of columns in the new matrix
-     * @param element the value to fill the matrix with (must not be null)
-     * @return a new Matrix of dimensions rowCount x columnCount filled with the specified element
-     * @throws IllegalArgumentException if rowCount or columnCount is negative, or if element is null
+     * @param rowCount the number of rows in the new matrix (must be {@code >= 0})
+     * @param columnCount the number of columns in the new matrix (must be {@code >= 0})
+     * @param element the value to fill the matrix with (must not be {@code null})
+     * @return a new Matrix of dimensions {@code rowCount × columnCount} filled with the specified element
+     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
+     *         or if {@code element} is {@code null}
      */
     public static <T> Matrix<T> repeat(final int rowCount, final int columnCount, final T element) throws IllegalArgumentException {
         N.checkArgNotNull(element, "element");
@@ -322,7 +336,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @return the element at position ({@code rowIndex}, {@code columnIndex})
+     * @return the element at position ({@code rowIndex}, {@code columnIndex}); may be {@code null}
+     *         since {@code null} elements are permitted
      * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
     @MayReturnNull
@@ -341,8 +356,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * String value = matrix.get(p);   // Same as matrix.get(1, 2), returns "f"
      * }</pre>
      *
-     * @param point the point containing row and column indices (must not be null)
-     * @return the element at the specified point
+     * @param point the point containing row and column indices (must not be {@code null})
+     * @return the element at the specified point; may be {@code null} since {@code null} elements
+     *         are permitted
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
      * @throws IllegalArgumentException if {@code point} is {@code null}
      */
@@ -366,9 +382,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @param value the value to set
-     * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
-     * @throws IllegalArgumentException if {@code value} is incompatible with the row's storage component type
+     * @param value the value to set; may be {@code null}
+     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws IllegalArgumentException if {@code value} is non-{@code null} and incompatible with
+     *         the row's storage component type
      */
     public void set(final int rowIndex, final int columnIndex, final T value) {
         ensureRowCanStore(rowIndex, value);
@@ -386,10 +403,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * matrix.set(p, "X");   // Same as matrix.set(0, 1, "X")
      * }</pre>
      *
-     * @param point the point containing row and column indices (must not be null)
-     * @param value the value to set
+     * @param point the point containing row and column indices (must not be {@code null})
+     * @param value the value to set; may be {@code null}
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
-     * @throws IllegalArgumentException if {@code point} is {@code null}, or if {@code value} is incompatible with the row's storage component type
+     * @throws IllegalArgumentException if {@code point} is {@code null}, or if {@code value} is
+     *         non-{@code null} and incompatible with the row's storage component type
      */
     public void set(final Point point, final T value) {
         N.checkArgNotNull(point, "point");
@@ -411,8 +429,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @return a {@link Nullable} containing the element at position (rowIndex - 1, columnIndex), or empty if rowIndex == 0
-     * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @return a {@link Nullable} containing the element at position {@code (rowIndex - 1, columnIndex)},
+     *         or {@link Nullable#empty()} if {@code rowIndex == 0}. Note that a non-empty {@code Nullable}
+     *         may itself contain {@code null} since {@code null} elements are permitted in the matrix.
+     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
     public Nullable<T> valueAbove(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -925,9 +945,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * // Matrix is now: {{10,2,3},{4,20,6},{7,8,30}}
      * }</pre>
      *
-     * @param mainDiagonal the new values for the main diagonal; must have length equal to rowCount
+     * @param mainDiagonal the new values for the main diagonal; must have length equal to {@code rowCount}
+     *                     (treated as length 0 if {@code null})
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
-     * @throws IllegalArgumentException if {@code mainDiagonal} array length does not equal {@code rowCount},
+     * @throws IllegalArgumentException if {@code mainDiagonal} array length does not equal {@code rowCount}
+     *         (including when it is {@code null} and {@code rowCount > 0}),
      *         or if any element is incompatible with the row's storage component type
      */
     @Override
@@ -1021,9 +1043,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * // Matrix is now: {{1,2,10},{4,20,6},{30,8,9}}
      * }</pre>
      *
-     * @param antiDiagonal the new values for the anti-diagonal; must have length equal to rowCount
+     * @param antiDiagonal the new values for the anti-diagonal; must have length equal to {@code rowCount}
+     *                     (treated as length 0 if {@code null})
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
-     * @throws IllegalArgumentException if {@code antiDiagonal} array length does not equal {@code rowCount},
+     * @throws IllegalArgumentException if {@code antiDiagonal} array length does not equal {@code rowCount}
+     *         (including when it is {@code null} and {@code rowCount > 0}),
      *         or if any element is incompatible with the row's storage component type
      */
     @Override
@@ -1288,8 +1312,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     }
 
     /**
-     * Creates a boolean matrix by applying a boolean-valued function to each element.
+     * Creates a {@link BooleanMatrix} by applying a boolean-valued function to each element.
      * This is useful for creating masks or performing element-wise comparisons.
+     * The mapper receives each element (which may be {@code null}) and must return a
+     * primitive {@code boolean}. The operation may be performed in parallel for large matrices.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1303,8 +1329,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @param <E> the type of exception that might be thrown
-     * @param mapper the function that returns a boolean for each element
-     * @return a new {@link BooleanMatrix}
+     * @param mapper the function that returns a boolean for each element (must not be {@code null})
+     * @return a new {@link BooleanMatrix} with the same dimensions as this matrix
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
      */
@@ -1991,7 +2017,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Reverses the order of rows in the matrix (vertical flip).
      *
-     * <p>This method modifies the matrix in-place.</p>
+     * <p>This method modifies the matrix in-place. It swaps row references rather than
+     * individual elements, so it remains correct even when rows have different runtime
+     * component types.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2186,9 +2214,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
     /**
      * Returns a new matrix that is the transpose of this matrix.
-     * The transpose operation converts each row into a column, so element at position (i, j)
-     * in the original matrix appears at position (j, i) in the transposed matrix. The resulting
-     * matrix has dimensions swapped (rowCount x columnCount becomes columnCount x rowCount).
+     * The transpose operation converts each row into a column, so the element at position
+     * {@code (i, j)} in the original matrix appears at position {@code (j, i)} in the
+     * transposed matrix. The resulting matrix has dimensions {@code columnCount × rowCount}.
      * The original matrix is not modified.
      *
      * <p><b>Usage Examples:</b></p>
@@ -2202,7 +2230,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Matrix<Integer> transposed = original.transpose();   // 2×3 becomes 3×2
      * }</pre>
      *
-     * @return a new matrix that is the transpose of this matrix with dimensions columnCount x rowCount
+     * @return a new matrix that is the transpose of this matrix, with dimensions
+     *         {@code columnCount × rowCount}
      */
     @Override
     public Matrix<T> transpose() {
@@ -2399,6 +2428,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
     /**
      * Returns a list containing all matrix elements in row-major order.
+     * The returned list is backed by a freshly allocated array, so subsequent modifications
+     * to the matrix do not affect the list and vice versa.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2406,8 +2437,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * List<Integer> flat = matrix.flatten();   // Returns List of [1, 2, 3, 4, 5, 6]
      * }</pre>
      *
-     * @return a list of all elements in row-major order
-     * @throws IllegalStateException if the matrix is too large to flatten (rowCount * columnCount &gt; Integer.MAX_VALUE)
+     * @return a list of all elements in row-major order, with size equal to {@code rowCount * columnCount}
+     * @throws IllegalStateException if the matrix is too large to flatten ({@code rowCount * columnCount > Integer.MAX_VALUE})
      */
     @Override
     public List<T> flatten() {
@@ -3379,10 +3410,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * List<Integer> columnA = dataset.getColumn("A");   // [1, 4]
      * }</pre>
      *
-     * @param columnNames the names to assign to each column in the resulting Dataset
+     * @param columnNames the names to assign to each column in the resulting Dataset; size must equal {@code columnCount}
      * @return a Dataset containing the matrix data with the specified column names
-     * @throws IllegalArgumentException if {@code columnNames} is {@code null}, or if its size doesn't match the column count
+     *         (one row per matrix row)
+     * @throws IllegalArgumentException if {@code columnNames} is {@code null}, or if its size
+     *         does not equal {@code columnCount}
      * @see Dataset
+     * @see #toColumnDataset(Collection)
      */
     @Beta
     public Dataset toRowDataset(final Collection<String> columnNames) throws IllegalArgumentException {
@@ -3408,11 +3442,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
     /**
      * Converts this matrix to a Dataset with vertically organized data.
-     * Each column in the matrix becomes a record in the Dataset, and each row
-     * is assigned the corresponding name from the provided collection.
-     *
-     * <p>The column names are used in the order they appear in the collection,
-     * and must match the number of rows in the matrix exactly.</p>
+     * Each row in this matrix becomes a column in the resulting Dataset, so the supplied
+     * names are assigned to the Dataset's columns in the order they appear in the collection
+     * and must match this matrix's {@code rowCount} exactly.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3428,11 +3460,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * // 3     6
      * }</pre>
      *
-     * @param columnNames the collection of column names to use for the Dataset
-     * @return a Dataset containing the matrix data organized vertically
-     * @throws IllegalArgumentException if {@code columnNames} is {@code null}, or if the number of column names doesn't match the number of rows in the matrix
+     * @param columnNames the column names of the resulting Dataset; size must equal {@code rowCount}
+     * @return a Dataset containing the matrix data organized vertically (one column per matrix row)
+     * @throws IllegalArgumentException if {@code columnNames} is {@code null}, or if its size
+     *         does not equal {@code rowCount}
      * @see Dataset
      * @see RowDataset
+     * @see #toRowDataset(Collection)
      */
     @Beta
     public Dataset toColumnDataset(final Collection<String> columnNames) throws IllegalArgumentException {
@@ -3451,9 +3485,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     }
 
     /**
-     * Prints this matrix to standard output and returns the formatted string.
+     * Prints this matrix to standard output and returns the printed string.
      * Each row is printed on a separate line with elements separated by commas
-     * and enclosed in square brackets.
+     * and enclosed in square brackets. Empty matrices print as {@code "[]"}.
+     * {@code null} elements are rendered as {@code "null"}.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3464,7 +3499,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * // [4, 5, 6]
      * }</pre>
      *
-     * @return the formatted string representation that was printed to standard output
+     * @return the string representation that was printed to standard output
      */
     @Override
     public String println() {
@@ -3538,8 +3573,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * m1.equals(m2);   // true
      * }</pre>
      *
-     * @param obj the object to compare with
-     * @return {@code true} if the objects are equal, {@code false} otherwise
+     * @param obj the object to compare with (may be {@code null})
+     * @return {@code true} if the given object is a {@code Matrix} with the same dimensions
+     *         and pairwise-equal elements; {@code false} otherwise (including when {@code obj}
+     *         is {@code null} or is not a {@code Matrix})
      */
     @Override
     public boolean equals(final Object obj) {

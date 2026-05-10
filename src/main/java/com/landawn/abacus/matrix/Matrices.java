@@ -35,9 +35,23 @@ import com.landawn.abacus.util.stream.Stream;
 /**
  * Utility and policy holder shared by the matrix implementations in this package.
  *
- * <p>In addition to the public shape-checking and parallel-mode APIs, this class centralizes
- * package-level helpers for index traversal, overflow-safe size calculations, backing-array
- * allocation, and element-wise zipping of compatible matrices.</p>
+ * <p>This class is non-instantiable and exposes static helpers for:</p>
+ * <ul>
+ * <li>Configuring and querying the per-thread {@link ParallelMode} that drives automatic
+ *     parallelization decisions for matrix operations.</li>
+ * <li>Shape-checking utilities ({@link #isSameShape(AbstractMatrix, AbstractMatrix)} and overloads).</li>
+ * <li>Index traversal helpers ({@link #forEachIndices(int, int, Throwables.IntBiConsumer, boolean) forEachIndices},
+ *     {@link #mapIndices(int, int, Throwables.IntBiFunction, boolean) mapIndices},
+ *     {@link #mapIndicesToInt(int, int, Throwables.IntBinaryOperator, boolean) mapIndicesToInt},
+ *     and {@link #forEachCartesianIndices(AbstractMatrix, AbstractMatrix, Throwables.IntTriConsumer) forEachCartesianIndices}
+ *     used to express matrix multiplication).</li>
+ * <li>n-ary stacking helpers ({@link #stackVertically(Collection)} and {@link #stackHorizontally(Collection)}).</li>
+ * <li>Element-wise zipping helpers across the various typed matrices ({@link ByteMatrix}, {@link IntMatrix},
+ *     {@link LongMatrix}, {@link DoubleMatrix}, and the generic {@link Matrix}).</li>
+ * </ul>
+ *
+ * <p>The class also holds package-private helpers for overflow-safe size calculations and
+ * backing-array allocation used by the matrix implementations.</p>
  */
 public final class Matrices {
 
@@ -806,8 +820,10 @@ public final class Matrices {
      * <p>The matrices must satisfy the multiplication constraint: {@code a.columnCount == b.rowCount}.
      * The resulting matrix would have dimensions {@code a.rowCount × b.columnCount}.</p>
      *
-     * <p>Parallelization is automatically determined based on the matrix sizes and current
-     * thread settings using {@link #isParallelizable(AbstractMatrix, long)}.</p>
+     * <p>Parallelization is automatically determined based on the total number of multiply-add
+     * operations ({@code a.rowCount * a.columnCount * b.columnCount}, saturated against
+     * {@link Long#MAX_VALUE}) and the current thread settings via
+     * {@link #isParallelizable(AbstractMatrix, long)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

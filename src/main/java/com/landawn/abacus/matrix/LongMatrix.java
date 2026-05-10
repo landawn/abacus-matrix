@@ -36,11 +36,17 @@ import com.landawn.abacus.util.stream.Stream;
  * Matrix implementation backed by a rectangular {@code long[][]}.
  *
  * <p>This type specializes {@link AbstractMatrix} for {@code long} values while keeping the data in a
- * validated backing array. Constructors and {@code of(...)} generally wrap the supplied storage
+ * validated backing array. Constructors and {@link #of(long[]...)} generally wrap the supplied storage
  * directly, while factories, conversions, and mapping operations allocate new arrays.</p>
  *
  * <p>Cells introduced by growth or reshaping default to {@code 0L} unless an overload accepts an
- * explicit fill value.</p>
+ * explicit fill value. Arithmetic operations on {@code long} values use Java's standard two's-complement
+ * wrap-around semantics on overflow; integer division truncates toward zero. Narrowing conversions
+ * (e.g. {@link #toIntMatrix()}) may discard high-order bits.</p>
+ *
+ * @see IntMatrix
+ * @see DoubleMatrix
+ * @see FloatMatrix
  */
 public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStream, Stream<LongStream>, LongMatrix> {
 
@@ -62,6 +68,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * }</pre>
      *
      * @param a the two-dimensional long array to wrap, or {@code null} for an empty matrix
+     * @throws IllegalArgumentException if {@code a} is non-{@code null} and any row is {@code null}
+     *         or rows have different lengths (the array is not rectangular)
      */
     public LongMatrix(final long[][] a) {
         super(a == null ? new long[0][0] : a, long.class);
@@ -84,10 +92,11 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     }
 
     /**
-     * Creates a LongMatrix from a two-dimensional long array.
+     * Creates a {@code LongMatrix} from a two-dimensional long array.
      *
      * <p><b>Important:</b> The provided array is used directly without defensive copying.
      * Changes to the input array are reflected in the returned matrix, and vice versa.
+     * The array is validated to be rectangular by the constructor.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -95,19 +104,20 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * // matrix.get(1, 1) returns 4
      * }</pre>
      *
-     * @param a the two-dimensional long array to create the matrix from, or null/empty for an empty matrix
-     * @return a new LongMatrix containing the provided data, or an empty LongMatrix if input is null or empty
+     * @param a the two-dimensional long array to create the matrix from, or {@code null}/empty for an empty matrix
+     * @return a new {@code LongMatrix} wrapping the provided data, or the shared empty matrix if input is {@code null} or empty
      */
     public static LongMatrix of(final long[]... a) {
         return N.isEmpty(a) ? EMPTY_LONG_MATRIX : new LongMatrix(a);
     }
 
     /**
-     * Creates a LongMatrix from a two-dimensional int array by converting int values to long.
-     * Each int value is widened to a long value without data loss, as int is a smaller primitive type than long.
+     * Creates a {@code LongMatrix} from a two-dimensional int array by widening each {@code int} to {@code long}.
+     * Each {@code int} value is widened to a {@code long} value without data loss.
      *
      * <p>All rows must have the same length as the first row (rectangular array required).
      * The method validates array structure and throws an exception if the array is jagged (rows of different lengths).
+     * The result is a freshly allocated matrix; subsequent modifications to {@code a} do not affect it.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -119,10 +129,11 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * LongMatrix empty = LongMatrix.from(null);   // Returns empty matrix
      * }</pre>
      *
-     * @param a the two-dimensional int array to convert to a long matrix, or null/empty for an empty matrix
-     * @return a new LongMatrix with converted values, or an empty LongMatrix if input is null or empty
-     * @throws IllegalArgumentException if the first row is {@code null}, or if any subsequent row is
-     *         {@code null} or has a length different from the first row (non-rectangular array)
+     * @param a the two-dimensional int array to convert to a long matrix, or {@code null}/empty for an empty matrix
+     * @return a new {@code LongMatrix} with widened values, or the shared empty matrix if input is {@code null} or empty
+     * @throws IllegalArgumentException if {@code a} is non-empty and its first row is {@code null},
+     *         or if any subsequent row is {@code null} or has a length different from the first row
+     *         (non-rectangular array)
      */
     public static LongMatrix from(final int[]... a) {
         if (N.isEmpty(a)) {
@@ -162,8 +173,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * // Result: a 1x5 matrix with random long values
      * }</pre>
      *
-     * @param length the number of columns in the new matrix
-     * @return a new LongMatrix of dimensions 1 x length filled with random values
+     * @param length the number of columns in the new matrix; must be {@code >= 0}
+     * @return a new {@code LongMatrix} of dimensions {@code 1 x length} filled with random {@code long} values
+     * @throws IllegalArgumentException if {@code length} is negative
      */
     public static LongMatrix random(final int length) {
         return random(1, length);
@@ -178,9 +190,11 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * // Result: a 2x3 matrix with random long values
      * }</pre>
      *
-     * @param rowCount the number of rows in the new matrix
-     * @param columnCount the number of columns in the new matrix
-     * @return a new LongMatrix of dimensions rowCount x columnCount filled with random values
+     * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
+     * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
+     * @return a new {@code LongMatrix} of dimensions {@code rowCount x columnCount} filled with random {@code long} values
+     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
+     *         or if the resulting shape is not representable
      */
     public static LongMatrix random(final int rowCount, final int columnCount) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -207,10 +221,12 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * // Result: [[1, 1, 1], [1, 1, 1]]
      * }</pre>
      *
-     * @param rowCount the number of rows in the new matrix
-     * @param columnCount the number of columns in the new matrix
+     * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
+     * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
      * @param element the long value to fill the matrix with
-     * @return a new LongMatrix of dimensions rowCount x columnCount filled with the specified element
+     * @return a new {@code LongMatrix} of dimensions {@code rowCount x columnCount} filled with the specified element
+     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
+     *         or if the resulting shape is not representable
      */
     public static LongMatrix repeat(final int rowCount, final int columnCount, final long element) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -227,7 +243,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     }
 
     /**
-     * Creates a 1-row LongMatrix with values from startInclusive to endExclusive.
+     * Creates a single-row {@code LongMatrix} with sequential values from {@code startInclusive} to {@code endExclusive}.
      * The values are generated with a step of 1. If {@code startInclusive >= endExclusive}, a 1×0 matrix is returned.
      *
      * <p><b>Usage Examples:</b></p>
@@ -238,16 +254,17 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * @param startInclusive the starting value (inclusive)
      * @param endExclusive the ending value (exclusive)
-     * @return a new 1×n LongMatrix where n = max(0, endExclusive - startInclusive)
+     * @return a new {@code 1×n} {@code LongMatrix} where {@code n = max(0, endExclusive - startInclusive)}
      */
     public static LongMatrix range(final long startInclusive, final long endExclusive) {
         return new LongMatrix(new long[][] { Array.range(startInclusive, endExclusive) });
     }
 
     /**
-     * Creates a 1-row LongMatrix with values from startInclusive to endExclusive with the specified step.
+     * Creates a single-row {@code LongMatrix} with values from {@code startInclusive} to {@code endExclusive}
+     * with the specified step.
      * The step size can be positive (for ascending sequences) or negative (for descending sequences).
-     * If the step would not reach endExclusive from startInclusive, a 1×0 matrix is returned.
+     * If the step does not move from {@code startInclusive} toward {@code endExclusive}, a 1×0 matrix is returned.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -259,7 +276,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param startInclusive the starting value (inclusive)
      * @param endExclusive the ending value (exclusive)
      * @param step the step size (must not be zero; can be positive or negative)
-     * @return a new 1×n LongMatrix with values incremented by the step size
+     * @return a new {@code 1×n} {@code LongMatrix} with values incremented by the step size
      * @throws IllegalArgumentException if {@code step} is zero
      */
     public static LongMatrix range(final long startInclusive, final long endExclusive, final long step) {
@@ -267,7 +284,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     }
 
     /**
-     * Creates a 1-row LongMatrix with values from startInclusive to endInclusive.
+     * Creates a single-row {@code LongMatrix} with sequential values from {@code startInclusive} to {@code endInclusive}.
      * This method includes the end value, unlike {@link #range(long, long)}.
      * If {@code startInclusive > endInclusive}, a 1×0 matrix is returned.
      *
@@ -280,17 +297,18 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * @param startInclusive the starting value (inclusive)
      * @param endInclusive the ending value (inclusive)
-     * @return a new 1×n LongMatrix where n = max(0, endInclusive - startInclusive + 1)
+     * @return a new {@code 1×n} {@code LongMatrix} where {@code n = max(0, endInclusive - startInclusive + 1)}
      */
     public static LongMatrix rangeClosed(final long startInclusive, final long endInclusive) {
         return new LongMatrix(new long[][] { Array.rangeClosed(startInclusive, endInclusive) });
     }
 
     /**
-     * Creates a 1-row LongMatrix with values from startInclusive to endInclusive with the specified step.
+     * Creates a single-row {@code LongMatrix} with values from {@code startInclusive} to {@code endInclusive}
+     * with the specified step.
      * The step size can be positive (for ascending sequences) or negative (for descending sequences).
-     * The end value is included only if it is reachable by stepping from start. If the step would not
-     * reach endInclusive from startInclusive, a 1×0 matrix is returned.
+     * The end value is included only if it is reachable by stepping from start. If the step does not move
+     * from {@code startInclusive} toward {@code endInclusive}, a 1×0 matrix is returned.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -302,7 +320,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param startInclusive the starting value (inclusive)
      * @param endInclusive the ending value (inclusive, if reachable by stepping)
      * @param step the step size (must not be zero; can be positive or negative)
-     * @return a new 1×n LongMatrix with values incremented by the step size
+     * @return a new {@code 1×n} {@code LongMatrix} with values incremented by the step size
      * @throws IllegalArgumentException if {@code step} is zero
      */
     public static LongMatrix rangeClosed(final long startInclusive, final long endInclusive, final long step) {
@@ -323,8 +341,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * //  [0, 0, 3]]
      * }</pre>
      *
-     * @param mainDiagonal the array of main diagonal elements (from upper-left to lower-right)
-     * @return a square n×n matrix with the specified main diagonal, where n is the array length
+     * @param mainDiagonal the array of main diagonal elements (from upper-left to lower-right);
+     *        if {@code null} or empty, an empty matrix is returned
+     * @return a square {@code n×n} matrix with the specified main diagonal, where {@code n} is the array length,
+     *         or the empty matrix if the input is {@code null} or empty
      */
     public static LongMatrix mainDiagonal(final long[] mainDiagonal) {
         return diagonals(mainDiagonal, null);
@@ -344,8 +364,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * //  [3, 0, 0]]
      * }</pre>
      *
-     * @param antiDiagonal the array of anti-diagonal elements (from upper-right to lower-left)
-     * @return a square n×n matrix with the specified anti-diagonal, where n is the array length
+     * @param antiDiagonal the array of anti-diagonal elements (from upper-right to lower-left);
+     *        if {@code null} or empty, an empty matrix is returned
+     * @return a square {@code n×n} matrix with the specified anti-diagonal, where {@code n} is the array length,
+     *         or the empty matrix if the input is {@code null} or empty
      */
     public static LongMatrix antiDiagonal(final long[] antiDiagonal) {
         return diagonals(null, antiDiagonal);
@@ -353,10 +375,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
     /**
      * Creates a square matrix from the specified main diagonal and anti-diagonal elements.
-     * All other elements are set to zero. If both arrays are provided, they must have the same length.
-     * The resulting matrix has dimensions n×n where n is the length of the non-empty diagonal array.
+     * All other elements are set to zero. If both arrays are non-empty, they must have the same length.
+     * The resulting matrix has dimensions {@code n×n} where {@code n} is the length of the non-empty diagonal array.
      * When both diagonals are provided and they overlap (at the center element of odd-sized matrices),
-     * the main diagonal value takes precedence.
+     * the main diagonal value takes precedence (the main diagonal is written after the anti-diagonal).
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -369,9 +391,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * }</pre>
      *
-     * @param mainDiagonal the array of main diagonal elements (can be null or empty)
-     * @param antiDiagonal the array of anti-diagonal elements (can be null or empty)
-     * @return a square matrix with the specified diagonals, or an empty matrix if both inputs are null or empty
+     * @param mainDiagonal the array of main diagonal elements (can be {@code null} or empty)
+     * @param antiDiagonal the array of anti-diagonal elements (can be {@code null} or empty)
+     * @return a square matrix with the specified diagonals, or an empty matrix if both inputs are {@code null} or empty
      * @throws IllegalArgumentException if both arrays are non-empty and have different lengths
      */
     public static LongMatrix diagonals(final long[] mainDiagonal, final long[] antiDiagonal) throws IllegalArgumentException {
@@ -405,7 +427,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * This method unboxes all {@code Long} wrapper objects to primitive {@code long} values for more efficient
      * storage and operations. This is particularly beneficial when working with large matrices, as primitive
      * arrays have less memory overhead and better cache locality than arrays of wrapper objects.
-     * Null values in the input matrix are converted to {@code 0L}.
+     * {@code null} elements in the input matrix are converted to {@code 0L}.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -698,8 +720,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * @param rowIndex the index of the row to set (0-based)
      * @param row the array of values to copy into the row; must have length equal to the number of columns
+     * @throws IllegalArgumentException if {@code rowIndex} is out of bounds, or if {@code row.length} does
+     *         not equal {@link #columnCount()}
      * @throws NullPointerException if {@code row} is {@code null}
-     * @throws IllegalArgumentException if rowIndex is out of bounds or row length does not match column count
      */
     public void setRow(final int rowIndex, final long[] row) throws IllegalArgumentException {
         N.checkArgument(rowIndex >= 0 && rowIndex < rowCount, MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount);
@@ -723,8 +746,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * @param columnIndex the index of the column to set (0-based)
      * @param column the array of values to copy into the column; must have length equal to the number of rows
+     * @throws IllegalArgumentException if {@code columnIndex} is out of bounds, or if {@code column.length}
+     *         does not equal {@link #rowCount()}
      * @throws NullPointerException if {@code column} is {@code null}
-     * @throws IllegalArgumentException if columnIndex is out of bounds or column length does not match row count
      */
     public void setColumn(final int columnIndex, final long[] column) throws IllegalArgumentException {
         N.checkArgument(columnIndex >= 0 && columnIndex < columnCount, MSG_COLUMN_INDEX_OUT_OF_BOUNDS, columnIndex, columnCount);
@@ -1257,10 +1281,12 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * // Result: [[0, 0, 0], [0, 1, 2], [0, 3, 4]]
      * }</pre>
      *
-     * @param destRowIndex the target row index in this matrix (0-based, must be 0 &lt;= destRowIndex &lt;= rowCount)
-     * @param destColumnIndex the target column index in this matrix (0-based, must be 0 &lt;= destColumnIndex &lt;= columnCount)
-     * @param source the source array to copy values from
-     * @throws IllegalArgumentException if destRowIndex &lt; 0 or &gt; rowCount, or if destColumnIndex &lt; 0 or &gt; columnCount
+     * @param destRowIndex the target row index in this matrix (0-based, must be {@code 0 <= destRowIndex <= rowCount})
+     * @param destColumnIndex the target column index in this matrix (0-based, must be {@code 0 <= destColumnIndex <= columnCount})
+     * @param source the source array to copy values from; must not be {@code null}.
+     *        Individual rows ({@code source[i]}) may be {@code null} and are skipped during copy.
+     * @throws IllegalArgumentException if {@code source} is {@code null}, if {@code destRowIndex < 0}
+     *         or {@code > rowCount}, or if {@code destColumnIndex < 0} or {@code > columnCount}
      */
     public void fill(final int destRowIndex, final int destColumnIndex, final long[][] source) throws IllegalArgumentException {
         N.checkArgNotNull(source, "source");
@@ -2196,9 +2222,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * //          [10, 12]]
      * }</pre>
      *
-     * @param other the matrix to add to this matrix
+     * @param other the matrix to add to this matrix; must not be {@code null}
      * @return a new matrix containing the element-wise sum
-     * @throws IllegalArgumentException if the matrices don't have the same shape
+     * @throws IllegalArgumentException if {@code other} is {@code null} or the matrices don't have the same shape
      */
     public LongMatrix add(final LongMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
@@ -2228,9 +2254,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * //          [4, 4]]
      * }</pre>
      *
-     * @param other the matrix to subtract from this matrix
+     * @param other the matrix to subtract from this matrix; must not be {@code null}
      * @return a new matrix containing the element-wise difference
-     * @throws IllegalArgumentException if the matrices don't have the same shape
+     * @throws IllegalArgumentException if {@code other} is {@code null} or the matrices don't have the same shape
      */
     public LongMatrix subtract(final LongMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
@@ -2266,9 +2292,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * //          [43, 50]]   // 3*5+4*7=43, 3*6+4*8=50
      * }</pre>
      *
-     * @param other the matrix to multiply with this matrix
+     * @param other the matrix to multiply with this matrix; must not be {@code null}
      * @return a new matrix containing the matrix product
-     * @throws IllegalArgumentException if the matrix dimensions are incompatible (this.columnCount != other.rowCount)
+     * @throws IllegalArgumentException if {@code other} is {@code null} or the matrix dimensions are
+     *         incompatible ({@code this.columnCount != other.rowCount})
      */
     public LongMatrix matmul(final LongMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
@@ -2346,6 +2373,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * }</pre>
      *
      * @return a new {@code IntMatrix} with values converted from long to int
+     * @see #mapToInt(Throwables.LongToIntFunction)
      */
     public IntMatrix toIntMatrix() {
         final int[][] c = new int[rowCount][columnCount];
@@ -2432,6 +2460,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * }</pre>
      *
      * @return a new {@code DoubleMatrix} with values converted from long to double
+     * @see #mapToDouble(Throwables.LongToDoubleFunction)
      */
     public DoubleMatrix toDoubleMatrix() {
         return DoubleMatrix.from(a);
@@ -3121,7 +3150,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * }</pre>
      *
      * @param <E> the type of exception that the action may throw
-     * @param action the action to apply to each element
+     * @param action the action to apply to each element; must not be {@code null}
+     * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the action throws an exception
      */
     public <E extends Exception> void forEach(final Throwables.LongConsumer<E> action) throws E {
@@ -3145,8 +3175,11 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param toRowIndex the ending row index (exclusive)
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
-     * @param action the action to apply to each element in the specified region
-     * @throws IndexOutOfBoundsException if the indices are out of bounds [0, rowCount] or [0, columnCount], or if fromRowIndex &gt; toRowIndex or fromColumnIndex &gt; toColumnIndex
+     * @param action the action to apply to each element in the specified region; must not be {@code null}
+     * @throws IndexOutOfBoundsException if the row/column indices are out of bounds {@code [0, rowCount]}
+     *         / {@code [0, columnCount]}, or if {@code fromRowIndex > toRowIndex} or
+     *         {@code fromColumnIndex > toColumnIndex}
+     * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the action throws an exception
      */
     public <E extends Exception> void forEach(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
