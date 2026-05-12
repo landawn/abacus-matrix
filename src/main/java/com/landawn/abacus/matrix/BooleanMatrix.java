@@ -264,21 +264,21 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
         }
 
         final int len = N.max(N.len(mainDiagonal), N.len(antiDiagonal));
-        final boolean[][] c = new boolean[len][len];
+        final boolean[][] result = new boolean[len][len];
 
         if (N.notEmpty(antiDiagonal)) {
             for (int i = 0, j = len - 1; i < len; i++, j--) {
-                c[i][j] = antiDiagonal[i];
+                result[i][j] = antiDiagonal[i];
             }
         }
 
         if (N.notEmpty(mainDiagonal)) {
             for (int i = 0; i < len; i++) {
-                c[i][i] = mainDiagonal[i]; // NOSONAR
+                result[i][i] = mainDiagonal[i]; // NOSONAR
             }
         }
 
-        return new BooleanMatrix(c);
+        return new BooleanMatrix(result);
     }
 
     /**

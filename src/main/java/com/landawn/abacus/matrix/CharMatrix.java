@@ -350,21 +350,21 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
         }
 
         final int len = N.max(N.len(mainDiagonal), N.len(antiDiagonal));
-        final char[][] c = new char[len][len];
+        final char[][] result = new char[len][len];
 
         if (N.notEmpty(antiDiagonal)) {
             for (int i = 0, j = len - 1; i < len; i++, j--) {
-                c[i][j] = antiDiagonal[i];
+                result[i][j] = antiDiagonal[i];
             }
         }
 
         if (N.notEmpty(mainDiagonal)) {
             for (int i = 0; i < len; i++) {
-                c[i][i] = mainDiagonal[i]; // NOSONAR
+                result[i][i] = mainDiagonal[i]; // NOSONAR
             }
         }
 
-        return new CharMatrix(c);
+        return new CharMatrix(result);
     }
 
     /**
