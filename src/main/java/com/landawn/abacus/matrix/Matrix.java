@@ -59,7 +59,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
     final Class<T[]> arrayType;
 
-    Class<T> elementType;
+    final Class<T> elementType;
 
     /**
      * Constructs a {@code Matrix} backed by the supplied two-dimensional array.
@@ -90,7 +90,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         super(N.checkArgNotNull(a, "Matrix array cannot be null"),
                 explicitElementType == null ? (Class<T>) a.getClass().getComponentType().getComponentType() : explicitElementType);
         arrayType = (Class<T[]>) this.a.getClass().getComponentType();
-        elementType = explicitElementType == null ? (Class<T>) arrayType.getComponentType() : explicitElementType;
+        this.elementType = (Class<T>) arrayType.getComponentType();
     }
 
     /**
@@ -180,7 +180,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         checkRepresentableShape(rowCount, columnCount);
 
         @SuppressWarnings("unchecked")
-        final T[][] a = (T[][]) new Object[rowCount][columnCount];
+        final T[][] a = Array.newInstance(element.getClass(), rowCount, columnCount); // (T[][]) new Object[rowCount][columnCount];
 
         for (T[] ea : a) {
             N.fill(ea, element);
@@ -304,7 +304,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         final Class<?> commonType = Matrices.resolveCommonAssignableType(leftComponentClass, rightComponentClass);
 
         @SuppressWarnings("unchecked")
-        final T[][] c = (T[][]) new Object[len][len];
+        final T[][] c = Array.newInstance(commonType, len, len);
 
         if (N.notEmpty(antiDiagonal)) {
             for (int i = 0, j = len - 1; i < len; i++, j--) {
@@ -388,7 +388,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *         the row's storage component type
      */
     public void set(final int rowIndex, final int columnIndex, final T value) {
-        ensureRowCanStore(rowIndex, value);
         a[rowIndex][columnIndex] = value;
     }
 
@@ -412,7 +411,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     public void set(final Point point, final T value) {
         N.checkArgNotNull(point, "point");
 
-        ensureRowCanStore(point.rowIndex(), value);
         a[point.rowIndex()][point.columnIndex()] = value;
     }
 
@@ -540,22 +538,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     public T[] rowView(final int rowIndex) throws IllegalArgumentException {
         N.checkArgument(rowIndex >= 0 && rowIndex < rowCount, MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount);
 
-        final T[] row = a[rowIndex];
-
-        // Matrices created from Object[][] (for example via repeat/diagonals) can otherwise
-        // trigger ClassCastException at call sites expecting T[] (for example String[]).
-        if (elementType != Object.class && row.getClass().getComponentType() == Object.class) {
-            final Class<?> resolvedElementType = resolveRowElementType(row);
-
-            if (resolvedElementType != Object.class) {
-                final T[] converted = N.newArray(resolvedElementType, row.length);
-                N.copy(row, 0, converted, 0, row.length);
-                a[rowIndex] = converted;
-                return converted;
-            }
-        }
-
-        return row;
+        return a[rowIndex];
     }
 
     /**
@@ -570,166 +553,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     public T[] rowCopy(final int rowIndex) throws IllegalArgumentException {
         N.checkArgument(rowIndex >= 0 && rowIndex < rowCount, MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount);
 
-        final T[] row = a[rowIndex];
-
-        if (elementType != Object.class && row.getClass().getComponentType() == Object.class) {
-            final Class<?> resolvedElementType = resolveRowElementType(row);
-
-            if (resolvedElementType != Object.class) {
-                final T[] converted = N.newArray(resolvedElementType, row.length);
-                N.copy(row, 0, converted, 0, row.length);
-                a[rowIndex] = converted;
-                return N.copyOf(converted, columnCount);
-            }
-        }
-
-        return N.copyOf(row, columnCount);
-    }
-
-    private void ensureRowCanStore(final int rowIndex, final T value) {
-        if (value == null) {
-            return;
-        }
-
-        final Class<T> resolvedElementType = resolveWidenedElementType(elementType, value.getClass());
-        final Class<?> rowStorageComponentType = rowStorageComponentType();
-
-        if (rowStorageComponentType != Object.class && !rowStorageComponentType.isInstance(value)) {
-            throw new IllegalArgumentException(
-                    "Matrix row type " + a.getClass().getComponentType().getTypeName() + " can't store value type " + value.getClass().getTypeName());
-        }
-
-        final Class<?> componentType = a[rowIndex].getClass().getComponentType();
-
-        if (componentType != Object.class && !componentType.isInstance(value)) {
-            widenRowStorage(rowIndex);
-        }
-
-        elementType = resolvedElementType;
-    }
-
-    private void ensureRowCanStoreAny(final int rowIndex, final T[] values, final int length) {
-        final Class<?> componentType = a[rowIndex].getClass().getComponentType();
-        final Class<?> rowStorageComponentType = rowStorageComponentType();
-        Class<T> resolvedElementType = elementType;
-        boolean needsWiden = false;
-
-        if (length == 0) {
-            return;
-        }
-
-        for (int i = 0; i < length; i++) {
-            final T value = values[i];
-
-            if (value != null) {
-                resolvedElementType = resolveWidenedElementType(resolvedElementType, value.getClass());
-
-                if (rowStorageComponentType != Object.class && !rowStorageComponentType.isInstance(value)) {
-                    throw new IllegalArgumentException(
-                            "Matrix row type " + a.getClass().getComponentType().getTypeName() + " can't store value type " + value.getClass().getTypeName());
-                }
-
-                if (componentType != Object.class && !componentType.isInstance(value)) {
-                    needsWiden = true;
-                }
-            }
-        }
-
-        if (needsWiden) {
-            widenRowStorage(rowIndex);
-        }
-
-        elementType = resolvedElementType;
-    }
-
-    @SuppressWarnings("unchecked")
-    private void widenRowStorage(final int rowIndex) {
-        final T[] row = a[rowIndex];
-        final Class<?> rowArrayType = a.getClass().getComponentType();
-        final Class<?> rowComponentType = rowStorageComponentType();
-
-        if (rowComponentType == null || rowComponentType.isPrimitive()) {
-            throw new IllegalArgumentException(
-                    "Matrix row type " + (rowArrayType == null ? "<unknown>" : rowArrayType.getTypeName()) + " can't be widened to store incompatible values");
-        }
-
-        final T[] widened = (T[]) java.lang.reflect.Array.newInstance(rowComponentType, row.length);
-        N.copy(row, 0, widened, 0, row.length);
-        a[rowIndex] = widened;
-    }
-
-    private Class<?> rowStorageComponentType() {
-        final Class<?> rowArrayType = a.getClass().getComponentType();
-        return rowArrayType == null ? Object.class : rowArrayType.getComponentType();
-    }
-
-    @SuppressWarnings("unchecked")
-    private Class<T> resolveWidenedElementType(final Class<T> currentElementType, final Class<?> valueType) {
-        if (currentElementType == null) {
-            return (Class<T>) (valueType == null ? Object.class : valueType);
-        }
-
-        if (valueType == null || currentElementType == Object.class || currentElementType.isAssignableFrom(valueType)) {
-            return currentElementType;
-        }
-
-        return (Class<T>) Matrices.resolveCommonAssignableType(currentElementType, valueType);
-    }
-
-    private Class<?> resolveRowElementType(final T[] row) {
-        if (elementType != Object.class) {
-            boolean allAssignableToElementType = true;
-
-            for (final T value : row) {
-                if (value != null && !elementType.isInstance(value)) {
-                    allAssignableToElementType = false;
-                    break;
-                }
-            }
-
-            if (allAssignableToElementType) {
-                return elementType;
-            }
-        }
-
-        Class<?> candidate = null;
-
-        for (final T value : row) {
-            if (value == null) {
-                continue;
-            }
-
-            final Class<?> valueClass = value.getClass();
-
-            if (candidate == null) {
-                candidate = valueClass;
-            } else if (!candidate.isAssignableFrom(valueClass)) {
-                candidate = Matrices.resolveCommonAssignableType(candidate, valueClass);
-
-                if (candidate == Object.class) {
-                    return Object.class;
-                }
-            }
-        }
-
-        return candidate == null ? elementType : candidate;
-    }
-
-    @SuppressWarnings("unchecked")
-    private T[] convertArrayTypeIfNeeded(final T[] values) {
-        if (values.getClass().getComponentType() != Object.class) {
-            return values;
-        }
-
-        final Class<?> resolvedElementType = resolveRowElementType(values);
-
-        if (resolvedElementType == Object.class) {
-            return values;
-        }
-
-        final T[] converted = N.newArray(resolvedElementType, values.length);
-        N.copy(values, 0, converted, 0, values.length);
-        return converted;
+        return a[rowIndex].clone();
     }
 
     /**
@@ -756,13 +580,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     public T[] columnCopy(final int columnIndex) throws IllegalArgumentException {
         N.checkArgument(columnIndex >= 0 && columnIndex < columnCount, MSG_COLUMN_INDEX_OUT_OF_BOUNDS, columnIndex, columnCount);
 
-        final T[] c = N.newArray(elementType, rowCount);
+        final T[] res = N.newArray(elementType, rowCount);
 
         for (int i = 0; i < rowCount; i++) {
-            c[i] = a[i][columnIndex];
+            res[i] = a[i][columnIndex];
         }
 
-        return convertArrayTypeIfNeeded(c);
+        return res;
     }
 
     /**
@@ -791,7 +615,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         N.checkArgNotNull(row, "row");
         N.checkArgument(rowIndex >= 0 && rowIndex < rowCount, MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount);
         N.checkArgument(row.length == columnCount, MSG_ROW_LENGTH_MISMATCH, columnCount, row.length);
-        ensureRowCanStoreAny(rowIndex, row, columnCount);
 
         N.copy(row, 0, a[rowIndex], 0, columnCount);
     }
@@ -823,7 +646,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         N.checkArgument(column.length == rowCount, MSG_COLUMN_LENGTH_MISMATCH, rowCount, column.length);
 
         for (int i = 0; i < rowCount; i++) {
-            ensureRowCanStore(i, column[i]);
             a[i][columnIndex] = column[i];
         }
     }
@@ -860,7 +682,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
         for (int i = 0; i < columnCount; i++) {
             final T updated = operator.apply(a[rowIndex][i]);
-            ensureRowCanStore(rowIndex, updated);
             a[rowIndex][i] = updated;
         }
     }
@@ -897,7 +718,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
         for (int i = 0; i < rowCount; i++) {
             final T updated = operator.apply(a[i][columnIndex]);
-            ensureRowCanStore(i, updated);
             a[i][columnIndex] = updated;
         }
     }
@@ -927,7 +747,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             res[i] = a[i][i]; // NOSONAR
         }
 
-        return convertArrayTypeIfNeeded(res);
+        return res;
     }
 
     /**
@@ -958,7 +778,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         N.checkArgument(N.len(mainDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(mainDiagonal));
 
         for (int i = 0; i < rowCount; i++) {
-            ensureRowCanStore(i, mainDiagonal[i]);
             a[i][i] = mainDiagonal[i];
         }
     }
@@ -993,7 +812,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
         for (int i = 0; i < rowCount; i++) {
             final T updated = operator.apply(a[i][i]);
-            ensureRowCanStore(i, updated);
             a[i][i] = updated;
         }
     }
@@ -1024,7 +842,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             res[i] = a[i][columnCount - i - 1];
         }
 
-        return convertArrayTypeIfNeeded(res);
+        return res;
     }
 
     /**
@@ -1056,7 +874,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         N.checkArgument(N.len(antiDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(antiDiagonal));
 
         for (int i = 0; i < rowCount; i++) {
-            ensureRowCanStore(i, antiDiagonal[i]);
             a[i][columnCount - i - 1] = antiDiagonal[i];
         }
     }
@@ -1091,7 +908,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
         for (int i = 0; i < rowCount; i++) {
             final T updated = operator.apply(a[i][columnCount - i - 1]);
-            ensureRowCanStore(i, updated);
             a[i][columnCount - i - 1] = updated;
         }
     }
@@ -1126,7 +942,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         N.checkArgNotNull(operator, "operator");
         final Throwables.IntBiConsumer<E> operation = (i, j) -> {
             final T updated = operator.apply(a[i][j]);
-            ensureRowCanStore(i, updated);
             a[i][j] = updated;
         };
         // Must be sequential because ensureRowCanStore mutates shared matrix metadata/storage.
@@ -1162,9 +977,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         N.checkArgNotNull(mapper, "mapper");
         final Throwables.IntBiConsumer<E> operation = (i, j) -> {
             final T updated = mapper.apply(i, j);
-            ensureRowCanStore(i, updated);
             a[i][j] = updated;
         };
+
         // Must be sequential because ensureRowCanStore mutates shared matrix metadata/storage.
         Matrices.forEachIndices(rowCount, columnCount, operation, false);
     }
@@ -1201,7 +1016,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         N.checkArgNotNull(predicate, "predicate");
         final Throwables.IntBiConsumer<E> operation = (i, j) -> {
             if (predicate.test(a[i][j])) {
-                ensureRowCanStore(i, newValue);
                 a[i][j] = newValue;
             }
         };
@@ -1238,7 +1052,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         N.checkArgNotNull(predicate, "predicate");
         final Throwables.IntBiConsumer<E> operation = (i, j) -> {
             if (predicate.test(i, j)) {
-                ensureRowCanStore(i, newValue);
                 a[i][j] = newValue;
             }
         };
@@ -1568,7 +1381,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     public void fill(final T value) {
         for (int i = 0; i < rowCount; i++) {
-            ensureRowCanStore(i, value);
             N.fill(a[i], value);
         }
     }
@@ -1623,7 +1435,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         for (int i = 0, minLen = N.min(rowCount - destRowIndex, source.length); i < minLen; i++) {
             if (source[i] != null) {
                 final int copyLen = N.min(source[i].length, columnCount - destColumnIndex);
-                ensureRowCanStoreAny(i + destRowIndex, source[i], copyLen);
                 N.copy(source[i], 0, a[i + destRowIndex], destColumnIndex, copyLen);
             }
         }

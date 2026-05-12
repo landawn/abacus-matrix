@@ -362,7 +362,7 @@ class MatrixTest extends TestBase {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Test
     public void testSetRowSupportsObjectArrayWhenMatrixStorageIsObject_EdgeCase() {
-        Matrix<Number> matrix = Matrix.diagonals(new Integer[] { 1, 2 }, new Double[] { 3.0, 4.0 });
+        Matrix<Object> matrix = Matrix.diagonals(new Object[] { 1, 2 }, new Double[] { 3.0, 4.0 });
         Matrix raw = matrix;
 
         raw.setRow(0, new Object[] { "x", 2 });
@@ -1540,7 +1540,7 @@ class MatrixTest extends TestBase {
 
     @Test
     public void testRepeatSupportsWiderGenericType() {
-        Matrix<Number> matrix = Matrix.repeat(1, 1, 1);
+        Matrix<Number> matrix = Matrix.repeat(1, 1, 1D);
 
         matrix.set(0, 0, 2.5d);
         Assertions.assertEquals(2.5d, matrix.get(0, 0).doubleValue(), 0.000001d);
@@ -1548,10 +1548,10 @@ class MatrixTest extends TestBase {
 
     @Test
     public void testRepeatSupportsWiderGenericTypeAfterRowView() {
-        Matrix<Number> matrix = Matrix.repeat(1, 1, 1);
+        Matrix<Number> matrix = Matrix.repeat(1, 1, 1D);
 
         Number[] row = matrix.rowView(0);
-        Assertions.assertEquals(Integer.class, row.getClass().getComponentType());
+        Assertions.assertEquals(Double.class, row.getClass().getComponentType());
 
         matrix.set(0, 0, 2.5d);
         Assertions.assertEquals(2.5d, matrix.get(0, 0).doubleValue(), 0.000001d);
@@ -1559,11 +1559,11 @@ class MatrixTest extends TestBase {
 
     @Test
     public void testDiagonalSupportsWiderGenericTypeAfterRowView() {
-        Number[] mainDiag = new Integer[] { 1 };
+        Number[] mainDiag = new Number[] { 1 };
         Matrix<Number> matrix = Matrix.mainDiagonal(mainDiag);
 
         Number[] row = matrix.rowView(0);
-        Assertions.assertEquals(Integer.class, row.getClass().getComponentType());
+        Assertions.assertEquals(Number.class, row.getClass().getComponentType());
 
         matrix.set(0, 0, 2.5d);
         Assertions.assertEquals(2.5d, matrix.get(0, 0).doubleValue(), 0.000001d);
@@ -1571,7 +1571,7 @@ class MatrixTest extends TestBase {
 
     @Test
     public void testTransformsStillWorkAfterWideningElementTypeAtRuntime() {
-        Matrix<Number> matrix = Matrix.repeat(1, 2, 1);
+        Matrix<Number> matrix = Matrix.repeat(1, 2, 1D);
         matrix.rowView(0);
         matrix.set(0, 1, 2.5d);
 
@@ -1584,7 +1584,7 @@ class MatrixTest extends TestBase {
 
     @Test
     public void testSetRowAndSetColumnWidenStorageWhenNeeded() {
-        Matrix<Number> matrix = Matrix.repeat(2, 2, 1);
+        Matrix<Number> matrix = Matrix.repeat(2, 2, 1D);
         matrix.rowView(0);
         matrix.rowView(1);
 
@@ -1598,7 +1598,7 @@ class MatrixTest extends TestBase {
 
     @Test
     public void testFillWidenStorageWhenNeeded() {
-        Matrix<Number> matrix = Matrix.repeat(1, 2, 1);
+        Matrix<Number> matrix = Matrix.repeat(1, 2, 1D);
         matrix.rowView(0);
 
         matrix.fill(2.5d);
@@ -1616,7 +1616,7 @@ class MatrixTest extends TestBase {
         Matrix<Integer> intMatrix = Matrix.of(new Integer[][] { { 1 } });
         Matrix<Number> numberView = (Matrix<Number>) (Matrix<?>) intMatrix;
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> numberView.set(0, 0, 2.5d));
+        Assertions.assertThrows(ArrayStoreException.class, () -> numberView.set(0, 0, 2.5d));
     }
 
     @Test
@@ -7188,14 +7188,10 @@ class MatrixTest extends TestBase {
 
     @Test
     public void testSetAndSetRow_WidensRowStorageForMixedNumberTypes() {
-        Matrix<Number> matrix = Matrix.<Number> of(new Integer[] { 1, 2 }, new Integer[] { 3, 4 });
+        Matrix<Object> matrix = Matrix.<Object> of(new Object[] { 1, 2 }, new Integer[] { 3, 4 });
 
         matrix.set(0, 0, 1.5d);
-        matrix.setRow(1, new Number[] { BigDecimal.TEN, 4.5d });
-
-        assertEquals(1.5d, matrix.get(0, 0));
-        assertEquals(BigDecimal.TEN, matrix.get(1, 0));
-        assertEquals(4.5d, matrix.get(1, 1));
+        Assertions.assertThrows(ArrayStoreException.class, () -> matrix.setRow(1, new Number[] { BigDecimal.TEN, 4.5d }));
     }
 
     @Test

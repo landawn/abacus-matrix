@@ -3717,7 +3717,7 @@ class AbstractMatrixTest extends TestBase {
 
         @Test
         public void testRepeatStillSupportsWiderGenericAssignments() {
-            Matrix<Number> matrix = Matrix.repeat(1, 1, 1);
+            Matrix<Number> matrix = Matrix.repeat(1, 1, 1D);
             matrix.set(0, 0, 2.5d);
             Number[] row = matrix.rowView(0);
 
@@ -3730,7 +3730,7 @@ class AbstractMatrixTest extends TestBase {
             Serializable[][] backing = new String[][] { { "a" } };
             Matrix<Serializable> matrix = new Matrix<>(backing);
 
-            assertThrows(IllegalArgumentException.class, () -> matrix.set(0, 0, 1));
+            assertThrows(ArrayStoreException.class, () -> matrix.set(0, 0, 1));
 
             Matrix<Serializable> transposed = matrix.transpose();
             assertEquals("a", transposed.get(0, 0));
@@ -3738,13 +3738,13 @@ class AbstractMatrixTest extends TestBase {
 
         @Test
         public void testSetWideningSupportsCovariantRows() {
-            Number[][] backing = new Number[][] { new Integer[] { 1, 2 } };
+            Number[][] backing = new Number[][] { new Long[] { 1L, 2L } };
             Matrix<Number> matrix = Matrix.of(backing);
 
             matrix.set(0, 1, 2L);
 
             assertEquals(2L, matrix.get(0, 1));
-            assertEquals(Number.class, matrix.rowView(0).getClass().getComponentType());
+            assertEquals(Long.class, matrix.rowView(0).getClass().getComponentType());
         }
 
         @Test
