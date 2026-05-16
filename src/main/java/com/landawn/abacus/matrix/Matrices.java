@@ -376,8 +376,12 @@ public final class Matrices {
      * types to their corresponding wrapper classes (e.g., {@code int} becomes {@code Integer}).</p>
      *
      * <p>The resulting array is fully initialized with all row arrays allocated. Each element
-     * is initialized to {@code null} for reference types or the default value for primitive
-     * wrapper types.</p>
+     * is initialized to {@code null} (the default value for reference types, including primitive
+     * wrapper types).</p>
+     *
+     * <p>The requested dimensions must form a representable matrix shape: a positive
+     * {@code rowCount}, or a {@code columnCount} of zero. A zero {@code rowCount} combined with a
+     * non-zero {@code columnCount} is rejected.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -396,7 +400,9 @@ public final class Matrices {
      * @param columnCount the number of columns in each row, must be non-negative
      * @param targetElementType the class of the element type; primitive types will be auto-wrapped, must not be {@code null}
      * @return a new two-dimensional array of type {@code T[][]} with the specified dimensions, never {@code null}
-     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative, or if {@code targetElementType} is {@code null}
+     * @throws IllegalArgumentException if {@code targetElementType} is {@code null}, if {@code rowCount} or
+     *         {@code columnCount} is negative, or if the dimensions do not form a representable matrix shape
+     *         (i.e. {@code rowCount} is zero while {@code columnCount} is non-zero)
      */
     public static <T> T[][] newMatrixArray(final int rowCount, final int columnCount, final Class<T> targetElementType) {
         N.checkArgNotNull(targetElementType, "targetElementType");
@@ -3065,7 +3071,9 @@ public final class Matrices {
      * // result[i][j] = zipFunction(zipFunction(m1[i][j], m2[i][j]), m3[i][j])...
      * }</pre>
      *
-     * <p>All matrices in the collection must have identical dimensions and element type. The operation
+     * <p>All matrices in the collection must have identical dimensions. Their element types need not
+     * be identical; the result matrix uses the most specific element type assignable from every input
+     * matrix's element type (see {@link #resolveCommonElementType(Matrix[])}). The operation
      * is optimized for single and two-element collections:</p>
      * <ul>
      * <li>One matrix: Returns a copy of that matrix</li>
@@ -3306,6 +3314,20 @@ public final class Matrices {
         return best;
     }
 
+    /**
+     * Resolves the most specific common element type shared by all the given matrices.
+     *
+     * <p>Starting from the element type of the first matrix, this method folds
+     * {@link #resolveCommonAssignableType(Class, Class)} across the element types of the
+     * remaining matrices. If no more specific common type can be identified,
+     * {@link Object} is effectively returned.</p>
+     *
+     * @param <T> the resolved common element type
+     * @param matrices the matrices whose element types are reconciled; must be non-empty and
+     *        is indexed from {@code 0}
+     * @return the most specific element type assignable from every matrix's element type, never {@code null}
+     * @see #resolveCommonAssignableType(Class, Class)
+     */
     @SuppressWarnings("unchecked")
     protected static <T> Class<T> resolveCommonElementType(final Matrix<T>[] matrices) {
         Class<?> commonType = matrices[0].elementType;

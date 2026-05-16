@@ -454,8 +454,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @return a {@link Nullable} containing the element at position (rowIndex + 1, columnIndex), or empty if rowIndex == rowCount - 1
-     * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @return a {@link Nullable} containing the element at position {@code (rowIndex + 1, columnIndex)},
+     *         or {@link Nullable#empty()} if {@code rowIndex == rowCount - 1}. Note that a non-empty
+     *         {@code Nullable} may itself contain {@code null} since {@code null} elements are permitted
+     *         in the matrix.
+     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
     public Nullable<T> valueBelow(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -476,8 +479,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @return a {@link Nullable} containing the element at position (rowIndex, columnIndex - 1), or empty if columnIndex == 0
-     * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @return a {@link Nullable} containing the element at position {@code (rowIndex, columnIndex - 1)},
+     *         or {@link Nullable#empty()} if {@code columnIndex == 0}. Note that a non-empty
+     *         {@code Nullable} may itself contain {@code null} since {@code null} elements are permitted
+     *         in the matrix.
+     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
     public Nullable<T> valueLeft(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -498,8 +504,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @return a {@link Nullable} containing the element at position (rowIndex, columnIndex + 1), or empty if columnIndex == columnCount - 1
-     * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @return a {@link Nullable} containing the element at position {@code (rowIndex, columnIndex + 1)},
+     *         or {@link Nullable#empty()} if {@code columnIndex == columnCount - 1}. Note that a non-empty
+     *         {@code Nullable} may itself contain {@code null} since {@code null} elements are permitted
+     *         in the matrix.
+     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
     public Nullable<T> valueRight(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -544,12 +553,22 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     }
 
     /**
-     * Returns a defensive copy of the specified row.
-     * Changes to the returned array do not affect this matrix.
+     * Returns a defensive (shallow) copy of the specified row.
+     * The returned array is a new array, so replacing its slots does not affect this matrix;
+     * however, the element references themselves are shared with the matrix. Contrast with
+     * {@link #rowView(int)}, which returns the live internal row array.
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * Matrix<String> matrix = Matrix.of(new String[][] {{"A", "B"}, {"C", "D"}});
+     * String[] rowCopy = matrix.rowCopy(1);
+     * rowCopy[0] = "X";  // Does NOT affect the matrix
+     * }</pre>
      *
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return a new array containing the values from the specified row
-     * @throws IllegalArgumentException if rowIndex is negative or greater than or equal to the number of rows
+     * @throws IllegalArgumentException if {@code rowIndex} is negative or greater than or equal to {@code rowCount}
+     * @see #rowView(int)
      */
     @Override
     public T[] rowCopy(final int rowIndex) throws IllegalArgumentException {
@@ -672,10 +691,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param <E> the type of exception that might be thrown by the operator
      * @param rowIndex the row index to update (0-based)
-     * @param operator the operator to apply to each element (must not be null)
+     * @param operator the operator to apply to each element (must not be {@code null})
      * @throws E if the operator throws an exception
-     * @throws IndexOutOfBoundsException if rowIndex is negative or greater than or equal to the number of rows
-     * @throws IllegalArgumentException if operator is null
+     * @throws IndexOutOfBoundsException if {@code rowIndex} is negative or greater than or equal to {@code rowCount}
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      */
     public <E extends Exception> void updateRow(final int rowIndex, final Throwables.UnaryOperator<T, E> operator) throws E {
         if (rowIndex < 0 || rowIndex >= rowCount) {
@@ -708,10 +727,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param <E> the type of exception that might be thrown by the operator
      * @param columnIndex the column index to update (0-based)
-     * @param operator the operator to apply to each element (must not be null)
+     * @param operator the operator to apply to each element (must not be {@code null})
      * @throws E if the operator throws an exception
-     * @throws IndexOutOfBoundsException if columnIndex is negative or greater than or equal to the number of columns
-     * @throws IllegalArgumentException if operator is null
+     * @throws IndexOutOfBoundsException if {@code columnIndex} is negative or greater than or equal to {@code columnCount}
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      */
     public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.UnaryOperator<T, E> operator) throws E {
         if (columnIndex < 0 || columnIndex >= columnCount) {
@@ -1080,7 +1099,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @param <E> the type of exception that might be thrown
-     * @param mapper the transformation function
+     * @param mapper the transformation function (must not be {@code null})
      * @return a new matrix with transformed elements
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
@@ -1111,8 +1130,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param <R> the type of elements in the result matrix
      * @param <E> the type of exception that might be thrown
-     * @param mapper the transformation function
-     * @param targetElementType the class of the result element type
+     * @param mapper the transformation function (must not be {@code null})
+     * @param targetElementType the class of the result element type (must not be {@code null})
      * @return a new matrix with transformed elements
      * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null}
      * @throws E if the function throws an exception
@@ -1175,7 +1194,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @param <E> the type of exception that might be thrown
-     * @param mapper the function that returns a byte for each element
+     * @param mapper the function that returns a byte for each element (must not be {@code null})
      * @return a new {@link ByteMatrix}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
@@ -1207,7 +1226,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @param <E> the type of exception that might be thrown
-     * @param mapper the function that returns a char for each element
+     * @param mapper the function that returns a char for each element (must not be {@code null})
      * @return a new {@link CharMatrix}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
@@ -1236,7 +1255,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @param <E> the type of exception that might be thrown
-     * @param mapper the function that returns a short for each element
+     * @param mapper the function that returns a short for each element (must not be {@code null})
      * @return a new {@link ShortMatrix}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
@@ -1266,7 +1285,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @param <E> the type of exception that might be thrown
-     * @param mapper the function that returns an int for each element
+     * @param mapper the function that returns an int for each element (must not be {@code null})
      * @return a new {@link IntMatrix}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
@@ -1295,7 +1314,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @param <E> the type of exception that might be thrown
-     * @param mapper the function that returns a long for each element
+     * @param mapper the function that returns a long for each element (must not be {@code null})
      * @return a new {@link LongMatrix}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
@@ -1324,7 +1343,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @param <E> the type of exception that might be thrown
-     * @param mapper the function that returns a float for each element
+     * @param mapper the function that returns a float for each element (must not be {@code null})
      * @return a new {@link FloatMatrix}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
@@ -1353,7 +1372,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @param <E> the type of exception that might be thrown
-     * @param mapper the function that returns a double for each element
+     * @param mapper the function that returns a double for each element (must not be {@code null})
      * @return a new {@link DoubleMatrix}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
@@ -2410,7 +2429,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param other the other matrix to zip with (must have the same dimensions, must not be null)
      * @param zipFunction the binary function to apply to corresponding elements (must not be null)
      * @return a new matrix with the results of the zip function
-     * @throws IllegalArgumentException if the matrices don't have the same dimensions
+     * @throws IllegalArgumentException if the matrices don't have the same dimensions, or if
+     *         {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception
      */
     public <B, E extends Exception> Matrix<T> zipWith(final Matrix<B> other, final Throwables.BiFunction<? super T, ? super B, T, E> zipFunction) throws E {
@@ -2438,7 +2458,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param zipFunction the function to apply to corresponding elements (must not be null)
      * @param targetElementType the class of the result element type (must not be null)
      * @return a new matrix with the results of the zip function
-     * @throws IllegalArgumentException if the matrices don't have the same shape
+     * @throws IllegalArgumentException if the matrices don't have the same shape, or if
+     *         {@code zipFunction} or {@code targetElementType} is {@code null}
      * @throws E if the zip function throws an exception
      */
     public <B, R, E extends Exception> Matrix<R> zipWith(final Matrix<B> other, final Throwables.BiFunction<? super T, ? super B, R, E> zipFunction,
@@ -2479,7 +2500,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param third the third matrix to zip with (must have the same dimensions, must not be null)
      * @param zipFunction the function to apply to corresponding elements (must not be null)
      * @return a new matrix with the results of the zip function
-     * @throws IllegalArgumentException if the matrices don't have the same dimensions
+     * @throws IllegalArgumentException if the matrices don't have the same dimensions, or if
+     *         {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception
      */
     public <B, C, E extends Exception> Matrix<T> zipWith(final Matrix<B> other, final Matrix<C> third,
@@ -2512,7 +2534,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param zipFunction the function to apply to corresponding elements (must not be null)
      * @param targetElementType the class of the result element type (must not be null)
      * @return a new matrix with the results of the zip function
-     * @throws IllegalArgumentException if the matrices don't have the same shape
+     * @throws IllegalArgumentException if the matrices don't have the same shape, or if
+     *         {@code zipFunction} or {@code targetElementType} is {@code null}
      * @throws E if the zip function throws an exception
      */
     public <B, C, R, E extends Exception> Matrix<R> zipWith(final Matrix<B> other, final Matrix<C> third,

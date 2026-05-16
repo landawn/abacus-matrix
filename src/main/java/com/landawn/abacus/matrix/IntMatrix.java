@@ -42,13 +42,14 @@ import com.landawn.abacus.util.stream.Stream;
  * <p>Cells introduced by growth or reshaping default to {@code 0} unless an overload accepts an
  * explicit fill value. Arithmetic operations (e.g. {@link #add(IntMatrix)}, {@link #subtract(IntMatrix)},
  * {@link #matmul(IntMatrix)}) follow standard Java {@code int} semantics: overflow silently wraps
- * around modulo 2<sup>32</sup>; integer division truncates toward zero.</p>
+ * around modulo 2<sup>32</sup>.</p>
  *
  * @see LongMatrix
  * @see DoubleMatrix
  * @see FloatMatrix
  * @see ShortMatrix
  * @see ByteMatrix
+ * @see CharMatrix
  * @see Matrix
  */
 public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, Stream<IntStream>, IntMatrix> {
@@ -1130,8 +1131,10 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * @param <E> the type of exception that the mapper may throw
      * @param mapper the function that receives row index and column index (0-based) and returns
-     *             the new value for that position
+     *             the new value for that position; the returned {@code Integer} is unboxed, so it
+     *             must not be {@code null}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
+     * @throws NullPointerException if {@code mapper} returns {@code null} for any position
      * @throws E if the mapper throws an exception
      */
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Integer, E> mapper) throws E {
@@ -1527,7 +1530,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param newRowCount the row count of the returned matrix; must be {@code >= 0}
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
      * @return a new IntMatrix with the specified dimensions
-     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative
+     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
      * @see #resize(int, int, int)
      * @see #extend(int, int, int, int)
      */
@@ -1649,7 +1653,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param padLeft number of padding columns to add to the left of the original matrix; must be {@code >= 0}
      * @param padRight number of padding columns to add to the right of the original matrix; must be {@code >= 0}
      * @return a new IntMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
-     * @throws IllegalArgumentException if any parameter is negative
+     * @throws IllegalArgumentException if any padding parameter is negative,
+     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
      * @see #extend(int, int, int, int, int)
      * @see #resize(int, int)
      */
@@ -2471,7 +2476,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
 
     /**
      * Converts this {@code int} matrix to a {@link FloatMatrix}.
-     * Each int value is converted to float by Java's standard {@code int}-to-{@code float} narrowing.
+     * Each int value is converted to float by Java's standard {@code int}-to-{@code float} widening
+     * primitive conversion (which may lose precision despite being a widening conversion).
      *
      * <p><b>Warning:</b> Precision loss may occur for large int values. The {@code float} type has
      * only 24 bits of mantissa precision, so int values with absolute values greater than 2<sup>24</sup>

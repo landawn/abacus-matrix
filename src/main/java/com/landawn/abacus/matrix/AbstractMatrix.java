@@ -56,6 +56,11 @@ import com.landawn.abacus.util.stream.Stream;
 public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMatrix<A, PL, ES, RS, M>>
         permits BooleanMatrix, CharMatrix, ByteMatrix, ShortMatrix, DoubleMatrix, FloatMatrix, IntMatrix, LongMatrix, Matrix {
 
+    /**
+     * Row separator used when concrete subclasses render the matrix in {@link #println()}.
+     * Fixed to the Unix line separator ({@code "\n"}) so that printed output is consistent
+     * across platforms.
+     */
     protected static final String ARRAY_PRINT_SEPARATOR = IOUtil.LINE_SEPARATOR_UNIX;
 
     /**
@@ -194,9 +199,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * This utility method ensures that the element count fits within an {@code int} range before
      * converting it, guarding against overflow when materializing streams or arrays from large matrices.
      *
-     * @param count the number of remaining elements (must be non-negative and at most {@code Integer.MAX_VALUE})
+     * @param count the element count to convert (must be non-negative and at most {@code Integer.MAX_VALUE})
      * @return the count cast to an {@code int} array length
-     * @throws IllegalStateException if count is negative or exceeds {@code Integer.MAX_VALUE}
+     * @throws IllegalStateException if {@code count} is negative or exceeds {@code Integer.MAX_VALUE}
      */
     protected static int toArrayLength(final long count) {
         if (count < 0 || count > Integer.MAX_VALUE) {
@@ -223,7 +228,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * @param template the message template containing {@code "{}"} placeholders
      * @param args the arguments to substitute into the placeholders
-     * @return the formatted message string, or the template itself if no arguments are provided
+     * @return the formatted message string; the {@code template} is returned unchanged if it is
+     *         {@code null}, or if {@code args} is {@code null} or empty. Surplus placeholders that
+     *         have no corresponding argument are left in the result as-is.
      */
     protected static String formatMsg(final String template, final Object... args) {
         if (template == null || args == null || args.length == 0) {
@@ -684,8 +691,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * @param newRowCount the number of rows in the reshaped matrix; must be non-negative
      * @param newColumnCount the number of columns in the reshaped matrix; must be non-negative
-     * @return a new matrix with the specified dimensions (newRowCount × newColumnCount)
-     * @throws IllegalArgumentException if newRowCount &lt; 0 or newColumnCount &lt; 0, or if the new shape is too small to hold all elements
+     * @return a new matrix with the specified dimensions ({@code newRowCount × newColumnCount})
+     * @throws IllegalArgumentException if {@code newRowCount < 0} or {@code newColumnCount < 0}, if the
+     *         requested shape is not representable (zero rows with a non-zero column count), or if the
+     *         new shape is too small to hold all {@code elementCount()} elements
      */
     public abstract M reshape(int newRowCount, int newColumnCount);
 

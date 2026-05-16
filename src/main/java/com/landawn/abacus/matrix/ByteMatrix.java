@@ -42,11 +42,13 @@ import com.landawn.abacus.util.stream.Stream;
  * <p>Cells introduced by growth or reshaping default to {@code 0} unless an overload accepts an
  * explicit fill value.</p>
  *
- * <p><b>Byte arithmetic:</b> all element-wise arithmetic ({@link #add}, {@link #subtract},
- * {@link #matmul}, and {@code zipWith}/{@code map} variants) is performed using Java's standard
- * numeric promotion to {@code int} and the result is narrowed back to {@code byte} via an explicit
- * cast, so values outside {@code [Byte.MIN_VALUE, Byte.MAX_VALUE]} wrap modulo 256. To preserve
- * the full magnitude, widen first via {@link #toIntMatrix()} or {@link #toLongMatrix()}.</p>
+ * <p><b>Byte arithmetic:</b> all element-wise arithmetic ({@link #add(ByteMatrix)},
+ * {@link #subtract(ByteMatrix)}, {@link #matmul(ByteMatrix)}, and the {@code zipWith}/{@code map}
+ * variants) is performed using Java's standard numeric promotion to {@code int} and the result is
+ * narrowed back to {@code byte} (via an explicit cast for {@code add}/{@code subtract}, or via the
+ * implicit narrowing of the {@code +=} accumulation in {@code matmul}), so values outside
+ * {@code [Byte.MIN_VALUE, Byte.MAX_VALUE]} wrap modulo 256. To preserve the full magnitude, widen
+ * first via {@link #toIntMatrix()} or {@link #toLongMatrix()}.</p>
  *
  * @see IntMatrix
  * @see ShortMatrix
@@ -582,7 +584,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * <p><b>Note:</b> This method returns a reference to the internal array, not a copy.
      * Modifications to the returned array will affect the matrix. If you need an independent
-     * copy, use {@code Arrays.copyOf(matrix.rowView(i), matrix.columnCount())}.
+     * copy, use {@link #rowCopy(int)} instead.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1080,6 +1082,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param targetElementType the class of the target element type (used for array creation); must not be {@code null}
      * @return a new {@code Matrix<R>} with the transformed object values; the original matrix is unchanged
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
+     * @throws NullPointerException if {@code targetElementType} is {@code null}
      * @throws E if the function throws an exception
      */
     public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.ByteFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E {

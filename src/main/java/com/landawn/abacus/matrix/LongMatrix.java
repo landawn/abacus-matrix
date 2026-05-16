@@ -1348,7 +1348,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param fromRowIndex the starting row index (inclusive, 0-based)
      * @param toRowIndex the ending row index (exclusive)
      * @return a new LongMatrix containing the specified rows
-     * @throws IndexOutOfBoundsException if indices are out of bounds
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount},
+     *         or {@code fromRowIndex > toRowIndex}
      */
     @Override
     public LongMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
@@ -1378,7 +1379,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @return a new LongMatrix containing the specified submatrix
-     * @throws IndexOutOfBoundsException if indices are out of bounds
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount},
+     *         {@code fromColumnIndex < 0}, {@code toColumnIndex > columnCount}, or if either
+     *         {@code from} index exceeds its corresponding {@code to} index
      */
     @Override
     public LongMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {

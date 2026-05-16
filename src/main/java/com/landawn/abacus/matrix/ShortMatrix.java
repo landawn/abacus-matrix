@@ -132,7 +132,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param length the number of columns in the new matrix; must be {@code >= 0}
      * @return a new ShortMatrix of dimensions 1 x length filled with random values
-     * @throws IllegalArgumentException if {@code length} is negative
+     * @throws IllegalArgumentException if {@code length} is negative,
+     *         or if the resulting shape cannot be represented
      */
     public static ShortMatrix random(final int length) {
         return random(1, length);

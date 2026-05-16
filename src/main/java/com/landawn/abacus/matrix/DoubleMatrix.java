@@ -36,8 +36,8 @@ import com.landawn.abacus.util.stream.Stream;
  * Matrix implementation backed by a rectangular {@code double[][]}.
  *
  * <p>This type specializes {@link AbstractMatrix} for {@code double} values while keeping the data in
- * a validated backing array. Constructors and {@code of(...)} generally wrap the supplied storage
- * directly, while factories, conversions, and mapping operations allocate new arrays.</p>
+ * a validated backing array. Constructors and {@link #of(double[]...)} generally wrap the supplied
+ * storage directly, while factories, conversions, and mapping operations allocate new arrays.</p>
  *
  * <p>Cells introduced by growth or reshaping default to {@code 0.0d} unless an overload accepts an
  * explicit fill value.</p>
@@ -48,6 +48,13 @@ import com.landawn.abacus.util.stream.Stream;
  * {@code ==} but are distinguished by {@link Double#doubleToLongBits(double)}. {@link #equals(Object)}
  * and {@link #hashCode()} use {@code doubleToLongBits} semantics, so {@code NaN} equals {@code NaN}
  * and {@code +0.0} is not equal to {@code -0.0} for matrix-level comparison.</p>
+ *
+ * @see IntMatrix
+ * @see LongMatrix
+ * @see FloatMatrix
+ * @see ShortMatrix
+ * @see ByteMatrix
+ * @see Matrix
  */
 public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, DoubleStream, Stream<DoubleStream>, DoubleMatrix> {
 
@@ -634,7 +641,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * <p><b>Note:</b> This method returns a reference to the internal array, not a copy.
      * Modifications to the returned array will affect the matrix. If you need an independent
-     * copy, use {@code Arrays.copyOf(matrix.rowView(i), matrix.columnCount())}.
+     * copy, use {@link #rowCopy(int)}.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

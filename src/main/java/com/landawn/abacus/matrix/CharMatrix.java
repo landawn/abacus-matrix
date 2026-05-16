@@ -1313,7 +1313,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param newRowCount the row count of the returned matrix; must be {@code >= 0}
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
      * @return a new CharMatrix with the specified dimensions
-     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative
+     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
      * @see #resize(int, int, char)
      * @see #extend(int, int, int, int)
      */
@@ -1435,7 +1436,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param padLeft number of padding columns to add to the left of the original matrix; must be {@code >= 0}
      * @param padRight number of padding columns to add to the right of the original matrix; must be {@code >= 0}
      * @return a new CharMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
-     * @throws IllegalArgumentException if any parameter is negative
+     * @throws IllegalArgumentException if any padding parameter is negative,
+     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
      * @see #extend(int, int, int, int, char)
      * @see #resize(int, int)
      */
@@ -1801,7 +1803,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param newRowCount the number of rows in the reshaped matrix (must be &gt;= 0)
      * @param newColumnCount the number of columns in the reshaped matrix (must be &gt;= 0)
      * @return a new CharMatrix with the specified dimensions
-     * @throws IllegalArgumentException if the new shape is too small to hold all elements
+     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         or if the new shape is too small to hold all elements
+     *         ({@code (long) newRowCount * newColumnCount < elementCount()})
      */
     @SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG")
     @Override
