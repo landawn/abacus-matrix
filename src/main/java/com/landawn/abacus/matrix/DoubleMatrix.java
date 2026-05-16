@@ -292,7 +292,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param rowCount the number of rows in the new matrix
      * @param columnCount the number of columns in the new matrix
      * @return a new DoubleMatrix of dimensions {@code rowCount x columnCount} filled with random values
-     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative
+     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
+     *         or if {@code rowCount * columnCount} would overflow representable shape limits
      */
     public static DoubleMatrix random(final int rowCount, final int columnCount) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -324,7 +325,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param element the double value to fill the matrix with (may be {@code NaN}, {@code +/-Infinity},
      *                or any other {@code double} value)
      * @return a new DoubleMatrix of dimensions {@code rowCount x columnCount} filled with the specified element
-     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative
+     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
+     *         or if {@code rowCount * columnCount} would overflow representable shape limits
      */
     public static DoubleMatrix repeat(final int rowCount, final int columnCount, final double element) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -744,7 +746,6 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param column the array of values to copy into the column; must have length equal to the number of rows
      * @throws NullPointerException if {@code column} is {@code null}
      * @throws IllegalArgumentException if columnIndex is out of bounds or column length does not match row count
-     * @throws ArrayIndexOutOfBoundsException if the underlying wrapped array has been externally modified into a non-rectangular shape
      */
     public void setColumn(final int columnIndex, final double[] column) throws IllegalArgumentException {
         N.checkArgument(columnIndex >= 0 && columnIndex < columnCount, MSG_COLUMN_INDEX_OUT_OF_BOUNDS, columnIndex, columnCount);
@@ -3238,7 +3239,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
         } else {
             final StringBuilder sb = Objectory.createStringBuilder();
             final int len = a.length;
-            String str = null;
+            String str = "";
 
             try {
                 for (int i = 0; i < len; i++) {

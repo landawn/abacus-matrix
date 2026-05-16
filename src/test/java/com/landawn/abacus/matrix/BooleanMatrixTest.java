@@ -6017,4 +6017,32 @@ class BooleanMatrixTest extends TestBase {
         assertEquals(List.of(false, true), visited);
     }
 
+    @Nested
+    class BooleanMatrixPrintlnStrInit {
+        @Test
+        public void testPrintlnEmptyReturnsBracketString() {
+            // Empty path returns "[]" directly.
+            BooleanMatrix empty = BooleanMatrix.empty();
+            String s = empty.println();
+            assertEquals("[]", s);
+        }
+
+        @Test
+        public void testPrintlnSingleRowProducesNonNullString() {
+            BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] { { true, false } });
+            String s = matrix.println();
+            assertNotNull(s);
+            assertTrue(s.contains("[true, false]"));
+        }
+
+        @Test
+        public void testPrintlnMultipleRowsProducesNonNullString() {
+            BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
+            String s = matrix.println();
+            assertNotNull(s);
+            assertTrue(s.contains("[true, false]"));
+            assertTrue(s.contains("[false, true]"));
+        }
+    }
+
 }

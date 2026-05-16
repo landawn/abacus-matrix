@@ -106,6 +106,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * @param a the two-dimensional long array to create the matrix from, or {@code null}/empty for an empty matrix
      * @return a new {@code LongMatrix} wrapping the provided data, or the shared empty matrix if input is {@code null} or empty
+     * @throws IllegalArgumentException if {@code a} is non-rectangular (rows have differing lengths)
      */
     public static LongMatrix of(final long[]... a) {
         return N.isEmpty(a) ? EMPTY_LONG_MATRIX : new LongMatrix(a);
@@ -624,8 +625,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * Returns the specified row as a long array.
      *
      * <p><b>Note:</b> This method returns a reference to the internal array, not a copy.
-     * Modifications to the returned array will affect the matrix. If you need an independent
-     * copy, use {@code Arrays.copyOf(matrix.rowView(i), matrix.columnCount())}.
+     * Modifications to the returned array will affect the matrix. Use {@link #rowCopy(int)}
+     * if you need an independent copy.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -639,6 +640,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return the specified row array (direct reference to internal storage)
      * @throws IllegalArgumentException if rowIndex &lt; 0 or rowIndex &gt;= rowCount
+     * @see #rowCopy(int)
      */
     @Override
     public long[] rowView(final int rowIndex) throws IllegalArgumentException {
@@ -3225,7 +3227,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         } else {
             final StringBuilder sb = Objectory.createStringBuilder();
             final int len = a.length;
-            String str = null;
+            String str = "";
 
             try {
                 for (int i = 0; i < len; i++) {

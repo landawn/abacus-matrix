@@ -3061,7 +3061,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
         } else {
             final StringBuilder sb = Objectory.createStringBuilder();
             final int rowCount = a.length;
-            String str = null;
+            String str = "";
 
             try {
                 for (int i = 0; i < rowCount; i++) {

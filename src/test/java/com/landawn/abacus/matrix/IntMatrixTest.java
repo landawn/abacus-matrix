@@ -6180,4 +6180,34 @@ class IntMatrixTest extends TestBase {
         assertEquals(999, region.get(0, 0));
     }
 
+    @Nested
+    class PrintlnStrInitFix_IntMatrix extends TestBase {
+
+        @Test
+        public void testPrintlnNonEmptyReturnsNonNullFormattedString() {
+            IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
+            String printed = m.println();
+            assertNotNull(printed);
+            assertTrue(printed.contains("1"));
+            assertTrue(printed.contains("4"));
+            assertFalse(printed.equals("null"));
+        }
+
+        @Test
+        public void testPrintlnEmptyReturnsBracketsLiteral() {
+            IntMatrix empty = IntMatrix.empty();
+            String printed = empty.println();
+            assertEquals("[]", printed);
+        }
+
+        @Test
+        public void testPrintlnWithExtremeIntValues() {
+            IntMatrix m = IntMatrix.of(new int[][] { { Integer.MIN_VALUE, 0, Integer.MAX_VALUE } });
+            String printed = m.println();
+            assertNotNull(printed);
+            assertTrue(printed.contains(String.valueOf(Integer.MIN_VALUE)));
+            assertTrue(printed.contains(String.valueOf(Integer.MAX_VALUE)));
+        }
+    }
+
 }

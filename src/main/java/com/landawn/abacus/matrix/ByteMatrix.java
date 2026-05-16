@@ -41,6 +41,16 @@ import com.landawn.abacus.util.stream.Stream;
  *
  * <p>Cells introduced by growth or reshaping default to {@code 0} unless an overload accepts an
  * explicit fill value.</p>
+ *
+ * <p><b>Byte arithmetic:</b> all element-wise arithmetic ({@link #add}, {@link #subtract},
+ * {@link #matmul}, and {@code zipWith}/{@code map} variants) is performed using Java's standard
+ * numeric promotion to {@code int} and the result is narrowed back to {@code byte} via an explicit
+ * cast, so values outside {@code [Byte.MIN_VALUE, Byte.MAX_VALUE]} wrap modulo 256. To preserve
+ * the full magnitude, widen first via {@link #toIntMatrix()} or {@link #toLongMatrix()}.</p>
+ *
+ * @see IntMatrix
+ * @see ShortMatrix
+ * @see LongMatrix
  */
 public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStream, Stream<ByteStream>, ByteMatrix> {
 
@@ -3148,7 +3158,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         } else {
             final StringBuilder sb = Objectory.createStringBuilder();
             final int len = a.length;
-            String str = null;
+            String str = "";
 
             try {
                 for (int i = 0; i < len; i++) {

@@ -3076,7 +3076,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
         } else {
             final StringBuilder sb = Objectory.createStringBuilder();
             final int len = a.length;
-            String str = null;
+            String str = "";
 
             try {
                 for (int i = 0; i < len; i++) {

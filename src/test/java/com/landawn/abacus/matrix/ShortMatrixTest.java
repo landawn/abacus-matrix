@@ -6426,4 +6426,35 @@ class ShortMatrixTest extends TestBase {
         assertEquals((short) -2, product.get(0, 0));
     }
 
+    @Nested
+    class PrintlnStrInitFix_ShortMatrix extends TestBase {
+        // Verify the println() defensive str-init fix is present so it cannot return null.
+
+        @Test
+        public void testPrintlnNonEmptyReturnsNonNullFormattedString() {
+            ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
+            String printed = m.println();
+            assertNotNull(printed);
+            assertTrue(printed.contains("[1, 2]"));
+            assertTrue(printed.contains("[3, 4]"));
+            assertFalse(printed.equals("null"));
+        }
+
+        @Test
+        public void testPrintlnEmptyReturnsBracketsLiteral() {
+            ShortMatrix empty = ShortMatrix.empty();
+            String printed = empty.println();
+            assertEquals("[]", printed);
+        }
+
+        @Test
+        public void testPrintlnWithMinAndMaxShortValues() {
+            ShortMatrix m = ShortMatrix.of(new short[][] { { Short.MIN_VALUE, Short.MAX_VALUE } });
+            String printed = m.println();
+            assertNotNull(printed);
+            assertTrue(printed.contains(String.valueOf(Short.MIN_VALUE)));
+            assertTrue(printed.contains(String.valueOf(Short.MAX_VALUE)));
+        }
+    }
+
 }

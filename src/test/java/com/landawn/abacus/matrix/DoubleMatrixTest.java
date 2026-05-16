@@ -6240,4 +6240,36 @@ class DoubleMatrixTest extends TestBase {
         assertThrows(java.util.NoSuchElementException.class, ex::nextDouble);
     }
 
+    @Nested
+    class PrintlnStrInitFix_DoubleMatrix extends TestBase {
+        // Verify the println() defensive str-init fix is present so it cannot return null.
+
+        @Test
+        public void testPrintlnNonEmptyReturnsNonNullFormattedString() {
+            DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
+            String printed = m.println();
+            assertNotNull(printed);
+            assertTrue(printed.contains("1.0"));
+            assertTrue(printed.contains("4.0"));
+            assertFalse(printed.equals("null"));
+        }
+
+        @Test
+        public void testPrintlnEmptyReturnsBracketsLiteral() {
+            DoubleMatrix empty = DoubleMatrix.empty();
+            String printed = empty.println();
+            assertEquals("[]", printed);
+        }
+
+        @Test
+        public void testPrintlnWithNaNAndInfinityRendersAsTokens() {
+            DoubleMatrix m = DoubleMatrix.of(new double[][] { { Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY } });
+            String printed = m.println();
+            assertNotNull(printed);
+            assertTrue(printed.contains("NaN"));
+            assertTrue(printed.contains("Infinity"));
+            assertTrue(printed.contains("-Infinity"));
+        }
+    }
+
 }

@@ -286,7 +286,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * // matrix now contains {{10, 2}, {3, 4}}
      * }</pre>
      *
-     * @return the underlying two-dimensional array (not a copy); for an empty matrix this is a zero-length array
+     * @return the underlying two-dimensional array (not a copy); its length equals {@code rowCount}
+     *         (so a {@code 0}-row matrix yields a zero-length array, but a {@code rowCount × 0} matrix
+     *         yields a {@code rowCount}-length array of zero-length rows)
      */
     @SuppressFBWarnings("EI_EXPOSE_REP")
     public A[] internalArray() {
@@ -405,7 +407,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * A matrix is considered empty if either the number of rows or columns is zero,
      * resulting in a total count of zero elements.
      *
-     * <p>Note: An empty matrix has zero rows (and therefore zero elements).</p>
+     * <p>Note: An empty matrix has zero elements. This includes shapes such as {@code 0 × 0}
+     * and {@code rowCount × 0}, so an empty matrix does not necessarily have zero rows.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -611,9 +614,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * // Original:    Transposed:
-     * // 1 2 3        1 4 7
-     * // 4 5 6   =>   2 5 8
-     * // 7 8 9        3 6 9
+     * // 1 2 3        1 4
+     * // 4 5 6   =>   2 5
+     * //              3 6
      *
      * IntMatrix original = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
      * IntMatrix transposed = original.transpose();   // 2x3 becomes 3x2

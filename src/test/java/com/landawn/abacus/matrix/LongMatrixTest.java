@@ -6057,11 +6057,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testMainDiagonalStream_iteratorAdvanceAndCount() {
         // Exercise advance() boundary around the `a[cursor][cursor++]` access pattern.
-        LongMatrix m = LongMatrix.of(new long[][] {
-                { 1L, 0L, 0L, 0L },
-                { 0L, 2L, 0L, 0L },
-                { 0L, 0L, 3L, 0L },
-                { 0L, 0L, 0L, 4L } });
+        LongMatrix m = LongMatrix.of(new long[][] { { 1L, 0L, 0L, 0L }, { 0L, 2L, 0L, 0L }, { 0L, 0L, 3L, 0L }, { 0L, 0L, 0L, 4L } });
 
         var it = (com.landawn.abacus.util.stream.LongIteratorEx) m.mainDiagonalStream().iterator();
         assertEquals(4L, it.count());
@@ -6075,11 +6071,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testAntiDiagonalStream_iteratorAdvanceAndCount() {
         // Anti-diagonal of 4x4: (0,3)=4, (1,2)=3, (2,1)=2, (3,0)=1.
-        LongMatrix m = LongMatrix.of(new long[][] {
-                { 0L, 0L, 0L, 4L },
-                { 0L, 0L, 3L, 0L },
-                { 0L, 2L, 0L, 0L },
-                { 1L, 0L, 0L, 0L } });
+        LongMatrix m = LongMatrix.of(new long[][] { { 0L, 0L, 0L, 4L }, { 0L, 0L, 3L, 0L }, { 0L, 2L, 0L, 0L }, { 1L, 0L, 0L, 0L } });
 
         long[] anti = m.antiDiagonalStream().toArray();
         assertArrayEquals(new long[] { 4L, 3L, 2L, 1L }, anti);
@@ -6093,10 +6085,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testVerticalStream_advanceCrossesColumnBoundary() {
         // Verify advance crosses column boundaries for verticalStream.
-        LongMatrix m = LongMatrix.of(new long[][] {
-                { 1L, 4L, 7L },
-                { 2L, 5L, 8L },
-                { 3L, 6L, 9L } });
+        LongMatrix m = LongMatrix.of(new long[][] { { 1L, 4L, 7L }, { 2L, 5L, 8L }, { 3L, 6L, 9L } });
 
         var it = (com.landawn.abacus.util.stream.LongIteratorEx) m.verticalStream().iterator();
         // verticalStream() → 1,2,3 (col 0) | 4,5,6 (col 1) | 7,8,9 (col 2)
@@ -6177,6 +6166,36 @@ class LongMatrixTest extends TestBase {
         // (1e9 * 2) + (1e9 * 3) = 5e9, which exceeds Integer.MAX_VALUE.
         assertEquals(5_000_000_000L, product.get(0, 0));
         assertEquals(0L, product.get(0, 1));
+    }
+
+    @Nested
+    class PrintlnStrInitFix_LongMatrix extends TestBase {
+
+        @Test
+        public void testPrintlnNonEmptyReturnsNonNullFormattedString() {
+            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            String printed = m.println();
+            assertNotNull(printed);
+            assertTrue(printed.contains("1"));
+            assertTrue(printed.contains("4"));
+            assertFalse(printed.equals("null"));
+        }
+
+        @Test
+        public void testPrintlnEmptyReturnsBracketsLiteral() {
+            LongMatrix empty = LongMatrix.empty();
+            String printed = empty.println();
+            assertEquals("[]", printed);
+        }
+
+        @Test
+        public void testPrintlnWithExtremeLongValues() {
+            LongMatrix m = LongMatrix.of(new long[][] { { Long.MIN_VALUE, 0L, Long.MAX_VALUE } });
+            String printed = m.println();
+            assertNotNull(printed);
+            assertTrue(printed.contains(String.valueOf(Long.MIN_VALUE)));
+            assertTrue(printed.contains(String.valueOf(Long.MAX_VALUE)));
+        }
     }
 
 }

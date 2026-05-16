@@ -7240,4 +7240,26 @@ class MatrixTest extends TestBase {
         assertArrayEquals(new Integer[] { 4, 5, 6 }, matrix.rowView(1));
         assertArrayEquals(new Integer[] { 1, 2, 3 }, matrix.rowView(2));
     }
+
+    @Nested
+    class PrintlnDefensiveNullGuard extends TestBase {
+        // Mirrors the defensive `String str = ""` guard applied to BooleanMatrix/ByteMatrix/CharMatrix/
+        // DoubleMatrix/FloatMatrix/ShortMatrix println() so that Matrix.println() can never reach
+        // N.println(null). This is a regression guard against the developer-intended pattern.
+        @Test
+        public void testPrintln_nonEmpty_returnsNonNullString() {
+            Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2 }, { 3, 4 } });
+            String result = matrix.println();
+            assertNotNull(result);
+            assertTrue(result.contains("1") && result.contains("4"));
+        }
+
+        @Test
+        public void testPrintln_empty_returnsNonNullString() {
+            Matrix<String> empty = Matrix.empty();
+            String result = empty.println();
+            assertNotNull(result);
+            assertEquals("[]", result);
+        }
+    }
 }

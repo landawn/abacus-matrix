@@ -6157,4 +6157,35 @@ class ByteMatrixTest extends TestBase {
         assertThrows(java.util.NoSuchElementException.class, ex::nextByte);
     }
 
+    @Nested
+    class PrintlnStrInitFix_ByteMatrix extends TestBase {
+        // Verify the println() defensive str-init fix is present so it cannot return null.
+
+        @Test
+        public void testPrintlnNonEmptyReturnsNonNullFormattedString() {
+            ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
+            String printed = m.println();
+            assertNotNull(printed);
+            assertTrue(printed.contains("[1, 2]"));
+            assertTrue(printed.contains("[3, 4]"));
+            assertFalse(printed.equals("null"));
+        }
+
+        @Test
+        public void testPrintlnEmptyReturnsBracketsLiteral() {
+            ByteMatrix empty = ByteMatrix.empty();
+            String printed = empty.println();
+            assertEquals("[]", printed);
+        }
+
+        @Test
+        public void testPrintlnWithMinAndMaxByteValues() {
+            ByteMatrix m = ByteMatrix.of(new byte[][] { { Byte.MIN_VALUE, Byte.MAX_VALUE } });
+            String printed = m.println();
+            assertNotNull(printed);
+            assertTrue(printed.contains(String.valueOf(Byte.MIN_VALUE)));
+            assertTrue(printed.contains(String.valueOf(Byte.MAX_VALUE)));
+        }
+    }
+
 }

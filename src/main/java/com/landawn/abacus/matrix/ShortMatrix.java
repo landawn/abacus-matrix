@@ -77,7 +77,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @param a the two-dimensional short array to wrap, or {@code null} for an empty matrix
-     * @throws IllegalArgumentException if {@code a} is non-rectangular (rows have differing lengths)
+     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     *         different lengths (i.e. the array is not rectangular)
      */
     public ShortMatrix(final short[][] a) {
         super(a == null ? new short[0][0] : a, short.class);
@@ -113,6 +114,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param a the two-dimensional short array to create the matrix from, or null/empty for an empty matrix
      * @return a new ShortMatrix containing the provided data, or an empty ShortMatrix if input is null or empty
+     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     *         different lengths (i.e. the array is not rectangular)
      */
     public static ShortMatrix of(final short[]... a) {
         return N.isEmpty(a) ? EMPTY_SHORT_MATRIX : new ShortMatrix(a);
@@ -3134,7 +3137,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
         } else {
             final StringBuilder sb = Objectory.createStringBuilder();
             final int len = a.length;
-            String str = null;
+            String str = "";
 
             try {
                 for (int i = 0; i < len; i++) {

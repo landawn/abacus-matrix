@@ -79,7 +79,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @param a the two-dimensional array of elements (must not be null)
-     * @throws IllegalArgumentException if the array is null or if rows have different lengths (not rectangular)
+     * @throws IllegalArgumentException if the array is null, if any row is null, or if rows have
+     *         different lengths (not rectangular)
      */
     public Matrix(final T[][] a) {
         this(a, null);
@@ -144,7 +145,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param <T> the type of elements in the matrix
      * @param a the two-dimensional array to create the matrix from (must not be null)
      * @return a new Matrix containing the provided data
-     * @throws IllegalArgumentException if the array is null or if rows have different lengths (non-rectangular array)
+     * @throws IllegalArgumentException if the array is null, if any row is null, or if rows have
+     *         different lengths (non-rectangular array)
      */
     @SafeVarargs
     public static <T> Matrix<T> of(final T[]... a) {
@@ -384,8 +386,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param columnIndex the column index (0-based)
      * @param value the value to set; may be {@code null}
      * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
-     * @throws IllegalArgumentException if {@code value} is non-{@code null} and incompatible with
-     *         the row's storage component type
+     * @throws ArrayStoreException if {@code value} is non-{@code null} and not assignable to
+     *         the row's runtime storage component type
      */
     public void set(final int rowIndex, final int columnIndex, final T value) {
         a[rowIndex][columnIndex] = value;
@@ -405,8 +407,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param point the point containing row and column indices (must not be {@code null})
      * @param value the value to set; may be {@code null}
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
-     * @throws IllegalArgumentException if {@code point} is {@code null}, or if {@code value} is
-     *         non-{@code null} and incompatible with the row's storage component type
+     * @throws IllegalArgumentException if {@code point} is {@code null}
+     * @throws ArrayStoreException if {@code value} is non-{@code null} and not assignable to
+     *         the row's runtime storage component type
      */
     public void set(final Point point, final T value) {
         N.checkArgNotNull(point, "point");
@@ -511,12 +514,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * are mirrored in the matrix. If you need an independent copy, use {@link #rowCopy(int)}
      * or call {@code .clone()} on the returned array.</p>
      *
-     * <p><b>Object-row promotion:</b> If this matrix advertises a more specific element type
-     * (e.g. {@code String}) but the underlying row is currently {@code Object[]} (which can
-     * happen for matrices created by {@link #repeat(int, int, Object)}, {@link #diagonals}
-     * and similar factories), the row is promoted to the narrower runtime type before being
-     * returned. The promoted array replaces the internal row reference, so callers always
-     * see a row whose runtime component type is assignable to {@code T[]}.</p>
+     * <p><b>Note on runtime component type:</b> the returned array is the row exactly as it is
+     * stored internally. For matrices created by factories such as {@link #repeat(int, int, Object)}
+     * or {@link #diagonals} the backing row may have a more specific runtime component type than
+     * {@code Object[]} (it is allocated from the resolved element type), but no conversion is
+     * performed by this method.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -531,7 +533,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @param rowIndex the index of the row to retrieve (0-based)
-     * @return the live internal row array (possibly after promotion to the matrix's element type)
+     * @return the live internal row array
      * @throws IllegalArgumentException if {@code rowIndex} is negative or greater than or equal to {@code rowCount}
      */
     @Override
@@ -608,8 +610,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param rowIndex the row index to replace (0-based)
      * @param row the new row data (must have exactly {@code columnCount} elements)
      * @throws IllegalArgumentException if {@code row} is {@code null}, if {@code rowIndex} is out of bounds,
-     *         if {@code row.length} does not equal {@code columnCount}, or if any element is incompatible
-     *         with the row's storage component type
+     *         or if {@code row.length} does not equal {@code columnCount}
+     * @throws ArrayStoreException if any element of {@code row} is not assignable to the row's
+     *         runtime storage component type
      */
     public void setRow(final int rowIndex, final T[] row) throws IllegalArgumentException {
         N.checkArgNotNull(row, "row");
@@ -637,8 +640,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param columnIndex the column index to replace (0-based)
      * @param column the new column data (must have exactly {@code rowCount} elements)
      * @throws IllegalArgumentException if {@code column} is {@code null}, if {@code columnIndex} is out of bounds,
-     *         if {@code column.length} does not equal {@code rowCount}, or if any element is incompatible
-     *         with the corresponding row's storage component type
+     *         or if {@code column.length} does not equal {@code rowCount}
+     * @throws ArrayStoreException if any element of {@code column} is not assignable to the
+     *         corresponding row's runtime storage component type
      */
     public void setColumn(final int columnIndex, final T[] column) throws IllegalArgumentException {
         N.checkArgNotNull(column, "column");
@@ -769,8 +773,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *                     (treated as length 0 if {@code null})
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      * @throws IllegalArgumentException if {@code mainDiagonal} array length does not equal {@code rowCount}
-     *         (including when it is {@code null} and {@code rowCount > 0}),
-     *         or if any element is incompatible with the row's storage component type
+     *         (including when it is {@code null} and {@code rowCount > 0})
+     * @throws ArrayStoreException if any element is not assignable to the row's runtime storage component type
      */
     @Override
     public void setMainDiagonal(final T[] mainDiagonal) throws IllegalStateException, IllegalArgumentException {
@@ -865,8 +869,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *                     (treated as length 0 if {@code null})
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      * @throws IllegalArgumentException if {@code antiDiagonal} array length does not equal {@code rowCount}
-     *         (including when it is {@code null} and {@code rowCount > 0}),
-     *         or if any element is incompatible with the row's storage component type
+     *         (including when it is {@code null} and {@code rowCount > 0})
+     * @throws ArrayStoreException if any element is not assignable to the row's runtime storage component type
      */
     @Override
     public void setAntiDiagonal(final T[] antiDiagonal) throws IllegalStateException, IllegalArgumentException {
@@ -2033,16 +2037,17 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * // Original:    Transposed:
-     * // 1 2 3        1 4 7
-     * // 4 5 6   =>   2 5 8
-     * // 7 8 9        3 6 9
+     * // 1 2 3        1 4
+     * // 4 5 6   =>   2 5
+     * //              3 6
      *
      * Matrix<Integer> original = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
      * Matrix<Integer> transposed = original.transpose();   // 2×3 becomes 3×2
      * }</pre>
      *
      * @return a new matrix that is the transpose of this matrix, with dimensions
-     *         {@code columnCount × rowCount}
+     *         {@code columnCount × rowCount} (an empty matrix with zero columns yields
+     *         an empty {@code 0}-row matrix)
      */
     @Override
     public Matrix<T> transpose() {
@@ -3319,7 +3324,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         } else {
             final StringBuilder sb = Objectory.createStringBuilder();
             final int len = a.length;
-            String str = null;
+            String str = "";
 
             try {
                 for (int i = 0; i < len; i++) {

@@ -3345,7 +3345,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
         } else {
             final StringBuilder sb = Objectory.createStringBuilder();
             final int len = a.length;
-            String str = null;
+            String str = "";
 
             try {
                 for (int i = 0; i < len; i++) {

@@ -6593,4 +6593,32 @@ class CharMatrixTest extends TestBase {
         assertThrows(java.util.NoSuchElementException.class, ex::nextChar);
     }
 
+    @Nested
+    class CharMatrixPrintlnStrInit {
+        @Test
+        public void testPrintlnEmptyReturnsBracketString() {
+            // Empty path returns "[]" directly.
+            CharMatrix empty = CharMatrix.empty();
+            String s = empty.println();
+            Assertions.assertEquals("[]", s);
+        }
+
+        @Test
+        public void testPrintlnSingleRowProducesNonNullString() {
+            CharMatrix matrix = CharMatrix.of(new char[][] { { 'a', 'b' } });
+            String s = matrix.println();
+            Assertions.assertNotNull(s);
+            Assertions.assertTrue(s.contains("[a, b]"));
+        }
+
+        @Test
+        public void testPrintlnMultipleRowsProducesNonNullString() {
+            CharMatrix matrix = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
+            String s = matrix.println();
+            Assertions.assertNotNull(s);
+            Assertions.assertTrue(s.contains("[a, b]"));
+            Assertions.assertTrue(s.contains("[c, d]"));
+        }
+    }
+
 }

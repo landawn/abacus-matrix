@@ -5828,8 +5828,7 @@ class FloatMatrixTest extends TestBase {
         FloatMatrix negZero = FloatMatrix.of(new float[][] { { -0.0f } });
 
         assertNotEquals(posZero, negZero, "+0.0f and -0.0f must not be equal under Float.floatToIntBits semantics");
-        assertNotEquals(posZero.hashCode(), negZero.hashCode(),
-                "+0.0f and -0.0f must produce different hash codes under Float.floatToIntBits semantics");
+        assertNotEquals(posZero.hashCode(), negZero.hashCode(), "+0.0f and -0.0f must produce different hash codes under Float.floatToIntBits semantics");
     }
 
     @Test
@@ -5924,11 +5923,8 @@ class FloatMatrixTest extends TestBase {
     @Test
     public void testMainDiagonalStream_iteratorAdvanceAndCount() {
         // Exercise advance() boundary around the cursor++ in a[cursor][cursor++].
-        FloatMatrix m = FloatMatrix.of(new float[][] {
-                { 1.0f, 0.0f, 0.0f, 0.0f },
-                { 0.0f, 2.0f, 0.0f, 0.0f },
-                { 0.0f, 0.0f, 3.0f, 0.0f },
-                { 0.0f, 0.0f, 0.0f, 4.0f } });
+        FloatMatrix m = FloatMatrix
+                .of(new float[][] { { 1.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 2.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 3.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 4.0f } });
 
         var it = (com.landawn.abacus.util.stream.FloatIteratorEx) m.mainDiagonalStream().iterator();
         assertEquals(4L, it.count());
@@ -5942,10 +5938,7 @@ class FloatMatrixTest extends TestBase {
     @Test
     public void testVerticalStream_advanceCrossesColumnBoundary() {
         // Verify advance crosses column boundaries for verticalStream.
-        FloatMatrix m = FloatMatrix.of(new float[][] {
-                { 1.0f, 4.0f, 7.0f },
-                { 2.0f, 5.0f, 8.0f },
-                { 3.0f, 6.0f, 9.0f } });
+        FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 4.0f, 7.0f }, { 2.0f, 5.0f, 8.0f }, { 3.0f, 6.0f, 9.0f } });
 
         var it = (com.landawn.abacus.util.stream.FloatIteratorEx) m.verticalStream().iterator();
         // verticalStream() → 1,2,3 (col 0) | 4,5,6 (col 1) | 7,8,9 (col 2)
@@ -6014,6 +6007,38 @@ class FloatMatrixTest extends TestBase {
         bData[0][1] = -1.0f;
         assertEquals(1.0f, stacked.get(0, 0), DELTA);
         assertEquals(4.0f, stacked.get(1, 1), DELTA);
+    }
+
+    @Nested
+    class PrintlnStrInitFix_FloatMatrix extends TestBase {
+        // Verify the println() defensive str-init fix is present so it cannot return null.
+
+        @Test
+        public void testPrintlnNonEmptyReturnsNonNullFormattedString() {
+            FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
+            String printed = m.println();
+            assertNotNull(printed);
+            assertTrue(printed.contains("1.0"));
+            assertTrue(printed.contains("4.0"));
+            assertFalse(printed.equals("null"));
+        }
+
+        @Test
+        public void testPrintlnEmptyReturnsBracketsLiteral() {
+            FloatMatrix empty = FloatMatrix.empty();
+            String printed = empty.println();
+            assertEquals("[]", printed);
+        }
+
+        @Test
+        public void testPrintlnWithNaNAndInfinityRendersAsTokens() {
+            FloatMatrix m = FloatMatrix.of(new float[][] { { Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY } });
+            String printed = m.println();
+            assertNotNull(printed);
+            assertTrue(printed.contains("NaN"));
+            assertTrue(printed.contains("Infinity"));
+            assertTrue(printed.contains("-Infinity"));
+        }
     }
 
 }

@@ -3263,7 +3263,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
         } else {
             final StringBuilder sb = Objectory.createStringBuilder();
             final int len = a.length;
-            String str = null;
+            String str = "";
 
             try {
                 for (int i = 0; i < len; i++) {
