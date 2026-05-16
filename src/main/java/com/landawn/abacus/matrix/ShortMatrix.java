@@ -2191,13 +2191,15 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
                 columnCount, other.rowCount, other.columnCount);
 
+        checkRepresentableShape(rowCount, other.columnCount);
+
         final short[][] otherArray = other.a;
         final short[][] result = new short[rowCount][other.columnCount];
         final Throwables.IntTriConsumer<RuntimeException> cmd = (i, j, k) -> result[i][j] += a[i][k] * otherArray[k][j];
 
         Matrices.forEachCartesianIndices(this, other, cmd);
 
-        return new ShortMatrix(result);
+        return ShortMatrix.of(result);
     }
 
     /**

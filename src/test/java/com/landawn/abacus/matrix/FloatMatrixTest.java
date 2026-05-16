@@ -2333,6 +2333,17 @@ class FloatMatrixTest extends TestBase {
             assertEquals(32.0f, product.get(0, 0), DELTA); // 1*4 + 2*5 + 3*6 = 4 + 10 + 18 = 32
         }
 
+        @Test
+        public void testMatmul_emptyProductReturnsCanonicalEmpty() {
+            // Regression: matmul must build its result via FloatMatrix.of(result) (not the raw
+            // constructor) so an empty product yields the shared EMPTY singleton, and must call
+            // checkRepresentableShape before allocation for consistency with the other
+            // result-allocating methods (resize/reshape/transpose/rotate).
+            FloatMatrix product = FloatMatrix.empty().matmul(FloatMatrix.empty());
+            assertSame(FloatMatrix.empty(), product);
+            assertTrue(product.isEmpty());
+        }
+
         // ============ Conversion Tests ============
 
         @Test

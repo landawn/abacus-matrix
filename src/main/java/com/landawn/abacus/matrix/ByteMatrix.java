@@ -2204,13 +2204,15 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
                 columnCount, other.rowCount, other.columnCount);
 
+        checkRepresentableShape(rowCount, other.columnCount);
+
         final byte[][] otherArray = other.a;
         final byte[][] result = new byte[rowCount][other.columnCount];
         final Throwables.IntTriConsumer<RuntimeException> multiplyAction = (i, j, k) -> result[i][j] += a[i][k] * otherArray[k][j];
 
         Matrices.forEachCartesianIndices(this, other, multiplyAction);
 
-        return new ByteMatrix(result);
+        return ByteMatrix.of(result);
     }
 
     /**

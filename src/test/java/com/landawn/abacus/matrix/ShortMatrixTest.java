@@ -2733,6 +2733,17 @@ class ShortMatrixTest extends TestBase {
             assertEquals(32, product.get(0, 0)); // 1*4 + 2*5 + 3*6 = 4 + 10 + 18 = 32
         }
 
+        @Test
+        public void testMatmul_emptyProductReturnsCanonicalEmpty() {
+            // Regression: matmul must build its result via ShortMatrix.of(result) (not the raw
+            // constructor) so an empty product yields the shared EMPTY singleton, and must call
+            // checkRepresentableShape before allocation for consistency with the other
+            // result-allocating methods (resize/reshape/transpose/rotate).
+            ShortMatrix product = ShortMatrix.empty().matmul(ShortMatrix.empty());
+            assertSame(ShortMatrix.empty(), product);
+            assertTrue(product.isEmpty());
+        }
+
         // ============ Conversion Tests ============
 
         @Test

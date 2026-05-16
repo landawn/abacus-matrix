@@ -2166,13 +2166,15 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
                 columnCount, other.rowCount, other.columnCount);
 
+        checkRepresentableShape(rowCount, other.columnCount);
+
         final float[][] otherMatrix = other.a;
         final float[][] result = new float[rowCount][other.columnCount];
         final Throwables.IntTriConsumer<RuntimeException> operation = (i, j, k) -> result[i][j] += a[i][k] * otherMatrix[k][j];
 
         Matrices.forEachCartesianIndices(this, other, operation);
 
-        return new FloatMatrix(result);
+        return FloatMatrix.of(result);
     }
 
     /**

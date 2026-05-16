@@ -2163,13 +2163,15 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
                 columnCount, other.rowCount, other.columnCount);
 
+        checkRepresentableShape(rowCount, other.columnCount);
+
         final char[][] otherArray = other.a;
         final char[][] result = new char[rowCount][other.columnCount];
         final Throwables.IntTriConsumer<RuntimeException> cmd = (i, j, k) -> result[i][j] += a[i][k] * otherArray[k][j];
 
         Matrices.forEachCartesianIndices(this, other, cmd);
 
-        return new CharMatrix(result);
+        return CharMatrix.of(result);
     }
 
     /**

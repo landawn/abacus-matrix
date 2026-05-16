@@ -2308,13 +2308,15 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
                 columnCount, other.rowCount, other.columnCount);
 
+        checkRepresentableShape(rowCount, other.columnCount);
+
         final long[][] otherArray = other.a;
         final long[][] result = new long[rowCount][other.columnCount];
         final Throwables.IntTriConsumer<RuntimeException> cmd = (i, j, k) -> result[i][j] += a[i][k] * otherArray[k][j];
 
         Matrices.forEachCartesianIndices(this, other, cmd);
 
-        return new LongMatrix(result);
+        return LongMatrix.of(result);
     }
 
     /**

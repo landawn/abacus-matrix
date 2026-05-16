@@ -2458,6 +2458,17 @@ class ByteMatrixTest extends TestBase {
             assertEquals(32, product.get(0, 0)); // 1*4 + 2*5 + 3*6 = 4 + 10 + 18 = 32
         }
 
+        @Test
+        public void testMatmul_emptyProductReturnsCanonicalEmpty() {
+            // Regression: matmul must build its result via ByteMatrix.of(result) (not the raw
+            // constructor) so an empty product yields the shared EMPTY singleton, and must call
+            // checkRepresentableShape before allocation for consistency with the other
+            // result-allocating methods (resize/reshape/transpose/rotate).
+            ByteMatrix product = ByteMatrix.empty().matmul(ByteMatrix.empty());
+            assertSame(ByteMatrix.empty(), product);
+            assertTrue(product.isEmpty());
+        }
+
         // ============ Conversion Tests ============
 
         @Test

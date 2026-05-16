@@ -2586,6 +2586,17 @@ class DoubleMatrixTest extends TestBase {
             assertEquals(32.0, product.get(0, 0), DELTA); // 1*4 + 2*5 + 3*6 = 4 + 10 + 18 = 32
         }
 
+        @Test
+        public void testMatmul_emptyProductReturnsCanonicalEmpty() {
+            // Regression: matmul must build its result via DoubleMatrix.of(result) (not the raw
+            // constructor) so an empty product yields the shared EMPTY singleton, and must call
+            // checkRepresentableShape before allocation for consistency with the other
+            // result-allocating methods (resize/reshape/transpose/rotate).
+            DoubleMatrix product = DoubleMatrix.empty().matmul(DoubleMatrix.empty());
+            assertSame(DoubleMatrix.empty(), product);
+            assertTrue(product.isEmpty());
+        }
+
         // ============ Conversion Tests ============
 
         @Test

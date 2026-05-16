@@ -2833,6 +2833,17 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
+        public void testMatmul_emptyProductReturnsCanonicalEmpty() {
+            // Regression: matmul must build its result via LongMatrix.of(result) (not the raw
+            // constructor) so an empty product yields the shared EMPTY singleton, and must call
+            // checkRepresentableShape before allocation for consistency with the other
+            // result-allocating methods (resize/reshape/transpose/rotate).
+            LongMatrix product = LongMatrix.empty().matmul(LongMatrix.empty());
+            assertSame(LongMatrix.empty(), product);
+            assertTrue(product.isEmpty());
+        }
+
+        @Test
         public void testMultiply_withLargeValues() {
             LongMatrix m1 = LongMatrix.of(new long[][] { { 1000000L, 2000000L } });
             LongMatrix m2 = LongMatrix.of(new long[][] { { 3000000L }, { 4000000L } });

@@ -2315,13 +2315,15 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
                 columnCount, other.rowCount, other.columnCount);
 
+        checkRepresentableShape(rowCount, other.columnCount);
+
         final double[][] otherData = other.a;
         final double[][] result = new double[rowCount][other.columnCount];
         final Throwables.IntTriConsumer<RuntimeException> multiplyAction = (i, j, k) -> result[i][j] += a[i][k] * otherData[k][j];
 
         Matrices.forEachCartesianIndices(this, other, multiplyAction);
 
-        return new DoubleMatrix(result);
+        return DoubleMatrix.of(result);
     }
 
     /**

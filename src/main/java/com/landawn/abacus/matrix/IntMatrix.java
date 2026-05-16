@@ -2412,13 +2412,15 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
                 columnCount, other.rowCount, other.columnCount);
 
+        checkRepresentableShape(rowCount, other.columnCount);
+
         final int[][] otherData = other.a;
         final int[][] result = new int[rowCount][other.columnCount];
         final Throwables.IntTriConsumer<RuntimeException> multiplyAction = (i, j, k) -> result[i][j] += a[i][k] * otherData[k][j];
 
         Matrices.forEachCartesianIndices(this, other, multiplyAction);
 
-        return new IntMatrix(result);
+        return IntMatrix.of(result);
     }
 
     /**
