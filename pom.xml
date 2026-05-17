@@ -5,7 +5,7 @@
 
 	<groupId>com.landawn</groupId>
 	<artifactId>abacus-matrix</artifactId>
-	<version>3.6.9</version>
+	<version>3.7.0</version>
 	<packaging>jar</packaging>
 	<name>abacus-matrix</name>
 	<description>Abacus Data Access and Analysis</description>
@@ -46,14 +46,14 @@
 		<dependency>
 			<groupId>com.landawn</groupId>
 			<artifactId>abacus-common</artifactId>
-			<version>7.6.8</version>
+			<version>7.6.9</version>
 			<scope>provided</scope>
 		</dependency>
 
 		<dependency>
 			<groupId>com.landawn</groupId>
 			<artifactId>abacus-extra</artifactId>
-			<version>3.6.9</version>
+			<version>3.6.10</version>
 			<scope>provided</scope>
 		</dependency>
 

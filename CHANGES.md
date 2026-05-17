@@ -1,10 +1,12 @@
+## 3.6.9
+* Naming convention improvements
+* Improvements and bug fixes
+
 ## 3.6.8
-* separated from abacus-extra
 * Naming convention improvements
 * Improvements and bug fixes
 
 ## 3.6.7
-* separated from abacus-extra
 * Naming convention improvements
 * Improvements and bug fixes
 
