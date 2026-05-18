@@ -1,7 +1,7 @@
 # abacus-matrix
 
 [![Maven Central](https://img.shields.io/maven-central/v/com.landawn/abacus-matrix.svg)](https://maven-badges.herokuapp.com/maven-central/com.landawn/abacus-matrix/)
-[![Javadocs](https://img.shields.io/badge/javadoc-3.6.9-brightgreen.svg)](https://www.javadoc.io/doc/com.landawn/abacus-matrix/3.6.9/index.html)
+[![Javadocs](https://img.shields.io/badge/javadoc-3.7.0-brightgreen.svg)](https://www.javadoc.io/doc/com.landawn/abacus-matrix/3.7.0/index.html)
 
 `abacus-matrix` is a Java library for working with rectangular 2D arrays as matrix types. It provides dedicated matrix implementations for primitive values and objects, with APIs for array-backed access, reshaping, traversal, and element-wise transformations without the overhead of a heavyweight numerical framework.
 
