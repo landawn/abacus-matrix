@@ -1101,7 +1101,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param targetElementType the class object representing the target element type (required for array creation;
      *        must not be {@code null})
      * @return a new Matrix&lt;R&gt; with the mapped object values
-     * @throws IllegalArgumentException if {@code mapper} is {@code null}
+     * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null}
      * @throws E if the function throws an exception
      */
     public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.CharFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E {

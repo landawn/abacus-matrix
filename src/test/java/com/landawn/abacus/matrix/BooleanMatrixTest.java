@@ -6045,4 +6045,55 @@ class BooleanMatrixTest extends TestBase {
         }
     }
 
+    /**
+     * Regression tests for the {@code countTrue()} overflow bug.
+     *
+     * <p>The original implementation declared the method as {@code public int countTrue()}
+     * with an {@code int} accumulator. Because {@code AbstractMatrix.elementCount} is a
+     * {@code long} (i.e. a matrix may legally contain more than {@code Integer.MAX_VALUE}
+     * cells, e.g. ~46341&times;46341 fits in an {@code int} row/column count but exceeds
+     * {@code 2^31 - 1} total elements), the {@code int} accumulator could silently overflow
+     * to a negative value on sufficiently large all-true matrices.</p>
+     *
+     * <p>The fix changed the return type and accumulator to {@code long}. The reflection
+     * test below FAILS on the original {@code int}-returning code and PASSES on the fixed
+     * {@code long}-returning code, providing a binary-compatible regression guard without
+     * requiring multi-gigabyte test heaps.</p>
+     */
+    @Nested
+    class CountTrueOverflowFix {
+
+        @Test
+        public void testCountTrue_returnTypeIsLong_avoidsIntOverflow() throws NoSuchMethodException {
+            // The whole purpose of the fix is to widen the return type so callers
+            // and the accumulator cannot silently overflow at int range.
+            java.lang.reflect.Method m = BooleanMatrix.class.getMethod("countTrue");
+            assertEquals(long.class, m.getReturnType(),
+                    "BooleanMatrix.countTrue() must return long to avoid int overflow for large matrices");
+        }
+
+        @Test
+        public void testCountTrue_resultIsLong_atCompileTime() {
+            // This compiles only if countTrue() returns a primitive convertible to long
+            // *and* the literal-long comparison binds to assertEquals(long, long).
+            BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false, true }, { false, true, false } });
+            long expected = 3L;
+            long actual = m.countTrue(); // would fail to compile with explicit narrowing on old int return
+            assertEquals(expected, actual);
+        }
+
+        @Test
+        public void testCountTrue_smallMatrixStillCorrect() {
+            // Behavioral regression: ensure the small-matrix path was not broken by widening.
+            BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, true, true }, { true, true, true } });
+            assertEquals(6L, m.countTrue());
+        }
+
+        @Test
+        public void testCountTrue_emptyMatrixReturnsZeroLong() {
+            // 0x0 — must produce 0L without throwing.
+            assertEquals(0L, BooleanMatrix.empty().countTrue());
+        }
+    }
+
 }

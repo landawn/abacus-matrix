@@ -212,7 +212,7 @@ public final class Matrices {
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[100][100]);
      * boolean shouldParallelize = Matrices.isParallelizable(matrix, 5000);
-     * // Returns true only if settings allow and count >= 8192
+     * // Under AUTO this returns false (5000 < 8192); under FORCE_ON it returns true (when runtime support is available)
      * }</pre>
      *
      * @param m the matrix being evaluated; only checked for {@code null}, the matrix's own

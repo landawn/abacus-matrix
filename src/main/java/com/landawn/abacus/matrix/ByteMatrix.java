@@ -154,7 +154,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
      * @return a new {@code ByteMatrix} of dimensions {@code rowCount x columnCount} filled with random values
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
-     *         or if {@code (long) rowCount * columnCount} overflows {@code Integer.MAX_VALUE}
+     *         or if {@code rowCount} is {@code 0} while {@code columnCount} is positive (an unrepresentable shape)
      */
     public static ByteMatrix random(final int rowCount, final int columnCount) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -186,7 +186,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param element the byte value to fill the matrix with
      * @return a new {@code ByteMatrix} of dimensions {@code rowCount x columnCount} with every cell set to {@code element}
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
-     *         or if {@code (long) rowCount * columnCount} overflows {@code Integer.MAX_VALUE}
+     *         or if {@code rowCount} is {@code 0} while {@code columnCount} is positive (an unrepresentable shape)
      */
     public static ByteMatrix repeat(final int rowCount, final int columnCount, final byte element) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -1636,7 +1636,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * }</pre>
      *
      * @return a new matrix rotated 90 degrees clockwise with dimensions {@code (columnCount x rowCount)}
-     * @throws IllegalArgumentException if {@code (long) columnCount * rowCount} overflows {@code Integer.MAX_VALUE}
+     * @throws IllegalArgumentException if the transposed shape {@code (columnCount x rowCount)} is not representable
      * @see #rotate180()
      * @see #rotate270()
      */
@@ -1721,7 +1721,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * }</pre>
      *
      * @return a new matrix rotated 270 degrees clockwise with dimensions {@code (columnCount x rowCount)}
-     * @throws IllegalArgumentException if {@code (long) columnCount * rowCount} overflows {@code Integer.MAX_VALUE}
+     * @throws IllegalArgumentException if the transposed shape {@code (columnCount x rowCount)} is not representable
      * @see #rotate90()
      * @see #rotate180()
      */
@@ -1771,7 +1771,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * }</pre>
      *
      * @return a new matrix that is the transpose of this matrix with dimensions {@code columnCount × rowCount}
-     * @throws IllegalArgumentException if {@code (long) columnCount * rowCount} overflows {@code Integer.MAX_VALUE}
+     * @throws IllegalArgumentException if the transposed shape {@code (columnCount × rowCount)} is not representable
      */
     @Override
     public ByteMatrix transpose() {
@@ -1823,8 +1823,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param newColumnCount the number of columns in the reshaped matrix; must be {@code >= 0}
      * @return a new {@code ByteMatrix} with the specified shape containing this matrix's elements
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
-     *         if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE},
-     *         or if the new shape is too small to hold all elements of this matrix
+     *         if the requested shape is not representable (i.e. {@code newRowCount} is {@code 0} while
+     *         {@code newColumnCount} is positive), or if the new shape is too small to hold all elements
+     *         of this matrix
      * @see #resize(int, int)
      */
     @SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG")

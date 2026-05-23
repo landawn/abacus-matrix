@@ -6221,4 +6221,157 @@ class IntMatrixTest extends TestBase {
         }
     }
 
+    @Nested
+    class BugHuntRegression {
+
+        // --- from(byte[]) / from(short[]) widening must sign-extend ---
+
+        @Test
+        public void testFromByteSignExtends() {
+            IntMatrix m = IntMatrix.from(new byte[][] { { -1, -128, 127 } });
+            assertArrayEquals(new int[] { -1, -128, 127 }, m.rowCopy(0));
+        }
+
+        @Test
+        public void testFromShortSignExtends() {
+            IntMatrix m = IntMatrix.from(new short[][] { { -1, Short.MIN_VALUE, Short.MAX_VALUE } });
+            assertArrayEquals(new int[] { -1, Short.MIN_VALUE, Short.MAX_VALUE }, m.rowCopy(0));
+        }
+
+        // --- from(char[]) widening must be unsigned (0..65535) ---
+
+        @Test
+        public void testFromCharUnsignedWidening() {
+            IntMatrix m = IntMatrix.from(new char[][] { { 'A', '￿', ' ' } });
+            assertArrayEquals(new int[] { 65, 65535, 0 }, m.rowCopy(0));
+        }
+
+        // --- from(...) rectangular validation rejects ragged input ---
+
+        @Test
+        public void testFromByteRaggedRejected() {
+            assertThrows(IllegalArgumentException.class, () -> IntMatrix.from(new byte[][] { { 1, 2 }, { 3 } }));
+        }
+
+        @Test
+        public void testFromCharNullSecondRowRejected() {
+            assertThrows(IllegalArgumentException.class, () -> IntMatrix.from(new char[][] { { 'a', 'b' }, null }));
+        }
+
+        // --- empty diagonal streams on 0x0 square matrix ---
+
+        @Test
+        public void testMainDiagonalStreamEmptyMatrix() {
+            assertEquals(0, IntMatrix.empty().mainDiagonalStream().count());
+        }
+
+        @Test
+        public void testAntiDiagonalStreamEmptyMatrix() {
+            assertEquals(0, IntMatrix.empty().antiDiagonalStream().count());
+        }
+
+        // --- diagonal stream values (main and anti) ---
+
+        @Test
+        public void testMainDiagonalStreamValues() {
+            IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+            assertArrayEquals(new int[] { 1, 5, 9 }, m.mainDiagonalStream().toArray());
+        }
+
+        @Test
+        public void testAntiDiagonalStreamValues() {
+            IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+            assertArrayEquals(new int[] { 3, 5, 7 }, m.antiDiagonalStream().toArray());
+        }
+
+        // --- reshape to a column count of zero must not divide by zero ---
+
+        @Test
+        public void testReshapeToZeroColumnsFromEmpty() {
+            IntMatrix reshaped = IntMatrix.empty().reshape(0, 0);
+            assertEquals(0, reshaped.rowCount());
+            assertEquals(0, reshaped.columnCount());
+        }
+
+        // --- reshape padding with trailing zeros ---
+
+        @Test
+        public void testReshapeWithTrailingZeroFill() {
+            IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+            IntMatrix reshaped = m.reshape(2, 4);
+            assertArrayEquals(new int[] { 1, 2, 3, 4 }, reshaped.rowCopy(0));
+            assertArrayEquals(new int[] { 5, 6, 0, 0 }, reshaped.rowCopy(1));
+        }
+
+        // --- rotate90 / rotate270 / transpose index correctness (non-square) ---
+
+        @Test
+        public void testRotate90NonSquare() {
+            IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+            IntMatrix r = m.rotate90();
+            assertEquals(3, r.rowCount());
+            assertEquals(2, r.columnCount());
+            assertArrayEquals(new int[] { 4, 1 }, r.rowCopy(0));
+            assertArrayEquals(new int[] { 5, 2 }, r.rowCopy(1));
+            assertArrayEquals(new int[] { 6, 3 }, r.rowCopy(2));
+        }
+
+        @Test
+        public void testRotate270NonSquare() {
+            IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+            IntMatrix r = m.rotate270();
+            assertArrayEquals(new int[] { 3, 6 }, r.rowCopy(0));
+            assertArrayEquals(new int[] { 2, 5 }, r.rowCopy(1));
+            assertArrayEquals(new int[] { 1, 4 }, r.rowCopy(2));
+        }
+
+        @Test
+        public void testTransposeNonSquare() {
+            IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+            IntMatrix t = m.transpose();
+            assertArrayEquals(new int[] { 1, 4 }, t.rowCopy(0));
+            assertArrayEquals(new int[] { 2, 5 }, t.rowCopy(1));
+            assertArrayEquals(new int[] { 3, 6 }, t.rowCopy(2));
+        }
+
+        // --- matmul must reject incompatible shapes ---
+
+        @Test
+        public void testMatmulIncompatibleShapesRejected() {
+            IntMatrix a = IntMatrix.of(new int[][] { { 1, 2, 3 } }); // 1x3
+            IntMatrix b = IntMatrix.of(new int[][] { { 1, 2 } }); // 1x2
+            assertThrows(IllegalArgumentException.class, () -> a.matmul(b));
+        }
+
+        @Test
+        public void testMatmulProduct() {
+            IntMatrix a = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
+            IntMatrix b = IntMatrix.of(new int[][] { { 5, 6 }, { 7, 8 } });
+            IntMatrix p = a.matmul(b);
+            assertArrayEquals(new int[] { 19, 22 }, p.rowCopy(0));
+            assertArrayEquals(new int[] { 43, 50 }, p.rowCopy(1));
+        }
+
+        // --- extend fills padding (interior left/right) correctly ---
+
+        @Test
+        public void testExtendAsymmetricFill() {
+            IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 } });
+            IntMatrix e = m.extend(1, 1, 2, 1, 9);
+            assertEquals(3, e.rowCount());
+            assertEquals(5, e.columnCount());
+            assertArrayEquals(new int[] { 9, 9, 9, 9, 9 }, e.rowCopy(0));
+            assertArrayEquals(new int[] { 9, 9, 1, 2, 9 }, e.rowCopy(1));
+            assertArrayEquals(new int[] { 9, 9, 9, 9, 9 }, e.rowCopy(2));
+        }
+
+        // --- vertical stream column-major traversal ---
+
+        @Test
+        public void testVerticalStreamColumnMajor() {
+            IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+            assertArrayEquals(new int[] { 1, 4, 2, 5, 3, 6 }, m.verticalStream().toArray());
+        }
+    }
+
 }

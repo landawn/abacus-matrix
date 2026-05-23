@@ -595,7 +595,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param columnIndex the index of the column to retrieve (0-based)
      * @return a new array containing the values from the specified column
-     * @throws IllegalArgumentException if columnIndex is negative or greater than or equal to the number of columns
+     * @throws IllegalArgumentException if {@code columnIndex} is negative or greater than or equal to {@code columnCount}
      */
     @Override
     public T[] columnCopy(final int columnIndex) throws IllegalArgumentException {
@@ -1927,7 +1927,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Returns a new matrix that is this matrix rotated 90 degrees clockwise.
      * The resulting matrix has dimensions swapped (rows become columns), with the first
-     * column of the result being the last row of the original, reading upward.
+     * column of the result being the last row of the original, read from left to right.
      * The original matrix is not modified.
      *
      * <p><b>Usage Examples:</b></p>
@@ -2002,7 +2002,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Returns a new matrix that is this matrix rotated 270 degrees clockwise.
      * This is equivalent to rotating 90 degrees counter-clockwise.
      * The resulting matrix has dimensions swapped (rows become columns), with the first
-     * column of the result being the first row of the original, reading downward.
+     * column of the result being the first row of the original, read from right to left.
      * The original matrix is not modified.
      *
      * <p><b>Usage Examples:</b></p>
@@ -2170,7 +2170,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param rowRepeats number of times to repeat each element in the row direction (must be &gt;= 1)
      * @param columnRepeats number of times to repeat each element in the column direction (must be &gt;= 1)
-     * @return a new matrix with repeated elements, dimensions (rowCount x rowRepeats) x (columnCount x columnRepeats)
+     * @return a new matrix with repeated elements, with dimensions {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}
      * @throws IllegalArgumentException if rowRepeats &lt; 1 or columnRepeats &lt; 1, or if the resulting
      *         dimensions would overflow {@code Integer.MAX_VALUE}
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">MATLAB repelem function</a>
@@ -2223,7 +2223,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param rowRepeats number of times to repeat the matrix in the row direction (must be &gt;= 1)
      * @param columnRepeats number of times to repeat the matrix in the column direction (must be &gt;= 1)
-     * @return a new matrix with the original matrix repeated, dimensions (rowCount x rowRepeats) x (columnCount x columnRepeats)
+     * @return a new matrix with the original matrix repeated, with dimensions {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}
      * @throws IllegalArgumentException if rowRepeats &lt; 1 or columnRepeats &lt; 1, or if the resulting
      *         dimensions would overflow {@code Integer.MAX_VALUE}
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>

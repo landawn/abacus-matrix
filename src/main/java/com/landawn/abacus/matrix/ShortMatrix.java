@@ -46,9 +46,11 @@ import com.landawn.abacus.util.stream.Stream;
  *
  * <p><b>Short arithmetic:</b> all element-wise arithmetic ({@link #add}, {@link #subtract},
  * {@link #matmul}, and {@code zipWith}/{@code map} variants) is performed using Java's standard
- * numeric promotion to {@code int} and the result is narrowed back to {@code short} via an explicit
- * cast, so values outside {@code [Short.MIN_VALUE, Short.MAX_VALUE]} wrap modulo 65536. To preserve
- * the full magnitude, widen first via {@link #toIntMatrix()} or {@link #toLongMatrix()}.</p>
+ * numeric promotion to {@code int} and the result is narrowed back to {@code short} (via an explicit
+ * cast for {@code add}/{@code subtract}/{@code zipWith}/{@code map}, or via the implicit narrowing of
+ * a compound assignment in {@code matmul}), so values outside {@code [Short.MIN_VALUE, Short.MAX_VALUE]}
+ * wrap modulo 65536. To preserve the full magnitude, widen first via {@link #toIntMatrix()} or
+ * {@link #toLongMatrix()}.</p>
  *
  * @see IntMatrix
  * @see ByteMatrix
@@ -1661,7 +1663,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     }
 
     /**
-     * Returns a new matrix that is this matrix rotated 180 degrees clockwise.
+     * Returns a new matrix that is this matrix rotated 180 degrees.
      *
      * <p>The resulting matrix has the same dimensions as the original. The element at position (i, j)
      * in the original matrix appears at position (rows-1-i, columns-1-j) in the rotated matrix.
@@ -1801,7 +1803,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param newRowCount the number of rows in the reshaped matrix (must be non-negative)
      * @param newColumnCount the number of columns in the reshaped matrix (must be non-negative)
      * @return a new ShortMatrix with the specified shape containing this matrix's elements in row-major order
-     * @throws IllegalArgumentException if the new shape is too small to hold all elements
+     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         or if the new shape is too small to hold all elements
      */
     @SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG")
     @Override

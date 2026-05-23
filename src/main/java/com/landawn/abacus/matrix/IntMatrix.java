@@ -1902,7 +1902,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     }
 
     /**
-     * Returns a new matrix that is this matrix rotated 180 degrees clockwise.
+     * Returns a new matrix that is this matrix rotated 180 degrees.
      * This is equivalent to flipping both horizontally and vertically, reversing the
      * order of all elements. The resulting matrix has the same dimensions as the original.
      * The original matrix is not modified.
@@ -1915,7 +1915,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * // 7 8 9        3 2 1
      * }</pre>
      *
-     * @return a new matrix that is this matrix rotated 180 degrees clockwise
+     * @return a new matrix that is this matrix rotated 180 degrees
      */
     @Override
     public IntMatrix rotate180() {
@@ -2630,7 +2630,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * IntStream diagonal = matrix.mainDiagonalStream();   // Stream of [1, 5, 9]
      * }</pre>
      *
-     * @return an IntStream of diagonal elements
+     * @return an IntStream of main-diagonal elements, or an empty stream if the matrix is empty
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
@@ -2685,7 +2685,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * IntStream antiDiagonal = matrix.antiDiagonalStream();   // Stream of [3, 5, 7]
      * }</pre>
      *
-     * @return an IntStream of anti-diagonal elements
+     * @return an IntStream of anti-diagonal elements, or an empty stream if the matrix is empty
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override

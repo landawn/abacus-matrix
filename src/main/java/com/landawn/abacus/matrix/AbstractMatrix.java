@@ -554,7 +554,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     public abstract M rotate90();
 
     /**
-     * Returns a new matrix that is this matrix rotated 180 degrees clockwise.
+     * Returns a new matrix that is this matrix rotated 180 degrees.
      * This is equivalent to flipping both horizontally and vertically, reversing the
      * order of all elements. The resulting matrix has the same dimensions as the original.
      * The original matrix is not modified.
@@ -575,7 +575,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * IntMatrix rotated = original.rotate180();   // Dimensions remain 3x3
      * }</pre>
      *
-     * @return a new matrix that is this matrix rotated 180 degrees clockwise, with the same dimensions (rowCount x columnCount)
+     * @return a new matrix that is this matrix rotated 180 degrees, with the same dimensions (rowCount x columnCount)
      */
     public abstract M rotate180();
 
@@ -654,8 +654,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * @param newColumnCount the number of columns in the reshaped matrix (must be positive)
      * @return a new matrix with the specified number of columns
-     * @throws IllegalArgumentException if {@code newColumnCount <= 0}, or if the implied row count
-     *         {@code ceil(elementCount / newColumnCount)} exceeds {@code Integer.MAX_VALUE}
+     * @throws IllegalArgumentException if {@code newColumnCount <= 0}, if the implied row count
+     *         {@code ceil(elementCount / newColumnCount)} exceeds {@code Integer.MAX_VALUE}, or if the
+     *         resulting shape is not representable (which occurs when this matrix is empty, since the
+     *         implied row count is then {@code 0} while {@code newColumnCount} is positive)
      */
     public M reshape(final int newColumnCount) {
         N.checkArgument(newColumnCount > 0, "newColumnCount must be positive, but got: {}", newColumnCount);
@@ -1300,9 +1302,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * The matrix must be square (rowCount == columnCount), and the supplied array must contain
      * exactly {@code rowCount} elements.
      *
-     * @param mainDiagonal the new values for the main diagonal; must have length equal to {@code rowCount}
+     * @param mainDiagonal the new values for the main diagonal; must be non-{@code null} and have length equal to {@code rowCount}
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
-     * @throws IllegalArgumentException if the supplied array length does not equal {@code rowCount}
+     * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null} or its length does not equal {@code rowCount}
      */
     public abstract void setMainDiagonal(A mainDiagonal);
 
@@ -1322,9 +1324,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * The matrix must be square (rowCount == columnCount), and the supplied array must contain
      * exactly {@code rowCount} elements.
      *
-     * @param antiDiagonal the new values for the anti-diagonal; must have length equal to {@code rowCount}
+     * @param antiDiagonal the new values for the anti-diagonal; must be non-{@code null} and have length equal to {@code rowCount}
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
-     * @throws IllegalArgumentException if the supplied array length does not equal {@code rowCount}
+     * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null} or its length does not equal {@code rowCount}
      */
     public abstract void setAntiDiagonal(A antiDiagonal);
 

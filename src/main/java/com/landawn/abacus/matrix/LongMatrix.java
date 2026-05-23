@@ -114,7 +114,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
     /**
      * Creates a {@code LongMatrix} from a two-dimensional int array by widening each {@code int} to {@code long}.
-     * Each {@code int} value is widened to a {@code long} value without data loss.
+     * The widening conversion preserves the exact numeric value (no data loss).
      *
      * <p>All rows must have the same length as the first row (rectangular array required).
      * The method validates array structure and throws an exception if the array is jagged (rows of different lengths).
@@ -2282,7 +2282,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * The number of columns in this matrix must equal the number of rows in the specified matrix.
      * The result is a new matrix with dimensions (this.rowCount × other.columnCount).
      * This implements standard matrix multiplication where each element (i,j) of the result is the
-     * dot product of row i from this matrix and column j from matrix b.
+     * dot product of row i from this matrix and column j from the other matrix.
      * <p><b>Note:</b> This is the linear-algebra matrix product, not element-wise multiplication.
      * For element-wise multiplication use
      * {@link #zipWith(LongMatrix, com.landawn.abacus.util.Throwables.LongBinaryOperator)}.

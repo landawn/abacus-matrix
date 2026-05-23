@@ -1058,7 +1058,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param mapper the function to convert boolean values to type R
      * @param targetElementType the Class object for type R
      * @return a new Matrix containing the converted values
-     * @throws IllegalArgumentException if {@code mapper} is {@code null}
+     * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null}
      * @throws E if the function throws an exception
      */
     public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.BooleanFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E {
@@ -1305,7 +1305,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param newRowCount the row count of the returned matrix; must be {@code >= 0}
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
      * @return a new BooleanMatrix with the specified dimensions
-     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative
+     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
      * @see #resize(int, int, boolean)
      * @see #extend(int, int, int, int)
      */
@@ -1431,7 +1432,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param padLeft number of padding columns to add to the left of the original matrix; must be {@code >= 0}
      * @param padRight number of padding columns to add to the right of the original matrix; must be {@code >= 0}
      * @return a new BooleanMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
-     * @throws IllegalArgumentException if any parameter is negative
+     * @throws IllegalArgumentException if any parameter is negative,
+     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
      * @see #extend(int, int, int, int, boolean)
      * @see #resize(int, int)
      */
@@ -2097,16 +2099,21 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     /**
      * Counts the number of {@code true} elements in this matrix.
      *
+     * <p>The result is a {@code long} because a matrix can contain up to
+     * {@code rowCount * columnCount} elements, a product that may exceed
+     * {@link Integer#MAX_VALUE}. An {@code int} accumulator would silently
+     * overflow for sufficiently large matrices.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] {{true, false, true}, {false, true, false}});
-     * int count = matrix.countTrue();   // Returns 3
+     * long count = matrix.countTrue();   // Returns 3
      * }</pre>
      *
-     * @return the number of {@code true} elements in this matrix
+     * @return the number of {@code true} elements in this matrix, as a non-negative {@code long}
      */
-    public int countTrue() {
-        int count = 0;
+    public long countTrue() {
+        long count = 0;
 
         for (int i = 0; i < rowCount; i++) {
             final boolean[] row = a[i];

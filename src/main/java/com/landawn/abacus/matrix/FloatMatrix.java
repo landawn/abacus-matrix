@@ -701,7 +701,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * This modifies the matrix directly.
      *
      * <p>The operator is applied to each element in the specified column sequentially
-     * from top to bottom (row 0 to row rows-1).</p>
+     * from top to bottom (row 0 to row rowCount-1).</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
