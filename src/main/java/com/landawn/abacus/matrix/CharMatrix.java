@@ -76,13 +76,16 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * }</pre>
      *
      * @param a the two-dimensional char array to wrap, or {@code null} for an empty matrix
+     * @throws IllegalArgumentException if {@code a} is non-{@code null} but not rectangular
+     *         (rows have differing lengths)
      */
     public CharMatrix(final char[][] a) {
         super(a == null ? new char[0][0] : a, char.class);
     }
 
     /**
-     * Creates an empty matrix with zero rows and zero columns.
+     * Returns an empty {@code CharMatrix} with zero rows and zero columns.
+     * The same shared instance is returned on every call.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -91,17 +94,17 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * // matrix.columnCount() returns 0
      * }</pre>
      *
-     * @return an empty char matrix
+     * @return the shared empty {@code CharMatrix}
      */
     public static CharMatrix empty() {
         return EMPTY_CHAR_MATRIX;
     }
 
     /**
-     * Creates a CharMatrix from a two-dimensional char array.
+     * Creates a {@code CharMatrix} from a two-dimensional char array.
      *
      * <p><b>Important:</b> The provided array is used directly without defensive copying.
-     * Changes to the input array are reflected in the returned matrix, and vice versa.
+     * Changes to the input array are reflected in the returned matrix, and vice versa.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -109,8 +112,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * // matrix.get(1, 0) returns 'c'
      * }</pre>
      *
-     * @param a the two-dimensional char array to create the matrix from, or null/empty for an empty matrix
-     * @return a new CharMatrix containing the provided data, or an empty CharMatrix if input is null or empty
+     * @param a the two-dimensional char array to wrap; may be {@code null} or empty, in which case
+     *        the shared empty {@code CharMatrix} instance is returned
+     * @return a new {@code CharMatrix} backed by the provided data, or the shared empty {@code CharMatrix}
+     *         if the input is {@code null} or empty
      */
     public static CharMatrix of(final char[]... a) {
         return N.isEmpty(a) ? EMPTY_CHAR_MATRIX : new CharMatrix(a);
@@ -128,7 +133,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * }</pre>
      *
      * @param length the number of columns in the new matrix; must be {@code >= 0}
-     * @return a new CharMatrix of dimensions 1 x length filled with random values
+     * @return a new {@code CharMatrix} of dimensions {@code 1 x length} filled with random values
      * @throws IllegalArgumentException if {@code length} is negative
      */
     public static CharMatrix random(final int length) {
@@ -148,8 +153,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
      * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
-     * @return a new CharMatrix of dimensions rowCount x columnCount filled with random values
-     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative
+     * @return a new {@code CharMatrix} of dimensions {@code rowCount x columnCount} filled with random values
+     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative, or
+     *         if the resulting shape cannot be represented (for example {@code rowCount == 0} with
+     *         {@code columnCount > 0})
      */
     public static CharMatrix random(final int rowCount, final int columnCount) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -179,8 +186,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
      * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
      * @param element the char value to fill the matrix with
-     * @return a new CharMatrix of dimensions rowCount x columnCount filled with the specified element
-     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative
+     * @return a new {@code CharMatrix} of dimensions {@code rowCount x columnCount} filled with the specified element
+     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative, or
+     *         if the resulting shape cannot be represented (for example {@code rowCount == 0} with
+     *         {@code columnCount > 0})
      */
     public static CharMatrix repeat(final int rowCount, final int columnCount, final char element) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -197,8 +206,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     }
 
     /**
-     * Creates a single-row CharMatrix containing a range of char values.
-     * The range is [startInclusive, endExclusive).
+     * Creates a single-row {@code CharMatrix} containing a half-open range of char values.
+     * The range is {@code [startInclusive, endExclusive)} with an implicit step of {@code +1}.
+     * If {@code endExclusive <= startInclusive}, the result is an empty matrix.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -207,7 +217,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * @param startInclusive the starting char value (inclusive)
      * @param endExclusive the ending char value (exclusive)
-     * @return a CharMatrix with one row containing the range of values
+     * @return a single-row {@code CharMatrix} containing the range of values
      */
     public static CharMatrix range(final char startInclusive, final char endExclusive) {
         return new CharMatrix(new char[][] { Array.range(startInclusive, endExclusive) });
@@ -236,8 +246,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     }
 
     /**
-     * Creates a single-row CharMatrix containing a closed range of char values.
-     * The range is [startInclusive, endInclusive].
+     * Creates a single-row {@code CharMatrix} containing a closed range of char values.
+     * The range is {@code [startInclusive, endInclusive]} with an implicit step of {@code +1}.
+     * If {@code endInclusive < startInclusive}, the result is an empty matrix.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -246,7 +257,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * @param startInclusive the starting char value (inclusive)
      * @param endInclusive the ending char value (inclusive)
-     * @return a CharMatrix with one row containing the range of values
+     * @return a single-row {@code CharMatrix} containing the range of values
      */
     public static CharMatrix rangeClosed(final char startInclusive, final char endInclusive) {
         return new CharMatrix(new char[][] { Array.rangeClosed(startInclusive, endInclusive) });
@@ -289,8 +300,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * //   {'\u0000', '\u0000', 'c'}
      * }</pre>
      *
-     * @param mainDiagonal the array of main diagonal elements
-     * @return a square matrix with the specified main diagonal (n×n where n = diagonal length)
+     * @param mainDiagonal the array of main diagonal elements; may be {@code null} or empty,
+     *        in which case the empty matrix is returned
+     * @return a square matrix with the specified main diagonal (n×n where n = diagonal length),
+     *         or an empty matrix if {@code mainDiagonal} is {@code null} or empty
      */
     public static CharMatrix mainDiagonal(final char[] mainDiagonal) {
         return diagonals(mainDiagonal, null);
@@ -311,8 +324,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * //   {'c', '\u0000', '\u0000'}
      * }</pre>
      *
-     * @param antiDiagonal the array of anti-diagonal elements
-     * @return a square matrix with the specified anti-diagonal (n×n where n = diagonal length)
+     * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} or empty,
+     *        in which case the empty matrix is returned
+     * @return a square matrix with the specified anti-diagonal (n×n where n = diagonal length),
+     *         or an empty matrix if {@code antiDiagonal} is {@code null} or empty
      */
     public static CharMatrix antiDiagonal(final char[] antiDiagonal) {
         return diagonals(null, antiDiagonal);
@@ -655,9 +670,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * }</pre>
      *
      * @param rowIndex the index of the row to set (0-based)
-     * @param row the array of values to copy into the row; must have length equal to the number of columns
+     * @param row the array of values to copy into the row; must not be {@code null} and must have
+     *        length equal to {@link #columnCount()}
      * @throws NullPointerException if {@code row} is {@code null}
-     * @throws IllegalArgumentException if rowIndex is out of bounds or row length does not match column count
+     * @throws IllegalArgumentException if {@code rowIndex} is out of bounds or {@code row.length}
+     *         does not match the column count
      */
     public void setRow(final int rowIndex, final char[] row) throws IllegalArgumentException {
         N.checkArgument(rowIndex >= 0 && rowIndex < rowCount, MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount);
@@ -681,9 +698,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * }</pre>
      *
      * @param columnIndex the index of the column to set (0-based)
-     * @param column the array of values to copy into the column; must have length equal to the number of rows
+     * @param column the array of values to copy into the column; must not be {@code null} and must
+     *        have length equal to {@link #rowCount()}
      * @throws NullPointerException if {@code column} is {@code null}
-     * @throws IllegalArgumentException if columnIndex is out of bounds or column length does not match row count
+     * @throws IllegalArgumentException if {@code columnIndex} is out of bounds or {@code column.length}
+     *         does not match the row count
      */
     public void setColumn(final int columnIndex, final char[] column) throws IllegalArgumentException {
         N.checkArgument(columnIndex >= 0 && columnIndex < columnCount, MSG_COLUMN_INDEX_OUT_OF_BOUNDS, columnIndex, columnCount);
@@ -1148,7 +1167,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * // Top-left 2x2 region is filled: [['a', 'b', 0], ['c', 'd', 0], [0, 0, 0]]
      * }</pre>
      *
-     * @param source the source array to copy values from (may be smaller or larger than the matrix)
+     * @param source the source array to copy values from (may be smaller or larger than the matrix);
+     *        must not be {@code null}
+     * @throws IllegalArgumentException if {@code source} is {@code null}
      */
     public void fill(final char[][] source) {
         fill(0, 0, source);
@@ -1853,9 +1874,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * //          ['a', 'a', 'a', 'b', 'b', 'b']]
      * }</pre>
      *
-     * @param rowRepeats the number of times to repeat each element in the row direction; must be {@code > 0}
-     * @param columnRepeats the number of times to repeat each element in the column direction; must be {@code > 0}
-     * @return a new CharMatrix with repeated elements
+     * @param rowRepeats the number of times to repeat each element vertically (down the row axis);
+     *        must be {@code > 0}
+     * @param columnRepeats the number of times to repeat each element horizontally (across the column axis);
+     *        must be {@code > 0}
+     * @return a new {@code CharMatrix} with repeated elements and dimensions
+     *         {@code (rowCount * rowRepeats) x (columnCount * columnRepeats)}
      * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is not positive,
      *         or the resulting dimensions would exceed {@link Integer#MAX_VALUE}
      * @see IntMatrix#repeatElements(int, int)
@@ -3035,7 +3059,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param toColumnIndex the ending column index (exclusive)
      * @param action the action to be performed on each element in the sub-region
      * @throws IllegalArgumentException if {@code action} is {@code null}
-     * @throws IndexOutOfBoundsException if any index is out of bounds or fromIndex &gt; toIndex
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex}/{@code toRowIndex} or
+     *         {@code fromColumnIndex}/{@code toColumnIndex} are out of range, or if either
+     *         {@code fromRowIndex > toRowIndex} or {@code fromColumnIndex > toColumnIndex}
      * @throws E if the action throws an exception
      */
     public <E extends Exception> void forEach(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
@@ -3128,7 +3154,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
     /**
      * Compares this matrix to the specified object for equality.
-     * Returns {@code true} if the given object is also a CharMatrix with the same dimensions
+     * Returns {@code true} if the given object is also a {@code CharMatrix} with the same dimensions
      * and all corresponding elements are equal.
      *
      * <p><b>Usage Examples:</b></p>
@@ -3139,7 +3165,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * }</pre>
      *
      * @param obj the object to compare with
-     * @return {@code true} if the objects are equal, {@code false} otherwise
+     * @return {@code true} if {@code obj} is a {@code CharMatrix} with the same shape and equal
+     *         element values; {@code false} otherwise
      */
     @Override
     public boolean equals(final Object obj) {

@@ -146,6 +146,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     /**
      * The underlying two-dimensional array storing the matrix data.
      * Direct access to this array should be avoided; use the provided methods instead.
+     * Exposed via {@link #internalArray()}.
      */
     final A[] a;
 
@@ -157,8 +158,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     final Class<?> elementType;
 
     /**
-     * Constructs a new AbstractMatrix with the specified two-dimensional array.
-     * The constructor validates that all rows are non-null and have the same length.
+     * Constructs a new {@code AbstractMatrix} with the specified two-dimensional array and element type.
+     * The constructor validates that all rows are non-{@code null} and have the same length.
+     * The supplied array is retained by reference and not defensively copied.
      *
      * @param a the two-dimensional array containing matrix data; must not be {@code null}
      * @param elementType the element type of the matrix (e.g. {@code int.class});
@@ -225,12 +227,15 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
     /**
      * Formats matrix error message templates that use {@code "{}"} placeholders.
+     * Each {@code "{}"} occurrence is replaced by the next argument's {@code String} representation,
+     * processing arguments in order until either runs out.
      *
      * @param template the message template containing {@code "{}"} placeholders
      * @param args the arguments to substitute into the placeholders
      * @return the formatted message string; the {@code template} is returned unchanged if it is
      *         {@code null}, or if {@code args} is {@code null} or empty. Surplus placeholders that
-     *         have no corresponding argument are left in the result as-is.
+     *         have no corresponding argument are left in the result as-is, and surplus arguments
+     *         beyond the placeholder count are ignored.
      */
     protected static String formatMsg(final String template, final Object... args) {
         if (template == null || args == null || args.length == 0) {
@@ -269,7 +274,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Class<?> strType = stringMatrix.elementType();   // Returns String.class
      * }</pre>
      *
-     * @return the Class object representing the element type of this matrix
+     * @return the {@link Class} object representing the element type of this matrix
      */
     public Class<?> elementType() {
         return elementType;
@@ -318,7 +323,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return the specified row array (direct reference to internal storage)
-     * @throws IllegalArgumentException if {@code rowIndex} is negative or {@code >= rowCount}
+     * @throws IllegalArgumentException if {@code rowIndex} is negative or {@code >= rowCount()}
      */
     public abstract A rowView(int rowIndex) throws IllegalArgumentException;
 
@@ -335,7 +340,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return a new array containing the values from the specified row
-     * @throws IllegalArgumentException if {@code rowIndex} is negative or {@code >= rowCount}
+     * @throws IllegalArgumentException if {@code rowIndex} is negative or {@code >= rowCount()}
      */
     public abstract A rowCopy(int rowIndex) throws IllegalArgumentException;
 
@@ -360,7 +365,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * @param columnIndex the index of the column to retrieve (0-based)
      * @return a new array containing the values from the specified column
-     * @throws IllegalArgumentException if {@code columnIndex} is negative or {@code >= columnCount}
+     * @throws IllegalArgumentException if {@code columnIndex} is negative or {@code >= columnCount()}
      */
     public abstract A columnCopy(int columnIndex) throws IllegalArgumentException;
 
@@ -497,8 +502,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
      * @param toRowIndex the ending row index (exclusive)
-     * @return a new matrix containing the specified rows with dimensions (toRowIndex - fromRowIndex) × columnCount
-     * @throws IndexOutOfBoundsException if fromRowIndex &lt; 0, toRowIndex &gt; rowCount, or fromRowIndex &gt; toRowIndex
+     * @return a new matrix containing the specified rows with dimensions
+     *         {@code (toRowIndex - fromRowIndex) × columnCount}
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount},
+     *         or {@code fromRowIndex > toRowIndex}
      */
     public abstract M copy(int fromRowIndex, int toRowIndex);
 
@@ -524,19 +531,20 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @return a new matrix containing the specified region with dimensions
-     *         (toRowIndex - fromRowIndex) × (toColumnIndex - fromColumnIndex)
-     * @throws IndexOutOfBoundsException if any index is out of bounds, fromRowIndex &gt; toRowIndex, or fromColumnIndex &gt; toColumnIndex
+     *         {@code (toRowIndex - fromRowIndex) × (toColumnIndex - fromColumnIndex)}
+     * @throws IndexOutOfBoundsException if any index is out of bounds, {@code fromRowIndex > toRowIndex},
+     *         or {@code fromColumnIndex > toColumnIndex}
      */
     public abstract M copy(int fromRowIndex, int toRowIndex, int fromColumnIndex, int toColumnIndex);
 
     /**
      * Returns a new matrix that is this matrix rotated 90 degrees clockwise.
      * The resulting matrix has dimensions swapped (rows become columns), with the first
-     * column of the result being the last row of the original matrix reading upward.
+     * row of the result being the first column of the original matrix read from bottom to top.
      * The original matrix is not modified.
      *
-     * <p>Rotation formula: element at position (i, j) in the original matrix
-     * moves to position (j, rowCount - 1 - i) in the rotated matrix.</p>
+     * <p>Rotation formula: element at position {@code (i, j)} in the original matrix
+     * moves to position {@code (j, rowCount - 1 - i)} in the rotated matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -549,7 +557,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * IntMatrix rotated = original.rotate90();   // 3x3 remains 3x3
      * }</pre>
      *
-     * @return a new matrix that is this matrix rotated 90 degrees clockwise, with dimensions columnCount x rowCount
+     * @return a new matrix that is this matrix rotated 90 degrees clockwise, with dimensions {@code columnCount × rowCount}
      */
     public abstract M rotate90();
 
@@ -559,8 +567,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * order of all elements. The resulting matrix has the same dimensions as the original.
      * The original matrix is not modified.
      *
-     * <p>Rotation formula: element at position (i, j) in the original matrix
-     * moves to position (rowCount - 1 - i, columnCount - 1 - j) in the rotated matrix.</p>
+     * <p>Rotation formula: element at position {@code (i, j)} in the original matrix
+     * moves to position {@code (rowCount - 1 - i, columnCount - 1 - j)} in the rotated matrix.</p>
      *
      * <p>This operation is equivalent to calling {@code rotate90().rotate90()}.</p>
      *
@@ -575,7 +583,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * IntMatrix rotated = original.rotate180();   // Dimensions remain 3x3
      * }</pre>
      *
-     * @return a new matrix that is this matrix rotated 180 degrees, with the same dimensions (rowCount x columnCount)
+     * @return a new matrix that is this matrix rotated 180 degrees, with the same dimensions ({@code rowCount × columnCount})
      */
     public abstract M rotate180();
 
@@ -585,8 +593,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * column of the result being the first row of the original matrix in reverse order.
      * The original matrix is not modified.
      *
-     * <p>Rotation formula: element at position (i, j) in the original matrix
-     * moves to position (columnCount - 1 - j, i) in the rotated matrix.</p>
+     * <p>Rotation formula: element at position {@code (i, j)} in the original matrix
+     * moves to position {@code (columnCount - 1 - j, i)} in the rotated matrix.</p>
      *
      * <p>This operation is equivalent to calling {@code rotate90().rotate90().rotate90()}.</p>
      *
@@ -601,7 +609,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * IntMatrix rotated = original.rotate270();   // 3x3 becomes 3x3
      * }</pre>
      *
-     * @return a new matrix that is this matrix rotated 270 degrees clockwise, with dimensions columnCount x rowCount
+     * @return a new matrix that is this matrix rotated 270 degrees clockwise, with dimensions {@code columnCount × rowCount}
      */
     public abstract M rotate270();
 
@@ -612,8 +620,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * matrix has dimensions swapped (rowCount x columnCount becomes columnCount x rowCount).
      * The original matrix is not modified.
      *
-     * <p>Transpose formula: element at position (i, j) in the original matrix
-     * moves to position (j, i) in the transposed matrix.</p>
+     * <p>Transpose formula: element at position {@code (i, j)} in the original matrix
+     * moves to position {@code (j, i)} in the transposed matrix.</p>
      *
      * <p>The transpose is a fundamental matrix operation used in linear algebra,
      * statistics, and many matrix algorithms.</p>
@@ -629,7 +637,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * IntMatrix transposed = original.transpose();   // 2x3 becomes 3x2
      * }</pre>
      *
-     * @return a new matrix that is the transpose of this matrix, with dimensions columnCount x rowCount
+     * @return a new matrix that is the transpose of this matrix, with dimensions {@code columnCount × rowCount}
      */
     public abstract M transpose();
 
@@ -729,11 +737,11 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
     /**
      * Returns a new matrix with each element repeated the specified number of times in both dimensions.
-     * Each element is expanded into a block of size rowRepeats x columnRepeats.
-     * The resulting matrix has dimensions (rowCount x rowRepeats) x (columnCount x columnRepeats).
+     * Each element is expanded into a block of size {@code rowRepeats × columnRepeats}.
+     * The resulting matrix has dimensions {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}.
      * The original matrix is not modified.
      *
-     * <p>This operation is similar to MATLAB's repelem function. Each element becomes a block,
+     * <p>This operation is similar to MATLAB's {@code repelem} function. Each element becomes a block,
      * effectively creating a "zoomed in" version of the matrix where each original element
      * occupies multiple positions.</p>
      *
@@ -751,7 +759,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * @param rowRepeats number of times to repeat each element in the row direction (must be &gt;= 1)
      * @param columnRepeats number of times to repeat each element in the column direction (must be &gt;= 1)
-     * @return a new matrix with repeated elements, with dimensions (rowCount x rowRepeats) x (columnCount x columnRepeats)
+     * @return a new matrix with repeated elements, with dimensions
+     *         {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}
      * @throws IllegalArgumentException if {@code rowRepeats < 1} or {@code columnRepeats < 1},
      *         or if either resulting dimension would overflow {@code Integer.MAX_VALUE}
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">MATLAB repelem function</a>
@@ -760,11 +769,11 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
     /**
      * Returns a new matrix formed by tiling this matrix the specified number of times in both dimensions.
-     * The matrix is tiled rowRepeats times vertically and columnRepeats times horizontally.
-     * The resulting matrix has dimensions (rowCount x rowRepeats) x (columnCount x columnRepeats).
+     * The matrix is tiled {@code rowRepeats} times vertically and {@code columnRepeats} times horizontally.
+     * The resulting matrix has dimensions {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}.
      * The original matrix is not modified.
      *
-     * <p>This operation is similar to MATLAB's repmat function. The entire matrix pattern
+     * <p>This operation is similar to MATLAB's {@code repmat} function. The entire matrix pattern
      * is replicated, creating a tiled arrangement.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -781,7 +790,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * @param rowRepeats number of times to repeat the matrix in the row direction (must be &gt;= 1)
      * @param columnRepeats number of times to repeat the matrix in the column direction (must be &gt;= 1)
-     * @return a new matrix with this matrix tiled, with dimensions (rowCount x rowRepeats) x (columnCount x columnRepeats)
+     * @return a new matrix with this matrix tiled, with dimensions
+     *         {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}
      * @throws IllegalArgumentException if {@code rowRepeats < 1} or {@code columnRepeats < 1},
      *         or if either resulting dimension would overflow {@code Integer.MAX_VALUE}
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
@@ -794,7 +804,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * {@code null} for object matrices). The original matrix is not modified.
      *
      * <p>The resulting matrix has dimensions
-     * {@code (padTop + rowCount + padBottom) x (padLeft + columnCount + padRight)}.</p>
+     * {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

@@ -173,7 +173,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param element the value to fill the matrix with (must not be {@code null})
      * @return a new Matrix of dimensions {@code rowCount × columnCount} filled with the specified element
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
-     *         or if {@code element} is {@code null}
+     *         if {@code element} is {@code null}, or if the resulting shape is unrepresentable
+     *         (i.e. {@code rowCount == 0} but {@code columnCount > 0})
      */
     public static <T> Matrix<T> repeat(final int rowCount, final int columnCount, final T element) throws IllegalArgumentException {
         N.checkArgNotNull(element, "element");
@@ -287,10 +288,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @param <T> the type of elements in the matrix
-     * @param mainDiagonal the main diagonal values.
-     * @param antiDiagonal the anti-diagonal values.
+     * @param mainDiagonal the values for the main diagonal (upper-left to lower-right); may be {@code null} if
+     *                     {@code antiDiagonal} is non-{@code null}
+     * @param antiDiagonal the values for the anti-diagonal (upper-right to lower-left); may be {@code null} if
+     *                     {@code mainDiagonal} is non-{@code null}
      * @return a square matrix with the given diagonal values
-     * @throws IllegalArgumentException if both arrays are null, or if both diagonals are non-empty and have different lengths
+     * @throws IllegalArgumentException if both arrays are {@code null}, or if both diagonals are non-empty
+     *         and have different lengths
      */
     @SuppressWarnings("null")
     public static <T> Matrix<T> diagonals(final T[] mainDiagonal, final T[] antiDiagonal) throws IllegalArgumentException {
@@ -1031,7 +1035,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param <E> the type of exception that might be thrown by the predicate
      * @param predicate the condition to test each element (must not be null)
-     * @param newValue the value to use as replacement (can be null)
+     * @param newValue the value to use as replacement (may be {@code null})
      * @throws E if the predicate throws an exception
      * @throws IllegalArgumentException if {@code predicate} is {@code null}
      */
@@ -1067,7 +1071,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param <E> the type of exception that might be thrown by the predicate
      * @param predicate the condition based on position (must not be null)
-     * @param newValue the value to use as replacement (can be null)
+     * @param newValue the value to use as replacement (may be {@code null})
      * @throws E if the predicate throws an exception
      * @throws IllegalArgumentException if {@code predicate} is {@code null}
      */
@@ -1400,7 +1404,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * matrix.fill("default");      // Reset to default
      * }</pre>
      *
-     * @param value the value to fill the matrix with (can be null)
+     * @param value the value to fill the matrix with (may be {@code null})
      */
     public void fill(final T value) {
         for (int i = 0; i < rowCount; i++) {
@@ -1504,7 +1508,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param fromRowIndex the starting row index (inclusive, 0-based)
      * @param toRowIndex the ending row index (exclusive)
      * @return a new Matrix containing the specified rows
-     * @throws IndexOutOfBoundsException if indices are out of bounds
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex} or {@code toRowIndex} is out of range
+     *         ({@code fromRowIndex < 0 || toRowIndex > rowCount || fromRowIndex > toRowIndex})
      */
     @Override
     public Matrix<T> copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
@@ -1534,7 +1539,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @return a new Matrix containing the specified submatrix
-     * @throws IndexOutOfBoundsException if indices are out of bounds
+     * @throws IndexOutOfBoundsException if any of the row or column indices are out of range
      */
     @Override
     public Matrix<T> copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
@@ -2168,10 +2173,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * // Result: {{1,1,1,2,2,2}, {1,1,1,2,2,2}, {3,3,3,4,4,4}, {3,3,3,4,4,4}}
      * }</pre>
      *
-     * @param rowRepeats number of times to repeat each element in the row direction (must be &gt;= 1)
-     * @param columnRepeats number of times to repeat each element in the column direction (must be &gt;= 1)
+     * @param rowRepeats number of times to repeat each element in the row direction (must be {@code >= 1})
+     * @param columnRepeats number of times to repeat each element in the column direction (must be {@code >= 1})
      * @return a new matrix with repeated elements, with dimensions {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}
-     * @throws IllegalArgumentException if rowRepeats &lt; 1 or columnRepeats &lt; 1, or if the resulting
+     * @throws IllegalArgumentException if {@code rowRepeats < 1} or {@code columnRepeats < 1}, or if the resulting
      *         dimensions would overflow {@code Integer.MAX_VALUE}
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">MATLAB repelem function</a>
      */
@@ -2221,10 +2226,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * // Result: {{1,2,1,2,1,2}, {3,4,3,4,3,4}, {1,2,1,2,1,2}, {3,4,3,4,3,4}}
      * }</pre>
      *
-     * @param rowRepeats number of times to repeat the matrix in the row direction (must be &gt;= 1)
-     * @param columnRepeats number of times to repeat the matrix in the column direction (must be &gt;= 1)
+     * @param rowRepeats number of times to repeat the matrix in the row direction (must be {@code >= 1})
+     * @param columnRepeats number of times to repeat the matrix in the column direction (must be {@code >= 1})
      * @return a new matrix with the original matrix repeated, with dimensions {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}
-     * @throws IllegalArgumentException if rowRepeats &lt; 1 or columnRepeats &lt; 1, or if the resulting
+     * @throws IllegalArgumentException if {@code rowRepeats < 1} or {@code columnRepeats < 1}, or if the resulting
      *         dimensions would overflow {@code Integer.MAX_VALUE}
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
@@ -2701,9 +2706,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Object[] firstRow = matrix.horizontalStream(0).toArray();        // Returns [1, 2, 3]
      * }</pre>
      *
-     * @param rowIndex the index of the row to stream
+     * @param rowIndex the index of the row to stream (0-based)
      * @return a {@link Stream} of elements from the specified row
-     * @throws IndexOutOfBoundsException if rowIndex is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex} is negative or greater than or equal to {@code rowCount}
      */
     @Override
     public Stream<T> horizontalStream(final int rowIndex) {
@@ -2721,10 +2726,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Object[] subArray = matrix.horizontalStream(0, 2).toArray();    // Returns [1, 2, 3, 4]
      * }</pre>
      *
-     * @param fromRowIndex the starting row index (inclusive)
+     * @param fromRowIndex the starting row index (inclusive, 0-based)
      * @param toRowIndex the ending row index (exclusive)
      * @return a {@link Stream} of elements from the specified row range, or an empty stream if the matrix is empty
-     * @throws IndexOutOfBoundsException if indices are out of bounds
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex} or {@code toRowIndex} is out of range
      */
     @Override
     public Stream<T> horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
@@ -2836,9 +2841,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Object[] secondCol = matrix.verticalStream(1).toArray();        // Returns [2, 5, 8]
      * }</pre>
      *
-     * @param columnIndex the index of the column to stream
+     * @param columnIndex the index of the column to stream (0-based)
      * @return a {@link Stream} of elements from the specified column
-     * @throws IndexOutOfBoundsException if columnIndex is out of bounds
+     * @throws IndexOutOfBoundsException if {@code columnIndex} is negative or greater than or equal to {@code columnCount}
      */
     @Override
     public Stream<T> verticalStream(final int columnIndex) {
@@ -2856,10 +2861,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Object[] colMajor = matrix.verticalStream(0, 2).toArray();     // Returns [1, 4, 2, 5]
      * }</pre>
      *
-     * @param fromColumnIndex the starting column index (inclusive)
+     * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @return a {@link Stream} of elements from the specified column range, or an empty stream if the matrix is empty
-     * @throws IndexOutOfBoundsException if indices are out of bounds
+     * @throws IndexOutOfBoundsException if {@code fromColumnIndex} or {@code toColumnIndex} is out of range
      */
     @Beta
     @Override
@@ -2973,10 +2978,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * // Outer stream contains 2 inner streams for rows 1 and 2
      * }</pre>
      *
-     * @param fromRowIndex the starting row index (inclusive)
+     * @param fromRowIndex the starting row index (inclusive, 0-based)
      * @param toRowIndex the ending row index (exclusive)
      * @return a {@link Stream} of row streams for the specified range, with one inner stream per row
-     * @throws IndexOutOfBoundsException if indices are out of bounds
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex} or {@code toRowIndex} is out of range
      */
     @Override
     public Stream<Stream<T>> rowStreams(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
@@ -3048,10 +3053,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * // Outer stream contains 2 inner streams for columns 1 and 2
      * }</pre>
      *
-     * @param fromColumnIndex the starting column index (inclusive)
+     * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @return a {@link Stream} of column streams for the specified range, or an empty stream if the matrix is empty
-     * @throws IndexOutOfBoundsException if indices are out of bounds
+     * @throws IndexOutOfBoundsException if {@code fromColumnIndex} or {@code toColumnIndex} is out of range
      */
     @Override
     @Beta
@@ -3132,10 +3137,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Returns the length of the given array.
      *
      * <p>This is an internal helper method used by the abstract base class for iteration
-     * and size calculations. It handles null arrays by returning 0.</p>
+     * and size calculations. It handles {@code null} arrays by returning {@code 0}.</p>
      *
-     * @param a the array to check (can be null)
-     * @return the length of the array, or 0 if the array is null
+     * @param a the array to check (may be {@code null})
+     * @return the length of the array, or {@code 0} if the array is {@code null}
      */
     @Override
     protected int length(@SuppressWarnings("hiding") final T[] a) {
@@ -3201,7 +3206,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @param action the action to be performed for each element; receives each element value
-     * @throws IndexOutOfBoundsException if indices are out of bounds
+     * @throws IndexOutOfBoundsException if any of the row or column indices are out of range
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the action throws an exception
      */

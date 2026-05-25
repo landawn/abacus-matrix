@@ -133,9 +133,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @param length the number of columns in the new matrix; must be {@code >= 0}
-     * @return a new ShortMatrix of dimensions 1 x length filled with random values
-     * @throws IllegalArgumentException if {@code length} is negative,
-     *         or if the resulting shape cannot be represented
+     * @return a new {@code 1 x length} {@code ShortMatrix} filled with random values
+     * @throws IllegalArgumentException if {@code length} is negative
      */
     public static ShortMatrix random(final int length) {
         return random(1, length);
@@ -152,9 +151,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
      * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
-     * @return a new ShortMatrix of dimensions rowCount x columnCount filled with random values
+     * @return a new {@code rowCount x columnCount} {@code ShortMatrix} filled with random values
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
-     *         or if the resulting shape cannot be represented
+     *         or if the resulting shape cannot be represented (e.g. zero rows with non-zero columns)
      */
     public static ShortMatrix random(final int rowCount, final int columnCount) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -184,9 +183,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
      * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
      * @param element the short value to fill the matrix with
-     * @return a new ShortMatrix of dimensions rowCount x columnCount filled with the specified element
+     * @return a new {@code rowCount x columnCount} {@code ShortMatrix} filled with the specified element
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
-     *         or if the resulting shape cannot be represented
+     *         or if the resulting shape cannot be represented (e.g. zero rows with non-zero columns)
      */
     public static ShortMatrix repeat(final int rowCount, final int columnCount, final short element) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -1080,9 +1079,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param <R> the type of elements in the resulting matrix
      * @param <E> the type of exception that the function may throw
-     * @param mapper the function to transform each short to an object of type R
-     * @param targetElementType the class of the target element type (used for array creation)
-     * @return a new Matrix&lt;R&gt; with the transformed object values; the original matrix is unchanged
+     * @param mapper the function to transform each short to an object of type {@code R}
+     * @param targetElementType the class of the target element type, used to allocate the backing array
+     * @return a new {@code Matrix<R>} with the transformed object values; the original matrix is unchanged
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
      */
@@ -1860,8 +1859,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param rowRepeats the number of times to repeat each element in the row direction (must be positive)
      * @param columnRepeats the number of times to repeat each element in the column direction (must be positive)
-     * @return a new ShortMatrix with dimensions (rowCount * rowRepeats) × (columnCount * columnRepeats)
-     * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is less than or equal to 0
+     * @return a new ShortMatrix with dimensions {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}
+     * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is less than or equal to 0,
+     *         or if either result dimension would overflow {@code Integer.MAX_VALUE}
      * @see IntMatrix#repeatElements(int, int)
      */
     @Override
@@ -1914,8 +1914,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param rowRepeats the number of times to repeat the matrix in the row direction (must be positive)
      * @param columnRepeats the number of times to repeat the matrix in the column direction (must be positive)
-     * @return a new ShortMatrix with dimensions (rowCount * rowRepeats) × (columnCount * columnRepeats) containing the tiled pattern
-     * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is less than or equal to 0
+     * @return a new ShortMatrix with dimensions {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)} containing the tiled pattern
+     * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is less than or equal to 0,
+     *         or if either result dimension would overflow {@code Integer.MAX_VALUE}
      * @see IntMatrix#repeatMatrix(int, int)
      * @see #repeatElements(int, int)
      */
@@ -2390,10 +2391,11 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @param <E> the type of exception that the zip function may throw
-     * @param other the second matrix to zip with this matrix
-     * @param zipFunction the binary operation to apply to corresponding elements
+     * @param other the second matrix to zip with this matrix; must not be {@code null}
+     * @param zipFunction the binary operation to apply to corresponding elements; must not be {@code null}
      * @return a new matrix with the results of the zip operation
-     * @throws IllegalArgumentException if the matrices don't have the same shape, or if {@code zipFunction} is {@code null}
+     * @throws IllegalArgumentException if {@code other} or {@code zipFunction} is {@code null},
+     *         or if the matrices do not have the same shape
      * @throws E if the zip function throws an exception
      */
     public <E extends Exception> ShortMatrix zipWith(final ShortMatrix other, final Throwables.ShortBinaryOperator<E> zipFunction)
@@ -2428,11 +2430,12 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @param <E> the type of exception that the zip function may throw
-     * @param other the second matrix to zip with
-     * @param third the third matrix to zip with
-     * @param zipFunction the ternary operation to apply to corresponding elements from all three matrices
+     * @param other the second matrix to zip with; must not be {@code null}
+     * @param third the third matrix to zip with; must not be {@code null}
+     * @param zipFunction the ternary operation to apply to corresponding elements from all three matrices; must not be {@code null}
      * @return a new matrix with the results of the zip operation
-     * @throws IllegalArgumentException if the matrices don't have the same shape, or if {@code zipFunction} is {@code null}
+     * @throws IllegalArgumentException if {@code other}, {@code third}, or {@code zipFunction} is {@code null},
+     *         or if the three matrices do not all have the same shape
      * @throws E if the zip function throws an exception
      */
     public <E extends Exception> ShortMatrix zipWith(final ShortMatrix other, final ShortMatrix third, final Throwables.ShortTernaryOperator<E> zipFunction)

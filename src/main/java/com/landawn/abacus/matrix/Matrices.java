@@ -91,9 +91,9 @@ public final class Matrices {
      * <p>The returned value indicates how matrix operations should decide whether to use
      * parallel processing:</p>
      * <ul>
-     * <li>{@link ParallelMode#FORCE_ON} - Requests parallel execution whenever the runtime supports it</li>
-     * <li>{@link ParallelMode#FORCE_OFF} - Forces sequential execution regardless of matrix size</li>
-     * <li>{@link ParallelMode#AUTO} - Automatically decides based on matrix size (threshold: 8192 elements)</li>
+     * <li>{@link ParallelMode#FORCE_ON} - requests parallel execution whenever the runtime supports it.</li>
+     * <li>{@link ParallelMode#FORCE_OFF} - forces sequential execution regardless of matrix size.</li>
+     * <li>{@link ParallelMode#AUTO} - automatically decides based on matrix size (threshold: 8192 elements).</li>
      * </ul>
      *
      * <p><b>Usage Examples:</b></p>
@@ -122,11 +122,11 @@ public final class Matrices {
      *
      * <p>Available settings:</p>
      * <ul>
-     * <li>{@link ParallelMode#FORCE_ON} - Requests parallel processing for all matrix operations when
+     * <li>{@link ParallelMode#FORCE_ON} - requests parallel processing for all matrix operations when
      *     the runtime supports it, regardless of matrix size.</li>
-     * <li>{@link ParallelMode#FORCE_OFF} - Forces all matrix operations to use sequential processing,
+     * <li>{@link ParallelMode#FORCE_OFF} - forces all matrix operations to use sequential processing,
      *     regardless of matrix size. Use this to avoid parallelization overhead for small matrices.</li>
-     * <li>{@link ParallelMode#AUTO} - Automatically decides based on matrix size. Operations
+     * <li>{@link ParallelMode#AUTO} - automatically decides based on matrix size. Operations
      *     on matrices with 8192 or more elements use parallel processing; smaller matrices use sequential processing.</li>
      * </ul>
      *
@@ -198,9 +198,9 @@ public final class Matrices {
      *     If not supported, always returns {@code false}.</li>
      * <li><b>Thread Setting:</b> Checks the current thread's {@link ParallelMode} setting:
      *     <ul>
-     *     <li>{@link ParallelMode#FORCE_ON} - Returns {@code true} whenever runtime support is available</li>
-     *     <li>{@link ParallelMode#FORCE_OFF} - Always returns {@code false}</li>
-     *     <li>{@link ParallelMode#AUTO} - Decides based on element count</li>
+     *     <li>{@link ParallelMode#FORCE_ON} - returns {@code true} whenever runtime support is available.</li>
+     *     <li>{@link ParallelMode#FORCE_OFF} - always returns {@code false}.</li>
+     *     <li>{@link ParallelMode#AUTO} - decides based on element count.</li>
      *     </ul>
      * </li>
      * <li><b>Element Count:</b> When using {@code AUTO} setting, returns {@code true} only if
@@ -322,9 +322,10 @@ public final class Matrices {
      *
      * <p>Special cases:</p>
      * <ul>
-     * <li>Empty collection: Returns {@code true} (vacuous truth)</li>
-     * <li>Single matrix: Returns {@code true} (trivially same shape)</li>
-     * <li>Multiple matrices: Returns {@code true} only if all have identical dimensions</li>
+     * <li>{@code null} or empty collection: returns {@code true} (vacuous truth).</li>
+     * <li>Single matrix: returns {@code true} (trivially same shape) when the matrix is non-{@code null};
+     *     returns {@code false} if the single element is {@code null}.</li>
+     * <li>Multiple matrices: returns {@code true} only if all are non-{@code null} and have identical dimensions.</li>
      * </ul>
      *
      * <p><b>Usage Examples:</b></p>
@@ -422,12 +423,12 @@ public final class Matrices {
     }
 
     /**
-     * Executes the specified command with a temporary parallel processing setting, then
+     * Executes the specified action with a temporary parallel processing setting, then
      * restores the original setting.
      *
      * <p>This method provides a safe way to temporarily change the parallel processing behavior
      * for a specific operation without affecting the thread-local setting for subsequent operations.
-     * The original {@link ParallelMode} setting is always restored, even if the command throws
+     * The original {@link ParallelMode} setting is always restored, even if the action throws
      * an exception.</p>
      *
      * <p>This is particularly useful when you need to force parallel or sequential execution for
@@ -450,11 +451,11 @@ public final class Matrices {
      * });
      * }</pre>
      *
-     * @param <E> the type of exception that the command might throw
-     * @param parallelMode the temporary {@link ParallelMode} setting to use during command execution, must not be {@code null}
-     * @param action the command to execute, must not be {@code null}
+     * @param <E> the type of exception that the action might throw
+     * @param parallelMode the temporary {@link ParallelMode} setting to use during action execution, must not be {@code null}
+     * @param action the action to execute, must not be {@code null}
      * @throws IllegalArgumentException if {@code parallelMode} or {@code action} is {@code null}
-     * @throws E if the command throws an exception during execution
+     * @throws E if the action throws an exception during execution
      * @see #setParallelMode(ParallelMode)
      * @see #getParallelMode()
      */
@@ -472,10 +473,10 @@ public final class Matrices {
     }
 
     /**
-     * Executes a command for each position in a matrix grid defined by rows and columns.
+     * Executes an action for each position in a matrix grid defined by rows and columns.
      *
      * <p>This method iterates over all positions in a matrix of the specified dimensions,
-     * executing the provided command with the row and column indices (i, j) for each position.
+     * executing the provided action with the row and column indices (i, j) for each position.
      * The iteration order is optimized based on the relative sizes of rows and columns to
      * improve cache locality.</p>
      *
@@ -495,13 +496,13 @@ public final class Matrices {
      *     result[i][j] = i * j, true);
      * }</pre>
      *
-     * @param <E> the type of exception that the command might throw
+     * @param <E> the type of exception that the action might throw
      * @param rowCount the number of rows to iterate over, must be non-negative
      * @param columnCount the number of columns to iterate over, must be non-negative
-     * @param action the command to execute for each position (i, j), receives row index and column index, must not be {@code null}
+     * @param action the action to execute for each position (i, j), receives row index and column index, must not be {@code null}
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative, or if {@code action} is {@code null}
-     * @throws E if the command throws an exception during execution
+     * @throws E if the action throws an exception during execution
      * @see #forEachIndices(int, int, int, int, Throwables.IntBiConsumer, boolean)
      */
     public static <E extends Exception> void forEachIndices(final int rowCount, final int columnCount, final Throwables.IntBiConsumer<E> action,
@@ -514,19 +515,19 @@ public final class Matrices {
     }
 
     /**
-     * Executes a command for each position in a specified subregion of a matrix grid.
+     * Executes an action for each position in a specified subregion of a matrix grid.
      *
      * <p>This method iterates over a rectangular region defined by the row and column index ranges,
-     * executing the provided command with the (i, j) indices for each position in the region.
+     * executing the provided action with the (i, j) indices for each position in the region.
      * The iteration order is automatically optimized based on the relative sizes of the row and
      * column ranges to improve cache locality and performance.</p>
      *
      * <p>Iteration strategy:</p>
      * <ul>
-     * <li>If there are fewer or equal rows than columns, iterates by rows first (row-major order)</li>
-     * <li>If there are more rows than columns, iterates by columns first (column-major order)</li>
+     * <li>If there are fewer or equal rows than columns, iterates by rows first (row-major order).</li>
+     * <li>If there are more rows than columns, iterates by columns first (column-major order).</li>
      * <li>When parallel execution is enabled, the outer loop is parallelized while the inner loop
-     *     remains sequential</li>
+     *     remains sequential.</li>
      * </ul>
      *
      * <p><b>Usage Examples:</b></p>
@@ -536,16 +537,16 @@ public final class Matrices {
      * Matrices.forEachIndices(2, 5, 3, 8, (i, j) -> result[i][j] = i + j, false);
      * }</pre>
      *
-     * @param <E> the type of exception that the command might throw
+     * @param <E> the type of exception that the action might throw
      * @param fromRowIndex the starting row index (inclusive), must be non-negative
-     * @param toRowIndex the ending row index (exclusive), must be greater than or equal to fromRowIndex
+     * @param toRowIndex the ending row index (exclusive), must be greater than or equal to {@code fromRowIndex}
      * @param fromColumnIndex the starting column index (inclusive), must be non-negative
-     * @param toColumnIndex the ending column index (exclusive), must be greater than or equal to fromColumnIndex
-     * @param action the command to execute for each position (i, j), receives row index and column index, must not be {@code null}
+     * @param toColumnIndex the ending column index (exclusive), must be greater than or equal to {@code fromColumnIndex}
+     * @param action the action to execute for each position (i, j), receives row index and column index, must not be {@code null}
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
-     * @throws IndexOutOfBoundsException if any index is negative or if toRowIndex is less than fromRowIndex or toColumnIndex is less than fromColumnIndex
+     * @throws IndexOutOfBoundsException if any index is negative, if {@code toRowIndex} is less than {@code fromRowIndex}, or if {@code toColumnIndex} is less than {@code fromColumnIndex}
      * @throws IllegalArgumentException if {@code action} is {@code null}
-     * @throws E if the command throws an exception during execution
+     * @throws E if the action throws an exception during execution
      */
     public static <E extends Exception> void forEachIndices(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
             final Throwables.IntBiConsumer<E> action, final boolean inParallel) throws IndexOutOfBoundsException, E {
@@ -639,8 +640,8 @@ public final class Matrices {
      *
      * <p>The order of elements in the stream depends on whether there are more rows or columns:</p>
      * <ul>
-     * <li>If rows is less than or equal to columns: Elements are ordered by rows first (row-major order)</li>
-     * <li>If rows is greater than columns: Elements are ordered by columns first (column-major order)</li>
+     * <li>If rows is less than or equal to columns: elements are ordered by rows first (row-major order).</li>
+     * <li>If rows is greater than columns: elements are ordered by columns first (column-major order).</li>
      * </ul>
      *
      * <p><b>Usage Examples:</b></p>
@@ -659,7 +660,7 @@ public final class Matrices {
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
      * @return a {@link Stream} of results from applying the function at each position, never {@code null}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
-     * @throws IndexOutOfBoundsException if any index is negative or if toRowIndex is less than fromRowIndex or toColumnIndex is less than fromColumnIndex
+     * @throws IndexOutOfBoundsException if any index is negative, if {@code toRowIndex} is less than {@code fromRowIndex}, or if {@code toColumnIndex} is less than {@code fromColumnIndex}
      */
     @SuppressWarnings("resource")
     public static <T> Stream<T> mapIndices(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
@@ -762,7 +763,7 @@ public final class Matrices {
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
      * @return an {@link IntStream} of results from applying the function at each position, never {@code null}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
-     * @throws IndexOutOfBoundsException if any index is negative or if toRowIndex is less than fromRowIndex or toColumnIndex is less than fromColumnIndex
+     * @throws IndexOutOfBoundsException if any index is negative, if {@code toRowIndex} is less than {@code fromRowIndex}, or if {@code toColumnIndex} is less than {@code fromColumnIndex}
      */
     @SuppressWarnings("resource")
     public static IntStream mapIndicesToInt(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
@@ -809,18 +810,18 @@ public final class Matrices {
      * Performs matrix multiplication iteration using a custom accumulator function.
      *
      * <p>This method iterates through all the positions required for matrix multiplication,
-     * calling the provided command for each (i, j, k) triple. It does NOT perform the actual
-     * multiplication arithmetic - that must be implemented in the command function. This provides
-     * maximum flexibility for custom multiplication algorithms.</p>
+     * calling the provided action for each (i, j, k) triple. It does NOT perform the actual
+     * multiplication arithmetic; that must be implemented in the action. This provides maximum
+     * flexibility for custom multiplication algorithms.</p>
      *
-     * <p>For standard matrix multiplication C = A × B, the command would typically accumulate:
-     * {@code C[i][j] += A[i][k] * B[k][j]}</p>
+     * <p>For standard matrix multiplication {@code C = A × B}, the action would typically accumulate:
+     * {@code C[i][j] += A[i][k] * B[k][j]}.</p>
      *
      * <p>Index meanings:</p>
      * <ul>
-     * <li>{@code i} - Row index in matrix A (and result matrix C)</li>
-     * <li>{@code j} - Column index in matrix B (and result matrix C)</li>
-     * <li>{@code k} - Common dimension (columns in A, rows in B)</li>
+     * <li>{@code i} - row index in matrix {@code a} (and result matrix C).</li>
+     * <li>{@code j} - column index in matrix {@code b} (and result matrix C).</li>
+     * <li>{@code k} - common dimension (columns in {@code a}, rows in {@code b}).</li>
      * </ul>
      *
      * <p>The matrices must satisfy the multiplication constraint: {@code a.columnCount == b.rowCount}.
@@ -875,8 +876,10 @@ public final class Matrices {
      *
      * <p>When parallel execution is enabled, the outermost loop is parallelized while inner
      * loops remain sequential. To avoid concurrent writes to the same accumulator cell, the
-     * {@code k} loop (over {@code a.columnCount} = {@code b.rowCount}) is never parallelized; when {@code rowsA}
-     * is not the smallest dimension, the parallel loop is over {@code b.columnCount} ({@code j}) instead.</p>
+     * {@code k} loop (over {@code a.columnCount} = {@code b.rowCount}) is never parallelized: when
+     * {@code a.rowCount} is the smallest dimension the parallel loop is over {@code i}, and
+     * otherwise the parallel loop is over {@code j} ({@code b.columnCount}). Each parallel iteration
+     * therefore targets an independent set of output cells.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

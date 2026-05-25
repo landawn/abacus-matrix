@@ -101,10 +101,11 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     }
 
     /**
-     * Creates a ByteMatrix from a two-dimensional byte array.
+     * Creates a {@code ByteMatrix} from a two-dimensional byte array.
      *
-     * <p><b>Important:</b> The provided array is used directly without defensive copying.
-     * Changes to the input array are reflected in the returned matrix, and vice versa.
+     * <p><b>Important:</b> When {@code a} is non-empty, the provided array is used directly
+     * without defensive copying. Changes to the input array are reflected in the returned matrix,
+     * and vice versa. Call {@link #copy()} if you need an independently owned matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -113,8 +114,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * // matrix.get(1, 2) returns 6
      * }</pre>
      *
-     * @param a the two-dimensional byte array to create the matrix from, or {@code null}/empty for an empty matrix
-     * @return a new {@code ByteMatrix} containing the provided data, or an empty {@code ByteMatrix} if input is {@code null} or empty
+     * @param a the two-dimensional byte array to wrap; may be {@code null} or empty
+     * @return a new {@code ByteMatrix} wrapping the provided data, or an empty {@code ByteMatrix}
+     *         if {@code a} is {@code null} or empty
      * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
@@ -135,6 +137,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param length the number of columns in the new matrix; must be {@code >= 0}
      * @return a new {@code ByteMatrix} of dimensions {@code 1 x length} filled with random values
      * @throws IllegalArgumentException if {@code length} is negative
+     * @see #random(int, int)
      */
     public static ByteMatrix random(final int length) {
         return random(1, length);
@@ -349,9 +352,10 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * }</pre>
      *
-     * @param mainDiagonal the array of main diagonal elements (can be null or empty)
-     * @param antiDiagonal the array of anti-diagonal elements (can be null or empty)
-     * @return a square matrix with the specified diagonals, or an empty matrix if both inputs are null or empty
+     * @param mainDiagonal the array of main diagonal elements; may be {@code null} or empty
+     * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} or empty
+     * @return a square matrix with the specified diagonals, or an empty matrix if both inputs are
+     *         {@code null} or empty
      * @throws IllegalArgumentException if both arrays are non-empty and have different lengths
      */
     public static ByteMatrix diagonals(final byte[] mainDiagonal, final byte[] antiDiagonal) throws IllegalArgumentException {
@@ -415,8 +419,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @return the element at position (rowIndex, columnIndex)
-     * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @return the byte element at position {@code (rowIndex, columnIndex)}
+     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @see #get(Point)
      */
     public byte get(final int rowIndex, final int columnIndex) {
         return a[rowIndex][columnIndex];
@@ -456,8 +461,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @param value the value to set
-     * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @param value the new byte value to store at the specified position
+     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @see #set(Point, byte)
      */
     public void set(final int rowIndex, final int columnIndex, final byte value) {
         a[rowIndex][columnIndex] = value;
@@ -720,9 +726,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * @param <E> the type of exception that may be thrown by the operator
      * @param rowIndex the index of the row to update (0-based)
-     * @param operator the unary operator to apply to each element in the row, taking a byte and returning a byte
-     * @throws ArrayIndexOutOfBoundsException if rowIndex is out of bounds
-     * @throws IllegalArgumentException if operator is null
+     * @param operator the unary operator to apply to each element in the row, taking a byte and returning a byte; must not be {@code null}
+     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} is out of bounds
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateRow(final int rowIndex, final Throwables.ByteUnaryOperator<E> operator) throws E {
@@ -751,9 +757,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * @param <E> the type of exception that the operator may throw
      * @param columnIndex the index of the column to update (0-based)
-     * @param operator the unary operator to apply to each element in the column, taking a byte and returning a byte
-     * @throws ArrayIndexOutOfBoundsException if columnIndex is out of bounds
-     * @throws IllegalArgumentException if operator is null
+     * @param operator the unary operator to apply to each element in the column, taking a byte and returning a byte; must not be {@code null}
+     * @throws ArrayIndexOutOfBoundsException if {@code columnIndex} is out of bounds
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.ByteUnaryOperator<E> operator) throws E {
@@ -837,8 +843,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * }</pre>
      *
      * @param <E> the type of exception that the operator may throw
-     * @param operator the operator to apply to each diagonal element
+     * @param operator the operator to apply to each diagonal element; must not be {@code null}
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateMainDiagonal(final Throwables.ByteUnaryOperator<E> operator) throws IllegalStateException, E {
@@ -921,8 +928,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * }</pre>
      *
      * @param <E> the type of exception that the operator may throw
-     * @param operator the operator to apply to each anti-diagonal element
+     * @param operator the operator to apply to each anti-diagonal element; must not be {@code null}
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateAntiDiagonal(final Throwables.ByteUnaryOperator<E> operator) throws IllegalStateException, E {
@@ -3079,14 +3087,15 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
 
     /**
      * Performs the specified action for each element in this matrix.
-     * Elements are processed in row-major order (left to right, top to bottom).
-     * This operation may be performed in parallel for large matrices.
+     * When sequential, elements are processed in row-major order (left to right, top to bottom).
+     * This operation may be performed in parallel for large matrices, in which case the order
+     * of element visits is unspecified.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
      * matrix.forEach(value -> System.out.print(value + " "));
-     * // Output: 1 2 3 4
+     * // Output (sequential): 1 2 3 4
      * }</pre>
      *
      * @param <E> the type of exception that may be thrown by the action
@@ -3100,14 +3109,15 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
 
     /**
      * Performs the specified action for each element in a rectangular sub-region of this matrix.
-     * Elements are processed in row-major order (left to right, top to bottom) within the specified bounds.
-     * This operation may be performed in parallel for large regions.
+     * When sequential, elements are processed in row-major order (left to right, top to bottom)
+     * within the specified bounds. This operation may be performed in parallel for large regions,
+     * in which case the order of element visits is unspecified.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      * matrix.forEach(1, 3, 1, 3, value -> System.out.print(value + " "));
-     * // Output: 5 6 8 9  (processes elements in rows 1-2, columns 1-2)
+     * // Output (sequential): 5 6 8 9  (processes elements in rows 1-2, columns 1-2)
      * }</pre>
      *
      * @param <E> the type of exception that may be thrown by the action
@@ -3115,9 +3125,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param toRowIndex the ending row index (exclusive)
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
-     * @param action the consumer to apply to each element in the region
+     * @param action the consumer to apply to each element in the region; must not be {@code null}
      * @throws IllegalArgumentException if {@code action} is {@code null}
-     * @throws IndexOutOfBoundsException if any index is out of bounds or fromIndex &gt; toIndex
+     * @throws IndexOutOfBoundsException if any of the from/to indices are out of bounds or {@code fromIndex > toIndex}
      * @throws E if the action throws an exception
      */
     public <E extends Exception> void forEach(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,

@@ -15,32 +15,56 @@
 package com.landawn.abacus.matrix;
 
 /**
- * Thread-local parallelization policy consulted by {@link Matrices}.
+ * Thread-local parallelization policy consulted by {@link Matrices} when deciding whether to execute
+ * matrix operations in parallel.
  *
- * <p>The active value is set through {@link Matrices#setParallelMode(ParallelMode)} and consulted by
- * helpers such as {@link Matrices#isParallelizable(AbstractMatrix, long)}. {@link #FORCE_ON} requests
- * parallel execution whenever the required runtime support is present, {@link #FORCE_OFF} disables
- * it, and {@link #AUTO} combines runtime support with the built-in size heuristics.</p>
+ * <p>The active value for the current thread is set through
+ * {@link Matrices#setParallelMode(ParallelMode)}, retrieved through {@link Matrices#getParallelMode()},
+ * and consulted by helpers such as {@link Matrices#isParallelizable(AbstractMatrix, long)}. The three
+ * available policies trade off explicit control against automatic heuristics:</p>
+ * <ul>
+ *   <li>{@link #FORCE_ON} requests parallel execution whenever the required runtime support is present,
+ *       irrespective of matrix size.</li>
+ *   <li>{@link #FORCE_OFF} disables parallel execution unconditionally.</li>
+ *   <li>{@link #AUTO} combines runtime support with the built-in size heuristics so that small
+ *       operations stay sequential while larger ones run in parallel.</li>
+ * </ul>
+ *
+ * <p>Because the setting is stored in a {@link ThreadLocal}, changing it on one thread does not affect
+ * other threads. {@link #AUTO} is the default value for every thread.</p>
  *
  * @see Matrices#setParallelMode(ParallelMode)
  * @see Matrices#getParallelMode()
+ * @see Matrices#isParallelizable(AbstractMatrix, long)
+ * @see Matrices#runWithParallelMode(ParallelMode, com.landawn.abacus.util.Throwables.Runnable)
  */
 public enum ParallelMode {
     /**
-     * Request parallel execution for the current thread whenever the runtime supports it,
-     * regardless of matrix size.
+     * Requests parallel execution for the current thread whenever the runtime supports it, regardless
+     * of matrix size.
+     *
+     * <p>This mode bypasses the size threshold used by {@link #AUTO}, so even small matrices may be
+     * processed in parallel. It is most useful when the per-element work is expensive enough that the
+     * fixed overhead of parallel dispatch is worthwhile even at small element counts.</p>
      */
     FORCE_ON,
 
     /**
-     * Force sequential execution for the current thread regardless of matrix size or runtime support.
+     * Forces sequential execution for the current thread regardless of matrix size or runtime support.
+     *
+     * <p>Use this mode to guarantee deterministic, single-threaded behavior, for example when running
+     * inside a context that already manages its own parallelism or when debugging.</p>
      */
     FORCE_OFF,
 
     /**
-     * Use parallel execution for the current thread only when the runtime supports it
-     * <i>and</i> the per-operation element count meets the size threshold checked by
+     * Uses parallel execution for the current thread only when the runtime supports it <i>and</i> the
+     * per-operation element count meets the size threshold checked by
      * {@link Matrices#isParallelizable(AbstractMatrix, long)}.
+     *
+     * <p>This is the default mode and is recommended for most workloads: small operations stay
+     * sequential to avoid parallel-dispatch overhead, while larger operations automatically benefit
+     * from parallel execution.</p>
      */
     AUTO
 }

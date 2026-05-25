@@ -87,6 +87,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @param a the two-dimensional double array to wrap, or {@code null} for an empty matrix
+     * @throws IllegalArgumentException if {@code a} is non-rectangular (rows have differing lengths)
+     *         or contains a {@code null} row
      */
     public DoubleMatrix(final double[][] a) {
         super(a == null ? new double[0][0] : a, double.class);
@@ -120,8 +122,10 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * // matrix.get(1, 1) returns 4.0
      * }</pre>
      *
-     * @param a the two-dimensional double array to create the matrix from, or null/empty for an empty matrix
-     * @return a new DoubleMatrix containing the provided data, or an empty DoubleMatrix if input is null or empty
+     * @param a the two-dimensional double array to create the matrix from, or {@code null}/empty for an empty matrix
+     * @return a new {@code DoubleMatrix} containing the provided data, or an empty {@code DoubleMatrix} if the input is {@code null} or empty
+     * @throws IllegalArgumentException if {@code a} is non-rectangular (rows have differing lengths)
+     *         or contains a {@code null} row
      */
     public static DoubleMatrix of(final double[]... a) {
         return N.isEmpty(a) ? EMPTY_DOUBLE_MATRIX : new DoubleMatrix(a);
