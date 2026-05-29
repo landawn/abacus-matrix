@@ -6209,4 +6209,46 @@ class LongMatrixTest extends TestBase {
         }
     }
 
+    // Regression tests for the deep-review fixes: diagonal stream on empty non-square matrices
+    // and N x 0 transpose/rotate shape contracts.
+    @Nested
+    public class ReviewBugfixTests {
+
+        @Test
+        public void testDiagonalStream_emptyNonSquareMatrix_returnsEmptyInsteadOfThrowing() {
+            // A 3x0 matrix is empty (0 elements) but not square; per the @return contract the
+            // diagonal streams must yield an empty stream rather than throw IllegalStateException.
+            LongMatrix m = LongMatrix.of(new long[3][0]);
+            assertEquals(3, m.rowCount());
+            assertEquals(0, m.columnCount());
+            assertEquals(0, m.mainDiagonalStream().count());
+            assertEquals(0, m.antiDiagonalStream().count());
+
+            // A non-empty non-square matrix must still throw.
+            LongMatrix nonSquare = LongMatrix.of(new long[][] { { 1, 2 } });
+            assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalStream());
+            assertThrows(IllegalStateException.class, () -> nonSquare.antiDiagonalStream());
+        }
+
+        @Test
+        public void testTranspose_Nx0_collapsesToEmpty() {
+            LongMatrix t = LongMatrix.of(new long[3][0]).transpose();
+            assertEquals(0, t.rowCount());
+            assertEquals(0, t.columnCount());
+        }
+
+        @Test
+        public void testRotate180_Nx0_preservesShape_whileRotate90TwiceCollapses() {
+            LongMatrix m = LongMatrix.of(new long[3][0]);
+
+            LongMatrix via180 = m.rotate180();
+            assertEquals(3, via180.rowCount());
+            assertEquals(0, via180.columnCount());
+
+            LongMatrix viaRotate90Twice = m.rotate90().rotate90();
+            assertEquals(0, viaRotate90Twice.rowCount());
+            assertEquals(0, viaRotate90Twice.columnCount());
+        }
+    }
+
 }

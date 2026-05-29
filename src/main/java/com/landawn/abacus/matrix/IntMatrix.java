@@ -2003,7 +2003,9 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * //  [3, 6]]
      * }</pre>
      *
-     * @return a new {@code IntMatrix} of shape {@code columnCount x rowCount} that is the transpose of this matrix
+     * @return a new {@code IntMatrix} of shape {@code columnCount x rowCount} that is the transpose of this matrix;
+     *         an {@code N x 0} matrix transposes to the empty {@code 0 x 0} matrix, because the swapped shape
+     *         {@code 0 x N} (zero rows with a non-zero column count) is not representable
      */
     @Override
     public IntMatrix transpose() {
@@ -2646,15 +2648,15 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * }</pre>
      *
      * @return an IntStream of main-diagonal elements, or an empty stream if the matrix is empty
-     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
+     * @throws IllegalStateException if the matrix is non-empty and not square (rowCount != columnCount)
      */
     @Override
     public IntStream mainDiagonalStream() {
-        checkIsSquare();
-
         if (isEmpty()) {
             return IntStream.empty();
         }
+
+        checkIsSquare();
 
         return IntStream.of(new IntIteratorEx() {
             private final int toIndex = rowCount;
@@ -2701,15 +2703,15 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * }</pre>
      *
      * @return an IntStream of anti-diagonal elements, or an empty stream if the matrix is empty
-     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
+     * @throws IllegalStateException if the matrix is non-empty and not square (rowCount != columnCount)
      */
     @Override
     public IntStream antiDiagonalStream() {
-        checkIsSquare();
-
         if (isEmpty()) {
             return IntStream.empty();
         }
+
+        checkIsSquare();
 
         return IntStream.of(new IntIteratorEx() {
             private final int toIndex = rowCount;
@@ -3296,11 +3298,13 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
 
     /**
      * Performs the specified action for each element in the specified sub-matrix region.
-     * Elements are processed in row-major order within the specified bounds.
+     * Elements are processed in row-major order within the specified bounds when executed sequentially.
      *
      * <p>This method allows for processing a rectangular subset of the matrix.
      * The operation may be parallelized internally if the sub-matrix is large enough
-     * to benefit from parallel processing.</p>
+     * to benefit from parallel processing; if parallelized, the order in which elements are
+     * visited is unspecified and the action must be thread-safe, but every element is still
+     * visited exactly once.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

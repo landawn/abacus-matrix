@@ -3101,6 +3101,8 @@ public final class Matrices {
      * @param zipFunction the binary operator to combine elements sequentially, must not be {@code null}
      * @return a new {@link Matrix} of type T containing the combined results, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
+     * @throws ArrayStoreException if {@code zipFunction} returns a value that is not assignable to the resolved common element type of the inputs
+     *         (use {@link #zip(Collection, Throwables.Function, Class)} with an explicit target type to avoid this)
      * @throws E if the zip function throws an exception during execution
      * @see #zip(Matrix, Matrix, Throwables.BiFunction)
      * @see #zip(Collection, Throwables.Function, Class)

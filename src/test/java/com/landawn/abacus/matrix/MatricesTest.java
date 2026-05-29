@@ -4663,4 +4663,18 @@ class MatricesTest extends TestBase {
         assertArrayEquals(new int[] { 12, 15, 18 }, result[2]);
     }
 
+    // Regression test for the deep-review fix: zip(Collection, BinaryOperator) documents that a
+    // widening operator result triggers ArrayStoreException against the narrowed common element type.
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @org.junit.jupiter.api.Test
+    public void testZip_collectionBinaryOperator_throwsArrayStoreWhenWidening() {
+        // All inputs are backed by Integer[][]; the resolved common element type is Integer, so a
+        // BinaryOperator returning a Double (a valid Number) cannot be stored into the Integer[][] result.
+        Matrix<Number> a = (Matrix) Matrix.of(new Integer[][] { { 1 } });
+        Matrix<Number> b = (Matrix) Matrix.of(new Integer[][] { { 2 } });
+        Matrix<Number> c = (Matrix) Matrix.of(new Integer[][] { { 3 } });
+        assertThrows(ArrayStoreException.class,
+                () -> Matrices.zip(List.of(a, b, c), (x, y) -> Double.valueOf(x.doubleValue() + y.doubleValue())));
+    }
+
 }

@@ -6374,4 +6374,95 @@ class IntMatrixTest extends TestBase {
         }
     }
 
+    // Regression tests for the deep-review fixes: diagonal stream on empty non-square matrices,
+    // N x 0 transpose/rotate shape contracts, and parallel forEach/forEachIndices ordering.
+    @Nested
+    public class ReviewBugfixTests {
+
+        @Test
+        public void testDiagonalStream_emptyNonSquareMatrix_returnsEmptyInsteadOfThrowing() {
+            // A 3x0 matrix is empty (0 elements) but not square; per the @return contract the
+            // diagonal streams must yield an empty stream rather than throw IllegalStateException.
+            IntMatrix m = IntMatrix.of(new int[3][0]);
+            assertEquals(3, m.rowCount());
+            assertEquals(0, m.columnCount());
+            assertEquals(0, m.mainDiagonalStream().count());
+            assertEquals(0, m.antiDiagonalStream().count());
+
+            // A non-empty non-square matrix must still throw.
+            IntMatrix nonSquare = IntMatrix.of(new int[][] { { 1, 2 } });
+            assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalStream());
+            assertThrows(IllegalStateException.class, () -> nonSquare.antiDiagonalStream());
+        }
+
+        @Test
+        public void testTranspose_Nx0_collapsesToEmpty() {
+            IntMatrix t = IntMatrix.of(new int[3][0]).transpose();
+            assertEquals(0, t.rowCount());
+            assertEquals(0, t.columnCount());
+        }
+
+        @Test
+        public void testRotate180_Nx0_preservesShape_whileRotate90TwiceCollapses() {
+            IntMatrix m = IntMatrix.of(new int[3][0]);
+
+            IntMatrix via180 = m.rotate180();
+            assertEquals(3, via180.rowCount());
+            assertEquals(0, via180.columnCount());
+
+            IntMatrix viaRotate90Twice = m.rotate90().rotate90();
+            assertEquals(0, viaRotate90Twice.rowCount());
+            assertEquals(0, viaRotate90Twice.columnCount());
+        }
+
+        @Test
+        public void testForEachRange_sequentialRowMajor_andParallelCompleteness() {
+            IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
+            final ParallelMode prev = Matrices.getParallelMode();
+            try {
+                Matrices.setParallelMode(ParallelMode.FORCE_OFF);
+                final List<Integer> seq = new ArrayList<>();
+                m.forEach(0, 3, 0, 2, v -> seq.add(v));
+                assertEquals(List.of(1, 2, 3, 4, 5, 6), seq);
+
+                // Parallel: order is unspecified, but every element is visited exactly once.
+                Matrices.setParallelMode(ParallelMode.FORCE_ON);
+                final AtomicInteger count = new AtomicInteger();
+                final java.util.concurrent.atomic.AtomicLong sum = new java.util.concurrent.atomic.AtomicLong();
+                m.forEach(0, 3, 0, 2, v -> {
+                    count.incrementAndGet();
+                    sum.addAndGet(v);
+                });
+                assertEquals(6, count.get());
+                assertEquals(21L, sum.get());
+            } finally {
+                Matrices.setParallelMode(prev);
+            }
+        }
+
+        @Test
+        public void testForEachIndices_sequentialRowMajor_andParallelCompleteness() {
+            IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
+            final ParallelMode prev = Matrices.getParallelMode();
+            try {
+                Matrices.setParallelMode(ParallelMode.FORCE_OFF);
+                final List<String> seq = new ArrayList<>();
+                m.forEachIndices((i, j) -> seq.add(i + "," + j));
+                assertEquals(List.of("0,0", "0,1", "1,0", "1,1", "2,0", "2,1"), seq);
+
+                Matrices.setParallelMode(ParallelMode.FORCE_ON);
+                final AtomicInteger count = new AtomicInteger();
+                final java.util.Set<String> visited = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+                m.forEachIndices((i, j) -> {
+                    count.incrementAndGet();
+                    visited.add(i + "," + j);
+                });
+                assertEquals(6, count.get());
+                assertEquals(6, visited.size());
+            } finally {
+                Matrices.setParallelMode(prev);
+            }
+        }
+    }
+
 }

@@ -7262,4 +7262,61 @@ class MatrixTest extends TestBase {
             assertEquals("[]", result);
         }
     }
+
+    // Regression tests for the deep-review fixes: diagonal stream on empty non-square matrices,
+    // undocumented ArrayStoreException from narrowed-element-type allocation, and deep hashCode.
+    @Nested
+    public class ReviewBugfixTests {
+
+        @Test
+        public void testDiagonalStream_emptyNonSquareMatrix_returnsEmptyInsteadOfThrowing() {
+            Matrix<Integer> m = Matrix.of(new Integer[3][0]);
+            assertEquals(3, m.rowCount());
+            assertEquals(0, m.columnCount());
+            assertEquals(0, m.mainDiagonalStream().count());
+            assertEquals(0, m.antiDiagonalStream().count());
+        }
+
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+        @Test
+        public void testMap_singleArg_throwsArrayStoreWhenMapperWidens() {
+            // Backing array runtime type is String[][]; returning an Integer is type-valid for T=Object
+            // but cannot be stored into a String[][].
+            Matrix<Object> m = (Matrix) Matrix.of(new String[][] { { "x" } });
+            assertThrows(ArrayStoreException.class, () -> m.map(o -> Integer.valueOf(5)));
+
+            // The explicit-target-type overload is the documented escape hatch.
+            Matrix<Integer> ok = m.map(o -> Integer.valueOf(5), Integer.class);
+            assertEquals(Integer.valueOf(5), ok.get(0, 0));
+        }
+
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+        @Test
+        public void testZipWith_twoArg_throwsArrayStoreWhenZipFunctionWidens() {
+            Matrix<Object> a = (Matrix) Matrix.of(new String[][] { { "x" } });
+            Matrix<Object> b = (Matrix) Matrix.of(new String[][] { { "y" } });
+            assertThrows(ArrayStoreException.class, () -> a.zipWith(b, (x, y) -> Integer.valueOf(1)));
+
+            Matrix<Integer> ok = a.zipWith(b, (x, y) -> Integer.valueOf(1), Integer.class);
+            assertEquals(Integer.valueOf(1), ok.get(0, 0));
+        }
+
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+        @Test
+        public void testZipWith_threeMatrix_throwsArrayStoreWhenZipFunctionWidens() {
+            Matrix<Object> a = (Matrix) Matrix.of(new String[][] { { "x" } });
+            Matrix<Object> b = (Matrix) Matrix.of(new String[][] { { "y" } });
+            Matrix<Object> c = (Matrix) Matrix.of(new String[][] { { "z" } });
+            assertThrows(ArrayStoreException.class, () -> a.zipWith(b, c, (x, y, z) -> Integer.valueOf(0)));
+        }
+
+        @Test
+        public void testHashCode_arrayTypedElements_areContentBased() {
+            Matrix<int[]> m1 = Matrix.of(new int[][][] { { { 1, 2 } } });
+            Matrix<int[]> m2 = Matrix.of(new int[][][] { { { 1, 2 } } });
+            assertTrue(m1.get(0, 0) != m2.get(0, 0)); // distinct int[] instances
+            assertEquals(m1, m2); // equals is deep (content-based)
+            assertEquals(m1.hashCode(), m2.hashCode()); // hashCode is consistently deep
+        }
+    }
 }

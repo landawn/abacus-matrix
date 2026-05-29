@@ -503,7 +503,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param fromRowIndex the starting row index (inclusive, 0-based)
      * @param toRowIndex the ending row index (exclusive)
      * @return a new matrix containing the specified rows with dimensions
-     *         {@code (toRowIndex - fromRowIndex) × columnCount}
+     *         {@code (toRowIndex - fromRowIndex) × columnCount}; when the row range is empty
+     *         ({@code fromRowIndex == toRowIndex}) the result is the canonical empty {@code 0 x 0} matrix
+     *         (the column count is not preserved)
      * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount},
      *         or {@code fromRowIndex > toRowIndex}
      */
@@ -531,7 +533,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @return a new matrix containing the specified region with dimensions
-     *         {@code (toRowIndex - fromRowIndex) × (toColumnIndex - fromColumnIndex)}
+     *         {@code (toRowIndex - fromRowIndex) × (toColumnIndex - fromColumnIndex)}; when the row range is empty
+     *         ({@code fromRowIndex == toRowIndex}) the result is the canonical empty {@code 0 x 0} matrix
+     *         (the column count is not preserved), whereas an empty column range with a non-empty row range
+     *         correctly yields {@code (toRowIndex - fromRowIndex) x 0}
      * @throws IndexOutOfBoundsException if any index is out of bounds, {@code fromRowIndex > toRowIndex},
      *         or {@code fromColumnIndex > toColumnIndex}
      */
@@ -557,7 +562,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * IntMatrix rotated = original.rotate90();   // 3x3 remains 3x3
      * }</pre>
      *
-     * @return a new matrix that is this matrix rotated 90 degrees clockwise, with dimensions {@code columnCount × rowCount}
+     * @return a new matrix that is this matrix rotated 90 degrees clockwise, with dimensions {@code columnCount × rowCount};
+     *         a matrix with zero columns (an {@code N x 0} shape) rotates to the empty {@code 0 x 0} matrix, because the
+     *         swapped shape {@code 0 x N} (zero rows with a non-zero column count) is not representable
      */
     public abstract M rotate90();
 
@@ -570,7 +577,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p>Rotation formula: element at position {@code (i, j)} in the original matrix
      * moves to position {@code (rowCount - 1 - i, columnCount - 1 - j)} in the rotated matrix.</p>
      *
-     * <p>This operation is equivalent to calling {@code rotate90().rotate90()}.</p>
+     * <p>For non-degenerate matrices this operation is equivalent to calling {@code rotate90().rotate90()}.
+     * The equivalence does not hold for {@code N x 0} shapes ({@code N > 0}): {@code rotate180()} preserves the
+     * {@code N x 0} shape, whereas {@code rotate90().rotate90()} collapses it to {@code 0 x 0} because the
+     * intermediate {@code 0 x N} shape is not representable.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -609,7 +619,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * IntMatrix rotated = original.rotate270();   // 3x3 becomes 3x3
      * }</pre>
      *
-     * @return a new matrix that is this matrix rotated 270 degrees clockwise, with dimensions {@code columnCount × rowCount}
+     * @return a new matrix that is this matrix rotated 270 degrees clockwise, with dimensions {@code columnCount × rowCount};
+     *         a matrix with zero columns (an {@code N x 0} shape) rotates to the empty {@code 0 x 0} matrix, because the
+     *         swapped shape {@code 0 x N} (zero rows with a non-zero column count) is not representable
      */
     public abstract M rotate270();
 
@@ -637,7 +649,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * IntMatrix transposed = original.transpose();   // 2x3 becomes 3x2
      * }</pre>
      *
-     * @return a new matrix that is the transpose of this matrix, with dimensions {@code columnCount × rowCount}
+     * @return a new matrix that is the transpose of this matrix, with dimensions {@code columnCount × rowCount};
+     *         a matrix with zero columns (an {@code N x 0} shape) transposes to the empty {@code 0 x 0} matrix, because the
+     *         swapped shape {@code 0 x N} (zero rows with a non-zero column count) is not representable
      */
     public abstract M transpose();
 
@@ -943,8 +957,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     /**
      * Performs the specified action for each element position in the matrix.
      * The action receives the row and column indices for each element.
-     * Elements are processed in row-major order (row by row from left to right).
-     * For large matrices, the operation may be automatically parallelized for better performance.
+     * Elements are processed in row-major order (row by row from left to right) when executed sequentially.
+     * For large matrices the operation may be automatically parallelized, in which case the order in which
+     * positions are visited is unspecified and the supplied action must be thread-safe; every position is
+     * still visited exactly once.
      *
      * <p>This method is useful when you need to access matrix positions without caring about
      * the actual element values, or when the element access logic is handled inside the action.</p>
@@ -988,8 +1004,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     /**
      * Performs the specified action for each element position in the specified rectangular region of the matrix.
      * The action receives the row and column indices for each element in the region.
-     * Elements are processed in row-major order within the specified region.
-     * For large regions, the operation may be automatically parallelized for better performance.
+     * Elements are processed in row-major order within the specified region when executed sequentially.
+     * For large regions the operation may be automatically parallelized, in which case the order in which
+     * positions are visited is unspecified and the supplied action must be thread-safe; every position is
+     * still visited exactly once.
      *
      * <p>This allows selective processing of matrix subregions without creating a copy.</p>
      *
@@ -1040,8 +1058,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     /**
      * Performs the specified action for each element position in the matrix, providing the matrix itself as a parameter.
      * The action receives the row index, column index, and the matrix instance.
-     * Elements are processed in row-major order (row by row from left to right).
-     * For large matrices, the operation may be automatically parallelized for better performance.
+     * Elements are processed in row-major order (row by row from left to right) when executed sequentially.
+     * For large matrices the operation may be automatically parallelized, in which case the order in which
+     * positions are visited is unspecified and the supplied action must be thread-safe; every position is
+     * still visited exactly once.
      *
      * <p>This variant is useful when the action needs access to matrix elements or methods,
      * allowing you to read/write values or use matrix operations within the action.</p>
@@ -1082,8 +1102,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     /**
      * Performs the specified action for each element position in the specified rectangular region, providing the matrix itself.
      * The action receives the row index, column index, and the matrix instance for each position in the region.
-     * Elements are processed in row-major order within the specified region.
-     * For large regions, the operation may be automatically parallelized for better performance.
+     * Elements are processed in row-major order within the specified region when executed sequentially.
+     * For large regions the operation may be automatically parallelized, in which case the order in which
+     * positions are visited is unspecified and the supplied action must be thread-safe; every position is
+     * still visited exactly once.
      *
      * <p>This combines region-based iteration with matrix access, allowing you to process
      * a subregion while having access to the entire matrix.</p>

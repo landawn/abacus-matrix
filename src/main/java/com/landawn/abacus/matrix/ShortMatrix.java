@@ -1755,7 +1755,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * ShortMatrix transposed = matrix.transpose();   // 2×3 becomes 3×2
      * }</pre>
      *
-     * @return a new ShortMatrix that is the transpose with dimensions columnCount × rowCount
+     * @return a new ShortMatrix that is the transpose with dimensions columnCount × rowCount;
+     *         an {@code N x 0} matrix transposes to the empty {@code 0 x 0} matrix, because the swapped shape
+     *         {@code 0 x N} (zero rows with a non-zero column count) is not representable
      */
     @Override
     public ShortMatrix transpose() {
@@ -2472,15 +2474,15 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @return a ShortStream of diagonal elements from upper-left to lower-right
-     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
+     * @throws IllegalStateException if the matrix is non-empty and not square (rowCount != columnCount)
      */
     @Override
     public ShortStream mainDiagonalStream() {
-        checkIsSquare();
-
         if (isEmpty()) {
             return ShortStream.empty();
         }
+
+        checkIsSquare();
 
         return ShortStream.of(new ShortIteratorEx() {
             private final int toIndex = rowCount;
@@ -2533,15 +2535,15 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @return a ShortStream of anti-diagonal elements from upper-right to lower-left
-     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
+     * @throws IllegalStateException if the matrix is non-empty and not square (rowCount != columnCount)
      */
     @Override
     public ShortStream antiDiagonalStream() {
-        checkIsSquare();
-
         if (isEmpty()) {
             return ShortStream.empty();
         }
+
+        checkIsSquare();
 
         return ShortStream.of(new ShortIteratorEx() {
             private final int toIndex = rowCount;
@@ -3082,8 +3084,12 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
 
     /**
      * Performs the specified action for each element in a rectangular sub-region of this matrix.
-     * Elements are processed in row-major order (left to right, top to bottom) within the specified bounds.
-     * This operation may be performed in parallel for large regions.
+     * Elements are processed in row-major order (left to right, top to bottom) within the specified bounds when executed sequentially.
+     *
+     * <p>This operation may be parallelized internally if the sub-matrix is large enough
+     * to benefit from parallel processing; if parallelized, the order in which elements are
+     * visited is unspecified and the action must be thread-safe, but every element is still
+     * visited exactly once.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

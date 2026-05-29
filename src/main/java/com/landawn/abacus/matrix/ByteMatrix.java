@@ -1778,7 +1778,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * ByteMatrix transposed = matrix.transpose();   // 2×3 becomes 3×2
      * }</pre>
      *
-     * @return a new matrix that is the transpose of this matrix with dimensions {@code columnCount × rowCount}
+     * @return a new matrix that is the transpose of this matrix with dimensions {@code columnCount × rowCount};
+     *         an {@code N x 0} matrix transposes to the empty {@code 0 x 0} matrix, because the swapped shape
+     *         {@code 0 x N} (zero rows with a non-zero column count) is not representable
      * @throws IllegalArgumentException if the transposed shape {@code (columnCount × rowCount)} is not representable
      */
     @Override
@@ -2497,15 +2499,15 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * }</pre>
      *
      * @return a ByteStream of diagonal elements
-     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
+     * @throws IllegalStateException if the matrix is non-empty and not square (rowCount != columnCount)
      */
     @Override
     public ByteStream mainDiagonalStream() {
-        checkIsSquare();
-
         if (isEmpty()) {
             return ByteStream.empty();
         }
+
+        checkIsSquare();
 
         return ByteStream.of(new ByteIteratorEx() {
             private final int toIndex = rowCount;
@@ -2552,15 +2554,15 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * }</pre>
      *
      * @return a ByteStream of anti-diagonal elements
-     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
+     * @throws IllegalStateException if the matrix is non-empty and not square (rowCount != columnCount)
      */
     @Override
     public ByteStream antiDiagonalStream() {
-        checkIsSquare();
-
         if (isEmpty()) {
             return ByteStream.empty();
         }
+
+        checkIsSquare();
 
         return ByteStream.of(new ByteIteratorEx() {
             private final int toIndex = rowCount;

@@ -1771,7 +1771,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * CharMatrix transposed = matrix.transpose();   // 2×3 becomes 3×2
      * }</pre>
      *
-     * @return a new matrix that is the transpose of this matrix with dimensions columnCount × rowCount
+     * @return a new matrix that is the transpose of this matrix with dimensions columnCount × rowCount;
+     *         an {@code N x 0} matrix transposes to the empty {@code 0 x 0} matrix, because the swapped shape
+     *         {@code 0 x N} (zero rows with a non-zero column count) is not representable
      */
     @Override
     public CharMatrix transpose() {
@@ -2445,15 +2447,15 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * }</pre>
      *
      * @return a CharStream containing the diagonal elements from top-left to bottom-right
-     * @throws IllegalStateException if the matrix is not square
+     * @throws IllegalStateException if the matrix is non-empty and not square
      */
     @Override
     public CharStream mainDiagonalStream() {
-        checkIsSquare();
-
         if (isEmpty()) {
             return CharStream.empty();
         }
+
+        checkIsSquare();
 
         return CharStream.of(new CharIteratorEx() {
             private final int toIndex = rowCount;
@@ -2502,15 +2504,15 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * }</pre>
      *
      * @return a CharStream containing the diagonal elements from top-right to bottom-left
-     * @throws IllegalStateException if the matrix is not square
+     * @throws IllegalStateException if the matrix is non-empty and not square
      */
     @Override
     public CharStream antiDiagonalStream() {
-        checkIsSquare();
-
         if (isEmpty()) {
             return CharStream.empty();
         }
+
+        checkIsSquare();
 
         return CharStream.of(new CharIteratorEx() {
             private final int toIndex = rowCount;
@@ -3033,9 +3035,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * Performs the specified action for each element in a sub-region of this matrix.
      *
      * <p>The action is performed on elements within the specified row and column ranges
-     * in row-major order. This allows you to operate on a rectangular portion of the matrix
-     * without affecting other elements. For large sub-regions, the operation may be parallelized
-     * automatically to improve performance.
+     * in row-major order when executed sequentially. This allows you to operate on a rectangular
+     * portion of the matrix without affecting other elements. For large sub-regions, the operation
+     * may be parallelized automatically to improve performance; if parallelized, the order in which
+     * elements are visited is unspecified and the action must be thread-safe, but every element is
+     * still visited exactly once.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

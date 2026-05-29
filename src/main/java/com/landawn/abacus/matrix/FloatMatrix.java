@@ -1737,7 +1737,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix transposed = matrix.transpose();   // 2×3 becomes 3×2
      * }</pre>
      *
-     * @return a new {@code FloatMatrix} that is the transpose of this matrix with dimensions {@code columnCount × rowCount}
+     * @return a new {@code FloatMatrix} that is the transpose of this matrix with dimensions {@code columnCount × rowCount};
+     *         an {@code N x 0} matrix transposes to the empty {@code 0 x 0} matrix, because the swapped shape
+     *         {@code 0 x N} (zero rows with a non-zero column count) is not representable
      */
     @Override
     public FloatMatrix transpose() {
@@ -2420,15 +2422,15 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @return a FloatStream containing the diagonal elements from upper-left to lower-right
-     * @throws IllegalStateException if the matrix is not square
+     * @throws IllegalStateException if the matrix is non-empty and not square
      */
     @Override
     public FloatStream mainDiagonalStream() {
-        checkIsSquare();
-
         if (isEmpty()) {
             return FloatStream.empty();
         }
+
+        checkIsSquare();
 
         return FloatStream.of(new FloatIteratorEx() {
             private final int toIndex = rowCount;
@@ -2477,15 +2479,15 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @return a FloatStream containing the anti-diagonal elements from upper-right to lower-left
-     * @throws IllegalStateException if the matrix is not square
+     * @throws IllegalStateException if the matrix is non-empty and not square
      */
     @Override
     public FloatStream antiDiagonalStream() {
-        checkIsSquare();
-
         if (isEmpty()) {
             return FloatStream.empty();
         }
+
+        checkIsSquare();
 
         return FloatStream.of(new FloatIteratorEx() {
             private final int toIndex = rowCount;

@@ -1902,7 +1902,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * DoubleMatrix transposed = matrix.transpose();   // 2×3 becomes 3×2
      * }</pre>
      *
-     * @return a new matrix that is the transpose of this matrix with dimensions columnCount × rowCount
+     * @return a new matrix that is the transpose of this matrix with dimensions columnCount × rowCount;
+     *         an {@code N x 0} matrix transposes to the empty {@code 0 x 0} matrix, because the swapped shape
+     *         {@code 0 x N} (zero rows with a non-zero column count) is not representable
      */
     @Override
     public DoubleMatrix transpose() {
@@ -2596,15 +2598,15 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @return a DoubleStream of diagonal elements from upper-left to lower-right
-     * @throws IllegalStateException if the matrix is not square
+     * @throws IllegalStateException if the matrix is non-empty and not square
      */
     @Override
     public DoubleStream mainDiagonalStream() {
-        checkIsSquare();
-
         if (isEmpty()) {
             return DoubleStream.empty();
         }
+
+        checkIsSquare();
 
         return DoubleStream.of(new DoubleIteratorEx() {
             private final int toIndex = rowCount;
@@ -2651,15 +2653,15 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @return a DoubleStream of diagonal elements from upper-right to lower-left
-     * @throws IllegalStateException if the matrix is not square
+     * @throws IllegalStateException if the matrix is non-empty and not square
      */
     @Override
     public DoubleStream antiDiagonalStream() {
-        checkIsSquare();
-
         if (isEmpty()) {
             return DoubleStream.empty();
         }
+
+        checkIsSquare();
 
         return DoubleStream.of(new DoubleIteratorEx() {
             private final int toIndex = rowCount;

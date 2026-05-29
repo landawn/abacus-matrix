@@ -1091,6 +1091,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * The result matrix has the same element type as the original.
      * This is a convenience method that uses the same element type for input and output.
      *
+     * <p><b>Note:</b> because the result reuses this matrix's runtime element type, an {@link ArrayStoreException}
+     * is thrown if {@code mapper} returns a value that is not assignable to that type. Use
+     * {@link #map(Throwables.Function, Class)} with an explicit target type to map to a wider or different type.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<String> strMatrix = Matrix.of(new String[][] {{"a", "b"}, {"c", "d"}});
@@ -1106,6 +1110,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param mapper the transformation function (must not be {@code null})
      * @return a new matrix with transformed elements
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
+     * @throws ArrayStoreException if {@code mapper} returns a value that is not assignable to this matrix's runtime element type
      * @throws E if the function throws an exception
      */
     public <E extends Exception> Matrix<T> map(final Throwables.UnaryOperator<T, E> mapper) throws E {
@@ -2421,6 +2426,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Both matrices must have the same dimensions. The result matrix has the same element type as this matrix.
      * The operation may be performed in parallel for large matrices.
      *
+     * <p><b>Note:</b> because the result reuses this matrix's runtime element type, an {@link ArrayStoreException}
+     * is thrown if {@code zipFunction} returns a value that is not assignable to that type. Use
+     * {@link #zipWith(Matrix, Throwables.BiFunction, Class)} with an explicit target type to produce a wider or different type.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Integer> m1 = Matrix.of(new Integer[][] {{1, 2}, {3, 4}});
@@ -2436,6 +2445,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @return a new matrix with the results of the zip function
      * @throws IllegalArgumentException if the matrices don't have the same dimensions, or if
      *         {@code zipFunction} is {@code null}
+     * @throws ArrayStoreException if {@code zipFunction} returns a value that is not assignable to this matrix's runtime element type
      * @throws E if the zip function throws an exception
      */
     public <B, E extends Exception> Matrix<T> zipWith(final Matrix<B> other, final Throwables.BiFunction<? super T, ? super B, T, E> zipFunction) throws E {
@@ -2507,6 +2517,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @return a new matrix with the results of the zip function
      * @throws IllegalArgumentException if the matrices don't have the same dimensions, or if
      *         {@code zipFunction} is {@code null}
+     * @throws ArrayStoreException if {@code zipFunction} returns a value that is not assignable to this matrix's runtime element type
+     *         (use {@link #zipWith(Matrix, Matrix, Throwables.TriFunction, Class)} with an explicit target type to avoid this)
      * @throws E if the zip function throws an exception
      */
     public <B, C, E extends Exception> Matrix<T> zipWith(final Matrix<B> other, final Matrix<C> third,
@@ -2574,15 +2586,15 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @return a {@link Stream} of diagonal elements from top-left to bottom-right, or an empty stream if the matrix is empty
-     * @throws IllegalStateException if the matrix is not square
+     * @throws IllegalStateException if the matrix is non-empty and not square
      */
     @Override
     public Stream<T> mainDiagonalStream() {
-        checkIsSquare();
-
         if (isEmpty()) {
             return Stream.empty();
         }
+
+        checkIsSquare();
 
         return Stream.of(new ObjIteratorEx<>() {
             private final int toIndex = rowCount;
@@ -2630,15 +2642,15 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @return a {@link Stream} of anti-diagonal elements from top-right to bottom-left, or an empty stream if the matrix is empty
-     * @throws IllegalStateException if the matrix is not square
+     * @throws IllegalStateException if the matrix is non-empty and not square
      */
     @Override
     public Stream<T> antiDiagonalStream() {
-        checkIsSquare();
-
         if (isEmpty()) {
             return Stream.empty();
         }
+
+        checkIsSquare();
 
         return Stream.of(new ObjIteratorEx<>() {
             private final int toIndex = rowCount;
@@ -3181,11 +3193,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
     /**
      * Applies the given action to each element in the specified sub-matrix region.
-     * Elements are processed in row-major order within the specified bounds.
+     * Elements are processed in row-major order within the specified bounds when executed sequentially.
      *
      * <p>This method allows for processing a rectangular subset of the matrix.
      * The operation may be parallelized internally if the sub-matrix is large enough
-     * to benefit from parallel processing.</p>
+     * to benefit from parallel processing; if parallelized, the order in which elements are
+     * visited is unspecified and the action must be thread-safe, but every element is still
+     * visited exactly once.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3386,9 +3400,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Returns a hash code value for this matrix.
      * The hash code is computed via {@link N#deepHashCode(Object[])} over the internal
-     * two-dimensional array, so each element contributes through its own {@code hashCode()}
-     * (with {@code null} contributing {@code 0}). Matrices that compare equal via
-     * {@link #equals(Object)} are guaranteed to produce the same hash code.
+     * two-dimensional array ({@link java.util.Arrays#deepHashCode(Object[])} semantics): a non-array
+     * element contributes its own {@code hashCode()} (with {@code null} contributing {@code 0}), while an
+     * array-typed element (for example a {@code Matrix<int[]>}) is hashed deeply by content. Matrices that
+     * compare equal via {@link #equals(Object)} are guaranteed to produce the same hash code.
      *
      * @return a hash code value for this matrix
      */

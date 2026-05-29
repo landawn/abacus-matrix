@@ -1897,7 +1897,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * LongMatrix transposed = matrix.transpose();   // 2×3 becomes 3×2
      * }</pre>
      *
-     * @return a new {@code LongMatrix} that is the transpose of this matrix with dimensions {@code columnCount × rowCount}
+     * @return a new {@code LongMatrix} that is the transpose of this matrix with dimensions {@code columnCount × rowCount};
+     *         an {@code N x 0} matrix transposes to the empty {@code 0 x 0} matrix, because the swapped shape
+     *         {@code 0 x N} (zero rows with a non-zero column count) is not representable
      * @throws IllegalArgumentException if the resulting shape is not representable
      */
     @Override
@@ -2575,15 +2577,15 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * @return a stream of diagonal elements from upper-left to lower-right,
      *         or an empty stream if the matrix is empty
-     * @throws IllegalStateException if the matrix is not square
+     * @throws IllegalStateException if the matrix is non-empty and not square
      */
     @Override
     public LongStream mainDiagonalStream() {
-        checkIsSquare();
-
         if (isEmpty()) {
             return LongStream.empty();
         }
+
+        checkIsSquare();
 
         return LongStream.of(new LongIteratorEx() {
             private final int toIndex = rowCount;
@@ -2634,15 +2636,15 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * @return a stream of diagonal elements from upper-right to lower-left,
      *         or an empty stream if the matrix is empty
-     * @throws IllegalStateException if the matrix is not square
+     * @throws IllegalStateException if the matrix is non-empty and not square
      */
     @Override
     public LongStream antiDiagonalStream() {
-        checkIsSquare();
-
         if (isEmpty()) {
             return LongStream.empty();
         }
+
+        checkIsSquare();
 
         return LongStream.of(new LongIteratorEx() {
             private final int toIndex = rowCount;
@@ -3180,8 +3182,13 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
     /**
      * Performs the specified action for each element in a sub-region of this matrix.
-     * Elements are processed in row-major order within the specified bounds.
-     * The operation may be performed in parallel for large sub-regions to improve performance.
+     * Elements are processed in row-major order within the specified bounds when executed sequentially.
+     *
+     * <p>This method allows for processing a rectangular subset of the matrix.
+     * The operation may be parallelized internally if the sub-matrix is large enough
+     * to benefit from parallel processing; if parallelized, the order in which elements are
+     * visited is unspecified and the action must be thread-safe, but every element is still
+     * visited exactly once.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

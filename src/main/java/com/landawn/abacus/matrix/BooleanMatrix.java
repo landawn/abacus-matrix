@@ -1774,8 +1774,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * BooleanMatrix transposed = matrix.transpose();   // 2×3 becomes 3×2
      * }</pre>
      *
-     * @return a new matrix that is the transpose of this matrix with dimensions {@code columnCount × rowCount},
-     *         or an empty matrix if this matrix has zero columns
+     * @return a new matrix that is the transpose of this matrix with dimensions {@code columnCount × rowCount};
+     *         an {@code N x 0} matrix transposes to the empty {@code 0 x 0} matrix, because the swapped shape
+     *         {@code 0 x N} (zero rows with a non-zero column count) is not representable
      */
     @Override
     public BooleanMatrix transpose() {
@@ -2463,15 +2464,15 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * @return a {@code Stream<Boolean>} containing the diagonal elements from top-left to bottom-right,
      *         or an empty stream if the matrix is empty (0 × 0)
-     * @throws IllegalStateException if the matrix is not square ({@code rowCount != columnCount})
+     * @throws IllegalStateException if the matrix is non-empty and not square ({@code rowCount != columnCount})
      */
     @Override
     public Stream<Boolean> mainDiagonalStream() {
-        checkIsSquare();
-
         if (isEmpty()) {
             return Stream.empty();
         }
+
+        checkIsSquare();
 
         return Stream.of(new ObjIteratorEx<>() {
             private final int toIndex = rowCount;
@@ -2530,15 +2531,15 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * @return a {@code Stream<Boolean>} containing the anti-diagonal elements from top-right to bottom-left,
      *         or an empty stream if the matrix is empty (0 × 0)
-     * @throws IllegalStateException if the matrix is not square ({@code rowCount != columnCount})
+     * @throws IllegalStateException if the matrix is non-empty and not square ({@code rowCount != columnCount})
      */
     @Override
     public Stream<Boolean> antiDiagonalStream() {
-        checkIsSquare();
-
         if (isEmpty()) {
             return Stream.empty();
         }
+
+        checkIsSquare();
 
         return Stream.of(new ObjIteratorEx<>() {
             private final int toIndex = rowCount;
@@ -3197,11 +3198,13 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
 
     /**
      * Performs the specified action for each element in the specified sub-matrix region.
-     * Elements are processed in row-major order within the specified bounds.
+     * Elements are processed in row-major order within the specified bounds when executed sequentially.
      *
      * <p>This method allows for processing a rectangular subset of the matrix.
      * The operation may be parallelized internally if the sub-matrix is large enough
-     * to benefit from parallel processing.</p>
+     * to benefit from parallel processing; if parallelized, the order in which elements are
+     * visited is unspecified and the action must be thread-safe, but every element is still
+     * visited exactly once.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
