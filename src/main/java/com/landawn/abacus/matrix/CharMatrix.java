@@ -351,9 +351,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * }</pre>
      *
-     * @param mainDiagonal the array of main diagonal elements (can be null or empty)
-     * @param antiDiagonal the array of anti-diagonal elements (can be null or empty)
-     * @return a square matrix with the specified diagonals, or an empty matrix if both inputs are null or empty
+     * @param mainDiagonal the array of main diagonal elements (can be {@code null} or empty)
+     * @param antiDiagonal the array of anti-diagonal elements (can be {@code null} or empty)
+     * @return a square matrix with the specified diagonals, or an empty matrix if both inputs are {@code null} or empty
      * @throws IllegalArgumentException if both arrays are non-empty and have different lengths
      */
     public static CharMatrix diagonals(final char[] mainDiagonal, final char[] antiDiagonal) throws IllegalArgumentException {
@@ -384,7 +384,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
     /**
      * Converts a boxed Character Matrix to a primitive CharMatrix.
-     * Null values in the input matrix are converted to {@code '\u0000'} (the null character).
+     * {@code null} values in the input matrix are converted to {@code '\u0000'} (the null character).
      *
      * <p>This method performs the opposite operation of {@link #boxed()}, converting
      * from object-based Character values to primitive char values. This conversion
@@ -435,7 +435,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * char value = matrix.get(point);   // Returns 'b'
      * }</pre>
      *
-     * @param point the point containing row and column indices (must not be null)
+     * @param point the point containing row and column indices (must not be {@code null})
      * @return the char element at the specified point
      * @throws IllegalArgumentException if {@code point} is {@code null}
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
@@ -477,7 +477,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * assert matrix.get(point) == 'x';
      * }</pre>
      *
-     * @param point the point containing row and column indices (must not be null)
+     * @param point the point containing row and column indices (must not be {@code null})
      * @param value the new char value to set at the specified point
      * @throws IllegalArgumentException if {@code point} is {@code null}
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
@@ -732,8 +732,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param rowIndex the index of the row to update (0-based)
      * @param operator the operator to apply to each element in the row; receives the current
      *             element value and returns the new value
-     * @throws ArrayIndexOutOfBoundsException if rowIndex is out of bounds
-     * @throws IllegalArgumentException if operator is null
+     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} is out of bounds
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateRow(final int rowIndex, final Throwables.CharUnaryOperator<E> operator) throws E {
@@ -766,8 +766,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param columnIndex the index of the column to update (0-based)
      * @param operator the operator to apply to each element in the column; receives the current
      *             element value and returns the new value
-     * @throws ArrayIndexOutOfBoundsException if columnIndex is out of bounds
-     * @throws IllegalArgumentException if operator is null
+     * @throws ArrayIndexOutOfBoundsException if {@code columnIndex} is out of bounds
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.CharUnaryOperator<E> operator) throws E {
@@ -2181,7 +2181,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * @param other the matrix to multiply with this matrix; must not be {@code null}
      * @return a new CharMatrix containing the matrix product
-     * @throws IllegalArgumentException if {@code other} is {@code null} or {@code this.columnCount != other.rowCount}
+     * @throws IllegalArgumentException if {@code other} is {@code null}, if {@code this.columnCount != other.rowCount}, or if this matrix has zero rows while {@code other} has a non-zero column count (the resulting shape is not representable)
      */
     public CharMatrix matmul(final CharMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
@@ -3000,7 +3000,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * for various matrix operations to determine row lengths.
      *
      * @param a the char array to measure
-     * @return the length of the array, or 0 if the array is null
+     * @return the length of the array, or 0 if the array is {@code null}
      */
     @Override
     protected int length(@SuppressWarnings("hiding") final char[] a) {

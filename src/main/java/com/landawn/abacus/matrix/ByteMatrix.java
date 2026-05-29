@@ -42,13 +42,15 @@ import com.landawn.abacus.util.stream.Stream;
  * <p>Cells introduced by growth or reshaping default to {@code 0} unless an overload accepts an
  * explicit fill value.</p>
  *
- * <p><b>Byte arithmetic:</b> all element-wise arithmetic ({@link #add(ByteMatrix)},
- * {@link #subtract(ByteMatrix)}, {@link #matmul(ByteMatrix)}, and the {@code zipWith}/{@code map}
- * variants) is performed using Java's standard numeric promotion to {@code int} and the result is
- * narrowed back to {@code byte} (via an explicit cast for {@code add}/{@code subtract}, or via the
- * implicit narrowing of the {@code +=} accumulation in {@code matmul}), so values outside
- * {@code [Byte.MIN_VALUE, Byte.MAX_VALUE]} wrap modulo 256. To preserve the full magnitude, widen
- * first via {@link #toIntMatrix()} or {@link #toLongMatrix()}.</p>
+ * <p><b>Byte arithmetic:</b> the built-in element-wise arithmetic ({@link #add(ByteMatrix)},
+ * {@link #subtract(ByteMatrix)}, and {@link #matmul(ByteMatrix)}) is performed using Java's standard
+ * numeric promotion to {@code int} and the result is narrowed back to {@code byte} (via an explicit
+ * cast for {@code add}/{@code subtract}, or via the implicit narrowing of the {@code +=} accumulation
+ * in {@code matmul}), so values outside {@code [Byte.MIN_VALUE, Byte.MAX_VALUE]} wrap modulo 256.
+ * The {@code zipWith}/{@code map} variants instead store whatever {@code byte} the supplied operator
+ * returns, so any narrowing of an {@code int} computation must be performed inside the operator
+ * itself. To preserve the full magnitude, widen first via {@link #toIntMatrix()} or
+ * {@link #toLongMatrix()}.</p>
  *
  * @see IntMatrix
  * @see ShortMatrix
@@ -438,7 +440,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * byte value = matrix.get(point);   // Returns 2
      * }</pre>
      *
-     * @param point the point containing row and column indices (must not be null)
+     * @param point the point containing row and column indices (must not be {@code null})
      * @return the byte element at the specified point
      * @throws IllegalArgumentException if {@code point} is {@code null}
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
@@ -481,7 +483,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * assert matrix.get(point) == 9;
      * }</pre>
      *
-     * @param point the point containing row and column indices (must not be null)
+     * @param point the point containing row and column indices (must not be {@code null})
      * @param value the new byte value to set at the specified point
      * @throws IllegalArgumentException if {@code point} is {@code null}
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
@@ -1089,8 +1091,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param mapper the function to transform each byte to an object of type {@code R}; must not be {@code null}
      * @param targetElementType the class of the target element type (used for array creation); must not be {@code null}
      * @return a new {@code Matrix<R>} with the transformed object values; the original matrix is unchanged
-     * @throws IllegalArgumentException if {@code mapper} is {@code null}
-     * @throws NullPointerException if {@code targetElementType} is {@code null}
+     * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null}
      * @throws E if the function throws an exception
      */
     public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.ByteFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E {
@@ -2207,7 +2208,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * @param other the matrix to multiply with; must have row count equal to this matrix's column count
      * @return a new ByteMatrix containing the matrix product with dimensions {@code (this.rowCount x other.columnCount)}
-     * @throws IllegalArgumentException if {@code other} is {@code null}, or if {@code this.columnCount != other.rowCount} (incompatible dimensions for multiplication)
+     * @throws IllegalArgumentException if {@code other} is {@code null}, if {@code this.columnCount != other.rowCount} (incompatible dimensions for multiplication), or if this matrix has zero rows while {@code other} has a non-zero column count (the resulting shape is not representable)
      */
     public ByteMatrix matmul(final ByteMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
@@ -2231,7 +2232,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * Each byte value is converted to its corresponding Byte wrapper object.
      *
      * <p>This conversion is useful when you need to work with APIs that require
-     * object types rather than primitives, or when you need null values in the matrix.
+     * object types rather than primitives, or when you need {@code null} values in the matrix.
      * Note that boxing incurs memory overhead and may impact performance.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -3072,7 +3073,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     }
 
     /**
-     * Returns the length of the specified byte array, or 0 if the array is null.
+     * Returns the length of the specified byte array, or 0 if the array is {@code null}.
      * This is an internal helper method used by the abstract parent class for
      * operations that need to determine array lengths safely.
      *
@@ -3080,7 +3081,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * matrix implementation and should not typically be called by external code.
      *
      * @param a the byte array to measure
-     * @return the length of the array, or 0 if the array is null
+     * @return the length of the array, or 0 if the array is {@code null}
      */
     @Override
     protected int length(@SuppressWarnings("hiding") final byte[] a) {

@@ -334,7 +334,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * boolean value = matrix.get(point);   // Returns false
      * }</pre>
      *
-     * @param point the point containing row and column indices (must not be null)
+     * @param point the point containing row and column indices (must not be {@code null})
      * @return the boolean element at the specified point
      * @throws IllegalArgumentException if {@code point} is {@code null}
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
@@ -376,7 +376,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * assert matrix.get(point) == true;
      * }</pre>
      *
-     * @param point the point containing row and column indices (must not be null)
+     * @param point the point containing row and column indices (must not be {@code null})
      * @param value the new boolean value to set at the specified point
      * @throws IllegalArgumentException if {@code point} is {@code null}
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
@@ -1005,7 +1005,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Creates a new BooleanMatrix by applying a transformation function to each element.
+     * Creates a new {@code BooleanMatrix} by applying a transformation function to each element.
      * The original matrix is not modified; a new matrix with transformed values is returned.
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance.
@@ -1041,7 +1041,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Creates a new Matrix by applying a function that converts boolean values to objects of type R.
+     * Creates a new {@code Matrix} by applying a function that converts boolean values to objects of type {@code R}.
      * This operation may be executed in parallel for better performance on large matrices.
      *
      * <p><b>Usage Examples:</b></p>
@@ -1111,7 +1111,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * // Top-left 2x2 region is now true, rest remains false
      * }</pre>
      *
-     * @param source the two-dimensional boolean array to copy values from; must not be null
+     * @param source the two-dimensional boolean array to copy values from; must not be {@code null}
      * @throws IllegalArgumentException if {@code source} is {@code null}
      */
     public void fill(final boolean[][] source) {
@@ -1133,7 +1133,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * @param destRowIndex the target row index in this matrix (0-based)
      * @param destColumnIndex the target column index in this matrix (0-based)
-     * @param source the source array to copy values from; must not be null
+     * @param source the source array to copy values from; must not be {@code null}
      * @throws IllegalArgumentException if {@code source} is {@code null}, or if the target indices are negative or exceed matrix dimensions
      */
     public void fill(final int destRowIndex, final int destColumnIndex, final boolean[][] source) throws IllegalArgumentException {
@@ -2291,11 +2291,11 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Converts this primitive boolean matrix to a boxed Boolean Matrix.
-     * Each boolean value is converted to its corresponding Boolean wrapper object.
+     * Converts this primitive {@code boolean} matrix to a boxed {@code Matrix<Boolean>}.
+     * Each {@code boolean} value is converted to its corresponding {@code Boolean} wrapper object.
      *
      * <p>This conversion is useful when you need to work with APIs that require
-     * object types rather than primitives, or when you need null values in the matrix.
+     * object types rather than primitives, or when you need {@code null} values in the matrix.
      * Note that boxing incurs memory overhead and may impact performance.</p>
      *
      * <p><b>Usage Examples:</b></p>

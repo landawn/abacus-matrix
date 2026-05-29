@@ -78,8 +78,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * data[0][0] = "X";  // This also changes the matrix
      * }</pre>
      *
-     * @param a the two-dimensional array of elements (must not be null)
-     * @throws IllegalArgumentException if the array is null, if any row is null, or if rows have
+     * @param a the two-dimensional array of elements (must not be {@code null})
+     * @throws IllegalArgumentException if the array is {@code null}, if any row is {@code null}, or if rows have
      *         different lengths (not rectangular)
      */
     public Matrix(final T[][] a) {
@@ -96,9 +96,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
     /**
      * Creates an empty matrix with zero rows and zero columns.
-     * The underlying backing array is an {@code Object[][]}, so the element type is tracked
+     *
+     * <p>The underlying backing array is an {@code Object[][]}, so the element type is tracked
      * as {@link Object}; subsequent operations that allocate fresh storage may therefore widen
-     * to {@code Object[]} rather than the static type {@code T}.
+     * to {@code Object[]} rather than the static type {@code T}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -123,7 +124,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * and vice versa.</p>
      *
      * <p>All rows must have the same length as the first row (rectangular array required).
-     * The array must not be null.</p>
+     * The array must not be {@code null}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -143,9 +144,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @param <T> the type of elements in the matrix
-     * @param a the two-dimensional array to create the matrix from (must not be null)
+     * @param a the two-dimensional array to create the matrix from (must not be {@code null})
      * @return a new Matrix containing the provided data
-     * @throws IllegalArgumentException if the array is null, if any row is null, or if rows have
+     * @throws IllegalArgumentException if the array is {@code null}, if any row is {@code null}, or if rows have
      *         different lengths (non-rectangular array)
      */
     @SafeVarargs
@@ -197,7 +198,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
     /**
      * Creates a square diagonal matrix with the given values on the main diagonal (upper-left to lower-right).
-     * All other elements are null. The matrix dimension is determined by the length of the diagonal array.
+     * All other elements are {@code null}. The matrix dimension is determined by the length of the diagonal array.
      *
      * <p>The main diagonal runs from upper-left to lower-right. The resulting matrix is always square
      * with size n×n where n is the length of the diagonal array.</p>
@@ -217,9 +218,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @param <T> the type of elements in the matrix
-     * @param mainDiagonal the diagonal values (must not be null)
+     * @param mainDiagonal the diagonal values (must not be {@code null})
      * @return a square matrix with the given diagonal values on the main diagonal
-     * @throws IllegalArgumentException if the diagonal array is null
+     * @throws IllegalArgumentException if the diagonal array is {@code null}
      * @see #diagonals(Object[], Object[])
      * @see #antiDiagonal(Object[])
      */
@@ -229,7 +230,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
     /**
      * Creates a square diagonal matrix with the given values on the anti-diagonal (upper-right to lower-left).
-     * All other elements are null. The matrix dimension is determined by the length of the diagonal array.
+     * All other elements are {@code null}. The matrix dimension is determined by the length of the diagonal array.
      *
      * <p>The anti-diagonal runs from upper-right to lower-left. The resulting matrix is always square
      * with size n×n where n is the length of the diagonal array. The first element in the array
@@ -250,9 +251,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @param <T> the type of elements in the matrix
-     * @param antiDiagonal the anti-diagonal values (must not be null)
+     * @param antiDiagonal the anti-diagonal values (must not be {@code null})
      * @return a square matrix with the given anti-diagonal values
-     * @throws IllegalArgumentException if the diagonal array is null
+     * @throws IllegalArgumentException if the diagonal array is {@code null}
      * @see #diagonals(Object[], Object[])
      * @see #mainDiagonal(Object[])
      */
@@ -264,7 +265,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Creates a square matrix with values on both diagonals.
      * The main diagonal runs from upper-left to lower-right, and the anti-diagonal
      * runs from upper-right to lower-left. If diagonals intersect (odd dimension),
-     * the main diagonal value takes precedence. At least one diagonal must be non-null,
+     * the main diagonal value takes precedence. At least one diagonal must be non-{@code null},
      * and two non-empty diagonals must have the same length.
      *
      * <p><b>Usage Examples:</b></p>
@@ -828,7 +829,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @param <E> the type of exception that might be thrown by the operator
-     * @param operator the operator to apply to each diagonal element (must not be null)
+     * @param operator the operator to apply to each diagonal element (must not be {@code null})
      * @throws E if the operator throws an exception
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      * @throws IllegalArgumentException if {@code operator} is {@code null}
@@ -924,7 +925,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @param <E> the type of exception that might be thrown by the operator
-     * @param operator the operator to apply to each anti-diagonal element (must not be null)
+     * @param operator the operator to apply to each anti-diagonal element (must not be {@code null})
      * @throws E if the operator throws an exception
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      * @throws IllegalArgumentException if {@code operator} is {@code null}
@@ -946,8 +947,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Each element is replaced by the result of applying the operator.
      * The matrix is modified in-place.
      *
-     * <p>Iteration is performed sequentially in row-major order because the implementation
-     * may need to widen the underlying row storage to accept new value types.</p>
+     * <p>Iteration is always performed sequentially in row-major order; this operation is
+     * never parallelized.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -961,7 +962,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @param <E> the type of exception that might be thrown by the operator
-     * @param operator the operator to apply to each element (must not be null)
+     * @param operator the operator to apply to each element (must not be {@code null})
      * @throws E if the operator throws an exception
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      */
@@ -980,8 +981,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * The mapper receives the row and column indices (both 0-based) and returns the new value.
      * This is useful for position-dependent transformations. The matrix is modified in-place.
      *
-     * <p>Iteration is performed sequentially in row-major order because the implementation
-     * may need to widen the underlying row storage to accept new value types.</p>
+     * <p>Iteration is always performed sequentially in row-major order; this operation is
+     * never parallelized.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -996,7 +997,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @param <E> the type of exception that might be thrown by the mapper
-     * @param mapper the function that takes row and column indices and returns the new value (must not be null)
+     * @param mapper the function that takes row and column indices and returns the new value (must not be {@code null})
      * @throws E if the mapper throws an exception
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      */
@@ -1016,8 +1017,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * The predicate is tested against each element's value, not its position.
      * The matrix is modified in-place.
      *
-     * <p>Iteration is performed sequentially in row-major order because the implementation
-     * may need to widen the underlying row storage to accept the replacement value's type.</p>
+     * <p>Iteration is always performed sequentially in row-major order; this operation is
+     * never parallelized.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1034,7 +1035,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @param <E> the type of exception that might be thrown by the predicate
-     * @param predicate the condition to test each element (must not be null)
+     * @param predicate the condition to test each element (must not be {@code null})
      * @param newValue the value to use as replacement (may be {@code null})
      * @throws E if the predicate throws an exception
      * @throws IllegalArgumentException if {@code predicate} is {@code null}
@@ -1055,8 +1056,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * The predicate receives row and column indices (both 0-based), not the element value.
      * This is useful for position-based replacements. The matrix is modified in-place.
      *
-     * <p>Iteration is performed sequentially in row-major order because the implementation
-     * may need to widen the underlying row storage to accept the replacement value's type.</p>
+     * <p>Iteration is always performed sequentially in row-major order; this operation is
+     * never parallelized.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1070,7 +1071,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @param <E> the type of exception that might be thrown by the predicate
-     * @param predicate the condition based on position (must not be null)
+     * @param predicate the condition based on position (must not be {@code null})
      * @param newValue the value to use as replacement (may be {@code null})
      * @throws E if the predicate throws an exception
      * @throws IllegalArgumentException if {@code predicate} is {@code null}
@@ -1432,7 +1433,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * matrix.fill(data);   // Copy from top-left
      * }</pre>
      *
-     * @param source the source two-dimensional array to copy values from (must not be null)
+     * @param source the source two-dimensional array to copy values from (must not be {@code null})
      * @throws IllegalArgumentException if {@code source} is {@code null}
      */
     public void fill(final T[][] source) {
@@ -1455,7 +1456,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param destRowIndex the target row index (0-based, must be between 0 and rowCount inclusive)
      * @param destColumnIndex the target column index (0-based, must be between 0 and columnCount inclusive)
-     * @param source the source two-dimensional array to copy values from (must not be null)
+     * @param source the source two-dimensional array to copy values from (must not be {@code null})
      * @throws IllegalArgumentException if {@code source} is {@code null}, or if the target indices are negative or exceed matrix dimensions
      */
     public void fill(final int destRowIndex, final int destColumnIndex, final T[][] source) throws IllegalArgumentException {
@@ -2340,7 +2341,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * // Result: {{1, 2}, {3, 4}, {5, 6}, {7, 8}}
      * }</pre>
      *
-     * @param other the matrix to stack below this matrix (must not be null)
+     * @param other the matrix to stack below this matrix (must not be {@code null})
      * @return a new vertically stacked matrix with dimensions (this.rowCount + other.rowCount) × columnCount
      * @throws IllegalArgumentException if {@code other} is {@code null}, the matrices have different column counts,
      *         or the merged row count would overflow {@code Integer.MAX_VALUE}
@@ -2390,7 +2391,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * // Result: {{1, 2, 5}, {3, 4, 6}}
      * }</pre>
      *
-     * @param other the matrix to stack to the right of this matrix (must not be null)
+     * @param other the matrix to stack to the right of this matrix (must not be {@code null})
      * @return a new horizontally stacked matrix with dimensions rowCount × (this.columnCount + other.columnCount)
      * @throws IllegalArgumentException if {@code other} is {@code null}, the matrices have different row counts,
      *         or the merged column count would overflow {@code Integer.MAX_VALUE}
@@ -2440,8 +2441,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param <B> the element type of the other matrix
      * @param <E> the type of exception that the zip function may throw
-     * @param other the other matrix to zip with (must have the same dimensions, must not be null)
-     * @param zipFunction the binary function to apply to corresponding elements (must not be null)
+     * @param other the other matrix to zip with (must have the same dimensions, must not be {@code null})
+     * @param zipFunction the binary function to apply to corresponding elements (must not be {@code null})
      * @return a new matrix with the results of the zip function
      * @throws IllegalArgumentException if the matrices don't have the same dimensions, or if
      *         {@code zipFunction} is {@code null}
@@ -2469,9 +2470,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param <B> the element type of the other matrix
      * @param <R> the element type of the result matrix
      * @param <E> the type of exception that the zip function may throw
-     * @param other the other matrix to zip with (must have the same dimensions, must not be null)
-     * @param zipFunction the function to apply to corresponding elements (must not be null)
-     * @param targetElementType the class of the result element type (must not be null)
+     * @param other the other matrix to zip with (must have the same dimensions, must not be {@code null})
+     * @param zipFunction the function to apply to corresponding elements (must not be {@code null})
+     * @param targetElementType the class of the result element type (must not be {@code null})
      * @return a new matrix with the results of the zip function
      * @throws IllegalArgumentException if the matrices don't have the same shape, or if
      *         {@code zipFunction} or {@code targetElementType} is {@code null}
@@ -2511,9 +2512,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param <B> the element type of the second matrix
      * @param <C> the element type of the third matrix
      * @param <E> the type of exception that the zip function may throw
-     * @param other the second matrix to zip with (must have the same dimensions, must not be null)
-     * @param third the third matrix to zip with (must have the same dimensions, must not be null)
-     * @param zipFunction the function to apply to corresponding elements (must not be null)
+     * @param other the second matrix to zip with (must have the same dimensions, must not be {@code null})
+     * @param third the third matrix to zip with (must have the same dimensions, must not be {@code null})
+     * @param zipFunction the function to apply to corresponding elements (must not be {@code null})
      * @return a new matrix with the results of the zip function
      * @throws IllegalArgumentException if the matrices don't have the same dimensions, or if
      *         {@code zipFunction} is {@code null}
@@ -2546,10 +2547,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param <C> the element type of the third matrix
      * @param <R> the element type of the result matrix
      * @param <E> the type of exception that the zip function may throw
-     * @param other the second matrix to zip with (must have the same dimensions, must not be null)
-     * @param third the third matrix to zip with (must have the same dimensions, must not be null)
-     * @param zipFunction the function to apply to corresponding elements (must not be null)
-     * @param targetElementType the class of the result element type (must not be null)
+     * @param other the second matrix to zip with (must have the same dimensions, must not be {@code null})
+     * @param third the third matrix to zip with (must have the same dimensions, must not be {@code null})
+     * @param zipFunction the function to apply to corresponding elements (must not be {@code null})
+     * @param targetElementType the class of the result element type (must not be {@code null})
      * @return a new matrix with the results of the zip function
      * @throws IllegalArgumentException if the matrices don't have the same shape, or if
      *         {@code zipFunction} or {@code targetElementType} is {@code null}

@@ -122,7 +122,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * <p><b>Requirements:</b></p>
      * <ul>
-     *   <li>All rows must be non-null and have the same length as the first row (rectangular array required)</li>
+     *   <li>All rows must be non-{@code null} and have the same length as the first row (rectangular array required)</li>
      *   <li>The first row cannot be {@code null} if the array is non-empty</li>
      * </ul>
      *
@@ -389,7 +389,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * float value = matrix.get(point);   // Returns 2.0f
      * }</pre>
      *
-     * @param point the point containing row and column indices (must not be null)
+     * @param point the point containing row and column indices (must not be {@code null})
      * @return the float element at the specified point
      * @throws IllegalArgumentException if {@code point} is {@code null}
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
@@ -431,7 +431,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * assert matrix.get(point) == 9.0f;
      * }</pre>
      *
-     * @param point the point containing row and column indices (must not be null)
+     * @param point the point containing row and column indices (must not be {@code null})
      * @param value the new float value to set at the specified point
      * @throws IllegalArgumentException if {@code point} is {@code null}
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
@@ -457,8 +457,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @return an {@link OptionalFloat} containing the element at position (rowIndex - 1, columnIndex), or empty if rowIndex == 0
-     * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @return an {@link OptionalFloat} containing the element at position {@code (rowIndex - 1, columnIndex)}, or empty if {@code rowIndex == 0}
+     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
     public OptionalFloat valueAbove(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -480,8 +480,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @return an {@link OptionalFloat} containing the element at position (rowIndex + 1, columnIndex), or empty if rowIndex == rowCount - 1
-     * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @return an {@link OptionalFloat} containing the element at position {@code (rowIndex + 1, columnIndex)}, or empty if {@code rowIndex == rowCount - 1}
+     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
     public OptionalFloat valueBelow(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -503,8 +503,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @return an {@link OptionalFloat} containing the element at position (rowIndex, columnIndex - 1), or empty if columnIndex == 0
-     * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @return an {@link OptionalFloat} containing the element at position {@code (rowIndex, columnIndex - 1)}, or empty if {@code columnIndex == 0}
+     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
     public OptionalFloat valueLeft(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -526,8 +526,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
-     * @return an {@link OptionalFloat} containing the element at position (rowIndex, columnIndex + 1), or empty if columnIndex == columnCount - 1
-     * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @return an {@link OptionalFloat} containing the element at position {@code (rowIndex, columnIndex + 1)}, or empty if {@code columnIndex == columnCount - 1}
+     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
     public OptionalFloat valueRight(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -2163,8 +2163,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @param other the matrix to multiply with this matrix; must not be {@code null}
      * @return a new {@code FloatMatrix} containing the matrix product with dimensions {@code this.rowCount × other.columnCount}
-     * @throws IllegalArgumentException if {@code other} is {@code null} or the matrix dimensions are incompatible for multiplication
-     *         (i.e., {@code this.columnCount != other.rowCount})
+     * @throws IllegalArgumentException if {@code other} is {@code null}, if the matrix dimensions are incompatible for multiplication
+     *         (i.e., {@code this.columnCount != other.rowCount}), or if this matrix has zero rows while {@code other} has a
+     *         non-zero column count (the resulting shape is not representable)
      */
     public FloatMatrix matmul(final FloatMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
@@ -2185,7 +2186,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
     /**
      * Converts this primitive {@code FloatMatrix} to a boxed {@code Matrix<Float>}.
-     * Each primitive {@code float} element is autoboxed to a non-null {@link Float}, so the
+     * Each primitive {@code float} element is autoboxed to a non-{@code null} {@link Float}, so the
      * returned matrix has the same dimensions and values as this matrix.
      *
      * <p><b>Usage Examples:</b></p>

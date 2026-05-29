@@ -496,9 +496,9 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * }</pre>
      *
-     * @param mainDiagonal the array of main diagonal elements (can be null or empty)
-     * @param antiDiagonal the array of anti-diagonal elements (can be null or empty)
-     * @return a square matrix with the specified diagonals, or an empty matrix if both inputs are null or empty
+     * @param mainDiagonal the array of main diagonal elements (can be {@code null} or empty)
+     * @param antiDiagonal the array of anti-diagonal elements (can be {@code null} or empty)
+     * @return a square matrix with the specified diagonals, or an empty matrix if both inputs are {@code null} or empty
      * @throws IllegalArgumentException if both arrays are non-empty and have different lengths
      */
     public static IntMatrix diagonals(final int[] mainDiagonal, final int[] antiDiagonal) throws IllegalArgumentException {
@@ -576,7 +576,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * int value = matrix.get(point);   // Returns 2
      * }</pre>
      *
-     * @param point the point containing row and column indices (must not be null)
+     * @param point the point containing row and column indices (must not be {@code null})
      * @return the int element at the specified point
      * @throws IllegalArgumentException if {@code point} is {@code null}
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
@@ -618,7 +618,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * assert matrix.get(point) == 9;
      * }</pre>
      *
-     * @param point the point containing row and column indices (must not be null)
+     * @param point the point containing row and column indices (must not be {@code null})
      * @param value the new int value to set at the specified point
      * @throws IllegalArgumentException if {@code point} is {@code null}
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
@@ -1546,6 +1546,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
      * @return a new IntMatrix with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         if the resulting shape is not representable (zero rows with a non-zero column count),
      *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
      * @see #resize(int, int, int)
      * @see #extend(int, int, int, int)
@@ -1596,6 +1597,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *        ignored when a dimension shrinks
      * @return a new IntMatrix with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         if the resulting shape is not representable (zero rows with a non-zero column count),
      *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
      * @see #resize(int, int)
      * @see #extend(int, int, int, int, int)
@@ -1876,7 +1878,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     /**
      * Returns a new matrix that is this matrix rotated 90 degrees clockwise.
      * The resulting matrix has dimensions swapped (rows become columns), with the first
-     * column of the result being the last row of the original, reading upward.
+     * row of the result being the first column of the original read from bottom to top.
      * The original matrix is not modified.
      *
      * <p><b>Usage Examples:</b></p>
@@ -1948,7 +1950,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * Returns a new matrix that is this matrix rotated 270 degrees clockwise.
      * This is equivalent to rotating 90 degrees counter-clockwise.
      * The resulting matrix has dimensions swapped (rows become columns), with the first
-     * column of the result being the first row of the original, reading downward.
+     * row of the result being the last column of the original read from top to bottom.
      * The original matrix is not modified.
      *
      * <p><b>Usage Examples:</b></p>
@@ -2421,7 +2423,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * @param other the matrix to multiply with; must not be {@code null}
      * @return a new {@code IntMatrix} of shape {@code this.rowCount x other.columnCount} containing the matrix product
-     * @throws IllegalArgumentException if {@code other} is {@code null}, or if {@code this.columnCount != other.rowCount}
+     * @throws IllegalArgumentException if {@code other} is {@code null}, if {@code this.columnCount != other.rowCount}, or if this matrix has zero rows while {@code other} has a non-zero column count (the resulting shape is not representable)
      */
     public IntMatrix matmul(final IntMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");

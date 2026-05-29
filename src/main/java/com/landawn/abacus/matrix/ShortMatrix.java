@@ -45,12 +45,14 @@ import com.landawn.abacus.util.stream.Stream;
  * explicit fill value.</p>
  *
  * <p><b>Short arithmetic:</b> all element-wise arithmetic ({@link #add}, {@link #subtract},
- * {@link #matmul}, and {@code zipWith}/{@code map} variants) is performed using Java's standard
- * numeric promotion to {@code int} and the result is narrowed back to {@code short} (via an explicit
- * cast for {@code add}/{@code subtract}/{@code zipWith}/{@code map}, or via the implicit narrowing of
- * a compound assignment in {@code matmul}), so values outside {@code [Short.MIN_VALUE, Short.MAX_VALUE]}
- * wrap modulo 65536. To preserve the full magnitude, widen first via {@link #toIntMatrix()} or
- * {@link #toLongMatrix()}.</p>
+ * {@link #matmul}, and the {@code zipWith}/{@code map} variants) computes intermediate results using
+ * Java's standard numeric promotion to {@code int} and stores the result back into {@code short} cells, so values
+ * outside {@code [Short.MIN_VALUE, Short.MAX_VALUE]} wrap modulo 65536. {@link #add} and {@link #subtract}
+ * narrow via an explicit {@code (short)} cast on the library side, and {@link #matmul} narrows via the
+ * implicit narrowing of a compound assignment into the {@code short} result cell. For the {@code zipWith}
+ * and {@code map} variants the supplied operator itself returns a {@code short}, so any narrowing of an
+ * out-of-range result is performed by the caller's lambda. To preserve the full magnitude, widen first
+ * via {@link #toIntMatrix()} or {@link #toLongMatrix()}.</p>
  *
  * @see IntMatrix
  * @see ByteMatrix
@@ -114,8 +116,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * // matrix.get(0, 1) returns 2
      * }</pre>
      *
-     * @param a the two-dimensional short array to create the matrix from, or null/empty for an empty matrix
-     * @return a new ShortMatrix containing the provided data, or an empty ShortMatrix if input is null or empty
+     * @param a the two-dimensional short array to create the matrix from, or {@code null}/empty for an empty matrix
+     * @return a new ShortMatrix containing the provided data, or an empty ShortMatrix if input is {@code null} or empty
      * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
@@ -350,9 +352,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * }</pre>
      *
-     * @param mainDiagonal the array of main diagonal elements (can be null or empty)
-     * @param antiDiagonal the array of anti-diagonal elements (can be null or empty)
-     * @return a square matrix with the specified diagonals, or an empty matrix if both inputs are null or empty
+     * @param mainDiagonal the array of main diagonal elements (can be {@code null} or empty)
+     * @param antiDiagonal the array of anti-diagonal elements (can be {@code null} or empty)
+     * @return a square matrix with the specified diagonals, or an empty matrix if both inputs are {@code null} or empty
      * @throws IllegalArgumentException if both arrays are non-empty and have different lengths
      */
     public static ShortMatrix diagonals(final short[] mainDiagonal, final short[] antiDiagonal) throws IllegalArgumentException {
@@ -434,7 +436,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * short value = matrix.get(point);   // Returns 2
      * }</pre>
      *
-     * @param point the point containing row and column indices (must not be null)
+     * @param point the point containing row and column indices (must not be {@code null})
      * @return the short element at the specified point
      * @throws IllegalArgumentException if {@code point} is {@code null}
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
@@ -476,7 +478,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * assert matrix.get(point) == 9;
      * }</pre>
      *
-     * @param point the point containing row and column indices (must not be null)
+     * @param point the point containing row and column indices (must not be {@code null})
      * @param value the new short value to set at the specified point
      * @throws IllegalArgumentException if {@code point} is {@code null}
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
@@ -732,7 +734,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param rowIndex the index of the row to update (0-based)
      * @param operator the unary operator to apply to each element in the row, taking a short and returning a short
      * @throws ArrayIndexOutOfBoundsException if rowIndex is out of bounds
-     * @throws IllegalArgumentException if operator is null
+     * @throws IllegalArgumentException if operator is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateRow(final int rowIndex, final Throwables.ShortUnaryOperator<E> operator) throws E {
@@ -762,7 +764,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param columnIndex the index of the column to update (0-based)
      * @param operator the unary operator to apply to each element in the column, taking a short and returning a short
      * @throws ArrayIndexOutOfBoundsException if columnIndex is out of bounds
-     * @throws IllegalArgumentException if operator is null
+     * @throws IllegalArgumentException if operator is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.ShortUnaryOperator<E> operator) throws E {
@@ -1805,6 +1807,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param newColumnCount the number of columns in the reshaped matrix (must be non-negative)
      * @return a new ShortMatrix with the specified shape containing this matrix's elements in row-major order
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         if the resulting shape cannot be represented (zero rows with non-zero columns),
      *         or if the new shape is too small to hold all elements
      */
     @SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG")
@@ -2188,8 +2191,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param other the matrix to multiply with this matrix ({@code this.columnCount} must equal {@code other.rowCount}); must not be {@code null}
      * @return a new matrix of dimension {@code (this.rowCount × other.columnCount)} containing the matrix product
-     * @throws IllegalArgumentException if {@code other} is {@code null}, or if
-     *         {@code this.columnCount != other.rowCount} (incompatible dimensions for multiplication)
+     * @throws IllegalArgumentException if {@code other} is {@code null}, if
+     *         {@code this.columnCount != other.rowCount} (incompatible dimensions for multiplication),
+     *         or if this matrix has zero rows while {@code other} has a non-zero column count
+     *         (the resulting shape is not representable)
      */
     public ShortMatrix matmul(final ShortMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
@@ -2214,7 +2219,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * This is the inverse operation of {@link #unbox(Matrix)}.
      *
      * <p><b>Note:</b> Boxing creates wrapper objects which have additional memory overhead compared to primitives.
-     * Use this method only when you need to work with generic Matrix API or when null values are required.
+     * Use this method only when you need to work with generic Matrix API or when {@code null} values are required.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3054,7 +3059,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * This is an internal helper method.
      *
      * @param a the array to get the length of
-     * @return the length of the array, or 0 if the array is null
+     * @return the length of the array, or 0 if the array is {@code null}
      */
     @Override
     protected int length(@SuppressWarnings("hiding") final short[] a) {

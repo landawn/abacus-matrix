@@ -1758,6 +1758,7 @@ public final class Matrices {
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if any argument is {@code null}
      * @throws E if the zip function throws an exception during execution
      * @see #zip(Collection, Throwables.IntNFunction, boolean, Class)
+     * @see #zip(Collection, Throwables.IntBinaryOperator)
      */
     public static <R, E extends Exception> Matrix<R> zip(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction,
             final Class<R> targetElementType) throws E {

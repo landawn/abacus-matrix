@@ -48,9 +48,9 @@ import com.landawn.abacus.util.stream.Stream;
  * {@code forEach}; when iterating by position use {@code forEachIndices}.</p>
  *
  * @param <A> the array type used for internal row storage (for example {@code int[]}, {@code double[]}, or {@code Object[]})
- * @param <PL> the flattened-view list type
- * @param <ES> the element stream type
- * @param <RS> the row or column stream type
+ * @param <PL> the flattened list type returned by {@link #flatten()} (for example {@code IntList} or {@code List<T>})
+ * @param <ES> the element stream type returned by element-streaming methods such as {@link #horizontalStream()}
+ * @param <RS> the stream-of-streams type returned by {@link #rowStreams()} and {@link #columnStreams()}
  * @param <M> the concrete matrix type used for fluent return values
  */
 public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMatrix<A, PL, ES, RS, M>>
@@ -627,9 +627,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
     /**
      * Returns a new matrix that is the transpose of this matrix.
-     * The transpose operation swaps rows and columns, so element at position (i, j)
-     * in the original matrix appears at position (j, i) in the transposed matrix. The resulting
-     * matrix has dimensions swapped (rowCount x columnCount becomes columnCount x rowCount).
+     * The transpose operation swaps rows and columns, so the element at position {@code (i, j)}
+     * in the original matrix appears at position {@code (j, i)} in the transposed matrix. The resulting
+     * matrix has dimensions swapped ({@code rowCount × columnCount} becomes {@code columnCount × rowCount}).
      * The original matrix is not modified.
      *
      * <p>Transpose formula: element at position {@code (i, j)} in the original matrix
@@ -660,7 +660,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * The number of rows is automatically calculated based on the total element count.
      * Elements are taken in row-major order from the original matrix and placed into the
      * new shape. If the total element count is not evenly divisible by the new column count,
-     * the last row will be padded with default values (0 for numeric types, false for boolean, null for objects).
+     * the last row will be padded with default values ({@code 0} for numeric types, {@code false} for boolean, {@code null} for objects).
      * The original matrix is not modified.
      *
      * <p>The new row count is calculated as: {@code ceiling(elementCount / newColumnCount)}</p>
@@ -700,7 +700,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * new shape. The new shape must have at least as many total elements as the original
      * ({@code newRowCount * newColumnCount >= elementCount()}).
      * If the new shape has more elements, the extra positions are filled with
-     * default values (0 for numeric types, false for boolean, null for objects).
+     * default values ({@code 0} for numeric types, {@code false} for boolean, {@code null} for objects).
      * The original matrix is not modified.
      *
      * <p>This is a fundamental operation for restructuring matrix data without changing

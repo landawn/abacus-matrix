@@ -476,7 +476,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * long value = matrix.get(point);   // Returns 2L
      * }</pre>
      *
-     * @param point the point containing row and column indices (must not be null)
+     * @param point the point containing row and column indices (must not be {@code null})
      * @return the long element at the specified point
      * @throws IllegalArgumentException if {@code point} is {@code null}
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
@@ -518,7 +518,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * assert matrix.get(point) == 9L;
      * }</pre>
      *
-     * @param point the point containing row and column indices (must not be null)
+     * @param point the point containing row and column indices (must not be {@code null})
      * @param value the new long value to set at the specified point
      * @throws IllegalArgumentException if {@code point} is {@code null}
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
@@ -2307,8 +2307,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * @param other the matrix to multiply with this matrix; must not be {@code null}
      * @return a new {@code LongMatrix} containing the matrix product
-     * @throws IllegalArgumentException if {@code other} is {@code null} or the matrix dimensions are
-     *         incompatible ({@code this.columnCount != other.rowCount})
+     * @throws IllegalArgumentException if {@code other} is {@code null}, if the matrix dimensions are
+     *         incompatible ({@code this.columnCount != other.rowCount}), or if this matrix has zero rows
+     *         while {@code other} has a non-zero column count (the resulting shape is not representable)
      */
     public LongMatrix matmul(final LongMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
@@ -2333,7 +2334,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * This is the inverse operation of {@link #unbox(Matrix)}.
      *
      * <p><b>Note:</b> Boxing creates wrapper objects which have additional memory overhead compared to primitives.
-     * Use this method only when you need to work with generic Matrix API or when null values are required.
+     * Use this method only when you need to work with generic Matrix API or when {@code null} values are required.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2836,7 +2837,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * // Stream contains: 1, 4, 2, 5, 3, 6
      * }</pre>
      *
-     * @return a stream of all matrix elements in column-major order
+     * @return a stream of all matrix elements in column-major order, or an empty stream if the matrix is empty
      */
     @Override
     @Beta

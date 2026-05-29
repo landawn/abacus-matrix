@@ -144,7 +144,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @param a the two-dimensional int array to convert to a double matrix, or {@code null}/empty for an empty matrix
-     * @return a new DoubleMatrix with converted values, or an empty DoubleMatrix if input is {@code null} or empty
+     * @return a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if input is {@code null} or empty
      * @throws IllegalArgumentException if any row is {@code null} or if rows have different lengths (non-rectangular array)
      */
     public static DoubleMatrix from(final int[]... a) {
@@ -367,8 +367,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * //  [0.0, 0.0, 3.0]]
      * }</pre>
      *
-     * @param mainDiagonal the array of main diagonal elements, or null/empty for an empty matrix
-     * @return a square matrix with the specified main diagonal, or an empty matrix if input is null or empty
+     * @param mainDiagonal the array of main diagonal elements, or {@code null}/empty for an empty matrix
+     * @return a square matrix with the specified main diagonal, or an empty matrix if input is {@code null} or empty
      */
     public static DoubleMatrix mainDiagonal(final double[] mainDiagonal) {
         return diagonals(mainDiagonal, null);
@@ -388,8 +388,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * //  [3.0, 0.0, 0.0]]
      * }</pre>
      *
-     * @param antiDiagonal the array of anti-diagonal elements, or null/empty for an empty matrix
-     * @return a square matrix with the specified anti-diagonal, or an empty matrix if input is null or empty
+     * @param antiDiagonal the array of anti-diagonal elements, or {@code null}/empty for an empty matrix
+     * @return a square matrix with the specified anti-diagonal, or an empty matrix if input is {@code null} or empty
      */
     public static DoubleMatrix antiDiagonal(final double[] antiDiagonal) {
         return diagonals(null, antiDiagonal);
@@ -414,9 +414,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * //   {6.0, 0.0, 3.0}
      * }</pre>
      *
-     * @param mainDiagonal the array of main diagonal elements (can be null or empty)
-     * @param antiDiagonal the array of anti-diagonal elements (can be null or empty)
-     * @return a square matrix with the specified diagonals, or an empty matrix if both inputs are null or empty
+     * @param mainDiagonal the array of main diagonal elements (can be {@code null} or empty)
+     * @param antiDiagonal the array of anti-diagonal elements (can be {@code null} or empty)
+     * @return a square matrix with the specified diagonals, or an empty matrix if both inputs are {@code null} or empty
      * @throws IllegalArgumentException if both arrays are non-empty and have different lengths
      */
     public static DoubleMatrix diagonals(final double[] mainDiagonal, final double[] antiDiagonal) throws IllegalArgumentException {
@@ -447,7 +447,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
 
     /**
      * Converts a boxed Double matrix to a primitive DoubleMatrix.
-     * Null values in the input matrix are converted to 0.0.
+     * {@code null} values in the input matrix are converted to {@code 0.0}.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -456,8 +456,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * // primitive is [[1.0, 2.0], [3.0, 0.0]]
      * }</pre>
      *
-     * @param x the boxed Double matrix to convert; must not be null
-     * @return a new DoubleMatrix with unboxed values (nulls become 0.0)
+     * @param x the boxed Double matrix to convert; must not be {@code null}
+     * @return a new DoubleMatrix with unboxed values ({@code null} elements become {@code 0.0})
      * @throws NullPointerException if {@code x} is {@code null}
      * @see #boxed()
      */
@@ -494,7 +494,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * double value = matrix.get(point);   // Returns 2.0
      * }</pre>
      *
-     * @param point the point containing row and column indices (must not be null)
+     * @param point the point containing row and column indices (must not be {@code null})
      * @return the double element at the specified point
      * @throws IllegalArgumentException if {@code point} is {@code null}
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
@@ -536,7 +536,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * assert matrix.get(point) == 9.0;
      * }</pre>
      *
-     * @param point the point containing row and column indices (must not be null)
+     * @param point the point containing row and column indices (must not be {@code null})
      * @param value the new double value to set at the specified point
      * @throws IllegalArgumentException if {@code point} is {@code null}
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
@@ -787,7 +787,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param operator the operator to apply to each element in the row; receives the current
      *             element value and returns the new value
      * @throws ArrayIndexOutOfBoundsException if rowIndex is out of bounds
-     * @throws IllegalArgumentException if operator is null
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateRow(final int rowIndex, final Throwables.DoubleUnaryOperator<E> operator) throws E {
@@ -821,7 +821,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param operator the operator to apply to each element in the column; receives the current
      *             element value and returns the new value
      * @throws ArrayIndexOutOfBoundsException if columnIndex is out of bounds
-     * @throws IllegalArgumentException if operator is null
+     * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.DoubleUnaryOperator<E> operator) throws E {
@@ -1170,7 +1170,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @param <E> the exception type that the function may throw
-     * @param mapper the mapping function that converts each double element to an int; must not be null
+     * @param mapper the mapping function that converts each double element to an int; must not be {@code null}
      * @return a new IntMatrix with the mapped values (same dimensions as the original)
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
@@ -1199,7 +1199,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @param <E> the exception type that the function may throw
-     * @param mapper the mapping function that converts each double element to a long; must not be null
+     * @param mapper the mapping function that converts each double element to a long; must not be {@code null}
      * @return a new LongMatrix with the mapped values (same dimensions as the original)
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
@@ -1229,8 +1229,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * @param <R> the type of elements in the resulting matrix
      * @param <E> the exception type that the function may throw
-     * @param mapper the mapping function that converts each double element to type R; must not be null
-     * @param targetElementType the class object representing the target element type (used for array creation); must not be null
+     * @param mapper the mapping function that converts each double element to type R; must not be {@code null}
+     * @param targetElementType the class object representing the target element type (used for array creation); must not be {@code null}
      * @return a new Matrix&lt;R&gt; with the mapped values (same dimensions as the original)
      * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null}
      * @throws E if the function throws an exception
@@ -2159,7 +2159,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * // Result: [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]
      * }</pre>
      *
-     * @param other the matrix to stack below this matrix; must not be null
+     * @param other the matrix to stack below this matrix; must not be {@code null}
      * @return a new matrix with combined rows
      * @throws IllegalArgumentException if {@code other} is {@code null}, the matrices have different
      *         number of columns, or the merged row count would overflow {@code Integer.MAX_VALUE}
@@ -2199,7 +2199,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * // Result: [[1.0, 2.0, 5.0], [3.0, 4.0, 6.0]]
      * }</pre>
      *
-     * @param other the matrix to stack to the right of this matrix; must not be null
+     * @param other the matrix to stack to the right of this matrix; must not be {@code null}
      * @return a new matrix with combined columns
      * @throws IllegalArgumentException if {@code other} is {@code null}, the matrices have different
      *         number of rows, or the merged column count would overflow {@code Integer.MAX_VALUE}
@@ -2238,7 +2238,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * {@code NaN}. If either operand is {@code NaN}, the result at that position is {@code NaN}.
      * No exception is thrown for these cases.</p>
      *
-     * @param other the matrix to add to this matrix; must not be null
+     * @param other the matrix to add to this matrix; must not be {@code null}
      * @return a new matrix containing the element-wise sum
      * @throws IllegalArgumentException if {@code other} is {@code null} or the matrices have different dimensions
      */
@@ -2271,7 +2271,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * (or {@code -Infinity} from {@code -Infinity}) produces {@code NaN}. If either operand is
      * {@code NaN}, the result at that position is {@code NaN}. No exception is thrown for these cases.</p>
      *
-     * @param other the matrix to subtract from this matrix; must not be null
+     * @param other the matrix to subtract from this matrix; must not be {@code null}
      * @return a new matrix containing the element-wise difference
      * @throws IllegalArgumentException if {@code other} is {@code null} or the matrices have different dimensions
      */
@@ -2310,10 +2310,11 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * sums of {@code +Infinity} and {@code -Infinity} produce {@code NaN}. No exception is
      * thrown for these cases.</p>
      *
-     * @param other the matrix to multiply with this matrix; must not be null
+     * @param other the matrix to multiply with this matrix; must not be {@code null}
      * @return a new matrix containing the matrix product with dimensions (this.rowCount × other.columnCount)
      * @throws IllegalArgumentException if {@code other} is {@code null} or the matrix dimensions are incompatible for multiplication
-     *         (i.e., this.columnCount != other.rowCount)
+     *         (i.e., this.columnCount != other.rowCount), or if this matrix has zero rows while {@code other} has a
+     *         non-zero column count (the resulting shape is not representable)
      */
     public DoubleMatrix matmul(final DoubleMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
@@ -2525,8 +2526,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @param <E> the type of exception that the zip function may throw
-     * @param other the matrix to combine with this matrix; must have the same dimensions and must not be null
-     * @param zipFunction the binary operation to apply to corresponding elements; must not be null
+     * @param other the matrix to combine with this matrix; must have the same dimensions and must not be {@code null}
+     * @param zipFunction the binary operation to apply to corresponding elements; must not be {@code null}
      * @return a new matrix with the operation applied element-wise (same dimensions as the input matrices)
      * @throws IllegalArgumentException if {@code other} or {@code zipFunction} is {@code null}, or the matrices have different dimensions
      * @throws E if the zip function throws an exception
@@ -2563,9 +2564,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @param <E> the type of exception that the zip function may throw
-     * @param other the second matrix to combine; must have the same dimensions and must not be null
-     * @param third the third matrix to combine; must have the same dimensions and must not be null
-     * @param zipFunction the ternary operation to apply to corresponding elements; must not be null
+     * @param other the second matrix to combine; must have the same dimensions and must not be {@code null}
+     * @param third the third matrix to combine; must have the same dimensions and must not be {@code null}
+     * @param zipFunction the ternary operation to apply to corresponding elements; must not be {@code null}
      * @return a new matrix with the operation applied element-wise (same dimensions as the input matrices)
      * @throws IllegalArgumentException if {@code other}, {@code third}, or {@code zipFunction} is {@code null}, or the matrices have different dimensions
      * @throws E if the zip function throws an exception
@@ -3159,7 +3160,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * This is an internal helper method used by the matrix framework.
      *
      * @param a the array to measure
-     * @return the length of the array, or 0 if the array is null
+     * @return the length of the array, or {@code 0} if the array is {@code null}
      */
     @Override
     protected int length(@SuppressWarnings("hiding") final double[] a) {
@@ -3180,7 +3181,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @param <E> the type of exception that the action may throw
-     * @param action the action to perform on each element; must not be null
+     * @param action the action to perform on each element; must not be {@code null}
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the action throws an exception
      */
@@ -3206,7 +3207,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param toRowIndex the ending row index (exclusive, must be &gt;= fromRowIndex and &lt;= rowCount)
      * @param fromColumnIndex the starting column index (inclusive, 0-based, must be &gt;= 0 and &lt;= toColumnIndex)
      * @param toColumnIndex the ending column index (exclusive, must be &gt;= fromColumnIndex and &lt;= columnCount)
-     * @param action the action to perform on each element in the sub-region; must not be null
+     * @param action the action to perform on each element in the sub-region; must not be {@code null}
      * @throws IndexOutOfBoundsException if the indices are out of bounds or invalid
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the action throws an exception
