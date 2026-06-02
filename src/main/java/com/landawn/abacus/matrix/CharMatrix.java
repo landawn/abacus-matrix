@@ -70,9 +70,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * char[][] data = {{'a', 'b'}, {'c', 'd'}};
      * CharMatrix matrix = new CharMatrix(data);
-     * data[0][0] = 'x';  // This also changes matrix.get(0,0) to 'x'
+     * matrix.get(0, 0);                  // returns 'a'
+     * data[0][0] = 'x';                  // backing array is shared
+     * matrix.get(0, 0);                  // returns 'x' (mutation is visible)
      *
-     * CharMatrix empty = new CharMatrix(null);   // Creates 0x0 empty matrix
+     * CharMatrix empty = new CharMatrix((char[][]) null);
+     * empty.rowCount();                                 // returns 0 (null -> empty 0x0 matrix)
+     * new CharMatrix(new char[][] {{'a', 'b'}, {'c'}}); // throws IllegalArgumentException (jagged)
      * }</pre>
      *
      * @param a the two-dimensional char array to wrap, or {@code null} for an empty matrix
@@ -90,8 +94,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.empty();
-     * // matrix.rowCount() returns 0
-     * // matrix.columnCount() returns 0
+     * matrix.rowCount();                        // returns 0
+     * matrix.columnCount();                     // returns 0
+     * matrix.isEmpty();                         // returns true
+     * CharMatrix.empty() == CharMatrix.empty(); // true (shared singleton instance)
      * }</pre>
      *
      * @return the shared empty {@code CharMatrix}
@@ -109,7 +115,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * // matrix.get(1, 0) returns 'c'
+     * matrix.get(1, 0);                  // returns 'c'
+     * matrix.get(0, 1);                  // returns 'b'
+     *
+     * CharMatrix.of((char[][]) null).isEmpty(); // returns true
+     * CharMatrix.of(new char[0][0]).isEmpty();  // returns true
      * }</pre>
      *
      * @param a the two-dimensional char array to wrap; may be {@code null} or empty, in which case
@@ -129,7 +139,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.random(5);
-     * // Result: a 1x5 matrix with random char values
+     * matrix.rowCount();            // returns 1
+     * matrix.columnCount();         // returns 5 (values are random)
+     *
+     * CharMatrix.random(0).columnCount(); // returns 0 (empty single row)
+     * CharMatrix.random(-1);              // throws IllegalArgumentException
      * }</pre>
      *
      * @param length the number of columns in the new matrix; must be {@code >= 0}
@@ -148,7 +162,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.random(2, 3);
-     * // Result: a 2x3 matrix with random characters
+     * matrix.rowCount();            // returns 2
+     * matrix.columnCount();         // returns 3 (values are random)
+     *
+     * CharMatrix.random(0, 0).isEmpty(); // returns true
+     * CharMatrix.random(-1, 3);          // throws IllegalArgumentException
+     * CharMatrix.random(0, 3);           // throws IllegalArgumentException (0 rows, 3 columns not representable)
      * }</pre>
      *
      * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
@@ -180,7 +199,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.repeat(2, 3, 'a');
-     * // Result: [['a', 'a', 'a'], ['a', 'a', 'a']]
+     * matrix.get(0, 0);            // returns 'a'
+     * matrix.get(1, 2);            // returns 'a'
+     * matrix.rowCount();           // returns 2
+     *
+     * CharMatrix.repeat(0, 0, 'a').isEmpty(); // returns true
+     * CharMatrix.repeat(-1, 3, 'a');          // throws IllegalArgumentException
      * }</pre>
      *
      * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
@@ -212,7 +236,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * CharMatrix matrix = CharMatrix.range('a', 'e');   // Creates [['a', 'b', 'c', 'd']]
+     * CharMatrix.range('a', 'e').rowView(0);   // returns ['a', 'b', 'c', 'd']
+     * CharMatrix.range('a', 'b').rowView(0);   // returns ['a']
+     *
+     * CharMatrix.range('a', 'a').rowView(0).length; // returns 0 (empty: start == end)
+     * CharMatrix.range('e', 'a').rowView(0).length; // returns 0 (empty: end < start)
      * }</pre>
      *
      * @param startInclusive the starting char value (inclusive)
@@ -230,9 +258,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * CharMatrix matrix = CharMatrix.range('a', 'g', 2);   // Creates [['a', 'c', 'e']]
-     * CharMatrix desc = CharMatrix.range('z', 'u', -2);    // Creates [['z', 'x', 'v']]
-     * CharMatrix empty = CharMatrix.range('a', 'z', -1);   // Creates an empty matrix (step is wrong direction)
+     * CharMatrix.range('a', 'g', 2).rowView(0);   // returns ['a', 'c', 'e']
+     * CharMatrix.range('z', 'u', -2).rowView(0);  // returns ['z', 'x', 'v']
+     *
+     * CharMatrix.range('a', 'z', -1).rowView(0).length; // returns 0 (step direction wrong)
+     * CharMatrix.range('a', 'z', 0);                    // throws IllegalArgumentException (step is zero)
      * }</pre>
      *
      * @param startInclusive the starting char value (inclusive)
@@ -252,7 +282,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * CharMatrix matrix = CharMatrix.rangeClosed('a', 'd');   // Creates [['a', 'b', 'c', 'd']]
+     * CharMatrix.rangeClosed('a', 'd').rowView(0);   // returns ['a', 'b', 'c', 'd']
+     * CharMatrix.rangeClosed('a', 'a').rowView(0);   // returns ['a'] (single element)
+     *
+     * CharMatrix.rangeClosed('d', 'a').rowView(0).length; // returns 0 (end < start)
+     * CharMatrix.rangeClosed('b', 'a').rowView(0).length; // returns 0 (end < start)
      * }</pre>
      *
      * @param startInclusive the starting char value (inclusive)
@@ -270,9 +304,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * CharMatrix matrix = CharMatrix.rangeClosed('a', 'g', 2);    // Creates [['a', 'c', 'e', 'g']]
-     * CharMatrix partial = CharMatrix.rangeClosed('a', 'i', 2);   // Creates [['a', 'c', 'e', 'g', 'i']]
-     * CharMatrix desc = CharMatrix.rangeClosed('z', 'u', -2);     // Creates [['z', 'x', 'v']]
+     * CharMatrix.rangeClosed('a', 'g', 2).rowView(0);    // returns ['a', 'c', 'e', 'g']
+     * CharMatrix.rangeClosed('a', 'i', 2).rowView(0);    // returns ['a', 'c', 'e', 'g', 'i']
+     * CharMatrix.rangeClosed('z', 'u', -2).rowView(0);   // returns ['z', 'x', 'v']
+     *
+     * CharMatrix.rangeClosed('a', 'z', -1).rowView(0).length; // returns 0 (step direction wrong)
+     * CharMatrix.rangeClosed('a', 'z', 0);                    // throws IllegalArgumentException (step is zero)
      * }</pre>
      *
      * @param startInclusive the starting char value (inclusive)
@@ -293,8 +330,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.mainDiagonal(new char[] {'a', 'b', 'c'});
-     * // Creates 3x3 matrix with diagonal ['a', 'b', 'c'] and zeros elsewhere
-     * // Resulting matrix:
+     * matrix.get(0, 0);                                 // returns 'a'
+     * matrix.get(2, 2);                                 // returns 'c'
+     * matrix.get(0, 1) == '\u0000';                     // true (off-diagonal default)
+     * CharMatrix.mainDiagonal((char[]) null).isEmpty(); // returns true
+     * CharMatrix.mainDiagonal(new char[0]).isEmpty();   // returns true
+     * // Resulting 3x3 matrix:
      * //   {'a', '\u0000', '\u0000'},
      * //   {'\u0000', 'b', '\u0000'},
      * //   {'\u0000', '\u0000', 'c'}
@@ -317,8 +358,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.antiDiagonal(new char[] {'a', 'b', 'c'});
-     * // Creates 3x3 matrix with anti-diagonal ['a', 'b', 'c'] and zeros elsewhere
-     * // Resulting matrix:
+     * matrix.get(0, 2);                                 // returns 'a'
+     * matrix.get(2, 0);                                 // returns 'c'
+     * matrix.get(0, 0) == '\u0000';                     // true (off-anti-diagonal default)
+     * CharMatrix.antiDiagonal((char[]) null).isEmpty(); // returns true
+     * CharMatrix.antiDiagonal(new char[0]).isEmpty();   // returns true
+     * // Resulting 3x3 matrix:
      * //   {'\u0000', '\u0000', 'a'},
      * //   {'\u0000', 'b', '\u0000'},
      * //   {'c', '\u0000', '\u0000'}
@@ -343,12 +388,17 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.diagonals(new char[] {'a', 'b', 'c'}, new char[] {'x', 'y', 'z'});
-     * // Creates 3x3 matrix with both diagonals set
-     * // Resulting matrix:
+     * matrix.get(0, 0);            // returns 'a' (main diagonal)
+     * matrix.get(0, 2);            // returns 'x' (anti-diagonal)
+     * matrix.get(1, 1);            // returns 'b' (overlap: main takes precedence)
+     * matrix.get(2, 0);            // returns 'z'
+     * // Resulting 3x3 matrix:
      * //   {'a', '\u0000', 'x'},
      * //   {'\u0000', 'b', '\u0000'},
      * //   {'z', '\u0000', 'c'}
      *
+     * CharMatrix.diagonals((char[]) null, (char[]) null).isEmpty();            // returns true
+     * CharMatrix.diagonals(new char[] {'a', 'b'}, new char[] {'x', 'y', 'z'}); // throws IllegalArgumentException (length mismatch)
      * }</pre>
      *
      * @param mainDiagonal the array of main diagonal elements (can be {@code null} or empty)
@@ -394,6 +444,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * Matrix<Character> boxedMatrix = Matrix.of(new Character[][] {{'a', 'b'}, {null, 'c'}});
      * CharMatrix primitive = CharMatrix.unbox(boxedMatrix);
+     * primitive.get(0, 0);                        // returns 'a'
+     * primitive.get(1, 1);                        // returns 'c'
+     * primitive.get(1, 0);                        // returns the null character (null mapped to default)
+     * CharMatrix.unbox((Matrix<Character>) null); // throws NullPointerException
      * // null is converted to '\u0000': [['a', 'b'], ['\u0000', 'c']]
      * }</pre>
      *
@@ -412,7 +466,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * char value = matrix.get(0, 1);   // Returns 'b'
+     * matrix.get(0, 1);            // returns 'b'
+     * matrix.get(1, 0);            // returns 'c'
+     *
+     * matrix.get(5, 0);            // throws ArrayIndexOutOfBoundsException (row out of bounds)
+     * matrix.get(0, 5);            // throws ArrayIndexOutOfBoundsException (column out of bounds)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -431,8 +489,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * Sheet.Point point = Sheet.Point.of(0, 1);
-     * char value = matrix.get(point);   // Returns 'b'
+     * matrix.get(Point.of(0, 1));      // returns 'b'
+     * matrix.get(Point.of(1, 1));      // returns 'd'
+     *
+     * matrix.get((Point) null);        // throws IllegalArgumentException (null point)
+     * matrix.get(Point.of(5, 0));      // throws ArrayIndexOutOfBoundsException (out of bounds)
      * }</pre>
      *
      * @param point the point containing row and column indices (must not be {@code null})
@@ -453,7 +514,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * matrix.set(0, 1, 'x');   // Sets element at row 0, column 1 to 'x'
+     * matrix.set(0, 1, 'x');
+     * matrix.get(0, 1);            // returns 'x' (was 'b')
+     * matrix.set(1, 0, 'y');
+     * matrix.get(1, 0);            // returns 'y' (was 'c')
+     *
+     * matrix.set(5, 0, 'z');       // throws ArrayIndexOutOfBoundsException (row out of bounds)
+     * matrix.set(0, 5, 'z');       // throws ArrayIndexOutOfBoundsException (column out of bounds)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -472,9 +539,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * Sheet.Point point = Sheet.Point.of(0, 1);
-     * matrix.set(point, 'x');
-     * assert matrix.get(point) == 'x';
+     * matrix.set(Point.of(0, 1), 'x');
+     * matrix.get(0, 1);                  // returns 'x' (was 'b')
+     * matrix.set(Point.of(1, 1), 'y');
+     * matrix.get(1, 1);                  // returns 'y' (was 'd')
+     *
+     * matrix.set((Point) null, 'z');     // throws IllegalArgumentException (null point)
+     * matrix.set(Point.of(5, 0), 'z');   // throws ArrayIndexOutOfBoundsException (out of bounds)
      * }</pre>
      *
      * @param point the point containing row and column indices (must not be {@code null})
@@ -497,8 +568,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * OptionalChar value = matrix.valueAbove(1, 0);   // Returns OptionalChar.of('a')
-     * OptionalChar empty = matrix.valueAbove(0, 0);   // Returns OptionalChar.empty() - no row above
+     * matrix.valueAbove(1, 0).get();         // returns 'a'
+     * matrix.valueAbove(1, 1).get();         // returns 'b'
+     *
+     * matrix.valueAbove(0, 0).isPresent();   // returns false (no row above the top edge)
+     * matrix.valueAbove(5, 0);               // throws ArrayIndexOutOfBoundsException (out of bounds)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -520,8 +594,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * OptionalChar value = matrix.valueBelow(0, 0);   // Returns OptionalChar.of('c')
-     * OptionalChar empty = matrix.valueBelow(1, 0);   // Returns OptionalChar.empty() - no row below
+     * matrix.valueBelow(0, 0).get();         // returns 'c'
+     * matrix.valueBelow(0, 1).get();         // returns 'd'
+     *
+     * matrix.valueBelow(1, 0).isPresent();   // returns false (no row below the bottom edge)
+     * matrix.valueBelow(5, 0);               // throws ArrayIndexOutOfBoundsException (out of bounds)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -543,8 +620,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * OptionalChar value = matrix.valueLeft(0, 1);   // Returns OptionalChar.of('a')
-     * OptionalChar empty = matrix.valueLeft(0, 0);   // Returns OptionalChar.empty() - no column to the left
+     * matrix.valueLeft(0, 1).get();          // returns 'a'
+     * matrix.valueLeft(1, 1).get();          // returns 'c'
+     *
+     * matrix.valueLeft(0, 0).isPresent();    // returns false (no column to the left edge)
+     * matrix.valueLeft(0, 5);                // throws ArrayIndexOutOfBoundsException (out of bounds)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -566,8 +646,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * OptionalChar value = matrix.valueRight(0, 0);   // Returns OptionalChar.of('b')
-     * OptionalChar empty = matrix.valueRight(0, 1);   // Returns OptionalChar.empty() - no column to the right
+     * matrix.valueRight(0, 0).get();         // returns 'b'
+     * matrix.valueRight(1, 0).get();         // returns 'd'
+     *
+     * matrix.valueRight(0, 1).isPresent();   // returns false (no column to the right edge)
+     * matrix.valueRight(0, 5);               // throws ArrayIndexOutOfBoundsException (out of bounds)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -591,10 +674,14 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
-     * char[] firstRow = matrix.rowView(0);   // Returns ['a', 'b', 'c']
+     * matrix.rowView(0);          // returns ['a', 'b', 'c']
+     * matrix.rowView(1);          // returns ['d', 'e', 'f']
      *
-     * // Direct modification affects the matrix
-     * firstRow[0] = 'x';  // matrix now has 'x' at position (0,0)
+     * // Direct modification affects the matrix (shared array reference)
+     * matrix.rowView(0)[0] = 'x';
+     * matrix.get(0, 0);           // returns 'x'
+     *
+     * matrix.rowView(5);          // throws IllegalArgumentException (row out of bounds)
      * }</pre>
      *
      * @param rowIndex the index of the row to retrieve (0-based)
@@ -611,6 +698,19 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     /**
      * Returns a defensive copy of the specified row.
      * Changes to the returned array do not affect this matrix.
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
+     * matrix.rowCopy(0);          // returns ['a', 'b', 'c']
+     * matrix.rowCopy(1);          // returns ['d', 'e', 'f']
+     *
+     * // Modification does NOT affect the matrix (it is a copy)
+     * matrix.rowCopy(0)[0] = 'x';
+     * matrix.get(0, 0);           // returns 'a' (unchanged)
+     *
+     * matrix.rowCopy(5);          // throws IllegalArgumentException (row out of bounds)
+     * }</pre>
      *
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return a new char array containing the values from the specified row
@@ -633,10 +733,14 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
-     * char[] firstColumn = matrix.columnCopy(0);   // Returns ['a', 'd']
+     * matrix.columnCopy(0);       // returns ['a', 'd']
+     * matrix.columnCopy(2);       // returns ['c', 'f']
      *
-     * // Modification does NOT affect the matrix (it's a copy)
-     * firstColumn[0] = 'x';  // matrix still has 'a' at position (0,0)
+     * // Modification does NOT affect the matrix (it is a copy)
+     * matrix.columnCopy(0)[0] = 'x';
+     * matrix.get(0, 0);           // returns 'a' (unchanged)
+     *
+     * matrix.columnCopy(5);       // throws IllegalArgumentException (column out of bounds)
      * }</pre>
      *
      * @param columnIndex the index of the column to retrieve (0-based)
@@ -666,7 +770,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
-     * matrix.setRow(0, new char[] {'x', 'y', 'z'});   // First row is now ['x', 'y', 'z']
+     * matrix.setRow(0, new char[] {'x', 'y', 'z'});
+     * matrix.rowView(0);          // returns ['x', 'y', 'z']
+     * matrix.rowView(1);          // returns ['d', 'e', 'f'] (unchanged)
+     *
+     * matrix.setRow(0, new char[] {'x', 'y'});       // throws IllegalArgumentException (length mismatch)
+     * matrix.setRow(5, new char[] {'x', 'y', 'z'});  // throws IllegalArgumentException (row out of bounds)
      * }</pre>
      *
      * @param rowIndex the index of the row to set (0-based)
@@ -693,8 +802,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
-     * matrix.setColumn(0, new char[] {'x', 'y'});   // First column is now ['x', 'y']
+     * matrix.setColumn(0, new char[] {'x', 'y'});
+     * matrix.get(0, 0);           // returns 'x'
+     * matrix.get(1, 0);           // returns 'y'
      * // Matrix is now: [['x', 'b', 'c'], ['y', 'e', 'f']]
+     *
+     * matrix.setColumn(0, new char[] {'x'});       // throws IllegalArgumentException (length mismatch)
+     * matrix.setColumn(5, new char[] {'x', 'y'});  // throws IllegalArgumentException (column out of bounds)
      * }</pre>
      *
      * @param columnIndex the index of the column to set (0-based)
@@ -724,8 +838,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
-     * matrix.updateRow(0, c -> Character.toUpperCase(c));   // Converts first row to uppercase
-     * // matrix is now [['A', 'B', 'C'], ['d', 'e', 'f']]
+     * matrix.updateRow(0, c -> Character.toUpperCase(c));
+     * matrix.rowView(0);          // returns ['A', 'B', 'C']
+     * matrix.rowView(1);          // returns ['d', 'e', 'f'] (unchanged)
+     *
+     * matrix.updateRow(0, c -> (char) (c + 1)); // shifts row 0 by +1 -> ['B', 'C', 'D']
+     * matrix.updateRow(5, c -> c);              // throws ArrayIndexOutOfBoundsException (row out of bounds)
      * }</pre>
      *
      * @param <E> the type of exception that the operator may throw
@@ -758,8 +876,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'A', 'B'}, {'C', 'D'}});
-     * matrix.updateColumn(1, c -> Character.toLowerCase(c));   // Converts second column to lowercase
-     * // matrix is now [['A', 'b'], ['C', 'd']]
+     * matrix.updateColumn(1, c -> Character.toLowerCase(c));
+     * matrix.get(0, 1);           // returns 'b'
+     * matrix.get(1, 1);           // returns 'd'
+     * matrix.get(0, 0);           // returns 'A' (unchanged)
+     *
+     * matrix.updateColumn(0, c -> (char) (c + 1)); // shifts column 0 by +1
+     * matrix.updateColumn(5, c -> c);              // throws ArrayIndexOutOfBoundsException (column out of bounds)
      * }</pre>
      *
      * @param <E> the type of exception that the operator may throw
@@ -791,7 +914,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}, {'g', 'h', 'i'}});
-     * char[] diagonal = matrix.getMainDiagonal();   // Returns ['a', 'e', 'i']
+     * matrix.getMainDiagonal();   // returns ['a', 'e', 'i']
+     *
+     * CharMatrix single = CharMatrix.of(new char[][] {{'x'}});
+     * single.getMainDiagonal();   // returns ['x']
+     *
+     * CharMatrix nonSquare = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
+     * nonSquare.getMainDiagonal(); // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a new char array containing the main diagonal elements
@@ -823,7 +952,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *                                                 {'d', 'e', 'f'},
      *                                                 {'g', 'h', 'i'}});
      * matrix.setMainDiagonal(new char[] {'x', 'y', 'z'});
-     * // Diagonal is now ['x', 'y', 'z']
+     * matrix.getMainDiagonal();   // returns ['x', 'y', 'z']
+     * matrix.get(0, 1);           // returns 'b' (off-diagonal unchanged)
+     *
+     * matrix.setMainDiagonal(new char[] {'x', 'y'}); // throws IllegalArgumentException (length mismatch)
+     *
+     * CharMatrix nonSquare = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
+     * nonSquare.setMainDiagonal(new char[] {'x', 'y'}); // throws IllegalStateException (not square)
      * }</pre>
      *
      * @param mainDiagonal the new values for the main diagonal; must have length equal to rowCount
@@ -847,8 +982,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * matrix.updateMainDiagonal(c -> Character.toUpperCase(c));   // Converts diagonal to uppercase
-     * // Diagonal is now ['A', 'D'], matrix: [['A', 'b'], ['c', 'D']]
+     * matrix.updateMainDiagonal(c -> Character.toUpperCase(c));
+     * matrix.getMainDiagonal();   // returns ['A', 'D']
+     * matrix.get(0, 1);           // returns 'b' (off-diagonal unchanged)
+     * matrix.get(1, 0);           // returns 'c' (off-diagonal unchanged)
+     *
+     * CharMatrix nonSquare = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
+     * nonSquare.updateMainDiagonal(c -> c); // throws IllegalStateException (not square)
      * }</pre>
      *
      * @param <E> the type of exception that the operator may throw
@@ -878,7 +1018,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'},
      *                                                 {'d', 'e', 'f'},
      *                                                 {'g', 'h', 'i'}});
-     * char[] diagonal = matrix.getAntiDiagonal();   // Returns ['c', 'e', 'g']
+     * matrix.getAntiDiagonal();   // returns ['c', 'e', 'g']
+     *
+     * CharMatrix single = CharMatrix.of(new char[][] {{'x'}});
+     * single.getAntiDiagonal();   // returns ['x']
+     *
+     * CharMatrix nonSquare = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
+     * nonSquare.getAntiDiagonal(); // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a new char array containing the anti-diagonal elements
@@ -911,7 +1057,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *                                                 {'d', 'e', 'f'},
      *                                                 {'g', 'h', 'i'}});
      * matrix.setAntiDiagonal(new char[] {'x', 'y', 'z'});
-     * // Anti-diagonal is now ['x', 'y', 'z']
+     * matrix.getAntiDiagonal();   // returns ['x', 'y', 'z']
+     * matrix.get(0, 0);           // returns 'a' (off-anti-diagonal unchanged)
+     *
+     * matrix.setAntiDiagonal(new char[] {'x', 'y'}); // throws IllegalArgumentException (length mismatch)
+     *
+     * CharMatrix nonSquare = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
+     * nonSquare.setAntiDiagonal(new char[] {'x', 'y'}); // throws IllegalStateException (not square)
      * }</pre>
      *
      * @param antiDiagonal the new values for the anti-diagonal; must have length equal to rowCount
@@ -937,7 +1089,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
      * matrix.updateAntiDiagonal(c -> Character.toUpperCase(c));
-     * // Anti-diagonal is now ['B', 'C'], matrix: [['a', 'B'], ['C', 'd']]
+     * matrix.getAntiDiagonal();   // returns ['B', 'C']
+     * matrix.get(0, 0);           // returns 'a' (off-anti-diagonal unchanged)
+     * matrix.get(1, 1);           // returns 'd' (off-anti-diagonal unchanged)
+     *
+     * CharMatrix nonSquare = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
+     * nonSquare.updateAntiDiagonal(c -> c); // throws IllegalStateException (not square)
      * }</pre>
      *
      * @param <E> the exception type that the operator may throw
@@ -965,7 +1122,14 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
      * matrix.updateAll(c -> Character.toUpperCase(c));
-     * // Matrix is now [['A', 'B'], ['C', 'D']]
+     * matrix.rowView(0);          // returns ['A', 'B']
+     * matrix.rowView(1);          // returns ['C', 'D']
+     *
+     * CharMatrix shift = CharMatrix.of(new char[][] {{'a', 'b'}});
+     * shift.updateAll(c -> (char) (c + 1));
+     * shift.rowView(0);           // returns ['b', 'c']
+     *
+     * CharMatrix.empty().updateAll(c -> c); // no-op on an empty matrix
      * }</pre>
      *
      * @param <E> the exception type that the operator may throw
@@ -990,10 +1154,17 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[3][4]);
      * matrix.updateAll((i, j) -> (char)('a' + i * 4 + j));
-     * // Creates a matrix filled with sequential characters based on position
      * // Result: [['a', 'b', 'c', 'd'],
      * //          ['e', 'f', 'g', 'h'],
      * //          ['i', 'j', 'k', 'l']]
+     * matrix.get(0, 0);           // returns 'a'
+     * matrix.get(2, 3);           // returns 'l'
+     *
+     * CharMatrix diag = CharMatrix.of(new char[2][2]);
+     * diag.updateAll((i, j) -> i == j ? 'X' : '.');
+     * diag.rowView(0);            // returns ['X', '.']
+     *
+     * CharMatrix.empty().updateAll((i, j) -> 'z'); // no-op on an empty matrix
      * }</pre>
      *
      * @param <E> the exception type that the mapper may throw
@@ -1017,8 +1188,15 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'e', 'c'}, {'b', 'f', 'd'}});
-     * matrix.replaceIf(c -> c < 'd', 'x');   // Replace all chars less than 'd' with 'x'
-     * // Matrix is now [['x', 'e', 'x'], ['x', 'f', 'd']]
+     * matrix.replaceIf(c -> c < 'd', 'x');
+     * matrix.rowView(0);          // returns ['x', 'e', 'x']
+     * matrix.rowView(1);          // returns ['x', 'f', 'd']
+     *
+     * CharMatrix none = CharMatrix.of(new char[][] {{'a', 'b'}});
+     * none.replaceIf(c -> c > 'z', '?'); // matches nothing
+     * none.rowView(0);                   // returns ['a', 'b'] (unchanged)
+     *
+     * CharMatrix.empty().replaceIf(c -> true, 'x'); // no-op on an empty matrix
      * }</pre>
      *
      * @param <E> the exception type that the predicate may throw
@@ -1046,8 +1224,15 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'},
      *                                                 {'d', 'e', 'f'},
      *                                                 {'g', 'h', 'i'}});
-     * matrix.replaceIf((i, j) -> i == j, 'X');   // Replace main diagonal elements with 'X'
-     * // Matrix is now [['X', 'b', 'c'], ['d', 'X', 'f'], ['g', 'h', 'X']]
+     * matrix.replaceIf((i, j) -> i == j, 'X');   // replace main diagonal positions
+     * matrix.rowView(0);                         // returns ['X', 'b', 'c']
+     * matrix.rowView(2);                         // returns ['g', 'h', 'X']
+     *
+     * CharMatrix firstCol = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
+     * firstCol.replaceIf((i, j) -> j == 0, '*'); // replace first column
+     * firstCol.rowView(0);                       // returns ['*', 'b']
+     *
+     * CharMatrix.empty().replaceIf((i, j) -> true, 'x'); // no-op on an empty matrix
      * }</pre>
      *
      * @param <E> the exception type that the predicate may throw
@@ -1072,11 +1257,14 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * CharMatrix upper = matrix.map(c -> Character.toUpperCase(c));   // Creates new matrix with uppercase values
-     * // upper is [['A', 'B'], ['C', 'D']], original matrix unchanged
+     * CharMatrix upper = matrix.map(c -> Character.toUpperCase(c));
+     * upper.rowView(0);           // returns ['A', 'B']
+     * matrix.get(0, 0);           // returns 'a' (original unchanged)
      *
-     * CharMatrix lower = matrix.map(c -> Character.toLowerCase(c));   // Convert all to lowercase
-     * // lower is [['a', 'b'], ['c', 'd']]
+     * CharMatrix shift = matrix.map(c -> (char) (c + 1));
+     * shift.rowView(0);           // returns ['b', 'c']
+     *
+     * CharMatrix.empty().map(c -> c).isEmpty(); // returns true
      * }</pre>
      *
      * @param <E> the type of exception that the function may throw
@@ -1108,10 +1296,14 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
      * Matrix<String> stringMatrix = matrix.mapToObj(c -> String.valueOf(c), String.class);
-     * // stringMatrix is [["a", "b"], ["c", "d"]]
+     * stringMatrix.get(0, 0);     // returns "a"
+     * stringMatrix.get(1, 1);     // returns "d"
      *
      * Matrix<Integer> codePoints = matrix.mapToObj(c -> (int) c, Integer.class);
-     * // codePoints is [[97, 98], [99, 100]]
+     * codePoints.get(0, 0);       // returns 97
+     * codePoints.get(1, 1);       // returns 100
+     *
+     * CharMatrix.empty().mapToObj(c -> "" + c, String.class).isEmpty(); // returns true
      * }</pre>
      *
      * @param <R> the type of elements in the resulting matrix
@@ -1142,8 +1334,15 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * matrix.fill('x');   // All elements become 'x'
-     * // Matrix is now [['x', 'x'], ['x', 'x']]
+     * matrix.fill('x');
+     * matrix.rowView(0);          // returns ['x', 'x']
+     * matrix.rowView(1);          // returns ['x', 'x']
+     *
+     * CharMatrix single = CharMatrix.of(new char[][] {{'a'}});
+     * single.fill('z');
+     * single.get(0, 0);           // returns 'z'
+     *
+     * CharMatrix.empty().fill('x'); // no-op on an empty matrix
      * }</pre>
      *
      * @param value the value to fill the matrix with
@@ -1164,7 +1363,17 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[3][3]);
      * matrix.fill(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * // Top-left 2x2 region is filled: [['a', 'b', 0], ['c', 'd', 0], [0, 0, 0]]
+     * // Top-left 2x2 region is filled; the rest keeps the null character '\u0000':
+     * //   [['a', 'b', '\u0000'], ['c', 'd', '\u0000'], ['\u0000', '\u0000', '\u0000']]
+     * matrix.get(0, 0);           // returns 'a'
+     * matrix.get(1, 1);           // returns 'd'
+     *
+     * // A source larger than the matrix is silently truncated to fit.
+     * CharMatrix small = CharMatrix.of(new char[1][1]);
+     * small.fill(new char[][] {{'x', 'y'}, {'z', 'w'}});
+     * small.get(0, 0);            // returns 'x' (only the top-left cell that fits is copied)
+     *
+     * matrix.fill((char[][]) null); // throws IllegalArgumentException (null source)
      * }</pre>
      *
      * @param source the source array to copy values from (may be smaller or larger than the matrix);
@@ -1184,7 +1393,17 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[3][3]);
      * matrix.fill(1, 1, new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * // Result: [[0, 0, 0], [0, 'a', 'b'], [0, 'c', 'd']]
+     * // Result (' ' = the null character):
+     * //   [[' ', ' ', ' '], [' ', 'a', 'b'], [' ', 'c', 'd']]
+     * matrix.get(1, 1);           // returns 'a'
+     * matrix.get(2, 2);           // returns 'd'
+     *
+     * // A source that overruns the bounds from the start position is clipped.
+     * CharMatrix clip = CharMatrix.of(new char[2][2]);
+     * clip.fill(1, 1, new char[][] {{'x', 'y'}, {'z', 'w'}});
+     * clip.get(1, 1);             // returns 'x' (only the in-bounds top-left cell is copied)
+     *
+     * matrix.fill(0, 0, (char[][]) null); // throws IllegalArgumentException (null source)
      * }</pre>
      *
      * @param destRowIndex the target row index in this matrix (0-based); must satisfy {@code 0 <= destRowIndex <= rowCount}
@@ -1213,7 +1432,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix original = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
      * CharMatrix copy = original.copy();
-     * // copy is independent from original
+     * copy.equals(original);      // returns true (same content)
+     *
+     * copy.set(0, 0, 'x');        // mutating the copy ...
+     * original.get(0, 0);         // returns 'a' (... does not affect the original)
+     *
+     * CharMatrix.empty().copy().isEmpty(); // returns true
      * }</pre>
      *
      * @return a copy of this matrix
@@ -1236,7 +1460,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}, {'e', 'f'}});
-     * CharMatrix copy = matrix.copy(1, 3);   // Returns [['c', 'd'], ['e', 'f']]
+     * CharMatrix copy = matrix.copy(1, 3);
+     * copy.rowView(0);            // returns ['c', 'd']
+     * copy.rowView(1);            // returns ['e', 'f']
+     *
+     * matrix.copy(0, 0).isEmpty(); // returns true (empty row range)
+     * matrix.copy(1, 5);           // throws IndexOutOfBoundsException (toRowIndex > rowCount)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -1263,8 +1492,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}, {'g', 'h', 'i'}});
-     * CharMatrix sub = matrix.copy(0, 2, 1, 3);   // Copy rows 0-1, columns 1-2
-     * // Result: [['b', 'c'], ['e', 'f']]
+     * CharMatrix sub = matrix.copy(0, 2, 1, 3);   // rows 0-1, columns 1-2
+     * sub.rowView(0);                             // returns ['b', 'c']
+     * sub.rowView(1);                             // returns ['e', 'f']
+     *
+     * matrix.copy(0, 2, 1, 1).columnCount(); // returns 0 (empty column range)
+     * matrix.copy(0, 2, 1, 5);               // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -1329,6 +1562,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * //          ['d', 'e'],
      * //          ['g', 'h'],
      * //          ['\u0000', '\u0000']]
+     *
+     * matrix.resize(0, 0).isEmpty(); // returns true
+     * matrix.resize(-1, 4);          // throws IllegalArgumentException (negative dimension)
      * }</pre>
      *
      * @param newRowCount the row count of the returned matrix; must be {@code >= 0}
@@ -1377,6 +1613,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * CharMatrix truncated = matrix.resize(2, 2, 'x');
      * // Result: [['a', 'b'],
      * //          ['d', 'e']]
+     *
+     * matrix.resize(0, 0, 'x').isEmpty(); // returns true
+     * matrix.resize(3, -1, 'x');          // throws IllegalArgumentException (negative dimension)
      * }</pre>
      *
      * @param newRowCount the row count of the returned matrix; must be {@code >= 0}
@@ -1450,6 +1689,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * CharMatrix shifted = matrix.extend(0, 0, 2, 0);
      * // Result: [['\u0000', '\u0000', 'a', 'b'],
      * //          ['\u0000', '\u0000', 'c', 'd']]
+     *
+     * matrix.extend(0, 0, 0, 0).equals(matrix); // returns true (no padding -> equal copy)
+     * matrix.extend(-1, 0, 0, 0);               // throws IllegalArgumentException (negative padding)
      * }</pre>
      *
      * @param padTop number of padding rows to add above the original matrix; must be {@code >= 0}
@@ -1500,6 +1742,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * CharMatrix shifted = matrix.extend(0, 0, 2, 0, ' ');
      * // Result: [[' ', ' ', 'a', 'b'],
      * //          [' ', ' ', 'c', 'd']]
+     *
+     * matrix.extend(0, 0, 0, 0, 'x').equals(matrix); // returns true (no padding -> equal copy)
+     * matrix.extend(0, -1, 0, 0, 'x');               // throws IllegalArgumentException (negative padding)
      * }</pre>
      *
      * @param padTop number of padding rows to add above the original matrix; must be {@code >= 0}
@@ -1570,7 +1815,14 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
      * matrix.flipHorizontallyInPlace();
-     * // matrix is now [['c', 'b', 'a'], ['f', 'e', 'd']]
+     * matrix.rowView(0);          // returns ['c', 'b', 'a']
+     * matrix.rowView(1);          // returns ['f', 'e', 'd']
+     *
+     * CharMatrix single = CharMatrix.of(new char[][] {{'x'}});
+     * single.flipHorizontallyInPlace();
+     * single.get(0, 0);           // returns 'x' (single column unchanged)
+     *
+     * CharMatrix.empty().flipHorizontallyInPlace(); // no-op on an empty matrix
      * }</pre>
      *
      * @see #flipHorizontally() for a non-mutating version
@@ -1590,7 +1842,14 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}, {'e', 'f'}});
      * matrix.flipVerticallyInPlace();
-     * // matrix is now [['e', 'f'], ['c', 'd'], ['a', 'b']]
+     * matrix.rowView(0);          // returns ['e', 'f']
+     * matrix.rowView(2);          // returns ['a', 'b']
+     *
+     * CharMatrix single = CharMatrix.of(new char[][] {{'x', 'y'}});
+     * single.flipVerticallyInPlace();
+     * single.rowView(0);          // returns ['x', 'y'] (single row unchanged)
+     *
+     * CharMatrix.empty().flipVerticallyInPlace(); // no-op on an empty matrix
      * }</pre>
      *
      * @see #flipVertically() for a non-mutating version
@@ -1611,8 +1870,14 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'}});
-     * CharMatrix flipped = matrix.flipHorizontally();   // Returns [['c', 'b', 'a']]
-     * // original matrix is unchanged
+     * CharMatrix flipped = matrix.flipHorizontally();
+     * flipped.rowView(0);         // returns ['c', 'b', 'a']
+     * matrix.rowView(0);          // returns ['a', 'b', 'c'] (original unchanged)
+     *
+     * CharMatrix multi = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
+     * multi.flipHorizontally().rowView(1); // returns ['d', 'c']
+     *
+     * CharMatrix.empty().flipHorizontally().isEmpty(); // returns true
      * }</pre>
      *
      * @return a new CharMatrix with each row reversed
@@ -1634,8 +1899,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}, {'e', 'f'}});
-     * CharMatrix flipped = matrix.flipVertically();   // Returns [['e', 'f'], ['c', 'd'], ['a', 'b']]
-     * // original matrix is unchanged
+     * CharMatrix flipped = matrix.flipVertically();
+     * flipped.rowView(0);         // returns ['e', 'f']
+     * flipped.rowView(2);         // returns ['a', 'b']
+     * matrix.rowView(0);          // returns ['a', 'b'] (original unchanged)
+     *
+     * CharMatrix.empty().flipVertically().isEmpty(); // returns true
      * }</pre>
      *
      * @return a new matrix that is a vertical flip of this matrix (rows in reversed order)
@@ -1657,7 +1926,14 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
      * CharMatrix rotated = matrix.rotate90();
-     * // rotated is {{'c', 'a'}, {'d', 'b'}}
+     * rotated.rowView(0);         // returns ['c', 'a']
+     * rotated.rowView(1);         // returns ['d', 'b']
+     *
+     * // Non-square: a 2x3 matrix rotates to 3x2.
+     * CharMatrix wide = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
+     * wide.rotate90().rowView(0); // returns ['d', 'a']
+     *
+     * CharMatrix.empty().rotate90().isEmpty(); // returns true
      * }</pre>
      *
      * @return a new matrix that is this matrix rotated 90 degrees clockwise
@@ -1696,7 +1972,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
      * CharMatrix rotated = matrix.rotate180();
-     * // rotated is {{'d', 'c'}, {'b', 'a'}}
+     * rotated.rowView(0);         // returns ['d', 'c']
+     * rotated.rowView(1);         // returns ['b', 'a']
+     *
+     * CharMatrix wide = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
+     * wide.rotate180().rowView(0); // returns ['f', 'e', 'd']
+     *
+     * CharMatrix.empty().rotate180().isEmpty(); // returns true
      * }</pre>
      *
      * @return a new matrix that is this matrix rotated 180 degrees clockwise
@@ -1721,7 +2003,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
      * CharMatrix rotated = matrix.rotate270();
-     * // rotated is {{'b', 'd'}, {'a', 'c'}}
+     * rotated.rowView(0);         // returns ['b', 'd']
+     * rotated.rowView(1);         // returns ['a', 'c']
+     *
+     * CharMatrix wide = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
+     * wide.rotate270().rowView(0); // returns ['c', 'f']
+     *
+     * CharMatrix.empty().rotate270().isEmpty(); // returns true
      * }</pre>
      *
      * @return a new matrix that is this matrix rotated 270 degrees clockwise
@@ -1768,7 +2056,14 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * //            c f
      *
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
-     * CharMatrix transposed = matrix.transpose();   // 2×3 becomes 3×2
+     * CharMatrix transposed = matrix.transpose();   // 2x3 becomes 3x2
+     * transposed.rowCount();                        // returns 3
+     * transposed.rowView(0);                        // returns ['a', 'd']
+     * transposed.rowView(2);                        // returns ['c', 'f']
+     *
+     * // An N x 0 matrix transposes to the empty 0 x 0 matrix.
+     * CharMatrix.empty().transpose().isEmpty();            // returns true
+     * CharMatrix.of(new char[2][0]).transpose().isEmpty(); // returns true
      * }</pre>
      *
      * @return a new matrix that is the transpose of this matrix with dimensions columnCount × rowCount;
@@ -1817,7 +2112,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * // Original is 2x3 (6 elements)
      *
      * CharMatrix reshaped1 = matrix.reshape(3, 2);
-     * // Result: [['a', 'b'], ['c', 'd'], ['e', 'f']] - same 6 elements in 3x2
+     * reshaped1.rowView(0);       // returns ['a', 'b']
+     * reshaped1.rowView(2);       // returns ['e', 'f']
+     *
+     * matrix.reshape(3, 1);       // throws IllegalArgumentException (3 < 6 elements: shape too small)
      *
      * CharMatrix reshaped2 = matrix.reshape(2, 4);
      * // Result: [['a', 'b', 'c', 'd'], ['e', 'f', '\u0000', '\u0000']] - 8 positions, last 2 filled with default
@@ -1872,8 +2170,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}});
      * CharMatrix repeated = matrix.repeatElements(2, 3);
-     * // Result: [['a', 'a', 'a', 'b', 'b', 'b'],
-     * //          ['a', 'a', 'a', 'b', 'b', 'b']]
+     * repeated.rowView(0);        // returns ['a', 'a', 'a', 'b', 'b', 'b']
+     * repeated.rowView(1);        // returns ['a', 'a', 'a', 'b', 'b', 'b']
+     *
+     * matrix.repeatElements(1, 1).rowView(0); // returns ['a', 'b'] (1x1 repeat is a copy)
+     * matrix.repeatElements(0, 1);            // throws IllegalArgumentException (repeats must be positive)
      * }</pre>
      *
      * @param rowRepeats the number of times to repeat each element vertically (down the row axis);
@@ -1924,10 +2225,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
      * CharMatrix repeated = matrix.repeatMatrix(2, 3);
-     * // Result: [['a', 'b', 'a', 'b', 'a', 'b'],
-     * //          ['c', 'd', 'c', 'd', 'c', 'd'],
-     * //          ['a', 'b', 'a', 'b', 'a', 'b'],
-     * //          ['c', 'd', 'c', 'd', 'c', 'd']]
+     * repeated.rowView(0);        // returns ['a', 'b', 'a', 'b', 'a', 'b']
+     * repeated.rowView(1);        // returns ['c', 'd', 'c', 'd', 'c', 'd']
+     * repeated.rowCount();        // returns 4
+     *
+     * matrix.repeatMatrix(1, 1).equals(matrix); // returns true (1x1 tiling is a copy)
+     * matrix.repeatMatrix(0, 1);                // throws IllegalArgumentException (repeats must be positive)
      * }</pre>
      *
      * @param rowRepeats number of times to repeat the matrix vertically; must be {@code > 0}
@@ -1975,8 +2278,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}, {'e', 'f'}});
-     * CharList list = matrix.flatten();
-     * // Returns CharList: ['a', 'b', 'c', 'd', 'e', 'f']
+     * matrix.flatten().toArray();   // returns ['a', 'b', 'c', 'd', 'e', 'f']
+     *
+     * CharMatrix single = CharMatrix.of(new char[][] {{'x', 'y', 'z'}});
+     * single.flatten().toArray();   // returns ['x', 'y', 'z']
+     *
+     * CharMatrix.empty().flatten().size(); // returns 0
      * }</pre>
      *
      * @return a new CharList containing all elements in row-major order
@@ -2010,7 +2317,14 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'d', 'b'}, {'c', 'a'}});
      * matrix.mutateAsFlat(arr -> java.util.Arrays.sort(arr));
-     * // matrix is now [['a', 'b'], ['c', 'd']] (all elements sorted globally, then placed back row by row)
+     * matrix.rowView(0);          // returns ['a', 'b']
+     * matrix.rowView(1);          // returns ['c', 'd']
+     *
+     * CharMatrix m = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
+     * m.mutateAsFlat(arr -> { for (int i = 0; i < arr.length; i++) arr[i] = Character.toUpperCase(arr[i]); });
+     * m.rowView(0);               // returns ['A', 'B']
+     *
+     * CharMatrix.empty().mutateAsFlat(arr -> java.util.Arrays.sort(arr)); // no-op on an empty matrix
      * }</pre>
      *
      * @param <E> the exception type that the operation may throw
@@ -2031,7 +2345,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix a = CharMatrix.of(new char[][] {{'a', 'b'}});
      * CharMatrix b = CharMatrix.of(new char[][] {{'c', 'd'}});
-     * CharMatrix stacked = a.stackVertically(b);   // Result: [['a', 'b'], ['c', 'd']]
+     * CharMatrix stacked = a.stackVertically(b);
+     * stacked.rowView(0);         // returns ['a', 'b']
+     * stacked.rowView(1);         // returns ['c', 'd']
+     *
+     * CharMatrix wrong = CharMatrix.of(new char[][] {{'x'}});
+     * a.stackVertically(wrong);             // throws IllegalArgumentException (column count mismatch)
+     * a.stackVertically((CharMatrix) null); // throws IllegalArgumentException (null argument)
      * }</pre>
      *
      * @param other the matrix to stack below this matrix; must not be {@code null}
@@ -2069,7 +2389,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix a = CharMatrix.of(new char[][] {{'a'}, {'b'}});
      * CharMatrix b = CharMatrix.of(new char[][] {{'c'}, {'d'}});
-     * CharMatrix stacked = a.stackHorizontally(b);   // Result: [['a', 'c'], ['b', 'd']]
+     * CharMatrix stacked = a.stackHorizontally(b);
+     * stacked.rowView(0);         // returns ['a', 'c']
+     * stacked.rowView(1);         // returns ['b', 'd']
+     *
+     * CharMatrix wrong = CharMatrix.of(new char[][] {{'x'}});
+     * a.stackHorizontally(wrong);             // throws IllegalArgumentException (row count mismatch)
+     * a.stackHorizontally((CharMatrix) null); // throws IllegalArgumentException (null argument)
      * }</pre>
      *
      * @param other the matrix to stack to the right of this matrix; must not be {@code null}
@@ -2105,7 +2431,16 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix a = CharMatrix.of(new char[][] {{'a', 'b'}});
      * CharMatrix b = CharMatrix.of(new char[][] {{1, 2}});
-     * CharMatrix sum = a.add(b);   // Result: [['b', 'd']] (a+1, b+2)
+     * a.add(b).rowView(0);        // returns ['b', 'd'] ('a'+1, 'b'+2)
+     *
+     * // Wraparound: 65535 + 1 wraps modulo 65536 back to 0.
+     * CharMatrix max = CharMatrix.of(new char[][] {{(char) 65535}});
+     * CharMatrix one = CharMatrix.of(new char[][] {{1}});
+     * (int) max.add(one).get(0, 0); // returns 0 (wrapped)
+     *
+     * CharMatrix wrong = CharMatrix.of(new char[][] {{'x', 'y', 'z'}});
+     * a.add(wrong);               // throws IllegalArgumentException (shape mismatch)
+     * a.add((CharMatrix) null);   // throws IllegalArgumentException (null argument)
      * }</pre>
      *
      * @param other the matrix to add to this matrix; must not be {@code null} and must have the same shape
@@ -2136,7 +2471,16 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix a = CharMatrix.of(new char[][] {{'d', 'e'}});
      * CharMatrix b = CharMatrix.of(new char[][] {{1, 2}});
-     * CharMatrix diff = a.subtract(b);   // Result: [['c', 'c']] (d-1, e-2)
+     * a.subtract(b).rowView(0);   // returns ['c', 'c'] ('d'-1, 'e'-2)
+     *
+     * // Underflow wraps modulo 65536: 0 - 1 becomes 65535.
+     * CharMatrix zero = CharMatrix.of(new char[][] {{0}});
+     * CharMatrix one = CharMatrix.of(new char[][] {{1}});
+     * (int) zero.subtract(one).get(0, 0); // returns 65535 (wrapped)
+     *
+     * CharMatrix wrong = CharMatrix.of(new char[][] {{'x', 'y', 'z'}});
+     * a.subtract(wrong);               // throws IllegalArgumentException (shape mismatch)
+     * a.subtract((CharMatrix) null);   // throws IllegalArgumentException (null argument)
      * }</pre>
      *
      * @param other the matrix to subtract from this matrix; must not be {@code null} and must have the same shape
@@ -2172,7 +2516,14 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix a = CharMatrix.of(new char[][] {{2, 3}, {4, 5}});
      * CharMatrix b = CharMatrix.of(new char[][] {{1, 2}, {3, 4}});
-     * CharMatrix product = a.matmul(b);   // Standard matrix multiplication
+     * CharMatrix product = a.matmul(b);   // standard matrix multiplication
+     * (int) product.get(0, 0);            // returns 11  (2*1 + 3*3)
+     * (int) product.get(0, 1);            // returns 16  (2*2 + 3*4)
+     * (int) product.get(1, 1);            // returns 28  (4*2 + 5*4)
+     *
+     * CharMatrix wrong = CharMatrix.of(new char[][] {{1, 2, 3}}); // 1x3, this.columnCount is 2
+     * a.matmul(wrong);                                            // throws IllegalArgumentException (this.columnCount != other.rowCount)
+     * a.matmul((CharMatrix) null);                                // throws IllegalArgumentException (null argument)
      * }</pre>
      *
      * <p><b>Note:</b> This is the linear-algebra matrix product, not element-wise multiplication.
@@ -2210,6 +2561,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix charMatrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
      * Matrix<Character> boxed = charMatrix.boxed();
+     * boxed.get(0, 0);            // returns Character 'a'
+     * boxed.get(1, 1);            // returns Character 'd'
+     *
+     * CharMatrix.empty().boxed().isEmpty(); // returns true
      * }</pre>
      *
      * @return a new Matrix containing Character objects with the same values and dimensions
@@ -2245,7 +2600,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix charMatrix = CharMatrix.of(new char[][] {{'a', 'b'}});
-     * IntMatrix intMatrix = charMatrix.toIntMatrix();   // Result: [[97, 98]]
+     * IntMatrix intMatrix = charMatrix.toIntMatrix();
+     * intMatrix.get(0, 0);        // returns 97
+     * intMatrix.get(0, 1);        // returns 98
+     *
+     * CharMatrix.of(new char[][] {{'0'}}).toIntMatrix().get(0, 0); // returns 48 (code unit of '0')
+     * CharMatrix.empty().toIntMatrix().isEmpty();                  // returns true
      * }</pre>
      *
      * @return a new IntMatrix with the same dimensions containing the int values of the characters
@@ -2261,7 +2621,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix charMatrix = CharMatrix.of(new char[][] {{'a', 'b'}});
-     * LongMatrix longMatrix = charMatrix.toLongMatrix();   // Result: [[97L, 98L]]
+     * LongMatrix longMatrix = charMatrix.toLongMatrix();
+     * longMatrix.get(0, 0);       // returns 97L
+     * longMatrix.get(0, 1);       // returns 98L
+     *
+     * CharMatrix.of(new char[][] {{'0'}}).toLongMatrix().get(0, 0); // returns 48L
+     * CharMatrix.empty().toLongMatrix().isEmpty();                  // returns true
      * }</pre>
      *
      * @return a new LongMatrix with the same dimensions containing the long values of the characters
@@ -2296,7 +2661,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix charMatrix = CharMatrix.of(new char[][] {{'a', 'b'}});
-     * FloatMatrix floatMatrix = charMatrix.toFloatMatrix();   // Result: [[97.0f, 98.0f]]
+     * FloatMatrix floatMatrix = charMatrix.toFloatMatrix();
+     * floatMatrix.get(0, 0);      // returns 97.0f
+     * floatMatrix.get(0, 1);      // returns 98.0f
+     *
+     * CharMatrix.of(new char[][] {{'0'}}).toFloatMatrix().get(0, 0); // returns 48.0f
+     * CharMatrix.empty().toFloatMatrix().isEmpty();                  // returns true
      * }</pre>
      *
      * @return a new FloatMatrix with the same dimensions containing the float values of the characters
@@ -2331,7 +2701,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix charMatrix = CharMatrix.of(new char[][] {{'a', 'b'}});
-     * DoubleMatrix doubleMatrix = charMatrix.toDoubleMatrix();   // Result: [[97.0, 98.0]]
+     * DoubleMatrix doubleMatrix = charMatrix.toDoubleMatrix();
+     * doubleMatrix.get(0, 0);     // returns 97.0
+     * doubleMatrix.get(0, 1);     // returns 98.0
+     *
+     * CharMatrix.of(new char[][] {{'0'}}).toDoubleMatrix().get(0, 0); // returns 48.0
+     * CharMatrix.empty().toDoubleMatrix().isEmpty();                  // returns true
      * }</pre>
      *
      * @return a new DoubleMatrix with the same dimensions containing the double values of the characters
@@ -2368,8 +2743,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix a = CharMatrix.of(new char[][] {{'a', 'b'}});
      * CharMatrix b = CharMatrix.of(new char[][] {{'A', 'B'}});
-     * CharMatrix result = a.zipWith(b, (x, y) -> (char) Math.max(x, y));
-     * // Result: [['a', 'b']] (max of each pair)
+     * a.zipWith(b, (x, y) -> (char) Math.max(x, y)).rowView(0); // returns ['a', 'b'] (lowercase code units are larger)
+     * a.zipWith(b, (x, y) -> (char) Math.min(x, y)).rowView(0); // returns ['A', 'B'] (min of each pair)
+     *
+     * CharMatrix wrong = CharMatrix.of(new char[][] {{'x', 'y', 'z'}});
+     * a.zipWith(wrong, (x, y) -> x);                                                                // throws IllegalArgumentException (shape mismatch)
+     * a.zipWith(b, (com.landawn.abacus.util.Throwables.CharBinaryOperator<RuntimeException>) null); // throws IllegalArgumentException (null function)
      * }</pre>
      *
      * @param <E> the type of exception that the zip function may throw
@@ -2405,8 +2784,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * CharMatrix a = CharMatrix.of(new char[][] {{'a', 'b'}});
      * CharMatrix b = CharMatrix.of(new char[][] {{'c', 'd'}});
      * CharMatrix c = CharMatrix.of(new char[][] {{'e', 'f'}});
-     * CharMatrix result = a.zipWith(b, c, (x, y, z) -> (char) Math.max(Math.max(x, y), z));
-     * // Result: [['e', 'f']] (max of each triple)
+     * a.zipWith(b, c, (x, y, z) -> (char) Math.max(Math.max(x, y), z)).rowView(0); // returns ['e', 'f'] (max of each triple)
+     * a.zipWith(b, c, (x, y, z) -> (char) Math.min(Math.min(x, y), z)).rowView(0); // returns ['a', 'b'] (min of each triple)
+     *
+     * CharMatrix wrong = CharMatrix.of(new char[][] {{'x', 'y', 'z'}});
+     * a.zipWith(b, wrong, (x, y, z) -> x); // throws IllegalArgumentException (shape mismatch)
      * }</pre>
      *
      * @param <E> the type of exception that the zip function may throw
@@ -2443,7 +2825,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'},
      *                                                 {'d', 'e', 'f'},
      *                                                 {'g', 'h', 'i'}});
-     * CharStream diagonal = matrix.mainDiagonalStream();   // Stream of: 'a', 'e', 'i'
+     * matrix.mainDiagonalStream().toArray(); // returns ['a', 'e', 'i']
+     *
+     * CharMatrix.empty().mainDiagonalStream().count(); // returns 0 (empty matrix is allowed)
+     *
+     * CharMatrix nonSquare = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
+     * nonSquare.mainDiagonalStream(); // throws IllegalStateException (non-empty and not square)
      * }</pre>
      *
      * @return a CharStream containing the diagonal elements from top-left to bottom-right
@@ -2500,7 +2887,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'},
      *                                                 {'d', 'e', 'f'},
      *                                                 {'g', 'h', 'i'}});
-     * CharStream diagonal = matrix.antiDiagonalStream();   // Stream of: 'c', 'e', 'g'
+     * matrix.antiDiagonalStream().toArray(); // returns ['c', 'e', 'g']
+     *
+     * CharMatrix.empty().antiDiagonalStream().count(); // returns 0 (empty matrix is allowed)
+     *
+     * CharMatrix nonSquare = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
+     * nonSquare.antiDiagonalStream(); // throws IllegalStateException (non-empty and not square)
      * }</pre>
      *
      * @return a CharStream containing the diagonal elements from top-right to bottom-left
@@ -2558,7 +2950,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * CharStream stream = matrix.horizontalStream();   // Stream of: 'a', 'b', 'c', 'd'
+     * matrix.horizontalStream().toArray(); // returns ['a', 'b', 'c', 'd']
+     *
+     * CharMatrix single = CharMatrix.of(new char[][] {{'x', 'y', 'z'}});
+     * single.horizontalStream().toArray(); // returns ['x', 'y', 'z']
+     *
+     * CharMatrix.empty().horizontalStream().count(); // returns 0
      * }</pre>
      *
      * @return a CharStream containing all matrix elements traversed horizontally (left to right, top to bottom)
@@ -2574,7 +2971,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * CharStream row = matrix.horizontalStream(1);   // Stream of: 'c', 'd'
+     * matrix.horizontalStream(1).toArray(); // returns ['c', 'd']
+     * matrix.horizontalStream(0).toArray(); // returns ['a', 'b']
+     *
+     * matrix.horizontalStream(5);  // throws IndexOutOfBoundsException (row out of bounds)
+     * matrix.horizontalStream(-1); // throws IndexOutOfBoundsException (negative row)
      * }</pre>
      *
      * @param rowIndex the index of the row to stream (0-based)
@@ -2592,8 +2993,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}, {'e', 'f'}});
-     * CharStream stream = matrix.horizontalStream(1, 3);   // Elements from rows 1 and 2
-     * // stream contains: 'c', 'd', 'e', 'f'
+     * matrix.horizontalStream(1, 3).toArray(); // returns ['c', 'd', 'e', 'f'] (rows 1 and 2)
+     * matrix.horizontalStream(1, 1).count();   // returns 0 (empty row range)
+     *
+     * matrix.horizontalStream(1, 5); // throws IndexOutOfBoundsException (toRowIndex > rowCount)
+     * matrix.horizontalStream(2, 1); // throws IndexOutOfBoundsException (fromRowIndex > toRowIndex)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -2683,7 +3087,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * CharStream stream = matrix.verticalStream();   // Stream of: 'a', 'c', 'b', 'd'
+     * matrix.verticalStream().toArray(); // returns ['a', 'c', 'b', 'd'] (column-major)
+     *
+     * CharMatrix single = CharMatrix.of(new char[][] {{'x'}, {'y'}, {'z'}});
+     * single.verticalStream().toArray(); // returns ['x', 'y', 'z']
+     *
+     * CharMatrix.empty().verticalStream().count(); // returns 0
      * }</pre>
      *
      * @return a CharStream containing all matrix elements in column-major order
@@ -2700,7 +3109,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * CharStream column = matrix.verticalStream(1);   // Stream of: 'b', 'd'
+     * matrix.verticalStream(1).toArray(); // returns ['b', 'd']
+     * matrix.verticalStream(0).toArray(); // returns ['a', 'c']
+     *
+     * matrix.verticalStream(5);  // throws IndexOutOfBoundsException (column out of bounds)
+     * matrix.verticalStream(-1); // throws IndexOutOfBoundsException (negative column)
      * }</pre>
      *
      * @param columnIndex the index of the column to stream (0-based)
@@ -2721,7 +3134,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
-     * CharStream stream = matrix.verticalStream(1, 3);   // Stream of: 'b', 'e', 'c', 'f'
+     * matrix.verticalStream(1, 3).toArray(); // returns ['b', 'e', 'c', 'f'] (columns 1 and 2)
+     * matrix.verticalStream(1, 1).count();   // returns 0 (empty column range)
+     *
+     * matrix.verticalStream(1, 5); // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
+     * matrix.verticalStream(2, 1); // throws IndexOutOfBoundsException (fromColumnIndex > toColumnIndex)
      * }</pre>
      *
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
@@ -2810,9 +3227,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * Stream<CharStream> rows = matrix.rowStreams();
-     * // First stream contains: 'a', 'b'
-     * // Second stream contains: 'c', 'd'
+     * List<CharStream> rows = matrix.rowStreams().toList();
+     * rows.get(0).toArray();       // returns ['a', 'b']
+     * rows.get(1).toArray();       // returns ['c', 'd']
+     * matrix.rowStreams().count(); // returns 2
+     *
+     * CharMatrix.empty().rowStreams().count(); // returns 0
      * }</pre>
      *
      * @return a Stream of CharStreams, one for each row in the matrix
@@ -2829,9 +3249,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}, {'e', 'f'}});
-     * Stream<CharStream> rows = matrix.rowStreams(1, 3);
-     * // First stream contains: 'c', 'd'
-     * // Second stream contains: 'e', 'f'
+     * List<CharStream> rows = matrix.rowStreams(1, 3).toList();
+     * rows.get(0).toArray();      // returns ['c', 'd']
+     * rows.get(1).toArray();      // returns ['e', 'f']
+     *
+     * matrix.rowStreams(1, 1).count(); // returns 0 (empty row range)
+     * matrix.rowStreams(1, 5);         // throws IndexOutOfBoundsException (toRowIndex > rowCount)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -2886,9 +3309,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * Stream<CharStream> columns = matrix.columnStreams();
-     * // First stream contains: 'a', 'c'
-     * // Second stream contains: 'b', 'd'
+     * List<CharStream> columns = matrix.columnStreams().toList();
+     * columns.get(0).toArray();       // returns ['a', 'c']
+     * columns.get(1).toArray();       // returns ['b', 'd']
+     * matrix.columnStreams().count(); // returns 2
+     *
+     * CharMatrix.empty().columnStreams().count(); // returns 0
      * }</pre>
      *
      * @return a Stream of CharStreams, one for each column in the matrix
@@ -2908,9 +3334,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
-     * Stream<CharStream> columns = matrix.columnStreams(1, 3);
-     * // First stream contains: 'b', 'e'
-     * // Second stream contains: 'c', 'f'
+     * List<CharStream> columns = matrix.columnStreams(1, 3).toList();
+     * columns.get(0).toArray();   // returns ['b', 'e']
+     * columns.get(1).toArray();   // returns ['c', 'f']
+     *
+     * matrix.columnStreams(1, 1).count(); // returns 0 (empty column range)
+     * matrix.columnStreams(1, 5);         // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
      * }</pre>
      *
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
@@ -3016,10 +3445,17 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * matrix.forEach(ch -> System.out.print(ch + " "));   // Prints: a b c d
+     * StringBuilder sb = new StringBuilder();
+     * matrix.forEach(ch -> sb.append(ch));
+     * sb.toString();              // returns "abcd" (row-major order)
      *
      * List<Character> chars = new ArrayList<>();
-     * matrix.forEach(ch -> chars.add(ch));   // Collects all characters
+     * matrix.forEach(chars::add);
+     * chars.size();               // returns 4
+     *
+     * StringBuilder empty = new StringBuilder();
+     * CharMatrix.empty().forEach(empty::append);
+     * empty.length();             // returns 0 (no elements visited)
      * }</pre>
      *
      * @param <E> the type of exception that the action may throw
@@ -3047,13 +3483,17 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *                                                 {'d', 'e', 'f'},
      *                                                 {'g', 'h', 'i'}});
      *
-     * // Process only the center 2x2 sub-region
-     * matrix.forEach(1, 3, 1, 3, ch -> System.out.print(ch + " "));
-     * // Prints: e f h i
+     * // Process only the bottom-right 2x2 sub-region (rows 1-2, columns 1-2).
+     * StringBuilder sb = new StringBuilder();
+     * matrix.forEach(1, 3, 1, 3, sb::append);
+     * sb.toString();              // returns "efhi"
      *
-     * // Process first two rows, last two columns
-     * matrix.forEach(0, 2, 1, 3, ch -> System.out.print(ch + " "));
-     * // Prints: b c e f
+     * // Process the first two rows, last two columns.
+     * StringBuilder sb2 = new StringBuilder();
+     * matrix.forEach(0, 2, 1, 3, sb2::append);
+     * sb2.toString();             // returns "bcef"
+     *
+     * matrix.forEach(0, 5, 0, 3, ch -> {}); // throws IndexOutOfBoundsException (toRowIndex > rowCount)
      * }</pre>
      *
      * @param <E> the type of exception that the action may throw
@@ -3097,10 +3537,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
-     * matrix.println();
-     * // Output:
-     * // [a, b, c]
-     * // [d, e, f]
+     * matrix.println();           // returns (and prints) "[a, b, c]\n[d, e, f]"
+     *
+     * CharMatrix single = CharMatrix.of(new char[][] {{'x'}});
+     * single.println();           // returns (and prints) "[x]"
+     *
+     * CharMatrix.empty().println(); // returns (and prints) "[]"
      * }</pre>
      *
      * @return the formatted string representation of the matrix
@@ -3149,6 +3591,17 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * Matrices with the same dimensions and element values will have equal hash codes,
      * consistent with the {@link #equals(Object)} method.
      *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * CharMatrix m1 = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
+     * CharMatrix m2 = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
+     * m1.hashCode() == m2.hashCode();   // returns true (equal matrices share a hash code)
+     *
+     * CharMatrix m3 = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'x'}});
+     * m1.hashCode() == m3.hashCode();   // typically returns false (different content)
+     * CharMatrix.empty().hashCode();    // returns a stable hash for the empty matrix
+     * }</pre>
+     *
      * @return a hash code value for this matrix
      */
     @Override
@@ -3165,7 +3618,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix m1 = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
      * CharMatrix m2 = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * m1.equals(m2);   // true
+     * m1.equals(m2);              // returns true (same shape and values)
+     *
+     * CharMatrix m3 = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'x'}});
+     * m1.equals(m3);                                       // returns false (one element differs)
+     * m1.equals(CharMatrix.of(new char[][] {{'a', 'b'}})); // returns false (different shape)
+     * m1.equals("not a matrix");                           // returns false (different type)
      * }</pre>
      *
      * @param obj the object to compare with
@@ -3192,7 +3650,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * System.out.println(matrix.toString());   // [[a, b], [c, d]]
+     * matrix.toString();          // returns "[[a, b], [c, d]]"
+     *
+     * CharMatrix single = CharMatrix.of(new char[][] {{'x'}});
+     * single.toString();          // returns "[[x]]"
+     *
+     * CharMatrix.empty().toString(); // returns "[]"
      * }</pre>
      *
      * @return a string representation of this matrix

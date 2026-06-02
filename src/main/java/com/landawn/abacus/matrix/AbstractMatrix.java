@@ -268,10 +268,16 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix intMatrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * Class<?> type = intMatrix.elementType();   // Returns int.class
+     * intMatrix.elementType();                                  // returns int.class
      *
-     * Matrix<String> stringMatrix = Matrix.of(new String[][] {{"a", "b"}, {"c", "d"}});
-     * Class<?> strType = stringMatrix.elementType();   // Returns String.class
+     * DoubleMatrix dblMatrix = DoubleMatrix.of(new double[][] {{1.0}});
+     * dblMatrix.elementType();                                  // returns double.class
+     *
+     * Matrix<String> strMatrix = Matrix.of(new String[][] {{"a", "b"}, {"c", "d"}});
+     * strMatrix.elementType();                                  // returns String.class
+     *
+     * IntMatrix empty = IntMatrix.of(new int[0][0]);
+     * empty.elementType();                                      // returns int.class (independent of size)
      * }</pre>
      *
      * @return the {@link Class} object representing the element type of this matrix
@@ -294,8 +300,15 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
      * int[][] array = matrix.internalArray();
-     * array[0][0] = 10;  // This WILL modify the matrix!
-     * // matrix now contains {{10, 2}, {3, 4}}
+     * array.length;                                             // returns 2 (one entry per row)
+     * array[0][0] = 10;                                         // WILL modify the matrix
+     * matrix.get(0, 0);                                         // returns 10 (mutation visible through the matrix)
+     *
+     * IntMatrix empty = IntMatrix.of(new int[0][0]);
+     * empty.internalArray().length;                            // returns 0 (zero-row matrix yields zero-length array)
+     *
+     * IntMatrix rowsNoCols = IntMatrix.of(new int[3][0]);
+     * rowsNoCols.internalArray().length;                      // returns 3 (3 x 0 matrix keeps 3 empty rows)
      * }</pre>
      *
      * @return the underlying two-dimensional array (not a copy); its length equals {@code rowCount}
@@ -317,8 +330,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * int[] row0 = matrix.rowView(0);  // Returns [1, 2, 3] (direct reference)
-     * row0[0] = 99;                // Also changes matrix element at (0, 0) to 99
+     * int[] row0 = matrix.rowView(0);                          // returns [1, 2, 3] (live reference)
+     * row0[0] = 99;                                            // also changes matrix element at (0, 0)
+     * matrix.get(0, 0);                                        // returns 99 (mutation visible through the matrix)
+     * int[] row1 = matrix.rowView(1);                          // returns [4, 5, 6]
+     *
+     * matrix.rowView(-1);                                      // throws IllegalArgumentException (negative index)
+     * matrix.rowView(2);                                       // throws IllegalArgumentException (index >= rowCount)
      * }</pre>
      *
      * @param rowIndex the index of the row to retrieve (0-based)
@@ -334,8 +352,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * int[] rowCopy = matrix.rowCopy(0);  // Returns [1, 2, 3] (independent copy)
-     * rowCopy[0] = 99;                    // Does NOT affect the original matrix
+     * int[] rowCopy = matrix.rowCopy(0);                       // returns [1, 2, 3] (independent copy)
+     * rowCopy[0] = 99;                                         // does NOT affect the original matrix
+     * matrix.get(0, 0);                                        // returns 1 (original unchanged)
+     * int[] last = matrix.rowCopy(1);                          // returns [4, 5, 6]
+     *
+     * matrix.rowCopy(-1);                                      // throws IllegalArgumentException (negative index)
+     * matrix.rowCopy(2);                                       // throws IllegalArgumentException (index >= rowCount)
      * }</pre>
      *
      * @param rowIndex the index of the row to retrieve (0-based)
@@ -359,8 +382,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * int[] colCopy = matrix.columnCopy(1);  // Returns [2, 5] (independent copy)
-     * colCopy[0] = 99;                       // Does NOT affect the original matrix
+     * int[] colCopy = matrix.columnCopy(1);                    // returns [2, 5] (independent copy)
+     * colCopy[0] = 99;                                         // does NOT affect the original matrix
+     * matrix.get(0, 1);                                        // returns 2 (original unchanged)
+     * int[] col0 = matrix.columnCopy(0);                       // returns [1, 4]
+     *
+     * matrix.columnCopy(-1);                                   // throws IllegalArgumentException (negative index)
+     * matrix.columnCopy(3);                                    // throws IllegalArgumentException (index >= columnCount)
      * }</pre>
      *
      * @param columnIndex the index of the column to retrieve (0-based)
@@ -375,7 +403,16 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * int rows = matrix.rowCount();   // Returns 2
+     * matrix.rowCount();                                       // returns 2
+     *
+     * IntMatrix single = IntMatrix.of(new int[][] {{7, 8, 9}});
+     * single.rowCount();                                       // returns 1
+     *
+     * IntMatrix empty = IntMatrix.of(new int[0][0]);
+     * empty.rowCount();                                        // returns 0
+     *
+     * IntMatrix rowsNoCols = IntMatrix.of(new int[3][0]);
+     * rowsNoCols.rowCount();                                   // returns 3 (rows can exist with zero columns)
      * }</pre>
      *
      * @return the number of rows
@@ -390,7 +427,16 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * int cols = matrix.columnCount();   // Returns 3
+     * matrix.columnCount();                                    // returns 3
+     *
+     * IntMatrix tall = IntMatrix.of(new int[][] {{1}, {2}, {3}});
+     * tall.columnCount();                                      // returns 1
+     *
+     * IntMatrix empty = IntMatrix.of(new int[0][0]);
+     * empty.columnCount();                                     // returns 0
+     *
+     * IntMatrix rowsNoCols = IntMatrix.of(new int[3][0]);
+     * rowsNoCols.columnCount();                                // returns 0 (3 x 0 matrix)
      * }</pre>
      *
      * @return the number of columns
@@ -405,7 +451,16 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * long count = matrix.elementCount();   // Returns 6
+     * matrix.elementCount();                                   // returns 6
+     *
+     * IntMatrix single = IntMatrix.of(new int[][] {{42}});
+     * single.elementCount();                                   // returns 1
+     *
+     * IntMatrix empty = IntMatrix.of(new int[0][0]);
+     * empty.elementCount();                                    // returns 0
+     *
+     * IntMatrix rowsNoCols = IntMatrix.of(new int[3][0]);
+     * rowsNoCols.elementCount();                               // returns 0 (3 rows x 0 columns)
      * }</pre>
      *
      * @return the total number of elements
@@ -425,10 +480,16 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix empty = IntMatrix.of(new int[0][0]);
-     * boolean result1 = empty.isEmpty();   // Returns true (0x0)
+     * empty.isEmpty();                                         // returns true (0 x 0)
      *
-     * IntMatrix notEmpty = IntMatrix.of(new int[][] {{1}});
-     * boolean result2 = notEmpty.isEmpty();   // Returns false (1x1)
+     * IntMatrix rowsNoCols = IntMatrix.of(new int[3][0]);
+     * rowsNoCols.isEmpty();                                    // returns true (3 x 0 still has 0 elements)
+     *
+     * IntMatrix single = IntMatrix.of(new int[][] {{1}});
+     * single.isEmpty();                                        // returns false (1 x 1)
+     *
+     * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
+     * matrix.isEmpty();                                        // returns false (2 x 2)
      * }</pre>
      *
      * @return {@code true} if the matrix has no elements (count == 0), {@code false} otherwise
@@ -451,11 +512,16 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * String output = matrix.println();
-     * // Prints to console:
-     * // [1, 2]
-     * // [3, 4]
-     * // And returns the same string
+     * matrix.println();                                        // prints and returns "[1, 2]\n[3, 4]"
+     *
+     * IntMatrix single = IntMatrix.of(new int[][] {{1, 2, 3}});
+     * single.println();                                        // prints and returns "[1, 2, 3]"
+     *
+     * IntMatrix empty = IntMatrix.of(new int[0][0]);
+     * empty.println();                                         // prints and returns "[]"
+     *
+     * IntMatrix rowsNoCols = IntMatrix.of(new int[2][0]);
+     * rowsNoCols.println();                                    // prints and returns "[]\n[]" (two empty rows)
      * }</pre>
      *
      * @return the formatted string representation of the matrix that was printed to standard output
@@ -474,9 +540,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <pre>{@code
      * IntMatrix original = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
      * IntMatrix copy = original.copy();
-     * copy.set(0, 0, 10);   // Original matrix remains unchanged
-     * // original: {{1, 2}, {3, 4}}
-     * // copy:     {{10, 2}, {3, 4}}
+     * copy.equals(original);                                   // returns true (same shape and values)
+     * copy.set(0, 0, 10);                                      // original matrix remains unchanged
+     * copy.get(0, 0);                                          // returns 10
+     * original.get(0, 0);                                      // returns 1 (independent storage)
+     *
+     * IntMatrix empty = IntMatrix.of(new int[0][0]);
+     * empty.copy().isEmpty();                                  // returns true (empty copy stays empty)
      * }</pre>
      *
      * @return a new matrix that is a copy of this matrix with the same dimensions and values
@@ -493,11 +563,16 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}, {5, 6}});
-     * IntMatrix subMatrix = matrix.copy(0, 2);   // Contains rows 0 and 1
-     * // subMatrix: {{1, 2}, {3, 4}}
+     * IntMatrix sub = matrix.copy(0, 2);                       // returns {{1, 2}, {3, 4}}
+     * sub.rowCount();                                          // returns 2
      *
-     * IntMatrix lastRow = matrix.copy(2, 3);   // Contains only row 2
-     * // lastRow: {{5, 6}}
+     * IntMatrix lastRow = matrix.copy(2, 3);                   // returns {{5, 6}}
+     *
+     * IntMatrix none = matrix.copy(1, 1);                      // returns the canonical empty 0 x 0 matrix
+     * none.rowCount();                                         // returns 0
+     *
+     * matrix.copy(0, 4);                                       // throws IndexOutOfBoundsException (toRowIndex > rowCount)
+     * matrix.copy(2, 1);                                       // throws IndexOutOfBoundsException (fromRowIndex > toRowIndex)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -521,11 +596,15 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * IntMatrix subMatrix = matrix.copy(0, 2, 1, 3);
-     * // subMatrix: {{2, 3}, {5, 6}} (rows 0-1, columns 1-2)
+     * IntMatrix sub = matrix.copy(0, 2, 1, 3);                 // returns {{2, 3}, {5, 6}} (rows 0-1, cols 1-2)
+     * IntMatrix center = matrix.copy(1, 2, 1, 2);              // returns {{5}} (just the center element)
      *
-     * IntMatrix centerElement = matrix.copy(1, 2, 1, 2);
-     * // centerElement: {{5}} (just the center element)
+     * IntMatrix emptyCols = matrix.copy(0, 2, 1, 1);           // returns a 2 x 0 matrix (empty column range)
+     * emptyCols.rowCount();                                    // returns 2
+     * emptyCols.columnCount();                                 // returns 0
+     *
+     * matrix.copy(0, 2, 0, 4);                                 // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
+     * matrix.copy(2, 0, 0, 2);                                 // throws IndexOutOfBoundsException (fromRowIndex > toRowIndex)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -553,13 +632,17 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * // Original:    Rotated 90 degrees clockwise:
-     * // 1 2 3        7 4 1
-     * // 4 5 6   =>   8 5 2
-     * // 7 8 9        9 6 3
+     * IntMatrix original = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
+     * IntMatrix rotated = original.rotate90();                 // returns {{4, 1}, {5, 2}, {6, 3}}
+     * rotated.rowCount();                                      // returns 3 (2 x 3 becomes 3 x 2)
+     * rotated.columnCount();                                   // returns 2
+     * rotated.get(0, 0);                                       // returns 4
      *
-     * IntMatrix original = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * IntMatrix rotated = original.rotate90();   // 3x3 remains 3x3
+     * IntMatrix single = IntMatrix.of(new int[][] {{42}});
+     * single.rotate90().get(0, 0);                             // returns 42 (1 x 1 unchanged)
+     *
+     * IntMatrix empty = IntMatrix.of(new int[0][0]);
+     * empty.rotate90().isEmpty();                              // returns true (empty rotates to empty)
      * }</pre>
      *
      * @return a new matrix that is this matrix rotated 90 degrees clockwise, with dimensions {@code columnCount × rowCount};
@@ -584,13 +667,16 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * // Original:    Rotated 180 degrees:
-     * // 1 2 3        9 8 7
-     * // 4 5 6   =>   6 5 4
-     * // 7 8 9        3 2 1
+     * IntMatrix original = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
+     * IntMatrix rotated = original.rotate180();                // returns {{6, 5, 4}, {3, 2, 1}}
+     * rotated.rowCount();                                      // returns 2 (dimensions unchanged)
+     * rotated.get(0, 0);                                       // returns 6
      *
-     * IntMatrix original = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * IntMatrix rotated = original.rotate180();   // Dimensions remain 3x3
+     * IntMatrix single = IntMatrix.of(new int[][] {{42}});
+     * single.rotate180().get(0, 0);                            // returns 42 (1 x 1 unchanged)
+     *
+     * IntMatrix rowsNoCols = IntMatrix.of(new int[3][0]);
+     * rowsNoCols.rotate180().rowCount();                       // returns 3 (3 x 0 shape preserved)
      * }</pre>
      *
      * @return a new matrix that is this matrix rotated 180 degrees, with the same dimensions ({@code rowCount × columnCount})
@@ -610,13 +696,17 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * // Original:    Rotated 270 degrees clockwise:
-     * // 1 2 3        3 6 9
-     * // 4 5 6   =>   2 5 8
-     * // 7 8 9        1 4 7
+     * IntMatrix original = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
+     * IntMatrix rotated = original.rotate270();                // returns {{3, 6}, {2, 5}, {1, 4}}
+     * rotated.rowCount();                                      // returns 3 (2 x 3 becomes 3 x 2)
+     * rotated.columnCount();                                   // returns 2
+     * rotated.get(0, 0);                                       // returns 3
      *
-     * IntMatrix original = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * IntMatrix rotated = original.rotate270();   // 3x3 becomes 3x3
+     * IntMatrix single = IntMatrix.of(new int[][] {{42}});
+     * single.rotate270().get(0, 0);                            // returns 42 (1 x 1 unchanged)
+     *
+     * IntMatrix empty = IntMatrix.of(new int[0][0]);
+     * empty.rotate270().isEmpty();                             // returns true (empty rotates to empty)
      * }</pre>
      *
      * @return a new matrix that is this matrix rotated 270 degrees clockwise, with dimensions {@code columnCount × rowCount};
@@ -640,13 +730,17 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * // Original:    Transposed:
-     * // 1 2 3        1 4
-     * // 4 5 6   =>   2 5
-     * //              3 6
-     *
      * IntMatrix original = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * IntMatrix transposed = original.transpose();   // 2x3 becomes 3x2
+     * IntMatrix transposed = original.transpose();            // returns {{1, 4}, {2, 5}, {3, 6}}
+     * transposed.rowCount();                                  // returns 3 (2 x 3 becomes 3 x 2)
+     * transposed.columnCount();                               // returns 2
+     * transposed.get(2, 1);                                   // returns 6
+     *
+     * IntMatrix square = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
+     * square.transpose().get(0, 1);                          // returns 3
+     *
+     * IntMatrix empty = IntMatrix.of(new int[0][0]);
+     * empty.transpose().isEmpty();                           // returns true (empty transposes to empty)
      * }</pre>
      *
      * @return a new matrix that is the transpose of this matrix, with dimensions {@code columnCount × rowCount};
@@ -668,10 +762,16 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * IntMatrix reshaped = matrix.reshape(2);   // Becomes [[1, 2], [3, 4], [5, 6]]
+     * IntMatrix reshaped = matrix.reshape(2);                  // returns {{1, 2}, {3, 4}, {5, 6}}
+     * reshaped.rowCount();                                     // returns 3 (ceil(6 / 2))
      *
-     * IntMatrix matrix2 = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * IntMatrix reshaped2 = matrix2.reshape(4);   // Becomes [[1, 2, 3, 4], [5, 6, 0, 0]]
+     * IntMatrix padded = matrix.reshape(4);                    // returns {{1, 2, 3, 4}, {5, 6, 0, 0}}
+     * padded.get(1, 3);                                        // returns 0 (trailing cell padded)
+     *
+     * matrix.reshape(0);                                       // throws IllegalArgumentException (newColumnCount <= 0)
+     *
+     * IntMatrix empty = IntMatrix.of(new int[0][0]);
+     * empty.reshape(2);                                        // throws IllegalArgumentException (0 rows with positive column count is not representable)
      * }</pre>
      *
      * @param newColumnCount the number of columns in the reshaped matrix (must be positive)
@@ -709,8 +809,14 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * IntMatrix reshaped = matrix.reshape(3, 2);    // Becomes [[1, 2], [3, 4], [5, 6]]
-     * IntMatrix extended = matrix.reshape(2, 4);    // Becomes [[1, 2, 3, 4], [5, 6, 0, 0]]
+     * IntMatrix reshaped = matrix.reshape(3, 2);              // returns {{1, 2}, {3, 4}, {5, 6}}
+     * reshaped.get(2, 1);                                     // returns 6
+     *
+     * IntMatrix extended = matrix.reshape(2, 4);             // returns {{1, 2, 3, 4}, {5, 6, 0, 0}}
+     * extended.get(1, 3);                                    // returns 0 (extra cell padded with default)
+     *
+     * matrix.reshape(-1, 6);                                 // throws IllegalArgumentException (negative dimension)
+     * matrix.reshape(1, 4);                                  // throws IllegalArgumentException (4 cells cannot hold 6 elements)
      * }</pre>
      *
      * @param newRowCount the number of rows in the reshaped matrix; must be non-negative
@@ -734,10 +840,16 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <pre>{@code
      * IntMatrix m1 = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
      * IntMatrix m2 = IntMatrix.of(new int[][] {{5, 6}, {7, 8}});
-     * boolean sameShape = m1.isSameShape(m2);   // Returns true (both are 2×2)
+     * m1.isSameShape(m2);                                      // returns true (both 2 x 2, values ignored)
      *
      * IntMatrix m3 = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * boolean sameShape2 = m1.isSameShape(m3);   // Returns false (2×2 vs 2×3)
+     * m1.isSameShape(m3);                                      // returns false (2 x 2 vs 2 x 3)
+     *
+     * IntMatrix e1 = IntMatrix.of(new int[0][0]);
+     * IntMatrix e2 = IntMatrix.of(new int[0][0]);
+     * e1.isSameShape(e2);                                      // returns true (both 0 x 0)
+     *
+     * m1.isSameShape((IntMatrix) null);                       // throws IllegalArgumentException (null argument)
      * }</pre>
      *
      * @param m the matrix to compare with
@@ -761,14 +873,17 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * // Original:    repeatElements(2, 2):
-     * // 1 2          1 1 2 2
-     * // 3 4     =>   1 1 2 2
-     * //              3 3 4 4
-     * //              3 3 4 4
-     *
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * IntMatrix repeated = matrix.repeatElements(2, 2);   // 2×2 becomes 4×4
+     * IntMatrix repeated = matrix.repeatElements(2, 2);       // returns {{1,1,2,2},{1,1,2,2},{3,3,4,4},{3,3,4,4}}
+     * repeated.rowCount();                                    // returns 4 (2 * 2)
+     * repeated.columnCount();                                 // returns 4 (2 * 2)
+     * repeated.get(0, 1);                                     // returns 1
+     *
+     * IntMatrix sameMatrix = matrix.repeatElements(1, 1);    // returns a copy with identical values
+     * sameMatrix.get(1, 1);                                  // returns 4
+     *
+     * matrix.repeatElements(0, 2);                           // throws IllegalArgumentException (rowRepeats < 1)
+     * matrix.repeatElements(2, 0);                           // throws IllegalArgumentException (columnRepeats < 1)
      * }</pre>
      *
      * @param rowRepeats number of times to repeat each element in the row direction (must be &gt;= 1)
@@ -792,14 +907,17 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * // Original:    repeatMatrix(2, 2):
-     * // 1 2          1 2 1 2
-     * // 3 4     =>   3 4 3 4
-     * //              1 2 1 2
-     * //              3 4 3 4
-     *
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * IntMatrix tiled = matrix.repeatMatrix(2, 2);   // 2×2 becomes 4×4
+     * IntMatrix tiled = matrix.repeatMatrix(2, 2);           // returns {{1,2,1,2},{3,4,3,4},{1,2,1,2},{3,4,3,4}}
+     * tiled.rowCount();                                      // returns 4 (2 * 2)
+     * tiled.columnCount();                                   // returns 4 (2 * 2)
+     * tiled.get(0, 2);                                       // returns 1 (pattern tiled, not element repeated)
+     *
+     * IntMatrix sameMatrix = matrix.repeatMatrix(1, 1);     // returns a copy with identical values
+     * sameMatrix.get(1, 0);                                 // returns 3
+     *
+     * matrix.repeatMatrix(0, 2);                            // throws IllegalArgumentException (rowRepeats < 1)
+     * matrix.repeatMatrix(2, 0);                            // throws IllegalArgumentException (columnRepeats < 1)
      * }</pre>
      *
      * @param rowRepeats number of times to repeat the matrix in the row direction (must be &gt;= 1)
@@ -823,8 +941,16 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * IntMatrix padded = matrix.extend(1, 1, 1, 1);
-     * // padded is 4x4 with original 2x2 in the center, surrounded by 0s
+     * IntMatrix padded = matrix.extend(1, 1, 1, 1);          // 4 x 4 with the 2 x 2 centered and 0-padded
+     * padded.rowCount();                                     // returns 4 (1 + 2 + 1)
+     * padded.columnCount();                                  // returns 4 (1 + 2 + 1)
+     * padded.get(0, 0);                                      // returns 0 (top-left padding)
+     * padded.get(1, 1);                                      // returns 1 (original (0,0) shifted to center)
+     *
+     * IntMatrix unchanged = matrix.extend(0, 0, 0, 0);      // returns an identical 2 x 2 matrix
+     * unchanged.get(1, 1);                                  // returns 4
+     *
+     * matrix.extend(-1, 0, 0, 0);                           // throws IllegalArgumentException (negative pad)
      * }</pre>
      *
      * @param padTop number of rows to add above the matrix (must be &gt;= 0)
@@ -841,6 +967,20 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Element at position {@code (i, j)} in this matrix appears at position {@code (i, columnCount - 1 - j)}
      * in the result. This matrix is not modified.
      *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
+     * IntMatrix flipped = matrix.flipHorizontally();          // returns {{3, 2, 1}, {6, 5, 4}}
+     * flipped.get(0, 0);                                      // returns 3
+     * matrix.get(0, 0);                                       // returns 1 (original unchanged)
+     *
+     * IntMatrix single = IntMatrix.of(new int[][] {{42}});
+     * single.flipHorizontally().get(0, 0);                    // returns 42 (single column unchanged)
+     *
+     * IntMatrix empty = IntMatrix.of(new int[0][0]);
+     * empty.flipHorizontally().isEmpty();                     // returns true
+     * }</pre>
+     *
      * @return a new matrix with columns reversed within each row
      * @see #flipHorizontallyInPlace()
      * @see #flipVertically()
@@ -851,6 +991,20 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Returns a new matrix that is a vertical flip (mirror across the horizontal axis) of this matrix.
      * Element at position {@code (i, j)} in this matrix appears at position {@code (rowCount - 1 - i, j)}
      * in the result. This matrix is not modified.
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
+     * IntMatrix flipped = matrix.flipVertically();            // returns {{4, 5, 6}, {1, 2, 3}}
+     * flipped.get(0, 0);                                      // returns 4
+     * matrix.get(0, 0);                                       // returns 1 (original unchanged)
+     *
+     * IntMatrix single = IntMatrix.of(new int[][] {{1}, {2}, {3}});
+     * single.flipVertically().get(0, 0);                      // returns 3 (single column reversed)
+     *
+     * IntMatrix empty = IntMatrix.of(new int[0][0]);
+     * empty.flipVertically().isEmpty();                       // returns true
+     * }</pre>
      *
      * @return a new matrix with rows reversed
      * @see #flipVerticallyInPlace()
@@ -863,6 +1017,17 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Element at position {@code (i, j)} is moved to position {@code (i, columnCount - 1 - j)}.
      * This method modifies this matrix.
      *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
+     * matrix.flipHorizontallyInPlace();                       // matrix becomes {{3, 2, 1}, {6, 5, 4}}
+     * matrix.get(0, 0);                                       // returns 3 (this matrix mutated)
+     * matrix.get(1, 2);                                       // returns 4
+     *
+     * IntMatrix empty = IntMatrix.of(new int[0][0]);
+     * empty.flipHorizontallyInPlace();                        // no-op; empty.isEmpty() stays true
+     * }</pre>
+     *
      * @see #flipHorizontally()
      * @see #flipVerticallyInPlace()
      */
@@ -873,6 +1038,17 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Element at position {@code (i, j)} is moved to position {@code (rowCount - 1 - i, j)}.
      * This method modifies this matrix.
      *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
+     * matrix.flipVerticallyInPlace();                         // matrix becomes {{4, 5, 6}, {1, 2, 3}}
+     * matrix.get(0, 0);                                       // returns 4 (this matrix mutated)
+     * matrix.get(1, 0);                                       // returns 1
+     *
+     * IntMatrix empty = IntMatrix.of(new int[0][0]);
+     * empty.flipVerticallyInPlace();                          // no-op; empty.isEmpty() stays true
+     * }</pre>
+     *
      * @see #flipVertically()
      * @see #flipHorizontallyInPlace()
      */
@@ -882,6 +1058,20 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Vertically stacks this matrix with the specified matrix.
      * The matrices must have the same number of columns. The result has rows from this matrix
      * followed by rows from the other matrix. Creates a new matrix; neither input is modified.
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * IntMatrix top = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
+     * IntMatrix bottom = IntMatrix.of(new int[][] {{5, 6}});
+     * IntMatrix stacked = top.stackVertically(bottom);        // returns {{1, 2}, {3, 4}, {5, 6}}
+     * stacked.rowCount();                                     // returns 3 (2 + 1)
+     * stacked.columnCount();                                  // returns 2 (unchanged)
+     * stacked.get(2, 0);                                      // returns 5
+     *
+     * IntMatrix mismatch = IntMatrix.of(new int[][] {{7, 8, 9}});
+     * top.stackVertically(mismatch);                          // throws IllegalArgumentException (column count mismatch)
+     * top.stackVertically((IntMatrix) null);                  // throws IllegalArgumentException (null argument)
+     * }</pre>
      *
      * @param other the matrix to stack below this matrix (must not be {@code null})
      * @return a new matrix with combined rows and the same column count
@@ -895,6 +1085,20 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Horizontally stacks this matrix with the specified matrix.
      * The matrices must have the same number of rows. The result has columns from this matrix
      * followed by columns from the other matrix. Creates a new matrix; neither input is modified.
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * IntMatrix left = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
+     * IntMatrix right = IntMatrix.of(new int[][] {{5}, {6}});
+     * IntMatrix stacked = left.stackHorizontally(right);      // returns {{1, 2, 5}, {3, 4, 6}}
+     * stacked.rowCount();                                     // returns 2 (unchanged)
+     * stacked.columnCount();                                  // returns 3 (2 + 1)
+     * stacked.get(0, 2);                                      // returns 5
+     *
+     * IntMatrix mismatch = IntMatrix.of(new int[][] {{7}, {8}, {9}});
+     * left.stackHorizontally(mismatch);                       // throws IllegalArgumentException (row count mismatch)
+     * left.stackHorizontally((IntMatrix) null);               // throws IllegalArgumentException (null argument)
+     * }</pre>
      *
      * @param other the matrix to stack to the right of this matrix (must not be {@code null})
      * @return a new matrix with combined columns and the same row count
@@ -915,10 +1119,15 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * IntList flat = matrix.flatten();   // Returns [1, 2, 3, 4]
+     * IntList flat = matrix.flatten();                        // returns [1, 2, 3, 4] (row-major order)
+     * flat.size();                                            // returns 4
+     * flat.get(0);                                            // returns 1
      *
      * IntMatrix matrix2 = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * IntList flat2 = matrix2.flatten();   // Returns [1, 2, 3, 4, 5, 6]
+     * matrix2.flatten();                                      // returns [1, 2, 3, 4, 5, 6]
+     *
+     * IntMatrix empty = IntMatrix.of(new int[0][0]);
+     * empty.flatten().size();                                 // returns 0 (empty matrix yields empty list)
      * }</pre>
      *
      * @return a new list containing all elements in row-major order with size equal to {@code elementCount}
@@ -941,11 +1150,18 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{3, 1, 4}, {1, 5, 9}});
-     * matrix.mutateAsFlat(a -> java.util.Arrays.sort(a));   // Sorts all elements
-     * // Matrix becomes [[1, 1, 3], [4, 5, 9]] (elements sorted in row-major order)
+     * matrix.mutateAsFlat(flat -> java.util.Arrays.sort(flat));   // sorts all elements in row-major order
+     * matrix.get(0, 0);                                           // returns 1 (matrix becomes {{1, 1, 3}, {4, 5, 9}})
+     * matrix.get(1, 2);                                           // returns 9
      *
-     * matrix.mutateAsFlat(a -> { for (int i = 0; i < a.length; i++) a[i] *= 2; });
-     * // Doubles all elements
+     * matrix.mutateAsFlat(flat -> { for (int i = 0; i < flat.length; i++) flat[i] *= 2; });   // doubles all elements
+     * matrix.get(0, 0);                                                                       // returns 2
+     *
+     * IntMatrix empty = IntMatrix.of(new int[0][0]);
+     * empty.mutateAsFlat(flat -> java.util.Arrays.sort(flat));    // no-op on an empty matrix; stays empty
+     *
+     * // Checked exceptions propagate to the caller (do not wrap in try/catch inside the block)
+     * matrix.mutateAsFlat(flat -> { throw new java.io.IOException(); });   // throws IOException
      * }</pre>
      *
      * @param <E> the type of exception that the operation might throw
@@ -969,15 +1185,20 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      *
-     * matrix.forEachIndices((i, j) -> {
-     *     System.out.println("Position: (" + i + "," + j + ")");
-     * });
+     * // Count every visited position
+     * AtomicInteger visited = new AtomicInteger(0);
+     * matrix.forEachIndices((i, j) -> visited.incrementAndGet());
+     * visited.get();                                          // returns 9 (3 x 3 = 9 positions)
      *
      * // Count elements on the main diagonal
      * AtomicInteger diagonalCount = new AtomicInteger(0);
-     * matrix.forEachIndices((i, j) -> {
-     *     if (i == j) diagonalCount.incrementAndGet();
-     * });
+     * matrix.forEachIndices((i, j) -> { if (i == j) diagonalCount.incrementAndGet(); });
+     * diagonalCount.get();                                    // returns 3
+     *
+     * IntMatrix empty = IntMatrix.of(new int[0][0]);
+     * empty.forEachIndices((i, j) -> visited.incrementAndGet());   // no positions; action never invoked
+     *
+     * matrix.forEachIndices((Throwables.IntBiConsumer<RuntimeException>) null);   // throws IllegalArgumentException (null action)
      * }</pre>
      *
      * @param <E> the type of exception that the action might throw
@@ -1015,15 +1236,20 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3, 4, 5}, {6, 7, 8, 9, 10}, {11, 12, 13, 14, 15}});
      *
-     * // Process only a 2×2 subregion starting at (1,1)
-     * matrix.forEachIndices(1, 3, 1, 3, (i, j) -> {
-     *     System.out.println("Processing element at (" + i + "," + j + ")");
-     * });
+     * // Process only a 2x2 subregion starting at (1,1)
+     * AtomicInteger visited = new AtomicInteger(0);
+     * matrix.forEachIndices(1, 3, 1, 3, (i, j) -> visited.incrementAndGet());
+     * visited.get();                                          // returns 4 (2 rows x 2 cols)
      *
      * // Process only the first column
-     * matrix.forEachIndices(0, matrix.rowCount(), 0, 1, (i, j) -> {
-     *     // Process each element in column 0
-     * });
+     * AtomicInteger colCount = new AtomicInteger(0);
+     * matrix.forEachIndices(0, matrix.rowCount(), 0, 1, (i, j) -> colCount.incrementAndGet());
+     * colCount.get();                                         // returns 3 (one per row)
+     *
+     * // Empty range visits nothing
+     * matrix.forEachIndices(1, 1, 0, 5, (i, j) -> visited.incrementAndGet());   // action never invoked
+     *
+     * matrix.forEachIndices(0, 4, 0, 5, (i, j) -> {});        // throws IndexOutOfBoundsException (toRowIndex > rowCount)
      * }</pre>
      *
      * @param <E> the type of exception that the action might throw
@@ -1069,13 +1295,18 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * matrix.forEachIndices((i, j, m) -> {
-     *     int value = m.get(i, j);
-     *     System.out.println("Value at (" + i + "," + j + ") is " + value);
-     * });
+     *
+     * // Sum every element via the supplied matrix reference
+     * AtomicInteger sum = new AtomicInteger(0);
+     * matrix.forEachIndices((i, j, m) -> sum.addAndGet(m.get(i, j)));
+     * sum.get();                                              // returns 10 (1 + 2 + 3 + 4)
      *
      * // Set each element to the sum of its indices
      * matrix.forEachIndices((i, j, m) -> m.set(i, j, i + j));
+     * matrix.get(1, 1);                                       // returns 2 (1 + 1)
+     * matrix.get(0, 0);                                       // returns 0
+     *
+     * matrix.forEachIndices((Throwables.BiIntObjConsumer<IntMatrix, RuntimeException>) null);   // throws IllegalArgumentException (null action)
      * }</pre>
      *
      * @param <E> the type of exception that the action might throw
@@ -1114,17 +1345,17 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3, 4, 5}, {6, 7, 8, 9, 10}, {11, 12, 13, 14, 15}});
      *
-     * matrix.forEachIndices(1, 3, 1, 3, (i, j, m) -> {
-     *     // Process only the 2×2 subregion with access to matrix
-     *     int value = m.get(i, j);
-     *     System.out.println("Value at (" + i + "," + j + "): " + value);
-     * });
+     * // Sum the 2x2 subregion (rows 1-2, cols 1-2): 7 + 8 + 12 + 13
+     * AtomicInteger regionSum = new AtomicInteger(0);
+     * matrix.forEachIndices(1, 3, 1, 3, (i, j, m) -> regionSum.addAndGet(m.get(i, j)));
+     * regionSum.get();                                        // returns 40
      *
-     * // Update subregion based on neighboring values
-     * matrix.forEachIndices(1, matrix.rowCount() - 1, 1, matrix.columnCount() - 1, (i, j, m) -> {
-     *     int avg = (m.get(i-1, j) + m.get(i+1, j) + m.get(i, j-1) + m.get(i, j+1)) / 4;
-     *     m.set(i, j, avg);
-     * });
+     * // Negate every element in the first column via the matrix reference
+     * matrix.forEachIndices(0, matrix.rowCount(), 0, 1, (i, j, m) -> m.set(i, j, -m.get(i, j)));
+     * matrix.get(0, 0);                                       // returns -1
+     * matrix.get(2, 0);                                       // returns -11
+     *
+     * matrix.forEachIndices(0, 3, 0, 6, (i, j, m) -> {});     // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
      * }</pre>
      *
      * @param <E> the type of exception that the action might throw
@@ -1169,13 +1400,17 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * Stream<Point> adjacent = matrix.adjacent4Points(0, 0);
-     * // Returns stream of Point(0, 1) and Point(1, 0) - only right and down exist
+     * matrix.adjacent4Points(0, 0).count();                   // returns 2 (only right and down exist at a corner)
+     * // points are Point.of(0, 1) and Point.of(1, 0)
      *
-     * // Center position has all 4 neighbors
+     * // Center position has all 4 neighbors (up, right, down, left)
      * IntMatrix larger = IntMatrix.of(new int[3][3]);
-     * Stream<Point> centerAdj = larger.adjacent4Points(1, 1);
-     * // Returns all 4 adjacent points: (0,1), (1,2), (2,1), (1,0)
+     * larger.adjacent4Points(1, 1).count();                   // returns 4: (0,1), (1,2), (2,1), (1,0)
+     *
+     * // Edge (non-corner) position has 3 neighbors
+     * larger.adjacent4Points(0, 1).count();                   // returns 3 (no up)
+     *
+     * matrix.adjacent4Points(2, 0);                           // throws ArrayIndexOutOfBoundsException (row out of bounds)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -1216,13 +1451,16 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] {{true, false, true}, {false, true, false}, {true, false, true}});
-     * Stream<Point> adjacent = matrix.adjacent8Points(1, 1);
-     * // Returns stream of all 8 surrounding points for the center position
+     * IntMatrix matrix = IntMatrix.of(new int[3][3]);
+     * matrix.adjacent8Points(1, 1).count();                   // returns 8 (center has all neighbors)
      *
-     * // Corner position has only 3 neighbors
-     * Stream<Point> corner = matrix.adjacent8Points(0, 0);
-     * // Returns 3 points: (0,1), (1,1), (1,0)
+     * // Corner position has only 3 neighbors: (0,1), (1,1), (1,0)
+     * matrix.adjacent8Points(0, 0).count();                   // returns 3
+     *
+     * // Edge (non-corner) position has 5 neighbors
+     * matrix.adjacent8Points(0, 1).count();                   // returns 5
+     *
+     * matrix.adjacent8Points(0, 3);                           // throws ArrayIndexOutOfBoundsException (column out of bounds)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -1280,8 +1518,14 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * Stream<Point> diagonal = matrix.mainDiagonalPoints();   // Points: (0,0), (1,1), (2,2)
-     * List<Point> points = diagonal.toList();          // [(0,0), (1,1), (2,2)]
+     * matrix.mainDiagonalPoints().toList();                   // returns [(0,0), (1,1), (2,2)]
+     * matrix.mainDiagonalPoints().count();                    // returns 3
+     *
+     * IntMatrix single = IntMatrix.of(new int[][] {{42}});
+     * single.mainDiagonalPoints().count();                    // returns 1: [(0,0)]
+     *
+     * IntMatrix nonSquare = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
+     * nonSquare.mainDiagonalPoints();                         // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a stream of {@link Point} objects representing the main diagonal positions
@@ -1304,8 +1548,14 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * Stream<Point> antiDiagonal = matrix.antiDiagonalPoints();   // Points: (0,2), (1,1), (2,0)
-     * List<Point> points = antiDiagonal.toList();          // [(0,2), (1,1), (2,0)]
+     * matrix.antiDiagonalPoints().toList();                   // returns [(0,2), (1,1), (2,0)]
+     * matrix.antiDiagonalPoints().count();                    // returns 3
+     *
+     * IntMatrix single = IntMatrix.of(new int[][] {{42}});
+     * single.antiDiagonalPoints().count();                    // returns 1: [(0,0)]
+     *
+     * IntMatrix nonSquare = IntMatrix.of(new int[][] {{1, 2}, {3, 4}, {5, 6}});
+     * nonSquare.antiDiagonalPoints();                         // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a stream of {@link Point} objects representing the anti-diagonal positions
@@ -1324,6 +1574,20 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * <p>The returned array is a copy; modifications to it do not affect the matrix.</p>
      *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
+     * int[] diag = matrix.getMainDiagonal();                  // returns [1, 5, 9]
+     * diag[0] = 99;                                           // copy; does NOT affect the matrix
+     * matrix.get(0, 0);                                       // returns 1 (original unchanged)
+     *
+     * IntMatrix single = IntMatrix.of(new int[][] {{42}});
+     * single.getMainDiagonal();                               // returns [42]
+     *
+     * IntMatrix nonSquare = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
+     * nonSquare.getMainDiagonal();                            // throws IllegalStateException (not square)
+     * }</pre>
+     *
      * @return a new array containing the main diagonal values
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
@@ -1333,6 +1597,20 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Sets the elements on the main diagonal (upper-left to lower-right).
      * The matrix must be square (rowCount == columnCount), and the supplied array must contain
      * exactly {@code rowCount} elements.
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
+     * matrix.setMainDiagonal(new int[] {10, 20, 30});
+     * matrix.get(0, 0);                                       // returns 10
+     * matrix.get(2, 2);                                       // returns 30
+     * matrix.get(0, 1);                                       // returns 2 (off-diagonal unchanged)
+     *
+     * matrix.setMainDiagonal(new int[] {1, 2});              // throws IllegalArgumentException (length != rowCount)
+     *
+     * IntMatrix nonSquare = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
+     * nonSquare.setMainDiagonal(new int[] {1, 2});           // throws IllegalStateException (not square)
+     * }</pre>
      *
      * @param mainDiagonal the new values for the main diagonal; must be non-{@code null} and have length equal to {@code rowCount}
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
@@ -1346,6 +1624,20 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * <p>The returned array is a copy; modifications to it do not affect the matrix.</p>
      *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
+     * int[] diag = matrix.getAntiDiagonal();                  // returns [3, 5, 7]
+     * diag[0] = 99;                                           // copy; does NOT affect the matrix
+     * matrix.get(0, 2);                                       // returns 3 (original unchanged)
+     *
+     * IntMatrix single = IntMatrix.of(new int[][] {{42}});
+     * single.getAntiDiagonal();                               // returns [42]
+     *
+     * IntMatrix nonSquare = IntMatrix.of(new int[][] {{1, 2}, {3, 4}, {5, 6}});
+     * nonSquare.getAntiDiagonal();                            // throws IllegalStateException (not square)
+     * }</pre>
+     *
      * @return a new array containing the anti-diagonal values
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
@@ -1355,6 +1647,20 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Sets the elements on the anti-diagonal (upper-right to lower-left).
      * The matrix must be square (rowCount == columnCount), and the supplied array must contain
      * exactly {@code rowCount} elements.
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
+     * matrix.setAntiDiagonal(new int[] {10, 20, 30});
+     * matrix.get(0, 2);                                       // returns 10 (top-right corner)
+     * matrix.get(2, 0);                                       // returns 30 (bottom-left corner)
+     * matrix.get(0, 0);                                       // returns 1 (off-anti-diagonal unchanged)
+     *
+     * matrix.setAntiDiagonal(new int[] {1, 2});              // throws IllegalArgumentException (length != rowCount)
+     *
+     * IntMatrix nonSquare = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
+     * nonSquare.setAntiDiagonal(new int[] {1, 2});           // throws IllegalStateException (not square)
+     * }</pre>
      *
      * @param antiDiagonal the new values for the anti-diagonal; must be non-{@code null} and have length equal to {@code rowCount}
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
@@ -1371,9 +1677,14 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * Stream<Point> allPoints = matrix.horizontalPoints();
-     * // Points in order: (0,0), (0,1), (1,0), (1,1)
-     * allPoints.forEach(p -> System.out.println("Point: " + p));
+     * matrix.horizontalPoints().toList();                     // returns [(0,0), (0,1), (1,0), (1,1)]
+     * matrix.horizontalPoints().count();                      // returns 4
+     *
+     * IntMatrix single = IntMatrix.of(new int[][] {{1, 2, 3}});
+     * single.horizontalPoints().count();                      // returns 3
+     *
+     * IntMatrix empty = IntMatrix.of(new int[0][0]);
+     * empty.horizontalPoints().count();                       // returns 0
      * }</pre>
      *
      * @return a stream of all {@link Point} objects in row-major order
@@ -1390,9 +1701,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3, 4, 5}, {6, 7, 8, 9, 10}, {11, 12, 13, 14, 15}});
+     * matrix.horizontalPoints(1).toList();                    // returns [(1,0), (1,1), (1,2), (1,3), (1,4)]
+     * matrix.horizontalPoints(1).count();                     // returns 5 (one per column)
      *
-     * Stream<Point> row1Points = matrix.horizontalPoints(1);   // All points in row 1
-     * // For this 5-column matrix: (1,0), (1,1), (1,2), (1,3), (1,4)
+     * matrix.horizontalPoints(0).count();                     // returns 5 (first row)
+     *
+     * matrix.horizontalPoints(3);                             // throws IndexOutOfBoundsException (rowIndex >= rowCount)
+     * matrix.horizontalPoints(-1);                            // throws IndexOutOfBoundsException (negative index)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -1412,8 +1727,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3, 4, 5}, {6, 7, 8, 9, 10}, {11, 12, 13, 14, 15}});
      *
      * // Get points from rows 1 and 2 (indices 1 and 2, not including 3)
-     * Stream<Point> points = matrix.horizontalPoints(1, 3);
-     * // For this 5-column matrix: (1,0), (1,1), (1,2), (1,3), (1,4), (2,0), (2,1), (2,2), (2,3), (2,4)
+     * matrix.horizontalPoints(1, 3).count();                  // returns 10 (2 rows x 5 columns)
+     * // points: (1,0), (1,1), (1,2), (1,3), (1,4), (2,0), (2,1), (2,2), (2,3), (2,4)
+     *
+     * matrix.horizontalPoints(1, 1).count();                  // returns 0 (empty range)
+     *
+     * matrix.horizontalPoints(0, 4);                          // throws IndexOutOfBoundsException (toRowIndex > rowCount)
+     * matrix.horizontalPoints(2, 1);                          // throws IndexOutOfBoundsException (fromRowIndex > toRowIndex)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -1438,9 +1758,14 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * Stream<Point> columnOrder = matrix.verticalPoints();
-     * // Points in order: (0,0), (1,0), (0,1), (1,1)
-     * // For a 2×3 matrix, order would be: (0,0), (1,0), (0,1), (1,1), (0,2), (1,2)
+     * matrix.verticalPoints().toList();                       // returns [(0,0), (1,0), (0,1), (1,1)]
+     * matrix.verticalPoints().count();                        // returns 4
+     *
+     * IntMatrix wide = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
+     * wide.verticalPoints().count();                          // returns 6
+     *
+     * IntMatrix empty = IntMatrix.of(new int[0][0]);
+     * empty.verticalPoints().count();                         // returns 0
      * }</pre>
      *
      * @return a stream of all {@link Point} objects in column-major order
@@ -1457,9 +1782,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3, 4, 5}, {6, 7, 8, 9, 10}, {11, 12, 13, 14, 15}});
+     * matrix.verticalPoints(2).toList();                      // returns [(0,2), (1,2), (2,2)]
+     * matrix.verticalPoints(2).count();                       // returns 3 (one per row)
      *
-     * Stream<Point> col2Points = matrix.verticalPoints(2);   // All points in column 2
-     * // For a 3-row matrix: (0,2), (1,2), (2,2)
+     * matrix.verticalPoints(0).count();                       // returns 3 (first column)
+     *
+     * matrix.verticalPoints(5);                               // throws IndexOutOfBoundsException (columnIndex >= columnCount)
+     * matrix.verticalPoints(-1);                              // throws IndexOutOfBoundsException (negative index)
      * }</pre>
      *
      * @param columnIndex the column index (0-based)
@@ -1479,8 +1808,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3, 4, 5}, {6, 7, 8, 9, 10}, {11, 12, 13, 14, 15}});
      *
      * // Get points from columns 1 through 3 (indices 1, 2, 3, not including 4)
-     * Stream<Point> points = matrix.verticalPoints(1, 4);
-     * // For this 3-row matrix: (0,1), (1,1), (2,1), (0,2), (1,2), (2,2), (0,3), (1,3), (2,3)
+     * matrix.verticalPoints(1, 4).count();                    // returns 9 (3 columns x 3 rows)
+     * // points: (0,1), (1,1), (2,1), (0,2), (1,2), (2,2), (0,3), (1,3), (2,3)
+     *
+     * matrix.verticalPoints(2, 2).count();                    // returns 0 (empty range)
+     *
+     * matrix.verticalPoints(0, 6);                            // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
+     * matrix.verticalPoints(3, 1);                            // throws IndexOutOfBoundsException (fromColumnIndex > toColumnIndex)
      * }</pre>
      *
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
@@ -1505,15 +1839,15 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3, 4, 5}, {6, 7, 8, 9, 10}, {11, 12, 13, 14, 15}});
+     * matrix.rowPoints().count();                             // returns 3 (one inner stream per row)
      *
-     * matrix.rowPoints().forEach(rowStream -> {
-     *     rowStream.forEach(point -> System.out.println("Point: " + point));
-     * });
+     * // Each inner stream has columnCount points
+     * List<List<Point>> rows = matrix.rowPoints().map(Stream::toList).toList();
+     * rows.get(0).size();                                     // returns 5
+     * rows.get(0).get(0);                                     // returns Point.of(0, 0)
      *
-     * // Collect each row's points separately
-     * List<List<Point>> rowsOfPoints = matrix.rowPoints()
-     *     .map(Stream::toList)
-     *     .toList();
+     * IntMatrix empty = IntMatrix.of(new int[0][0]);
+     * empty.rowPoints().count();                              // returns 0
      * }</pre>
      *
      * @return a stream of streams, where each inner stream contains {@link Point} objects for one row
@@ -1531,10 +1865,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3, 4, 5}, {6, 7, 8, 9, 10}, {11, 12, 13, 14, 15}});
      *
      * // Process rows 1 and 2 separately
-     * matrix.rowPoints(1, 3).forEach(rowStream -> {
-     *     List<Point> rowPoints = rowStream.toList();
-     *     // Process each row's points
-     * });
+     * matrix.rowPoints(1, 3).count();                         // returns 2 (one inner stream per selected row)
+     * List<List<Point>> rows = matrix.rowPoints(1, 3).map(Stream::toList).toList();
+     * rows.get(0).get(0);                                     // returns Point.of(1, 0)
+     *
+     * matrix.rowPoints(1, 1).count();                         // returns 0 (empty range)
+     *
+     * matrix.rowPoints(0, 4);                                 // throws IndexOutOfBoundsException (toRowIndex > rowCount)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -1559,15 +1896,15 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3, 4, 5}, {6, 7, 8, 9, 10}, {11, 12, 13, 14, 15}});
+     * matrix.columnPoints().count();                          // returns 5 (one inner stream per column)
      *
-     * matrix.columnPoints().forEach(colStream -> {
-     *     colStream.forEach(point -> System.out.println("Point: " + point));
-     * });
+     * // Each inner stream has rowCount points
+     * List<List<Point>> cols = matrix.columnPoints().map(Stream::toList).toList();
+     * cols.get(0).size();                                     // returns 3
+     * cols.get(0).get(1);                                     // returns Point.of(1, 0)
      *
-     * // Collect each column's points separately
-     * List<List<Point>> columnsOfPoints = matrix.columnPoints()
-     *     .map(Stream::toList)
-     *     .toList();
+     * IntMatrix empty = IntMatrix.of(new int[0][0]);
+     * empty.columnPoints().count();                           // returns 0
      * }</pre>
      *
      * @return a stream of streams, where each inner stream contains {@link Point} objects for one column
@@ -1585,10 +1922,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3, 4, 5}, {6, 7, 8, 9, 10}, {11, 12, 13, 14, 15}});
      *
      * // Process columns 2 through 4 separately
-     * matrix.columnPoints(2, 5).forEach(colStream -> {
-     *     List<Point> colPoints = colStream.toList();
-     *     // Process each column's points
-     * });
+     * matrix.columnPoints(2, 5).count();                      // returns 3 (one inner stream per selected column)
+     * List<List<Point>> cols = matrix.columnPoints(2, 5).map(Stream::toList).toList();
+     * cols.get(0).get(0);                                     // returns Point.of(0, 2)
+     *
+     * matrix.columnPoints(2, 2).count();                      // returns 0 (empty range)
+     *
+     * matrix.columnPoints(0, 6);                              // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
      * }</pre>
      *
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
@@ -1614,8 +1954,14 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * IntStream diagonal = matrix.mainDiagonalStream();   // Stream of: 1, 5, 9
-     * int sum = diagonal.sum();                    // 15
+     * matrix.mainDiagonalStream().toArray();                  // returns [1, 5, 9]
+     * matrix.mainDiagonalStream().sum();                      // returns 15
+     *
+     * IntMatrix single = IntMatrix.of(new int[][] {{42}});
+     * single.mainDiagonalStream().sum();                      // returns 42
+     *
+     * IntMatrix nonSquare = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
+     * nonSquare.mainDiagonalStream();                         // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a stream of diagonal elements
@@ -1633,8 +1979,14 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * IntStream antiDiagonal = matrix.antiDiagonalStream();   // Stream of: 3, 5, 7
-     * int sum = antiDiagonal.sum();                    // 15
+     * matrix.antiDiagonalStream().toArray();                  // returns [3, 5, 7]
+     * matrix.antiDiagonalStream().sum();                      // returns 15
+     *
+     * IntMatrix single = IntMatrix.of(new int[][] {{42}});
+     * single.antiDiagonalStream().sum();                      // returns 42
+     *
+     * IntMatrix nonSquare = IntMatrix.of(new int[][] {{1, 2}, {3, 4}, {5, 6}});
+     * nonSquare.antiDiagonalStream();                         // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a stream of anti-diagonal elements
@@ -1651,8 +2003,14 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * IntStream elements = matrix.horizontalStream();   // Stream of: 1, 2, 3, 4
-     * int sum = elements.sum();                // 10
+     * matrix.horizontalStream().toArray();                    // returns [1, 2, 3, 4] (row-major)
+     * matrix.horizontalStream().sum();                        // returns 10
+     *
+     * IntMatrix wide = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
+     * wide.horizontalStream().count();                        // returns 6
+     *
+     * IntMatrix empty = IntMatrix.of(new int[0][0]);
+     * empty.horizontalStream().count();                       // returns 0
      * }</pre>
      *
      * @return a stream of all elements in row-major order
@@ -1666,8 +2024,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * IntStream row1 = matrix.horizontalStream(1);   // Stream of: 4, 5, 6
-     * int max = row1.max().orElse(0);       // 6
+     * matrix.horizontalStream(1).toArray();                  // returns [4, 5, 6]
+     * matrix.horizontalStream(1).max().orElse(0);            // returns 6
+     *
+     * matrix.horizontalStream(0).sum();                       // returns 6 (1 + 2 + 3)
+     *
+     * matrix.horizontalStream(2);                             // throws IndexOutOfBoundsException (rowIndex >= rowCount)
+     * matrix.horizontalStream(-1);                            // throws IndexOutOfBoundsException (negative index)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
@@ -1683,8 +2046,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}, {5, 6}});
-     * IntStream rows1and2 = matrix.horizontalStream(1, 3);   // Stream of: 3, 4, 5, 6
-     * long count = rows1and2.count();               // 4
+     * matrix.horizontalStream(1, 3).toArray();                // returns [3, 4, 5, 6]
+     * matrix.horizontalStream(1, 3).count();                  // returns 4
+     *
+     * matrix.horizontalStream(1, 1).count();                  // returns 0 (empty range)
+     *
+     * matrix.horizontalStream(0, 4);                          // throws IndexOutOfBoundsException (toRowIndex > rowCount)
+     * matrix.horizontalStream(2, 1);                          // throws IndexOutOfBoundsException (fromRowIndex > toRowIndex)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -1703,8 +2071,14 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * IntStream elements = matrix.verticalStream();   // Stream of: 1, 3, 2, 4
-     * int sum = elements.sum();                // 10
+     * matrix.verticalStream().toArray();                      // returns [1, 3, 2, 4] (column-major)
+     * matrix.verticalStream().sum();                          // returns 10
+     *
+     * IntMatrix wide = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
+     * wide.verticalStream().count();                          // returns 6
+     *
+     * IntMatrix empty = IntMatrix.of(new int[0][0]);
+     * empty.verticalStream().count();                         // returns 0
      * }</pre>
      *
      * @return a stream of all elements in column-major order
@@ -1718,8 +2092,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * IntStream col1 = matrix.verticalStream(1);   // Stream of: 2, 5
-     * int min = col1.min().orElse(0);       // 2
+     * matrix.verticalStream(1).toArray();                    // returns [2, 5]
+     * matrix.verticalStream(1).min().orElse(0);              // returns 2
+     *
+     * matrix.verticalStream(0).sum();                         // returns 5 (1 + 4)
+     *
+     * matrix.verticalStream(3);                               // throws IndexOutOfBoundsException (columnIndex >= columnCount)
+     * matrix.verticalStream(-1);                              // throws IndexOutOfBoundsException (negative index)
      * }</pre>
      *
      * @param columnIndex the column index (0-based)
@@ -1735,8 +2114,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * IntStream cols1and2 = matrix.verticalStream(1, 3);   // Stream of: 2, 5, 3, 6
-     * double avg = cols1and2.average().orElse(0);   // 4.0
+     * matrix.verticalStream(1, 3).toArray();                 // returns [2, 5, 3, 6] (column-major)
+     * matrix.verticalStream(1, 3).average().orElse(0);       // returns 4.0
+     *
+     * matrix.verticalStream(1, 1).count();                    // returns 0 (empty range)
+     *
+     * matrix.verticalStream(0, 4);                            // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
+     * matrix.verticalStream(2, 1);                            // throws IndexOutOfBoundsException (fromColumnIndex > toColumnIndex)
      * }</pre>
      *
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
@@ -1756,12 +2140,15 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * matrix.rowStreams().forEach(rowStream -> {
-     *     int sum = rowStream.sum();   // Sum each row
-     *     System.out.println("Row sum: " + sum);
-     * });
-     * // Output: Row sum: 6
-     * //         Row sum: 15
+     * matrix.rowStreams().count();                            // returns 2 (one inner stream per row)
+     *
+     * // Sum each row into a list
+     * List<Integer> rowSums = matrix.rowStreams().map(s -> s.sum()).toList();
+     * rowSums.get(0);                                         // returns 6
+     * rowSums.get(1);                                         // returns 15
+     *
+     * IntMatrix empty = IntMatrix.of(new int[0][0]);
+     * empty.rowStreams().count();                             // returns 0
      * }</pre>
      *
      * @return a stream of row streams
@@ -1778,10 +2165,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3, 4, 5}, {6, 7, 8, 9, 10}, {11, 12, 13, 14, 15}});
      *
      * // Process only rows 1 and 2
-     * matrix.rowStreams(1, 3).forEach(rowStream -> {
-     *     int max = rowStream.max().orElse(0);
-     *     System.out.println("Row max: " + max);
-     * });
+     * matrix.rowStreams(1, 3).count();                        // returns 2 (one inner stream per selected row)
+     * List<Integer> maxes = matrix.rowStreams(1, 3).map(s -> s.max().orElse(0)).toList();
+     * maxes.get(0);                                           // returns 10 (max of row 1)
+     *
+     * matrix.rowStreams(1, 1).count();                        // returns 0 (empty range)
+     *
+     * matrix.rowStreams(0, 4);                                // throws IndexOutOfBoundsException (toRowIndex > rowCount)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -1801,12 +2191,15 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
-     * matrix.columnStreams().forEach(colStream -> {
-     *     double avg = colStream.average().orElse(0);
-     *     System.out.println("Column average: " + avg);
-     * });
-     * // Output: Column average: 2.0
-     * //         Column average: 3.0
+     * matrix.columnStreams().count();                         // returns 2 (one inner stream per column)
+     *
+     * // Average each column into a list
+     * List<Double> colAvgs = matrix.columnStreams().map(s -> s.average().orElse(0)).toList();
+     * colAvgs.get(0);                                         // returns 2.0 (avg of column [1.0, 3.0])
+     * colAvgs.get(1);                                         // returns 3.0 (avg of column [2.0, 4.0])
+     *
+     * DoubleMatrix empty = DoubleMatrix.of(new double[0][0]);
+     * empty.columnStreams().count();                          // returns 0
      * }</pre>
      *
      * @return a stream of column streams
@@ -1823,10 +2216,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3, 4, 5}, {6, 7, 8, 9, 10}, {11, 12, 13, 14, 15}});
      *
      * // Process columns 2 through 4
-     * matrix.columnStreams(2, 5).forEach(colStream -> {
-     *     int sum = colStream.sum();
-     *     System.out.println("Column sum: " + sum);
-     * });
+     * matrix.columnStreams(2, 5).count();                     // returns 3 (one inner stream per selected column)
+     * List<Integer> colSums = matrix.columnStreams(2, 5).map(s -> s.sum()).toList();
+     * colSums.get(0);                                         // returns 24 (column 2: 3 + 8 + 13)
+     *
+     * matrix.columnStreams(2, 2).count();                     // returns 0 (empty range)
+     *
+     * matrix.columnStreams(0, 6);                             // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
      * }</pre>
      *
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
@@ -1846,27 +2242,22 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3, 4, 5}, {6, 7, 8, 9, 10}, {11, 12, 13, 14, 15}});
+     * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
      *
-     * // Log matrix details
-     * matrix.accept(m -> {
-     *     System.out.println("Matrix dimensions: " + m.rowCount() + "x" + m.columnCount());
-     *     m.println();
-     * });
-     *
-     * // Validate matrix before processing
-     * matrix.accept(m -> {
-     *     if (m.isEmpty()) {
-     *         throw new IllegalStateException("Matrix cannot be empty");
-     *     }
-     * });
+     * // Capture a value via side effect
+     * int[] holder = new int[1];
+     * matrix.accept(m -> holder[0] = m.rowCount() * m.columnCount());
+     * holder[0];                                              // returns 4
      *
      * // Modify matrix elements in place
-     * matrix.accept(m -> {
-     *     for (int i = 0; i < m.rowCount(); i++) {
-     *         m.set(i, 0, 0);   // Set first column to 0
-     *     }
-     * });
+     * matrix.accept(m -> { for (int i = 0; i < m.rowCount(); i++) m.set(i, 0, 0); });   // zero the first column
+     * matrix.get(0, 0);                                                                 // returns 0
+     * matrix.get(1, 0);                                                                 // returns 0
+     *
+     * // A non-empty matrix passes a validation guard without throwing
+     * matrix.accept(m -> { if (m.isEmpty()) throw new IllegalStateException(); });   // no exception
+     *
+     * matrix.accept((Throwables.Consumer<IntMatrix, RuntimeException>) null);   // throws IllegalArgumentException (null action)
      * }</pre>
      *
      * @param <E> the type of exception that the action might throw
@@ -1890,11 +2281,14 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * long elementCount = matrix.apply(AbstractMatrix::elementCount);
-     * String info = matrix.apply(m -> "Matrix " + m.rowCount() + "x" + m.columnCount());
+     * long count = matrix.apply(AbstractMatrix::elementCount);               // count == 6L
+     * matrix.apply(AbstractMatrix::elementCount);                            // returns 6L
+     * matrix.apply(m -> "Matrix " + m.rowCount() + "x" + m.columnCount());   // returns "Matrix 2x3"
      *
      * // Transform matrix into a different representation
-     * IntList allValues = matrix.apply(IntMatrix::flatten);
+     * matrix.apply(IntMatrix::flatten).size();               // returns 6
+     *
+     * matrix.apply((Throwables.Function<IntMatrix, Long, RuntimeException>) null);   // throws IllegalArgumentException (null mapper)
      * }</pre>
      *
      * @param <R> the result type of the function
