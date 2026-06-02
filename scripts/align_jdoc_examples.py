@@ -59,10 +59,10 @@ file would change (handy for CI / pre-commit), else 0.
 Examples
 --------
     # preview changes for one file
-    python scripts/align_jdoc_examples.py src/main/java/com/landawn/abacus/util/Strings.java
+    python scripts/align_jdoc_examples.py src/main/java/com/landawn/abacus/matrix/IntMatrix.java
 
     # fix every Java file under a package
-    python scripts/align_jdoc_examples.py --apply src/main/java/com/landawn/abacus/util
+    python scripts/align_jdoc_examples.py --apply src/main/java/com/landawn/abacus/matrix
 """
 from __future__ import annotations
 

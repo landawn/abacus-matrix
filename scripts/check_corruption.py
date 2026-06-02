@@ -1,9 +1,9 @@
-"""Check for signs of file corruption/decompilation across util classes."""
+"""Check for signs of file corruption/decompilation across the matrix classes."""
 import os
 import re
 import sys
 
-base = sys.argv[1] if len(sys.argv) > 1 else 'src/main/java/com/landawn/abacus/util'
+base = sys.argv[1] if len(sys.argv) > 1 else 'src/main/java/com/landawn/abacus/matrix'
 
 # Signs of decompiled class files
 decomp_artifacts = ['// $FF:', 'synthetic method', 'bridge method', 'decompiled', '// compiled from']

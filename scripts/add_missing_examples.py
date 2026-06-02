@@ -2,6 +2,12 @@
 """
 Batch-adds "Usage Examples" blocks to Dataset.java methods that are missing them.
 Run: python scripts/add_missing_examples.py
+
+LEGACY / NOT PART OF THE MATRIX TOOLKIT: this generator is hard-wired to the old
+``com.landawn.abacus.util`` project's Dataset.java (see FILE below) and the
+example text it emits is util-specific. It has no equivalent among the codex
+scripts and was left untouched during the Python rewrite. Retarget FILE and the
+generate_examples() heuristics before using it on this project.
 """
 import re, sys
 
