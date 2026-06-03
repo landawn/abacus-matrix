@@ -1,22 +1,5 @@
 
-▎ The scripts in ./scripts/codex/ are Node.js (.js) tools that codex wrote for a different codebase (com.landawn.abacus.util, e.g. Dataset.java). They normalize/validate Javadoc "Usage Examples" blocks in Java source. I want equivalent Python tools for this project.
-▎
-▎ This project: package com.landawn.abacus.matrix, sources under src/main/java/com/landawn/abacus/matrix/ (the 12 *Matrix.java classes). Output Python (python3, stdlib only) into ./scripts/.
-▎
-▎ Do this:
-▎ 1. Triage first. List every script in ./scripts/codex/ with a one-line purpose and a keep/drop call. Drop: one-off "slice"/range helpers (print_range.js, *_slice.js, select_inventory_slice.js), EOL fixups (normalize_source_eol_crlf.js, revert_eol_only_owned_files.js), and audit_codex_scripts.js (it only audits the JS scripts). Keep: the report/validate/fix tools that operate on Javadoc. Show me the triage before porting.
-▎ 2. Port the shared library first (javadoc_region.js → e.g. javadoc_region.py); the fixers/reporters depend on it.
-▎ 3. Consolidate, don't transliterate. Group the many tiny fix_*/normalize_*/report_* scripts into a few cohesive Python modules with subcommands rather than ~40 separate files. Preserve behavior, not file count.
-▎ 4. Retarget everything to com.landawn.abacus.matrix / src/main/java/com/landawn/abacus/matrix/. Make the root path and excluded-package configurable via CLI args, not hardcoded.
-▎ 5. Reconcile with existing ./scripts/*.py. Those (add_missing_examples.py, align_jdoc_examples.py, check_corruption.py, …) also target the old util/Dataset.java codebase. Where a codex script duplicates one, keep one retargeted version (don't leave two). Flag, don't silently overwrite.
-▎ 6. Verify: every ported script must python3 -c "import …" / --help cleanly and run against a real matrix class (read-only reporters first) without error.
-▎ 7. Leave ./scripts/codex/ in place as reference unless I say otherwise.
-▎
-▎ Show me the triage list and your consolidation plan before writing files.
-
-
 ==============================================================================================================================================
-codex version:
 
 ---
   TASK: Start multiple agents to audit and complete the Javadoc “Usage Examples” for public methods in public classes under ./src/main/java/.
@@ -53,8 +36,6 @@ codex version:
   4. Checked exceptions:
      Document checked exceptions with a trailing comment:
      // throws IOException
-
-     Do not wrap examples in try/catch inside the <pre>{@code} block.
 
   5. Library behavior is the ground truth:
      Never guess expected values. Verify with tests.
@@ -203,7 +184,7 @@ codex version:
   =======================================================================
 
   Group 1:
-  - Arrays.java
+  - Matrices.java
 
   Group 2:
   - All remaining in-scope classes
@@ -212,7 +193,7 @@ codex version:
   6. PAUSE POINT
   =======================================================================
 
-  After completing Arrays.java:
+  After completing Matrices.java:
   - Stop.
   - Report the results.
   - Wait for review before proceeding to Group 2.
@@ -243,3 +224,23 @@ codex version:
     - alignment applied
     - final build green
     - only comments were edited
+    
+
+
+==============================================================================================================================================
+
+-- The scripts in ./scripts/codex/ are Node.js (.js) tools that codex wrote for a different codebase (com.landawn.abacus.util, e.g. Dataset.java). They normalize/validate Javadoc "Usage Examples" blocks in Java source. I want equivalent Python tools for this project.
+
+-- This project: package com.landawn.abacus.matrix, sources under src/main/java/com/landawn/abacus/matrix/ (the 12 *Matrix.java classes). Output Python (python3, stdlib only) into ./scripts/.
+
+-- Do this:
+-- 1. Triage first. List every script in ./scripts/codex/ with a one-line purpose and a keep/drop call. Drop: one-off "slice"/range helpers (print_range.js, *_slice.js, select_inventory_slice.js), EOL fixups (normalize_source_eol_crlf.js, revert_eol_only_owned_files.js), and audit_codex_scripts.js (it only audits the JS scripts). Keep: the report/validate/fix tools that operate on Javadoc. Show me the triage before porting.
+-- 2. Port the shared library first (javadoc_region.js → e.g. javadoc_region.py); the fixers/reporters depend on it.
+-- 3. Consolidate, don't transliterate. Group the many tiny fix_*/normalize_*/report_* scripts into a few cohesive Python modules with subcommands rather than ~40 separate files. Preserve behavior, not file count.
+-- 4. Retarget everything to com.landawn.abacus.matrix / src/main/java/com/landawn/abacus/matrix/. Make the root path and excluded-package configurable via CLI args, not hardcoded.
+-- 5. Reconcile with existing ./scripts/*.py. Those (add_missing_examples.py, align_jdoc_examples.py, check_corruption.py, …) also target the old util/Dataset.java codebase. Where a codex script duplicates one, keep one retargeted version (don't leave two). Flag, don't silently overwrite.
+-- 6. Verify: every ported script must python3 -c "import …" / --help cleanly and run against a real matrix class (read-only reporters first) without error.
+-- 7. Leave ./scripts/codex/ in place as reference unless I say otherwise.
+▎
+-- Show me the triage list and your consolidation plan before writing files.
+

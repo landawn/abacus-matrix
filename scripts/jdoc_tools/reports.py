@@ -1,30 +1,117 @@
 """
-reports.py -- read-only Javadoc "Usage Examples" checks.
+reports.py -- read-only Javadoc "Usage Examples" audits (project-agnostic).
 
-Every function here is a pure reader: it takes a file path and its split lines
-and returns a list of human-readable finding strings (``path:line: ...``). None
-of them ever writes. The CLI prints the findings and exits non-zero when an
-"issue" report returns anything (handy for CI / pre-commit); "info" reports
-(``scan``) always exit zero.
+Every function is a pure reader: ``check_X(path, lines) -> list[str]`` of
+``path:line: ...`` findings; none ever writes. These back the audit/verify side
+of the comments-only workflow:
 
-Consolidates these former ``scripts/codex/`` scripts:
-  javadoc_usage_check, javadoc_placeholder_report, javadoc_example_comment_report,
-  javadoc_missing_call_comment_report, javadoc_sample_member_misuse_report,
-  report_jdoc_comments_outside_pre, report_jdoc_sample_comments_outside_code_blocks,
-  report_jdoc_standalone_sample_comments, report_suspicious_jdoc_strings,
-  scan_owned_javadoc_comments, report_changed_javadoc_methods.
+  - find documented public methods (Step A) ............ methods
+  - find documented public methods missing examples .... missing-examples
+  - check the required Section-2 block structure ....... usage-check
+  - find example calls with no behavior comment ........ missing-behavior-comments
+  - find unresolved "..." placeholders ................. placeholders
+  - find array/collection .size()/.length misuse ....... sample-member-misuse
+  - find "// returns/throws" hidden inside a string .... suspicious-strings
+  - generic needle search inside Javadoc ............... scan
+  - which documented methods changed in git ............ changed-methods
+
+Nothing here is tied to a package or class name, so it applies to any project's
+sources under ``src/main/java``.
 """
 from __future__ import annotations
 
 import re
 import subprocess
-from typing import List
+from typing import List, Optional, Tuple
 
 from . import region
 
 
 # --------------------------------------------------------------------------- #
-# usage-check: structural formatting of Usage Examples blocks
+# shared: the public method (if any) a Javadoc block documents
+# --------------------------------------------------------------------------- #
+def _method_after(lines: List[str], end: int) -> Optional[Tuple[int, str]]:
+    """Return ``(decl_line_index, one_line_signature)`` for the declaration that
+    follows a Javadoc block ending at ``end`` (skipping blank/annotation lines),
+    or None. The signature is gathered across continuation lines up to ``(...)``."""
+    start = None
+    for i in range(end + 1, len(lines)):
+        t = lines[i].strip()
+        if not t or t.startswith("@"):
+            continue
+        start = i
+        break
+    if start is None:
+        return None
+    sig = ""
+    for j in range(start, min(len(lines), start + 12)):
+        sig += " " + lines[j].strip()
+        if "(" in sig and ")" in sig and ("{" in sig or ";" in sig):
+            break
+    return start, re.sub(r"\s+", " ", sig).strip()
+
+
+def _is_public_method(sig: str) -> bool:
+    s = re.sub(r"^(?:@\w[\w.]*(?:\([^)]*\))?\s*)*", "", sig)
+    return s.startswith("public ") and "(" in s and not re.search(r"\b(class|interface|enum|record)\b", s)
+
+
+def _method_name(sig: str) -> str:
+    m = re.search(r"\b([A-Za-z_$][\w$]*)\s*\(", sig)
+    return m.group(1) if m else ""
+
+
+_EXAMPLE_HEADER = re.compile(r"Usage Examples|<b>Examples?:|Example usage|<b>Example\b", re.I)
+
+
+def _block_has_examples(block: List[str]) -> bool:
+    text = "\n".join(block)
+    return "<pre>{@code" in text or bool(_EXAMPLE_HEADER.search(text))
+
+
+def documented_public_methods(path: str, lines: List[str]) -> List[dict]:
+    """Records for each Javadoc'd public method in a public class: line, name,
+    signature, has_examples. Empty if the file has no public top-level type."""
+    if not region.has_public_top_level_type("\n".join(lines)):
+        return []
+    records: List[dict] = []
+    for start, end in region.iter_javadoc_blocks(lines):
+        m = _method_after(lines, end)
+        if not m:
+            continue
+        decl_line, sig = m
+        if not _is_public_method(sig):
+            continue
+        records.append({
+            "line": decl_line + 1,
+            "name": _method_name(sig),
+            "signature": sig,
+            "has_examples": _block_has_examples(lines[start:end + 1]),
+        })
+    return records
+
+
+# --------------------------------------------------------------------------- #
+# methods (Step A) / missing-examples
+# --------------------------------------------------------------------------- #
+def check_methods(path: str, lines: List[str]) -> List[str]:
+    out = []
+    for r in documented_public_methods(path, lines):
+        mark = "examples" if r["has_examples"] else "NO-EXAMPLES"
+        out.append(f"{path}:{r['line']}: [{mark}] {r['signature']}")
+    return out
+
+
+def check_missing_examples(path: str, lines: List[str]) -> List[str]:
+    return [
+        f"{path}:{r['line']}: {r['signature']}"
+        for r in documented_public_methods(path, lines)
+        if not r["has_examples"]
+    ]
+
+
+# --------------------------------------------------------------------------- #
+# usage-check: Section-2 structural formatting of Usage Examples blocks
 # --------------------------------------------------------------------------- #
 def check_usage(path: str, lines: List[str]) -> List[str]:
     out: List[str] = []
@@ -38,7 +125,6 @@ def check_usage(path: str, lines: List[str]) -> List[str]:
         if not usage_headers:
             continue
 
-        # first @tag that sits outside a <pre> code block
         in_pre = False
         first_tag = -1
         for i, ln in enumerate(block):
@@ -94,7 +180,6 @@ def _has_placeholder(line: str) -> bool:
     return (
         bool(re.search(r"\.\.\.\s*;", code))
         or bool(re.search(r"\(\s*\.\.\.\s*\)", code))
-        or bool(re.search(r"\bcollect\(\s*\.\.\.\s*\)", code))
         or bool(re.search(r"<\s*\.\.\.\s*>", code))
         or bool(re.match(r"^\s*\*\s*\.\.\.\s*$", code))
         or "typical usage" in code
@@ -104,148 +189,37 @@ def _has_placeholder(line: str) -> bool:
 
 def check_placeholders(path: str, lines: List[str]) -> List[str]:
     out: List[str] = []
-    in_javadoc = False
-    in_pre = False
-    current_method = ""
-    for i, line in enumerate(lines):
-        if region.is_active_javadoc_start(line):
-            in_javadoc, in_pre, current_method = True, False, ""
-            continue
-        if in_javadoc and "<pre>{@code" in line:
-            in_pre = True
-            continue
-        if in_javadoc and "</pre>" in line:
-            in_pre = False
-            continue
-        if in_javadoc and "*/" in line:
-            in_javadoc = in_pre = False
-            j = i + 1
-            while j < len(lines) and lines[j].strip() == "":
-                j += 1
-            while j < len(lines) and re.match(r"^(\s*@|\s*$)", lines[j]):
-                j += 1
-            signature = lines[j] if j < len(lines) else ""
-            m = re.search(r"\b([A-Za-z_$][\w$]*)\s*\(", signature)
-            current_method = m.group(1) if m else ""
-            continue
-        if not in_javadoc or not in_pre:
-            continue
-        if _has_placeholder(line):
-            suffix = f":{current_method}" if current_method else ""
-            out.append(f"{path}:{i + 1}{suffix}: {line.strip()}")
-    return out
-
-
-# --------------------------------------------------------------------------- #
-# example-comments: trailing "// ..." comments that aren't in the house style
-# --------------------------------------------------------------------------- #
-_ACTION_VERBS = (
-    "converts|adds|removes|fills|sorts|reverses|rotates|shuffles|copies|pads|"
-    "prints|keeps|leaves|uses|treats|searches|starts|ends|invokes|transforms|"
-    "collects|processes|sums|filters|switches|maintains|stops|logs|buffers|"
-    "inserts|gets|reuses|waits|creates|closes|maps|contains"
-)
-
-
-def _is_acceptable_comment(comment: str) -> bool:
-    text = re.sub(r"^//\s*", "", comment).strip()
-    if re.match(r"^(returns|throws)\b", text):
-        return not re.match(r"^returns\s+void\s*$", text, re.I)
-    if re.match(r"^(true|false|null)\b", text):
-        return True
-    if re.match(r"^(Optional(?:Boolean|Char|Byte|Short|Int|Long|Float|Double)?|Nullable)\b", text):
-        return True
-    if re.match(r"""^(-?\d+(?:\.\d+)?(?:[a-zA-Z])?|\[[^\]]*\]|\{[^}]*\}|"[^"]*"|'[^']*')""", text):
-        return True
-    if re.match(r"^[a-z_$][\w$]*(?:\[[^\]]+\])?\s+(?:is|are|contains|has|becomes)\b", text):
-        return True
-    if re.match(r"^(" + _ACTION_VERBS + r")\b", text):
-        return True
-    if re.match(r"^[a-z_$][\w$]*(?:\[[^\]]+\])?\s+(?:is|are|contains|has|holds|becomes)\b", text):
-        return True
-    if re.match(r"^(no change|no exception thrown|same instance|empty result|unchanged|case-sensitive|case-insensitive)\b", text):
-        return True
-    return False
-
-
-def check_example_comments(path: str, lines: List[str]) -> List[str]:
-    out: List[str] = []
     for i, line in region.iter_code_lines(lines):
-        m = re.match(r"^\s*\*\s+(.*)$", line)
-        if not m:
-            continue
-        code = m.group(1)
-        idx = region.comment_index_outside_literals(code)
-        if idx < 0:
-            continue
-        before = code[:idx].strip()
-        comment = code[idx:].strip()
-        if not before or before.startswith("//"):
-            continue
-        if _is_acceptable_comment(comment):
-            continue
-        out.append(f"{path}:{i + 1}: * {code}")
+        if _has_placeholder(line):
+            out.append(f"{path}:{i + 1}: {line.strip()}")
     return out
 
 
 # --------------------------------------------------------------------------- #
-# missing-call-comments: bare static-utility calls lacking a "// returns ..."
+# missing-behavior-comments: an example call line with no "// returns/throws"
 # --------------------------------------------------------------------------- #
-_NON_CALL_DECL = re.compile(
-    r"^\s*(?:final\s+)?(?:var|void|int|long|boolean|double|float|char|byte|short|"
-    r"String|Object|Class|List|Set|Map|Collection|Iterable|Iterator|Stream|"
-    r"[A-Z][\w$<>?, ]+)\s+\w+\b"
-)
-
-
-def _is_likely_call(code: str, facade: re.Pattern) -> bool:
-    if "(" not in code or ")" not in code:
-        return False
-    if re.match(r"^\s*(if|for|while|switch|try|catch|return|throw|new\s|class\s|interface\s|enum\s)\b", code):
-        return False
-    if re.match(r"^\s*[@{}]", code):
-        return False
-    if "=" in code:
-        return False
-    if _NON_CALL_DECL.match(code):
-        return False
-    return bool(facade.match(code))
-
-
 def _has_follow_up_comment(lines: List[str], index: int) -> bool:
     nxt = lines[index + 1].strip() if index + 1 < len(lines) else ""
-    return bool(re.match(
-        r"^\*\s*//\s*(?:returns|throws|[a-z_$][\w$]*(?:\[[^\]]+\])?\s+"
-        r"(?:is|are|contains|has|becomes)|no exception thrown|no change|"
-        r"same instance|empty result|unchanged)\b",
-        nxt,
-    ))
+    return bool(re.match(r"^\*\s*//\s*(?:returns|throws|no\b|same\b|empty\b|unchanged\b)", nxt, re.I))
 
 
-def _next_declaration(lines: List[str], end: int) -> str:
-    for i in range(end + 1, len(lines)):
-        s = lines[i].strip()
-        if s:
-            return s
-    return ""
+def _is_behavior_statement(code: str) -> bool:
+    """A call statement that produces a result/side effect and so should carry a
+    behavior comment -- not a setup/declaration line. Project-agnostic."""
+    if not code.endswith(";") or "(" not in code or ")" not in code:
+        return False
+    if re.match(r"^(if|for|while|switch|try|catch|return|throw|new |}|{|@|else)\b", code):
+        return False
+    if "=" in code.split("//")[0]:  # assignment / declaration = setup, exempt
+        return False
+    return bool(re.search(r"[A-Za-z_$][\w$]*\s*\([^;]*\)\s*;$", code))
 
 
-def _is_callable_declaration(line: str) -> bool:
-    return (
-        bool(re.match(r"^(?:@\w+(?:\([^)]*\))?\s*)*(?:public|protected)\s+", line))
-        and "(" in line
-        and not re.search(r"\b(class|interface|enum|record)\b", line)
-    )
-
-
-def check_missing_call_comments(path: str, lines: List[str]) -> List[str]:
-    # Retargeted: the original hard-coded the ``util`` project's ``N`` / ``CommonUtil``
-    # facades. Generalised to any capitalised static facade call, e.g.
-    # ``Matrices.zip(...)`` -- a top-level ``Type.method(args);`` statement.
-    facade = re.compile(r"^\s*(?:[A-Z][\w$]*)\.[A-Za-z_$][\w$]*\s*\([^;]*\)\s*;?$")
+def check_missing_behavior_comments(path: str, lines: List[str]) -> List[str]:
     out: List[str] = []
     for start, end in region.iter_javadoc_blocks(lines):
-        if not _is_callable_declaration(_next_declaration(lines, end)):
+        m = _method_after(lines, end)
+        if not m or not _is_public_method(m[1]):
             continue
         in_pre = False
         for index in range(start, end + 1):
@@ -258,18 +232,16 @@ def check_missing_call_comments(path: str, lines: List[str]) -> List[str]:
             if "</pre>" in line:
                 in_pre = False
                 continue
-            m = re.match(r"^\s*\*\s?(.*)$", line)
-            if not m:
+            mm = re.match(r"^\s*\*\s?(.*)$", line)
+            if not mm:
                 continue
-            code = m.group(1).strip()
-            if not code or code.startswith("//") or code.startswith("*"):
-                continue
-            if "//" in code:
+            code = mm.group(1).strip()
+            if not code or code.startswith("//") or code.startswith("*") or "//" in code:
                 continue
             if _has_follow_up_comment(lines, index):
                 continue
-            if _is_likely_call(code, facade):
-                out.append(f"{path}:{index + 1}: {line}")
+            if _is_behavior_statement(code):
+                out.append(f"{path}:{index + 1}: {code}")
     return out
 
 
@@ -293,8 +265,8 @@ def _code_of(line: str) -> str:
 
 
 def _iter_full_code_blocks(lines: List[str]):
-    """Yield ``(block_start_index, [block lines])`` for each ``<pre>{@code``
-    block (marker lines included), like the JS member-misuse scanners."""
+    """Yield ``(block_start_index, [block lines])`` for each ``<pre>{@code`` block
+    (marker lines included)."""
     mask = region.active_javadoc_line_mask(lines)
     in_block = False
     block_start = 0
@@ -339,80 +311,6 @@ def check_sample_member_misuse(path: str, lines: List[str]) -> List[str]:
 
 
 # --------------------------------------------------------------------------- #
-# comments-outside-pre / sample-comments-outside-code / standalone-sample
-# --------------------------------------------------------------------------- #
-def check_comments_outside_pre(path: str, lines: List[str]) -> List[str]:
-    out: List[str] = []
-    mask = region.active_javadoc_line_mask(lines)
-    for i, line in enumerate(lines):
-        if not mask[i] or "Usage Examples:</b></p>" not in line:
-            continue
-        j = i + 1
-        while j < min(len(lines), i + 8) and mask[j]:
-            if "<pre>{@code" in lines[j]:
-                break
-            if re.match(r"^\s*\*\s+//\s+", lines[j]):
-                out.append(f"{path}:{j + 1}: {lines[j].strip()}")
-            j += 1
-    return out
-
-
-def check_sample_comments_outside_code(path: str, lines: List[str]) -> List[str]:
-    out: List[str] = []
-    mask = region.active_javadoc_line_mask(lines)
-    in_pre = False
-    for i, line in enumerate(lines):
-        if not mask[i]:
-            in_pre = False
-            continue
-        if "<pre>{@code" in line:
-            in_pre = True
-            continue
-        if in_pre and "}</pre>" in line:
-            in_pre = False
-            continue
-        if not in_pre and re.match(r"^\s*\*\s+//\s+\S", line):
-            out.append(f"{path}:{i + 1}: {line.strip()}")
-    return out
-
-
-_RESULT_COMMENT_PREFIXES = (
-    "return", "throw", "print", "result", "represent", "useful", "using", "set ",
-    "can be used", "default ", "high precision", "parse with", "convert to",
-    "note:", "a java", "the default", "formatted with", "numeric =",
-    "numberformatexception", "nullpointerexception", "illegalargumentexception",
-    "arithmeticexception",
-)
-
-
-def check_standalone_sample_comments(path: str, lines: List[str], all_kinds: bool = False) -> List[str]:
-    out: List[str] = []
-    mask = region.active_javadoc_line_mask(lines)
-    in_pre = False
-    for i, line in enumerate(lines):
-        if not mask[i]:
-            in_pre = False
-            continue
-        if "<pre>{@code" in line:
-            in_pre = True
-            continue
-        if in_pre and "}</pre>" in line:
-            in_pre = False
-            continue
-        if not in_pre:
-            continue
-        m = re.match(r"^\s*\*\s+//\s+(.+)$", line)
-        if not m:
-            continue
-        text = m.group(1).strip()
-        lower = text.lower()
-        kind = "NON_HEADING" if any(lower.startswith(p) for p in _RESULT_COMMENT_PREFIXES) else "HEADING"
-        if all_kinds or kind != "HEADING":
-            out.append(f"{kind}\t{path}:{i + 1}\t{text}")
-    return out
-
-
-# --------------------------------------------------------------------------- #
 # suspicious-strings: a "// returns/throws" buried inside a string literal
 # --------------------------------------------------------------------------- #
 def _has_suspicious_string(line: str) -> bool:
@@ -444,27 +342,19 @@ def check_suspicious_strings(path: str, lines: List[str]) -> List[str]:
         idx = region.comment_index_outside_literals(line)
         code = line if idx < 0 else line[:idx]
         if _has_suspicious_string(code):
-            out.append(f"{path}:{i + 1}:{line}")
+            out.append(f"{path}:{i + 1}:{line.strip()}")
     return out
 
 
 # --------------------------------------------------------------------------- #
 # scan: generic needle search inside active Javadoc (info report, exit 0)
 # --------------------------------------------------------------------------- #
-_SCAN_ALIASES = {
-    "returns_this": "// returns this",
-    "returns_response": "// returns response",
-    "returns_void": "// returns void",
-}
-
-
-def check_scan(path: str, lines: List[str], needle: str = "returns_this") -> List[str]:
-    needle = _SCAN_ALIASES.get(needle, needle)
+def check_scan(path: str, lines: List[str], needle: str = "// returns") -> List[str]:
     out: List[str] = []
     mask = region.active_javadoc_line_mask(lines)
     for i, line in enumerate(lines):
         if mask[i] and needle in line:
-            out.append(f"{path.replace(chr(92), '/')}:{i + 1}:{line.strip()}")
+            out.append(f"{path}:{i + 1}:{line.strip()}")
     return out
 
 
@@ -472,12 +362,8 @@ def check_scan(path: str, lines: List[str], needle: str = "returns_this") -> Lis
 # changed-methods: which Javadoc'd methods changed in the working tree (git)
 # --------------------------------------------------------------------------- #
 def _git_changed_new_lines(path: str) -> set:
-    """New-file line numbers touched by ``git diff`` for ``path`` (was ``svn``)."""
     try:
-        diff = subprocess.run(
-            ["git", "diff", "--", path],
-            capture_output=True, text=True, check=False,
-        ).stdout
+        diff = subprocess.run(["git", "diff", "--", path], capture_output=True, text=True, check=False).stdout
     except FileNotFoundError:
         return set()
     changed = set()
@@ -503,50 +389,25 @@ def check_changed_methods(path: str, lines: List[str]) -> List[str]:
     changed_lines = _git_changed_new_lines(path)
     if not changed_lines:
         return []
-
-    def signature_after(end: int) -> str:
-        sig = ""
-        for i in range(end + 1, min(len(lines), end + 30)):
-            t = lines[i].strip()
-            if not t or t.startswith("@"):
-                continue
-            sig += " " + t
-            if "{" in t or ";" in t:
-                break
-        return re.sub(r"\s+", " ", sig).strip()
-
-    methods: dict[str, list[str]] = {}
+    out: List[str] = []
     for start, end in region.iter_javadoc_blocks(lines):
         if any((start + 1) <= ln <= (end + 1) for ln in changed_lines):
-            sig = signature_after(end)
-            m = re.search(r"\b([A-Za-z_$][\w$]*)\s*\(", sig)
-            name = m.group(1) if m else "(class javadoc)"
-            methods.setdefault(name, []).append(sig)
-
-    out: List[str] = []
-    for name, sigs in methods.items():
-        out.append(f"{name}: {len(sigs)}")
-        for sig in sigs[:4]:
-            out.append(f"  {sig}")
-        if len(sigs) > 4:
-            out.append(f"  ... {len(sigs) - 4} more overload(s)")
+            m = _method_after(lines, end)
+            sig = m[1] if m else "(class javadoc)"
+            out.append(f"{path}:{(m[0] + 1) if m else start + 1}: {sig}")
     return out
 
 
 # --------------------------------------------------------------------------- #
 # registry -- name -> (function, is_issue_report)
 # --------------------------------------------------------------------------- #
-# is_issue_report=True  -> non-empty output means "problems found" (exit 1)
-# is_issue_report=False -> informational (exit 0 regardless)
 REPORTS = {
+    "methods": (check_methods, False),
+    "missing-examples": (check_missing_examples, False),
     "usage-check": (check_usage, True),
+    "missing-behavior-comments": (check_missing_behavior_comments, True),
     "placeholders": (check_placeholders, True),
-    "example-comments": (check_example_comments, True),
-    "missing-call-comments": (check_missing_call_comments, True),
     "sample-member-misuse": (check_sample_member_misuse, True),
-    "comments-outside-pre": (check_comments_outside_pre, False),
-    "sample-comments-outside-code": (check_sample_comments_outside_code, False),
-    "standalone-sample-comments": (check_standalone_sample_comments, False),
     "suspicious-strings": (check_suspicious_strings, True),
     "scan": (check_scan, False),
     "changed-methods": (check_changed_methods, False),

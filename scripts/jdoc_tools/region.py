@@ -171,3 +171,88 @@ def line_prefix(line: str) -> str | None:
     """Leading whitespace up to (not including) the ``*``, or None if no star."""
     m = re.match(r"^(\s*)\*", line)
     return m.group(1) if m else None
+
+
+# --------------------------------------------------------------------------- #
+# light Java structure helpers (comment/literal aware, project-agnostic)
+# --------------------------------------------------------------------------- #
+_PACKAGE_RE = re.compile(r"^\s*package\s+([A-Za-z0-9_.]+)\s*;", re.M)
+_PUBLIC_TYPE_RE = re.compile(
+    r"^\s*public\s+(?:abstract\s+|final\s+|sealed\s+|non-sealed\s+|strictfp\s+)*"
+    r"\b(?:class|interface|enum|record)\b", re.M,
+)
+_PUBLIC_ANNOTATION_RE = re.compile(r"^\s*public\s+@interface\b", re.M)
+
+
+def package_name(text: str) -> str:
+    m = _PACKAGE_RE.search(text)
+    return m.group(1) if m else ""
+
+
+def strip_comments(text: str) -> str:
+    """Blank out all comments and string/char literals, preserving newlines and
+    character offsets, so braces/keywords can be scanned without false hits from
+    text inside comments or strings. (Each blanked char becomes a space.)"""
+    out: List[str] = []
+    in_block = in_line = in_string = in_char = escaped = False
+    i, n = 0, len(text)
+    while i < n:
+        ch = text[i]
+        nxt = text[i + 1] if i + 1 < n else ""
+        if in_line:
+            if ch in "\n\r":
+                in_line = False
+                out.append(ch)
+            else:
+                out.append(" ")
+            i += 1
+            continue
+        if in_block:
+            if ch == "*" and nxt == "/":
+                out.append("  ")
+                i += 2
+                in_block = False
+                continue
+            out.append(ch if ch in "\n\r" else " ")
+            i += 1
+            continue
+        if escaped:
+            escaped = False
+            out.append(" ")
+            i += 1
+            continue
+        if (in_string or in_char) and ch == "\\":
+            escaped = True
+            out.append(" ")
+            i += 1
+            continue
+        if not in_string and not in_char and ch == "/" and nxt == "/":
+            out.append("  ")
+            i += 2
+            in_line = True
+            continue
+        if not in_string and not in_char and ch == "/" and nxt == "*":
+            out.append("  ")
+            i += 2
+            in_block = True
+            continue
+        if not in_char and ch == '"':
+            in_string = not in_string
+            out.append(" ")
+            i += 1
+            continue
+        if not in_string and ch == "'":
+            in_char = not in_char
+            out.append(" ")
+            i += 1
+            continue
+        out.append(" " if (in_string or in_char) else ch)
+        i += 1
+    return "".join(out)
+
+
+def has_public_top_level_type(text: str) -> bool:
+    """True if the file declares a ``public`` class/interface/enum/record
+    (excluding a bare ``public @interface``)."""
+    code = strip_comments(text)
+    return bool(_PUBLIC_TYPE_RE.search(code)) and not _PUBLIC_ANNOTATION_RE.search(code)

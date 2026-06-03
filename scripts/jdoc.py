@@ -2,28 +2,32 @@
 """
 jdoc.py -- one CLI for the Javadoc "Usage Examples" toolkit (jdoc_tools).
 
-This is the consolidated Python replacement for the ~50 Node.js scripts that
-used to live under ``scripts/codex/`` (written by codex for the unrelated
-``com.landawn.abacus.util`` project). Everything is retargeted at this project
-(``com.landawn.abacus.matrix``) and reachable through subcommands.
+A project-agnostic toolkit for auditing and tidying the Javadoc *Usage Examples*
+of public methods in public classes anywhere under ``src/main/java``. It supports
+the comments-only "audit & complete Usage Examples" workflow:
 
-Quick start
------------
-    # which source files have Usage Examples blocks?
-    python scripts/jdoc.py eligible src/main/java
+  Step A  list documented public methods / find those missing examples
+            python scripts/jdoc.py audit
+            python scripts/jdoc.py report missing-examples <file|dir>
+            python scripts/jdoc.py report methods          <file|dir>
 
-    # report problems (read-only; exits 1 if any are found)
-    python scripts/jdoc.py report usage-check src/main/java/com/landawn/abacus/matrix/IntMatrix.java
+  audit    check the required block structure + behavior comments (read-only)
+            python scripts/jdoc.py report usage-check               <file|dir>
+            python scripts/jdoc.py report missing-behavior-comments <file|dir>
+            python scripts/jdoc.py validate src/main/java
 
-    # preview a fix, then apply it
-    python scripts/jdoc.py fix usage-spacing src/main/java/com/landawn/abacus/matrix
-    python scripts/jdoc.py fix usage-spacing --apply src/main/java/com/landawn/abacus/matrix
+  Step E  normalize structure / align columns (writes only with --apply)
+            python scripts/jdoc.py fix usage-spacing --apply <file|dir>
+            python scripts/jdoc.py fix align        --apply <file|dir>
+            python scripts/jdoc.py cleanup          --apply src/main/java
 
-    # run every check / every fixer across the eligible tree
-    python scripts/jdoc.py validate src/main/java
-    python scripts/jdoc.py cleanup --apply src/main/java
+  guard    confirm a file's git diff changed only comments (Section "only
+           comments were edited")
+            python scripts/jdoc.py verify-comment-only <file>
 
-Reports never write. Fixers are dry-run unless you pass --apply.
+Reports never write. Fixers are dry-run unless you pass --apply. The fixers only
+reshape structure / apply mechanical corrections -- they never invent the text of
+a behavior comment (verify those with a test, per the task rules).
 """
 from __future__ import annotations
 
@@ -40,6 +44,8 @@ try:  # make CJK printable on Windows consoles
 except Exception:
     pass
 
+_FIXER_NAMES = list(fixes.FIXES) + ["align", "move-usage-before-tags"]
+
 
 def _read(path: str):
     text = pipeline.read_text(path)
@@ -54,12 +60,7 @@ def _cmd_report(args) -> int:
     findings = 0
     for path in pipeline.find_java_files(args.paths):
         _text, _nl, lines = _read(path)
-        if args.name == "scan":
-            out = fn(path, lines, needle=args.needle)
-        elif args.name == "standalone-sample-comments":
-            out = fn(path, lines, all_kinds=args.all)
-        else:
-            out = fn(path, lines)
+        out = fn(path, lines, needle=args.needle) if args.name == "scan" else fn(path, lines)
         for line in out:
             print(line)
         findings += len(out)
@@ -69,7 +70,6 @@ def _cmd_report(args) -> int:
 
 def _cmd_fix(args) -> int:
     name = args.name
-    # the two fixers delegated to existing standalone scripts
     if name == "align":
         align = pipeline._sibling("align_jdoc_examples")
         return align.main((["--apply"] if args.apply else []) + args.paths)
@@ -85,13 +85,11 @@ def _cmd_fix(args) -> int:
         return 0
 
     if name not in fixes.FIXES:
-        avail = ", ".join(list(fixes.FIXES) + ["align", "move-usage-before-tags"])
-        print(f"unknown fixer: {name}\navailable: {avail}", file=sys.stderr)
+        print(f"unknown fixer: {name}\navailable: {', '.join(_FIXER_NAMES)}", file=sys.stderr)
         return 2
 
     fixer = fixes.FIXES[name]
-    total = 0
-    files_changed = 0
+    total = files_changed = 0
     for path in pipeline.find_java_files(args.paths):
         _text, newline, lines = _read(path)
         new_lines, count, details = fixer(path, lines)
@@ -105,15 +103,17 @@ def _cmd_fix(args) -> int:
                     fh.write(region.join_lines(new_lines, newline))
     verb = "changed" if args.apply else "would change"
     print(f"{name.upper().replace('-', '_')}: {verb} {files_changed} file(s), {total} edit(s)")
-    if not args.apply and files_changed:
-        return 1
-    return 0
+    return 1 if (not args.apply and files_changed) else 0
 
 
 def _cmd_eligible(args) -> int:
     for file, count, pkg in pipeline.eligible_files(args.root, args.exclude_package):
         print(f"{file}\t{count}\t{pkg}")
     return 0
+
+
+def _cmd_audit(args) -> int:
+    return pipeline.audit(args.root, args.exclude_package)
 
 
 def _cmd_validate(args) -> int:
@@ -143,18 +143,16 @@ def _cmd_verify_comment_only(args) -> int:
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="jdoc.py",
-        description="Javadoc Usage Examples reporting / normalization toolkit.",
+        description="Javadoc Usage Examples auditing / normalization toolkit (any project).",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="reports: " + ", ".join(reports.REPORTS) + "\nfixers:  "
-        + ", ".join(list(fixes.FIXES) + ["align", "move-usage-before-tags"]),
+        epilog="reports: " + ", ".join(reports.REPORTS) + "\nfixers:  " + ", ".join(_FIXER_NAMES),
     )
     sub = p.add_subparsers(dest="command", required=True)
 
-    sp = sub.add_parser("report", help="run a read-only check (exits 1 on findings)")
+    sp = sub.add_parser("report", help="run a read-only check")
     sp.add_argument("name", help="check name (see epilog of -h)")
     sp.add_argument("paths", nargs="+", help=".java file(s) or directory(ies)")
-    sp.add_argument("--needle", default="returns_this", help="for 'scan': text/alias to search")
-    sp.add_argument("--all", action="store_true", help="for 'standalone-sample-comments': include HEADING lines")
+    sp.add_argument("--needle", default="// returns", help="for 'scan': text to search inside Javadoc")
     sp.set_defaults(func=_cmd_report)
 
     sp = sub.add_parser("fix", help="run an in-place fixer (dry-run unless --apply)")
@@ -163,9 +161,14 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--apply", action="store_true", help="write changes (default: preview)")
     sp.set_defaults(func=_cmd_fix)
 
-    sp = sub.add_parser("eligible", help="list files with Usage Examples (file<TAB>count<TAB>package)")
+    sp = sub.add_parser("audit", help="overview: documented public methods vs. missing examples")
     sp.add_argument("root", nargs="?", default="src/main/java")
     sp.add_argument("--exclude-package", action="append", default=[], help="package to skip (repeatable)")
+    sp.set_defaults(func=_cmd_audit)
+
+    sp = sub.add_parser("eligible", help="list files with Usage Examples (file<TAB>count<TAB>package)")
+    sp.add_argument("root", nargs="?", default="src/main/java")
+    sp.add_argument("--exclude-package", action="append", default=[])
     sp.set_defaults(func=_cmd_eligible)
 
     sp = sub.add_parser("inventory", help="alias of 'eligible'")
@@ -173,12 +176,12 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--exclude-package", action="append", default=[])
     sp.set_defaults(func=_cmd_eligible)
 
-    sp = sub.add_parser("validate", help="run all checks across the eligible tree")
+    sp = sub.add_parser("validate", help="run all structural checks across the eligible tree")
     sp.add_argument("root", nargs="?", default="src/main/java")
     sp.add_argument("--exclude-package", action="append", default=[])
     sp.set_defaults(func=_cmd_validate)
 
-    sp = sub.add_parser("cleanup", help="run all fixers across the eligible tree")
+    sp = sub.add_parser("cleanup", help="run all structural fixers across the eligible tree")
     sp.add_argument("root", nargs="?", default="src/main/java")
     sp.add_argument("--apply", action="store_true", help="write changes (default: preview)")
     sp.add_argument("--exclude-package", action="append", default=[])
