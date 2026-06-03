@@ -168,14 +168,3 @@ never rewrite the *content* of a behavior comment.
 | `pipeline.py` | File discovery (`public_type_files`, `eligible_files`), the `audit`/`validate`/`cleanup` orchestrators, and the git `verify_comment_only`. Lazily reuses the two standalone scripts above. |
 
 ---
-
-## Notes
-
-- `scripts/codex/` holds the original Node.js scripts this toolkit was ported
-  from — kept **as reference only**; nothing in the toolkit calls them.
-- Git is used (not svn) for `verify-comment-only` and `changed-methods`.
-- Earlier content-*guessing* fixers (which rewrote comment text from one
-  library's vocabulary) and an example *generator* were removed on purpose: they
-  conflict with the rule "never guess expected values; verify with tests."
-  Auditing + structural normalization is automated here; example *content* is
-  authored and test-verified by a human/agent.
