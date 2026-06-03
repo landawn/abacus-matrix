@@ -1131,15 +1131,15 @@ public final class Matrices {
      * }</pre>
      *
      * @param <M> the matrix type
-     * @param matrices the matrices to stack vertically, must not be {@code null} or empty
+     * @param matrices the matrices to stack vertically, must not be {@code null}, empty, or contain {@code null} elements
      * @return a new matrix containing the rows of all input matrices, never {@code null}
-     * @throws IllegalArgumentException if {@code matrices} is {@code null}, empty, or contains
-     *         matrices with mismatched column counts
+     * @throws IllegalArgumentException if {@code matrices} is {@code null}, empty, contains
+     *         {@code null} elements, or contains matrices with mismatched column counts
      * @see AbstractMatrix#stackVertically(AbstractMatrix)
      * @see #stackHorizontally(Collection)
      */
     public static <M extends AbstractMatrix<?, ?, ?, ?, M>> M stackVertically(final Collection<? extends M> matrices) {
-        N.checkArgNotEmpty(matrices, "matrices");
+        checkMatricesNotEmptyAndNoNullElements(matrices);
 
         final Iterator<? extends M> it = matrices.iterator();
         M result = it.next();
@@ -1180,15 +1180,15 @@ public final class Matrices {
      * }</pre>
      *
      * @param <M> the matrix type
-     * @param matrices the matrices to stack horizontally, must not be {@code null} or empty
+     * @param matrices the matrices to stack horizontally, must not be {@code null}, empty, or contain {@code null} elements
      * @return a new matrix containing the columns of all input matrices, never {@code null}
-     * @throws IllegalArgumentException if {@code matrices} is {@code null}, empty, or contains
-     *         matrices with mismatched row counts
+     * @throws IllegalArgumentException if {@code matrices} is {@code null}, empty, contains
+     *         {@code null} elements, or contains matrices with mismatched row counts
      * @see AbstractMatrix#stackHorizontally(AbstractMatrix)
      * @see #stackVertically(Collection)
      */
     public static <M extends AbstractMatrix<?, ?, ?, ?, M>> M stackHorizontally(final Collection<? extends M> matrices) {
-        N.checkArgNotEmpty(matrices, "matrices");
+        checkMatricesNotEmptyAndNoNullElements(matrices);
 
         final Iterator<? extends M> it = matrices.iterator();
         M result = it.next();
@@ -3845,16 +3845,20 @@ public final class Matrices {
     }
 
     private static void checkShapeForZip(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> coll) {
-        N.checkArgNotEmpty(coll, "matrices");
+        checkMatricesNotEmptyAndNoNullElements(coll);
+
+        N.checkArgument(isSameShape(coll), "Cannot zip matrices with different shapes");
+    }
+
+    private static void checkMatricesNotEmptyAndNoNullElements(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> matrices) {
+        N.checkArgNotEmpty(matrices, "matrices");
 
         int idx = 0;
-        for (final AbstractMatrix<?, ?, ?, ?, ?> m : coll) {
+        for (final AbstractMatrix<?, ?, ?, ?, ?> m : matrices) {
             if (m == null) {
                 throw new IllegalArgumentException("matrices[" + idx + "] is null");
             }
             idx++;
         }
-
-        N.checkArgument(isSameShape(coll), "Cannot zip matrices with different shapes");
     }
 }

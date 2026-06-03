@@ -4470,6 +4470,20 @@ class MatricesTest extends TestBase {
     class MatricesNullArgumentContractTest {
 
         @Test
+        public void testStackVerticallyNullElementsThrowIllegalArgumentException() {
+            assertThrows(IllegalArgumentException.class, () -> Matrices.stackVertically(Arrays.asList((IntMatrix) null)));
+            assertThrows(IllegalArgumentException.class, () -> Matrices.stackVertically(Arrays.asList((IntMatrix) null, intMatrix1)));
+            assertThrows(IllegalArgumentException.class, () -> Matrices.stackVertically(Arrays.asList(intMatrix1, (IntMatrix) null)));
+        }
+
+        @Test
+        public void testStackHorizontallyNullElementsThrowIllegalArgumentException() {
+            assertThrows(IllegalArgumentException.class, () -> Matrices.stackHorizontally(Arrays.asList((IntMatrix) null)));
+            assertThrows(IllegalArgumentException.class, () -> Matrices.stackHorizontally(Arrays.asList((IntMatrix) null, intMatrix1)));
+            assertThrows(IllegalArgumentException.class, () -> Matrices.stackHorizontally(Arrays.asList(intMatrix1, (IntMatrix) null)));
+        }
+
+        @Test
         public void testZipByteMatrixNullArgumentsThrowIllegalArgumentException() {
             ByteMatrix m1 = ByteMatrix.of(new byte[][] { { 1, 2 } });
             ByteMatrix m2 = ByteMatrix.of(new byte[][] { { 3, 4 } });
