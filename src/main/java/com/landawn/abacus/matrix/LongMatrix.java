@@ -41,7 +41,7 @@ import com.landawn.abacus.util.stream.Stream;
  *
  * <p>Cells introduced by growth, reshaping, or padding default to {@code 0L} unless an overload accepts
  * an explicit fill value. Arithmetic operations on {@code long} values use Java's standard two's-complement
- * wrap-around semantics on overflow; integer division truncates toward zero. Narrowing conversions
+ * wrap-around semantics on overflow. Narrowing conversions
  * (for example {@link #toIntMatrix()}) may discard high-order bits.</p>
  *
  * @see IntMatrix
@@ -180,7 +180,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     }
 
     /**
-     * Creates a new {@code 1 x length} matrix filled with random long values.
+     * Creates a new {@code 1 x length} matrix filled with random {@code long} values.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -201,7 +201,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     }
 
     /**
-     * Creates a new matrix of the specified dimensions filled with random long values.
+     * Creates a new matrix of the specified dimensions filled with random {@code long} values.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1307,9 +1307,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     }
 
     /**
-     * Creates a new IntMatrix by applying the specified function to each element of this matrix.
-     * The original matrix is not modified. Each long element is independently converted to an int
-     * by the function, and the results are collected into a new IntMatrix with the same dimensions.
+     * Creates a new {@code IntMatrix} by applying the specified function to each element of this matrix.
+     * The original matrix is not modified. Each {@code long} element is independently converted to an {@code int}
+     * by the function, and the results are collected into a new {@code IntMatrix} with the same dimensions.
      * The operation may be performed in parallel for large matrices to improve performance.
      *
      * <p><b>Usage Examples:</b></p>
@@ -1317,7 +1317,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * LongMatrix matrix = LongMatrix.of(new long[][] {{123L, 256L}, {300L, 401L}});
      * IntMatrix intMatrix = matrix.mapToInt(x -> (int) (x % 100));
      * intMatrix.get(0, 0);            // returns 23
-     * intMatrix.get(1, 0);            // returns 0 (300 % 100)
+     * intMatrix.get(1, 0);            // returns 0 ((int)(300 % 100))
      *
      * matrix.mapToInt(x -> (int) x).rowCount();                               // returns 2 (same dimensions)
      * matrix.mapToInt((Throwables.LongToIntFunction<RuntimeException>) null); // throws IllegalArgumentException
@@ -1340,9 +1340,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     }
 
     /**
-     * Creates a new DoubleMatrix by applying the specified function to each element of this matrix.
-     * The original matrix is not modified. Each long element is independently converted to a double
-     * by the function, and the results are collected into a new DoubleMatrix with the same dimensions.
+     * Creates a new {@code DoubleMatrix} by applying the specified function to each element of this matrix.
+     * The original matrix is not modified. Each {@code long} element is independently converted to a {@code double}
+     * by the function, and the results are collected into a new {@code DoubleMatrix} with the same dimensions.
      * The operation may be performed in parallel for large matrices to improve performance.
      *
      * <p><b>Usage Examples:</b></p>
@@ -1373,9 +1373,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     }
 
     /**
-     * Creates a new object Matrix by applying the specified function to each element of this matrix.
-     * The original matrix is not modified. Each long element is independently converted to an object
-     * of type R by the function, and the results are collected into a new Matrix with the same dimensions.
+     * Creates a new object {@code Matrix} by applying the specified function to each element of this matrix.
+     * The original matrix is not modified. Each {@code long} element is independently converted to an object
+     * of type {@code R} by the function, and the results are collected into a new {@code Matrix} with the same dimensions.
      * The operation may be performed in parallel for large matrices to improve performance.
      *
      * <p><b>Usage Examples:</b></p>
@@ -1613,7 +1613,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * LongMatrix matrix = LongMatrix.of(new long[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
+     * LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}, {7L, 8L, 9L}});
      *
      * // Grow: both dimensions larger — new cells filled with 0L
      * LongMatrix grown = matrix.resize(4, 4);
@@ -1673,7 +1673,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * LongMatrix matrix = LongMatrix.of(new long[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
+     * LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}, {7L, 8L, 9L}});
      *
      * // Grow: both dimensions larger — new cells filled with 9L
      * LongMatrix grown = matrix.resize(4, 4, 9L);
@@ -2045,7 +2045,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     }
 
     /**
-     * Returns a new matrix that is this matrix rotated 180 degrees clockwise.
+     * Returns a new matrix that is this matrix rotated 180 degrees.
      * This is equivalent to flipping both horizontally and vertically, reversing the
      * order of all elements. The resulting matrix has the same dimensions as the original.
      * The original matrix is not modified.
@@ -2063,7 +2063,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * LongMatrix.empty().rotate180().isEmpty(); // returns true
      * }</pre>
      *
-     * @return a new {@code LongMatrix} rotated 180 degrees clockwise
+     * @return a new {@code LongMatrix} rotated 180 degrees
      */
     @Override
     public LongMatrix rotate180() {

@@ -1829,7 +1829,6 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @return a new {@code FloatMatrix} with each row reversed
      * @see #flipHorizontallyInPlace()
      * @see #flipVertically()
-     * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
     @Override
     public FloatMatrix flipHorizontally() {
@@ -1855,7 +1854,6 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @return a new {@code FloatMatrix} that is a vertical flip of this matrix (rows in reversed order)
      * @see #flipVerticallyInPlace()
      * @see #flipHorizontally()
-     * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
     @Override
     public FloatMatrix flipVertically() {
@@ -1911,7 +1909,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns a new matrix that is this matrix rotated 180 degrees clockwise.
+     * Returns a new matrix that is this matrix rotated 180 degrees.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1925,7 +1923,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix.empty().rotate180().isEmpty(); // returns true
      * }</pre>
      *
-     * @return a new matrix that is this matrix rotated 180 degrees clockwise
+     * @return a new matrix that is this matrix rotated 180 degrees
      */
     @Override
     public FloatMatrix rotate180() {
@@ -3043,8 +3041,6 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * Elements are returned in column-major order: all elements from the first column,
      * then all elements from the second column, and so on.
      *
-     * <p>Note: This method is marked as @Beta and may be subject to change.
-     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
@@ -3087,8 +3083,6 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
     /**
      * Returns a stream of elements from a range of columns in column-major order.
-     *
-     * <p>Note: This method is marked as @Beta and may be subject to change.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3260,8 +3254,6 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * Returns a stream where each element is a FloatStream representing a column.
      * This allows processing the matrix column by column with stream operations.
      *
-     * <p>Note: This method is marked as @Beta and may be subject to change.
-     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
@@ -3282,8 +3274,6 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
     /**
      * Returns a stream of FloatStream for a range of columns.
-     *
-     * <p>Note: This method is marked as @Beta and may be subject to change.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

@@ -128,7 +128,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
 
     /**
      * Creates an {@code IntMatrix} from a two-dimensional {@code char} array by widening each
-     * {@code char} to its unsigned 16-bit numeric value (the same value as a Java {@code char}-to-{@code int} widening).
+     * {@code char} to {@code int} using its unsigned 16-bit numeric value (for example {@code 'A'} becomes {@code 65}).
      *
      * <p>All rows must have the same length as the first row (rectangular array required). The
      * returned matrix owns a freshly-allocated backing array; modifications to {@code a} after
@@ -886,7 +886,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     }
 
     /**
-     * Returns a copy of the specified column as a new int array.
+     * Returns a defensive copy of the specified column as a new {@code int[]}.
      *
      * <p>Unlike {@link #rowView(int)}, this method always returns a new array copy since
      * columns are not stored contiguously in memory. Modifications to the returned array
@@ -910,6 +910,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @return a new int array of length {@code rowCount} containing the values of the specified column
      * @throws IllegalArgumentException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      * @see #rowCopy(int)
+     * @see #rowView(int)
      */
     @Override
     public int[] columnCopy(final int columnIndex) throws IllegalArgumentException {
@@ -1118,7 +1119,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
      * matrix.setMainDiagonal(new int[] {9, 8});
      * matrix.getMainDiagonal();              // returns [9, 8]
-     * matrix.get(1, 1);                      // returns 8 (off-diagonal value 2,3 unchanged)
+     * matrix.get(1, 1);                      // returns 8 (diagonal element updated)
      *
      * matrix.setMainDiagonal(new int[] {1}); // throws IllegalArgumentException (length != rowCount)
      * IntMatrix nonSquare = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
@@ -1543,7 +1544,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param targetElementType the {@code Class} object for type {@code R} (used to allocate the
      *        {@code R[][]} backing array); must not be {@code null}
      * @return a new {@link Matrix Matrix&lt;R&gt;} containing the mapped values
-     * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null}
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
      */
     public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.IntFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E {
@@ -1596,7 +1597,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * IntMatrix matrix = IntMatrix.of(new int[][] {{0, 0, 0}, {0, 0, 0}});
      * matrix.fill(new int[][] {{1, 2}, {3, 4}});
      * matrix.get(0, 0);                       // returns 1
-     * matrix.get(0, 2);                       // returns 0 (source narrower, not overwritten)
+     * matrix.get(0, 2);                       // returns 0 (source row is narrower, so this column is not overwritten)
      * // matrix is [[1, 2, 0], [3, 4, 0]]
      *
      * IntMatrix big = IntMatrix.of(new int[][] {{0, 0}, {0, 0}});
@@ -3228,7 +3229,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param fromRowIndex the starting row index (inclusive, 0-based)
      * @param toRowIndex the ending row index (exclusive)
      * @return an IntStream of elements from the specified row range, or an empty stream if the matrix is empty
-     * @throws IndexOutOfBoundsException if fromRowIndex &lt; 0, toRowIndex &gt; rowCount, or fromRowIndex &gt; toRowIndex
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount}, or {@code fromRowIndex > toRowIndex}
      */
     @Override
     public IntStream horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
@@ -3306,8 +3307,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).
      * Elements are streamed column by column from the top-left corner to the bottom-right corner.
      *
-     * <p>This method is marked as @Beta, indicating it may be subject to change
-     * in future versions. It provides an alternative way to iterate through matrix
+     * <p>It provides an alternative way to iterate through matrix
      * elements compared to the row-major order of {@link #horizontalStream()}.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -3359,7 +3359,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * Elements are streamed column by column from the starting column (inclusive)
      * to the ending column (exclusive), with each column streamed from top to bottom.
      *
-     * <p>This method is marked as @Beta and allows for efficient processing of a
+     * <p>This method allows for efficient processing of a
      * subset of matrix columns in column-major order.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -3376,8 +3376,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param toColumnIndex the ending column index (exclusive)
      * @return an IntStream of elements from the specified column range in column-major order,
      *         or an empty stream if the matrix is empty
-     * @throws IndexOutOfBoundsException if fromColumnIndex &lt; 0, toColumnIndex &gt; columnCount,
-     *         or fromColumnIndex &gt; toColumnIndex
+     * @throws IndexOutOfBoundsException if {@code fromColumnIndex < 0}, {@code toColumnIndex > columnCount},
+     *         or {@code fromColumnIndex > toColumnIndex}
      */
     @Override
     @Beta
@@ -3502,8 +3502,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param fromRowIndex the starting row index (inclusive, 0-based)
      * @param toRowIndex the ending row index (exclusive)
      * @return a Stream of IntStream objects for the specified row range
-     * @throws IndexOutOfBoundsException if fromRowIndex &lt; 0, toRowIndex &gt; rowCount,
-     *         or fromRowIndex &gt; toRowIndex
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount},
+     *         or {@code fromRowIndex > toRowIndex}
      */
     @Override
     public Stream<IntStream> rowStreams(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
@@ -3547,7 +3547,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * Returns a stream of IntStream objects, where each IntStream represents a complete column.
      * This creates a stream of streams, allowing for column-by-column processing of the matrix.
      *
-     * <p>This method is marked as @Beta and is useful for operations that need to process
+     * <p>This method is useful for operations that need to process
      * entire columns as units, such as column-wise statistics, transformations, or filtering
      * columns based on conditions.</p>
      *
@@ -3576,7 +3576,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * Returns a stream of IntStream objects for a range of columns.
      * Each IntStream in the result represents a complete column within the specified range.
      *
-     * <p>This method is marked as @Beta and allows for processing a subset of columns
+     * <p>This method allows for processing a subset of columns
      * while maintaining the ability to work with complete columns as individual streams.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -3595,8 +3595,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param toColumnIndex the ending column index (exclusive)
      * @return a Stream of IntStream objects for the specified column range,
      *         or an empty stream if the matrix is empty
-     * @throws IndexOutOfBoundsException if fromColumnIndex &lt; 0, toColumnIndex &gt; columnCount,
-     *         or fromColumnIndex &gt; toColumnIndex
+     * @throws IndexOutOfBoundsException if {@code fromColumnIndex < 0}, {@code toColumnIndex > columnCount},
+     *         or {@code fromColumnIndex > toColumnIndex}
      */
     @Override
     @Beta

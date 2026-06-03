@@ -46,8 +46,9 @@ import com.landawn.abacus.util.stream.Stream;
  * storage.</p>
  *
  * <p>{@code null} elements are permitted. {@link #equals(Object)} and {@link #hashCode()} use
- * value equality on elements (i.e. {@code Objects.equals}, with {@code null} equal only to
- * {@code null}), not reference identity.</p>
+ * value equality on elements via {@code N.deepEquals}/{@code N.deepHashCode} semantics
+ * ({@code null} equal only to {@code null}; array-typed elements are compared and hashed deeply
+ * by content), not reference identity.</p>
  *
  * <p>When a new backing array must be created, the implementation tracks either an explicit
  * target type or the runtime component type so array-typed results remain reifiable where
@@ -598,6 +599,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return the live internal row array
      * @throws IllegalArgumentException if {@code rowIndex} is negative or greater than or equal to {@code rowCount}
+     * @see #rowCopy(int)
      */
     @Override
     public T[] rowView(final int rowIndex) throws IllegalArgumentException {
@@ -2193,7 +2195,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     }
 
     /**
-     * Returns a new matrix that is this matrix rotated 180 degrees clockwise.
+     * Returns a new matrix that is this matrix rotated 180 degrees.
      * This is equivalent to flipping both horizontally and vertically, reversing the
      * order of all elements. The resulting matrix has the same dimensions as the original.
      * The original matrix is not modified.
@@ -2212,7 +2214,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * empty.rotate180().isEmpty();   // returns true
      * }</pre>
      *
-     * @return a new matrix that is this matrix rotated 180 degrees clockwise
+     * @return a new matrix that is this matrix rotated 180 degrees
      */
     @Override
     public Matrix<T> rotate180() {

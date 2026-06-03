@@ -2028,6 +2028,8 @@ public final class Matrices {
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if any argument is {@code null}
      * @throws E if the zip function throws an exception during execution
+     * @see #zip(Collection, Throwables.IntNFunction, Class)
+     * @see #zip(Collection, Throwables.IntBinaryOperator)
      */
     public static <R, E extends Exception> Matrix<R> zip(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction,
             final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E {
@@ -2093,6 +2095,8 @@ public final class Matrices {
      * @return a new {@link LongMatrix} with the combined values, never {@code null}
      * @throws IllegalArgumentException if the matrices have different shapes or if any argument is {@code null}
      * @throws E if the zip function throws an exception during execution
+     * @see #zipToLong(IntMatrix, IntMatrix, IntMatrix, Throwables.IntTriFunction)
+     * @see #zipToLong(Collection, Throwables.IntNFunction)
      */
     public static <E extends Exception> LongMatrix zipToLong(final IntMatrix a, final IntMatrix b, final Throwables.IntBiFunction<Long, E> zipFunction)
             throws E {
@@ -2148,6 +2152,8 @@ public final class Matrices {
      * @return a new {@link LongMatrix} with the combined values, never {@code null}
      * @throws IllegalArgumentException if the matrices have different shapes or if any argument is {@code null}
      * @throws E if the zip function throws an exception during execution
+     * @see #zipToLong(IntMatrix, IntMatrix, Throwables.IntBiFunction)
+     * @see #zipToLong(Collection, Throwables.IntNFunction)
      */
     public static <E extends Exception> LongMatrix zipToLong(final IntMatrix a, final IntMatrix b, final IntMatrix c,
             final Throwables.IntTriFunction<Long, E> zipFunction) throws IllegalArgumentException, E {
@@ -2319,6 +2325,8 @@ public final class Matrices {
      * @return a new {@link DoubleMatrix} with the combined values, never {@code null}
      * @throws IllegalArgumentException if the matrices have different shapes or if any argument is {@code null}
      * @throws E if the zip function throws an exception during execution
+     * @see #zipToDouble(IntMatrix, IntMatrix, IntMatrix, Throwables.IntTriFunction)
+     * @see #zipToDouble(Collection, Throwables.IntNFunction)
      */
     public static <E extends Exception> DoubleMatrix zipToDouble(final IntMatrix a, final IntMatrix b, final Throwables.IntBiFunction<Double, E> zipFunction)
             throws E {
@@ -2372,6 +2380,8 @@ public final class Matrices {
      * @return a new {@link DoubleMatrix} with the combined values, never {@code null}
      * @throws IllegalArgumentException if the matrices have different shapes or if any argument is {@code null}
      * @throws E if the zip function throws an exception during execution
+     * @see #zipToDouble(IntMatrix, IntMatrix, Throwables.IntBiFunction)
+     * @see #zipToDouble(Collection, Throwables.IntNFunction)
      */
     public static <E extends Exception> DoubleMatrix zipToDouble(final IntMatrix a, final IntMatrix b, final IntMatrix c,
             final Throwables.IntTriFunction<Double, E> zipFunction) throws IllegalArgumentException, E {
@@ -2398,7 +2408,8 @@ public final class Matrices {
      *
      * <p>This method combines an arbitrary number of integer matrices by applying a function that takes
      * an array of integers (one from each matrix at each position) and returns a {@code Double}.
-     * This is a convenience method that delegates with {@code shareIntermediateArray = false}.</p>
+     * This is a convenience method that calls {@link #zipToDouble(Collection, Throwables.IntNFunction, boolean)}
+     * with {@code shareIntermediateArray = false}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2669,7 +2680,8 @@ public final class Matrices {
      *
      * <p>This method combines an arbitrary number of long matrices by applying a function that takes
      * an array of longs (one from each matrix at each position) and produces a result of any type.
-     * This is a convenience method that delegates with {@code shareIntermediateArray = false}.</p>
+     * This is a convenience method that calls {@link #zip(Collection, Throwables.LongNFunction, boolean, Class)}
+     * with {@code shareIntermediateArray = false}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2903,7 +2915,8 @@ public final class Matrices {
      *
      * <p>This method combines an arbitrary number of long matrices by applying a function that takes
      * an array of longs (one from each matrix at each position) and returns a {@code Double}.
-     * This is a convenience method that delegates with {@code shareIntermediateArray = false}.</p>
+     * This is a convenience method that calls {@link #zipToDouble(Collection, Throwables.LongNFunction, boolean)}
+     * with {@code shareIntermediateArray = false}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3178,7 +3191,8 @@ public final class Matrices {
      *
      * <p>This method combines an arbitrary number of double matrices by applying a function that takes
      * an array of doubles (one from each matrix at each position) and produces a result of any type.
-     * This is a convenience method that delegates with {@code shareIntermediateArray = false}.</p>
+     * This is a convenience method that calls {@link #zip(Collection, Throwables.DoubleNFunction, boolean, Class)}
+     * with {@code shareIntermediateArray = false}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3549,7 +3563,8 @@ public final class Matrices {
      * @return a new {@link Matrix} of type T containing the combined results, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, if matrices have different shapes, or if {@code zipFunction} is {@code null}
      * @throws ArrayStoreException if {@code zipFunction} returns a value that is not assignable to the resolved common element type of the inputs
-     *         (use {@link #zip(Collection, Throwables.Function, Class)} with an explicit target type to avoid this)
+     *         (there is no binary-fold overload accepting an explicit target type; to control the result element type, use
+     *         {@link #zip(Collection, Throwables.Function, Class)}, which combines all per-cell values at once)
      * @throws E if the zip function throws an exception during execution
      * @see #zip(Matrix, Matrix, Throwables.BiFunction)
      * @see #zip(Collection, Throwables.Function, Class)
@@ -3786,8 +3801,7 @@ public final class Matrices {
      * {@link Object} is effectively returned.</p>
      *
      * @param <T> the resolved common element type
-     * @param matrices the matrices whose element types are reconciled; must be non-empty and
-     *        is indexed from {@code 0}
+     * @param matrices the matrices whose element types are reconciled; must be non-empty
      * @return the most specific element type assignable from every matrix's element type, never {@code null}
      * @see #resolveCommonAssignableType(Class, Class)
      */

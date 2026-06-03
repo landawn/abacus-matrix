@@ -724,7 +724,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return the specified row array (direct reference to internal storage)
-     * @throws IllegalArgumentException if rowIndex &lt; 0 or rowIndex &gt;= rowCount
+     * @throws IllegalArgumentException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      */
     @Override
     public byte[] rowView(final int rowIndex) throws IllegalArgumentException {
@@ -751,7 +751,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return a new byte array containing the values from the specified row
-     * @throws IllegalArgumentException if rowIndex &lt; 0 or rowIndex &gt;= rowCount
+     * @throws IllegalArgumentException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      */
     @Override
     public byte[] rowCopy(final int rowIndex) throws IllegalArgumentException {
@@ -781,7 +781,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * @param columnIndex the index of the column to retrieve (0-based)
      * @return a new array containing the values from the specified column
-     * @throws IllegalArgumentException if columnIndex &lt; 0 or columnIndex &gt;= columnCount
+     * @throws IllegalArgumentException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     @Override
     public byte[] columnCopy(final int columnIndex) throws IllegalArgumentException {
@@ -2014,7 +2014,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     }
 
     /**
-     * Returns a new matrix that is this matrix rotated 180 degrees clockwise.
+     * Returns a new matrix that is this matrix rotated 180 degrees.
      * The dimensions remain the same: a matrix with dimensions (rowCount x columnCount) stays (rowCount x columnCount).
      * This is equivalent to reversing both rows and columns.
      *
@@ -2372,7 +2372,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * }</pre>
      *
      * @return a new ByteList containing all elements in row-major order
-     * @throws IllegalStateException if the matrix is too large to flatten (rowCount * columnCount &gt; Integer.MAX_VALUE)
+     * @throws IllegalStateException if the matrix is too large to flatten ({@code rowCount * columnCount > Integer.MAX_VALUE})
      * @see #horizontalStream()
      */
     @Override
@@ -2676,7 +2676,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * ByteMatrix.empty().boxed().isEmpty();      // returns true
      * }</pre>
      *
-     * @return a new Matrix&lt;Byte&gt; with the same dimensions and values as this matrix
+     * @return a new {@code Matrix<Byte>} with the same dimensions and values as this matrix
      * @see #unbox(Matrix)
      */
     public Matrix<Byte> boxed() {
@@ -2959,7 +2959,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      * matrix.mainDiagonalStream().toArray();      // returns [1, 5, 9]
-     * matrix.mainDiagonalStream().sum();          // returns 15L
+     * matrix.mainDiagonalStream().sum();          // returns 15
      *
      * ByteMatrix.empty().mainDiagonalStream().count();   // returns 0L (empty allowed)
      *
@@ -3020,7 +3020,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      * matrix.antiDiagonalStream().toArray();      // returns [3, 5, 7]
-     * matrix.antiDiagonalStream().sum();          // returns 15L
+     * matrix.antiDiagonalStream().sum();          // returns 15
      *
      * ByteMatrix.empty().antiDiagonalStream().count();   // returns 0L (empty allowed)
      *
@@ -3221,8 +3221,6 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p>The order of elements is:
      * [0][0], [1][0], ..., [rowCount-1][0], [0][1], [1][1], ..., [rowCount-1][columnCount-1]
      * </p>
-     *
-     * <p><b>Note:</b> This method is marked as @Beta and may change in future versions.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3448,8 +3446,6 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p>Each ByteStream in the returned Stream represents one column of the matrix.
      * This is useful for column-wise operations or when you need to apply stream operations
      * to individual columns.
-     *
-     * <p><b>Note:</b> This method is marked as @Beta and may change in future versions.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

@@ -70,7 +70,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * }</pre>
      *
      * @param a the two-dimensional boolean array to wrap, or {@code null} for an empty matrix
-     * @throws IllegalArgumentException if {@code a} contains a {@code null} row or rows of differing lengths
+     * @throws IllegalArgumentException if {@code a} has rows of differing lengths
      */
     public BooleanMatrix(final boolean[][] a) {
         super(a == null ? new boolean[0][0] : a, boolean.class);
@@ -117,7 +117,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * @param a the two-dimensional boolean array to wrap; may be {@code null} or empty, in which case the empty matrix singleton is returned
      * @return a new {@code BooleanMatrix} backed by {@code a}, or the empty {@code BooleanMatrix} if {@code a} is {@code null} or empty
-     * @throws IllegalArgumentException if {@code a} contains a {@code null} row or rows of differing lengths
+     * @throws IllegalArgumentException if {@code a} has rows of differing lengths
      */
     public static BooleanMatrix of(final boolean[]... a) {
         return N.isEmpty(a) ? EMPTY_BOOLEAN_MATRIX : new BooleanMatrix(a);
@@ -1093,6 +1093,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param mapper the function that receives row index and column index (0-based) and returns
      *             the new value for that position
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
+     * @throws NullPointerException if {@code mapper} returns {@code null} for any position
      * @throws E if the mapper throws an exception
      */
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Boolean, E> mapper) throws E {
@@ -1941,7 +1942,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Returns a new matrix that is this matrix rotated 180 degrees clockwise.
+     * Returns a new matrix that is this matrix rotated 180 degrees.
      * This is equivalent to flipping both horizontally and vertically, reversing the
      * order of all elements. The resulting matrix has the same dimensions as the original.
      * Creates a new matrix; the original matrix is not modified.
@@ -1962,7 +1963,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * BooleanMatrix.of(new boolean[3][0]).rotate180().columnCount();   // returns 0
      * }</pre>
      *
-     * @return a new matrix rotated 180 degrees clockwise
+     * @return a new matrix rotated 180 degrees
      */
     @Override
     public BooleanMatrix rotate180() {
@@ -2741,7 +2742,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * are combined using the provided function to produce the result matrix.
      *
      * <p>This is useful for operations that combine three matrices, such as majority vote,
-     * conditional selection, or mathematical formulas involving three variables.</p>
+     * conditional selection, or other three-operand logical expressions.</p>
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance.
      * Creates a new matrix; the original matrices are not modified.</p>
@@ -3102,8 +3103,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * Elements are streamed column by column from top to bottom, starting from
      * the leftmost column and proceeding to the rightmost column.
      *
-     * <p>This method is marked as @Beta, indicating it may be subject to change
-     * in future versions. It provides an alternative way to iterate through matrix
+     * <p>This method provides an alternative way to iterate through matrix
      * elements compared to the row-major order of horizontalStream().</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -3159,7 +3159,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * Elements are streamed column by column from the starting column (inclusive)
      * to the ending column (exclusive), with each column streamed from top to bottom.
      *
-     * <p>This method is marked as @Beta and allows for efficient processing of a
+     * <p>This method allows for efficient processing of a
      * subset of matrix columns in column-major order.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -3265,7 +3265,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Returns a stream of Stream&lt;Boolean&gt; objects, where each inner stream represents a complete row.
+     * Returns a stream of {@code Stream<Boolean>} objects, where each inner stream represents a complete row.
      * This creates a stream of streams, allowing for row-by-row processing of the matrix.
      *
      * <p>This method is useful for operations that need to process entire rows as units,
@@ -3299,7 +3299,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Returns a stream of Stream&lt;Boolean&gt; objects for a range of rows.
+     * Returns a stream of {@code Stream<Boolean>} objects for a range of rows.
      * Each inner stream in the result represents a complete row within the specified range.
      *
      * <p>This method allows for processing a subset of rows while maintaining the
@@ -3368,10 +3368,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Returns a stream of Stream&lt;Boolean&gt; objects, where each inner stream represents a complete column.
+     * Returns a stream of {@code Stream<Boolean>} objects, where each inner stream represents a complete column.
      * This creates a stream of streams, allowing for column-by-column processing of the matrix.
      *
-     * <p>This method is marked as @Beta and is useful for operations that need to process
+     * <p>This method is useful for operations that need to process
      * entire columns as units, such as column-wise statistics, transformations, or filtering
      * columns based on conditions.</p>
      *
@@ -3404,10 +3404,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Returns a stream of Stream&lt;Boolean&gt; objects for a range of columns.
+     * Returns a stream of {@code Stream<Boolean>} objects for a range of columns.
      * Each inner stream in the result represents a complete column within the specified range.
      *
-     * <p>This method is marked as @Beta and allows for processing a subset of columns
+     * <p>This method allows for processing a subset of columns
      * while maintaining the ability to work with complete columns as individual streams.</p>
      *
      * <p><b>Usage Examples:</b></p>

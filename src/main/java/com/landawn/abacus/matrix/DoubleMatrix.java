@@ -216,7 +216,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @param a the two-dimensional long array to convert to a double matrix, or {@code null}/empty for an empty matrix
-     * @return a new DoubleMatrix with converted values, or an empty DoubleMatrix if input is {@code null} or empty
+     * @return a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if input is {@code null} or empty
      * @throws IllegalArgumentException if any row is {@code null} or if rows have different lengths (non-rectangular array)
      */
     public static DoubleMatrix from(final long[]... a) {
@@ -273,7 +273,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @param a the two-dimensional float array to convert to a double matrix, or {@code null}/empty for an empty matrix
-     * @return a new DoubleMatrix with converted values, or an empty DoubleMatrix if input is {@code null} or empty
+     * @return a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if input is {@code null} or empty
      * @throws IllegalArgumentException if any row is {@code null} or if rows have different lengths (non-rectangular array)
      */
     public static DoubleMatrix from(final float[]... a) {
@@ -775,7 +775,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return the specified row array (direct reference to internal storage)
-     * @throws IllegalArgumentException if rowIndex &lt; 0 or rowIndex &gt;= rowCount
+     * @throws IllegalArgumentException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      */
     @Override
     public double[] rowView(final int rowIndex) throws IllegalArgumentException {
@@ -804,7 +804,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return a new double array containing the values from the specified row
-     * @throws IllegalArgumentException if rowIndex &lt; 0 or rowIndex &gt;= rowCount
+     * @throws IllegalArgumentException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      */
     @Override
     public double[] rowCopy(final int rowIndex) throws IllegalArgumentException {
@@ -836,7 +836,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * @param columnIndex the index of the column to retrieve (0-based)
      * @return a new array containing the values from the specified column
-     * @throws IllegalArgumentException if columnIndex &lt; 0 or columnIndex &gt;= columnCount
+     * @throws IllegalArgumentException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     @Override
     public double[] columnCopy(final int columnIndex) throws IllegalArgumentException {
@@ -1460,7 +1460,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     }
 
     /**
-     * Creates a new object Matrix by applying the specified function to each element of this matrix.
+     * Creates a new {@code Matrix<R>} by applying the specified function to each element of this matrix.
      * The original matrix is not modified. Each double element is independently converted to an object
      * of type T by the function, and the results are collected into a new Matrix with the same dimensions.
      * The operation may be performed in parallel for large matrices to improve performance.
@@ -1481,7 +1481,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param <E> the exception type that the function may throw
      * @param mapper the mapping function that converts each double element to type R; must not be {@code null}
      * @param targetElementType the class object representing the target element type (used for array creation); must not be {@code null}
-     * @return a new Matrix&lt;R&gt; with the mapped values (same dimensions as the original)
+     * @return a new {@code Matrix<R>} with the mapped values (same dimensions as the original)
      * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null}
      * @throws E if the function throws an exception
      */
@@ -1686,7 +1686,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param toColumnIndex the ending column index (exclusive)
      * @return a new DoubleMatrix containing the specified region with dimensions
      *         (toRowIndex - fromRowIndex) × (toColumnIndex - fromColumnIndex)
-     * @throws IndexOutOfBoundsException if any index is out of bounds, fromRowIndex &gt; toRowIndex, or fromColumnIndex &gt; toColumnIndex
+     * @throws IndexOutOfBoundsException if any index is out of bounds, {@code fromRowIndex > toRowIndex}, or {@code fromColumnIndex > toColumnIndex}
      */
     @Override
     public DoubleMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex)
@@ -2161,7 +2161,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     }
 
     /**
-     * Returns a new matrix that is this matrix rotated 180 degrees clockwise.
+     * Returns a new matrix that is this matrix rotated 180 degrees.
      * This is equivalent to flipping both horizontally and vertically, reversing the
      * order of all elements. The resulting matrix has the same dimensions as the original.
      * The original matrix is not modified.
@@ -2179,7 +2179,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * empty.isEmpty();             // returns true
      * }</pre>
      *
-     * @return a new matrix that is this matrix rotated 180 degrees clockwise
+     * @return a new matrix that is this matrix rotated 180 degrees
      */
     @Override
     public DoubleMatrix rotate180() {
@@ -2788,7 +2788,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * emptyBoxed.isEmpty();        // returns true
      * }</pre>
      *
-     * @return a new Matrix&lt;Double&gt; containing boxed Double values (same dimensions as the original)
+     * @return a new {@code Matrix<Double>} containing boxed Double values (same dimensions as the original)
      * @see #unbox(Matrix)
      */
     public Matrix<Double> boxed() {
@@ -3234,7 +3234,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * @param rowIndex the index of the row to stream (0-based)
      * @return a DoubleStream of elements in the specified row, from left to right
-     * @throws IndexOutOfBoundsException if rowIndex &lt; 0 or rowIndex &gt;= rowCount
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      */
     @Override
     public DoubleStream horizontalStream(final int rowIndex) {
@@ -3263,7 +3263,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param fromRowIndex the starting row index (inclusive, 0-based)
      * @param toRowIndex the ending row index (exclusive)
      * @return a DoubleStream of elements in the specified row range, or an empty stream if the matrix is empty
-     * @throws IndexOutOfBoundsException if fromRowIndex &lt; 0, toRowIndex &gt; rowCount, or fromRowIndex &gt; toRowIndex
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount}, or {@code fromRowIndex > toRowIndex}
      */
     @Override
     public DoubleStream horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
@@ -3728,10 +3728,10 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @param <E> the type of exception that the action may throw
-     * @param fromRowIndex the starting row index (inclusive, 0-based, must be &gt;= 0 and &lt;= toRowIndex)
-     * @param toRowIndex the ending row index (exclusive, must be &gt;= fromRowIndex and &lt;= rowCount)
-     * @param fromColumnIndex the starting column index (inclusive, 0-based, must be &gt;= 0 and &lt;= toColumnIndex)
-     * @param toColumnIndex the ending column index (exclusive, must be &gt;= fromColumnIndex and &lt;= columnCount)
+     * @param fromRowIndex the starting row index (inclusive, 0-based, must be {@code >= 0} and {@code <= toRowIndex})
+     * @param toRowIndex the ending row index (exclusive, must be {@code >= fromRowIndex} and {@code <= rowCount})
+     * @param fromColumnIndex the starting column index (inclusive, 0-based, must be {@code >= 0} and {@code <= toColumnIndex})
+     * @param toColumnIndex the ending column index (exclusive, must be {@code >= fromColumnIndex} and {@code <= columnCount})
      * @param action the action to perform on each element in the sub-region; must not be {@code null}
      * @throws IndexOutOfBoundsException if the indices are out of bounds or invalid
      * @throws IllegalArgumentException if {@code action} is {@code null}

@@ -377,7 +377,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * backing storage and can be aliased directly. A column is interleaved across rows
      * and cannot be returned as a live, single-array view without either copying or
      * synthesising a wrapper. {@code columnCopy} is the supported accessor; for
-     * iteration without materialising a copy use {@link #verticalStream(int)}.</p>
+     * element-by-element iteration over a column use {@link #verticalStream(int)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -509,19 +509,20 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *   <li>Object matrices display using the {@code toString()} method of elements</li>
      * </ul>
      *
-     * <p><b>Usage Examples:</b></p>
+     * <p><b>Usage Examples:</b> (the exact rendering is implementation-defined; the strings below are
+     * only an illustration of one possible format)</p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * matrix.println();                                        // prints and returns "[1, 2]\n[3, 4]"
+     * matrix.println();                                        // prints and returns something such as "[1, 2]\n[3, 4]"
      *
      * IntMatrix single = IntMatrix.of(new int[][] {{1, 2, 3}});
-     * single.println();                                        // prints and returns "[1, 2, 3]"
+     * single.println();                                        // for example "[1, 2, 3]"
      *
      * IntMatrix empty = IntMatrix.of(new int[0][0]);
-     * empty.println();                                         // prints and returns "[]"
+     * empty.println();                                         // for example "[]"
      *
      * IntMatrix rowsNoCols = IntMatrix.of(new int[2][0]);
-     * rowsNoCols.println();                                    // prints and returns "[]\n[]" (two empty rows)
+     * rowsNoCols.println();                                    // for example "[]\n[]" (two empty rows)
      * }</pre>
      *
      * @return the formatted string representation of the matrix that was printed to standard output
@@ -886,11 +887,11 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * matrix.repeatElements(2, 0);                           // throws IllegalArgumentException (columnRepeats < 1)
      * }</pre>
      *
-     * @param rowRepeats number of times to repeat each element in the row direction (must be &gt;= 1)
-     * @param columnRepeats number of times to repeat each element in the column direction (must be &gt;= 1)
+     * @param rowRepeats number of times to repeat each element in the row direction (must be positive)
+     * @param columnRepeats number of times to repeat each element in the column direction (must be positive)
      * @return a new matrix with repeated elements, with dimensions
      *         {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}
-     * @throws IllegalArgumentException if {@code rowRepeats < 1} or {@code columnRepeats < 1},
+     * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is not positive,
      *         or if either resulting dimension would overflow {@code Integer.MAX_VALUE}
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">MATLAB repelem function</a>
      */
@@ -920,11 +921,11 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * matrix.repeatMatrix(2, 0);                            // throws IllegalArgumentException (columnRepeats < 1)
      * }</pre>
      *
-     * @param rowRepeats number of times to repeat the matrix in the row direction (must be &gt;= 1)
-     * @param columnRepeats number of times to repeat the matrix in the column direction (must be &gt;= 1)
+     * @param rowRepeats number of times to repeat the matrix in the row direction (must be positive)
+     * @param columnRepeats number of times to repeat the matrix in the column direction (must be positive)
      * @return a new matrix with this matrix tiled, with dimensions
      *         {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}
-     * @throws IllegalArgumentException if {@code rowRepeats < 1} or {@code columnRepeats < 1},
+     * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is not positive,
      *         or if either resulting dimension would overflow {@code Integer.MAX_VALUE}
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
@@ -953,10 +954,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * matrix.extend(-1, 0, 0, 0);                           // throws IllegalArgumentException (negative pad)
      * }</pre>
      *
-     * @param padTop number of rows to add above the matrix (must be &gt;= 0)
-     * @param padBottom number of rows to add below the matrix (must be &gt;= 0)
-     * @param padLeft number of columns to add to the left of the matrix (must be &gt;= 0)
-     * @param padRight number of columns to add to the right of the matrix (must be &gt;= 0)
+     * @param padTop number of rows to add above the matrix (must be {@code >= 0})
+     * @param padBottom number of rows to add below the matrix (must be {@code >= 0})
+     * @param padLeft number of columns to add to the left of the matrix (must be {@code >= 0})
+     * @param padRight number of columns to add to the right of the matrix (must be {@code >= 0})
      * @return a new matrix grown by the specified pad widths, with new cells filled with the type's default value
      * @throws IllegalArgumentException if any pad value is negative or if the resulting dimensions overflow {@code Integer.MAX_VALUE}
      */
@@ -1165,7 +1166,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * }</pre>
      *
      * @param <E> the type of exception that the operation might throw
-     * @param action the operation to apply to the flattened array (receives array type A, not A[])
+     * @param action the operation to apply to the one-dimensional flattened array (for example {@code int[]} for {@code IntMatrix})
      * @throws E if the operation throws an exception
      */
     public abstract <E extends Exception> void mutateAsFlat(Throwables.Consumer<? super A, E> action) throws E;
@@ -1540,7 +1541,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
     /**
      * Returns a stream of points along the anti-diagonal (upper-right to lower-left).
-     * The anti-diagonal consists of elements where row index + column index equals (columnCount - 1).
+     * The anti-diagonal consists of the elements where {@code rowIndex + columnIndex == rowCount - 1} (the matrix is square).
      * The matrix must be square (rowCount == columnCount) for this operation.
      *
      * <p>The anti-diagonal runs from the upper-right corner to the lower-left corner.</p>
@@ -1712,7 +1713,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * @param rowIndex the row index (0-based)
      * @return a stream of {@link Point} objects for all columns in the specified row
-     * @throws IndexOutOfBoundsException if rowIndex &lt; 0 or rowIndex &gt;= rowCount
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      */
     public Stream<Point> horizontalPoints(final int rowIndex) {
         return horizontalPoints(rowIndex, rowIndex + 1);
@@ -1739,7 +1740,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param fromRowIndex the starting row index (inclusive, 0-based)
      * @param toRowIndex the ending row index (exclusive)
      * @return a stream of {@link Point} objects in the specified row range, in row-major order
-     * @throws IndexOutOfBoundsException if fromRowIndex &lt; 0, toRowIndex &gt; rowCount, or fromRowIndex &gt; toRowIndex
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount}, or {@code fromRowIndex > toRowIndex}
      */
     @SuppressWarnings("resource")
     public Stream<Point> horizontalPoints(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
@@ -1793,7 +1794,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * @param columnIndex the column index (0-based)
      * @return a stream of {@link Point} objects for all rows in the specified column
-     * @throws IndexOutOfBoundsException if columnIndex &lt; 0 or columnIndex &gt;= columnCount
+     * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     public Stream<Point> verticalPoints(final int columnIndex) {
         return verticalPoints(columnIndex, columnIndex + 1);
@@ -1820,7 +1821,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @return a stream of {@link Point} objects in the specified column range, in column-major order
-     * @throws IndexOutOfBoundsException if fromColumnIndex &lt; 0, toColumnIndex &gt; columnCount, or fromColumnIndex &gt; toColumnIndex
+     * @throws IndexOutOfBoundsException if {@code fromColumnIndex < 0}, {@code toColumnIndex > columnCount}, or {@code fromColumnIndex > toColumnIndex}
      */
     @SuppressWarnings("resource")
     public Stream<Point> verticalPoints(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
@@ -1877,7 +1878,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param fromRowIndex the starting row index (inclusive, 0-based)
      * @param toRowIndex the ending row index (exclusive)
      * @return a stream of streams, where each inner stream contains {@link Point} objects for one row
-     * @throws IndexOutOfBoundsException if fromRowIndex &lt; 0, toRowIndex &gt; rowCount, or fromRowIndex &gt; toRowIndex
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount}, or {@code fromRowIndex > toRowIndex}
      */
     @SuppressWarnings("resource")
     public Stream<Stream<Point>> rowPoints(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
@@ -1934,7 +1935,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @return a stream of streams, where each inner stream contains {@link Point} objects for one column
-     * @throws IndexOutOfBoundsException if fromColumnIndex &lt; 0, toColumnIndex &gt; columnCount, or fromColumnIndex &gt; toColumnIndex
+     * @throws IndexOutOfBoundsException if {@code fromColumnIndex < 0}, {@code toColumnIndex > columnCount}, or {@code fromColumnIndex > toColumnIndex}
      */
     @SuppressWarnings("resource")
     public Stream<Stream<Point>> columnPoints(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
@@ -1971,7 +1972,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
     /**
      * Returns a stream of elements along the anti-diagonal (upper-right to lower-left).
-     * The anti-diagonal consists of elements where row index + column index equals (columnCount - 1).
+     * The anti-diagonal consists of the elements where {@code rowIndex + columnIndex == rowCount - 1} (the matrix is square).
      * The matrix must be square (rowCount == columnCount) for this operation.
      *
      * <p>The anti-diagonal runs from the upper-right corner to the lower-left corner.</p>
@@ -2035,7 +2036,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * @param rowIndex the row index (0-based)
      * @return a stream of elements in the specified row
-     * @throws IndexOutOfBoundsException if rowIndex &lt; 0 or rowIndex &gt;= rowCount
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      */
     public abstract ES horizontalStream(final int rowIndex);
 
@@ -2058,7 +2059,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param fromRowIndex the starting row index (inclusive, 0-based)
      * @param toRowIndex the ending row index (exclusive)
      * @return a stream of elements in the specified row range
-     * @throws IndexOutOfBoundsException if fromRowIndex &lt; 0, toRowIndex &gt; rowCount, or fromRowIndex &gt; toRowIndex
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount}, or {@code fromRowIndex > toRowIndex}
      */
     public abstract ES horizontalStream(final int fromRowIndex, final int toRowIndex);
 
@@ -2103,7 +2104,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * @param columnIndex the column index (0-based)
      * @return a stream of elements in the specified column
-     * @throws IndexOutOfBoundsException if columnIndex &lt; 0 or columnIndex &gt;= columnCount
+     * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     public abstract ES verticalStream(final int columnIndex);
 
@@ -2126,7 +2127,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @return a stream of elements in the specified column range
-     * @throws IndexOutOfBoundsException if fromColumnIndex &lt; 0, toColumnIndex &gt; columnCount, or fromColumnIndex &gt; toColumnIndex
+     * @throws IndexOutOfBoundsException if {@code fromColumnIndex < 0}, {@code toColumnIndex > columnCount}, or {@code fromColumnIndex > toColumnIndex}
      */
     public abstract ES verticalStream(final int fromColumnIndex, final int toColumnIndex);
 
@@ -2177,7 +2178,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param fromRowIndex the starting row index (inclusive, 0-based)
      * @param toRowIndex the ending row index (exclusive)
      * @return a stream of row streams for the specified range
-     * @throws IndexOutOfBoundsException if fromRowIndex &lt; 0, toRowIndex &gt; rowCount, or fromRowIndex &gt; toRowIndex
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount}, or {@code fromRowIndex > toRowIndex}
      */
     public abstract RS rowStreams(final int fromRowIndex, final int toRowIndex);
 
@@ -2228,7 +2229,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @return a stream of column streams for the specified range
-     * @throws IndexOutOfBoundsException if fromColumnIndex &lt; 0, toColumnIndex &gt; columnCount, or fromColumnIndex &gt; toColumnIndex
+     * @throws IndexOutOfBoundsException if {@code fromColumnIndex < 0}, {@code toColumnIndex > columnCount}, or {@code fromColumnIndex > toColumnIndex}
      */
     public abstract RS columnStreams(final int fromColumnIndex, final int toColumnIndex);
 
@@ -2282,7 +2283,6 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
      * long count = matrix.apply(AbstractMatrix::elementCount);               // count == 6L
-     * matrix.apply(AbstractMatrix::elementCount);                            // returns 6L
      * matrix.apply(m -> "Matrix " + m.rowCount() + "x" + m.columnCount());   // returns "Matrix 2x3"
      *
      * // Transform matrix into a different representation

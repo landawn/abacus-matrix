@@ -671,7 +671,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return the specified row array (direct reference to internal storage)
-     * @throws IllegalArgumentException if rowIndex &lt; 0 or rowIndex &gt;= rowCount
+     * @throws IllegalArgumentException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      */
     @Override
     public short[] rowView(final int rowIndex) throws IllegalArgumentException {
@@ -697,7 +697,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return a new short array containing the values from the specified row
-     * @throws IllegalArgumentException if rowIndex &lt; 0 or rowIndex &gt;= rowCount
+     * @throws IllegalArgumentException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      * @see #rowView(int)
      */
     @Override
@@ -727,7 +727,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param columnIndex the index of the column to retrieve (0-based)
      * @return a new array containing the values from the specified column
-     * @throws IllegalArgumentException if columnIndex &lt; 0 or columnIndex &gt;= columnCount
+     * @throws IllegalArgumentException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     @Override
     public short[] columnCopy(final int columnIndex) throws IllegalArgumentException {
@@ -1343,11 +1343,11 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * matrix.fill(4, 0, new short[][] {{1}});          // throws IllegalArgumentException (destRowIndex > rowCount)
      * }</pre>
      *
-     * @param destRowIndex the target row index in this matrix (0-based, must be 0 &lt;= destRowIndex &lt;= rowCount)
-     * @param destColumnIndex the target column index in this matrix (0-based, must be 0 &lt;= destColumnIndex &lt;= columnCount)
+     * @param destRowIndex the target row index in this matrix (0-based, must be {@code 0 <= destRowIndex <= rowCount})
+     * @param destColumnIndex the target column index in this matrix (0-based, must be {@code 0 <= destColumnIndex <= columnCount})
      * @param source the source array to copy values from; must not be {@code null}
-     * @throws IllegalArgumentException if {@code source} is {@code null}, if destRowIndex &lt; 0 or &gt; rowCount,
-     *         or if destColumnIndex &lt; 0 or &gt; columnCount
+     * @throws IllegalArgumentException if {@code source} is {@code null}, if {@code destRowIndex < 0} or {@code destRowIndex > rowCount},
+     *         or if {@code destColumnIndex < 0} or {@code destColumnIndex > columnCount}
      */
     public void fill(final int destRowIndex, final int destColumnIndex, final short[][] source) throws IllegalArgumentException {
         N.checkArgNotNull(source, "source");
@@ -1415,7 +1415,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param fromRowIndex the starting row index (inclusive, 0-based)
      * @param toRowIndex the ending row index (exclusive)
      * @return a new ShortMatrix containing an independent copy of the specified rows
-     * @throws IndexOutOfBoundsException if fromRowIndex &lt; 0, toRowIndex &gt; rowCount, or fromRowIndex &gt; toRowIndex
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount}, or {@code fromRowIndex > toRowIndex}
      */
     @Override
     public ShortMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
@@ -1453,7 +1453,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @return a new ShortMatrix containing an independent copy of the specified rectangular region
-     * @throws IndexOutOfBoundsException if any index is out of bounds or fromIndex &gt; toIndex
+     * @throws IndexOutOfBoundsException if any index is out of bounds or {@code fromIndex > toIndex}
      */
     @Override
     public ShortMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
@@ -2990,7 +2990,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param fromRowIndex the starting row index (inclusive, 0-based)
      * @param toRowIndex the ending row index (exclusive)
      * @return a ShortStream of elements from the specified row range in row-major order
-     * @throws IndexOutOfBoundsException if the row indices are out of bounds or fromRowIndex &gt; toRowIndex
+     * @throws IndexOutOfBoundsException if the row indices are out of bounds or {@code fromRowIndex > toRowIndex}
      */
     @Override
     public ShortStream horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
@@ -3134,7 +3134,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @return a ShortStream of elements from the specified column range in column-major order
-     * @throws IndexOutOfBoundsException if the column indices are out of bounds or fromColumnIndex &gt; toColumnIndex
+     * @throws IndexOutOfBoundsException if the column indices are out of bounds or {@code fromColumnIndex > toColumnIndex}
      */
     @Override
     @Beta
@@ -3255,7 +3255,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param fromRowIndex the starting row index (inclusive, 0-based)
      * @param toRowIndex the ending row index (exclusive)
      * @return a Stream of ShortStream objects for rows in the specified range
-     * @throws IndexOutOfBoundsException if the row indices are out of bounds or fromRowIndex &gt; toRowIndex
+     * @throws IndexOutOfBoundsException if the row indices are out of bounds or {@code fromRowIndex > toRowIndex}
      */
     @Override
     public Stream<ShortStream> rowStreams(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
@@ -3341,7 +3341,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @return a Stream of ShortStream objects for columns in the specified range
-     * @throws IndexOutOfBoundsException if the column indices are out of bounds or fromColumnIndex &gt; toColumnIndex
+     * @throws IndexOutOfBoundsException if the column indices are out of bounds or {@code fromColumnIndex > toColumnIndex}
      */
     @Override
     @Beta
@@ -3485,8 +3485,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @param action the consumer to apply to each element in the region
+     * @throws IndexOutOfBoundsException if any index is out of bounds or {@code fromIndex > toIndex}
      * @throws IllegalArgumentException if {@code action} is {@code null}
-     * @throws IndexOutOfBoundsException if any index is out of bounds or fromIndex &gt; toIndex
      * @throws E if the action throws an exception
      */
     public <E extends Exception> void forEach(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
