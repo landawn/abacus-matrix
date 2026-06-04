@@ -3740,6 +3740,20 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * array-typed element (for example a {@code Matrix<int[]>}) is hashed deeply by content. Matrices that
      * compare equal via {@link #equals(Object)} are guaranteed to produce the same hash code.
      *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * Matrix<Integer> m1 = Matrix.of(new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> m2 = Matrix.of(new Integer[][] {{1, 2}, {3, 4}});
+     * m1.hashCode() == m2.hashCode();                         // returns true  (equal matrices, same hash)
+     * m1.hashCode();                                          // returns 32833
+     *
+     * Matrix<Integer> m3 = Matrix.of(new Integer[][] {{1, 2}, {3, 5}});
+     * m1.hashCode() == m3.hashCode();                         // returns false (different content, different hash)
+     *
+     * Matrix.empty().hashCode();                              // returns 1     (empty matrix)
+     * Matrix.of(new String[][] {{null}}).hashCode();          // returns 62    (null element contributes 0 per element)
+     * }</pre>
+     *
      * @return a hash code value for this matrix
      */
     @Override

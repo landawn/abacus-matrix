@@ -1135,7 +1135,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * matrix.replaceIf(x -> x > 3.0f, 99.0f);   // matrix is now [[0.0f, 2.0f, 0.0f], [99.0f, 0.0f, 99.0f]]
      * matrix.get(1, 0);                         // returns 99.0f
      *
-     * // NaN edge case: ordering comparisons fail on NaN, so use Float.isNaN to match it
+     * // NaN note: ordering comparisons fail on NaN, so use Float.isNaN to match it
      * FloatMatrix nans = FloatMatrix.of(new float[][] {{Float.NaN, 1.0f}});
      * nans.replaceIf(x -> Float.isNaN(x), 0.0f);   // NaN cell replaced with 0.0f
      * nans.get(0, 0);                              // returns 0.0f
