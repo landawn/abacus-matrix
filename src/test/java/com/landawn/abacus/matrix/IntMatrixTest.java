@@ -6463,6 +6463,13 @@ class IntMatrixTest extends TestBase {
                 Matrices.setParallelMode(prev);
             }
         }
+
+        @Test
+        public void testSetDiagonal_nullArraysOnEmptyMatrixThrow() {
+            IntMatrix m = IntMatrix.empty();
+            assertThrows(IllegalArgumentException.class, () -> m.setMainDiagonal(null));
+            assertThrows(IllegalArgumentException.class, () -> m.setAntiDiagonal(null));
+        }
     }
 
 }

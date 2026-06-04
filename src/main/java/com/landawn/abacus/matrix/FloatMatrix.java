@@ -907,6 +907,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     @Override
     public void setMainDiagonal(final float[] mainDiagonal) throws IllegalStateException, IllegalArgumentException {
         checkIsSquare();
+        N.checkArgNotNull(mainDiagonal, "mainDiagonal");
         N.checkArgument(N.len(mainDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(mainDiagonal));
 
         for (int i = 0; i < rowCount; i++) {
@@ -1007,6 +1008,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     @Override
     public void setAntiDiagonal(final float[] antiDiagonal) throws IllegalStateException, IllegalArgumentException {
         checkIsSquare();
+        N.checkArgNotNull(antiDiagonal, "antiDiagonal");
         N.checkArgument(N.len(antiDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(antiDiagonal));
 
         for (int i = 0; i < rowCount; i++) {

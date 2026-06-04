@@ -884,6 +884,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     @Override
     public void setMainDiagonal(final T[] mainDiagonal) throws IllegalStateException, IllegalArgumentException {
         checkIsSquare();
+        N.checkArgNotNull(mainDiagonal, "mainDiagonal");
         N.checkArgument(N.len(mainDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(mainDiagonal));
 
         for (int i = 0; i < rowCount; i++) {
@@ -993,6 +994,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     @Override
     public void setAntiDiagonal(final T[] antiDiagonal) throws IllegalStateException, IllegalArgumentException {
         checkIsSquare();
+        N.checkArgNotNull(antiDiagonal, "antiDiagonal");
         N.checkArgument(N.len(antiDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(antiDiagonal));
 
         for (int i = 0; i < rowCount; i++) {
@@ -1069,12 +1071,14 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     public <E extends Exception> void updateAll(final Throwables.UnaryOperator<T, E> operator) throws E {
         N.checkArgNotNull(operator, "operator");
-        final Throwables.IntBiConsumer<E> operation = (i, j) -> {
-            final T updated = operator.apply(a[i][j]);
-            a[i][j] = updated;
-        };
-        // Must be sequential because ensureRowCanStore mutates shared matrix metadata/storage.
-        Matrices.forEachIndices(rowCount, columnCount, operation, false);
+
+        for (int i = 0; i < rowCount; i++) {
+            final T[] currentRow = a[i];
+
+            for (int j = 0; j < columnCount; j++) {
+                currentRow[j] = operator.apply(currentRow[j]);
+            }
+        }
     }
 
     /**
@@ -1108,13 +1112,14 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends T, E> mapper) throws E {
         N.checkArgNotNull(mapper, "mapper");
-        final Throwables.IntBiConsumer<E> operation = (i, j) -> {
-            final T updated = mapper.apply(i, j);
-            a[i][j] = updated;
-        };
 
-        // Must be sequential because ensureRowCanStore mutates shared matrix metadata/storage.
-        Matrices.forEachIndices(rowCount, columnCount, operation, false);
+        for (int i = 0; i < rowCount; i++) {
+            final T[] currentRow = a[i];
+
+            for (int j = 0; j < columnCount; j++) {
+                currentRow[j] = mapper.apply(i, j);
+            }
+        }
     }
 
     /**
@@ -1149,13 +1154,16 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     public <E extends Exception> void replaceIf(final Throwables.Predicate<? super T, E> predicate, final T newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
-        final Throwables.IntBiConsumer<E> operation = (i, j) -> {
-            if (predicate.test(a[i][j])) {
-                a[i][j] = newValue;
+
+        for (int i = 0; i < rowCount; i++) {
+            final T[] currentRow = a[i];
+
+            for (int j = 0; j < columnCount; j++) {
+                if (predicate.test(currentRow[j])) {
+                    currentRow[j] = newValue;
+                }
             }
-        };
-        // Must be sequential because ensureRowCanStore mutates shared matrix metadata/storage.
-        Matrices.forEachIndices(rowCount, columnCount, operation, false);
+        }
     }
 
     /**
@@ -1187,13 +1195,16 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final T newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
-        final Throwables.IntBiConsumer<E> operation = (i, j) -> {
-            if (predicate.test(i, j)) {
-                a[i][j] = newValue;
+
+        for (int i = 0; i < rowCount; i++) {
+            final T[] currentRow = a[i];
+
+            for (int j = 0; j < columnCount; j++) {
+                if (predicate.test(i, j)) {
+                    currentRow[j] = newValue;
+                }
             }
-        };
-        // Must be sequential because ensureRowCanStore mutates shared matrix metadata/storage.
-        Matrices.forEachIndices(rowCount, columnCount, operation, false);
+        }
     }
 
     /**

@@ -1006,6 +1006,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     @Override
     public void setMainDiagonal(final long[] mainDiagonal) throws IllegalStateException, IllegalArgumentException {
         checkIsSquare();
+        N.checkArgNotNull(mainDiagonal, "mainDiagonal");
         N.checkArgument(N.len(mainDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(mainDiagonal));
 
         for (int i = 0; i < rowCount; i++) {
@@ -1108,6 +1109,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     @Override
     public void setAntiDiagonal(final long[] antiDiagonal) throws IllegalStateException, IllegalArgumentException {
         checkIsSquare();
+        N.checkArgNotNull(antiDiagonal, "antiDiagonal");
         N.checkArgument(N.len(antiDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(antiDiagonal));
 
         for (int i = 0; i < rowCount; i++) {

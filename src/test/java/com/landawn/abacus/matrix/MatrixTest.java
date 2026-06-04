@@ -7318,5 +7318,52 @@ class MatrixTest extends TestBase {
             assertEquals(m1, m2); // equals is deep (content-based)
             assertEquals(m1.hashCode(), m2.hashCode()); // hashCode is consistently deep
         }
+
+        @Test
+        public void testSetDiagonal_nullArraysOnEmptyMatrixThrow() {
+            Matrix<Object> m = Matrix.empty();
+            assertThrows(IllegalArgumentException.class, () -> m.setMainDiagonal(null));
+            assertThrows(IllegalArgumentException.class, () -> m.setAntiDiagonal(null));
+        }
+
+        @Test
+        public void testUpdateAllUnary_tallMatrixTraversesRowMajor() {
+            Matrix<Integer> m = Matrix.of(new Integer[][] { { 0, 0 }, { 0, 0 }, { 0, 0 } });
+            final int[] counter = { 0 };
+
+            m.updateAll(value -> ++counter[0]);
+
+            assertEquals(List.of(1, 2, 3, 4, 5, 6), m.flatten());
+        }
+
+        @Test
+        public void testUpdateAllIndexed_tallMatrixTraversesRowMajor() {
+            Matrix<Integer> m = Matrix.of(new Integer[][] { { 0, 0 }, { 0, 0 }, { 0, 0 } });
+            final int[] counter = { 0 };
+
+            m.updateAll((i, j) -> ++counter[0]);
+
+            assertEquals(List.of(1, 2, 3, 4, 5, 6), m.flatten());
+        }
+
+        @Test
+        public void testReplaceIfValue_tallMatrixTraversesRowMajor() {
+            Matrix<Integer> m = Matrix.of(new Integer[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
+            final int[] counter = { 0 };
+
+            m.replaceIf(value -> ++counter[0] <= 3, 9);
+
+            assertEquals(List.of(9, 9, 9, 4, 5, 6), m.flatten());
+        }
+
+        @Test
+        public void testReplaceIfIndexed_tallMatrixTraversesRowMajor() {
+            Matrix<Integer> m = Matrix.of(new Integer[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
+            final int[] counter = { 0 };
+
+            m.replaceIf((i, j) -> ++counter[0] <= 3, 9);
+
+            assertEquals(List.of(9, 9, 9, 4, 5, 6), m.flatten());
+        }
     }
 }

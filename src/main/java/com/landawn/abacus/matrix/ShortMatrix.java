@@ -937,6 +937,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     @Override
     public void setMainDiagonal(final short[] mainDiagonal) throws IllegalStateException, IllegalArgumentException {
         checkIsSquare();
+        N.checkArgNotNull(mainDiagonal, "mainDiagonal");
         N.checkArgument(N.len(mainDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(mainDiagonal));
 
         for (int i = 0; i < rowCount; i++) {
@@ -1040,6 +1041,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     @Override
     public void setAntiDiagonal(final short[] antiDiagonal) throws IllegalStateException, IllegalArgumentException {
         checkIsSquare();
+        N.checkArgNotNull(antiDiagonal, "antiDiagonal");
         N.checkArgument(N.len(antiDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(antiDiagonal));
 
         for (int i = 0; i < rowCount; i++) {

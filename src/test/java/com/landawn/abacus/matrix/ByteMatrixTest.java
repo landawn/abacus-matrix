@@ -6239,6 +6239,13 @@ class ByteMatrixTest extends TestBase {
             assertEquals(0, viaRotate90Twice.rowCount());
             assertEquals(0, viaRotate90Twice.columnCount());
         }
+
+        @Test
+        public void testSetDiagonal_nullArraysOnEmptyMatrixThrow() {
+            ByteMatrix m = ByteMatrix.empty();
+            assertThrows(IllegalArgumentException.class, () -> m.setMainDiagonal(null));
+            assertThrows(IllegalArgumentException.class, () -> m.setAntiDiagonal(null));
+        }
     }
 
 }
