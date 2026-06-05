@@ -78,7 +78,7 @@ public final class Matrices {
     }
 
     private Matrices() {
-        // singleton: utility class.
+        // Utility class; not instantiable.
     }
 
     /**
@@ -601,10 +601,9 @@ public final class Matrices {
      */
     public static <E extends Exception> void forEachIndices(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
             final Throwables.IntBiConsumer<E> action, final boolean inParallel) throws IndexOutOfBoundsException, E {
-        N.checkArgNotNull(action, "action");
-
         N.checkFromToIndex(fromRowIndex, toRowIndex, Integer.MAX_VALUE);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, Integer.MAX_VALUE);
+        N.checkArgNotNull(action, "action");
 
         final int rowCount = toRowIndex - fromRowIndex;
         final int columnCount = toColumnIndex - fromColumnIndex;
@@ -998,15 +997,15 @@ public final class Matrices {
                 "Matrix dimensions incompatible for multiplication: a is {}x{}, b is {}x{} (a.columnCount must equal b.rowCount)", a.rowCount, a.columnCount,
                 b.rowCount, b.columnCount);
 
-        final int rowsA = a.rowCount;
+        final int rowCountA = a.rowCount;
         final int columnCountA = a.columnCount;
         final int columnCountB = b.columnCount;
 
         if (inParallel) {
-            if (N.min(rowsA, columnCountA, columnCountB) == rowsA) {
+            if (N.min(rowCountA, columnCountA, columnCountB) == rowCountA) {
                 if (N.min(columnCountA, columnCountB) == columnCountA) {
                     //noinspection resource
-                    IntStream.range(0, rowsA).parallel().forEach(i -> {
+                    IntStream.range(0, rowCountA).parallel().forEach(i -> {
                         for (int k = 0; k < columnCountA; k++) {
                             for (int j = 0; j < columnCountB; j++) {
                                 action.accept(i, j, k);
@@ -1015,7 +1014,7 @@ public final class Matrices {
                     });
                 } else {
                     //noinspection resource
-                    IntStream.range(0, rowsA).parallel().forEach(i -> {
+                    IntStream.range(0, rowCountA).parallel().forEach(i -> {
                         for (int j = 0; j < columnCountB; j++) {
                             for (int k = 0; k < columnCountA; k++) {
                                 action.accept(i, j, k);
@@ -1027,10 +1026,10 @@ public final class Matrices {
                 // Never parallelize over k (columnCountA), as multiple threads would write to
                 // the same result[i][j] cell concurrently (non-atomic +=), causing lost updates.
                 // Instead, parallelize over j (columnCountB) which gives each thread independent output cells.
-                if (N.min(rowsA, columnCountA) == rowsA) {
+                if (N.min(rowCountA, columnCountA) == rowCountA) {
                     //noinspection resource
                     IntStream.range(0, columnCountB).parallel().forEach(j -> {
-                        for (int i = 0; i < rowsA; i++) {
+                        for (int i = 0; i < rowCountA; i++) {
                             for (int k = 0; k < columnCountA; k++) {
                                 action.accept(i, j, k);
                             }
@@ -1040,7 +1039,7 @@ public final class Matrices {
                     //noinspection resource
                     IntStream.range(0, columnCountB).parallel().forEach(j -> {
                         for (int k = 0; k < columnCountA; k++) {
-                            for (int i = 0; i < rowsA; i++) {
+                            for (int i = 0; i < rowCountA; i++) {
                                 action.accept(i, j, k);
                             }
                         }
@@ -1048,9 +1047,9 @@ public final class Matrices {
                 }
             }
         } else {
-            if (N.min(rowsA, columnCountA, columnCountB) == rowsA) {
+            if (N.min(rowCountA, columnCountA, columnCountB) == rowCountA) {
                 if (N.min(columnCountA, columnCountB) == columnCountA) {
-                    for (int i = 0; i < rowsA; i++) {
+                    for (int i = 0; i < rowCountA; i++) {
                         for (int k = 0; k < columnCountA; k++) {
                             for (int j = 0; j < columnCountB; j++) {
                                 action.accept(i, j, k);
@@ -1058,7 +1057,7 @@ public final class Matrices {
                         }
                     }
                 } else {
-                    for (int i = 0; i < rowsA; i++) {
+                    for (int i = 0; i < rowCountA; i++) {
                         for (int j = 0; j < columnCountB; j++) {
                             for (int k = 0; k < columnCountA; k++) {
                                 action.accept(i, j, k);
@@ -1066,10 +1065,10 @@ public final class Matrices {
                         }
                     }
                 }
-            } else if (N.min(rowsA, columnCountA, columnCountB) == columnCountA) {
-                if (N.min(rowsA, columnCountB) == rowsA) {
+            } else if (N.min(rowCountA, columnCountA, columnCountB) == columnCountA) {
+                if (N.min(rowCountA, columnCountB) == rowCountA) {
                     for (int k = 0; k < columnCountA; k++) {
-                        for (int i = 0; i < rowsA; i++) {
+                        for (int i = 0; i < rowCountA; i++) {
                             for (int j = 0; j < columnCountB; j++) {
                                 action.accept(i, j, k);
                             }
@@ -1078,16 +1077,16 @@ public final class Matrices {
                 } else {
                     for (int k = 0; k < columnCountA; k++) {
                         for (int j = 0; j < columnCountB; j++) {
-                            for (int i = 0; i < rowsA; i++) {
+                            for (int i = 0; i < rowCountA; i++) {
                                 action.accept(i, j, k);
                             }
                         }
                     }
                 }
             } else {
-                if (N.min(rowsA, columnCountA) == rowsA) {
+                if (N.min(rowCountA, columnCountA) == rowCountA) {
                     for (int j = 0; j < columnCountB; j++) {
-                        for (int i = 0; i < rowsA; i++) {
+                        for (int i = 0; i < rowCountA; i++) {
                             for (int k = 0; k < columnCountA; k++) {
                                 action.accept(i, j, k);
                             }
@@ -1096,7 +1095,7 @@ public final class Matrices {
                 } else {
                     for (int j = 0; j < columnCountB; j++) {
                         for (int k = 0; k < columnCountA; k++) {
-                            for (int i = 0; i < rowsA; i++) {
+                            for (int i = 0; i < rowCountA; i++) {
                                 action.accept(i, j, k);
                             }
                         }
@@ -1212,7 +1211,7 @@ public final class Matrices {
      * elements from both matrices: {@code zipFunction.apply(a[i][j], b[i][j])}.</p>
      *
      * <p>Both matrices must have identical dimensions (same number of rows and columns).
-     * The operation delegates to the {@link ByteMatrix#zipWith} method.</p>
+     * The operation delegates to the {@link ByteMatrix#zipWith(ByteMatrix, Throwables.ByteBinaryOperator)} method.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1256,7 +1255,7 @@ public final class Matrices {
      * elements from all three matrices: {@code zipFunction.apply(a[i][j], b[i][j], c[i][j])}.</p>
      *
      * <p>All three matrices must have identical dimensions (same number of rows and columns).
-     * The operation delegates to the {@link ByteMatrix#zipWith} method.</p>
+     * The operation delegates to the {@link ByteMatrix#zipWith(ByteMatrix, ByteMatrix, Throwables.ByteTernaryOperator)} method.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1349,9 +1348,9 @@ public final class Matrices {
         final int size = coll.size();
         final ByteMatrix[] matrices = coll.toArray(new ByteMatrix[size]);
 
-        if (coll.size() == 1) {
+        if (size == 1) {
             return matrices[0].copy();
-        } else if (coll.size() == 2) {
+        } else if (size == 2) {
             return matrices[0].zipWith(matrices[1], zipFunction);
         }
 
@@ -1764,7 +1763,7 @@ public final class Matrices {
      * elements from both matrices: {@code zipFunction.apply(a[i][j], b[i][j])}.</p>
      *
      * <p>Both matrices must have identical dimensions (same number of rows and columns).
-     * The operation delegates to the {@link IntMatrix#zipWith} method.</p>
+     * The operation delegates to the {@link IntMatrix#zipWith(IntMatrix, Throwables.IntBinaryOperator)} method.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1808,7 +1807,7 @@ public final class Matrices {
      * elements from all three matrices: {@code zipFunction.apply(a[i][j], b[i][j], c[i][j])}.</p>
      *
      * <p>All three matrices must have identical dimensions (same number of rows and columns).
-     * The operation delegates to the {@link IntMatrix#zipWith} method.</p>
+     * The operation delegates to the {@link IntMatrix#zipWith(IntMatrix, IntMatrix, Throwables.IntTernaryOperator)} method.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1904,9 +1903,9 @@ public final class Matrices {
         final int size = coll.size();
         final IntMatrix[] matrices = coll.toArray(new IntMatrix[size]);
 
-        if (coll.size() == 1) {
+        if (size == 1) {
             return matrices[0].copy();
-        } else if (coll.size() == 2) {
+        } else if (size == 2) {
             return matrices[0].zipWith(matrices[1], zipFunction);
         }
 
@@ -2523,7 +2522,7 @@ public final class Matrices {
      * elements from both matrices: {@code zipFunction.apply(a[i][j], b[i][j])}.</p>
      *
      * <p>Both matrices must have identical dimensions (same number of rows and columns).
-     * The operation delegates to the {@link LongMatrix#zipWith} method.</p>
+     * The operation delegates to the {@link LongMatrix#zipWith(LongMatrix, Throwables.LongBinaryOperator)} method.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2566,7 +2565,7 @@ public final class Matrices {
      * ternary operator. For each position (i, j), the function is called with the corresponding
      * elements from all three matrices: {@code zipFunction.apply(a[i][j], b[i][j], c[i][j])}.
      * All three matrices must have identical dimensions (same number of rows and columns).
-     * The operation delegates to the {@link LongMatrix#zipWith} method.</p>
+     * The operation delegates to the {@link LongMatrix#zipWith(LongMatrix, LongMatrix, Throwables.LongTernaryOperator)} method.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2651,9 +2650,9 @@ public final class Matrices {
         final int size = coll.size();
         final LongMatrix[] matrices = coll.toArray(new LongMatrix[size]);
 
-        if (coll.size() == 1) {
+        if (size == 1) {
             return matrices[0].copy();
-        } else if (coll.size() == 2) {
+        } else if (size == 2) {
             return matrices[0].zipWith(matrices[1], zipFunction);
         }
 
@@ -3032,7 +3031,7 @@ public final class Matrices {
      * elements from both matrices: {@code zipFunction.apply(a[i][j], b[i][j])}.</p>
      *
      * <p>Both matrices must have identical dimensions (same number of rows and columns).
-     * The operation delegates to the {@link DoubleMatrix#zipWith} method.</p>
+     * The operation delegates to the {@link DoubleMatrix#zipWith(DoubleMatrix, Throwables.DoubleBinaryOperator)} method.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3076,7 +3075,7 @@ public final class Matrices {
      * ternary operator. For each position (i, j), the function is called with the corresponding
      * elements from all three matrices: {@code zipFunction.apply(a[i][j], b[i][j], c[i][j])}.
      * All three matrices must have identical dimensions (same number of rows and columns).
-     * The operation delegates to the {@link DoubleMatrix#zipWith} method.</p>
+     * The operation delegates to the {@link DoubleMatrix#zipWith(DoubleMatrix, DoubleMatrix, Throwables.DoubleTernaryOperator)} method.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3162,9 +3161,9 @@ public final class Matrices {
         final int size = coll.size();
         final DoubleMatrix[] matrices = coll.toArray(new DoubleMatrix[size]);
 
-        if (coll.size() == 1) {
+        if (size == 1) {
             return matrices[0].copy();
-        } else if (coll.size() == 2) {
+        } else if (size == 2) {
             return matrices[0].zipWith(matrices[1], zipFunction);
         }
 
@@ -3315,7 +3314,7 @@ public final class Matrices {
      * the first matrix.</p>
      *
      * <p>Both matrices must have identical dimensions (same number of rows and columns).
-     * This operation delegates to the {@link Matrix#zipWith} method.</p>
+     * This operation delegates to the {@link Matrix#zipWith(Matrix, Throwables.BiFunction)} method.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3364,7 +3363,7 @@ public final class Matrices {
      * from both input types.</p>
      *
      * <p>Both matrices must have identical dimensions (same number of rows and columns).
-     * This operation delegates to the {@link Matrix#zipWith} method.</p>
+     * This operation delegates to the {@link Matrix#zipWith(Matrix, Throwables.BiFunction, Class)} method.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3415,7 +3414,7 @@ public final class Matrices {
      * The result matrix has the same element type as the first matrix.</p>
      *
      * <p>All three matrices must have identical dimensions (same number of rows and columns).
-     * This operation delegates to the {@link Matrix#zipWith} method.</p>
+     * This operation delegates to the {@link Matrix#zipWith(Matrix, Matrix, Throwables.TriFunction)} method.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3468,7 +3467,7 @@ public final class Matrices {
      * matrix has element type R, which may differ from all input types.</p>
      *
      * <p>All three matrices must have identical dimensions (same number of rows and columns).
-     * This operation delegates to the {@link Matrix#zipWith} method.</p>
+     * This operation delegates to the {@link Matrix#zipWith(Matrix, Matrix, Throwables.TriFunction, Class)} method.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3577,9 +3576,9 @@ public final class Matrices {
         final int size = coll.size();
         final Matrix<T>[] matrices = coll.toArray(new Matrix[size]);
 
-        if (coll.size() == 1) {
+        if (size == 1) {
             return matrices[0].copy();
-        } else if (coll.size() == 2) {
+        } else if (size == 2) {
             return matrices[0].zipWith(matrices[1], zipFunction);
         }
 

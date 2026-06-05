@@ -351,7 +351,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param columnCount the number of columns in the new matrix
      * @return a new DoubleMatrix of dimensions {@code rowCount x columnCount} filled with random values
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
-     *         or if {@code rowCount * columnCount} would overflow representable shape limits
+     *         or if the resulting shape is not representable
      */
     public static DoubleMatrix random(final int rowCount, final int columnCount) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -394,7 +394,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *                or any other {@code double} value)
      * @return a new DoubleMatrix of dimensions {@code rowCount x columnCount} filled with the specified element
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
-     *         or if {@code rowCount * columnCount} would overflow representable shape limits
+     *         or if the resulting shape is not representable
      */
     public static DoubleMatrix repeat(final int rowCount, final int columnCount, final double element) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -1464,7 +1464,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     /**
      * Creates a new {@code Matrix<R>} by applying the specified function to each element of this matrix.
      * The original matrix is not modified. Each double element is independently converted to an object
-     * of type T by the function, and the results are collected into a new Matrix with the same dimensions.
+     * of type R by the function, and the results are collected into a new Matrix with the same dimensions.
      * The operation may be performed in parallel for large matrices to improve performance.
      *
      * <p><b>Usage Examples:</b></p>
@@ -1755,7 +1755,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
      * @return a new DoubleMatrix with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
-     *         or if {@code newRowCount * newColumnCount} would overflow {@code Integer.MAX_VALUE}
+     *         if the resulting shape is not representable (zero rows with a non-zero column count),
+     *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
      * @see #resize(int, int, double)
      * @see #extend(int, int, int, int)
      */
@@ -1815,7 +1816,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param defaultValue the double value used to fill any newly created cells
      * @return a new DoubleMatrix with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
-     *         or if {@code newRowCount * newColumnCount} would overflow {@code Integer.MAX_VALUE}
+     *         if the resulting shape is not representable (zero rows with a non-zero column count),
+     *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
      * @see #resize(int, int)
      * @see #extend(int, int, int, int, double)
      */
@@ -2324,7 +2326,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param newRowCount the number of rows in the reshaped matrix; must be {@code >= 0}
      * @param newColumnCount the number of columns in the reshaped matrix; must be {@code >= 0}
      * @return a new DoubleMatrix with the specified shape containing this matrix's elements
-     * @throws IllegalArgumentException if either dimension is negative or if the new shape is too small to hold all elements
+     * @throws IllegalArgumentException if either dimension is negative,
+     *         if the resulting shape is not representable (zero rows with a non-zero column count),
+     *         or if the new shape is too small to hold all elements
      */
     @SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG")
     @Override

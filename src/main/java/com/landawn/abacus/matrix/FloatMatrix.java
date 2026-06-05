@@ -227,7 +227,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param columnCount the number of columns in the new matrix
      * @return a new {@code FloatMatrix} of dimensions {@code rowCount x columnCount} filled with random values in {@code [0.0f, 1.0f)}
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
-     *         or if {@code rowCount * columnCount} would overflow representable shape limits
+     *         or if the resulting shape is not representable
      */
     public static FloatMatrix random(final int rowCount, final int columnCount) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -265,7 +265,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param element the float value to fill the matrix with (may be {@code NaN}, {@code +/-Infinity}, or {@code -0.0f})
      * @return a new {@code FloatMatrix} of dimensions {@code rowCount x columnCount} with every cell equal to {@code element}
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
-     *         or if {@code rowCount * columnCount} would overflow representable shape limits
+     *         or if the resulting shape is not representable
      */
     public static FloatMatrix repeat(final int rowCount, final int columnCount, final float element) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -1215,6 +1215,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @return a new {@code FloatMatrix} with the mapped values (same dimensions as the original)
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
+     * @see #updateAll(Throwables.FloatUnaryOperator)
      */
     public <E extends Exception> FloatMatrix map(final Throwables.FloatUnaryOperator<E> mapper) throws E {
         N.checkArgNotNull(mapper, "mapper");
@@ -1512,7 +1513,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
      * @return a new {@code FloatMatrix} with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
-     *         or if {@code newRowCount * newColumnCount} would overflow {@code Integer.MAX_VALUE}
+     *         if the resulting shape is not representable (zero rows with a non-zero column count),
+     *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
      * @see #resize(int, int, float)
      * @see #extend(int, int, int, int)
      */
@@ -1574,7 +1576,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *                     {@code +/-Infinity}, or {@code -0.0f})
      * @return a new {@code FloatMatrix} with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
-     *         or if {@code newRowCount * newColumnCount} would overflow {@code Integer.MAX_VALUE}
+     *         if the resulting shape is not representable (zero rows with a non-zero column count),
+     *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
      * @see #resize(int, int)
      * @see #extend(int, int, int, int, float)
      */
@@ -2065,6 +2068,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param newColumnCount the number of columns in the reshaped matrix; must be {@code >= 0}
      * @return a new {@code FloatMatrix} with the specified shape containing this matrix's elements in row-major order
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         if the resulting shape is not representable (zero rows with a non-zero column count),
      *         or if the new shape is too small to hold all elements of this matrix
      */
     @SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG")

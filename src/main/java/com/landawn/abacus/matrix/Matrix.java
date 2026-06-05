@@ -201,7 +201,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         checkRepresentableShape(rowCount, columnCount);
 
         @SuppressWarnings("unchecked")
-        final T[][] a = Array.newInstance(element.getClass(), rowCount, columnCount); // (T[][]) new Object[rowCount][columnCount];
+        final T[][] a = Array.newInstance(element.getClass(), rowCount, columnCount);
 
         for (T[] ea : a) {
             N.fill(ea, element);
@@ -874,11 +874,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * m.setMainDiagonal(new Integer[] {1, 2});           // throws IllegalArgumentException (length != rowCount)
      * }</pre>
      *
-     * @param mainDiagonal the new values for the main diagonal; must have length equal to {@code rowCount}
-     *                     (treated as length 0 if {@code null})
+     * @param mainDiagonal the new values for the main diagonal; must be non-{@code null} and have length equal to {@code rowCount}
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
-     * @throws IllegalArgumentException if {@code mainDiagonal} array length does not equal {@code rowCount}
-     *         (including when it is {@code null} and {@code rowCount > 0})
+     * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null} or its length does not equal {@code rowCount}
      * @throws ArrayStoreException if any element is not assignable to the row's runtime storage component type
      */
     @Override
@@ -984,11 +982,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * m.setAntiDiagonal(new Integer[] {1, 2});           // throws IllegalArgumentException (length != rowCount)
      * }</pre>
      *
-     * @param antiDiagonal the new values for the anti-diagonal; must have length equal to {@code rowCount}
-     *                     (treated as length 0 if {@code null})
+     * @param antiDiagonal the new values for the anti-diagonal; must be non-{@code null} and have length equal to {@code rowCount}
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
-     * @throws IllegalArgumentException if {@code antiDiagonal} array length does not equal {@code rowCount}
-     *         (including when it is {@code null} and {@code rowCount > 0})
+     * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null} or its length does not equal {@code rowCount}
      * @throws ArrayStoreException if any element is not assignable to the row's runtime storage component type
      */
     @Override
@@ -1794,7 +1790,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
      * @return a new Matrix with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
-     *         or if the resulting element count would overflow {@code Integer.MAX_VALUE}
+     *         if the resulting shape is not representable (zero rows with a non-zero column count),
+     *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
      * @see #resize(int, int, Object)
      * @see #extend(int, int, int, int)
      */
@@ -1848,7 +1845,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param defaultValue the value used to fill any newly created cells; may be {@code null}
      * @return a new Matrix with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
-     *         or if the resulting element count would overflow {@code Integer.MAX_VALUE}
+     *         if the resulting shape is not representable (zero rows with a non-zero column count),
+     *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
      * @see #resize(int, int)
      * @see #extend(int, int, int, int, Object)
      */
@@ -1868,7 +1866,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             final T[][] b = N.newArray(arrayType, newRowCount);
 
             for (int i = 0; i < newRowCount; i++) {
-                b[i] = i < rowCount ? N.copyOf(a[i], newColumnCount) : (T[]) N.newArray(elementType, newColumnCount);
+                b[i] = i < rowCount ? N.copyOf(a[i], newColumnCount) : N.newArray(elementType, newColumnCount);
 
                 if (fillDefaultValue) {
                     if (i >= rowCount) {
@@ -2378,6 +2376,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param newColumnCount the number of columns in the reshaped matrix (must be non-negative)
      * @return a new Matrix with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         if the resulting shape is not representable (zero rows with a non-zero column count),
      *         or if the new shape is too small to hold all elements
      */
     @SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG")
@@ -2466,7 +2465,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             final T[] fr = c[i * rowRepeats];
 
             for (int j = 0; j < columnCount; j++) {
-                // N.copy(Array.repeat(a[i][j], columnRepeats), 0, fr, j * columnRepeats, columnRepeats);
                 N.fill(fr, j * columnRepeats, j * columnRepeats + columnRepeats, aa[j]);
             }
 
@@ -3612,7 +3610,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     @Beta
     public Dataset toRowDataset(final Collection<String> columnNames) throws IllegalArgumentException {
         N.checkArgNotNull(columnNames, "columnNames");
-        N.checkArgument(columnNames.size() == columnCount, "The size({}) of specified columnNames and column count({}) of this Matrix are not equals",
+        N.checkArgument(columnNames.size() == columnCount, "The size({}) of specified columnNames and column count({}) of this Matrix are not equal",
                 columnNames.size(), columnCount);
 
         final List<String> newColumnNameList = new ArrayList<>(columnNames);
@@ -3665,7 +3663,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     @Beta
     public Dataset toColumnDataset(final Collection<String> columnNames) throws IllegalArgumentException {
         N.checkArgNotNull(columnNames, "columnNames");
-        N.checkArgument(columnNames.size() == rowCount, "The size({}) of specified columnNames and row count({}) of this Matrix are not equals",
+        N.checkArgument(columnNames.size() == rowCount, "The size({}) of specified columnNames and row count({}) of this Matrix are not equal",
                 columnNames.size(), rowCount);
 
         final List<String> newColumnNameList = new ArrayList<>(columnNames);

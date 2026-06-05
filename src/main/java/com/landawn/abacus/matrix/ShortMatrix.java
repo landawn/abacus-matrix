@@ -1229,6 +1229,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @return a new ShortMatrix with the transformed values; the original matrix is unchanged
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
+     * @see #updateAll(Throwables.ShortUnaryOperator)
      */
     public <E extends Exception> ShortMatrix map(final Throwables.ShortUnaryOperator<E> mapper) throws E {
         N.checkArgNotNull(mapper, "mapper");
@@ -1265,7 +1266,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param mapper the function to transform each short to an object of type {@code R}
      * @param targetElementType the class of the target element type, used to allocate the backing array
      * @return a new {@code Matrix<R>} with the transformed object values; the original matrix is unchanged
-     * @throws IllegalArgumentException if {@code mapper} is {@code null}
+     * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null}
      * @throws E if the function throws an exception
      */
     public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.ShortFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E {
@@ -1512,6 +1513,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
      * @return a new ShortMatrix with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         if the resulting shape is not representable (zero rows with a non-zero column count),
      *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
      * @see #resize(int, int, short)
      * @see #extend(int, int, int, int)
@@ -1561,6 +1563,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *        ignored when a dimension shrinks
      * @return a new ShortMatrix with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         if the resulting shape is not representable (zero rows with a non-zero column count),
      *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
      * @see #resize(int, int)
      * @see #extend(int, int, int, int, short)

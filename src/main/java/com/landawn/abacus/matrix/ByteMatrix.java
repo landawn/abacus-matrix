@@ -1301,6 +1301,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @return a new {@code ByteMatrix} with the transformed values; the original matrix is unchanged
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
+     * @see #updateAll(Throwables.ByteUnaryOperator)
      */
     public <E extends Exception> ByteMatrix map(final Throwables.ByteUnaryOperator<E> mapper) throws E {
         N.checkArgNotNull(mapper, "mapper");
@@ -1600,6 +1601,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
      * @return a new ByteMatrix with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         if the resulting shape is not representable (zero rows with a non-zero column count),
      *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
      * @see #resize(int, int, byte)
      * @see #extend(int, int, int, int)
@@ -1655,6 +1657,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *        ignored when a dimension shrinks
      * @return a new ByteMatrix with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         if the resulting shape is not representable (zero rows with a non-zero column count),
      *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
      * @see #resize(int, int)
      * @see #extend(int, int, int, int, byte)

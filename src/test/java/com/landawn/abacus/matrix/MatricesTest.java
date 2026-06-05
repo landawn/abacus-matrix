@@ -4687,8 +4687,7 @@ class MatricesTest extends TestBase {
         Matrix<Number> a = (Matrix) Matrix.of(new Integer[][] { { 1 } });
         Matrix<Number> b = (Matrix) Matrix.of(new Integer[][] { { 2 } });
         Matrix<Number> c = (Matrix) Matrix.of(new Integer[][] { { 3 } });
-        assertThrows(ArrayStoreException.class,
-                () -> Matrices.zip(List.of(a, b, c), (x, y) -> Double.valueOf(x.doubleValue() + y.doubleValue())));
+        assertThrows(ArrayStoreException.class, () -> Matrices.zip(List.of(a, b, c), (x, y) -> Double.valueOf(x.doubleValue() + y.doubleValue())));
     }
 
 }

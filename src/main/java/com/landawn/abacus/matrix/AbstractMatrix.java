@@ -1541,7 +1541,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
     /**
      * Returns a stream of points along the anti-diagonal (upper-right to lower-left).
-     * The anti-diagonal consists of the elements where {@code rowIndex + columnIndex == rowCount - 1} (the matrix is square).
+     * The anti-diagonal consists of the elements where {@code rowIndex + columnIndex == rowCount - 1}.
      * The matrix must be square (rowCount == columnCount) for this operation.
      *
      * <p>The anti-diagonal runs from the upper-right corner to the lower-left corner.</p>
@@ -1972,7 +1972,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
     /**
      * Returns a stream of elements along the anti-diagonal (upper-right to lower-left).
-     * The anti-diagonal consists of the elements where {@code rowIndex + columnIndex == rowCount - 1} (the matrix is square).
+     * The anti-diagonal consists of the elements where {@code rowIndex + columnIndex == rowCount - 1}.
      * The matrix must be square (rowCount == columnCount) for this operation.
      *
      * <p>The anti-diagonal runs from the upper-right corner to the lower-left corner.</p>

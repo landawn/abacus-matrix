@@ -1646,7 +1646,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
      * @return a new {@code LongMatrix} with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
-     *         or if the resulting shape is not representable
+     *         if the resulting shape is not representable (zero rows with a non-zero column count),
+     *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
      * @see #resize(int, int, long)
      * @see #extend(int, int, int, int)
      */
@@ -1707,8 +1708,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param defaultValue the long value used to fill any newly created cells
      * @return a new {@code LongMatrix} with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
-     *         if the resulting shape is not representable, or if
-     *         {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
+     *         if the resulting shape is not representable (zero rows with a non-zero column count),
+     *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
      * @see #resize(int, int)
      * @see #extend(int, int, int, int, long)
      */

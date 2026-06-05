@@ -1517,6 +1517,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
      * @return a new {@code BooleanMatrix} with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         if the resulting shape is not representable (zero rows with a non-zero column count),
      *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
      * @see #resize(int, int, boolean)
      * @see #extend(int, int, int, int)
@@ -1578,6 +1579,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *        ignored when a dimension shrinks
      * @return a new {@code BooleanMatrix} with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         if the resulting shape is not representable (zero rows with a non-zero column count),
      *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
      * @see #resize(int, int)
      * @see #extend(int, int, int, int, boolean)
@@ -2114,6 +2116,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param newColumnCount the number of columns in the reshaped matrix; must be non-negative
      * @return a new {@code BooleanMatrix} with the specified shape
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         if the resulting shape is not representable (zero rows with a non-zero column count),
      *         or if the new shape is too small to hold all elements of this matrix
      */
     @SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG")

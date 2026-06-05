@@ -6068,8 +6068,7 @@ class BooleanMatrixTest extends TestBase {
             // The whole purpose of the fix is to widen the return type so callers
             // and the accumulator cannot silently overflow at int range.
             java.lang.reflect.Method m = BooleanMatrix.class.getMethod("countTrue");
-            assertEquals(long.class, m.getReturnType(),
-                    "BooleanMatrix.countTrue() must return long to avoid int overflow for large matrices");
+            assertEquals(long.class, m.getReturnType(), "BooleanMatrix.countTrue() must return long to avoid int overflow for large matrices");
         }
 
         @Test

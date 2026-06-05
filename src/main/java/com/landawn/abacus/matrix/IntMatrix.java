@@ -1546,7 +1546,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param targetElementType the {@code Class} object for type {@code R} (used to allocate the
      *        {@code R[][]} backing array); must not be {@code null}
      * @return a new {@link Matrix Matrix&lt;R&gt;} containing the mapped values
-     * @throws IllegalArgumentException if {@code mapper} is {@code null}
+     * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null}
      * @throws E if the function throws an exception
      */
     public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.IntFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E {
@@ -1646,8 +1646,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      */
     public void fill(final int destRowIndex, final int destColumnIndex, final int[][] source) throws IllegalArgumentException {
         N.checkArgNotNull(source, "source");
-        N.checkArgument(destRowIndex >= 0 && destRowIndex <= rowCount, "destRowIndex out of bounds: {}. Valid range is [0, {}]", destRowIndex, rowCount);
-        N.checkArgument(destColumnIndex >= 0 && destColumnIndex <= columnCount, "destColumnIndex out of bounds: {}. Valid range is [0, {}]", destColumnIndex,
+        N.checkArgument(destRowIndex >= 0 && destRowIndex <= rowCount, "destRowIndex({}) must be between 0 and rowCount({})", destRowIndex, rowCount);
+        N.checkArgument(destColumnIndex >= 0 && destColumnIndex <= columnCount, "destColumnIndex({}) must be between 0 and columnCount({})", destColumnIndex,
                 columnCount);
 
         for (int i = 0, minLen = N.min(rowCount - destRowIndex, source.length); i < minLen; i++) {
@@ -2531,8 +2531,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     public IntList flatten() {
         // Check for overflow before allocation
         if ((long) rowCount * columnCount > Integer.MAX_VALUE) {
-            throw new IllegalStateException("Matrix too large to flatten into array: " + rowCount + " x " + columnCount + " = "
-                    + ((long) rowCount * columnCount) + " exceeds Integer.MAX_VALUE");
+            throw new IllegalStateException("Matrix too large to flatten: " + rowCount + " x " + columnCount);
         }
 
         final int[] c = new int[rowCount * columnCount];

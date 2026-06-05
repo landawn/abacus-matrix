@@ -1291,7 +1291,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * Creates a new object Matrix by applying the specified function to each char element.
      *
      * <p>This method transforms the primitive CharMatrix into an object-based Matrix,
-     * applying the mapping function to convert each char to an object of type T.
+     * applying the mapping function to convert each char to an object of type R.
      * For large matrices, this operation may be performed in parallel.
      *
      * <p><b>Usage Examples:</b></p>
@@ -1573,6 +1573,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
      * @return a new CharMatrix with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         if the resulting shape is not representable (zero rows with a non-zero column count),
      *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
      * @see #resize(int, int, char)
      * @see #extend(int, int, int, int)
@@ -1626,6 +1627,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *        ignored when a dimension shrinks
      * @return a new CharMatrix with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         if the resulting shape is not representable (zero rows with a non-zero column count),
      *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
      * @see #resize(int, int)
      * @see #extend(int, int, int, int, char)
@@ -1771,12 +1773,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
             return copy();
         } else {
             if ((long) padTop + rowCount + padBottom > Integer.MAX_VALUE) {
-                throw new IllegalArgumentException("Result rowCount overflow: " + padTop + " + " + rowCount + " + " + padBottom + " exceeds Integer.MAX_VALUE");
+                throw new IllegalArgumentException(
+                        "Result row count overflow: " + padTop + " + " + rowCount + " + " + padBottom + " exceeds Integer.MAX_VALUE");
             }
 
             if ((long) padLeft + columnCount + padRight > Integer.MAX_VALUE) {
                 throw new IllegalArgumentException(
-                        "Result columnCount overflow: " + padLeft + " + " + columnCount + " + " + padRight + " exceeds Integer.MAX_VALUE");
+                        "Result column count overflow: " + padLeft + " + " + columnCount + " + " + padRight + " exceeds Integer.MAX_VALUE");
             }
 
             final int newRowCount = padTop + rowCount + padBottom;
@@ -2127,6 +2130,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param newColumnCount the number of columns in the reshaped matrix (must be {@code >= 0})
      * @return a new CharMatrix with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
+     *         if the resulting shape is not representable (zero rows with a non-zero column count),
      *         or if the new shape is too small to hold all elements
      *         ({@code (long) newRowCount * newColumnCount < elementCount()})
      */
