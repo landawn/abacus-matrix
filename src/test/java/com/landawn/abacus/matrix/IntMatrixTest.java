@@ -305,8 +305,8 @@ class IntMatrixTest extends TestBase {
         assertArrayEquals(new int[] { 4, 5, 6 }, row1);
 
         // Test bounds
-        assertThrows(IllegalArgumentException.class, () -> matrix.rowView(-1));
-        assertThrows(IllegalArgumentException.class, () -> matrix.rowView(3));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowView(-1));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowView(3));
     }
 
     // Verify rowCopy returns a defensive row snapshot and enforces row bounds.
@@ -328,8 +328,8 @@ class IntMatrixTest extends TestBase {
         assertArrayEquals(new int[] { 2, 5, 8 }, col1);
 
         // Test bounds
-        assertThrows(IllegalArgumentException.class, () -> matrix.columnCopy(-1));
-        assertThrows(IllegalArgumentException.class, () -> matrix.columnCopy(3));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.columnCopy(-1));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.columnCopy(3));
     }
 
     @Test
@@ -1670,8 +1670,8 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testRow_outOfBounds() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(2));
         }
 
         @Test
@@ -1685,8 +1685,8 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testColumn_outOfBounds() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(2));
         }
 
         @Test
@@ -1924,7 +1924,7 @@ class IntMatrixTest extends TestBase {
         public void testFill_outOfBounds() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             int[][] patch = { { 1, 2 }, { 3, 4 } };
-            assertThrows(IllegalArgumentException.class, () -> m.fill(-1, 0, patch));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(-1, 0, patch));
         }
 
         // ============ Copy Tests ============
@@ -3225,15 +3225,15 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testRow_invalidIndex() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 } });
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(1));
         }
 
         @Test
         public void testColumn_invalidIndex() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 } });
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(2));
         }
 
         @Test
@@ -4278,7 +4278,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void test_row_invalidIndex() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 } });
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(5));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(5));
         }
 
         @Test
@@ -4291,7 +4291,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void test_column_invalidIndex() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 } });
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(5));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(5));
         }
 
         @Test
@@ -4304,7 +4304,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void test_setRow_invalidRowIndex() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 } });
-            assertThrows(IllegalArgumentException.class, () -> m.setRow(5, new int[] { 1, 2 }));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.setRow(5, new int[] { 1, 2 }));
         }
 
         @Test
@@ -4323,7 +4323,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void test_setColumn_invalidColumnIndex() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 } });
-            assertThrows(IllegalArgumentException.class, () -> m.setColumn(5, new int[] { 1 }));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.setColumn(5, new int[] { 1 }));
         }
 
         @Test
@@ -5933,9 +5933,9 @@ class IntMatrixTest extends TestBase {
         // IllegalArgumentException for invalid inputs, consistent with the other matrix classes.
         IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
 
-        // Out-of-bounds column index should throw IllegalArgumentException
-        assertThrows(IllegalArgumentException.class, () -> m.setColumn(-1, new int[] { 10, 20 }));
-        assertThrows(IllegalArgumentException.class, () -> m.setColumn(3, new int[] { 10, 20 }));
+        // Out-of-bounds column index should throw IndexOutOfBoundsException
+        assertThrows(IndexOutOfBoundsException.class, () -> m.setColumn(-1, new int[] { 10, 20 }));
+        assertThrows(IndexOutOfBoundsException.class, () -> m.setColumn(3, new int[] { 10, 20 }));
 
         // Column length mismatch should throw IllegalArgumentException
         assertThrows(IllegalArgumentException.class, () -> m.setColumn(0, new int[] { 10, 20, 30 }));

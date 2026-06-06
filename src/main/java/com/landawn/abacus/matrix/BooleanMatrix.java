@@ -352,15 +352,17 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * primitive.get(1, 1);          // returns true
      *
      * BooleanMatrix.unbox(Matrix.of(new Boolean[0][0])).isEmpty();   // returns true
-     * BooleanMatrix.unbox((Matrix<Boolean>) null);                   // throws NullPointerException
+     * BooleanMatrix.unbox((Matrix<Boolean>) null);                   // throws IllegalArgumentException
      * }</pre>
      *
      * @param x the boxed {@code Matrix<Boolean>} to convert; must not be {@code null}
      * @return a new {@code BooleanMatrix} with primitive boolean values
-     * @throws NullPointerException if {@code x} is {@code null}
+     * @throws IllegalArgumentException if {@code x} is {@code null}
      * @see #boxed()
      */
     public static BooleanMatrix unbox(final Matrix<Boolean> x) {
+        N.checkArgNotNull(x, "x");
+
         return BooleanMatrix.of(Array.unbox(x.a));
     }
 
@@ -476,15 +478,15 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * matrix.valueAbove(1, 1).get();       // returns false (element at (0, 1))
      * matrix.valueAbove(0, 0).isEmpty();   // returns true  (no row above the top row)
      *
-     * matrix.valueAbove(5, 0);             // throws ArrayIndexOutOfBoundsException (row out of range)
-     * matrix.valueAbove(1, 9);             // throws ArrayIndexOutOfBoundsException (column out of range)
+     * matrix.valueAbove(5, 0);             // throws IndexOutOfBoundsException (row out of range)
+     * matrix.valueAbove(1, 9);             // throws IndexOutOfBoundsException (column out of range)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
      * @return an {@link OptionalBoolean} containing the element at position {@code (rowIndex - 1, columnIndex)},
      *         or empty if {@code rowIndex == 0}
-     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
     public OptionalBoolean valueAbove(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -504,15 +506,15 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * matrix.valueBelow(0, 1).get();       // returns true  (element at (1, 1))
      * matrix.valueBelow(1, 0).isEmpty();   // returns true  (no row below the bottom row)
      *
-     * matrix.valueBelow(5, 0);             // throws ArrayIndexOutOfBoundsException (row out of range)
-     * matrix.valueBelow(0, 9);             // throws ArrayIndexOutOfBoundsException (column out of range)
+     * matrix.valueBelow(5, 0);             // throws IndexOutOfBoundsException (row out of range)
+     * matrix.valueBelow(0, 9);             // throws IndexOutOfBoundsException (column out of range)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
      * @return an {@link OptionalBoolean} containing the element at position {@code (rowIndex + 1, columnIndex)},
      *         or empty if {@code rowIndex == rowCount - 1}
-     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
     public OptionalBoolean valueBelow(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -532,15 +534,15 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * matrix.valueLeft(1, 1).get();        // returns false (element at (1, 0))
      * matrix.valueLeft(0, 0).isEmpty();    // returns true  (no column to the left of column 0)
      *
-     * matrix.valueLeft(5, 1);              // throws ArrayIndexOutOfBoundsException (row out of range)
-     * matrix.valueLeft(0, 9);              // throws ArrayIndexOutOfBoundsException (column out of range)
+     * matrix.valueLeft(5, 1);              // throws IndexOutOfBoundsException (row out of range)
+     * matrix.valueLeft(0, 9);              // throws IndexOutOfBoundsException (column out of range)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
      * @return an {@link OptionalBoolean} containing the element at position {@code (rowIndex, columnIndex - 1)},
      *         or empty if {@code columnIndex == 0}
-     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
     public OptionalBoolean valueLeft(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -560,15 +562,15 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * matrix.valueRight(1, 0).get();       // returns true  (element at (1, 1))
      * matrix.valueRight(0, 1).isEmpty();   // returns true  (no column to the right of the last column)
      *
-     * matrix.valueRight(5, 0);             // throws ArrayIndexOutOfBoundsException (row out of range)
-     * matrix.valueRight(0, 9);             // throws ArrayIndexOutOfBoundsException (column out of range)
+     * matrix.valueRight(5, 0);             // throws IndexOutOfBoundsException (row out of range)
+     * matrix.valueRight(0, 9);             // throws IndexOutOfBoundsException (column out of range)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
      * @return an {@link OptionalBoolean} containing the element at position {@code (rowIndex, columnIndex + 1)},
      *         or empty if {@code columnIndex == columnCount - 1}
-     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
     public OptionalBoolean valueRight(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -590,17 +592,17 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * firstRow[0] = false;                      // mutates the matrix in place
      * matrix.get(0, 0);                         // returns false
      *
-     * matrix.rowView(-1);   // throws IllegalArgumentException (negative index)
-     * matrix.rowView(2);    // throws IllegalArgumentException (index >= rowCount)
+     * matrix.rowView(-1);   // throws IndexOutOfBoundsException (negative index)
+     * matrix.rowView(2);    // throws IndexOutOfBoundsException (index >= rowCount)
      * }</pre>
      *
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return the specified row array (direct reference to internal storage)
-     * @throws IllegalArgumentException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      */
     @Override
-    public boolean[] rowView(final int rowIndex) throws IllegalArgumentException {
-        N.checkArgument(rowIndex >= 0 && rowIndex < rowCount, MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount);
+    public boolean[] rowView(final int rowIndex) throws IndexOutOfBoundsException {
+        checkRowIndex(rowIndex);
 
         return a[rowIndex];
     }
@@ -616,17 +618,17 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * firstRow[0] = false;                      // does NOT affect the matrix
      * matrix.get(0, 0);                         // returns true (unchanged)
      *
-     * matrix.rowCopy(-1);   // throws IllegalArgumentException (negative index)
-     * matrix.rowCopy(2);    // throws IllegalArgumentException (index >= rowCount)
+     * matrix.rowCopy(-1);   // throws IndexOutOfBoundsException (negative index)
+     * matrix.rowCopy(2);    // throws IndexOutOfBoundsException (index >= rowCount)
      * }</pre>
      *
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return a new boolean array containing the values from the specified row
-     * @throws IllegalArgumentException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      */
     @Override
-    public boolean[] rowCopy(final int rowIndex) throws IllegalArgumentException {
-        N.checkArgument(rowIndex >= 0 && rowIndex < rowCount, MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount);
+    public boolean[] rowCopy(final int rowIndex) throws IndexOutOfBoundsException {
+        checkRowIndex(rowIndex);
 
         return N.copyOf(a[rowIndex], columnCount);
     }
@@ -646,17 +648,17 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * firstColumn[0] = false;                         // does NOT affect the matrix
      * matrix.get(0, 0);                               // returns true (unchanged)
      *
-     * matrix.columnCopy(-1);   // throws IllegalArgumentException (negative index)
-     * matrix.columnCopy(3);    // throws IllegalArgumentException (index >= columnCount)
+     * matrix.columnCopy(-1);   // throws IndexOutOfBoundsException (negative index)
+     * matrix.columnCopy(3);    // throws IndexOutOfBoundsException (index >= columnCount)
      * }</pre>
      *
      * @param columnIndex the index of the column to retrieve (0-based)
      * @return a new boolean array containing the values from the specified column
-     * @throws IllegalArgumentException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
+     * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     @Override
-    public boolean[] columnCopy(final int columnIndex) throws IllegalArgumentException {
-        N.checkArgument(columnIndex >= 0 && columnIndex < columnCount, MSG_COLUMN_INDEX_OUT_OF_BOUNDS, columnIndex, columnCount);
+    public boolean[] columnCopy(final int columnIndex) throws IndexOutOfBoundsException {
+        checkColumnIndex(columnIndex);
 
         final boolean[] c = new boolean[rowCount];
 
@@ -682,18 +684,18 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * matrix.get(0, 1);          // returns true
      *
      * matrix.setRow(0, new boolean[] {true, false});      // throws IllegalArgumentException (length != columnCount)
-     * matrix.setRow(5, new boolean[] {true, true, true}); // throws IllegalArgumentException (row index out of bounds)
+     * matrix.setRow(5, new boolean[] {true, true, true}); // throws IndexOutOfBoundsException (row index out of bounds)
      * matrix.setRow(0, (boolean[]) null);                 // throws IllegalArgumentException (null row)
      * }</pre>
      *
      * @param rowIndex the index of the row to set (0-based)
      * @param row the array of values to copy into the row; must have length equal to the number of columns
-     * @throws IllegalArgumentException if {@code row} is {@code null}, if {@code rowIndex} is out of bounds,
-     *         or if {@code row.length} does not match the column count
+     * @throws IndexOutOfBoundsException if {@code rowIndex} is out of bounds
+     * @throws IllegalArgumentException if {@code row} is {@code null} or if {@code row.length} does not match the column count
      */
-    public void setRow(final int rowIndex, final boolean[] row) throws IllegalArgumentException {
+    public void setRow(final int rowIndex, final boolean[] row) throws IndexOutOfBoundsException, IllegalArgumentException {
         N.checkArgNotNull(row, "row");
-        N.checkArgument(rowIndex >= 0 && rowIndex < rowCount, MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount);
+        checkRowIndex(rowIndex);
         N.checkArgument(row.length == columnCount, MSG_ROW_LENGTH_MISMATCH, columnCount, row.length);
 
         N.copy(row, 0, a[rowIndex], 0, columnCount);
@@ -714,18 +716,18 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * matrix.get(1, 0);          // returns true
      *
      * matrix.setColumn(0, new boolean[] {true});        // throws IllegalArgumentException (length != rowCount)
-     * matrix.setColumn(5, new boolean[] {true, true});  // throws IllegalArgumentException (column index out of bounds)
+     * matrix.setColumn(5, new boolean[] {true, true});  // throws IndexOutOfBoundsException (column index out of bounds)
      * matrix.setColumn(0, (boolean[]) null);            // throws IllegalArgumentException (null column)
      * }</pre>
      *
      * @param columnIndex the index of the column to set (0-based)
      * @param column the array of values to copy into the column; must have length equal to the number of rows
-     * @throws IllegalArgumentException if {@code column} is {@code null}, if {@code columnIndex} is out of bounds,
-     *         or if {@code column.length} does not match the row count
+     * @throws IndexOutOfBoundsException if {@code columnIndex} is out of bounds
+     * @throws IllegalArgumentException if {@code column} is {@code null} or if {@code column.length} does not match the row count
      */
-    public void setColumn(final int columnIndex, final boolean[] column) throws IllegalArgumentException {
+    public void setColumn(final int columnIndex, final boolean[] column) throws IndexOutOfBoundsException, IllegalArgumentException {
         N.checkArgNotNull(column, "column");
-        N.checkArgument(columnIndex >= 0 && columnIndex < columnCount, MSG_COLUMN_INDEX_OUT_OF_BOUNDS, columnIndex, columnCount);
+        checkColumnIndex(columnIndex);
         N.checkArgument(column.length == rowCount, MSG_COLUMN_LENGTH_MISMATCH, rowCount, column.length);
 
         for (int i = 0; i < rowCount; i++) {
@@ -750,7 +752,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * matrix.updateRow(1, val -> true);   // sets every cell in row 1 to true
      * matrix.get(1, 0);                   // returns true
      *
-     * matrix.updateRow(5, val -> val);    // throws ArrayIndexOutOfBoundsException (row out of bounds)
+     * matrix.updateRow(5, val -> val);    // throws IndexOutOfBoundsException (row out of bounds)
      * matrix.updateRow(0, null);          // throws IllegalArgumentException (null operator)
      * }</pre>
      *
@@ -758,14 +760,12 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param rowIndex the index of the row to update (0-based)
      * @param operator the operator to apply to each element in the row; receives the current
      *             element value and returns the new value
-     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex} is out of bounds
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateRow(final int rowIndex, final Throwables.BooleanUnaryOperator<E> operator) throws E {
-        if (rowIndex < 0 || rowIndex >= rowCount) {
-            throw new ArrayIndexOutOfBoundsException(formatMsg(MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount));
-        }
+        checkRowIndex(rowIndex);
 
         N.checkArgNotNull(operator, "operator");
 
@@ -791,7 +791,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * matrix.updateColumn(0, val -> false);  // sets every cell in column 0 to false
      * matrix.get(0, 0);                      // returns false
      *
-     * matrix.updateColumn(5, val -> val);    // throws ArrayIndexOutOfBoundsException (column out of bounds)
+     * matrix.updateColumn(5, val -> val);    // throws IndexOutOfBoundsException (column out of bounds)
      * matrix.updateColumn(0, null);          // throws IllegalArgumentException (null operator)
      * }</pre>
      *
@@ -799,14 +799,12 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param columnIndex the index of the column to update (0-based)
      * @param operator the operator to apply to each element in the column; receives the current
      *             element value and returns the new value
-     * @throws ArrayIndexOutOfBoundsException if {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code columnIndex} is out of bounds
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.BooleanUnaryOperator<E> operator) throws E {
-        if (columnIndex < 0 || columnIndex >= columnCount) {
-            throw new ArrayIndexOutOfBoundsException(formatMsg(MSG_COLUMN_INDEX_OUT_OF_BOUNDS, columnIndex, columnCount));
-        }
+        checkColumnIndex(columnIndex);
 
         N.checkArgNotNull(operator, "operator");
 
@@ -879,7 +877,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * @param mainDiagonal the new values for the main diagonal; must have length equal to {@code rowCount}
      * @throws IllegalStateException if the matrix is not square ({@code rowCount != columnCount})
-     * @throws IllegalArgumentException if {@code mainDiagonal} array length does not equal {@code rowCount}
+     * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null} or its array length does not equal {@code rowCount}
      */
     @Override
     public void setMainDiagonal(final boolean[] mainDiagonal) throws IllegalStateException, IllegalArgumentException {
@@ -993,7 +991,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * @param antiDiagonal the new values for the anti-diagonal; must have length equal to {@code rowCount}
      * @throws IllegalStateException if the matrix is not square ({@code rowCount != columnCount})
-     * @throws IllegalArgumentException if {@code antiDiagonal} array length does not equal {@code rowCount}
+     * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null} or its array length does not equal {@code rowCount}
      */
     @Override
     public void setAntiDiagonal(final boolean[] antiDiagonal) throws IllegalStateException, IllegalArgumentException {
@@ -1323,20 +1321,25 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * matrix.get(0, 0);                                                  // returns false (outside the copied region)
      *
      * matrix.fill(1, 1, new boolean[][] {{true, true, true}});   // overflow is clipped to the matrix bounds
-     * matrix.fill(-1, 0, new boolean[][] {{true}});              // throws IllegalArgumentException (negative index)
+     * matrix.fill(-1, 0, new boolean[][] {{true}});              // throws IndexOutOfBoundsException (negative index)
      * matrix.fill(0, 0, (boolean[][]) null);                     // throws IllegalArgumentException (null source)
      * }</pre>
      *
      * @param destRowIndex the target row index in this matrix (0-based)
      * @param destColumnIndex the target column index in this matrix (0-based)
      * @param source the source array to copy values from; must not be {@code null}
-     * @throws IllegalArgumentException if {@code source} is {@code null}, or if the target indices are negative or exceed matrix dimensions
+     * @throws IndexOutOfBoundsException if {@code destRowIndex < 0} or {@code destRowIndex > rowCount},
+     *         or if {@code destColumnIndex < 0} or {@code destColumnIndex > columnCount}
+     * @throws IllegalArgumentException if {@code source} is {@code null}
      */
-    public void fill(final int destRowIndex, final int destColumnIndex, final boolean[][] source) throws IllegalArgumentException {
+    public void fill(final int destRowIndex, final int destColumnIndex, final boolean[][] source) throws IndexOutOfBoundsException, IllegalArgumentException {
         N.checkArgNotNull(source, "source");
-        N.checkArgument(destRowIndex >= 0 && destRowIndex <= rowCount, "destRowIndex({}) must be between 0 and rowCount({})", destRowIndex, rowCount);
-        N.checkArgument(destColumnIndex >= 0 && destColumnIndex <= columnCount, "destColumnIndex({}) must be between 0 and columnCount({})", destColumnIndex,
-                columnCount);
+        if (destRowIndex < 0 || destRowIndex > rowCount) {
+            throw new IndexOutOfBoundsException(formatMsg("destRowIndex({}) must be between 0 and rowCount({})", destRowIndex, rowCount));
+        }
+        if (destColumnIndex < 0 || destColumnIndex > columnCount) {
+            throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be between 0 and columnCount({})", destColumnIndex, columnCount));
+        }
 
         for (int i = 0, minLen = N.min(rowCount - destRowIndex, source.length); i < minLen; i++) {
             if (source[i] != null) {
@@ -1924,6 +1927,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * @return a new matrix rotated 90 degrees clockwise (dimensions {@code columnCount × rowCount}),
      *         or an empty matrix if this matrix has zero columns
+     * @throws IllegalArgumentException if the resulting (transposed) shape is not representable
      */
     @Override
     public BooleanMatrix rotate90() {
@@ -2013,6 +2017,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * @return a new matrix rotated 270 degrees clockwise (dimensions {@code columnCount × rowCount}),
      *         or an empty matrix if this matrix has zero columns
+     * @throws IllegalArgumentException if the resulting (transposed) shape is not representable
      */
     @Override
     public BooleanMatrix rotate270() {
@@ -2068,6 +2073,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @return a new matrix that is the transpose of this matrix with dimensions {@code columnCount × rowCount};
      *         an {@code N x 0} matrix transposes to the empty {@code 0 x 0} matrix, because the swapped shape
      *         {@code 0 x N} (zero rows with a non-zero column count) is not representable
+     * @throws IllegalArgumentException if the resulting (transposed) shape is not representable
      */
     @Override
     public BooleanMatrix transpose() {
@@ -2332,11 +2338,14 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * @param <E> the type of exception that the operation may throw
      * @param action the operation to apply to the flattened array; must not be {@code null}
+     * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the operation throws an exception
      * @see Arrays#mutateAsFlat(boolean[][], Throwables.Consumer)
      */
     @Override
     public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super boolean[], E> action) throws E {
+        N.checkArgNotNull(action, "action");
+
         Arrays.mutateAsFlat(a, action);
     }
 
@@ -2727,16 +2736,17 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *                    element from this matrix as first argument and element from {@code other}
      *                    as second argument
      * @return a new {@code BooleanMatrix} with the results of the element-wise operation
-     * @throws IllegalArgumentException if the matrices have different dimensions (shape mismatch),
-     *         or if {@code zipFunction} is {@code null}
+     * @throws IllegalArgumentException if {@code other} or {@code zipFunction} is {@code null},
+     *         or if the matrices have different shapes
      * @throws E if the zip function throws an exception
      * @see #zipWith(BooleanMatrix, BooleanMatrix, Throwables.BooleanTernaryOperator)
      */
     public <E extends Exception> BooleanMatrix zipWith(final BooleanMatrix other, final Throwables.BooleanBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
+        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(zipFunction, "zipFunction");
         N.checkArgument(isSameShape(other), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
-        N.checkArgNotNull(zipFunction, "zipFunction");
 
         final boolean[][] otherData = other.a;
         final boolean[][] result = new boolean[rowCount][columnCount];
@@ -2783,16 +2793,18 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *                    element from this matrix as first argument, element from {@code other} as
      *                    second argument, and element from {@code third} as third argument
      * @return a new {@code BooleanMatrix} with the results of the element-wise operation
-     * @throws IllegalArgumentException if any of the matrices have different dimensions (shape mismatch),
-     *         or if {@code zipFunction} is {@code null}
+     * @throws IllegalArgumentException if any of {@code other}, {@code third}, or {@code zipFunction} is {@code null},
+     *         or if any of the matrices have different shapes
      * @throws E if the zip function throws an exception
      * @see #zipWith(BooleanMatrix, Throwables.BooleanBinaryOperator)
      */
     public <E extends Exception> BooleanMatrix zipWith(final BooleanMatrix other, final BooleanMatrix third,
             final Throwables.BooleanTernaryOperator<E> zipFunction) throws IllegalArgumentException, E {
+        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(third, "third");
+        N.checkArgNotNull(zipFunction, "zipFunction");
         N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: all matrices must be {}x{}", rowCount,
                 columnCount);
-        N.checkArgNotNull(zipFunction, "zipFunction");
 
         final boolean[][] otherData = other.a;
         final boolean[][] thirdData = third.a;

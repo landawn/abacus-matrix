@@ -443,15 +443,17 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * ShortMatrix.unbox(withNull).get(0, 1);    // returns (short) 0 (null cell -> 0)
      *
      * ShortMatrix.unbox(Matrix.of(new Short[0][0])).isEmpty();   // returns true
-     * ShortMatrix.unbox(null);                                   // throws NullPointerException
+     * ShortMatrix.unbox(null);                                   // throws IllegalArgumentException
      * }</pre>
      *
      * @param x the boxed Short matrix to convert; must not be {@code null}
      * @return a new ShortMatrix with unboxed primitive values
-     * @throws NullPointerException if {@code x} is {@code null}
+     * @throws IllegalArgumentException if {@code x} is {@code null}
      * @see #boxed()
      */
     public static ShortMatrix unbox(final Matrix<Short> x) {
+        N.checkArgNotNull(x, "x");
+
         return ShortMatrix.of(Array.unbox(x.a));
     }
 
@@ -562,13 +564,13 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * matrix.valueAbove(1, 0).get();         // returns (short) 1
      * matrix.valueAbove(1, 1).get();         // returns (short) 2
      * matrix.valueAbove(0, 0).isPresent();   // returns false (no row above row 0)
-     * matrix.valueAbove(5, 0);               // throws ArrayIndexOutOfBoundsException (out of bounds)
+     * matrix.valueAbove(5, 0);               // throws IndexOutOfBoundsException (out of bounds)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
      * @return an OptionalShort containing the element at position (rowIndex - 1, columnIndex), or empty if rowIndex == 0
-     * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @throws IndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     public OptionalShort valueAbove(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -587,13 +589,13 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * matrix.valueBelow(0, 0).get();         // returns (short) 3
      * matrix.valueBelow(0, 1).get();         // returns (short) 4
      * matrix.valueBelow(1, 0).isPresent();   // returns false (no row below last row)
-     * matrix.valueBelow(5, 0);               // throws ArrayIndexOutOfBoundsException (out of bounds)
+     * matrix.valueBelow(5, 0);               // throws IndexOutOfBoundsException (out of bounds)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
      * @return an OptionalShort containing the element at position (rowIndex + 1, columnIndex), or empty if rowIndex == rowCount - 1
-     * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @throws IndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     public OptionalShort valueBelow(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -612,13 +614,13 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * matrix.valueLeft(0, 1).get();         // returns (short) 1
      * matrix.valueLeft(1, 1).get();         // returns (short) 3
      * matrix.valueLeft(0, 0).isPresent();   // returns false (no column left of column 0)
-     * matrix.valueLeft(0, 5);               // throws ArrayIndexOutOfBoundsException (out of bounds)
+     * matrix.valueLeft(0, 5);               // throws IndexOutOfBoundsException (out of bounds)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
      * @return an OptionalShort containing the element at position (rowIndex, columnIndex - 1), or empty if columnIndex == 0
-     * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @throws IndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     public OptionalShort valueLeft(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -637,13 +639,13 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * matrix.valueRight(0, 0).get();         // returns (short) 2
      * matrix.valueRight(1, 0).get();         // returns (short) 4
      * matrix.valueRight(0, 1).isPresent();   // returns false (no column right of last column)
-     * matrix.valueRight(0, 5);               // throws ArrayIndexOutOfBoundsException (out of bounds)
+     * matrix.valueRight(0, 5);               // throws IndexOutOfBoundsException (out of bounds)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
      * @return an OptionalShort containing the element at position (rowIndex, columnIndex + 1), or empty if columnIndex == columnCount - 1
-     * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @throws IndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     public OptionalShort valueRight(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -671,11 +673,11 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return the specified row array (direct reference to internal storage)
-     * @throws IllegalArgumentException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      */
     @Override
-    public short[] rowView(final int rowIndex) throws IllegalArgumentException {
-        N.checkArgument(rowIndex >= 0 && rowIndex < rowCount, MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount);
+    public short[] rowView(final int rowIndex) throws IndexOutOfBoundsException {
+        checkRowIndex(rowIndex);
 
         return a[rowIndex];
     }
@@ -691,18 +693,18 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * matrix.rowCopy(1);                      // returns [4, 5, 6]
      *
      * firstRow[0] = 10;                       // copy: matrix.get(0, 0) still returns (short) 1
-     * matrix.rowCopy(2);                      // throws IllegalArgumentException (row out of bounds)
-     * matrix.rowCopy(-1);                     // throws IllegalArgumentException (negative index)
+     * matrix.rowCopy(2);                      // throws IndexOutOfBoundsException (row out of bounds)
+     * matrix.rowCopy(-1);                     // throws IndexOutOfBoundsException (negative index)
      * }</pre>
      *
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return a new short array containing the values from the specified row
-     * @throws IllegalArgumentException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      * @see #rowView(int)
      */
     @Override
-    public short[] rowCopy(final int rowIndex) throws IllegalArgumentException {
-        N.checkArgument(rowIndex >= 0 && rowIndex < rowCount, MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount);
+    public short[] rowCopy(final int rowIndex) throws IndexOutOfBoundsException {
+        checkRowIndex(rowIndex);
 
         return N.copyOf(a[rowIndex], columnCount);
     }
@@ -721,17 +723,17 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * matrix.columnCopy(2);                         // returns [3, 6]
      *
      * firstColumn[0] = 10;                          // copy: matrix.get(0, 0) still returns (short) 1
-     * matrix.columnCopy(3);                         // throws IllegalArgumentException (column out of bounds)
-     * matrix.columnCopy(-1);                        // throws IllegalArgumentException (negative index)
+     * matrix.columnCopy(3);                         // throws IndexOutOfBoundsException (column out of bounds)
+     * matrix.columnCopy(-1);                        // throws IndexOutOfBoundsException (negative index)
      * }</pre>
      *
      * @param columnIndex the index of the column to retrieve (0-based)
      * @return a new array containing the values from the specified column
-     * @throws IllegalArgumentException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
+     * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     @Override
-    public short[] columnCopy(final int columnIndex) throws IllegalArgumentException {
-        N.checkArgument(columnIndex >= 0 && columnIndex < columnCount, MSG_COLUMN_INDEX_OUT_OF_BOUNDS, columnIndex, columnCount);
+    public short[] columnCopy(final int columnIndex) throws IndexOutOfBoundsException {
+        checkColumnIndex(columnIndex);
 
         final short[] result = new short[rowCount];
 
@@ -756,18 +758,18 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * matrix.rowCopy(0);                               // returns [7, 8, 9] (row replaced)
      *
      * matrix.setRow(0, new short[] {1, 2});           // throws IllegalArgumentException (length != columnCount)
-     * matrix.setRow(5, new short[] {1, 2, 3});        // throws IllegalArgumentException (row out of bounds)
+     * matrix.setRow(5, new short[] {1, 2, 3});        // throws IndexOutOfBoundsException (row out of bounds)
      * matrix.setRow(0, (short[]) null);               // throws IllegalArgumentException
      * }</pre>
      *
      * @param rowIndex the index of the row to set (0-based)
      * @param row the array of values to copy into the row; must have length equal to the number of columns
-     * @throws IllegalArgumentException if {@code row} is {@code null}, if rowIndex is out of bounds,
-     *         or if row length does not match column count
+     * @throws IndexOutOfBoundsException if {@code rowIndex} is out of bounds
+     * @throws IllegalArgumentException if {@code row} is {@code null} or if {@code row.length != columnCount}
      */
-    public void setRow(final int rowIndex, final short[] row) throws IllegalArgumentException {
+    public void setRow(final int rowIndex, final short[] row) throws IndexOutOfBoundsException, IllegalArgumentException {
         N.checkArgNotNull(row, "row");
-        N.checkArgument(rowIndex >= 0 && rowIndex < rowCount, MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount);
+        checkRowIndex(rowIndex);
         N.checkArgument(row.length == columnCount, MSG_ROW_LENGTH_MISMATCH, columnCount, row.length);
 
         N.copy(row, 0, a[rowIndex], 0, columnCount);
@@ -787,18 +789,18 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * matrix.columnCopy(0);                            // returns [7, 8] (column replaced)
      *
      * matrix.setColumn(0, new short[] {1, 2, 3});     // throws IllegalArgumentException (length != rowCount)
-     * matrix.setColumn(5, new short[] {1, 2});        // throws IllegalArgumentException (column out of bounds)
+     * matrix.setColumn(5, new short[] {1, 2});        // throws IndexOutOfBoundsException (column out of bounds)
      * matrix.setColumn(0, (short[]) null);            // throws IllegalArgumentException
      * }</pre>
      *
      * @param columnIndex the index of the column to set (0-based)
      * @param column the array of values to copy into the column; must have length equal to the number of rows
-     * @throws IllegalArgumentException if {@code column} is {@code null}, if columnIndex is out of bounds,
-     *         or if column length does not match row count
+     * @throws IndexOutOfBoundsException if {@code columnIndex} is out of bounds
+     * @throws IllegalArgumentException if {@code column} is {@code null} or if {@code column.length != rowCount}
      */
-    public void setColumn(final int columnIndex, final short[] column) throws IllegalArgumentException {
+    public void setColumn(final int columnIndex, final short[] column) throws IndexOutOfBoundsException, IllegalArgumentException {
         N.checkArgNotNull(column, "column");
-        N.checkArgument(columnIndex >= 0 && columnIndex < columnCount, MSG_COLUMN_INDEX_OUT_OF_BOUNDS, columnIndex, columnCount);
+        checkColumnIndex(columnIndex);
         N.checkArgument(column.length == rowCount, MSG_COLUMN_LENGTH_MISMATCH, rowCount, column.length);
 
         for (int i = 0; i < rowCount; i++) {
@@ -819,21 +821,19 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * matrix.updateRow(1, x -> (short) 0);
      * matrix.rowCopy(1);                              // returns [0, 0, 0]
-     * matrix.updateRow(5, x -> x);                    // throws ArrayIndexOutOfBoundsException (row out of bounds)
+     * matrix.updateRow(5, x -> x);                    // throws IndexOutOfBoundsException (row out of bounds)
      * matrix.updateRow(0, null);                      // throws IllegalArgumentException (null operator)
      * }</pre>
      *
      * @param <E> the type of exception that the operator may throw
      * @param rowIndex the index of the row to update (0-based)
      * @param operator the unary operator to apply to each element in the row, taking a short and returning a short
-     * @throws ArrayIndexOutOfBoundsException if rowIndex is out of bounds
+     * @throws IndexOutOfBoundsException if rowIndex is out of bounds
      * @throws IllegalArgumentException if operator is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateRow(final int rowIndex, final Throwables.ShortUnaryOperator<E> operator) throws E {
-        if (rowIndex < 0 || rowIndex >= rowCount) {
-            throw new ArrayIndexOutOfBoundsException(formatMsg(MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount));
-        }
+        checkRowIndex(rowIndex);
 
         N.checkArgNotNull(operator, "operator");
 
@@ -855,21 +855,19 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * matrix.updateColumn(0, x -> (short) 0);
      * matrix.columnCopy(0);                              // returns [0, 0]
-     * matrix.updateColumn(5, x -> x);                    // throws ArrayIndexOutOfBoundsException (column out of bounds)
+     * matrix.updateColumn(5, x -> x);                    // throws IndexOutOfBoundsException (column out of bounds)
      * matrix.updateColumn(0, null);                      // throws IllegalArgumentException (null operator)
      * }</pre>
      *
      * @param <E> the type of exception that the operator may throw
      * @param columnIndex the index of the column to update (0-based)
      * @param operator the unary operator to apply to each element in the column, taking a short and returning a short
-     * @throws ArrayIndexOutOfBoundsException if columnIndex is out of bounds
+     * @throws IndexOutOfBoundsException if columnIndex is out of bounds
      * @throws IllegalArgumentException if operator is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.ShortUnaryOperator<E> operator) throws E {
-        if (columnIndex < 0 || columnIndex >= columnCount) {
-            throw new ArrayIndexOutOfBoundsException(formatMsg(MSG_COLUMN_INDEX_OUT_OF_BOUNDS, columnIndex, columnCount));
-        }
+        checkColumnIndex(columnIndex);
 
         N.checkArgNotNull(operator, "operator");
 
@@ -934,7 +932,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param mainDiagonal the new values for the main diagonal; must have length equal to rowCount
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
-     * @throws IllegalArgumentException if mainDiagonal array length does not equal rowCount
+     * @throws IllegalArgumentException if mainDiagonal is null or its array length does not equal rowCount
      */
     @Override
     public void setMainDiagonal(final short[] mainDiagonal) throws IllegalStateException, IllegalArgumentException {
@@ -1038,7 +1036,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param antiDiagonal the new values for the anti-diagonal; must have length equal to rowCount
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
-     * @throws IllegalArgumentException if antiDiagonal array length does not equal rowCount
+     * @throws IllegalArgumentException if antiDiagonal is null or its array length does not equal rowCount
      */
     @Override
     public void setAntiDiagonal(final short[] antiDiagonal) throws IllegalStateException, IllegalArgumentException {
@@ -1345,20 +1343,24 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * matrix.get(0, 0);                                  // returns (short) 0 (top-left untouched)
      *
      * matrix.fill(0, 0, (short[][]) null);             // throws IllegalArgumentException (null source)
-     * matrix.fill(4, 0, new short[][] {{1}});          // throws IllegalArgumentException (destRowIndex > rowCount)
+     * matrix.fill(4, 0, new short[][] {{1}});          // throws IndexOutOfBoundsException (destRowIndex > rowCount)
      * }</pre>
      *
      * @param destRowIndex the target row index in this matrix (0-based, must be {@code 0 <= destRowIndex <= rowCount})
      * @param destColumnIndex the target column index in this matrix (0-based, must be {@code 0 <= destColumnIndex <= columnCount})
      * @param source the source array to copy values from; must not be {@code null}
-     * @throws IllegalArgumentException if {@code source} is {@code null}, if {@code destRowIndex < 0} or {@code destRowIndex > rowCount},
+     * @throws IndexOutOfBoundsException if {@code destRowIndex < 0} or {@code destRowIndex > rowCount},
      *         or if {@code destColumnIndex < 0} or {@code destColumnIndex > columnCount}
+     * @throws IllegalArgumentException if {@code source} is {@code null}
      */
-    public void fill(final int destRowIndex, final int destColumnIndex, final short[][] source) throws IllegalArgumentException {
+    public void fill(final int destRowIndex, final int destColumnIndex, final short[][] source) throws IndexOutOfBoundsException, IllegalArgumentException {
         N.checkArgNotNull(source, "source");
-        N.checkArgument(destRowIndex >= 0 && destRowIndex <= rowCount, "destRowIndex({}) must be between 0 and rowCount({})", destRowIndex, rowCount);
-        N.checkArgument(destColumnIndex >= 0 && destColumnIndex <= columnCount, "destColumnIndex({}) must be between 0 and columnCount({})", destColumnIndex,
-                columnCount);
+        if (destRowIndex < 0 || destRowIndex > rowCount) {
+            throw new IndexOutOfBoundsException(formatMsg("destRowIndex({}) must be between 0 and rowCount({})", destRowIndex, rowCount));
+        }
+        if (destColumnIndex < 0 || destColumnIndex > columnCount) {
+            throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be between 0 and columnCount({})", destColumnIndex, columnCount));
+        }
 
         for (int i = 0, minLen = N.min(rowCount - destRowIndex, source.length); i < minLen; i++) {
             if (source[i] != null) {
@@ -1873,6 +1875,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @return a new ShortMatrix rotated 90 degrees clockwise with dimensions columnCount × rowCount
+     * @throws IllegalArgumentException if the resulting (transposed) shape is not representable
      */
     @Override
     public ShortMatrix rotate90() {
@@ -1955,6 +1958,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @return a new ShortMatrix rotated 270 degrees clockwise with dimensions columnCount × rowCount
+     * @throws IllegalArgumentException if the resulting (transposed) shape is not representable
      */
     @Override
     public ShortMatrix rotate270() {
@@ -2006,6 +2010,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @return a new ShortMatrix that is the transpose with dimensions columnCount × rowCount;
      *         an {@code N x 0} matrix transposes to the empty {@code 0 x 0} matrix, because the swapped shape
      *         {@code 0 x N} (zero rows with a non-zero column count) is not representable
+     * @throws IllegalArgumentException if the resulting (transposed) shape is not representable
      */
     @Override
     public ShortMatrix transpose() {
@@ -2270,11 +2275,14 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param <E> the type of exception that the operation may throw
      * @param action the operation to apply to the flattened array
+     * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the operation throws an exception
      * @see Arrays#mutateAsFlat(short[][], Throwables.Consumer)
      */
     @Override
     public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super short[], E> action) throws E {
+        N.checkArgNotNull(action, "action");
+
         Arrays.mutateAsFlat(a, action);
     }
 
@@ -2737,9 +2745,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      */
     public <E extends Exception> ShortMatrix zipWith(final ShortMatrix other, final Throwables.ShortBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
+        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(zipFunction, "zipFunction");
         N.checkArgument(isSameShape(other), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
-        N.checkArgNotNull(zipFunction, "zipFunction");
 
         final short[][] arrayB = other.a;
         final short[][] result = new short[rowCount][columnCount];
@@ -2782,10 +2791,12 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @throws E if the zip function throws an exception
      */
     public <E extends Exception> ShortMatrix zipWith(final ShortMatrix other, final ShortMatrix third, final Throwables.ShortTernaryOperator<E> zipFunction)
-            throws E {
+            throws IllegalArgumentException, E {
+        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(third, "third");
+        N.checkArgNotNull(zipFunction, "zipFunction");
         N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: all matrices must be {}x{}", rowCount,
                 columnCount);
-        N.checkArgNotNull(zipFunction, "zipFunction");
 
         final short[][] arrayB = other.a;
         final short[][] arrayC = third.a;

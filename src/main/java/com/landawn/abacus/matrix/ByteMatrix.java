@@ -493,15 +493,17 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * Matrix<Byte> emptyBoxed = Matrix.of(new Byte[0][0]);
      * ByteMatrix.unbox(emptyBoxed).isEmpty();            // returns true
      *
-     * ByteMatrix.unbox((Matrix<Byte>) null);             // throws NullPointerException
+     * ByteMatrix.unbox((Matrix<Byte>) null);             // throws IllegalArgumentException
      * }</pre>
      *
      * @param x the boxed {@code Matrix<Byte>} to convert; must not be {@code null}
      * @return a new {@code ByteMatrix} with primitive byte values
-     * @throws NullPointerException if {@code x} is {@code null}
+     * @throws IllegalArgumentException if {@code x} is {@code null}
      * @see #boxed()
      */
     public static ByteMatrix unbox(final Matrix<Byte> x) {
+        N.checkArgNotNull(x, "x");
+
         return ByteMatrix.of(Array.unbox(x.a));
     }
 
@@ -614,13 +616,13 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * matrix.valueAbove(1, 0).get();        // returns (byte) 1
      * matrix.valueAbove(0, 0).isPresent();  // returns false (no row above row 0)
      * matrix.valueAbove(1, 1).get();        // returns (byte) 2
-     * matrix.valueAbove(5, 0);              // throws ArrayIndexOutOfBoundsException (row out of bounds)
+     * matrix.valueAbove(5, 0);              // throws IndexOutOfBoundsException (row out of bounds)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
      * @return an OptionalByte containing the element at position (rowIndex - 1, columnIndex), or empty if rowIndex == 0
-     * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @throws IndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     public OptionalByte valueAbove(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -639,13 +641,13 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * matrix.valueBelow(0, 0).get();        // returns (byte) 3
      * matrix.valueBelow(1, 0).isPresent();  // returns false (no row below last row)
      * matrix.valueBelow(0, 1).get();        // returns (byte) 4
-     * matrix.valueBelow(0, 9);              // throws ArrayIndexOutOfBoundsException (column out of bounds)
+     * matrix.valueBelow(0, 9);              // throws IndexOutOfBoundsException (column out of bounds)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
      * @return an OptionalByte containing the element at position (rowIndex + 1, columnIndex), or empty if rowIndex == rowCount - 1
-     * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @throws IndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     public OptionalByte valueBelow(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -664,13 +666,13 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * matrix.valueLeft(0, 1).get();         // returns (byte) 1
      * matrix.valueLeft(0, 0).isPresent();   // returns false (no column left of column 0)
      * matrix.valueLeft(1, 1).get();         // returns (byte) 3
-     * matrix.valueLeft(9, 1);               // throws ArrayIndexOutOfBoundsException (row out of bounds)
+     * matrix.valueLeft(9, 1);               // throws IndexOutOfBoundsException (row out of bounds)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
      * @return an OptionalByte containing the element at position (rowIndex, columnIndex - 1), or empty if columnIndex == 0
-     * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @throws IndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     public OptionalByte valueLeft(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -689,13 +691,13 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * matrix.valueRight(0, 0).get();        // returns (byte) 2
      * matrix.valueRight(0, 1).isPresent();  // returns false (no column right of last column)
      * matrix.valueRight(1, 0).get();        // returns (byte) 4
-     * matrix.valueRight(0, 9);              // throws ArrayIndexOutOfBoundsException (column out of bounds)
+     * matrix.valueRight(0, 9);              // throws IndexOutOfBoundsException (column out of bounds)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
      * @return an OptionalByte containing the element at position (rowIndex, columnIndex + 1), or empty if columnIndex == columnCount - 1
-     * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @throws IndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     public OptionalByte valueRight(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -718,17 +720,17 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * matrix.get(0, 0);                      // returns (byte) 99
      *
      * matrix.rowView(1);                     // returns [4, 5, 6]
-     * matrix.rowView(-1);                    // throws IllegalArgumentException (negative index)
-     * matrix.rowView(5);                     // throws IllegalArgumentException (index >= rowCount)
+     * matrix.rowView(-1);                    // throws IndexOutOfBoundsException (negative index)
+     * matrix.rowView(5);                     // throws IndexOutOfBoundsException (index >= rowCount)
      * }</pre>
      *
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return the specified row array (direct reference to internal storage)
-     * @throws IllegalArgumentException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      */
     @Override
-    public byte[] rowView(final int rowIndex) throws IllegalArgumentException {
-        N.checkArgument(rowIndex >= 0 && rowIndex < rowCount, MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount);
+    public byte[] rowView(final int rowIndex) throws IndexOutOfBoundsException {
+        checkRowIndex(rowIndex);
 
         return a[rowIndex];
     }
@@ -745,17 +747,17 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * matrix.get(0, 0);                      // returns (byte) 1
      *
      * matrix.rowCopy(1);                     // returns [4, 5, 6]
-     * matrix.rowCopy(-1);                    // throws IllegalArgumentException (negative index)
-     * matrix.rowCopy(5);                     // throws IllegalArgumentException (index >= rowCount)
+     * matrix.rowCopy(-1);                    // throws IndexOutOfBoundsException (negative index)
+     * matrix.rowCopy(5);                     // throws IndexOutOfBoundsException (index >= rowCount)
      * }</pre>
      *
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return a new byte array containing the values from the specified row
-     * @throws IllegalArgumentException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      */
     @Override
-    public byte[] rowCopy(final int rowIndex) throws IllegalArgumentException {
-        N.checkArgument(rowIndex >= 0 && rowIndex < rowCount, MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount);
+    public byte[] rowCopy(final int rowIndex) throws IndexOutOfBoundsException {
+        checkRowIndex(rowIndex);
 
         return N.copyOf(a[rowIndex], columnCount);
     }
@@ -775,17 +777,17 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * matrix.get(0, 0);                            // returns (byte) 1
      *
      * matrix.columnCopy(2);                        // returns [3, 6]
-     * matrix.columnCopy(-1);                       // throws IllegalArgumentException (negative index)
-     * matrix.columnCopy(5);                        // throws IllegalArgumentException (index >= columnCount)
+     * matrix.columnCopy(-1);                       // throws IndexOutOfBoundsException (negative index)
+     * matrix.columnCopy(5);                        // throws IndexOutOfBoundsException (index >= columnCount)
      * }</pre>
      *
      * @param columnIndex the index of the column to retrieve (0-based)
      * @return a new array containing the values from the specified column
-     * @throws IllegalArgumentException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
+     * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     @Override
-    public byte[] columnCopy(final int columnIndex) throws IllegalArgumentException {
-        N.checkArgument(columnIndex >= 0 && columnIndex < columnCount, MSG_COLUMN_INDEX_OUT_OF_BOUNDS, columnIndex, columnCount);
+    public byte[] columnCopy(final int columnIndex) throws IndexOutOfBoundsException {
+        checkColumnIndex(columnIndex);
 
         final byte[] c = new byte[rowCount];
 
@@ -813,17 +815,17 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * matrix.get(1, 2);                            // returns (byte) 0
      *
      * matrix.setRow(0, new byte[] {1, 2});         // throws IllegalArgumentException (length != columnCount)
-     * matrix.setRow(5, new byte[] {1, 2, 3});      // throws IllegalArgumentException (row index out of bounds)
+     * matrix.setRow(5, new byte[] {1, 2, 3});      // throws IndexOutOfBoundsException (row index out of bounds)
      * }</pre>
      *
      * @param rowIndex the index of the row to set (0-based)
      * @param row the array of values to copy into the row; must have length equal to the number of columns
-     * @throws IllegalArgumentException if {@code row} is {@code null}, if rowIndex is out of bounds,
-     *         or if row length does not match columnCount
+     * @throws IndexOutOfBoundsException if {@code rowIndex} is out of bounds
+     * @throws IllegalArgumentException if {@code row} is {@code null} or if {@code row.length != columnCount}
      */
-    public void setRow(final int rowIndex, final byte[] row) throws IllegalArgumentException {
+    public void setRow(final int rowIndex, final byte[] row) throws IndexOutOfBoundsException, IllegalArgumentException {
         N.checkArgNotNull(row, "row");
-        N.checkArgument(rowIndex >= 0 && rowIndex < rowCount, MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount);
+        checkRowIndex(rowIndex);
         N.checkArgument(row.length == columnCount, MSG_ROW_LENGTH_MISMATCH, columnCount, row.length);
 
         N.copy(row, 0, a[rowIndex], 0, columnCount);
@@ -846,17 +848,17 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * matrix.get(1, 2);                            // returns (byte) 0
      *
      * matrix.setColumn(0, new byte[] {1});         // throws IllegalArgumentException (length != rowCount)
-     * matrix.setColumn(9, new byte[] {1, 2});      // throws IllegalArgumentException (column index out of bounds)
+     * matrix.setColumn(9, new byte[] {1, 2});      // throws IndexOutOfBoundsException (column index out of bounds)
      * }</pre>
      *
      * @param columnIndex the index of the column to set (0-based)
      * @param column the array of values to copy into the column; must have length equal to the number of rows
-     * @throws IllegalArgumentException if {@code column} is {@code null}, if columnIndex is out of bounds,
-     *         or if column length does not match rowCount
+     * @throws IndexOutOfBoundsException if {@code columnIndex} is out of bounds
+     * @throws IllegalArgumentException if {@code column} is {@code null} or if {@code column.length != rowCount}
      */
-    public void setColumn(final int columnIndex, final byte[] column) throws IllegalArgumentException {
+    public void setColumn(final int columnIndex, final byte[] column) throws IndexOutOfBoundsException, IllegalArgumentException {
         N.checkArgNotNull(column, "column");
-        N.checkArgument(columnIndex >= 0 && columnIndex < columnCount, MSG_COLUMN_INDEX_OUT_OF_BOUNDS, columnIndex, columnCount);
+        checkColumnIndex(columnIndex);
         N.checkArgument(column.length == rowCount, MSG_COLUMN_LENGTH_MISMATCH, rowCount, column.length);
 
         for (int i = 0; i < rowCount; i++) {
@@ -878,21 +880,19 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * matrix.updateRow(1, b -> (byte) (b + 10));
      * matrix.rowView(1);                          // returns [14, 15, 16]
      *
-     * matrix.updateRow(5, b -> b);               // throws ArrayIndexOutOfBoundsException (row out of bounds)
+     * matrix.updateRow(5, b -> b);               // throws IndexOutOfBoundsException (row out of bounds)
      * matrix.updateRow(0, null);                 // throws IllegalArgumentException (operator is null)
      * }</pre>
      *
      * @param <E> the type of exception that may be thrown by the operator
      * @param rowIndex the index of the row to update (0-based)
      * @param operator the unary operator to apply to each element in the row, taking a byte and returning a byte; must not be {@code null}
-     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex} is out of bounds
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateRow(final int rowIndex, final Throwables.ByteUnaryOperator<E> operator) throws E {
-        if (rowIndex < 0 || rowIndex >= rowCount) {
-            throw new ArrayIndexOutOfBoundsException(formatMsg(MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount));
-        }
+        checkRowIndex(rowIndex);
 
         N.checkArgNotNull(operator, "operator");
 
@@ -915,21 +915,19 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * matrix.updateColumn(0, b -> (byte) (b * 0));
      * matrix.columnCopy(0);                       // returns [0, 0]
      *
-     * matrix.updateColumn(9, b -> b);            // throws ArrayIndexOutOfBoundsException (column out of bounds)
+     * matrix.updateColumn(9, b -> b);            // throws IndexOutOfBoundsException (column out of bounds)
      * matrix.updateColumn(0, null);              // throws IllegalArgumentException (operator is null)
      * }</pre>
      *
      * @param <E> the type of exception that the operator may throw
      * @param columnIndex the index of the column to update (0-based)
      * @param operator the unary operator to apply to each element in the column, taking a byte and returning a byte; must not be {@code null}
-     * @throws ArrayIndexOutOfBoundsException if {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code columnIndex} is out of bounds
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.ByteUnaryOperator<E> operator) throws E {
-        if (columnIndex < 0 || columnIndex >= columnCount) {
-            throw new ArrayIndexOutOfBoundsException(formatMsg(MSG_COLUMN_INDEX_OUT_OF_BOUNDS, columnIndex, columnCount));
-        }
+        checkColumnIndex(columnIndex);
 
         N.checkArgNotNull(operator, "operator");
 
@@ -994,7 +992,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * @param mainDiagonal the new values for the main diagonal; must have length equal to rowCount
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
-     * @throws IllegalArgumentException if mainDiagonal array length does not equal rowCount
+     * @throws IllegalArgumentException if mainDiagonal is null or its array length does not equal rowCount
      */
     @Override
     public void setMainDiagonal(final byte[] mainDiagonal) throws IllegalStateException, IllegalArgumentException {
@@ -1099,7 +1097,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * @param antiDiagonal the new values for the anti-diagonal; must have length equal to rowCount
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
-     * @throws IllegalArgumentException if antiDiagonal array length does not equal rowCount
+     * @throws IllegalArgumentException if antiDiagonal is null or its array length does not equal rowCount
      */
     @Override
     public void setAntiDiagonal(final byte[] antiDiagonal) throws IllegalStateException, IllegalArgumentException {
@@ -1425,21 +1423,25 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * m2.fill(1, 0, new byte[][] {{7, 8}, {9, 9}});    // only the fitting part is copied
      * m2.rowView(1);                                   // returns [7, 8]
      *
-     * matrix.fill(-1, 0, new byte[][] {{1}});    // throws IllegalArgumentException (negative destRowIndex)
+     * matrix.fill(-1, 0, new byte[][] {{1}});    // throws IndexOutOfBoundsException (negative destRowIndex)
      * matrix.fill(0, 0, (byte[][]) null);        // throws IllegalArgumentException (source is null)
      * }</pre>
      *
      * @param destRowIndex the target row index in this matrix; must be in {@code [0, rowCount]}
      * @param destColumnIndex the target column index in this matrix; must be in {@code [0, columnCount]}
      * @param source the source array to copy values from; must not be {@code null}
-     * @throws IllegalArgumentException if {@code source} is {@code null}, or if {@code destRowIndex}
-     *         or {@code destColumnIndex} is negative or exceeds the corresponding matrix dimension
+     * @throws IndexOutOfBoundsException if {@code destRowIndex < 0} or {@code destRowIndex > rowCount},
+     *         or if {@code destColumnIndex < 0} or {@code destColumnIndex > columnCount}
+     * @throws IllegalArgumentException if {@code source} is {@code null}
      */
-    public void fill(final int destRowIndex, final int destColumnIndex, final byte[][] source) throws IllegalArgumentException {
+    public void fill(final int destRowIndex, final int destColumnIndex, final byte[][] source) throws IndexOutOfBoundsException, IllegalArgumentException {
         N.checkArgNotNull(source, "source");
-        N.checkArgument(destRowIndex >= 0 && destRowIndex <= rowCount, "destRowIndex({}) must be between 0 and rowCount({})", destRowIndex, rowCount);
-        N.checkArgument(destColumnIndex >= 0 && destColumnIndex <= columnCount, "destColumnIndex({}) must be between 0 and columnCount({})", destColumnIndex,
-                columnCount);
+        if (destRowIndex < 0 || destRowIndex > rowCount) {
+            throw new IndexOutOfBoundsException(formatMsg("destRowIndex({}) must be between 0 and rowCount({})", destRowIndex, rowCount));
+        }
+        if (destColumnIndex < 0 || destColumnIndex > columnCount) {
+            throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be between 0 and columnCount({})", destColumnIndex, columnCount));
+        }
 
         for (int i = 0, minLen = N.min(rowCount - destRowIndex, source.length); i < minLen; i++) {
             if (source[i] != null) {
@@ -2088,6 +2090,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * }</pre>
      *
      * @return a new matrix rotated 270 degrees clockwise with dimensions {@code (columnCount x rowCount)}
+     * @throws IllegalArgumentException if the resulting (transposed) shape is not representable
      * @see #rotate90()
      * @see #rotate180()
      */
@@ -2147,6 +2150,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @return a new matrix that is the transpose of this matrix with dimensions {@code columnCount × rowCount};
      *         an {@code N x 0} matrix transposes to the empty {@code 0 x 0} matrix, because the swapped shape
      *         {@code 0 x N} (zero rows with a non-zero column count) is not representable
+     * @throws IllegalArgumentException if the resulting (transposed) shape is not representable
      */
     @Override
     public ByteMatrix transpose() {
@@ -2420,11 +2424,14 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * @param <E> the type of exception that may be thrown by the operation
      * @param action the operation to apply to the flattened array
+     * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the operation throws an exception
      * @see Arrays#mutateAsFlat(byte[][], Throwables.Consumer)
      */
     @Override
     public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super byte[], E> action) throws E {
+        N.checkArgNotNull(action, "action");
+
         Arrays.mutateAsFlat(a, action);
     }
 
@@ -2889,15 +2896,15 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param other the second matrix
      * @param zipFunction the binary operation to apply to corresponding elements
      * @return a new {@code ByteMatrix} containing the results
-     * @throws IllegalArgumentException if {@code other} has a different shape than this matrix,
-     *         or if {@code zipFunction} is {@code null}
+     * @throws IllegalArgumentException if {@code other} or {@code zipFunction} is {@code null}, or if the matrices have different shapes
      * @throws E if the zip function throws an exception
      */
     public <E extends Exception> ByteMatrix zipWith(final ByteMatrix other, final Throwables.ByteBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
+        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(zipFunction, "zipFunction");
         N.checkArgument(isSameShape(other), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
-        N.checkArgNotNull(zipFunction, "zipFunction");
 
         final byte[][] b = other.a;
         final byte[][] result = new byte[rowCount][columnCount];
@@ -2935,15 +2942,17 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param third the third matrix
      * @param zipFunction the ternary operation to apply to corresponding elements
      * @return a new {@code ByteMatrix} containing the results
-     * @throws IllegalArgumentException if {@code other} or {@code third} has a different shape than this matrix,
-     *         or if {@code zipFunction} is {@code null}
+     * @throws IllegalArgumentException if any of {@code other}, {@code third}, or {@code zipFunction} is {@code null},
+     *         or if any of the matrices have different shapes
      * @throws E if the zip function throws an exception
      */
     public <E extends Exception> ByteMatrix zipWith(final ByteMatrix other, final ByteMatrix third, final Throwables.ByteTernaryOperator<E> zipFunction)
-            throws E {
+            throws IllegalArgumentException, E {
+        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(third, "third");
+        N.checkArgNotNull(zipFunction, "zipFunction");
         N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: all matrices must be {}x{}", rowCount,
                 columnCount);
-        N.checkArgNotNull(zipFunction, "zipFunction");
 
         final byte[][] b = other.a;
         final byte[][] c = third.a;

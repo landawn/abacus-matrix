@@ -293,11 +293,11 @@ class MatrixTest extends TestBase {
     public void testRowInvalidIndex() {
         Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2 } });
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> {
             matrix.rowView(-1);
         });
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> {
             matrix.rowView(2);
         });
     }
@@ -318,11 +318,11 @@ class MatrixTest extends TestBase {
     public void testColumnInvalidIndex() {
         Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2 } });
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> {
             matrix.columnCopy(-1);
         });
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> {
             matrix.columnCopy(2);
         });
     }
@@ -342,7 +342,7 @@ class MatrixTest extends TestBase {
     @Test
     public void testRowCopy_OutOfBounds() {
         Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2 } });
-        assertThrows(IllegalArgumentException.class, () -> matrix.rowCopy(1));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowCopy(1));
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -2239,8 +2239,8 @@ class MatrixTest extends TestBase {
         @Test
         public void testRow_outOfBounds() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(2));
         }
 
         @Test
@@ -2254,8 +2254,8 @@ class MatrixTest extends TestBase {
         @Test
         public void testColumn_outOfBounds() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(2));
         }
 
         @Test
@@ -2578,7 +2578,7 @@ class MatrixTest extends TestBase {
         public void testFill_outOfBounds() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
             String[][] patch = { { "X", "Y" }, { "Z", "W" } };
-            assertThrows(IllegalArgumentException.class, () -> m.fill(-1, 0, patch));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(-1, 0, patch));
         }
 
         // ============ Copy Tests ============
@@ -3932,8 +3932,8 @@ class MatrixTest extends TestBase {
         @Test
         public void testRow_invalidIndex() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" } });
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(1));
         }
 
         @Test
@@ -3953,8 +3953,8 @@ class MatrixTest extends TestBase {
         @Test
         public void testColumn_invalidIndex() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" } });
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(2));
         }
 
         @Test
@@ -4155,10 +4155,10 @@ class MatrixTest extends TestBase {
         public void testFill_array_withOffset_invalidIndices() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" } });
             String[][] patch = { { "X" } };
-            assertThrows(IllegalArgumentException.class, () -> m.fill(-1, 0, patch));
-            assertThrows(IllegalArgumentException.class, () -> m.fill(0, -1, patch));
-            assertThrows(IllegalArgumentException.class, () -> m.fill(2, 0, patch));
-            assertThrows(IllegalArgumentException.class, () -> m.fill(0, 3, patch));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(-1, 0, patch));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(0, -1, patch));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(2, 0, patch));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(0, 3, patch));
         }
 
         @Test
@@ -6085,7 +6085,7 @@ class MatrixTest extends TestBase {
         @Test
         public void test_row_outOfBounds_throwsException() {
             Matrix<String> m = Matrix.of(new String[][] { { "a", "b" } });
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(5));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(5));
         }
 
         @Test
@@ -6099,7 +6099,7 @@ class MatrixTest extends TestBase {
         @Test
         public void test_column_outOfBounds_throwsException() {
             Matrix<String> m = Matrix.of(new String[][] { { "a", "b" } });
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(5));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(5));
         }
 
         @Test
@@ -7148,8 +7148,8 @@ class MatrixTest extends TestBase {
     @Test
     public void testCopyFrom_negativeIndexThrows() {
         Matrix<String> m = Matrix.of(new String[][] { { "a" } });
-        assertThrows(IllegalArgumentException.class, () -> m.fill(-1, 0, new String[][] { { "b" } }));
-        assertThrows(IllegalArgumentException.class, () -> m.fill(0, -1, new String[][] { { "b" } }));
+        assertThrows(IndexOutOfBoundsException.class, () -> m.fill(-1, 0, new String[][] { { "b" } }));
+        assertThrows(IndexOutOfBoundsException.class, () -> m.fill(0, -1, new String[][] { { "b" } }));
     }
 
     @Test

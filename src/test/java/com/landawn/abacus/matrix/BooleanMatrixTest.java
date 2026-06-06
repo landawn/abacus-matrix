@@ -204,8 +204,8 @@ class BooleanMatrixTest extends TestBase {
         assertTrue(row[0]);
         assertFalse(row[1]);
 
-        assertThrows(IllegalArgumentException.class, () -> matrix.rowView(-1));
-        assertThrows(IllegalArgumentException.class, () -> matrix.rowView(2));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowView(-1));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowView(2));
     }
 
     // Verify rowCopy returns a defensive row snapshot and enforces row bounds.
@@ -225,8 +225,8 @@ class BooleanMatrixTest extends TestBase {
     public void testRowCopy_InvalidIndex() {
         BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
 
-        assertThrows(IllegalArgumentException.class, () -> matrix.rowCopy(-1));
-        assertThrows(IllegalArgumentException.class, () -> matrix.rowCopy(2));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowCopy(-1));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowCopy(2));
     }
 
     @Test
@@ -239,8 +239,8 @@ class BooleanMatrixTest extends TestBase {
         assertTrue(col[0]);
         assertFalse(col[1]);
 
-        assertThrows(IllegalArgumentException.class, () -> matrix.columnCopy(-1));
-        assertThrows(IllegalArgumentException.class, () -> matrix.columnCopy(2));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.columnCopy(-1));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.columnCopy(2));
     }
 
     @Test
@@ -489,7 +489,7 @@ class BooleanMatrixTest extends TestBase {
         assertFalse(matrix.get(0, 1));
         assertFalse(matrix.get(0, 2));
 
-        assertThrows(IllegalArgumentException.class, () -> matrix.fill(-1, 0, fillArr));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.fill(-1, 0, fillArr));
     }
 
     @Test
@@ -1453,8 +1453,8 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testRow_outOfBounds() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(2));
         }
 
         @Test
@@ -1468,8 +1468,8 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testColumn_outOfBounds() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(2));
         }
 
         @Test
@@ -1717,7 +1717,7 @@ class BooleanMatrixTest extends TestBase {
         public void testFill_outOfBounds() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
             boolean[][] patch = { { true, false }, { false, true } };
-            assertThrows(IllegalArgumentException.class, () -> m.fill(-1, 0, patch));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(-1, 0, patch));
         }
 
         // ============ Copy Tests ============
@@ -2983,8 +2983,8 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testRow_invalidIndex() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false } });
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(1));
         }
 
         @Test
@@ -3000,8 +3000,8 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testColumn_invalidIndex() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false } });
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(2));
         }
 
         @Test
@@ -3192,7 +3192,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testFill_withOffset_invalidPosition() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[2][2]);
-            assertThrows(IllegalArgumentException.class, () -> m.fill(3, 3, new boolean[][] { { true, true }, { true, true } }));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(3, 3, new boolean[][] { { true, true }, { true, true } }));
         }
 
         // ============ Copy Tests ============
@@ -3948,15 +3948,15 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testSetRow_invalidIndex() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { false, false } });
-            assertThrows(IllegalArgumentException.class, () -> m.setRow(-1, new boolean[] { true, true }));
-            assertThrows(IllegalArgumentException.class, () -> m.setRow(1, new boolean[] { true, true }));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.setRow(-1, new boolean[] { true, true }));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.setRow(1, new boolean[] { true, true }));
         }
 
         @Test
         public void testSetColumn_invalidIndex() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { false, false }, { false, false } });
-            assertThrows(IllegalArgumentException.class, () -> m.setColumn(-1, new boolean[] { true, true }));
-            assertThrows(IllegalArgumentException.class, () -> m.setColumn(2, new boolean[] { true, true }));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.setColumn(-1, new boolean[] { true, true }));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.setColumn(2, new boolean[] { true, true }));
         }
 
         @Test
@@ -4700,7 +4700,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void test_row_invalidIndex() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false } });
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(5));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(5));
         }
 
         @Test
@@ -4713,7 +4713,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void test_column_invalidIndex() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false } });
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(5));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(5));
         }
 
         @Test
@@ -5768,8 +5768,8 @@ class BooleanMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_negativeIndexThrows() {
         BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true } });
-        assertThrows(IllegalArgumentException.class, () -> m.fill(-1, 0, new boolean[][] { { true } }));
-        assertThrows(IllegalArgumentException.class, () -> m.fill(0, -1, new boolean[][] { { true } }));
+        assertThrows(IndexOutOfBoundsException.class, () -> m.fill(-1, 0, new boolean[][] { { true } }));
+        assertThrows(IndexOutOfBoundsException.class, () -> m.fill(0, -1, new boolean[][] { { true } }));
     }
 
     @Test

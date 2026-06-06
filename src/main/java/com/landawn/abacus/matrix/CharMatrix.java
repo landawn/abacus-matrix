@@ -449,16 +449,18 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * primitive.get(0, 0);                        // returns 'a'
      * primitive.get(1, 1);                        // returns 'c'
      * primitive.get(1, 0);                        // returns the null character (null mapped to default)
-     * CharMatrix.unbox((Matrix<Character>) null); // throws NullPointerException
+     * CharMatrix.unbox((Matrix<Character>) null); // throws IllegalArgumentException
      * // null is converted to '\u0000': [['a', 'b'], ['\u0000', 'c']]
      * }</pre>
      *
      * @param x the boxed Character Matrix to convert; must not be {@code null}
      * @return a new CharMatrix with primitive char values
-     * @throws NullPointerException if {@code x} is {@code null}
+     * @throws IllegalArgumentException if {@code x} is {@code null}
      * @see #boxed()
      */
     public static CharMatrix unbox(final Matrix<Character> x) {
+        N.checkArgNotNull(x, "x");
+
         return CharMatrix.of(Array.unbox(x.a));
     }
 
@@ -574,13 +576,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * matrix.valueAbove(1, 1).get();         // returns 'b'
      *
      * matrix.valueAbove(0, 0).isPresent();   // returns false (no row above the top edge)
-     * matrix.valueAbove(5, 0);               // throws ArrayIndexOutOfBoundsException (out of bounds)
+     * matrix.valueAbove(5, 0);               // throws IndexOutOfBoundsException (out of bounds)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
      * @return an OptionalChar containing the element at position (rowIndex - 1, columnIndex), or empty if rowIndex == 0
-     * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @throws IndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     public OptionalChar valueAbove(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -600,13 +602,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * matrix.valueBelow(0, 1).get();         // returns 'd'
      *
      * matrix.valueBelow(1, 0).isPresent();   // returns false (no row below the bottom edge)
-     * matrix.valueBelow(5, 0);               // throws ArrayIndexOutOfBoundsException (out of bounds)
+     * matrix.valueBelow(5, 0);               // throws IndexOutOfBoundsException (out of bounds)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
      * @return an OptionalChar containing the element at position (rowIndex + 1, columnIndex), or empty if rowIndex == rowCount - 1
-     * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @throws IndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     public OptionalChar valueBelow(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -626,13 +628,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * matrix.valueLeft(1, 1).get();          // returns 'c'
      *
      * matrix.valueLeft(0, 0).isPresent();    // returns false (already at the leftmost column)
-     * matrix.valueLeft(0, 5);                // throws ArrayIndexOutOfBoundsException (out of bounds)
+     * matrix.valueLeft(0, 5);                // throws IndexOutOfBoundsException (out of bounds)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
      * @return an OptionalChar containing the element at position (rowIndex, columnIndex - 1), or empty if columnIndex == 0
-     * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @throws IndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     public OptionalChar valueLeft(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -652,13 +654,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * matrix.valueRight(1, 0).get();         // returns 'd'
      *
      * matrix.valueRight(0, 1).isPresent();   // returns false (already at the rightmost column)
-     * matrix.valueRight(0, 5);               // throws ArrayIndexOutOfBoundsException (out of bounds)
+     * matrix.valueRight(0, 5);               // throws IndexOutOfBoundsException (out of bounds)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
      * @return an OptionalChar containing the element at position (rowIndex, columnIndex + 1), or empty if columnIndex == columnCount - 1
-     * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @throws IndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     public OptionalChar valueRight(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -683,16 +685,16 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * matrix.rowView(0)[0] = 'x';
      * matrix.get(0, 0);           // returns 'x'
      *
-     * matrix.rowView(5);          // throws IllegalArgumentException (row out of bounds)
+     * matrix.rowView(5);          // throws IndexOutOfBoundsException (row out of bounds)
      * }</pre>
      *
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return the specified row array (direct reference to internal storage)
-     * @throws IllegalArgumentException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      */
     @Override
-    public char[] rowView(final int rowIndex) throws IllegalArgumentException {
-        N.checkArgument(rowIndex >= 0 && rowIndex < rowCount, MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount);
+    public char[] rowView(final int rowIndex) throws IndexOutOfBoundsException {
+        checkRowIndex(rowIndex);
 
         return a[rowIndex];
     }
@@ -711,16 +713,16 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * matrix.rowCopy(0)[0] = 'x';
      * matrix.get(0, 0);           // returns 'a' (unchanged)
      *
-     * matrix.rowCopy(5);          // throws IllegalArgumentException (row out of bounds)
+     * matrix.rowCopy(5);          // throws IndexOutOfBoundsException (row out of bounds)
      * }</pre>
      *
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return a new char array containing the values from the specified row
-     * @throws IllegalArgumentException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      */
     @Override
-    public char[] rowCopy(final int rowIndex) throws IllegalArgumentException {
-        N.checkArgument(rowIndex >= 0 && rowIndex < rowCount, MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount);
+    public char[] rowCopy(final int rowIndex) throws IndexOutOfBoundsException {
+        checkRowIndex(rowIndex);
 
         return N.copyOf(a[rowIndex], columnCount);
     }
@@ -742,16 +744,16 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * matrix.columnCopy(0)[0] = 'x';
      * matrix.get(0, 0);           // returns 'a' (unchanged)
      *
-     * matrix.columnCopy(5);       // throws IllegalArgumentException (column out of bounds)
+     * matrix.columnCopy(5);       // throws IndexOutOfBoundsException (column out of bounds)
      * }</pre>
      *
      * @param columnIndex the index of the column to retrieve (0-based)
      * @return a new array containing the values from the specified column
-     * @throws IllegalArgumentException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
+     * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     @Override
-    public char[] columnCopy(final int columnIndex) throws IllegalArgumentException {
-        N.checkArgument(columnIndex >= 0 && columnIndex < columnCount, MSG_COLUMN_INDEX_OUT_OF_BOUNDS, columnIndex, columnCount);
+    public char[] columnCopy(final int columnIndex) throws IndexOutOfBoundsException {
+        checkColumnIndex(columnIndex);
 
         final char[] c = new char[rowCount];
 
@@ -777,18 +779,18 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * matrix.rowView(1);          // returns ['d', 'e', 'f'] (unchanged)
      *
      * matrix.setRow(0, new char[] {'x', 'y'});       // throws IllegalArgumentException (length mismatch)
-     * matrix.setRow(5, new char[] {'x', 'y', 'z'});  // throws IllegalArgumentException (row out of bounds)
+     * matrix.setRow(5, new char[] {'x', 'y', 'z'});  // throws IndexOutOfBoundsException (row out of bounds)
      * }</pre>
      *
      * @param rowIndex the index of the row to set (0-based)
      * @param row the array of values to copy into the row; must not be {@code null} and must have
      *        length equal to {@link #columnCount()}
-     * @throws IllegalArgumentException if {@code row} is {@code null}, if {@code rowIndex} is out of bounds,
-     *         or if {@code row.length} does not match the column count
+     * @throws IndexOutOfBoundsException if {@code rowIndex} is out of bounds
+     * @throws IllegalArgumentException if {@code row} is {@code null} or if {@code row.length != columnCount}
      */
-    public void setRow(final int rowIndex, final char[] row) throws IllegalArgumentException {
+    public void setRow(final int rowIndex, final char[] row) throws IndexOutOfBoundsException, IllegalArgumentException {
         N.checkArgNotNull(row, "row");
-        N.checkArgument(rowIndex >= 0 && rowIndex < rowCount, MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount);
+        checkRowIndex(rowIndex);
         N.checkArgument(row.length == columnCount, MSG_ROW_LENGTH_MISMATCH, columnCount, row.length);
 
         N.copy(row, 0, a[rowIndex], 0, columnCount);
@@ -810,18 +812,18 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * // Matrix is now: [['x', 'b', 'c'], ['y', 'e', 'f']]
      *
      * matrix.setColumn(0, new char[] {'x'});       // throws IllegalArgumentException (length mismatch)
-     * matrix.setColumn(5, new char[] {'x', 'y'});  // throws IllegalArgumentException (column out of bounds)
+     * matrix.setColumn(5, new char[] {'x', 'y'});  // throws IndexOutOfBoundsException (column out of bounds)
      * }</pre>
      *
      * @param columnIndex the index of the column to set (0-based)
      * @param column the array of values to copy into the column; must not be {@code null} and must
      *        have length equal to {@link #rowCount()}
-     * @throws IllegalArgumentException if {@code column} is {@code null}, if {@code columnIndex} is out of bounds,
-     *         or if {@code column.length} does not match the row count
+     * @throws IndexOutOfBoundsException if {@code columnIndex} is out of bounds
+     * @throws IllegalArgumentException if {@code column} is {@code null} or if {@code column.length != rowCount}
      */
-    public void setColumn(final int columnIndex, final char[] column) throws IllegalArgumentException {
+    public void setColumn(final int columnIndex, final char[] column) throws IndexOutOfBoundsException, IllegalArgumentException {
         N.checkArgNotNull(column, "column");
-        N.checkArgument(columnIndex >= 0 && columnIndex < columnCount, MSG_COLUMN_INDEX_OUT_OF_BOUNDS, columnIndex, columnCount);
+        checkColumnIndex(columnIndex);
         N.checkArgument(column.length == rowCount, MSG_COLUMN_LENGTH_MISMATCH, rowCount, column.length);
 
         for (int i = 0; i < rowCount; i++) {
@@ -845,21 +847,19 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * matrix.rowView(1);          // returns ['d', 'e', 'f'] (unchanged)
      *
      * matrix.updateRow(0, c -> (char) (c + 1)); // shifts row 0 by +1 -> ['B', 'C', 'D']
-     * matrix.updateRow(5, c -> c);              // throws ArrayIndexOutOfBoundsException (row out of bounds)
+     * matrix.updateRow(5, c -> c);              // throws IndexOutOfBoundsException (row out of bounds)
      * }</pre>
      *
      * @param <E> the type of exception that the operator may throw
      * @param rowIndex the index of the row to update (0-based)
      * @param operator the operator to apply to each element in the row; receives the current
      *             element value and returns the new value
-     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex} is out of bounds
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateRow(final int rowIndex, final Throwables.CharUnaryOperator<E> operator) throws E {
-        if (rowIndex < 0 || rowIndex >= rowCount) {
-            throw new ArrayIndexOutOfBoundsException(formatMsg(MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount));
-        }
+        checkRowIndex(rowIndex);
 
         N.checkArgNotNull(operator, "operator");
 
@@ -884,21 +884,19 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * matrix.get(0, 0);           // returns 'A' (unchanged)
      *
      * matrix.updateColumn(0, c -> (char) (c + 1)); // shifts column 0 by +1
-     * matrix.updateColumn(5, c -> c);              // throws ArrayIndexOutOfBoundsException (column out of bounds)
+     * matrix.updateColumn(5, c -> c);              // throws IndexOutOfBoundsException (column out of bounds)
      * }</pre>
      *
      * @param <E> the type of exception that the operator may throw
      * @param columnIndex the index of the column to update (0-based)
      * @param operator the operator to apply to each element in the column; receives the current
      *             element value and returns the new value
-     * @throws ArrayIndexOutOfBoundsException if {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code columnIndex} is out of bounds
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.CharUnaryOperator<E> operator) throws E {
-        if (columnIndex < 0 || columnIndex >= columnCount) {
-            throw new ArrayIndexOutOfBoundsException(formatMsg(MSG_COLUMN_INDEX_OUT_OF_BOUNDS, columnIndex, columnCount));
-        }
+        checkColumnIndex(columnIndex);
 
         N.checkArgNotNull(operator, "operator");
 
@@ -965,7 +963,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * @param mainDiagonal the new values for the main diagonal; must have length equal to rowCount
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
-     * @throws IllegalArgumentException if mainDiagonal array length does not equal rowCount
+     * @throws IllegalArgumentException if mainDiagonal is null or its array length does not equal rowCount
      */
     @Override
     public void setMainDiagonal(final char[] mainDiagonal) throws IllegalStateException, IllegalArgumentException {
@@ -1071,7 +1069,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * @param antiDiagonal the new values for the anti-diagonal; must have length equal to rowCount
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
-     * @throws IllegalArgumentException if antiDiagonal array length does not equal rowCount
+     * @throws IllegalArgumentException if antiDiagonal is null or its array length does not equal rowCount
      */
     @Override
     public void setAntiDiagonal(final char[] antiDiagonal) throws IllegalStateException, IllegalArgumentException {
@@ -1174,6 +1172,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param <E> the exception type that the mapper may throw
      * @param mapper the function that takes (rowIndex, columnIndex) and returns the new char value
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
+     * @throws NullPointerException if {@code mapper} returns {@code null} for any position
      * @throws E if the mapper throws an exception
      */
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Character, E> mapper) throws E {
@@ -1413,13 +1412,18 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param destRowIndex the target row index in this matrix (0-based); must satisfy {@code 0 <= destRowIndex <= rowCount}
      * @param destColumnIndex the target column index in this matrix (0-based); must satisfy {@code 0 <= destColumnIndex <= columnCount}
      * @param source the source array to copy values from; must not be {@code null} (individual rows may be {@code null} and are skipped)
-     * @throws IllegalArgumentException if {@code source} is {@code null} or the target indices are out of range
+     * @throws IndexOutOfBoundsException if {@code destRowIndex < 0} or {@code destRowIndex > rowCount},
+     *         or if {@code destColumnIndex < 0} or {@code destColumnIndex > columnCount}
+     * @throws IllegalArgumentException if {@code source} is {@code null}
      */
-    public void fill(final int destRowIndex, final int destColumnIndex, final char[][] source) throws IllegalArgumentException {
+    public void fill(final int destRowIndex, final int destColumnIndex, final char[][] source) throws IndexOutOfBoundsException, IllegalArgumentException {
         N.checkArgNotNull(source, "source");
-        N.checkArgument(destRowIndex >= 0 && destRowIndex <= rowCount, "destRowIndex({}) must be between 0 and rowCount({})", destRowIndex, rowCount);
-        N.checkArgument(destColumnIndex >= 0 && destColumnIndex <= columnCount, "destColumnIndex({}) must be between 0 and columnCount({})", destColumnIndex,
-                columnCount);
+        if (destRowIndex < 0 || destRowIndex > rowCount) {
+            throw new IndexOutOfBoundsException(formatMsg("destRowIndex({}) must be between 0 and rowCount({})", destRowIndex, rowCount));
+        }
+        if (destColumnIndex < 0 || destColumnIndex > columnCount) {
+            throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be between 0 and columnCount({})", destColumnIndex, columnCount));
+        }
 
         for (int i = 0, minLen = N.min(rowCount - destRowIndex, source.length); i < minLen; i++) {
             if (source[i] != null) {
@@ -1944,6 +1948,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * }</pre>
      *
      * @return a new matrix that is this matrix rotated 90 degrees clockwise
+     * @throws IllegalArgumentException if the resulting (transposed) shape is not representable
      */
     @Override
     public CharMatrix rotate90() {
@@ -2020,6 +2025,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * }</pre>
      *
      * @return a new matrix that is this matrix rotated 270 degrees clockwise
+     * @throws IllegalArgumentException if the resulting (transposed) shape is not representable
      */
     @Override
     public CharMatrix rotate270() {
@@ -2076,6 +2082,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @return a new matrix that is the transpose of this matrix with dimensions columnCount × rowCount;
      *         an {@code N x 0} matrix transposes to the empty {@code 0 x 0} matrix, because the swapped shape
      *         {@code 0 x N} (zero rows with a non-zero column count) is not representable
+     * @throws IllegalArgumentException if the resulting (transposed) shape is not representable
      */
     @Override
     public CharMatrix transpose() {
@@ -2337,11 +2344,14 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * @param <E> the exception type that the operation may throw
      * @param action the operation to apply to the flattened array
+     * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the operation throws an exception
      * @see Arrays#mutateAsFlat(char[][], Throwables.Consumer)
      */
     @Override
     public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super char[], E> action) throws E {
+        N.checkArgNotNull(action, "action");
+
         Arrays.mutateAsFlat(a, action);
     }
 
@@ -2763,14 +2773,15 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param other the second matrix to zip with this matrix
      * @param zipFunction the binary operation to apply to corresponding elements
      * @return a new CharMatrix containing the results of the zip operation
-     * @throws IllegalArgumentException if the matrices have different dimensions, or if {@code zipFunction} is {@code null}
+     * @throws IllegalArgumentException if {@code other} or {@code zipFunction} is {@code null}, or if the matrices have different shapes
      * @throws E if the zip function throws an exception
      */
     public <E extends Exception> CharMatrix zipWith(final CharMatrix other, final Throwables.CharBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
+        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(zipFunction, "zipFunction");
         N.checkArgument(isSameShape(other), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
-        N.checkArgNotNull(zipFunction, "zipFunction");
 
         final char[][] otherData = other.a;
         final char[][] result = new char[rowCount][columnCount];
@@ -2804,14 +2815,16 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param third the third matrix to zip with
      * @param zipFunction the ternary operation to apply to corresponding elements
      * @return a new CharMatrix containing the results of the zip operation
-     * @throws IllegalArgumentException if any of the matrices have different dimensions, or if {@code zipFunction} is {@code null}
+     * @throws IllegalArgumentException if any of {@code other}, {@code third}, or {@code zipFunction} is {@code null}, or if any of the matrices have different shapes
      * @throws E if the zip function throws an exception
      */
     public <E extends Exception> CharMatrix zipWith(final CharMatrix other, final CharMatrix third, final Throwables.CharTernaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
+        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(third, "third");
+        N.checkArgNotNull(zipFunction, "zipFunction");
         N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: all matrices must be {}x{}", rowCount,
                 columnCount);
-        N.checkArgNotNull(zipFunction, "zipFunction");
 
         final char[][] otherData = other.a;
         final char[][] thirdData = third.a;

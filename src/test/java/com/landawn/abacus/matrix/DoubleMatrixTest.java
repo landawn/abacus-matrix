@@ -251,8 +251,8 @@ class DoubleMatrixTest extends TestBase {
         assertEquals(1.0, row[0]);
         assertEquals(2.0, row[1]);
 
-        assertThrows(IllegalArgumentException.class, () -> matrix.rowView(-1));
-        assertThrows(IllegalArgumentException.class, () -> matrix.rowView(2));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowView(-1));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowView(2));
     }
 
     // Verify rowCopy returns a defensive row snapshot and enforces row bounds.
@@ -272,8 +272,8 @@ class DoubleMatrixTest extends TestBase {
     public void testRowCopy_InvalidIndex() {
         DoubleMatrix matrix = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
 
-        assertThrows(IllegalArgumentException.class, () -> matrix.rowCopy(-1));
-        assertThrows(IllegalArgumentException.class, () -> matrix.rowCopy(2));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowCopy(-1));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowCopy(2));
     }
 
     @Test
@@ -286,8 +286,8 @@ class DoubleMatrixTest extends TestBase {
         assertEquals(1.0, col[0]);
         assertEquals(3.0, col[1]);
 
-        assertThrows(IllegalArgumentException.class, () -> matrix.columnCopy(-1));
-        assertThrows(IllegalArgumentException.class, () -> matrix.columnCopy(2));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.columnCopy(-1));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.columnCopy(2));
     }
 
     @Test
@@ -563,7 +563,7 @@ class DoubleMatrixTest extends TestBase {
         assertEquals(7.0, matrix.get(0, 1));
         assertEquals(8.0, matrix.get(0, 2));
 
-        assertThrows(IllegalArgumentException.class, () -> matrix.fill(-1, 0, fillArr));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.fill(-1, 0, fillArr));
     }
 
     @Test
@@ -1828,8 +1828,8 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testRow_outOfBounds() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(2));
         }
 
         @Test
@@ -1843,8 +1843,8 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testColumn_outOfBounds() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(2));
         }
 
         @Test
@@ -2117,7 +2117,7 @@ class DoubleMatrixTest extends TestBase {
         public void testFill_outOfBounds() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             double[][] patch = { { 1.0, 2.0 }, { 3.0, 4.0 } };
-            assertThrows(IllegalArgumentException.class, () -> m.fill(-1, 0, patch));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(-1, 0, patch));
         }
 
         // ============ Copy Tests ============
@@ -4941,7 +4941,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void test_row_invalidIndex() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 } });
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(5));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(5));
         }
 
         @Test
@@ -4954,7 +4954,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void test_column_invalidIndex() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 } });
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(5));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(5));
         }
 
         @Test
@@ -4967,7 +4967,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void test_setRow_invalidRowIndex() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 } });
-            assertThrows(IllegalArgumentException.class, () -> m.setRow(5, new double[] { 1.0, 2.0 }));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.setRow(5, new double[] { 1.0, 2.0 }));
         }
 
         @Test
@@ -4986,7 +4986,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void test_setColumn_invalidColumnIndex() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 } });
-            assertThrows(IllegalArgumentException.class, () -> m.setColumn(5, new double[] { 1.0 }));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.setColumn(5, new double[] { 1.0 }));
         }
 
         @Test

@@ -292,8 +292,8 @@ class ByteMatrixTest extends TestBase {
         byte[] row1 = matrix.rowView(1);
         Assertions.assertArrayEquals(new byte[] { 4, 5, 6 }, row1);
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.rowView(-1));
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.rowView(2));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowView(-1));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowView(2));
     }
 
     // Verify rowCopy returns a defensive row snapshot and enforces row bounds.
@@ -313,8 +313,8 @@ class ByteMatrixTest extends TestBase {
     public void testRowCopy_InvalidIndex() {
         ByteMatrix matrix = ByteMatrix.of(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 } });
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.rowCopy(-1));
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.rowCopy(2));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowCopy(-1));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowCopy(2));
     }
 
     @Test
@@ -328,8 +328,8 @@ class ByteMatrixTest extends TestBase {
         byte[] col1 = matrix.columnCopy(1);
         Assertions.assertArrayEquals(new byte[] { 2, 5 }, col1);
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.columnCopy(-1));
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.columnCopy(3));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.columnCopy(-1));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.columnCopy(3));
     }
 
     @Test
@@ -575,8 +575,8 @@ class ByteMatrixTest extends TestBase {
         Assertions.assertEquals(1, matrix.get(1, 1));
         Assertions.assertEquals(2, matrix.get(1, 2));
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.fill(-1, 0, b));
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.fill(0, -1, b));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.fill(-1, 0, b));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.fill(0, -1, b));
     }
 
     @Test
@@ -1736,8 +1736,8 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testRow_outOfBounds() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(2));
         }
 
         @Test
@@ -1751,8 +1751,8 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testColumn_outOfBounds() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(2));
         }
 
         @Test
@@ -1989,7 +1989,7 @@ class ByteMatrixTest extends TestBase {
         public void testFill_outOfBounds() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
             byte[][] patch = { { 1, 2 }, { 3, 4 } };
-            assertThrows(IllegalArgumentException.class, () -> m.fill(-1, 0, patch));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(-1, 0, patch));
         }
 
         // ============ Copy Tests ============
@@ -3130,8 +3130,8 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testRow_invalidIndex() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 } });
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(1));
         }
 
         @Test
@@ -3147,8 +3147,8 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testColumn_invalidIndex() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 } });
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(2));
         }
 
         @Test
@@ -3330,7 +3330,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testFill_withOffset_invalidPosition() {
             ByteMatrix m = ByteMatrix.of(new byte[2][2]);
-            assertThrows(IllegalArgumentException.class, () -> m.fill(3, 3, new byte[][] { { 1, 2 }, { 3, 4 } }));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(3, 3, new byte[][] { { 1, 2 }, { 3, 4 } }));
         }
 
         // ============ Copy Tests ============
@@ -4108,15 +4108,15 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testSetRow_invalidIndex() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 0, 0 } });
-            assertThrows(IllegalArgumentException.class, () -> m.setRow(-1, new byte[] { 1, 2 }));
-            assertThrows(IllegalArgumentException.class, () -> m.setRow(1, new byte[] { 1, 2 }));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.setRow(-1, new byte[] { 1, 2 }));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.setRow(1, new byte[] { 1, 2 }));
         }
 
         @Test
         public void testSetColumn_invalidIndex() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 0, 0 }, { 0, 0 } });
-            assertThrows(IllegalArgumentException.class, () -> m.setColumn(-1, new byte[] { 1, 2 }));
-            assertThrows(IllegalArgumentException.class, () -> m.setColumn(2, new byte[] { 1, 2 }));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.setColumn(-1, new byte[] { 1, 2 }));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.setColumn(2, new byte[] { 1, 2 }));
         }
 
         @Test
@@ -4992,7 +4992,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void test_row_invalidIndex() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 } });
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(5));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(5));
         }
 
         @Test
@@ -5005,7 +5005,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void test_column_invalidIndex() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 } });
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(5));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(5));
         }
 
         @Test
@@ -6109,8 +6109,8 @@ class ByteMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_negativeIndexThrows() {
         ByteMatrix m = ByteMatrix.of(new byte[][] { { 1 } });
-        assertThrows(IllegalArgumentException.class, () -> m.fill(-1, 0, new byte[][] { { 1 } }));
-        assertThrows(IllegalArgumentException.class, () -> m.fill(0, -1, new byte[][] { { 1 } }));
+        assertThrows(IndexOutOfBoundsException.class, () -> m.fill(-1, 0, new byte[][] { { 1 } }));
+        assertThrows(IndexOutOfBoundsException.class, () -> m.fill(0, -1, new byte[][] { { 1 } }));
     }
 
     @Test

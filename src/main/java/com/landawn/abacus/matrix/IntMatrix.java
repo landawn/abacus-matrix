@@ -599,15 +599,17 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * Matrix<Integer> withNull = Matrix.of(new Integer[][] {{1, null}});
      * IntMatrix.unbox(withNull).get(0, 1);     // returns 0 (null becomes 0)
-     * IntMatrix.unbox((Matrix<Integer>) null); // throws NullPointerException
+     * IntMatrix.unbox((Matrix<Integer>) null); // throws IllegalArgumentException
      * }</pre>
      *
      * @param x the boxed {@code Integer} matrix to convert; must not be {@code null}
      * @return a new {@code IntMatrix} with primitive int values
-     * @throws NullPointerException if {@code x} is {@code null}
+     * @throws IllegalArgumentException if {@code x} is {@code null}
      * @see #boxed()
      */
     public static IntMatrix unbox(final Matrix<Integer> x) {
+        N.checkArgNotNull(x, "x");
+
         return IntMatrix.of(Array.unbox(x.a));
     }
 
@@ -724,14 +726,14 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * matrix.valueAbove(1, 1).getAsInt();     // returns 2
      *
      * matrix.valueAbove(0, 0).isPresent();    // returns false (top row, no cell above)
-     * matrix.valueAbove(2, 0);                // throws ArrayIndexOutOfBoundsException (row out of range)
+     * matrix.valueAbove(2, 0);                // throws IndexOutOfBoundsException (row out of range)
      * }</pre>
      *
      * @param rowIndex the row index of the reference cell (0-based)
      * @param columnIndex the column index of the reference cell (0-based)
      * @return an {@link OptionalInt} containing the element at position {@code (rowIndex - 1, columnIndex)},
      *         or empty if {@code rowIndex == 0}
-     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
     public OptionalInt valueAbove(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -752,14 +754,14 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * matrix.valueBelow(0, 1).getAsInt();     // returns 4
      *
      * matrix.valueBelow(1, 0).isPresent();    // returns false (bottom row, no cell below)
-     * matrix.valueBelow(2, 0);                // throws ArrayIndexOutOfBoundsException (row out of range)
+     * matrix.valueBelow(2, 0);                // throws IndexOutOfBoundsException (row out of range)
      * }</pre>
      *
      * @param rowIndex the row index of the reference cell (0-based)
      * @param columnIndex the column index of the reference cell (0-based)
      * @return an {@link OptionalInt} containing the element at position {@code (rowIndex + 1, columnIndex)},
      *         or empty if {@code rowIndex == rowCount - 1}
-     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
     public OptionalInt valueBelow(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -780,14 +782,14 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * matrix.valueLeft(1, 1).getAsInt();      // returns 3
      *
      * matrix.valueLeft(0, 0).isPresent();     // returns false (leftmost column, no cell to the left)
-     * matrix.valueLeft(0, 2);                 // throws ArrayIndexOutOfBoundsException (column out of range)
+     * matrix.valueLeft(0, 2);                 // throws IndexOutOfBoundsException (column out of range)
      * }</pre>
      *
      * @param rowIndex the row index of the reference cell (0-based)
      * @param columnIndex the column index of the reference cell (0-based)
      * @return an {@link OptionalInt} containing the element at position {@code (rowIndex, columnIndex - 1)},
      *         or empty if {@code columnIndex == 0}
-     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
     public OptionalInt valueLeft(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -808,14 +810,14 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * matrix.valueRight(1, 0).getAsInt();     // returns 4
      *
      * matrix.valueRight(0, 1).isPresent();    // returns false (rightmost column, no cell to the right)
-     * matrix.valueRight(0, 2);                // throws ArrayIndexOutOfBoundsException (column out of range)
+     * matrix.valueRight(0, 2);                // throws IndexOutOfBoundsException (column out of range)
      * }</pre>
      *
      * @param rowIndex the row index of the reference cell (0-based)
      * @param columnIndex the column index of the reference cell (0-based)
      * @return an {@link OptionalInt} containing the element at position {@code (rowIndex, columnIndex + 1)},
      *         or empty if {@code columnIndex == columnCount - 1}
-     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
     public OptionalInt valueRight(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -846,12 +848,12 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return the specified row as a direct reference to internal storage
-     * @throws IllegalArgumentException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      * @see #rowCopy(int)
      */
     @Override
-    public int[] rowView(final int rowIndex) throws IllegalArgumentException {
-        N.checkArgument(rowIndex >= 0 && rowIndex < rowCount, MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount);
+    public int[] rowView(final int rowIndex) throws IndexOutOfBoundsException {
+        checkRowIndex(rowIndex);
 
         return a[rowIndex];
     }
@@ -870,19 +872,19 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * firstRow[0] = 10;
      * matrix.get(0, 0);                       // returns 1 (copy is independent)
      *
-     * matrix.rowCopy(-1);                     // throws IllegalArgumentException
-     * matrix.rowCopy(2);                      // throws IllegalArgumentException (rowIndex >= rowCount)
+     * matrix.rowCopy(-1);                     // throws IndexOutOfBoundsException
+     * matrix.rowCopy(2);                      // throws IndexOutOfBoundsException (rowIndex >= rowCount)
      * }</pre>
      *
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return a new int array of length {@code columnCount} containing the values of the specified row
-     * @throws IllegalArgumentException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      * @see #rowView(int)
      * @see #columnCopy(int)
      */
     @Override
-    public int[] rowCopy(final int rowIndex) throws IllegalArgumentException {
-        N.checkArgument(rowIndex >= 0 && rowIndex < rowCount, MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount);
+    public int[] rowCopy(final int rowIndex) throws IndexOutOfBoundsException {
+        checkRowIndex(rowIndex);
 
         return N.copyOf(a[rowIndex], columnCount);
     }
@@ -904,19 +906,19 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * firstColumn[0] = 10;
      * matrix.get(0, 0);                       // returns 1 (copy is independent)
      *
-     * matrix.columnCopy(-1);                  // throws IllegalArgumentException
-     * matrix.columnCopy(3);                   // throws IllegalArgumentException (columnIndex >= columnCount)
+     * matrix.columnCopy(-1);                  // throws IndexOutOfBoundsException
+     * matrix.columnCopy(3);                   // throws IndexOutOfBoundsException (columnIndex >= columnCount)
      * }</pre>
      *
      * @param columnIndex the index of the column to retrieve (0-based)
      * @return a new int array of length {@code rowCount} containing the values of the specified column
-     * @throws IllegalArgumentException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
+     * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      * @see #rowCopy(int)
      * @see #rowView(int)
      */
     @Override
-    public int[] columnCopy(final int columnIndex) throws IllegalArgumentException {
-        N.checkArgument(columnIndex >= 0 && columnIndex < columnCount, MSG_COLUMN_INDEX_OUT_OF_BOUNDS, columnIndex, columnCount);
+    public int[] columnCopy(final int columnIndex) throws IndexOutOfBoundsException {
+        checkColumnIndex(columnIndex);
 
         final int[] c = new int[rowCount];
 
@@ -944,17 +946,17 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * matrix.get(1, 1);                       // returns 0
      *
      * matrix.setRow(0, new int[] {1, 2});     // throws IllegalArgumentException (length != columnCount)
-     * matrix.setRow(5, new int[] {1, 2, 3});  // throws IllegalArgumentException (rowIndex out of bounds)
+     * matrix.setRow(5, new int[] {1, 2, 3});  // throws IndexOutOfBoundsException (rowIndex out of bounds)
      * }</pre>
      *
      * @param rowIndex the index of the row to set (0-based)
      * @param row the array of values to copy into the row; must be non-{@code null} and of length {@code columnCount}
-     * @throws IllegalArgumentException if {@code row} is {@code null}, if {@code rowIndex} is out of bounds,
-     *         or if {@code row.length != columnCount}
+     * @throws IndexOutOfBoundsException if {@code rowIndex} is out of bounds
+     * @throws IllegalArgumentException if {@code row} is {@code null} or if {@code row.length != columnCount}
      */
-    public void setRow(final int rowIndex, final int[] row) throws IllegalArgumentException {
+    public void setRow(final int rowIndex, final int[] row) throws IndexOutOfBoundsException, IllegalArgumentException {
         N.checkArgNotNull(row, "row");
-        N.checkArgument(rowIndex >= 0 && rowIndex < rowCount, MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount);
+        checkRowIndex(rowIndex);
         N.checkArgument(row.length == columnCount, MSG_ROW_LENGTH_MISMATCH, columnCount, row.length);
 
         N.copy(row, 0, a[rowIndex], 0, columnCount);
@@ -977,17 +979,17 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * matrix.get(1, 2);                       // returns 0
      *
      * matrix.setColumn(0, new int[] {1, 2, 3}); // throws IllegalArgumentException (length != rowCount)
-     * matrix.setColumn(5, new int[] {1, 2});    // throws IllegalArgumentException (columnIndex out of bounds)
+     * matrix.setColumn(5, new int[] {1, 2});    // throws IndexOutOfBoundsException (columnIndex out of bounds)
      * }</pre>
      *
      * @param columnIndex the index of the column to set (0-based)
      * @param column the array of values to copy into the column; must be non-{@code null} and of length {@code rowCount}
-     * @throws IllegalArgumentException if {@code column} is {@code null}, if {@code columnIndex} is out of bounds,
-     *         or if {@code column.length != rowCount}
+     * @throws IndexOutOfBoundsException if {@code columnIndex} is out of bounds
+     * @throws IllegalArgumentException if {@code column} is {@code null} or if {@code column.length != rowCount}
      */
-    public void setColumn(final int columnIndex, final int[] column) throws IllegalArgumentException {
+    public void setColumn(final int columnIndex, final int[] column) throws IndexOutOfBoundsException, IllegalArgumentException {
         N.checkArgNotNull(column, "column");
-        N.checkArgument(columnIndex >= 0 && columnIndex < columnCount, MSG_COLUMN_INDEX_OUT_OF_BOUNDS, columnIndex, columnCount);
+        checkColumnIndex(columnIndex);
         N.checkArgument(column.length == rowCount, MSG_COLUMN_LENGTH_MISMATCH, rowCount, column.length);
 
         for (int i = 0; i < rowCount; i++) {
@@ -1011,7 +1013,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * matrix.updateRow(1, x -> 0);
      * matrix.rowCopy(1);                      // returns [0, 0, 0]
      *
-     * matrix.updateRow(5, x -> x);           // throws ArrayIndexOutOfBoundsException (rowIndex out of bounds)
+     * matrix.updateRow(5, x -> x);           // throws IndexOutOfBoundsException (rowIndex out of bounds)
      * matrix.updateRow(0, null);             // throws IllegalArgumentException (operator is null)
      * }</pre>
      *
@@ -1019,14 +1021,12 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param rowIndex the index of the row to update (0-based)
      * @param operator the operator to apply to each element in the row; receives the current
      *             element value and returns the new value
-     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex} is out of bounds
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateRow(final int rowIndex, final Throwables.IntUnaryOperator<E> operator) throws E {
-        if (rowIndex < 0 || rowIndex >= rowCount) {
-            throw new ArrayIndexOutOfBoundsException(formatMsg(MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount));
-        }
+        checkRowIndex(rowIndex);
 
         N.checkArgNotNull(operator, "operator");
 
@@ -1051,7 +1051,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * matrix.updateColumn(1, x -> -x);
      * matrix.columnCopy(1);                   // returns [-2, -4, -6]
      *
-     * matrix.updateColumn(5, x -> x);        // throws ArrayIndexOutOfBoundsException (columnIndex out of bounds)
+     * matrix.updateColumn(5, x -> x);        // throws IndexOutOfBoundsException (columnIndex out of bounds)
      * matrix.updateColumn(0, null);          // throws IllegalArgumentException (operator is null)
      * }</pre>
      *
@@ -1059,14 +1059,12 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param columnIndex the index of the column to update (0-based)
      * @param operator the operator to apply to each element in the column; receives the current
      *             element value and returns the new value
-     * @throws ArrayIndexOutOfBoundsException if {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code columnIndex} is out of bounds
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.IntUnaryOperator<E> operator) throws E {
-        if (columnIndex < 0 || columnIndex >= columnCount) {
-            throw new ArrayIndexOutOfBoundsException(formatMsg(MSG_COLUMN_INDEX_OUT_OF_BOUNDS, columnIndex, columnCount));
-        }
+        checkColumnIndex(columnIndex);
 
         N.checkArgNotNull(operator, "operator");
 
@@ -1638,21 +1636,25 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * // matrix is [[0, 0, 0], [0, 1, 2], [0, 3, 4]]
      *
      * matrix.fill(0, 0, (int[][]) null);                 // throws IllegalArgumentException (source is null)
-     * matrix.fill(-1, 0, new int[][] {{1}});             // throws IllegalArgumentException (destRowIndex < 0)
-     * matrix.fill(0, 5, new int[][] {{1}});              // throws IllegalArgumentException (destColumnIndex > columnCount)
+     * matrix.fill(-1, 0, new int[][] {{1}});             // throws IndexOutOfBoundsException (destRowIndex < 0)
+     * matrix.fill(0, 5, new int[][] {{1}});              // throws IndexOutOfBoundsException (destColumnIndex > columnCount)
      * }</pre>
      *
      * @param destRowIndex the target row index in this matrix (0-based, must satisfy {@code 0 <= destRowIndex <= rowCount})
      * @param destColumnIndex the target column index in this matrix (0-based, must satisfy {@code 0 <= destColumnIndex <= columnCount})
      * @param source the source array to copy values from; must not be {@code null}
-     * @throws IllegalArgumentException if {@code source} is {@code null}, if {@code destRowIndex < 0} or {@code destRowIndex > rowCount},
+     * @throws IndexOutOfBoundsException if {@code destRowIndex < 0} or {@code destRowIndex > rowCount},
      *         or if {@code destColumnIndex < 0} or {@code destColumnIndex > columnCount}
+     * @throws IllegalArgumentException if {@code source} is {@code null}
      */
-    public void fill(final int destRowIndex, final int destColumnIndex, final int[][] source) throws IllegalArgumentException {
+    public void fill(final int destRowIndex, final int destColumnIndex, final int[][] source) throws IndexOutOfBoundsException, IllegalArgumentException {
         N.checkArgNotNull(source, "source");
-        N.checkArgument(destRowIndex >= 0 && destRowIndex <= rowCount, "destRowIndex({}) must be between 0 and rowCount({})", destRowIndex, rowCount);
-        N.checkArgument(destColumnIndex >= 0 && destColumnIndex <= columnCount, "destColumnIndex({}) must be between 0 and columnCount({})", destColumnIndex,
-                columnCount);
+        if (destRowIndex < 0 || destRowIndex > rowCount) {
+            throw new IndexOutOfBoundsException(formatMsg("destRowIndex({}) must be between 0 and rowCount({})", destRowIndex, rowCount));
+        }
+        if (destColumnIndex < 0 || destColumnIndex > columnCount) {
+            throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be between 0 and columnCount({})", destColumnIndex, columnCount));
+        }
 
         for (int i = 0, minLen = N.min(rowCount - destRowIndex, source.length); i < minLen; i++) {
             if (source[i] != null) {
@@ -2184,6 +2186,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * }</pre>
      *
      * @return a new matrix that is this matrix rotated 90 degrees clockwise
+     * @throws IllegalArgumentException if the resulting (transposed) shape is not representable
      */
     @Override
     public IntMatrix rotate90() {
@@ -2266,6 +2269,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * }</pre>
      *
      * @return a new matrix that is this matrix rotated 270 degrees clockwise
+     * @throws IllegalArgumentException if the resulting (transposed) shape is not representable
      */
     @Override
     public IntMatrix rotate270() {
@@ -2315,6 +2319,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @return a new {@code IntMatrix} of shape {@code columnCount x rowCount} that is the transpose of this matrix;
      *         an {@code N x 0} matrix transposes to the empty {@code 0 x 0} matrix, because the swapped shape
      *         {@code 0 x N} (zero rows with a non-zero column count) is not representable
+     * @throws IllegalArgumentException if the resulting (transposed) shape is not representable
      */
     @Override
     public IntMatrix transpose() {
@@ -2572,11 +2577,14 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * @param <E> the type of exception that the operation may throw
      * @param action the operation to apply to the flattened array
+     * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the operation throws an exception
      * @see Arrays#mutateAsFlat(int[][], Throwables.Consumer)
      */
     @Override
     public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super int[], E> action) throws E {
+        N.checkArgNotNull(action, "action");
+
         Arrays.mutateAsFlat(a, action);
     }
 
@@ -2966,9 +2974,10 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      */
     public <E extends Exception> IntMatrix zipWith(final IntMatrix other, final Throwables.IntBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
+        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(zipFunction, "zipFunction");
         N.checkArgument(isSameShape(other), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
-        N.checkArgNotNull(zipFunction, "zipFunction");
 
         final int[][] otherData = other.a;
         final int[][] result = new int[rowCount][columnCount];
@@ -3023,9 +3032,11 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      */
     public <E extends Exception> IntMatrix zipWith(final IntMatrix other, final IntMatrix third, final Throwables.IntTernaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
+        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(third, "third");
+        N.checkArgNotNull(zipFunction, "zipFunction");
         N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: all matrices must be {}x{}", rowCount,
                 columnCount);
-        N.checkArgNotNull(zipFunction, "zipFunction");
 
         final int[][] otherData = other.a;
         final int[][] thirdData = third.a;

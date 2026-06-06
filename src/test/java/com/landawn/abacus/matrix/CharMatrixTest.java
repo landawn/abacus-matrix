@@ -281,8 +281,8 @@ class CharMatrixTest extends TestBase {
         char[] row1 = matrix.rowView(1);
         Assertions.assertArrayEquals(new char[] { 'd', 'e', 'f' }, row1);
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.rowView(-1));
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.rowView(2));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowView(-1));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowView(2));
     }
 
     // Verify rowCopy returns a defensive row snapshot and enforces row bounds.
@@ -302,8 +302,8 @@ class CharMatrixTest extends TestBase {
     public void testRowCopy_InvalidIndex() {
         CharMatrix matrix = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } });
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.rowCopy(-1));
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.rowCopy(2));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowCopy(-1));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowCopy(2));
     }
 
     @Test
@@ -317,8 +317,8 @@ class CharMatrixTest extends TestBase {
         char[] col1 = matrix.columnCopy(1);
         Assertions.assertArrayEquals(new char[] { 'b', 'e' }, col1);
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.columnCopy(-1));
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.columnCopy(3));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.columnCopy(-1));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.columnCopy(3));
     }
 
     @Test
@@ -564,8 +564,8 @@ class CharMatrixTest extends TestBase {
         Assertions.assertEquals('x', matrix.get(1, 1));
         Assertions.assertEquals('y', matrix.get(1, 2));
 
-        assertThrows(IllegalArgumentException.class, () -> matrix.fill(-1, 0, b));
-        assertThrows(IllegalArgumentException.class, () -> matrix.fill(0, -1, b));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.fill(-1, 0, b));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.fill(0, -1, b));
     }
 
     @Test
@@ -1658,8 +1658,8 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testRow_outOfBounds() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B' }, { 'C', 'D' } });
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(2));
         }
 
         @Test
@@ -1673,8 +1673,8 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testColumn_outOfBounds() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B' }, { 'C', 'D' } });
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(2));
         }
 
         @Test
@@ -1929,7 +1929,7 @@ class CharMatrixTest extends TestBase {
         public void testFill_outOfBounds() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B' }, { 'C', 'D' } });
             char[][] patch = { { 'X', 'Y' }, { 'Z', 'W' } };
-            assertThrows(IllegalArgumentException.class, () -> m.fill(-1, 0, patch));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(-1, 0, patch));
         }
 
         // ============ Copy Tests ============
@@ -3143,8 +3143,8 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testRow_invalidIndex() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' } });
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(1));
         }
 
         @Test
@@ -3160,8 +3160,8 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testColumn_invalidIndex() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' } });
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(2));
         }
 
         @Test
@@ -3343,7 +3343,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testFill_withOffset_invalidPosition() {
             CharMatrix m = CharMatrix.of(new char[2][2]);
-            assertThrows(IllegalArgumentException.class, () -> m.fill(3, 3, new char[][] { { 'a', 'b' }, { 'c', 'd' } }));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(3, 3, new char[][] { { 'a', 'b' }, { 'c', 'd' } }));
         }
 
         // ============ Copy Tests ============
@@ -4292,8 +4292,8 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testSetRow_invalidIndex() {
             CharMatrix m = CharMatrix.of(new char[][] { { ' ', ' ' } });
-            assertThrows(IllegalArgumentException.class, () -> m.setRow(-1, new char[] { 'a', 'b' }));
-            assertThrows(IllegalArgumentException.class, () -> m.setRow(1, new char[] { 'a', 'b' }));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.setRow(-1, new char[] { 'a', 'b' }));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.setRow(1, new char[] { 'a', 'b' }));
         }
 
         @Test
@@ -4313,8 +4313,8 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testSetColumn_invalidIndex() {
             CharMatrix m = CharMatrix.of(new char[][] { { ' ', ' ' }, { ' ', ' ' } });
-            assertThrows(IllegalArgumentException.class, () -> m.setColumn(-1, new char[] { 'a', 'b' }));
-            assertThrows(IllegalArgumentException.class, () -> m.setColumn(2, new char[] { 'a', 'b' }));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.setColumn(-1, new char[] { 'a', 'b' }));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.setColumn(2, new char[] { 'a', 'b' }));
         }
 
         @Test
@@ -5313,7 +5313,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void test_row_invalidIndex() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' } });
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(5));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(5));
         }
 
         @Test
@@ -5326,7 +5326,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void test_column_invalidIndex() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' } });
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(5));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(5));
         }
 
         @Test
@@ -6480,8 +6480,8 @@ class CharMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_negativeIndexThrows() {
         CharMatrix m = CharMatrix.of(new char[][] { { 'a' } });
-        assertThrows(IllegalArgumentException.class, () -> m.fill(-1, 0, new char[][] { { 'b' } }));
-        assertThrows(IllegalArgumentException.class, () -> m.fill(0, -1, new char[][] { { 'b' } }));
+        assertThrows(IndexOutOfBoundsException.class, () -> m.fill(-1, 0, new char[][] { { 'b' } }));
+        assertThrows(IndexOutOfBoundsException.class, () -> m.fill(0, -1, new char[][] { { 'b' } }));
     }
 
     @Test

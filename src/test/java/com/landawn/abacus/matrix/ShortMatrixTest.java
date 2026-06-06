@@ -274,8 +274,8 @@ class ShortMatrixTest extends TestBase {
         assertArrayEquals(new short[] { 4, 5, 6 }, row1);
 
         // Test bounds
-        assertThrows(IllegalArgumentException.class, () -> matrix.rowView(-1));
-        assertThrows(IllegalArgumentException.class, () -> matrix.rowView(3));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowView(-1));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowView(3));
     }
 
     // Verify rowCopy returns a defensive row snapshot and enforces row bounds.
@@ -290,8 +290,8 @@ class ShortMatrixTest extends TestBase {
 
     @Test
     public void testRowCopy_InvalidIndex() {
-        assertThrows(IllegalArgumentException.class, () -> matrix.rowCopy(-1));
-        assertThrows(IllegalArgumentException.class, () -> matrix.rowCopy(3));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowCopy(-1));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowCopy(3));
     }
 
     @Test
@@ -303,8 +303,8 @@ class ShortMatrixTest extends TestBase {
         assertArrayEquals(new short[] { 2, 5, 8 }, col1);
 
         // Test bounds
-        assertThrows(IllegalArgumentException.class, () -> matrix.columnCopy(-1));
-        assertThrows(IllegalArgumentException.class, () -> matrix.columnCopy(3));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.columnCopy(-1));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.columnCopy(3));
     }
 
     @Test
@@ -533,7 +533,7 @@ class ShortMatrixTest extends TestBase {
         assertEquals((short) 4, m.get(2, 2));
 
         // Test bounds
-        assertThrows(IllegalArgumentException.class, () -> m.fill(-1, 0, patch));
+        assertThrows(IndexOutOfBoundsException.class, () -> m.fill(-1, 0, patch));
         // assertThrows(IndexOutOfBoundsException.class, () -> m.fill(3, 0, patch));
         m.fill(3, 0, patch);
     }
@@ -2031,8 +2031,8 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testRow_outOfBounds() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(2));
         }
 
         @Test
@@ -2046,8 +2046,8 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testColumn_outOfBounds() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(2));
         }
 
         @Test
@@ -2302,7 +2302,7 @@ class ShortMatrixTest extends TestBase {
         public void testFill_outOfBounds() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
             short[][] patch = { { 1, 2 }, { 3, 4 } };
-            assertThrows(IllegalArgumentException.class, () -> m.fill(-1, 0, patch));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(-1, 0, patch));
         }
 
         // ============ Copy Tests ============
@@ -4203,15 +4203,15 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testRow_invalidIndex() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 } });
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(1));
         }
 
         @Test
         public void testColumn_invalidIndex() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 } });
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(2));
         }
 
         @Test
@@ -5181,7 +5181,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void test_row_outOfBounds_throwsException() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 } });
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(5));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(5));
         }
 
         @Test
@@ -5195,7 +5195,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void test_column_outOfBounds_throwsException() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 } });
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(5));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(5));
         }
 
         @Test

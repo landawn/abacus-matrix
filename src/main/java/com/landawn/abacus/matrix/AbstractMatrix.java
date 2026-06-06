@@ -1411,13 +1411,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * // Edge (non-corner) position has 3 neighbors
      * larger.adjacent4Points(0, 1).count();                   // returns 3 (no up)
      *
-     * matrix.adjacent4Points(2, 0);                           // throws ArrayIndexOutOfBoundsException (row out of bounds)
+     * matrix.adjacent4Points(2, 0);                           // throws IndexOutOfBoundsException (row out of bounds)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
      * @return a stream of adjacent points in the four cardinal directions (0 to 4 points depending on position)
-     * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @throws IndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     public Stream<Point> adjacent4Points(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -1461,13 +1461,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * // Edge (non-corner) position has 5 neighbors
      * matrix.adjacent8Points(0, 1).count();                   // returns 5
      *
-     * matrix.adjacent8Points(0, 3);                           // throws ArrayIndexOutOfBoundsException (column out of bounds)
+     * matrix.adjacent8Points(0, 3);                           // throws IndexOutOfBoundsException (column out of bounds)
      * }</pre>
      *
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
      * @return a stream of adjacent points in all 8 directions (0 to 8 points depending on position)
-     * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @throws IndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     public Stream<Point> adjacent8Points(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -1716,6 +1716,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      */
     public Stream<Point> horizontalPoints(final int rowIndex) {
+        checkRowIndex(rowIndex);
+
         return horizontalPoints(rowIndex, rowIndex + 1);
     }
 
@@ -1797,6 +1799,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     public Stream<Point> verticalPoints(final int columnIndex) {
+        checkColumnIndex(columnIndex);
+
         return verticalPoints(columnIndex, columnIndex + 1);
     }
 
@@ -2323,7 +2327,34 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *         different row counts or column counts
      */
     protected void checkSameShape(final M x) {
-        N.checkArgument(this.isSameShape(x), MSG_SHAPE_MISMATCH, rowCount, columnCount, x.rowCount, x.columnCount);
+        N.checkArgNotNull(x, "x");
+        N.checkArgument(isSameShape(x), MSG_SHAPE_MISMATCH, rowCount, columnCount, x.rowCount, x.columnCount);
+    }
+
+    /**
+     * Validates that the specified row index is within the bounds of this matrix (range {@code [0, rowCount)}).
+     * This is a helper method used internally to enforce index validity before row access or mutation.
+     *
+     * @param rowIndex the row index to validate (must be in range [0, rowCount))
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
+     */
+    protected void checkRowIndex(final int rowIndex) {
+        if (rowIndex < 0 || rowIndex >= rowCount) {
+            throw new IndexOutOfBoundsException(formatMsg(MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount));
+        }
+    }
+
+    /**
+     * Validates that the specified column index is within the bounds of this matrix (range {@code [0, columnCount)}).
+     * This is a helper method used internally to enforce index validity before column access or mutation.
+     *
+     * @param columnIndex the column index to validate (must be in range [0, columnCount))
+     * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
+     */
+    protected void checkColumnIndex(final int columnIndex) {
+        if (columnIndex < 0 || columnIndex >= columnCount) {
+            throw new IndexOutOfBoundsException(formatMsg(MSG_COLUMN_INDEX_OUT_OF_BOUNDS, columnIndex, columnCount));
+        }
     }
 
     /**
@@ -2333,16 +2364,11 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * @param rowIndex the row index to validate (must be in range [0, rowCount))
      * @param columnIndex the column index to validate (must be in range [0, columnCount))
-     * @throws ArrayIndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @throws IndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
      */
     protected void checkRowColumnIndex(final int rowIndex, final int columnIndex) {
-        if (rowIndex < 0 || rowIndex >= rowCount) {
-            throw new ArrayIndexOutOfBoundsException(formatMsg(MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount));
-        }
-
-        if (columnIndex < 0 || columnIndex >= columnCount) {
-            throw new ArrayIndexOutOfBoundsException(formatMsg(MSG_COLUMN_INDEX_OUT_OF_BOUNDS, columnIndex, columnCount));
-        }
+        checkRowIndex(rowIndex);
+        checkColumnIndex(columnIndex);
     }
 
     /**

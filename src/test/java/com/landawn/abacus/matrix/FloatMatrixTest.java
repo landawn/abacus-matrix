@@ -280,8 +280,8 @@ class FloatMatrixTest extends TestBase {
         assertArrayEquals(new float[] { 4.0f, 5.0f, 6.0f }, row1, DELTA);
 
         // Test bounds
-        assertThrows(IllegalArgumentException.class, () -> matrix.rowView(-1));
-        assertThrows(IllegalArgumentException.class, () -> matrix.rowView(3));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowView(-1));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowView(3));
     }
 
     // Verify rowCopy returns a defensive row snapshot and enforces row bounds.
@@ -303,8 +303,8 @@ class FloatMatrixTest extends TestBase {
         assertArrayEquals(new float[] { 2.0f, 5.0f, 8.0f }, col1, DELTA);
 
         // Test bounds
-        assertThrows(IllegalArgumentException.class, () -> matrix.columnCopy(-1));
-        assertThrows(IllegalArgumentException.class, () -> matrix.columnCopy(3));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.columnCopy(-1));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.columnCopy(3));
     }
 
     @Test
@@ -533,7 +533,7 @@ class FloatMatrixTest extends TestBase {
         assertEquals(4.0f, m.get(2, 2), DELTA);
 
         // Test bounds
-        assertThrows(IllegalArgumentException.class, () -> m.fill(-1, 0, patch));
+        assertThrows(IndexOutOfBoundsException.class, () -> m.fill(-1, 0, patch));
         // assertThrows(IndexOutOfBoundsException.class, () -> m.fill(3, 0, patch));
         m.fill(3, 0, patch);
     }
@@ -1531,8 +1531,8 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testRow_outOfBounds() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(2));
         }
 
         @Test
@@ -1546,8 +1546,8 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testColumn_outOfBounds() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(-1));
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(2));
         }
 
         @Test
@@ -1810,7 +1810,7 @@ class FloatMatrixTest extends TestBase {
         public void testFill_outOfBounds() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             float[][] patch = { { 1.0f, 2.0f }, { 3.0f, 4.0f } };
-            assertThrows(IllegalArgumentException.class, () -> m.fill(-1, 0, patch));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(-1, 0, patch));
         }
 
         // ============ Copy Tests ============
@@ -4428,7 +4428,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void test_row_invalidIndex() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f } });
-            assertThrows(IllegalArgumentException.class, () -> m.rowView(5));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(5));
         }
 
         @Test
@@ -4441,7 +4441,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void test_column_invalidIndex() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f } });
-            assertThrows(IllegalArgumentException.class, () -> m.columnCopy(5));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(5));
         }
 
         @Test
@@ -4454,7 +4454,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void test_setRow_invalidRowIndex() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f } });
-            assertThrows(IllegalArgumentException.class, () -> m.setRow(5, new float[] { 1.0f, 2.0f }));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.setRow(5, new float[] { 1.0f, 2.0f }));
         }
 
         @Test
@@ -4473,7 +4473,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void test_setColumn_invalidColumnIndex() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f } });
-            assertThrows(IllegalArgumentException.class, () -> m.setColumn(5, new float[] { 1.0f }));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.setColumn(5, new float[] { 1.0f }));
         }
 
         @Test

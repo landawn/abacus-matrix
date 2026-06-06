@@ -152,7 +152,7 @@ public final class Matrices {
      * @see ParallelMode
      */
     public static void setParallelMode(final ParallelMode parallelMode) throws IllegalArgumentException {
-        N.checkArgNotNull(parallelMode);
+        N.checkArgNotNull(parallelMode, "parallelMode");
 
         PARALLEL_MODE_TL.set(parallelMode);
     }
@@ -672,13 +672,14 @@ public final class Matrices {
      * @param mapper the function to apply at each position (i, j), receives row index and column index, must not be {@code null}
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
      * @return a {@link Stream} of results from applying the function at each position, never {@code null}
-     * @throws IllegalArgumentException if {@code mapper} is {@code null}
-     * @throws IndexOutOfBoundsException if {@code rowCount} or {@code columnCount} is negative
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}, or if {@code rowCount} or {@code columnCount} is negative
      * @see #mapIndices(int, int, int, int, Throwables.IntBiFunction, boolean)
      */
     public static <T> Stream<T> mapIndices(final int rowCount, final int columnCount, final Throwables.IntBiFunction<? extends T, ? extends Exception> mapper,
             final boolean inParallel) {
         N.checkArgNotNull(mapper, "mapper");
+        N.checkArgument(rowCount >= 0, "rowCount cannot be negative: {}", rowCount);
+        N.checkArgument(columnCount >= 0, "columnCount cannot be negative: {}", columnCount);
 
         return mapIndices(0, rowCount, 0, columnCount, mapper, inParallel);
     }
@@ -793,13 +794,14 @@ public final class Matrices {
      * @param mapper the function to apply at each position (i, j), receives row index and column index, must not be {@code null}
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
      * @return an {@link IntStream} of results from applying the function at each position, never {@code null}
-     * @throws IllegalArgumentException if {@code mapper} is {@code null}
-     * @throws IndexOutOfBoundsException if {@code rowCount} or {@code columnCount} is negative
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}, or if {@code rowCount} or {@code columnCount} is negative
      * @see #mapIndicesToInt(int, int, int, int, Throwables.IntBinaryOperator, boolean)
      */
     public static IntStream mapIndicesToInt(final int rowCount, final int columnCount, final Throwables.IntBinaryOperator<? extends Exception> mapper,
             final boolean inParallel) {
         N.checkArgNotNull(mapper, "mapper");
+        N.checkArgument(rowCount >= 0, "rowCount cannot be negative: {}", rowCount);
+        N.checkArgument(columnCount >= 0, "columnCount cannot be negative: {}", columnCount);
 
         return mapIndicesToInt(0, rowCount, 0, columnCount, mapper, inParallel);
     }
@@ -1604,9 +1606,12 @@ public final class Matrices {
      */
     public static <E extends Exception> IntMatrix zipToInt(final ByteMatrix a, final ByteMatrix b, final ByteMatrix c,
             final Throwables.ByteTriFunction<Integer, E> zipFunction) throws IllegalArgumentException, E {
+        N.checkArgNotNull(a, "a");
+        N.checkArgNotNull(b, "b");
+        N.checkArgNotNull(c, "c");
+        N.checkArgNotNull(zipFunction, "zipFunction");
         checkShapeForZip(a, b);
         checkShapeForZip(a, c);
-        N.checkArgNotNull(zipFunction, "zipFunction");
 
         final int rowCount = a.rowCount;
         final int columnCount = a.columnCount;
@@ -2156,9 +2161,12 @@ public final class Matrices {
      */
     public static <E extends Exception> LongMatrix zipToLong(final IntMatrix a, final IntMatrix b, final IntMatrix c,
             final Throwables.IntTriFunction<Long, E> zipFunction) throws IllegalArgumentException, E {
+        N.checkArgNotNull(a, "a");
+        N.checkArgNotNull(b, "b");
+        N.checkArgNotNull(c, "c");
+        N.checkArgNotNull(zipFunction, "zipFunction");
         checkShapeForZip(a, b);
         checkShapeForZip(a, c);
-        N.checkArgNotNull(zipFunction, "zipFunction");
 
         final int rowCount = a.rowCount;
         final int columnCount = a.columnCount;
@@ -2384,9 +2392,12 @@ public final class Matrices {
      */
     public static <E extends Exception> DoubleMatrix zipToDouble(final IntMatrix a, final IntMatrix b, final IntMatrix c,
             final Throwables.IntTriFunction<Double, E> zipFunction) throws IllegalArgumentException, E {
+        N.checkArgNotNull(a, "a");
+        N.checkArgNotNull(b, "b");
+        N.checkArgNotNull(c, "c");
+        N.checkArgNotNull(zipFunction, "zipFunction");
         checkShapeForZip(a, b);
         checkShapeForZip(a, c);
-        N.checkArgNotNull(zipFunction, "zipFunction");
 
         final int rowCount = a.rowCount;
         final int columnCount = a.columnCount;
@@ -2891,9 +2902,12 @@ public final class Matrices {
      */
     public static <E extends Exception> DoubleMatrix zipToDouble(final LongMatrix a, final LongMatrix b, final LongMatrix c,
             final Throwables.LongTriFunction<Double, E> zipFunction) throws IllegalArgumentException, E {
+        N.checkArgNotNull(a, "a");
+        N.checkArgNotNull(b, "b");
+        N.checkArgNotNull(c, "c");
+        N.checkArgNotNull(zipFunction, "zipFunction");
         checkShapeForZip(a, b);
         checkShapeForZip(a, c);
-        N.checkArgNotNull(zipFunction, "zipFunction");
 
         final int rowCount = a.rowCount;
         final int columnCount = a.columnCount;
@@ -3852,13 +3866,14 @@ public final class Matrices {
     }
 
     private static void checkShapeForZip(final AbstractMatrix<?, ?, ?, ?, ?> a, final AbstractMatrix<?, ?, ?, ?, ?> b) {
-        N.checkArgument(isSameShape(a, b), "Cannot zip matrices with different shapes");
+        N.checkArgument(isSameShape(a, b), "Cannot zip matrices with different shapes: first is {}x{} but second is {}x{}", a.rowCount, a.columnCount,
+                b.rowCount, b.columnCount);
     }
 
     private static void checkShapeForZip(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> coll) {
         checkMatricesNotEmptyAndNoNullElements(coll);
 
-        N.checkArgument(isSameShape(coll), "Cannot zip matrices with different shapes");
+        N.checkArgument(isSameShape(coll), "Cannot zip matrices with different shapes: all matrices must have the same dimensions");
     }
 
     private static void checkMatricesNotEmptyAndNoNullElements(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> matrices) {
