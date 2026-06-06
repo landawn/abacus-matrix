@@ -340,6 +340,7 @@ class IntMatrixTest extends TestBase {
 
         // Test wrong size
         assertThrows(IllegalArgumentException.class, () -> m.setRow(0, new int[] { 1, 2 }));
+        assertThrows(IllegalArgumentException.class, () -> m.setRow(0, (int[]) null));
     }
 
     @Test
@@ -350,6 +351,7 @@ class IntMatrixTest extends TestBase {
 
         // Test wrong size
         assertThrows(IllegalArgumentException.class, () -> m.setColumn(0, new int[] { 1, 2 }));
+        assertThrows(IllegalArgumentException.class, () -> m.setColumn(0, (int[]) null));
     }
 
     @Test

@@ -300,6 +300,7 @@ class DoubleMatrixTest extends TestBase {
         assertEquals(6.0, matrix.get(0, 1));
 
         assertThrows(IllegalArgumentException.class, () -> matrix.setRow(0, new double[] { 1.0 }));
+        assertThrows(IllegalArgumentException.class, () -> matrix.setRow(0, (double[]) null));
     }
 
     @Test
@@ -312,6 +313,7 @@ class DoubleMatrixTest extends TestBase {
         assertEquals(6.0, matrix.get(1, 0));
 
         assertThrows(IllegalArgumentException.class, () -> matrix.setColumn(0, new double[] { 1.0 }));
+        assertThrows(IllegalArgumentException.class, () -> matrix.setColumn(0, (double[]) null));
     }
 
     @Test

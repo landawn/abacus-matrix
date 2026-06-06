@@ -949,10 +949,11 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * @param rowIndex the index of the row to set (0-based)
      * @param row the array of values to copy into the row; must be non-{@code null} and of length {@code columnCount}
-     * @throws NullPointerException if {@code row} is {@code null}
-     * @throws IllegalArgumentException if {@code rowIndex} is out of bounds, or {@code row.length != columnCount}
+     * @throws IllegalArgumentException if {@code row} is {@code null}, if {@code rowIndex} is out of bounds,
+     *         or if {@code row.length != columnCount}
      */
     public void setRow(final int rowIndex, final int[] row) throws IllegalArgumentException {
+        N.checkArgNotNull(row, "row");
         N.checkArgument(rowIndex >= 0 && rowIndex < rowCount, MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount);
         N.checkArgument(row.length == columnCount, MSG_ROW_LENGTH_MISMATCH, columnCount, row.length);
 
@@ -981,10 +982,11 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * @param columnIndex the index of the column to set (0-based)
      * @param column the array of values to copy into the column; must be non-{@code null} and of length {@code rowCount}
-     * @throws NullPointerException if {@code column} is {@code null}
-     * @throws IllegalArgumentException if {@code columnIndex} is out of bounds, or {@code column.length != rowCount}
+     * @throws IllegalArgumentException if {@code column} is {@code null}, if {@code columnIndex} is out of bounds,
+     *         or if {@code column.length != rowCount}
      */
     public void setColumn(final int columnIndex, final int[] column) throws IllegalArgumentException {
+        N.checkArgNotNull(column, "column");
         N.checkArgument(columnIndex >= 0 && columnIndex < columnCount, MSG_COLUMN_INDEX_OUT_OF_BOUNDS, columnIndex, columnCount);
         N.checkArgument(column.length == rowCount, MSG_COLUMN_LENGTH_MISMATCH, rowCount, column.length);
 

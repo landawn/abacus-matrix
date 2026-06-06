@@ -253,6 +253,7 @@ class BooleanMatrixTest extends TestBase {
         assertFalse(matrix.get(0, 1));
 
         assertThrows(IllegalArgumentException.class, () -> matrix.setRow(0, new boolean[] { true }));
+        assertThrows(IllegalArgumentException.class, () -> matrix.setRow(0, (boolean[]) null));
     }
 
     @Test
@@ -265,6 +266,7 @@ class BooleanMatrixTest extends TestBase {
         assertFalse(matrix.get(1, 0));
 
         assertThrows(IllegalArgumentException.class, () -> matrix.setColumn(0, new boolean[] { true }));
+        assertThrows(IllegalArgumentException.class, () -> matrix.setColumn(0, (boolean[]) null));
     }
 
     @Test

@@ -347,6 +347,7 @@ class LongMatrixTest extends TestBase {
         Assertions.assertArrayEquals(new long[] { 10L, 20L, 30L }, matrix.rowView(0));
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.setRow(0, new long[] { 1L, 2L }));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.setRow(0, (long[]) null));
     }
 
     @Test
@@ -358,6 +359,7 @@ class LongMatrixTest extends TestBase {
         Assertions.assertArrayEquals(new long[] { 10L, 20L }, matrix.columnCopy(0));
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.setColumn(0, new long[] { 1L }));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.setColumn(0, (long[]) null));
     }
 
     @Test

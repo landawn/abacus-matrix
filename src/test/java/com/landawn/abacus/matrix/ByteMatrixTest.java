@@ -341,6 +341,7 @@ class ByteMatrixTest extends TestBase {
         Assertions.assertArrayEquals(new byte[] { 7, 8, 9 }, matrix.rowView(0));
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.setRow(0, new byte[] { 1, 2 }));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.setRow(0, (byte[]) null));
     }
 
     @Test
@@ -352,6 +353,7 @@ class ByteMatrixTest extends TestBase {
         Assertions.assertArrayEquals(new byte[] { 7, 8 }, matrix.columnCopy(0));
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.setColumn(0, new byte[] { 1 }));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.setColumn(0, (byte[]) null));
     }
 
     @Test

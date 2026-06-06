@@ -783,11 +783,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param rowIndex the index of the row to set (0-based)
      * @param row the array of values to copy into the row; must not be {@code null} and must have
      *        length equal to {@link #columnCount()}
-     * @throws NullPointerException if {@code row} is {@code null}
-     * @throws IllegalArgumentException if {@code rowIndex} is out of bounds or {@code row.length}
-     *         does not match the column count
+     * @throws IllegalArgumentException if {@code row} is {@code null}, if {@code rowIndex} is out of bounds,
+     *         or if {@code row.length} does not match the column count
      */
     public void setRow(final int rowIndex, final char[] row) throws IllegalArgumentException {
+        N.checkArgNotNull(row, "row");
         N.checkArgument(rowIndex >= 0 && rowIndex < rowCount, MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount);
         N.checkArgument(row.length == columnCount, MSG_ROW_LENGTH_MISMATCH, columnCount, row.length);
 
@@ -816,11 +816,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param columnIndex the index of the column to set (0-based)
      * @param column the array of values to copy into the column; must not be {@code null} and must
      *        have length equal to {@link #rowCount()}
-     * @throws NullPointerException if {@code column} is {@code null}
-     * @throws IllegalArgumentException if {@code columnIndex} is out of bounds or {@code column.length}
-     *         does not match the row count
+     * @throws IllegalArgumentException if {@code column} is {@code null}, if {@code columnIndex} is out of bounds,
+     *         or if {@code column.length} does not match the row count
      */
     public void setColumn(final int columnIndex, final char[] column) throws IllegalArgumentException {
+        N.checkArgNotNull(column, "column");
         N.checkArgument(columnIndex >= 0 && columnIndex < columnCount, MSG_COLUMN_INDEX_OUT_OF_BOUNDS, columnIndex, columnCount);
         N.checkArgument(column.length == rowCount, MSG_COLUMN_LENGTH_MISMATCH, rowCount, column.length);
 

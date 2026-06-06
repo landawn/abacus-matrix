@@ -330,6 +330,7 @@ class CharMatrixTest extends TestBase {
         Assertions.assertArrayEquals(new char[] { 'x', 'y', 'z' }, matrix.rowView(0));
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.setRow(0, new char[] { 'x', 'y' }));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.setRow(0, (char[]) null));
     }
 
     @Test
@@ -341,6 +342,7 @@ class CharMatrixTest extends TestBase {
         Assertions.assertArrayEquals(new char[] { 'x', 'y' }, matrix.columnCopy(0));
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.setColumn(0, new char[] { 'x' }));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.setColumn(0, (char[]) null));
     }
 
     @Test

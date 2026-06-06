@@ -1401,6 +1401,13 @@ class MatrixTest extends TestBase {
     }
 
     @Test
+    public void testToDatasetHRejectsRowsWithZeroColumns() {
+        Matrix<String> matrix = Matrix.of(new String[3][0]);
+
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.toRowDataset(List.of()));
+    }
+
+    @Test
     public void testToDatasetV() {
         Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 } });
         List<String> columnNames = Arrays.asList("Row1", "Row2");

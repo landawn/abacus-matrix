@@ -315,6 +315,7 @@ class FloatMatrixTest extends TestBase {
 
         // Test wrong size
         assertThrows(IllegalArgumentException.class, () -> m.setRow(0, new float[] { 1.0f, 2.0f }));
+        assertThrows(IllegalArgumentException.class, () -> m.setRow(0, (float[]) null));
     }
 
     @Test
@@ -325,6 +326,7 @@ class FloatMatrixTest extends TestBase {
 
         // Test wrong size
         assertThrows(IllegalArgumentException.class, () -> m.setColumn(0, new float[] { 1.0f, 2.0f }));
+        assertThrows(IllegalArgumentException.class, () -> m.setColumn(0, (float[]) null));
     }
 
     @Test

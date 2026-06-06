@@ -3603,8 +3603,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param columnNames the names to assign to each column in the resulting Dataset; size must equal {@code columnCount}
      * @return a Dataset containing the matrix data with the specified column names
      *         (one row per matrix row)
-     * @throws IllegalArgumentException if {@code columnNames} is {@code null}, or if its size
-     *         does not equal {@code columnCount}
+     * @throws IllegalArgumentException if {@code columnNames} is {@code null}, if its size
+     *         does not equal {@code columnCount}, or if this matrix has rows but no columns
      * @see Dataset
      * @see #toColumnDataset(Collection)
      */
@@ -3613,6 +3613,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         N.checkArgNotNull(columnNames, "columnNames");
         N.checkArgument(columnNames.size() == columnCount, "The size({}) of specified columnNames and column count({}) of this Matrix are not equal",
                 columnNames.size(), columnCount);
+        N.checkArgument(rowCount == 0 || columnCount > 0, "Cannot convert a matrix with rows but zero columns to a row dataset");
 
         final List<String> newColumnNameList = new ArrayList<>(columnNames);
         final List<List<Object>> newColumnList = new ArrayList<>(newColumnNameList.size());

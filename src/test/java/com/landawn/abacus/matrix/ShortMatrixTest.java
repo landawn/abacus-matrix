@@ -315,6 +315,7 @@ class ShortMatrixTest extends TestBase {
 
         // Test wrong size
         assertThrows(IllegalArgumentException.class, () -> m.setRow(0, new short[] { 1, 2 }));
+        assertThrows(IllegalArgumentException.class, () -> m.setRow(0, (short[]) null));
     }
 
     @Test
@@ -325,6 +326,7 @@ class ShortMatrixTest extends TestBase {
 
         // Test wrong size
         assertThrows(IllegalArgumentException.class, () -> m.setColumn(0, new short[] { 1, 2 }));
+        assertThrows(IllegalArgumentException.class, () -> m.setColumn(0, (short[]) null));
     }
 
     @Test

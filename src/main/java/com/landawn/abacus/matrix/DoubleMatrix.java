@@ -871,10 +871,11 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * @param rowIndex the index of the row to set (0-based)
      * @param row the array of values to copy into the row; must have length equal to the number of columns
-     * @throws NullPointerException if {@code row} is {@code null}
-     * @throws IllegalArgumentException if rowIndex is out of bounds or row length does not match column count
+     * @throws IllegalArgumentException if {@code row} is {@code null}, if rowIndex is out of bounds,
+     *         or if row length does not match column count
      */
     public void setRow(final int rowIndex, final double[] row) throws IllegalArgumentException {
+        N.checkArgNotNull(row, "row");
         N.checkArgument(rowIndex >= 0 && rowIndex < rowCount, MSG_ROW_INDEX_OUT_OF_BOUNDS, rowIndex, rowCount);
         N.checkArgument(row.length == columnCount, MSG_ROW_LENGTH_MISMATCH, columnCount, row.length);
 
@@ -901,10 +902,11 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * @param columnIndex the index of the column to set (0-based)
      * @param column the array of values to copy into the column; must have length equal to the number of rows
-     * @throws NullPointerException if {@code column} is {@code null}
-     * @throws IllegalArgumentException if columnIndex is out of bounds or column length does not match row count
+     * @throws IllegalArgumentException if {@code column} is {@code null}, if columnIndex is out of bounds,
+     *         or if column length does not match row count
      */
     public void setColumn(final int columnIndex, final double[] column) throws IllegalArgumentException {
+        N.checkArgNotNull(column, "column");
         N.checkArgument(columnIndex >= 0 && columnIndex < columnCount, MSG_COLUMN_INDEX_OUT_OF_BOUNDS, columnIndex, columnCount);
         N.checkArgument(column.length == rowCount, MSG_COLUMN_LENGTH_MISMATCH, rowCount, column.length);
 
