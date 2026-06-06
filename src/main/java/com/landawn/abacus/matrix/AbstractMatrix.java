@@ -343,15 +343,15 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * matrix.get(0, 0);                                        // returns 99 (mutation visible through the matrix)
      * int[] row1 = matrix.rowView(1);                          // returns [4, 5, 6]
      *
-     * matrix.rowView(-1);                                      // throws IllegalArgumentException (negative index)
-     * matrix.rowView(2);                                       // throws IllegalArgumentException (index >= rowCount)
+     * matrix.rowView(-1);                                      // throws IndexOutOfBoundsException (negative index)
+     * matrix.rowView(2);                                       // throws IndexOutOfBoundsException (index >= rowCount)
      * }</pre>
      *
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return the specified row array (direct reference to internal storage)
-     * @throws IllegalArgumentException if {@code rowIndex} is negative or {@code >= rowCount()}
+     * @throws IndexOutOfBoundsException if {@code rowIndex} is negative or {@code >= rowCount()}
      */
-    public abstract A rowView(int rowIndex) throws IllegalArgumentException;
+    public abstract A rowView(int rowIndex) throws IndexOutOfBoundsException;
 
     /**
      * Returns a defensive copy of the specified row.
@@ -365,15 +365,15 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * matrix.get(0, 0);                                        // returns 1 (original unchanged)
      * int[] last = matrix.rowCopy(1);                          // returns [4, 5, 6]
      *
-     * matrix.rowCopy(-1);                                      // throws IllegalArgumentException (negative index)
-     * matrix.rowCopy(2);                                       // throws IllegalArgumentException (index >= rowCount)
+     * matrix.rowCopy(-1);                                      // throws IndexOutOfBoundsException (negative index)
+     * matrix.rowCopy(2);                                       // throws IndexOutOfBoundsException (index >= rowCount)
      * }</pre>
      *
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return a new array containing the values from the specified row
-     * @throws IllegalArgumentException if {@code rowIndex} is negative or {@code >= rowCount()}
+     * @throws IndexOutOfBoundsException if {@code rowIndex} is negative or {@code >= rowCount()}
      */
-    public abstract A rowCopy(int rowIndex) throws IllegalArgumentException;
+    public abstract A rowCopy(int rowIndex) throws IndexOutOfBoundsException;
 
     /**
      * Returns a defensive copy of the specified column.
@@ -395,15 +395,15 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * matrix.get(0, 1);                                        // returns 2 (original unchanged)
      * int[] col0 = matrix.columnCopy(0);                       // returns [1, 4]
      *
-     * matrix.columnCopy(-1);                                   // throws IllegalArgumentException (negative index)
-     * matrix.columnCopy(3);                                    // throws IllegalArgumentException (index >= columnCount)
+     * matrix.columnCopy(-1);                                   // throws IndexOutOfBoundsException (negative index)
+     * matrix.columnCopy(3);                                    // throws IndexOutOfBoundsException (index >= columnCount)
      * }</pre>
      *
      * @param columnIndex the index of the column to retrieve (0-based)
      * @return a new array containing the values from the specified column
-     * @throws IllegalArgumentException if {@code columnIndex} is negative or {@code >= columnCount()}
+     * @throws IndexOutOfBoundsException if {@code columnIndex} is negative or {@code >= columnCount()}
      */
-    public abstract A columnCopy(int columnIndex) throws IllegalArgumentException;
+    public abstract A columnCopy(int columnIndex) throws IndexOutOfBoundsException;
 
     /**
      * Returns the number of rows in this matrix.

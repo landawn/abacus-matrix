@@ -667,8 +667,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * matrix.rowView(1);                      // returns [4, 5, 6]
      *
      * firstRow[0] = 10;                       // shared storage: matrix.get(0, 0) now returns (short) 10
-     * matrix.rowView(2);                      // throws IllegalArgumentException (row out of bounds)
-     * matrix.rowView(-1);                     // throws IllegalArgumentException (negative index)
+     * matrix.rowView(2);                      // throws IndexOutOfBoundsException (row out of bounds)
+     * matrix.rowView(-1);                     // throws IndexOutOfBoundsException (negative index)
      * }</pre>
      *
      * @param rowIndex the index of the row to retrieve (0-based)

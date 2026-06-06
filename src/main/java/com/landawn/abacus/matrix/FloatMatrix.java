@@ -636,7 +636,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * matrix.get(0, 0);                       // returns 99.0f
      *
      * matrix.rowView(1)[2];                   // returns 6.0f
-     * matrix.rowView(5);                      // throws IllegalArgumentException (row out of range)
+     * matrix.rowView(5);                      // throws IndexOutOfBoundsException (row out of range)
      * }</pre>
      *
      * @param rowIndex the index of the row to retrieve (0-based)

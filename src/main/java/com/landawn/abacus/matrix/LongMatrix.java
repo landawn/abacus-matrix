@@ -732,7 +732,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * firstRow[0] = 99L;          // mutates the shared backing array
      * matrix.get(0, 0);           // returns 99L (the matrix sees the change)
      *
-     * matrix.rowView(5);          // throws IllegalArgumentException (row out of range)
+     * matrix.rowView(5);          // throws IndexOutOfBoundsException (row out of range)
      * }</pre>
      *
      * @param rowIndex the index of the row to retrieve (0-based)

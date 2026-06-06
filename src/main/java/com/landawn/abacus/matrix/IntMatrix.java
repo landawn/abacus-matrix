@@ -842,8 +842,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * firstRow[0] = 10;
      * matrix.get(0, 0);                       // returns 10 (live view is shared)
      *
-     * matrix.rowView(-1);                     // throws IllegalArgumentException
-     * matrix.rowView(2);                      // throws IllegalArgumentException (rowIndex >= rowCount)
+     * matrix.rowView(-1);                     // throws IndexOutOfBoundsException
+     * matrix.rowView(2);                      // throws IndexOutOfBoundsException (rowIndex >= rowCount)
      * }</pre>
      *
      * @param rowIndex the index of the row to retrieve (0-based)

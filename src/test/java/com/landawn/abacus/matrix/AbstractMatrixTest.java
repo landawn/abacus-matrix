@@ -149,6 +149,37 @@ class AbstractMatrixTest extends TestBase {
         });
     }
 
+    // Bug fix: AbstractMatrix.rowView/rowCopy/columnCopy were declared and documented to throw
+    // IllegalArgumentException for an out-of-bounds index, but the real contract (every concrete
+    // override + the project's validation policy: index -> IndexOutOfBoundsException) is
+    // IndexOutOfBoundsException. These assertions exercise the corrected contract through the
+    // AbstractMatrix reference type for every matrix variant (rowCopy bounds were previously untested).
+    @Test
+    public void testRowColumnAccessorsThrowIndexOutOfBoundsThroughBaseType() {
+        List<AbstractMatrix<?, ?, ?, ?, ?>> matrices = new ArrayList<>();
+        matrices.add(BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } }));
+        matrices.add(ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } }));
+        matrices.add(CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } }));
+        matrices.add(ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } }));
+        matrices.add(IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } }));
+        matrices.add(LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } }));
+        matrices.add(FloatMatrix.of(new float[][] { { 1f, 2f }, { 3f, 4f } }));
+        matrices.add(DoubleMatrix.of(new double[][] { { 1d, 2d }, { 3d, 4d } }));
+        matrices.add(Matrix.of(new String[][] { { "a", "b" }, { "c", "d" } }));
+
+        for (AbstractMatrix<?, ?, ?, ?, ?> m : matrices) {
+            // rowView
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(2));
+            // rowCopy
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowCopy(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowCopy(2));
+            // columnCopy
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(2));
+        }
+    }
+
     @Test
     public void testRotate90() {
         IntMatrix matrix = createTestMatrix2x3();
