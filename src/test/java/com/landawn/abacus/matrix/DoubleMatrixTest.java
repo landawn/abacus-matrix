@@ -6324,6 +6324,12 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
+        public void testReshape_oversizedShapeThrowsIllegalArgumentException() {
+            DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0 } });
+            assertThrows(IllegalArgumentException.class, () -> m.reshape(46341, 46341));
+        }
+
+        @Test
         public void testSetDiagonal_nullArraysOnEmptyMatrixThrow() {
             DoubleMatrix m = DoubleMatrix.empty();
             assertThrows(IllegalArgumentException.class, () -> m.setMainDiagonal(null));

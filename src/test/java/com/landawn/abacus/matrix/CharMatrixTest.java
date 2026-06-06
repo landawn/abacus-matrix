@@ -6673,6 +6673,12 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
+        public void testReshape_oversizedShapeThrowsIllegalArgumentException() {
+            CharMatrix m = CharMatrix.of(new char[][] { { 'a' } });
+            assertThrows(IllegalArgumentException.class, () -> m.reshape(46341, 46341));
+        }
+
+        @Test
         public void testSetDiagonal_nullArraysOnEmptyMatrixThrow() {
             CharMatrix m = CharMatrix.empty();
             assertThrows(IllegalArgumentException.class, () -> m.setMainDiagonal(null));

@@ -7338,6 +7338,26 @@ class MatrixTest extends TestBase {
         }
 
         @Test
+        public void testResizeWithDefaultValue_widensHeterogeneousRowsBeforeFilling() {
+            Matrix<Object> m = Matrix.of(new Object[] { 1 }, new Integer[] { 2 });
+
+            Matrix<Object> resized = m.resize(2, 2, "x");
+
+            assertEquals(1, resized.get(0, 0));
+            assertEquals("x", resized.get(0, 1));
+            assertEquals(2, resized.get(1, 0));
+            assertEquals("x", resized.get(1, 1));
+            assertEquals(Object.class, resized.rowView(0).getClass().getComponentType());
+            assertEquals(Object.class, resized.rowView(1).getClass().getComponentType());
+        }
+
+        @Test
+        public void testReshape_oversizedShapeThrowsIllegalArgumentException() {
+            Matrix<Integer> m = Matrix.of(new Integer[][] { { 1 } });
+            assertThrows(IllegalArgumentException.class, () -> m.reshape(46341, 46341));
+        }
+
+        @Test
         public void testUpdateAllUnary_tallMatrixTraversesRowMajor() {
             Matrix<Integer> m = Matrix.of(new Integer[][] { { 0, 0 }, { 0, 0 }, { 0, 0 } });
             final int[] counter = { 0 };

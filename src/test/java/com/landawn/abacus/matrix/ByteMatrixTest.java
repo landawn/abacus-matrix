@@ -6240,6 +6240,12 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
+        public void testReshape_oversizedShapeThrowsIllegalArgumentException() {
+            ByteMatrix m = ByteMatrix.of(new byte[][] { { 1 } });
+            assertThrows(IllegalArgumentException.class, () -> m.reshape(46341, 46341));
+        }
+
+        @Test
         public void testSetDiagonal_nullArraysOnEmptyMatrixThrow() {
             ByteMatrix m = ByteMatrix.empty();
             assertThrows(IllegalArgumentException.class, () -> m.setMainDiagonal(null));

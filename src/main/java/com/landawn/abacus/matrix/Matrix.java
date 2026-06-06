@@ -1866,9 +1866,14 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         } else {
             final boolean fillDefaultValue = defaultValue != null;
             final T[][] b = N.newArray(arrayType, newRowCount);
+            final int columnCountToCopy = N.min(columnCount, newColumnCount);
 
             for (int i = 0; i < newRowCount; i++) {
-                b[i] = i < rowCount ? N.copyOf(a[i], newColumnCount) : N.newArray(elementType, newColumnCount);
+                b[i] = N.newArray(elementType, newColumnCount);
+
+                if (i < rowCount && columnCountToCopy > 0) {
+                    N.copy(a[i], 0, b[i], 0, columnCountToCopy);
+                }
 
                 if (fillDefaultValue) {
                     if (i >= rowCount) {
@@ -2390,6 +2395,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
         checkRepresentableShape(newRowCount, newColumnCount);
+        checkMaterializableShape(newRowCount, newColumnCount);
         N.checkArgument((long) newRowCount * newColumnCount >= elementCount(), "New shape [{}x{}={}] is too small to hold all {} elements", newRowCount,
                 newColumnCount, (long) newRowCount * newColumnCount, elementCount());
 

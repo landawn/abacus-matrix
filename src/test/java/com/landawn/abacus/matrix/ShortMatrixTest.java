@@ -6509,6 +6509,12 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
+        public void testReshape_oversizedShapeThrowsIllegalArgumentException() {
+            ShortMatrix m = ShortMatrix.of(new short[][] { { 1 } });
+            assertThrows(IllegalArgumentException.class, () -> m.reshape(46341, 46341));
+        }
+
+        @Test
         public void testSetDiagonal_nullArraysOnEmptyMatrixThrow() {
             ShortMatrix m = ShortMatrix.empty();
             assertThrows(IllegalArgumentException.class, () -> m.setMainDiagonal(null));

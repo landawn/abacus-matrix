@@ -6136,6 +6136,12 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
+        public void testReshape_oversizedShapeThrowsIllegalArgumentException() {
+            BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true } });
+            assertThrows(IllegalArgumentException.class, () -> m.reshape(46341, 46341));
+        }
+
+        @Test
         public void testSetDiagonal_nullArraysOnEmptyMatrixThrow() {
             BooleanMatrix m = BooleanMatrix.empty();
             assertThrows(IllegalArgumentException.class, () -> m.setMainDiagonal(null));

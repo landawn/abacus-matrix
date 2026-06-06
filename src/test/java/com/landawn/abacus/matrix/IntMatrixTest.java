@@ -6415,6 +6415,12 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
+        public void testReshape_oversizedShapeThrowsIllegalArgumentException() {
+            IntMatrix m = IntMatrix.of(new int[][] { { 1 } });
+            assertThrows(IllegalArgumentException.class, () -> m.reshape(46341, 46341));
+        }
+
+        @Test
         public void testForEachRange_sequentialRowMajor_andParallelCompleteness() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
             final ParallelMode prev = Matrices.getParallelMode();

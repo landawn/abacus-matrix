@@ -222,7 +222,15 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @throws IllegalArgumentException if the shape is not representable
      */
     protected static void checkRepresentableShape(final int rowCount, final int columnCount) {
+        N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
+        N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
         N.checkArgument(rowCount > 0 || columnCount == 0, MSG_UNREPRESENTABLE_SHAPE, rowCount, columnCount);
+    }
+
+    protected static void checkMaterializableShape(final int rowCount, final int columnCount) {
+        if ((long) rowCount * columnCount > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("Matrix dimensions overflow: " + rowCount + " x " + columnCount + " exceeds Integer.MAX_VALUE");
+        }
     }
 
     /**

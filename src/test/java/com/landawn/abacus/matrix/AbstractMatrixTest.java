@@ -3849,6 +3849,12 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
+        public void testRepresentableShapeRejectsNegativeDimensions() {
+            assertThrows(IllegalArgumentException.class, () -> AbstractMatrix.checkRepresentableShape(-1, 0));
+            assertThrows(IllegalArgumentException.class, () -> AbstractMatrix.checkRepresentableShape(1, -1));
+        }
+
+        @Test
         public void testColumnAndDiagonalReadsAreTypeSafeForObjectBackedMatrices() {
             Matrix<String> repeated = Matrix.repeat(2, 2, "a");
             String[] col = repeated.columnCopy(0);
