@@ -975,7 +975,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * The matrix must be square (rowCount == columnCount), and the diagonal array must have
      * exactly as many elements as the matrix has rows.
      *
-     * <p>This method sets the main diagonal elements at positions (0,0), (1,1), (2,2), etc.
+     * <p>This method sets the main diagonal elements at positions (0,0), (1,1), (2,2), etc.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2086,7 +2086,6 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * }</pre>
      *
      * @return a new matrix rotated 270 degrees clockwise with dimensions {@code (columnCount x rowCount)}
-     * @throws IllegalArgumentException if the transposed shape {@code (columnCount x rowCount)} is not representable
      * @see #rotate90()
      * @see #rotate180()
      */
@@ -2146,7 +2145,6 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @return a new matrix that is the transpose of this matrix with dimensions {@code columnCount × rowCount};
      *         an {@code N x 0} matrix transposes to the empty {@code 0 x 0} matrix, because the swapped shape
      *         {@code 0 x N} (zero rows with a non-zero column count) is not representable
-     * @throws IllegalArgumentException if the transposed shape {@code (columnCount × rowCount)} is not representable
      */
     @Override
     public ByteMatrix transpose() {
@@ -2969,19 +2967,19 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * ByteMatrix.empty().mainDiagonalStream().count();   // returns 0L (empty allowed)
      *
      * ByteMatrix nonSquare = ByteMatrix.of(new byte[][] {{1, 2, 3}, {4, 5, 6}});
-     * nonSquare.mainDiagonalStream();             // throws IllegalStateException (non-empty and not square)
+     * nonSquare.mainDiagonalStream();             // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a ByteStream of diagonal elements
-     * @throws IllegalStateException if the matrix is non-empty and not square (rowCount != columnCount)
+     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
     public ByteStream mainDiagonalStream() {
+        checkIsSquare();
+
         if (isEmpty()) {
             return ByteStream.empty();
         }
-
-        checkIsSquare();
 
         return ByteStream.of(new ByteIteratorEx() {
             private final int toIndex = rowCount;
@@ -3030,19 +3028,19 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * ByteMatrix.empty().antiDiagonalStream().count();   // returns 0L (empty allowed)
      *
      * ByteMatrix nonSquare = ByteMatrix.of(new byte[][] {{1, 2, 3}, {4, 5, 6}});
-     * nonSquare.antiDiagonalStream();             // throws IllegalStateException (non-empty and not square)
+     * nonSquare.antiDiagonalStream();             // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a ByteStream of anti-diagonal elements
-     * @throws IllegalStateException if the matrix is non-empty and not square (rowCount != columnCount)
+     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
     public ByteStream antiDiagonalStream() {
+        checkIsSquare();
+
         if (isEmpty()) {
             return ByteStream.empty();
         }
-
-        checkIsSquare();
 
         return ByteStream.of(new ByteIteratorEx() {
             private final int toIndex = rowCount;

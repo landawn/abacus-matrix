@@ -77,7 +77,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * }</pre>
      *
      * @param a the two-dimensional int array to wrap, or {@code null} for an empty matrix
-     * @throws IllegalArgumentException if {@code a} is non-rectangular (rows have differing lengths)
+     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     *         different lengths (i.e. the array is not rectangular)
      */
     public IntMatrix(final int[][] a) {
         super(a == null ? new int[0][0] : a, int.class);
@@ -120,7 +121,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * @param a the two-dimensional int array to wrap, or {@code null}/empty for an empty matrix
      * @return a new {@code IntMatrix} backed by {@code a}, or the shared empty matrix if {@code a} is {@code null} or empty
-     * @throws IllegalArgumentException if {@code a} is non-rectangular (rows have differing lengths)
+     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     *         different lengths (i.e. the array is not rectangular)
      */
     public static IntMatrix of(final int[]... a) {
         return N.isEmpty(a) ? EMPTY_INT_MATRIX : new IntMatrix(a);
@@ -1112,7 +1114,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * The matrix must be square (rowCount == columnCount), and the diagonal array must have
      * exactly as many elements as the matrix has rows.
      *
-     * <p>This method sets the main diagonal elements at positions (0,0), (1,1), (2,2), etc.
+     * <p>This method sets the main diagonal elements at positions (0,0), (1,1), (2,2), etc.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3046,19 +3048,19 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * IntMatrix.empty().mainDiagonalStream().count(); // returns 0 (empty stream)
      * IntMatrix nonSquare = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * nonSquare.mainDiagonalStream();         // throws IllegalStateException (non-empty and not square)
+     * nonSquare.mainDiagonalStream();         // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return an IntStream of main-diagonal elements, or an empty stream if the matrix is empty
-     * @throws IllegalStateException if the matrix is non-empty and not square (rowCount != columnCount)
+     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
     public IntStream mainDiagonalStream() {
+        checkIsSquare();
+
         if (isEmpty()) {
             return IntStream.empty();
         }
-
-        checkIsSquare();
 
         return IntStream.of(new IntIteratorEx() {
             private final int toIndex = rowCount;
@@ -3106,19 +3108,19 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * IntMatrix.empty().antiDiagonalStream().count(); // returns 0 (empty stream)
      * IntMatrix nonSquare = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * nonSquare.antiDiagonalStream();         // throws IllegalStateException (non-empty and not square)
+     * nonSquare.antiDiagonalStream();         // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return an IntStream of anti-diagonal elements, or an empty stream if the matrix is empty
-     * @throws IllegalStateException if the matrix is non-empty and not square (rowCount != columnCount)
+     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
     public IntStream antiDiagonalStream() {
+        checkIsSquare();
+
         if (isEmpty()) {
             return IntStream.empty();
         }
-
-        checkIsSquare();
 
         return IntStream.of(new IntIteratorEx() {
             private final int toIndex = rowCount;

@@ -85,8 +85,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @param a the two-dimensional double array to wrap, or {@code null} for an empty matrix
-     * @throws IllegalArgumentException if {@code a} is non-rectangular (rows have differing lengths)
-     *         or contains a {@code null} row
+     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     *         different lengths (i.e. the array is not rectangular)
      */
     public DoubleMatrix(final double[][] a) {
         super(a == null ? new double[0][0] : a, double.class);
@@ -133,8 +133,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * @param a the two-dimensional double array to create the matrix from, or {@code null}/empty for an empty matrix
      * @return a new {@code DoubleMatrix} containing the provided data, or an empty {@code DoubleMatrix} if the input is {@code null} or empty
-     * @throws IllegalArgumentException if {@code a} is non-rectangular (rows have differing lengths)
-     *         or contains a {@code null} row
+     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     *         different lengths (i.e. the array is not rectangular)
      */
     public static DoubleMatrix of(final double[]... a) {
         return N.isEmpty(a) ? EMPTY_DOUBLE_MATRIX : new DoubleMatrix(a);
@@ -1036,7 +1036,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * The matrix must be square (rowCount == columnCount), and the diagonal array must have
      * exactly as many elements as the matrix has rows.
      *
-     * <p>This method sets the main diagonal elements at positions (0,0), (1,1), (2,2), etc.
+     * <p>This method sets the main diagonal elements at positions (0,0), (1,1), (2,2), etc.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3088,15 +3088,15 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @return a DoubleStream of diagonal elements from upper-left to lower-right
-     * @throws IllegalStateException if the matrix is non-empty and not square
+     * @throws IllegalStateException if the matrix is not square
      */
     @Override
     public DoubleStream mainDiagonalStream() {
+        checkIsSquare();
+
         if (isEmpty()) {
             return DoubleStream.empty();
         }
-
-        checkIsSquare();
 
         return DoubleStream.of(new DoubleIteratorEx() {
             private final int toIndex = rowCount;
@@ -3150,15 +3150,15 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @return a DoubleStream of diagonal elements from upper-right to lower-left
-     * @throws IllegalStateException if the matrix is non-empty and not square
+     * @throws IllegalStateException if the matrix is not square
      */
     @Override
     public DoubleStream antiDiagonalStream() {
+        checkIsSquare();
+
         if (isEmpty()) {
             return DoubleStream.empty();
         }
-
-        checkIsSquare();
 
         return DoubleStream.of(new DoubleIteratorEx() {
             private final int toIndex = rowCount;

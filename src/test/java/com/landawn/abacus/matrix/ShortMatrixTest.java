@@ -6468,25 +6468,22 @@ class ShortMatrixTest extends TestBase {
         }
     }
 
-    // Regression tests for the deep-review fixes: diagonal stream on empty non-square matrices,
+    // Regression tests for the deep-review fixes: diagonal stream square validation,
     // and N x 0 transpose/rotate shape contracts.
     @Nested
     public class ReviewBugfixTests {
 
         @Test
-        public void testDiagonalStream_emptyNonSquareMatrix_returnsEmptyInsteadOfThrowing() {
-            // A 3x0 matrix is empty (0 elements) but not square; per the @return contract the
-            // diagonal streams must yield an empty stream rather than throw IllegalStateException.
+        public void testDiagonalStream_Nx0MatrixThrowsBecauseNotSquare() {
             ShortMatrix m = ShortMatrix.of(new short[3][0]);
             assertEquals(3, m.rowCount());
             assertEquals(0, m.columnCount());
-            assertEquals(0, m.mainDiagonalStream().count());
-            assertEquals(0, m.antiDiagonalStream().count());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalStream());
+            assertThrows(IllegalStateException.class, () -> m.antiDiagonalStream());
 
-            // A non-empty non-square matrix must still throw.
-            ShortMatrix nonSquare = ShortMatrix.of(new short[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalStream());
-            assertThrows(IllegalStateException.class, () -> nonSquare.antiDiagonalStream());
+            ShortMatrix empty = ShortMatrix.empty();
+            assertEquals(0, empty.mainDiagonalStream().count());
+            assertEquals(0, empty.antiDiagonalStream().count());
         }
 
         @Test

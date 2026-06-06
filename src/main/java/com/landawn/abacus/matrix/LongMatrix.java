@@ -74,8 +74,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * }</pre>
      *
      * @param a the two-dimensional long array to wrap, or {@code null} for an empty matrix
-     * @throws IllegalArgumentException if {@code a} is non-{@code null}, non-empty, and rows have
-     *         different lengths (the array is not rectangular)
+     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     *         different lengths (i.e. the array is not rectangular)
      */
     public LongMatrix(final long[][] a) {
         super(a == null ? new long[0][0] : a, long.class);
@@ -119,7 +119,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * @param a the two-dimensional long array to create the matrix from, or {@code null}/empty for an empty matrix
      * @return a new {@code LongMatrix} wrapping the provided data, or the shared empty matrix if input is {@code null} or empty
-     * @throws IllegalArgumentException if {@code a} is non-{@code null}, non-empty, and rows have differing lengths
+     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     *         different lengths (i.e. the array is not rectangular)
      */
     public static LongMatrix of(final long[]... a) {
         return N.isEmpty(a) ? EMPTY_LONG_MATRIX : new LongMatrix(a);
@@ -985,7 +986,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * The matrix must be square (rowCount == columnCount), and the diagonal array must have
      * exactly as many elements as the matrix has rows.
      *
-     * <p>This method sets the main diagonal elements at positions (0,0), (1,1), (2,2), etc.
+     * <p>This method sets the main diagonal elements at positions (0,0), (1,1), (2,2), etc.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2018,7 +2019,6 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * }</pre>
      *
      * @return a new {@code LongMatrix} rotated 90 degrees clockwise
-     * @throws IllegalArgumentException if the resulting shape is not representable
      */
     @Override
     public LongMatrix rotate90() {
@@ -2100,7 +2100,6 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * }</pre>
      *
      * @return a new {@code LongMatrix} rotated 270 degrees clockwise
-     * @throws IllegalArgumentException if the resulting shape is not representable
      */
     @Override
     public LongMatrix rotate270() {
@@ -2155,7 +2154,6 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @return a new {@code LongMatrix} that is the transpose of this matrix with dimensions {@code columnCount × rowCount};
      *         an {@code N x 0} matrix transposes to the empty {@code 0 x 0} matrix, because the swapped shape
      *         {@code 0 x N} (zero rows with a non-zero column count) is not representable
-     * @throws IllegalArgumentException if the resulting shape is not representable
      */
     @Override
     public LongMatrix transpose() {
@@ -2901,15 +2899,15 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * @return a stream of diagonal elements from upper-left to lower-right,
      *         or an empty stream if the matrix is empty
-     * @throws IllegalStateException if the matrix is non-empty and not square
+     * @throws IllegalStateException if the matrix is not square
      */
     @Override
     public LongStream mainDiagonalStream() {
+        checkIsSquare();
+
         if (isEmpty()) {
             return LongStream.empty();
         }
-
-        checkIsSquare();
 
         return LongStream.of(new LongIteratorEx() {
             private final int toIndex = rowCount;
@@ -2962,15 +2960,15 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * @return a stream of diagonal elements from upper-right to lower-left,
      *         or an empty stream if the matrix is empty
-     * @throws IllegalStateException if the matrix is non-empty and not square
+     * @throws IllegalStateException if the matrix is not square
      */
     @Override
     public LongStream antiDiagonalStream() {
+        checkIsSquare();
+
         if (isEmpty()) {
             return LongStream.empty();
         }
-
-        checkIsSquare();
 
         return LongStream.of(new LongIteratorEx() {
             private final int toIndex = rowCount;

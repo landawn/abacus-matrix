@@ -75,7 +75,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @param a the two-dimensional float array to wrap, or {@code null} for an empty matrix
-     * @throws IllegalArgumentException if {@code a} is non-empty but not rectangular (rows of differing length)
+     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     *         different lengths (i.e. the array is not rectangular)
      */
     public FloatMatrix(final float[][] a) {
         super(a == null ? new float[0][0] : a, float.class);
@@ -119,7 +120,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @param a the two-dimensional float array to create the matrix from, or {@code null}/empty for an empty matrix
      * @return a new {@code FloatMatrix} wrapping the provided data, or the shared empty {@code FloatMatrix} if input is {@code null} or empty
-     * @throws IllegalArgumentException if {@code a} is non-empty but not rectangular (rows of differing length)
+     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     *         different lengths (i.e. the array is not rectangular)
      */
     public static FloatMatrix of(final float[]... a) {
         return N.isEmpty(a) ? EMPTY_FLOAT_MATRIX : new FloatMatrix(a);
@@ -886,7 +888,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * The matrix must be square (rowCount == columnCount), and the diagonal array must have
      * exactly as many elements as the matrix has rows.
      *
-     * <p>This method sets the main diagonal elements at positions (0,0), (1,1), (2,2), etc.
+     * <p>This method sets the main diagonal elements at positions (0,0), (1,1), (2,2), etc.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2801,15 +2803,15 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @return a FloatStream containing the diagonal elements from upper-left to lower-right
-     * @throws IllegalStateException if the matrix is non-empty and not square
+     * @throws IllegalStateException if the matrix is not square
      */
     @Override
     public FloatStream mainDiagonalStream() {
+        checkIsSquare();
+
         if (isEmpty()) {
             return FloatStream.empty();
         }
-
-        checkIsSquare();
 
         return FloatStream.of(new FloatIteratorEx() {
             private final int toIndex = rowCount;
@@ -2862,15 +2864,15 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @return a FloatStream containing the anti-diagonal elements from upper-right to lower-left
-     * @throws IllegalStateException if the matrix is non-empty and not square
+     * @throws IllegalStateException if the matrix is not square
      */
     @Override
     public FloatStream antiDiagonalStream() {
+        checkIsSquare();
+
         if (isEmpty()) {
             return FloatStream.empty();
         }
-
-        checkIsSquare();
 
         return FloatStream.of(new FloatIteratorEx() {
             private final int toIndex = rowCount;

@@ -915,7 +915,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * The matrix must be square (rowCount == columnCount), and the diagonal array must have
      * exactly as many elements as the matrix has rows.
      *
-     * <p>This method sets the main diagonal elements at positions (0,0), (1,1), (2,2), etc.
+     * <p>This method sets the main diagonal elements at positions (0,0), (1,1), (2,2), etc.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2816,15 +2816,15 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @return a ShortStream of diagonal elements from upper-left to lower-right
-     * @throws IllegalStateException if the matrix is non-empty and not square (rowCount != columnCount)
+     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
     public ShortStream mainDiagonalStream() {
+        checkIsSquare();
+
         if (isEmpty()) {
             return ShortStream.empty();
         }
-
-        checkIsSquare();
 
         return ShortStream.of(new ShortIteratorEx() {
             private final int toIndex = rowCount;
@@ -2880,15 +2880,15 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @return a ShortStream of anti-diagonal elements from upper-right to lower-left
-     * @throws IllegalStateException if the matrix is non-empty and not square (rowCount != columnCount)
+     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
     public ShortStream antiDiagonalStream() {
+        checkIsSquare();
+
         if (isEmpty()) {
             return ShortStream.empty();
         }
-
-        checkIsSquare();
 
         return ShortStream.of(new ShortIteratorEx() {
             private final int toIndex = rowCount;

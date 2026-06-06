@@ -70,7 +70,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * }</pre>
      *
      * @param a the two-dimensional boolean array to wrap, or {@code null} for an empty matrix
-     * @throws IllegalArgumentException if {@code a} has rows of differing lengths
+     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     *         different lengths (i.e. the array is not rectangular)
      */
     public BooleanMatrix(final boolean[][] a) {
         super(a == null ? new boolean[0][0] : a, boolean.class);
@@ -117,7 +118,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * @param a the two-dimensional boolean array to wrap; may be {@code null} or empty, in which case the empty matrix singleton is returned
      * @return a new {@code BooleanMatrix} backed by {@code a}, or the empty {@code BooleanMatrix} if {@code a} is {@code null} or empty
-     * @throws IllegalArgumentException if {@code a} has rows of differing lengths
+     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     *         different lengths (i.e. the array is not rectangular)
      */
     public static BooleanMatrix of(final boolean[]... a) {
         return N.isEmpty(a) ? EMPTY_BOOLEAN_MATRIX : new BooleanMatrix(a);
@@ -164,7 +166,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
      * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
      * @return a new {@code BooleanMatrix} of dimensions {@code rowCount × columnCount} filled with random values
-     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative
+     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
+     *         or if {@code rowCount} is {@code 0} while {@code columnCount} is positive (an unrepresentable shape)
      */
     public static BooleanMatrix random(final int rowCount, final int columnCount) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -200,7 +203,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
      * @param element the boolean value to fill the matrix with
      * @return a new {@code BooleanMatrix} of dimensions {@code rowCount × columnCount} with every element set to {@code element}
-     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative
+     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
+     *         or if {@code rowCount} is {@code 0} while {@code columnCount} is positive (an unrepresentable shape)
      */
     public static BooleanMatrix repeat(final int rowCount, final int columnCount, final boolean element) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -1281,6 +1285,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     /**
      * Fills the matrix with values from the provided two-dimensional array, starting from position (0, 0).
      * The copy continues for the size of the input array or until the matrix boundaries are reached.
+     * Source rows that are {@code null} are skipped (the corresponding destination row is left untouched).
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2818,20 +2823,20 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * BooleanMatrix.empty().mainDiagonalStream().count();   // returns 0 (empty stream)
      * BooleanMatrix wide = BooleanMatrix.of(new boolean[][] {{true, false, true}});
-     * wide.mainDiagonalStream();   // throws IllegalStateException (non-empty and not square)
+     * wide.mainDiagonalStream();   // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a {@code Stream<Boolean>} containing the diagonal elements from top-left to bottom-right,
      *         or an empty stream if the matrix is empty (0 × 0)
-     * @throws IllegalStateException if the matrix is non-empty and not square ({@code rowCount != columnCount})
+     * @throws IllegalStateException if the matrix is not square ({@code rowCount != columnCount})
      */
     @Override
     public Stream<Boolean> mainDiagonalStream() {
+        checkIsSquare();
+
         if (isEmpty()) {
             return Stream.empty();
         }
-
-        checkIsSquare();
 
         return Stream.of(new ObjIteratorEx<>() {
             private final int toIndex = rowCount;
@@ -2887,20 +2892,20 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * BooleanMatrix.empty().antiDiagonalStream().count();   // returns 0 (empty stream)
      * BooleanMatrix wide = BooleanMatrix.of(new boolean[][] {{true, false, true}});
-     * wide.antiDiagonalStream();   // throws IllegalStateException (non-empty and not square)
+     * wide.antiDiagonalStream();   // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a {@code Stream<Boolean>} containing the anti-diagonal elements from top-right to bottom-left,
      *         or an empty stream if the matrix is empty (0 × 0)
-     * @throws IllegalStateException if the matrix is non-empty and not square ({@code rowCount != columnCount})
+     * @throws IllegalStateException if the matrix is not square ({@code rowCount != columnCount})
      */
     @Override
     public Stream<Boolean> antiDiagonalStream() {
+        checkIsSquare();
+
         if (isEmpty()) {
             return Stream.empty();
         }
-
-        checkIsSquare();
 
         return Stream.of(new ObjIteratorEx<>() {
             private final int toIndex = rowCount;

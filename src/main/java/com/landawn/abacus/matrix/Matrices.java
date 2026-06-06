@@ -3578,8 +3578,6 @@ public final class Matrices {
 
         if (size == 1) {
             return matrices[0].copy();
-        } else if (size == 2) {
-            return matrices[0].zipWith(matrices[1], zipFunction);
         }
 
         final int rowCount = matrices[0].rowCount;

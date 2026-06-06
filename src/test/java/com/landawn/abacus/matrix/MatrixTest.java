@@ -7263,18 +7263,22 @@ class MatrixTest extends TestBase {
         }
     }
 
-    // Regression tests for the deep-review fixes: diagonal stream on empty non-square matrices,
+    // Regression tests for the deep-review fixes: diagonal stream square validation,
     // undocumented ArrayStoreException from narrowed-element-type allocation, and deep hashCode.
     @Nested
     public class ReviewBugfixTests {
 
         @Test
-        public void testDiagonalStream_emptyNonSquareMatrix_returnsEmptyInsteadOfThrowing() {
+        public void testDiagonalStream_Nx0MatrixThrowsBecauseNotSquare() {
             Matrix<Integer> m = Matrix.of(new Integer[3][0]);
             assertEquals(3, m.rowCount());
             assertEquals(0, m.columnCount());
-            assertEquals(0, m.mainDiagonalStream().count());
-            assertEquals(0, m.antiDiagonalStream().count());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalStream());
+            assertThrows(IllegalStateException.class, () -> m.antiDiagonalStream());
+
+            Matrix<Integer> empty = Matrix.empty();
+            assertEquals(0, empty.mainDiagonalStream().count());
+            assertEquals(0, empty.antiDiagonalStream().count());
         }
 
         @SuppressWarnings({ "unchecked", "rawtypes" })

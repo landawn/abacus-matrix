@@ -702,6 +702,17 @@ class MatricesTest extends TestBase {
     }
 
     @Test
+    public void testZipGenericMatrixCollectionWithMixedRuntimeTypesFirstMatrixNarrower() throws Exception {
+        Number[][] intData = new Integer[][] { { 1, 2 }, { 3, 4 } };
+        Number[][] doubleData = new Double[][] { { 0.5, 1.5 }, { 2.5, 3.5 } };
+        List<Matrix<Number>> matrices = N.asList(Matrix.of(intData), Matrix.of(doubleData));
+
+        Matrix<Number> result = Matrices.zip(matrices, (a, b) -> a.doubleValue() + b.doubleValue());
+        assertEquals(1.5d, result.get(0, 0).doubleValue());
+        assertEquals(7.5d, result.get(1, 1).doubleValue());
+    }
+
+    @Test
     public void testZipGenericMatrixCollectionWithFunctionAndMixedRuntimeTypes() throws Exception {
         Number[][] intData = new Integer[][] { { 1, 2 }, { 3, 4 } };
         Number[][] doubleData = new Double[][] { { 0.5, 1.5 }, { 2.5, 3.5 } };

@@ -80,8 +80,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * }</pre>
      *
      * @param a the two-dimensional char array to wrap, or {@code null} for an empty matrix
-     * @throws IllegalArgumentException if {@code a} is non-{@code null} but not rectangular
-     *         (rows have differing lengths)
+     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     *         different lengths (i.e. the array is not rectangular)
      */
     public CharMatrix(final char[][] a) {
         super(a == null ? new char[0][0] : a, char.class);
@@ -126,6 +126,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *        the shared empty {@code CharMatrix} instance is returned
      * @return a new {@code CharMatrix} backed by the provided data, or the shared empty {@code CharMatrix}
      *         if the input is {@code null} or empty
+     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     *         different lengths (i.e. the array is not rectangular)
      */
     public static CharMatrix of(final char[]... a) {
         return N.isEmpty(a) ? EMPTY_CHAR_MATRIX : new CharMatrix(a);
@@ -944,7 +946,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * The matrix must be square (rowCount == columnCount), and the diagonal array must have
      * exactly as many elements as the matrix has rows.
      *
-     * <p>This method sets the main diagonal elements at positions (0,0), (1,1), (2,2), etc.
+     * <p>This method sets the main diagonal elements at positions (0,0), (1,1), (2,2), etc.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2836,19 +2838,19 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * CharMatrix.empty().mainDiagonalStream().count(); // returns 0 (empty matrix is allowed)
      *
      * CharMatrix nonSquare = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
-     * nonSquare.mainDiagonalStream(); // throws IllegalStateException (non-empty and not square)
+     * nonSquare.mainDiagonalStream(); // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a CharStream containing the diagonal elements from top-left to bottom-right
-     * @throws IllegalStateException if the matrix is non-empty and not square
+     * @throws IllegalStateException if the matrix is not square
      */
     @Override
     public CharStream mainDiagonalStream() {
+        checkIsSquare();
+
         if (isEmpty()) {
             return CharStream.empty();
         }
-
-        checkIsSquare();
 
         return CharStream.of(new CharIteratorEx() {
             private final int toIndex = rowCount;
@@ -2898,19 +2900,19 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * CharMatrix.empty().antiDiagonalStream().count(); // returns 0 (empty matrix is allowed)
      *
      * CharMatrix nonSquare = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
-     * nonSquare.antiDiagonalStream(); // throws IllegalStateException (non-empty and not square)
+     * nonSquare.antiDiagonalStream(); // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a CharStream containing the diagonal elements from top-right to bottom-left
-     * @throws IllegalStateException if the matrix is non-empty and not square
+     * @throws IllegalStateException if the matrix is not square
      */
     @Override
     public CharStream antiDiagonalStream() {
+        checkIsSquare();
+
         if (isEmpty()) {
             return CharStream.empty();
         }
-
-        checkIsSquare();
 
         return CharStream.of(new CharIteratorEx() {
             private final int toIndex = rowCount;

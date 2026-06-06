@@ -860,7 +860,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * The matrix must be square (rowCount == columnCount), and the diagonal array must have
      * exactly as many elements as the matrix has rows.
      *
-     * <p>This method sets the main diagonal elements at positions (0,0), (1,1), (2,2), etc.
+     * <p>This method sets the main diagonal elements at positions (0,0), (1,1), (2,2), etc.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1583,6 +1583,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Copies as much data as will fit, starting from the top-left corner (position 0,0).
      * If the source array is larger than this matrix, extra data is ignored.
      * If the source array is smaller than this matrix, the remaining cells are unchanged.
+     * Source rows that are {@code null} are skipped (the corresponding destination row is left untouched).
      *
      * <p>This method modifies the matrix in-place.</p>
      *
@@ -2885,19 +2886,19 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * empty.mainDiagonalStream().count();      // returns 0 (empty stream)
      *
      * Matrix<Integer> nonSquare = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
-     * nonSquare.mainDiagonalStream();          // throws IllegalStateException (non-empty and not square)
+     * nonSquare.mainDiagonalStream();          // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a {@link Stream} of diagonal elements from top-left to bottom-right, or an empty stream if the matrix is empty
-     * @throws IllegalStateException if the matrix is non-empty and not square
+     * @throws IllegalStateException if the matrix is not square
      */
     @Override
     public Stream<T> mainDiagonalStream() {
+        checkIsSquare();
+
         if (isEmpty()) {
             return Stream.empty();
         }
-
-        checkIsSquare();
 
         return Stream.of(new ObjIteratorEx<>() {
             private final int toIndex = rowCount;
@@ -2946,19 +2947,19 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * empty.antiDiagonalStream().count();      // returns 0 (empty stream)
      *
      * Matrix<Integer> nonSquare = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
-     * nonSquare.antiDiagonalStream();          // throws IllegalStateException (non-empty and not square)
+     * nonSquare.antiDiagonalStream();          // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a {@link Stream} of anti-diagonal elements from top-right to bottom-left, or an empty stream if the matrix is empty
-     * @throws IllegalStateException if the matrix is non-empty and not square
+     * @throws IllegalStateException if the matrix is not square
      */
     @Override
     public Stream<T> antiDiagonalStream() {
+        checkIsSquare();
+
         if (isEmpty()) {
             return Stream.empty();
         }
-
-        checkIsSquare();
 
         return Stream.of(new ObjIteratorEx<>() {
             private final int toIndex = rowCount;
