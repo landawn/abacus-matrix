@@ -3717,7 +3717,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * BooleanMatrix matrix3 = BooleanMatrix.of(new boolean[][] {{false, false}, {false, false}});
      * matrix1.hashCode() == matrix3.hashCode();   // returns false (different content, almost always)
-     * BooleanMatrix.empty().hashCode();           // returns a stable value (e.g. 0 for the empty matrix)
+     * BooleanMatrix.empty().hashCode();           // returns 1 (stable hash of the empty matrix)
      * }</pre>
      *
      * @return a hash code value for this matrix
