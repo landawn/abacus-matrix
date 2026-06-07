@@ -241,8 +241,13 @@ public final class Matrices {
      */
     public static boolean isParallelizable(final AbstractMatrix<?, ?, ?, ?, ?> m, final long count) {
         N.checkArgNotNull(m, "m");
-        return IS_PARALLEL_STREAM_SUPPORTED && (Matrices.PARALLEL_MODE_TL.get() == ParallelMode.FORCE_ON
-                || (Matrices.PARALLEL_MODE_TL.get() == ParallelMode.AUTO && count >= MIN_COUNT_FOR_PARALLEL));
+
+        if (!IS_PARALLEL_STREAM_SUPPORTED) {
+            return false;
+        }
+
+        final ParallelMode mode = PARALLEL_MODE_TL.get();
+        return mode == ParallelMode.FORCE_ON || (mode == ParallelMode.AUTO && count >= MIN_COUNT_FOR_PARALLEL);
     }
 
     private static long saturatedMultiply(final long left, final long right) {
@@ -260,7 +265,8 @@ public final class Matrices {
 
         final long result = left * right;
 
-        // Check for overflow: if dividing the result back by one operand doesn't give the other, overflow occurred
+        // Check for overflow: dividing the product back by one operand must reproduce the other.
+        // 'left' is guaranteed non-zero here (the zero case returned above), so this division is safe.
         if (result / left != right) {
             // Determine saturation direction based on sign of operands
             return (left ^ right) < 0 ? Long.MIN_VALUE : Long.MAX_VALUE;
@@ -440,8 +446,6 @@ public final class Matrices {
      */
     public static <T> T[][] newMatrixArray(final int rowCount, final int columnCount, final Class<T> targetElementType) {
         N.checkArgNotNull(targetElementType, "targetElementType");
-        N.checkArgument(rowCount >= 0, "rowCount cannot be negative: {}", rowCount);
-        N.checkArgument(columnCount >= 0, "columnCount cannot be negative: {}", columnCount);
         AbstractMatrix.checkRepresentableShape(rowCount, columnCount);
         final Class<T> eleType = (Class<T>) ClassUtil.wrap(targetElementType);
         final Class<T[]> subArrayType = (Class<T[]>) N.newArray(eleType, 0).getClass();
@@ -549,9 +553,9 @@ public final class Matrices {
      */
     public static <E extends Exception> void forEachIndices(final int rowCount, final int columnCount, final Throwables.IntBiConsumer<E> action,
             final boolean inParallel) throws E {
-        N.checkArgument(rowCount >= 0, "rowCount cannot be negative: {}", rowCount);
-        N.checkArgument(columnCount >= 0, "columnCount cannot be negative: {}", columnCount);
         N.checkArgNotNull(action, "action");
+        N.checkArgument(rowCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
+        N.checkArgument(columnCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
 
         forEachIndices(0, rowCount, 0, columnCount, action, inParallel);
     }
@@ -678,8 +682,8 @@ public final class Matrices {
     public static <T> Stream<T> mapIndices(final int rowCount, final int columnCount, final Throwables.IntBiFunction<? extends T, ? extends Exception> mapper,
             final boolean inParallel) {
         N.checkArgNotNull(mapper, "mapper");
-        N.checkArgument(rowCount >= 0, "rowCount cannot be negative: {}", rowCount);
-        N.checkArgument(columnCount >= 0, "columnCount cannot be negative: {}", columnCount);
+        N.checkArgument(rowCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
+        N.checkArgument(columnCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
 
         return mapIndices(0, rowCount, 0, columnCount, mapper, inParallel);
     }
@@ -800,8 +804,8 @@ public final class Matrices {
     public static IntStream mapIndicesToInt(final int rowCount, final int columnCount, final Throwables.IntBinaryOperator<? extends Exception> mapper,
             final boolean inParallel) {
         N.checkArgNotNull(mapper, "mapper");
-        N.checkArgument(rowCount >= 0, "rowCount cannot be negative: {}", rowCount);
-        N.checkArgument(columnCount >= 0, "columnCount cannot be negative: {}", columnCount);
+        N.checkArgument(rowCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
+        N.checkArgument(columnCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
 
         return mapIndicesToInt(0, rowCount, 0, columnCount, mapper, inParallel);
     }
@@ -1545,8 +1549,10 @@ public final class Matrices {
      */
     public static <E extends Exception> IntMatrix zipToInt(final ByteMatrix a, final ByteMatrix b, final Throwables.ByteBiFunction<Integer, E> zipFunction)
             throws E {
-        checkShapeForZip(a, b);
+        N.checkArgNotNull(a, "a");
+        N.checkArgNotNull(b, "b");
         N.checkArgNotNull(zipFunction, "zipFunction");
+        checkShapeForZip(a, b);
 
         final int rowCount = a.rowCount;
         final int columnCount = a.columnCount;
@@ -2104,8 +2110,10 @@ public final class Matrices {
      */
     public static <E extends Exception> LongMatrix zipToLong(final IntMatrix a, final IntMatrix b, final Throwables.IntBiFunction<Long, E> zipFunction)
             throws E {
-        checkShapeForZip(a, b);
+        N.checkArgNotNull(a, "a");
+        N.checkArgNotNull(b, "b");
         N.checkArgNotNull(zipFunction, "zipFunction");
+        checkShapeForZip(a, b);
 
         final int rowCount = a.rowCount;
         final int columnCount = a.columnCount;
@@ -2337,8 +2345,10 @@ public final class Matrices {
      */
     public static <E extends Exception> DoubleMatrix zipToDouble(final IntMatrix a, final IntMatrix b, final Throwables.IntBiFunction<Double, E> zipFunction)
             throws E {
-        checkShapeForZip(a, b);
+        N.checkArgNotNull(a, "a");
+        N.checkArgNotNull(b, "b");
         N.checkArgNotNull(zipFunction, "zipFunction");
+        checkShapeForZip(a, b);
 
         final int rowCount = a.rowCount;
         final int columnCount = a.columnCount;
@@ -2847,8 +2857,10 @@ public final class Matrices {
      */
     public static <E extends Exception> DoubleMatrix zipToDouble(final LongMatrix a, final LongMatrix b, final Throwables.LongBiFunction<Double, E> zipFunction)
             throws E {
-        checkShapeForZip(a, b);
+        N.checkArgNotNull(a, "a");
+        N.checkArgNotNull(b, "b");
         N.checkArgNotNull(zipFunction, "zipFunction");
+        checkShapeForZip(a, b);
 
         final int rowCount = a.rowCount;
         final int columnCount = a.columnCount;

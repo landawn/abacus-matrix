@@ -217,9 +217,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Validates that the specified shape is representable by this matrix implementation.
      * Because dimensions are encoded by row arrays, a matrix with zero rows can only have zero columns.
      *
-     * @param rowCount the row count
-     * @param columnCount the column count
-     * @throws IllegalArgumentException if the shape is not representable
+     * @param rowCount the row count; must be non-negative
+     * @param columnCount the column count; must be non-negative
+     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative, or if {@code rowCount == 0} while
+     *         {@code columnCount != 0} (zero rows with a non-zero column count is not representable)
      */
     protected static void checkRepresentableShape(final int rowCount, final int columnCount) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -227,10 +228,33 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         N.checkArgument(rowCount > 0 || columnCount == 0, MSG_UNREPRESENTABLE_SHAPE, rowCount, columnCount);
     }
 
+    /**
+     * Validates that a matrix of the specified shape can be materialized, i.e. that its total cell count
+     * fits within an {@code int} (the addressable size of a single backing row array).
+     *
+     * @param rowCount the row count
+     * @param columnCount the column count
+     * @throws IllegalArgumentException if the total cell count {@code (long) rowCount * columnCount} exceeds {@code Integer.MAX_VALUE}
+     */
     protected static void checkMaterializableShape(final int rowCount, final int columnCount) {
         if ((long) rowCount * columnCount > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("Matrix dimensions overflow: " + rowCount + " x " + columnCount + " exceeds Integer.MAX_VALUE");
         }
+    }
+
+    /**
+     * Returns {@code ceil(dividend / divisor)} for a non-negative {@code dividend} and a positive {@code divisor};
+     * that is, the smallest non-negative integer {@code n} such that {@code n * divisor >= dividend}.
+     *
+     * <p>Used by reshape operations to compute the number of rows required to hold every element for a fixed
+     * column count.</p>
+     *
+     * @param dividend the non-negative dividend (for example the matrix element count)
+     * @param divisor the positive divisor (for example the target column count); must not be {@code 0}
+     * @return {@code ceil(dividend / divisor)}
+     */
+    protected static long ceilDiv(final long dividend, final long divisor) {
+        return dividend % divisor == 0 ? dividend / divisor : dividend / divisor + 1;
     }
 
     /**
@@ -793,7 +817,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     public M reshape(final int newColumnCount) {
         N.checkArgument(newColumnCount > 0, "newColumnCount must be positive, but got: {}", newColumnCount);
 
-        final long newRowCount = elementCount % newColumnCount == 0 ? elementCount / newColumnCount : elementCount / newColumnCount + 1;
+        final long newRowCount = ceilDiv(elementCount, newColumnCount);
 
         N.checkArgument(newRowCount <= Integer.MAX_VALUE, "Reshaped row count overflow: ceil({} / {}) = {} exceeds Integer.MAX_VALUE", elementCount,
                 newColumnCount, newRowCount);
@@ -832,7 +856,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param newColumnCount the number of columns in the reshaped matrix; must be non-negative
      * @return a new matrix with the specified dimensions ({@code newRowCount × newColumnCount})
      * @throws IllegalArgumentException if {@code newRowCount < 0} or {@code newColumnCount < 0}, if the
-     *         requested shape is not representable (zero rows with a non-zero column count), or if the
+     *         requested shape is not representable (zero rows with a non-zero column count), if the total
+     *         cell count {@code (long) newRowCount * newColumnCount} exceeds {@code Integer.MAX_VALUE}, or if the
      *         new shape is too small to hold all {@code elementCount()} elements
      */
     public abstract M reshape(int newRowCount, int newColumnCount);
@@ -1009,7 +1034,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * matrix.get(0, 0);                                       // returns 1 (original unchanged)
      *
      * IntMatrix single = IntMatrix.of(new int[][] {{1}, {2}, {3}});
-     * single.flipVertically().get(0, 0);                      // returns 3 (single column reversed)
+     * single.flipVertically().get(0, 0);                      // returns 3 (row order reversed)
      *
      * IntMatrix empty = IntMatrix.of(new int[0][0]);
      * empty.flipVertically().isEmpty();                       // returns true
@@ -1175,6 +1200,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * @param <E> the type of exception that the operation might throw
      * @param action the operation to apply to the one-dimensional flattened array (for example {@code int[]} for {@code IntMatrix})
+     * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the operation throws an exception
      */
     public abstract <E extends Exception> void mutateAsFlat(Throwables.Consumer<? super A, E> action) throws E;

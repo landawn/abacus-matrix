@@ -154,6 +154,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @see #random(int, int)
      */
     public static BooleanMatrix random(final int length) {
+        N.checkArgument(length >= 0, MSG_NEGATIVE_DIMENSION, "length", length);
+
         return random(1, length);
     }
 
@@ -245,14 +247,15 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * matrix.get(2, 2);          // returns true
      * matrix.get(0, 2);          // returns false (off-diagonal)
      *
-     * BooleanMatrix.mainDiagonal((boolean[]) null).isEmpty();   // returns true
+     * BooleanMatrix.mainDiagonal((boolean[]) null);            // throws IllegalArgumentException (null array)
      * BooleanMatrix.mainDiagonal(new boolean[0]).isEmpty();     // returns true
      * }</pre>
      *
-     * @param mainDiagonal the array of main diagonal elements; may be {@code null} or empty,
+     * @param mainDiagonal the array of main diagonal elements; must not be {@code null}, but may be empty,
      *        in which case an empty matrix is returned
      * @return a square matrix with the specified main diagonal ({@code n × n} where {@code n}
-     *         is the diagonal length), or an empty matrix if {@code mainDiagonal} is {@code null} or empty
+     *         is the diagonal length), or an empty matrix if {@code mainDiagonal} is empty
+     * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null}
      * @see #antiDiagonal(boolean[])
      * @see #diagonals(boolean[], boolean[])
      */
@@ -276,14 +279,15 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * matrix.get(2, 0);          // returns true
      * matrix.get(0, 0);          // returns false (off-anti-diagonal)
      *
-     * BooleanMatrix.antiDiagonal((boolean[]) null).isEmpty();   // returns true
+     * BooleanMatrix.antiDiagonal((boolean[]) null);            // throws IllegalArgumentException (null array)
      * BooleanMatrix.antiDiagonal(new boolean[0]).isEmpty();     // returns true
      * }</pre>
      *
-     * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} or empty,
+     * @param antiDiagonal the array of anti-diagonal elements; must not be {@code null}, but may be empty,
      *        in which case an empty matrix is returned
      * @return a square matrix with the specified anti-diagonal ({@code n × n} where {@code n}
-     *         is the diagonal length), or an empty matrix if {@code antiDiagonal} is {@code null} or empty
+     *         is the diagonal length), or an empty matrix if {@code antiDiagonal} is empty
+     * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null}
      * @see #mainDiagonal(boolean[])
      * @see #diagonals(boolean[], boolean[])
      */
@@ -309,16 +313,18 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * matrix.get(0, 2);          // returns true  (anti-diagonal)
      * matrix.get(1, 1);          // returns true  (main wins over anti-diagonal's false at center)
      *
-     * BooleanMatrix.diagonals(null, null).isEmpty();                              // returns true (both empty)
+     * BooleanMatrix.diagonals(null, null);                                        // throws IllegalArgumentException (both null)
      * BooleanMatrix.diagonals(new boolean[] {true}, new boolean[] {true, false}); // throws IllegalArgumentException (length mismatch)
      * }</pre>
      *
-     * @param mainDiagonal the array of main diagonal elements; may be {@code null} or empty
-     * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} or empty
-     * @return a square matrix with the specified diagonals, or an empty matrix if both inputs are {@code null} or empty
-     * @throws IllegalArgumentException if both arrays are non-empty and have different lengths
+     * @param mainDiagonal the array of main diagonal elements; may be {@code null} or empty if {@code antiDiagonal} is non-{@code null}
+     * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} or empty if {@code mainDiagonal} is non-{@code null}
+     * @return a square matrix with the specified diagonals, or an empty matrix when both arrays are empty (at least one being a non-{@code null} zero-length array)
+     * @throws IllegalArgumentException if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null}, or if both arrays are non-empty and have different lengths
      */
     public static BooleanMatrix diagonals(final boolean[] mainDiagonal, final boolean[] antiDiagonal) throws IllegalArgumentException {
+        N.checkArgument(mainDiagonal != null || antiDiagonal != null, "Both 'mainDiagonal' and 'antiDiagonal' can't be null");
+
         N.checkArgument(N.isEmpty(mainDiagonal) || N.isEmpty(antiDiagonal) || mainDiagonal.length == antiDiagonal.length,
                 "The length of 'mainDiagonal' and 'antiDiagonal' must be same");
 
@@ -777,10 +783,11 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
-    public <E extends Exception> void updateRow(final int rowIndex, final Throwables.BooleanUnaryOperator<E> operator) throws E {
-        checkRowIndex(rowIndex);
-
+    public <E extends Exception> void updateRow(final int rowIndex, final Throwables.BooleanUnaryOperator<E> operator)
+            throws IndexOutOfBoundsException, IllegalArgumentException, E {
         N.checkArgNotNull(operator, "operator");
+
+        checkRowIndex(rowIndex);
 
         for (int i = 0; i < columnCount; i++) {
             a[rowIndex][i] = operator.applyAsBoolean(a[rowIndex][i]);
@@ -816,10 +823,11 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
-    public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.BooleanUnaryOperator<E> operator) throws E {
-        checkColumnIndex(columnIndex);
-
+    public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.BooleanUnaryOperator<E> operator)
+            throws IndexOutOfBoundsException, IllegalArgumentException, E {
         N.checkArgNotNull(operator, "operator");
+
+        checkColumnIndex(columnIndex);
 
         for (int i = 0; i < rowCount; i++) {
             a[i][columnIndex] = operator.applyAsBoolean(a[i][columnIndex]);
@@ -1260,6 +1268,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.BooleanFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E {
         N.checkArgNotNull(mapper, "mapper");
+        N.checkArgNotNull(targetElementType, "targetElementType");
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
 
@@ -1946,7 +1955,6 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * @return a new matrix rotated 90 degrees clockwise (dimensions {@code columnCount × rowCount}),
      *         or an empty matrix if this matrix has zero columns
-     * @throws IllegalArgumentException if the resulting (transposed) shape is not representable
      * @see #rotate180()
      * @see #rotate270()
      * @see #transpose()
@@ -2041,7 +2049,6 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * @return a new matrix rotated 270 degrees clockwise (dimensions {@code columnCount × rowCount}),
      *         or an empty matrix if this matrix has zero columns
-     * @throws IllegalArgumentException if the resulting (transposed) shape is not representable
      * @see #rotate90()
      * @see #rotate180()
      * @see #transpose()
@@ -2100,7 +2107,6 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @return a new matrix that is the transpose of this matrix with dimensions {@code columnCount × rowCount};
      *         an {@code N x 0} matrix transposes to the empty {@code 0 x 0} matrix, because the swapped shape
      *         {@code 0 x N} (zero rows with a non-zero column count) is not representable
-     * @throws IllegalArgumentException if the resulting (transposed) shape is not representable
      */
     @Override
     public BooleanMatrix transpose() {
@@ -2155,9 +2161,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param newRowCount the number of rows in the reshaped matrix; must be non-negative
      * @param newColumnCount the number of columns in the reshaped matrix; must be non-negative
      * @return a new {@code BooleanMatrix} with the specified shape
-     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
-     *         if the resulting shape is not representable (zero rows with a non-zero column count),
-     *         or if the new shape is too small to hold all elements of this matrix
+     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative, if the resulting shape is not
+     *         representable (zero rows with a non-zero column count), if the total cell count {@code (long) newRowCount * newColumnCount}
+     *         exceeds {@code Integer.MAX_VALUE}, or if the new shape is too small to hold every existing element
      */
     @SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG")
     @Override
@@ -2175,7 +2181,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
             return new BooleanMatrix(c);
         }
 
-        final int rowLen = (int) N.min(newRowCount, elementCount % newColumnCount == 0 ? elementCount / newColumnCount : elementCount / newColumnCount + 1);
+        final int rowLen = (int) N.min(newRowCount, ceilDiv(elementCount, newColumnCount));
 
         if (a.length == 1) {
             for (int i = 0; i < rowLen; i++) {
@@ -3047,6 +3053,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     @Override
     public Stream<Boolean> horizontalStream(final int rowIndex) {
+        checkRowIndex(rowIndex);
+
         return horizontalStream(rowIndex, rowIndex + 1);
     }
 
@@ -3213,6 +3221,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     @Override
     public Stream<Boolean> verticalStream(final int columnIndex) {
+        checkColumnIndex(columnIndex);
+
         return verticalStream(columnIndex, columnIndex + 1);
     }
 

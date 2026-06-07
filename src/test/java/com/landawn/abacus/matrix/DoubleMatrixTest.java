@@ -3501,9 +3501,8 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testDiagonal_withBothEmpty() {
-            DoubleMatrix m = DoubleMatrix.diagonals(null, null);
-            assertTrue(m.isEmpty());
+        public void testDiagonal_withBothNull() {
+            assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.diagonals(null, null));
         }
 
         @Test
@@ -4766,8 +4765,7 @@ class DoubleMatrixTest extends TestBase {
 
         @Test
         public void test_mainDiagonal_null() {
-            DoubleMatrix m = DoubleMatrix.mainDiagonal(null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.mainDiagonal(null));
         }
 
         @Test
@@ -4784,8 +4782,7 @@ class DoubleMatrixTest extends TestBase {
 
         @Test
         public void test_antiDiagonal_null() {
-            DoubleMatrix m = DoubleMatrix.antiDiagonal(null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.antiDiagonal(null));
         }
 
         @Test

@@ -156,8 +156,7 @@ class CharMatrixTest extends TestBase {
         Assertions.assertEquals('b', matrix.get(1, 1));
         Assertions.assertEquals('z', matrix.get(2, 0));
 
-        CharMatrix emptyMatrix = CharMatrix.diagonals(null, null);
-        Assertions.assertTrue(emptyMatrix.isEmpty());
+        Assertions.assertThrows(IllegalArgumentException.class, () -> CharMatrix.diagonals(null, null));
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> CharMatrix.diagonals(new char[] { 'a' }, new char[] { 'x', 'y' }));
     }
@@ -1502,8 +1501,7 @@ class CharMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withBothNull() {
-            CharMatrix m = CharMatrix.diagonals(null, null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> CharMatrix.diagonals(null, null));
         }
 
         @Test

@@ -167,8 +167,7 @@ class ByteMatrixTest extends TestBase {
         Assertions.assertEquals(2, matrix.get(1, 1));
         Assertions.assertEquals(6, matrix.get(2, 0));
 
-        ByteMatrix emptyMatrix = ByteMatrix.diagonals(null, null);
-        Assertions.assertTrue(emptyMatrix.isEmpty());
+        Assertions.assertThrows(IllegalArgumentException.class, () -> ByteMatrix.diagonals(null, null));
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> ByteMatrix.diagonals(new byte[] { 1 }, new byte[] { 2, 3 }));
     }
@@ -1580,8 +1579,7 @@ class ByteMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withBothNull() {
-            ByteMatrix m = ByteMatrix.diagonals(null, null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> ByteMatrix.diagonals(null, null));
         }
 
         @Test

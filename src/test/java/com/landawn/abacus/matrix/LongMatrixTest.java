@@ -173,8 +173,7 @@ class LongMatrixTest extends TestBase {
         Assertions.assertEquals(2L, matrix.get(1, 1));
         Assertions.assertEquals(6L, matrix.get(2, 0));
 
-        LongMatrix emptyMatrix = LongMatrix.diagonals(null, null);
-        Assertions.assertTrue(emptyMatrix.isEmpty());
+        Assertions.assertThrows(IllegalArgumentException.class, () -> LongMatrix.diagonals(null, null));
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> LongMatrix.diagonals(new long[] { 1L }, new long[] { 4L, 5L }));
     }
@@ -1907,8 +1906,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withBothNull() {
-            LongMatrix m = LongMatrix.diagonals(null, null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> LongMatrix.diagonals(null, null));
         }
 
         @Test
@@ -4775,8 +4773,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_mainDiagonal_null() {
-            LongMatrix m = LongMatrix.mainDiagonal(null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> LongMatrix.mainDiagonal(null));
         }
 
         @Test
@@ -4793,8 +4790,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_antiDiagonal_null() {
-            LongMatrix m = LongMatrix.antiDiagonal(null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> LongMatrix.antiDiagonal(null));
         }
 
         @Test

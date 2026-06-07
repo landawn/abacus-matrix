@@ -55,6 +55,14 @@ import com.landawn.abacus.util.stream.Stream;
  * possible.</p>
  *
  * @param <T> the element type stored in the matrix
+ * @see IntMatrix
+ * @see LongMatrix
+ * @see DoubleMatrix
+ * @see FloatMatrix
+ * @see ShortMatrix
+ * @see ByteMatrix
+ * @see CharMatrix
+ * @see BooleanMatrix
  */
 public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Stream<Stream<T>>, Matrix<T>> {
 
@@ -346,6 +354,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             }
         }
 
+        // Written after the anti-diagonal so that, for an odd-sized matrix, the main-diagonal value wins
+        // at the single cell the two diagonals share (the center).
         if (N.notEmpty(mainDiagonal)) {
             for (int i = 0; i < len; i++) {
                 result[i][i] = mainDiagonal[i]; // NOSONAR
@@ -769,10 +779,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws IndexOutOfBoundsException if {@code rowIndex} is negative or greater than or equal to {@code rowCount}
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      */
-    public <E extends Exception> void updateRow(final int rowIndex, final Throwables.UnaryOperator<T, E> operator) throws E {
-        checkRowIndex(rowIndex);
-
+    public <E extends Exception> void updateRow(final int rowIndex, final Throwables.UnaryOperator<T, E> operator)
+            throws IndexOutOfBoundsException, IllegalArgumentException, E {
         N.checkArgNotNull(operator, "operator");
+
+        checkRowIndex(rowIndex);
 
         for (int i = 0; i < columnCount; i++) {
             final T updated = operator.apply(a[rowIndex][i]);
@@ -806,10 +817,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws IndexOutOfBoundsException if {@code columnIndex} is negative or greater than or equal to {@code columnCount}
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      */
-    public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.UnaryOperator<T, E> operator) throws E {
-        checkColumnIndex(columnIndex);
-
+    public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.UnaryOperator<T, E> operator)
+            throws IndexOutOfBoundsException, IllegalArgumentException, E {
         N.checkArgNotNull(operator, "operator");
+
+        checkColumnIndex(columnIndex);
 
         for (int i = 0; i < rowCount; i++) {
             final T updated = operator.apply(a[i][columnIndex]);
@@ -1030,8 +1042,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             a[i][columnCount - i - 1] = updated;
         }
     }
-
-    // TODO should the method name be "replaceAll"? If change the method name to replaceAll, what about updateMainDiagonal/updateAntiDiagonal?
 
     /**
      * Updates all elements in the matrix by applying the given operator.
@@ -2178,7 +2188,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @return a new matrix that is this matrix rotated 90 degrees clockwise
-     * @throws IllegalArgumentException if the resulting (transposed) shape is not representable
      */
     @Override
     public Matrix<T> rotate90() {
@@ -2232,6 +2241,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @return a new matrix that is this matrix rotated 180 degrees
+     * @see #rotate90()
+     * @see #rotate270()
      */
     @Override
     public Matrix<T> rotate180() {
@@ -2268,7 +2279,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @return a new matrix that is this matrix rotated 270 degrees clockwise
-     * @throws IllegalArgumentException if the resulting (transposed) shape is not representable
      */
     @Override
     public Matrix<T> rotate270() {
@@ -2328,7 +2338,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @return a new matrix that is the transpose of this matrix, with dimensions
      *         {@code columnCount × rowCount} (an empty matrix with zero columns yields
      *         an empty {@code 0}-row matrix)
-     * @throws IllegalArgumentException if the resulting (transposed) shape is not representable
      */
     @Override
     public Matrix<T> transpose() {
@@ -2385,9 +2394,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param newRowCount the number of rows in the reshaped matrix (must be non-negative)
      * @param newColumnCount the number of columns in the reshaped matrix (must be non-negative)
      * @return a new Matrix with the specified dimensions
-     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
-     *         if the resulting shape is not representable (zero rows with a non-zero column count),
-     *         or if the new shape is too small to hold all elements
+     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative, if the resulting shape is not
+     *         representable (zero rows with a non-zero column count), if the total cell count {@code (long) newRowCount * newColumnCount}
+     *         exceeds {@code Integer.MAX_VALUE}, or if the new shape is too small to hold every existing element
      */
     @SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG")
     @Override
@@ -2409,7 +2418,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             return new Matrix<>(c, elementType);
         }
 
-        final int rowLen = (int) N.min(newRowCount, elementCount % newColumnCount == 0 ? elementCount / newColumnCount : elementCount / newColumnCount + 1);
+        final int rowLen = (int) N.min(newRowCount, ceilDiv(elementCount, newColumnCount));
 
         if (a.length == 1) {
             for (int i = 0; i < rowLen; i++) {
@@ -2931,7 +2940,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
                     throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                 }
 
-                return a[cursor][cursor++];
+                final T result = a[cursor][cursor];
+                cursor++;
+                return result;
             }
 
             @Override
@@ -3052,6 +3063,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     @Override
     public Stream<T> horizontalStream(final int rowIndex) {
+        checkRowIndex(rowIndex);
+
         return horizontalStream(rowIndex, rowIndex + 1);
     }
 
@@ -3191,6 +3204,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     @Override
     public Stream<T> verticalStream(final int columnIndex) {
+        checkColumnIndex(columnIndex);
+
         return verticalStream(columnIndex, columnIndex + 1);
     }
 
@@ -3717,7 +3732,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         } else {
             final StringBuilder sb = Objectory.createStringBuilder();
             final int len = a.length;
-            String str = "";
+            final String str;
 
             try {
                 for (int i = 0; i < len; i++) {

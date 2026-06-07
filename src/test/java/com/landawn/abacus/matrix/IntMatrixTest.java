@@ -181,9 +181,8 @@ class IntMatrixTest extends TestBase {
         assertEquals(5, m3.get(1, 1));
         assertEquals(6, m3.get(2, 0));
 
-        // Test with empty arrays
-        IntMatrix empty = IntMatrix.diagonals(null, null);
-        assertTrue(empty.isEmpty());
+        // Test with both null
+        assertThrows(IllegalArgumentException.class, () -> IntMatrix.diagonals(null, null));
 
         // Test illegal argument
         assertThrows(IllegalArgumentException.class, () -> IntMatrix.diagonals(new int[] { 1, 2 }, new int[] { 3, 4, 5 }));
@@ -1514,8 +1513,7 @@ class IntMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withBothNull() {
-            IntMatrix m = IntMatrix.diagonals(null, null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> IntMatrix.diagonals(null, null));
         }
 
         @Test
@@ -4103,8 +4101,7 @@ class IntMatrixTest extends TestBase {
 
         @Test
         public void test_mainDiagonal_null() {
-            IntMatrix m = IntMatrix.mainDiagonal(null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> IntMatrix.mainDiagonal(null));
         }
 
         @Test
@@ -4121,8 +4118,7 @@ class IntMatrixTest extends TestBase {
 
         @Test
         public void test_antiDiagonal_null() {
-            IntMatrix m = IntMatrix.antiDiagonal(null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> IntMatrix.antiDiagonal(null));
         }
 
         @Test

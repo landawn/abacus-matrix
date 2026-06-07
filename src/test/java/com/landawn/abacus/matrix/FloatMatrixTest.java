@@ -156,9 +156,8 @@ class FloatMatrixTest extends TestBase {
         assertEquals(5.0f, m3.get(1, 1), DELTA);
         assertEquals(6.0f, m3.get(2, 0), DELTA);
 
-        // Test with empty arrays
-        FloatMatrix empty = FloatMatrix.diagonals(null, null);
-        assertTrue(empty.isEmpty());
+        // Test with both null
+        assertThrows(IllegalArgumentException.class, () -> FloatMatrix.diagonals(null, null));
 
         // Test illegal argument
         assertThrows(IllegalArgumentException.class, () -> FloatMatrix.diagonals(new float[] { 1.0f, 2.0f }, new float[] { 3.0f, 4.0f, 5.0f }));
@@ -3049,9 +3048,8 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void testDiagonal_withBothEmpty() {
-            FloatMatrix m = FloatMatrix.diagonals(null, null);
-            assertTrue(m.isEmpty());
+        public void testDiagonal_withBothNull() {
+            assertThrows(IllegalArgumentException.class, () -> FloatMatrix.diagonals(null, null));
         }
 
         @Test
@@ -4253,8 +4251,7 @@ class FloatMatrixTest extends TestBase {
 
         @Test
         public void test_mainDiagonal_null() {
-            FloatMatrix m = FloatMatrix.mainDiagonal(null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> FloatMatrix.mainDiagonal(null));
         }
 
         @Test
@@ -4271,8 +4268,7 @@ class FloatMatrixTest extends TestBase {
 
         @Test
         public void test_antiDiagonal_null() {
-            FloatMatrix m = FloatMatrix.antiDiagonal(null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> FloatMatrix.antiDiagonal(null));
         }
 
         @Test

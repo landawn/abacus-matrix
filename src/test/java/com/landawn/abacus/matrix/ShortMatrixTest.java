@@ -150,9 +150,8 @@ class ShortMatrixTest extends TestBase {
         assertEquals((short) 5, m3.get(1, 1));
         assertEquals((short) 6, m3.get(2, 0));
 
-        // Test with empty arrays
-        ShortMatrix empty = ShortMatrix.diagonals(null, null);
-        assertTrue(empty.isEmpty());
+        // Test with both null
+        assertThrows(IllegalArgumentException.class, () -> ShortMatrix.diagonals(null, null));
 
         // Test illegal argument
         assertThrows(IllegalArgumentException.class, () -> ShortMatrix.diagonals(new short[] { 1, 2 }, new short[] { 3, 4, 5 }));
@@ -1884,8 +1883,7 @@ class ShortMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withBothNull() {
-            ShortMatrix m = ShortMatrix.diagonals(null, null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> ShortMatrix.diagonals(null, null));
         }
 
         @Test
@@ -5038,9 +5036,8 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_diagonal_withBothNull_returnsEmpty() {
-            ShortMatrix m = ShortMatrix.diagonals(null, null);
-            assertSame(ShortMatrix.empty(), m);
+        public void test_diagonal_withBothNull_throws() {
+            assertThrows(IllegalArgumentException.class, () -> ShortMatrix.diagonals(null, null));
         }
 
         @Test

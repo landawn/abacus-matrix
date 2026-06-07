@@ -1297,8 +1297,7 @@ class BooleanMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withBothNull() {
-            BooleanMatrix m = BooleanMatrix.diagonals(null, null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> BooleanMatrix.diagonals(null, null));
         }
 
         @Test
