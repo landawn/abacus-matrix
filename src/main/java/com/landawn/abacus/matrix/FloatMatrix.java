@@ -48,6 +48,14 @@ import com.landawn.abacus.util.stream.Stream;
  * propagate through arithmetic. Equality on this matrix uses
  * {@link Float#floatToIntBits(float)} semantics (so {@code NaN} equals {@code NaN} and
  * {@code +0.0f} does <em>not</em> equal {@code -0.0f}); see {@link #equals(Object)}.</p>
+ *
+ * @see IntMatrix
+ * @see LongMatrix
+ * @see DoubleMatrix
+ * @see ShortMatrix
+ * @see ByteMatrix
+ * @see CharMatrix
+ * @see Matrix
  */
 public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatStream, Stream<FloatStream>, FloatMatrix> {
 
@@ -83,18 +91,18 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Creates an empty matrix with zero rows and zero columns.
+     * Returns the shared empty {@code 0x0} matrix instance.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.empty();
-     * matrix.rowCount();        // returns 0
-     * matrix.columnCount();     // returns 0
-     * matrix.isEmpty();         // returns true
-     * matrix.get(0, 0);         // throws ArrayIndexOutOfBoundsException
+     * matrix.rowCount();                            // returns 0
+     * matrix.columnCount();                         // returns 0
+     * matrix.isEmpty();                             // returns true
+     * FloatMatrix.empty() == FloatMatrix.empty();   // true (shared singleton)
      * }</pre>
      *
-     * @return an empty float matrix
+     * @return the shared empty {@code FloatMatrix} singleton
      */
     public static FloatMatrix empty() {
         return EMPTY_FLOAT_MATRIX;
@@ -205,6 +213,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param length the number of columns in the new matrix
      * @return a new {@code FloatMatrix} of dimensions {@code 1 x length} filled with random values in {@code [0.0f, 1.0f)}
      * @throws IllegalArgumentException if {@code length} is negative
+     * @see #random(int, int)
      */
     public static FloatMatrix random(final int length) {
         return random(1, length);
@@ -285,8 +294,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
     /**
      * Creates a square matrix from the specified main diagonal elements (upper-left to lower-right).
-     * All other elements are set to zero. The matrix size is n×n where n is the length
-     * of the diagonal array.
+     * All other elements are set to zero.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -303,8 +311,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix.mainDiagonal(new float[0]).isEmpty();       // returns true
      * }</pre>
      *
-     * @param mainDiagonal the array of main diagonal elements, or {@code null}/empty for an empty matrix
-     * @return a square {@code FloatMatrix} with the specified main diagonal, or an empty matrix if the input is {@code null} or empty
+     * @param mainDiagonal the array of main-diagonal elements; may be {@code null} or empty
+     * @return a new {@code n x n} {@code FloatMatrix} (where {@code n = mainDiagonal.length}) with
+     *         the supplied values on the main diagonal and {@code 0} elsewhere; the shared empty
+     *         matrix if {@code mainDiagonal} is {@code null} or empty
+     * @see #antiDiagonal(float[])
+     * @see #diagonals(float[], float[])
      */
     public static FloatMatrix mainDiagonal(final float[] mainDiagonal) {
         return diagonals(mainDiagonal, null);
@@ -330,8 +342,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix.antiDiagonal(new float[0]).isEmpty();       // returns true
      * }</pre>
      *
-     * @param antiDiagonal the array of anti-diagonal elements, or {@code null}/empty for an empty matrix
-     * @return a square {@code FloatMatrix} with the specified anti-diagonal, or an empty matrix if the input is {@code null} or empty
+     * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} or empty
+     * @return a new {@code n x n} {@code FloatMatrix} (where {@code n = antiDiagonal.length}) with
+     *         the supplied values on the anti-diagonal and {@code 0} elsewhere; the shared empty
+     *         matrix if {@code antiDiagonal} is {@code null} or empty
+     * @see #mainDiagonal(float[])
+     * @see #diagonals(float[], float[])
      */
     public static FloatMatrix antiDiagonal(final float[] antiDiagonal) {
         return diagonals(null, antiDiagonal);
@@ -341,10 +357,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * Creates a square matrix from the specified main diagonal and anti-diagonal elements.
      * All other elements are set to zero. If both arrays are provided, they must have the same length.
      * The resulting matrix has dimensions n×n where n is the length of the non-empty diagonal array.
-     *
-     * <p><b>Note:</b> The anti-diagonal is written first, then the main diagonal. If both diagonals
-     * share a position (which happens for odd-sized matrices at the center element), the main diagonal
-     * value takes precedence.</p>
+     * When both diagonals are provided and they overlap (at the center element of odd-sized matrices),
+     * the main diagonal value takes precedence.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -362,10 +376,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix.diagonals(new float[] {1.0f}, new float[] {1.0f, 2.0f});                             // throws IllegalArgumentException (length mismatch)
      * }</pre>
      *
-     * @param mainDiagonal the array of main diagonal elements (may be {@code null} or empty)
-     * @param antiDiagonal the array of anti-diagonal elements (may be {@code null} or empty)
-     * @return a square {@code FloatMatrix} with the specified diagonals, or an empty matrix if both inputs are {@code null} or empty
+     * @param mainDiagonal the array of main diagonal elements (can be {@code null} or empty)
+     * @param antiDiagonal the array of anti-diagonal elements (can be {@code null} or empty)
+     * @return a square matrix with the specified diagonals, or an empty matrix if both inputs are {@code null} or empty
      * @throws IllegalArgumentException if both arrays are non-empty and have different lengths
+     * @see #mainDiagonal(float[])
+     * @see #antiDiagonal(float[])
      */
     public static FloatMatrix diagonals(final float[] mainDiagonal, final float[] antiDiagonal) throws IllegalArgumentException {
         N.checkArgument(N.isEmpty(mainDiagonal) || N.isEmpty(antiDiagonal) || mainDiagonal.length == antiDiagonal.length,
@@ -518,23 +534,25 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns the element directly above the specified position, if it exists.
-     * This method provides safe access to the element directly above the given position
-     * without throwing an exception when at the top edge of the matrix.
+     * Returns the element directly above the specified position, or an empty {@link OptionalFloat}
+     * if the position is on the top edge of the matrix.
+     * This method provides safe edge handling: an empty {@code OptionalFloat} is returned for the top
+     * row instead of an out-of-bounds exception.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
-     * matrix.valueAbove(1, 0).get();         // returns 1.0f
-     * matrix.valueAbove(0, 0).isPresent();   // returns false (no row above)
+     * matrix.valueAbove(1, 0).get();          // returns 1.0f
+     * matrix.valueAbove(1, 1).get();          // returns 2.0f
      *
-     * matrix.valueAbove(1, 1).get();         // returns 2.0f
-     * matrix.valueAbove(5, 0);               // throws IndexOutOfBoundsException (out of range)
+     * matrix.valueAbove(0, 0).isPresent();    // returns false (top row, no cell above)
+     * matrix.valueAbove(2, 0);                // throws IndexOutOfBoundsException (row out of range)
      * }</pre>
      *
-     * @param rowIndex the row index (0-based)
-     * @param columnIndex the column index (0-based)
-     * @return an {@link OptionalFloat} containing the element at position {@code (rowIndex - 1, columnIndex)}, or empty if {@code rowIndex == 0}
+     * @param rowIndex the row index of the reference cell (0-based)
+     * @param columnIndex the column index of the reference cell (0-based)
+     * @return an {@link OptionalFloat} containing the element at position {@code (rowIndex - 1, columnIndex)},
+     *         or empty if {@code rowIndex == 0}
      * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
     public OptionalFloat valueAbove(final int rowIndex, final int columnIndex) {
@@ -544,23 +562,25 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns the element directly below the specified position, if it exists.
-     * This method provides safe access to the element directly below the given position
-     * without throwing an exception when at the bottom edge of the matrix.
+     * Returns the element directly below the specified position, or an empty {@link OptionalFloat}
+     * if the position is on the bottom edge of the matrix.
+     * This method provides safe edge handling: an empty {@code OptionalFloat} is returned for the
+     * bottom row instead of an out-of-bounds exception.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
-     * matrix.valueBelow(0, 0).get();         // returns 3.0f
-     * matrix.valueBelow(1, 0).isPresent();   // returns false (no row below)
+     * matrix.valueBelow(0, 0).get();          // returns 3.0f
+     * matrix.valueBelow(0, 1).get();          // returns 4.0f
      *
-     * matrix.valueBelow(0, 1).get();         // returns 4.0f
-     * matrix.valueBelow(5, 0);               // throws IndexOutOfBoundsException (out of range)
+     * matrix.valueBelow(1, 0).isPresent();    // returns false (bottom row, no cell below)
+     * matrix.valueBelow(2, 0);                // throws IndexOutOfBoundsException (row out of range)
      * }</pre>
      *
-     * @param rowIndex the row index (0-based)
-     * @param columnIndex the column index (0-based)
-     * @return an {@link OptionalFloat} containing the element at position {@code (rowIndex + 1, columnIndex)}, or empty if {@code rowIndex == rowCount - 1}
+     * @param rowIndex the row index of the reference cell (0-based)
+     * @param columnIndex the column index of the reference cell (0-based)
+     * @return an {@link OptionalFloat} containing the element at position {@code (rowIndex + 1, columnIndex)},
+     *         or empty if {@code rowIndex == rowCount - 1}
      * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
     public OptionalFloat valueBelow(final int rowIndex, final int columnIndex) {
@@ -570,23 +590,25 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns the element directly to the left of the specified position, if it exists.
-     * This method provides safe access to the element directly to the left of the given position
-     * without throwing an exception when at the left edge of the matrix.
+     * Returns the element directly to the left of the specified position, or an empty
+     * {@link OptionalFloat} if the position is on the leftmost edge of the matrix.
+     * This method provides safe edge handling: an empty {@code OptionalFloat} is returned for the
+     * leftmost column instead of an out-of-bounds exception.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
-     * matrix.valueLeft(0, 1).get();          // returns 1.0f
-     * matrix.valueLeft(0, 0).isPresent();    // returns false (no column to the left)
+     * matrix.valueLeft(0, 1).get();           // returns 1.0f
+     * matrix.valueLeft(1, 1).get();           // returns 3.0f
      *
-     * matrix.valueLeft(1, 1).get();          // returns 3.0f
-     * matrix.valueLeft(0, 5);                // throws IndexOutOfBoundsException (out of range)
+     * matrix.valueLeft(0, 0).isPresent();     // returns false (leftmost column, no cell to the left)
+     * matrix.valueLeft(0, 2);                 // throws IndexOutOfBoundsException (column out of range)
      * }</pre>
      *
-     * @param rowIndex the row index (0-based)
-     * @param columnIndex the column index (0-based)
-     * @return an {@link OptionalFloat} containing the element at position {@code (rowIndex, columnIndex - 1)}, or empty if {@code columnIndex == 0}
+     * @param rowIndex the row index of the reference cell (0-based)
+     * @param columnIndex the column index of the reference cell (0-based)
+     * @return an {@link OptionalFloat} containing the element at position {@code (rowIndex, columnIndex - 1)},
+     *         or empty if {@code columnIndex == 0}
      * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
     public OptionalFloat valueLeft(final int rowIndex, final int columnIndex) {
@@ -596,23 +618,25 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns the element directly to the right of the specified position, if it exists.
-     * This method provides safe access to the element directly to the right of the given position
-     * without throwing an exception when at the right edge of the matrix.
+     * Returns the element directly to the right of the specified position, or an empty
+     * {@link OptionalFloat} if the position is on the rightmost edge of the matrix.
+     * This method provides safe edge handling: an empty {@code OptionalFloat} is returned for the
+     * rightmost column instead of an out-of-bounds exception.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
-     * matrix.valueRight(0, 0).get();         // returns 2.0f
-     * matrix.valueRight(0, 1).isPresent();   // returns false (no column to the right)
+     * matrix.valueRight(0, 0).get();          // returns 2.0f
+     * matrix.valueRight(1, 0).get();          // returns 4.0f
      *
-     * matrix.valueRight(1, 0).get();         // returns 4.0f
-     * matrix.valueRight(0, 5);               // throws IndexOutOfBoundsException (out of range)
+     * matrix.valueRight(0, 1).isPresent();    // returns false (rightmost column, no cell to the right)
+     * matrix.valueRight(0, 2);                // throws IndexOutOfBoundsException (column out of range)
      * }</pre>
      *
-     * @param rowIndex the row index (0-based)
-     * @param columnIndex the column index (0-based)
-     * @return an {@link OptionalFloat} containing the element at position {@code (rowIndex, columnIndex + 1)}, or empty if {@code columnIndex == columnCount - 1}
+     * @param rowIndex the row index of the reference cell (0-based)
+     * @param columnIndex the column index of the reference cell (0-based)
+     * @return an {@link OptionalFloat} containing the element at position {@code (rowIndex, columnIndex + 1)},
+     *         or empty if {@code columnIndex == columnCount - 1}
      * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
     public OptionalFloat valueRight(final int rowIndex, final int columnIndex) {
@@ -622,25 +646,28 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns the specified row as a float array.
+     * Returns the specified row as a live reference to the underlying {@code float[]} storage.
      *
-     * <p><b>Note:</b> This method returns a reference to the internal array, not a copy.
-     * Modifications to the returned array will affect the matrix. If you need an independent
-     * copy, use {@link #rowCopy(int)}.
+     * <p><b>Note:</b> This method returns the internal array, not a copy. Modifications to the
+     * returned array will affect the matrix and vice versa. Use {@link #rowCopy(int)} if you need
+     * an independent copy.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}, {4.0f, 5.0f, 6.0f}});
-     * float[] firstRow = matrix.rowView(0);   // returns [1.0f, 2.0f, 3.0f]
-     * firstRow[0] = 99.0f;                    // shared storage: also mutates the matrix
-     * matrix.get(0, 0);                       // returns 99.0f
+     * matrix.rowView(0);                      // returns [1.0f, 2.0f, 3.0f]
+     * matrix.rowView(1);                      // returns [4.0f, 5.0f, 6.0f]
      *
-     * matrix.rowView(1)[2];                   // returns 6.0f
-     * matrix.rowView(5);                      // throws IndexOutOfBoundsException (row out of range)
+     * float[] firstRow = matrix.rowView(0);
+     * firstRow[0] = 99.0f;
+     * matrix.get(0, 0);                       // returns 99.0f (live view is shared)
+     *
+     * matrix.rowView(-1);                     // throws IndexOutOfBoundsException
+     * matrix.rowView(2);                      // throws IndexOutOfBoundsException (rowIndex >= rowCount)
      * }</pre>
      *
      * @param rowIndex the index of the row to retrieve (0-based)
-     * @return the specified row array (direct reference to internal storage)
+     * @return the specified row as a direct reference to internal storage
      * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      * @see #rowCopy(int)
      */
@@ -652,23 +679,28 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns a defensive copy of the specified row.
-     * Changes to the returned array do not affect this matrix.
+     * Returns a defensive copy of the specified row as a new {@code float[]}.
+     * Changes to the returned array do not affect this matrix and vice versa.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}, {4.0f, 5.0f, 6.0f}});
-     * float[] firstRow = matrix.rowCopy(0);   // returns [1.0f, 2.0f, 3.0f]
-     * firstRow[0] = 99.0f;                    // independent copy: matrix is NOT modified
-     * matrix.get(0, 0);                       // returns 1.0f
+     * matrix.rowCopy(0);                      // returns [1.0f, 2.0f, 3.0f]
+     * matrix.rowCopy(1);                      // returns [4.0f, 5.0f, 6.0f]
      *
-     * matrix.rowCopy(1)[2];                   // returns 6.0f
-     * matrix.rowCopy(5);                      // throws IndexOutOfBoundsException (row out of range)
+     * float[] firstRow = matrix.rowCopy(0);
+     * firstRow[0] = 99.0f;
+     * matrix.get(0, 0);                       // returns 1.0f (copy is independent)
+     *
+     * matrix.rowCopy(-1);                     // throws IndexOutOfBoundsException
+     * matrix.rowCopy(2);                      // throws IndexOutOfBoundsException (rowIndex >= rowCount)
      * }</pre>
      *
      * @param rowIndex the index of the row to retrieve (0-based)
-     * @return a new {@code float} array containing the values from the specified row
+     * @return a new float array of length {@code columnCount} containing the values of the specified row
      * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
+     * @see #rowView(int)
+     * @see #columnCopy(int)
      */
     @Override
     public float[] rowCopy(final int rowIndex) throws IndexOutOfBoundsException {
@@ -678,7 +710,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns a copy of the specified column as a new array.
+     * Returns a defensive copy of the specified column as a new {@code float[]}.
      *
      * <p>Unlike {@link #rowView(int)}, this method always returns a new array copy since
      * columns are not stored contiguously in memory. Modifications to the returned array
@@ -687,17 +719,22 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}, {4.0f, 5.0f, 6.0f}});
-     * float[] firstColumn = matrix.columnCopy(0);   // returns [1.0f, 4.0f]
-     * firstColumn[0] = 99.0f;                       // independent copy: matrix is NOT modified
-     * matrix.get(0, 0);                             // returns 1.0f
+     * matrix.columnCopy(0);                   // returns [1.0f, 4.0f]
+     * matrix.columnCopy(2);                   // returns [3.0f, 6.0f]
      *
-     * matrix.columnCopy(2)[1];                      // returns 6.0f
-     * matrix.columnCopy(5);                         // throws IndexOutOfBoundsException (column out of range)
+     * float[] firstColumn = matrix.columnCopy(0);
+     * firstColumn[0] = 99.0f;
+     * matrix.get(0, 0);                       // returns 1.0f (copy is independent)
+     *
+     * matrix.columnCopy(-1);                  // throws IndexOutOfBoundsException
+     * matrix.columnCopy(3);                   // throws IndexOutOfBoundsException (columnIndex >= columnCount)
      * }</pre>
      *
      * @param columnIndex the index of the column to retrieve (0-based)
-     * @return a new {@code float} array containing a copy of the specified column
+     * @return a new float array of length {@code rowCount} containing the values of the specified column
      * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
+     * @see #rowCopy(int)
+     * @see #rowView(int)
      */
     @Override
     public float[] columnCopy(final int columnIndex) throws IndexOutOfBoundsException {
@@ -795,6 +832,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * matrix.updateRow(0, x -> x / 0.0f);          // row 0 becomes Infinity values
      * matrix.get(0, 0) == Float.POSITIVE_INFINITY; // returns true
      * matrix.updateRow(5, x -> x);                 // throws IndexOutOfBoundsException (row out of range)
+     * matrix.updateRow(0, null);                   // throws IllegalArgumentException (operator is null)
      * }</pre>
      *
      * @param <E> the type of exception that the operator may throw
@@ -831,6 +869,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * matrix.get(0, 1);                         // returns 2.0f (column 1 unchanged)
      *
      * matrix.updateColumn(5, x -> x);           // throws IndexOutOfBoundsException (column out of range)
+     * matrix.updateColumn(0, null);             // throws IllegalArgumentException (operator is null)
      * }</pre>
      *
      * @param <E> the type of exception that the operator may throw
@@ -852,10 +891,11 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns a copy of the main diagonal elements (upper-left to lower-right).
+     * Returns a copy of the main diagonal elements (upper-left to lower-right) as an array.
      * The matrix must be square (rowCount == columnCount) for this operation.
      *
      * <p>This method extracts the main diagonal elements at positions (0,0), (1,1), (2,2), etc.
+     * The returned array is a copy; modifications to it will not affect the matrix.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -867,8 +907,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}}).getMainDiagonal(); // throws IllegalStateException (not square)
      * }</pre>
      *
-     * @return a new {@code float} array containing the main diagonal elements
-     * @throws IllegalStateException if the matrix is not square ({@code rowCount != columnCount})
+     * @return a new float array containing a copy of the main diagonal elements
+     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
     public float[] getMainDiagonal() throws IllegalStateException {
@@ -902,9 +942,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}}).setMainDiagonal(new float[] {1.0f}); // throws IllegalStateException (not square)
      * }</pre>
      *
-     * @param mainDiagonal the new values for the main diagonal; must have length equal to {@code rowCount}
-     * @throws IllegalStateException if the matrix is not square ({@code rowCount != columnCount})
-     * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null} or {@code mainDiagonal.length} does not equal {@code rowCount}
+     * @param mainDiagonal the new values for the main diagonal; must be non-{@code null} and of length {@code rowCount}
+     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
+     * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null} or its length is not equal to {@code rowCount}
      */
     @Override
     public void setMainDiagonal(final float[] mainDiagonal) throws IllegalStateException, IllegalArgumentException {
@@ -931,12 +971,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * matrix.updateMainDiagonal(x -> x / 0.0f);                                      // 1.0f/0.0f -> Infinity at (0,0)
      * matrix.get(0, 0) == Float.POSITIVE_INFINITY;                                   // returns true
+     * matrix.updateMainDiagonal(null);                                               // throws IllegalArgumentException (operator is null)
      * FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}}).updateMainDiagonal(x -> x); // throws IllegalStateException (not square)
      * }</pre>
      *
      * @param <E> the type of exception that the operator may throw
-     * @param operator the operator to apply to each diagonal element; receives the current
-     *             element value and returns the new value
+     * @param operator the operator to apply to each diagonal element; receives current element value and returns new value
      * @throws IllegalStateException if the matrix is not square
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
@@ -951,11 +991,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns a copy of the anti-diagonal elements (upper-right to lower-left).
+     * Returns a copy of the anti-diagonal elements (upper-right to lower-left) as an array.
      * The matrix must be square (rowCount == columnCount) for this operation.
      *
      * <p>This method extracts the anti-diagonal (secondary diagonal) elements from
      * upper-right to lower-left, at positions (0,n-1), (1,n-2), (2,n-3), etc.
+     * The returned array is a copy; modifications to it will not affect the matrix.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -967,8 +1008,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}}).getAntiDiagonal(); // throws IllegalStateException (not square)
      * }</pre>
      *
-     * @return a new {@code float} array containing the anti-diagonal elements
-     * @throws IllegalStateException if the matrix is not square ({@code rowCount != columnCount})
+     * @return a new float array containing a copy of the anti-diagonal elements
+     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
     public float[] getAntiDiagonal() throws IllegalStateException {
@@ -1003,9 +1044,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}}).setAntiDiagonal(new float[] {1.0f}); // throws IllegalStateException (not square)
      * }</pre>
      *
-     * @param antiDiagonal the new values for the anti-diagonal; must have length equal to {@code rowCount}
-     * @throws IllegalStateException if the matrix is not square ({@code rowCount != columnCount})
-     * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null} or {@code antiDiagonal.length} does not equal {@code rowCount}
+     * @param antiDiagonal the new values for the anti-diagonal; must be non-{@code null} and of length {@code rowCount}
+     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
+     * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null} or its length is not equal to {@code rowCount}
      */
     @Override
     public void setAntiDiagonal(final float[] antiDiagonal) throws IllegalStateException, IllegalArgumentException {
@@ -1032,12 +1073,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * matrix.updateAntiDiagonal(x -> x / 0.0f);                                      // -2.0f/0.0f -> -Infinity at (0,1)
      * matrix.get(0, 1) == Float.NEGATIVE_INFINITY;                                   // returns true
+     * matrix.updateAntiDiagonal(null);                                               // throws IllegalArgumentException (operator is null)
      * FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}}).updateAntiDiagonal(x -> x); // throws IllegalStateException (not square)
      * }</pre>
      *
      * @param <E> the type of exception that the operator may throw
-     * @param operator the operator to apply to each anti-diagonal element; receives the current
-     *             element value and returns the new value
+     * @param operator the operator to apply to each anti-diagonal element; receives current element value and returns new value
      * @throws IllegalStateException if the matrix is not square
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
@@ -1104,10 +1145,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @param <E> the type of exception that the mapper may throw
      * @param mapper the function that receives row index and column index (0-based) and returns
-     *             the new value for that position; must not return {@code null} (auto-unboxing
-     *             would throw {@link NullPointerException})
+     *             the new value for that position; the returned {@code Float} is unboxed, so it
+     *             must not be {@code null}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
-     * @throws NullPointerException if the mapper returns a {@code null} {@link Float}
+     * @throws NullPointerException if {@code mapper} returns {@code null} for any position
      * @throws E if the mapper throws an exception
      */
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Float, E> mapper) throws E {
@@ -1293,10 +1334,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Fills the matrix with values from the specified two-dimensional array in-place, starting from position (0,0).
-     * Values are copied up to the minimum of the matrix size and the source array size. If the source
-     * array is smaller than the matrix, only the overlapping region is filled. If the source array is
-     * larger, only the portion that fits is copied.
+     * Fills this matrix with values from another two-dimensional array, starting at position {@code (0, 0)}.
+     * Equivalent to {@code fill(0, 0, source)}.
+     * The source array can be smaller than this matrix; only the overlapping region is copied.
+     * If the source array is larger, only the portion that fits is copied. {@code null} rows in
+     * {@code source} are skipped (the corresponding row of this matrix is left unchanged).
+     * The matrix is modified in-place.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1313,17 +1356,20 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * matrix.fill((float[][]) null);                 // throws IllegalArgumentException (null source)
      * }</pre>
      *
-     * @param source the source array to copy values from (may be smaller or larger than the matrix)
+     * @param source the two-dimensional array to copy values from; must not be {@code null}
      * @throws IllegalArgumentException if {@code source} is {@code null}
+     * @see #fill(int, int, float[][])
      */
     public void fill(final float[][] source) {
         fill(0, 0, source);
     }
 
     /**
-     * Fills a portion of the matrix with values from the specified two-dimensional array in-place, starting from a specified position.
-     * Values are copied starting from the specified row and column indices. If the source array extends
-     * beyond the matrix bounds from the starting position, only the portion that fits is copied.
+     * Fills a region of this matrix with values from another two-dimensional array, starting at the
+     * specified destination position.
+     * The source array can extend beyond this matrix's bounds; only the overlapping region is copied.
+     * The matrix is modified in-place. {@code null} rows in {@code source} are skipped (the
+     * corresponding destination row is left unchanged). Elements outside the matrix bounds are ignored.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1338,10 +1384,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * matrix.fill(0, 0, (float[][]) null);          // throws IllegalArgumentException (null source)
      * }</pre>
      *
-     * @param destRowIndex the starting row index in this matrix (0-based, must be in {@code [0, rowCount]})
-     * @param destColumnIndex the starting column index in this matrix (0-based, must be in {@code [0, columnCount]})
-     * @param source the source array to copy values from; must not be {@code null}.
-     *               Individual rows of {@code source} may be {@code null} and are skipped.
+     * @param destRowIndex the target row index in this matrix (0-based, must satisfy {@code 0 <= destRowIndex <= rowCount})
+     * @param destColumnIndex the target column index in this matrix (0-based, must satisfy {@code 0 <= destColumnIndex <= columnCount})
+     * @param source the source array to copy values from; must not be {@code null}
      * @throws IndexOutOfBoundsException if {@code destRowIndex < 0} or {@code destRowIndex > rowCount},
      *         or if {@code destColumnIndex < 0} or {@code destColumnIndex > columnCount}
      * @throws IllegalArgumentException if {@code source} is {@code null}
@@ -1364,20 +1409,20 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
     /**
      * Returns a copy of this matrix.
-     *
-     * <p>The returned matrix is completely independent from the original. All elements
-     * are copied into a new two-dimensional array, ensuring that modifications to either
-     * the copy or the original will not affect the other.
+     * The returned matrix is a completely independent copy; modifications to one
+     * do not affect the other.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix original = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
      * FloatMatrix copy = original.copy();
-     * copy.equals(original);          // returns true (same content)
+     * copy.get(0, 0);                       // returns 1.0f
+     * copy.equals(original);                // returns true
      *
-     * copy.set(0, 0, 99.0f);                // mutate the copy only
+     * copy.set(0, 0, 99.0f);
      * original.get(0, 0);                   // returns 1.0f (original unchanged)
-     * copy.get(0, 0);                       // returns 99.0f
+     * copy.get(0, 0);                       // returns 99.0f (copy modified)
+     *
      * FloatMatrix.empty().copy().isEmpty(); // returns true
      * }</pre>
      *
@@ -1395,24 +1440,25 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns a copy of a row range from this matrix.
+     * Creates a copy of a row range from this matrix.
      * The returned matrix contains only the specified rows and is completely independent from the original matrix.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}, {5.0f, 6.0f}});
-     * FloatMatrix partial = matrix.copy(1, 3);   // returns [[3.0f, 4.0f], [5.0f, 6.0f]]
-     * partial.get(0, 0);                         // returns 3.0f
-     * partial.rowCount();                        // returns 2
+     * FloatMatrix subset = matrix.copy(1, 3);
+     * subset.rowCount();                         // returns 2
+     * subset.get(0, 0);                          // returns 3.0f -> {{3.0f, 4.0f}, {5.0f, 6.0f}}
      *
-     * matrix.copy(0, 0).rowCount();              // returns 0 (empty range)
+     * matrix.copy(1, 1).rowCount();              // returns 0 (empty range)
+     *
+     * matrix.copy(-1, 2);                        // throws IndexOutOfBoundsException (fromRowIndex < 0)
      * matrix.copy(0, 5);                         // throws IndexOutOfBoundsException (toRowIndex > rowCount)
-     * matrix.copy(2, 1);                         // throws IndexOutOfBoundsException (from > to)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
      * @param toRowIndex the ending row index (exclusive)
-     * @return a new {@code FloatMatrix} containing a copy of the specified rows
+     * @return a new {@code FloatMatrix} containing the specified rows
      * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount},
      *         or {@code fromRowIndex > toRowIndex}
      */
@@ -1430,29 +1476,29 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns a copy of a rectangular region from this matrix.
-     * The returned matrix contains only the specified rows and columns and is completely
-     * independent from the original matrix.
+     * Creates a copy of a submatrix defined by row and column ranges.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}, {4.0f, 5.0f, 6.0f}});
-     * FloatMatrix sub = matrix.copy(0, 2, 1, 3);   // rows 0-1, columns 1-2 -> [[2.0f, 3.0f], [5.0f, 6.0f]]
-     * sub.get(0, 0);                               // returns 2.0f
-     * sub.get(1, 1);                               // returns 6.0f
+     * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}, {4.0f, 5.0f, 6.0f}, {7.0f, 8.0f, 9.0f}});
+     * FloatMatrix submatrix = matrix.copy(0, 2, 1, 3);
+     * submatrix.get(0, 0);                         // returns 2.0f
+     * submatrix.get(1, 1);                         // returns 6.0f -> {{2.0f, 3.0f}, {5.0f, 6.0f}}
      *
-     * matrix.copy(0, 1, 0, 0).columnCount();       // returns 0 (empty column range)
+     * matrix.copy(0, 1, 0, 1).get(0, 0);           // returns 1.0f (single-cell submatrix)
+     *
      * matrix.copy(0, 2, 1, 5);                     // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
-     * matrix.copy(0, 2, 2, 1);                     // throws IndexOutOfBoundsException (fromColumn > toColumn)
+     * matrix.copy(-1, 2, 0, 2);                    // throws IndexOutOfBoundsException (fromRowIndex < 0)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
      * @param toRowIndex the ending row index (exclusive)
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
-     * @return a new {@code FloatMatrix} containing the specified region with dimensions
-     *         {@code (toRowIndex - fromRowIndex) × (toColumnIndex - fromColumnIndex)}
-     * @throws IndexOutOfBoundsException if any index is out of bounds, {@code fromRowIndex > toRowIndex}, or {@code fromColumnIndex > toColumnIndex}
+     * @return a new {@code FloatMatrix} containing the specified submatrix
+     * @throws IndexOutOfBoundsException if any range is invalid (e.g. {@code fromRowIndex < 0},
+     *         {@code toRowIndex > rowCount}, {@code fromColumnIndex < 0}, {@code toColumnIndex > columnCount},
+     *         or {@code from > to} for either range)
      */
     @Override
     public FloatMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
@@ -1770,8 +1816,11 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Reverses the order of elements in each row (horizontal flip in-place).
-     * This method modifies the matrix directly. For a non-destructive version, use {@link #flipHorizontally()}.
+     * Reverses the order of elements in each row in-place (horizontal flip).
+     * This modifies the current matrix; each row is reversed left-to-right.
+     *
+     * <p>This is an in-place operation that modifies the current matrix.
+     * For a non-destructive version that returns a new matrix, use {@link #flipHorizontally()}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1787,6 +1836,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @see #flipHorizontally()
+     * @see #flipVerticallyInPlace()
      */
     @Override
     public void flipHorizontallyInPlace() {
@@ -1796,8 +1846,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Reverses the order of rows in the matrix (vertical flip in-place).
-     * This method modifies the matrix directly. For a non-destructive version, use {@link #flipVertically()}.
+     * Reverses the order of rows in-place (vertical flip).
+     * This modifies the current matrix; the order of rows is reversed top-to-bottom
+     * while the order of elements within each row remains unchanged.
+     *
+     * <p>This is an in-place operation that modifies the current matrix.
+     * For a non-destructive version that returns a new matrix, use {@link #flipVertically()}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1813,6 +1867,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @see #flipVertically()
+     * @see #flipHorizontallyInPlace()
      */
     @Override
     public void flipVerticallyInPlace() {
@@ -1824,7 +1879,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns a new matrix that is a horizontal flip of this matrix (columns in reversed order within each row).
+     * Returns a new matrix that is a horizontal flip of this matrix (columns in reversed order).
+     * Each row is reversed left-to-right (the leftmost element becomes rightmost).
      * The original matrix is not modified.
      *
      * <p><b>Usage Examples:</b></p>
@@ -1840,6 +1896,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @return a new {@code FloatMatrix} with each row reversed
      * @see #flipHorizontallyInPlace()
      * @see #flipVertically()
+     * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
     @Override
     public FloatMatrix flipHorizontally() {
@@ -1850,7 +1907,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
     /**
      * Returns a new matrix that is a vertical flip of this matrix (rows in reversed order).
-     * The original matrix is not modified. The first row becomes the last row, etc.
+     * The topmost row becomes bottommost.
+     * The original matrix is not modified.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1862,9 +1920,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix.empty().flipVertically().isEmpty(); // returns true
      * }</pre>
      *
-     * @return a new {@code FloatMatrix} that is a vertical flip of this matrix (rows in reversed order)
+     * @return a new {@code FloatMatrix} with rows reversed
      * @see #flipVerticallyInPlace()
      * @see #flipHorizontally()
+     * @see <a href="https://www.mathworks.com/help/matlab/ref/flip.html#btz149s-1">MATLAB flip function</a>
      */
     @Override
     public FloatMatrix flipVertically() {
@@ -1875,6 +1934,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
     /**
      * Returns a new matrix that is this matrix rotated 90 degrees clockwise.
+     * The resulting matrix has dimensions swapped (rows become columns), with the first
+     * row of the result being the first column of the original read from bottom to top.
+     * The original matrix is not modified.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1890,8 +1952,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix.empty().rotate90().isEmpty(); // returns true
      * }</pre>
      *
-     * @return a new matrix that is this matrix rotated 90 degrees clockwise
+     * @return a new matrix rotated 90 degrees clockwise (dimensions {@code columnCount × rowCount}),
+     *         or an empty matrix if this matrix has zero columns
      * @throws IllegalArgumentException if the resulting (transposed) shape is not representable
+     * @see #rotate180()
+     * @see #rotate270()
+     * @see #transpose()
      */
     @Override
     public FloatMatrix rotate90() {
@@ -1922,6 +1988,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
     /**
      * Returns a new matrix that is this matrix rotated 180 degrees.
+     * This is equivalent to flipping both horizontally and vertically, reversing the
+     * order of all elements. The resulting matrix has the same dimensions as the original.
+     * The original matrix is not modified.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1936,6 +2005,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @return a new matrix that is this matrix rotated 180 degrees
+     * @see #rotate90()
+     * @see #rotate270()
      */
     @Override
     public FloatMatrix rotate180() {
@@ -1952,6 +2023,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     /**
      * Returns a new matrix that is this matrix rotated 270 degrees clockwise.
      * This is equivalent to rotating 90 degrees counter-clockwise.
+     * The resulting matrix has dimensions swapped (rows become columns), with the first
+     * row of the result being the last column of the original read from top to bottom.
+     * The original matrix is not modified.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1967,8 +2041,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix.empty().rotate270().isEmpty(); // returns true
      * }</pre>
      *
-     * @return a new matrix that is this matrix rotated 270 degrees clockwise
+     * @return a new matrix rotated 270 degrees clockwise (dimensions {@code columnCount × rowCount}),
+     *         or an empty matrix if this matrix has zero columns
      * @throws IllegalArgumentException if the resulting (transposed) shape is not representable
+     * @see #rotate90()
+     * @see #rotate180()
+     * @see #transpose()
      */
     @Override
     public FloatMatrix rotate270() {
@@ -2053,12 +2131,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Reshapes the matrix to new dimensions while preserving element order.
-     * Elements are read in row-major order from the original matrix and placed into the new shape.
-     *
-     * <p>The new shape must have at least as many total elements as the original
-     * ({@code newRowCount * newColumnCount >= elementCount()}).
-     * If the new shape has more total elements, the additional positions are filled with zeros.</p>
+     * Reshapes this matrix to have the specified dimensions.
+     * Elements are taken in row-major order from this matrix and placed into the new shape.
+     * The new shape must have at least as many total cells as the original
+     * ({@code (long) newRowCount * newColumnCount >= elementCount()}).
+     * Any extra trailing cells in the new shape are filled with {@code 0.0f}.
+     * The original matrix is not modified.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2075,10 +2153,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @param newRowCount the number of rows in the reshaped matrix; must be {@code >= 0}
      * @param newColumnCount the number of columns in the reshaped matrix; must be {@code >= 0}
-     * @return a new {@code FloatMatrix} with the specified shape containing this matrix's elements in row-major order
-     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
-     *         if the resulting shape is not representable (zero rows with a non-zero column count),
-     *         or if the new shape is too small to hold all elements of this matrix
+     * @return a new {@code FloatMatrix} with the specified dimensions
+     * @throws IllegalArgumentException if either dimension is negative, if the resulting shape is not
+     *         representable, or if the new shape is too small to hold every existing element
      */
     @SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG")
     @Override
@@ -2138,7 +2215,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @return a new {@code FloatMatrix} of dimensions {@code (rowCount*rowRepeats) x (columnCount*columnRepeats)} with repeated elements
      * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is not positive,
      *         or if either resulting dimension would overflow {@code Integer.MAX_VALUE}
-     * @see IntMatrix#repeatElements(int, int)
+     * @see <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">MATLAB repelem function</a>
      */
     @Override
     public FloatMatrix repeatElements(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
@@ -2195,7 +2272,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @return a new {@code FloatMatrix} of dimensions {@code (rowCount*rowRepeats) x (columnCount*columnRepeats)} with the tiled pattern
      * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is not positive,
      *         or if either resulting dimension would overflow {@code Integer.MAX_VALUE}
-     * @see IntMatrix#repeatMatrix(int, int)
+     * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
     @Override
     public FloatMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
@@ -2227,10 +2304,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns a list containing all matrix elements in row-major order.
-     *
-     * <p>The returned {@link FloatList} owns a fresh backing array; modifying it does not
-     * affect this matrix.</p>
+     * Returns a new {@link FloatList} containing all elements of this matrix in row-major order.
+     * The returned list owns its data; modifications to it do not affect this matrix.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2244,7 +2319,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @return a new {@link FloatList} of all elements in row-major order
-     * @throws IllegalStateException if the matrix is too large to flatten ({@code rowCount * columnCount > Integer.MAX_VALUE})
+     * @throws IllegalStateException if {@code (long) rowCount * columnCount > Integer.MAX_VALUE}
+     * @see #horizontalStream()
      */
     @Override
     public FloatList flatten() {
@@ -2301,8 +2377,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Stacks this matrix vertically with another matrix.
-     * The matrices must have the same number of columns.
+     * Stacks this matrix vertically with another matrix (vertical concatenation).
+     * The matrices must have the same number of columns. The result has rows from this matrix
+     * on top and rows from the other matrix below.
+     *
+     * <p>This operation is also known as vertical concatenation or rbind (bind by rows).
+     * Creates a new matrix; the original matrices are not modified.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2318,11 +2398,11 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * a.stackVertically((FloatMatrix) null); // throws IllegalArgumentException (null other)
      * }</pre>
      *
-     * @param other the matrix to stack below this matrix; must not be {@code null}
-     * @return a new {@code FloatMatrix} with {@code other} stacked vertically below this matrix
-     * @throws IllegalArgumentException if {@code other} is {@code null}, the matrices don't have the
-     *         same number of columns, or the merged row count would overflow {@code Integer.MAX_VALUE}
-     * @see IntMatrix#stackVertically(IntMatrix)
+     * @param other the matrix to stack below this matrix (must have the same column count)
+     * @return a new FloatMatrix with dimensions (this.rowCount + other.rowCount) x this.columnCount
+     * @throws IllegalArgumentException if {@code other} is {@code null}, if {@code this.columnCount != other.columnCount},
+     *         or if the merged row count would exceed {@code Integer.MAX_VALUE}
+     * @see #stackHorizontally(FloatMatrix)
      */
     @Override
     public FloatMatrix stackVertically(final FloatMatrix other) throws IllegalArgumentException {
@@ -2346,8 +2426,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Stacks this matrix horizontally with another matrix.
-     * The matrices must have the same number of rows.
+     * Stacks this matrix horizontally with another matrix (horizontal concatenation).
+     * The matrices must have the same number of rows. The result has columns from this matrix
+     * on the left and columns from the other matrix on the right.
+     *
+     * <p>This operation is also known as horizontal concatenation or cbind (bind by columns).
+     * Creates a new matrix; the original matrices are not modified.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2363,11 +2447,11 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * a.stackHorizontally((FloatMatrix) null); // throws IllegalArgumentException (null other)
      * }</pre>
      *
-     * @param other the matrix to stack to the right of this matrix; must not be {@code null}
-     * @return a new {@code FloatMatrix} with {@code other} stacked horizontally to the right of this matrix
-     * @throws IllegalArgumentException if {@code other} is {@code null}, the matrices don't have the
-     *         same number of rows, or the merged column count would overflow {@code Integer.MAX_VALUE}
-     * @see IntMatrix#stackHorizontally(IntMatrix)
+     * @param other the matrix to stack to the right of this matrix (must have the same row count)
+     * @return a new FloatMatrix with dimensions this.rowCount x (this.columnCount + other.columnCount)
+     * @throws IllegalArgumentException if {@code other} is {@code null}, if {@code this.rowCount != other.rowCount},
+     *         or if the merged column count would exceed {@code Integer.MAX_VALUE}
+     * @see #stackVertically(FloatMatrix)
      */
     @Override
     public FloatMatrix stackHorizontally(final FloatMatrix other) throws IllegalArgumentException {
@@ -2394,6 +2478,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p>For large matrices (8192+ elements), this operation may be parallelized automatically
      * for better performance.</p>
      *
+     * <p><b>Floating-point notes:</b> Adding {@code +Infinity} and {@code -Infinity} produces
+     * {@code NaN}. If either operand is {@code NaN}, the result at that position is {@code NaN}.
+     * No exception is thrown for these cases.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix a = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
@@ -2409,13 +2497,11 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * a.add((FloatMatrix) null);                                 // throws IllegalArgumentException (null other)
      * }</pre>
      *
-     * <p><b>Floating-point notes:</b> Adding {@code +Infinity} and {@code -Infinity} produces
-     * {@code NaN}. If either operand is {@code NaN}, the result at that position is {@code NaN}.
-     * No exception is thrown for these cases.</p>
-     *
      * @param other the matrix to add to this matrix; must not be {@code null}
      * @return a new {@code FloatMatrix} containing the element-wise sum (same dimensions as the inputs)
      * @throws IllegalArgumentException if {@code other} is {@code null} or the matrices have different dimensions
+     * @see #subtract(FloatMatrix)
+     * @see #zipWith(FloatMatrix, Throwables.FloatBinaryOperator)
      */
     public FloatMatrix add(final FloatMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
@@ -2438,6 +2524,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p>For large matrices (8192+ elements), this operation may be parallelized automatically
      * for better performance.</p>
      *
+     * <p><b>Floating-point notes:</b> Subtracting {@code +Infinity} from {@code +Infinity}
+     * (or {@code -Infinity} from {@code -Infinity}) produces {@code NaN}. If either operand is
+     * {@code NaN}, the result at that position is {@code NaN}. No exception is thrown for these cases.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix a = FloatMatrix.of(new float[][] {{5.0f, 6.0f}, {7.0f, 8.0f}});
@@ -2452,13 +2542,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * a.subtract((FloatMatrix) null);                     // throws IllegalArgumentException (null other)
      * }</pre>
      *
-     * <p><b>Floating-point notes:</b> Subtracting {@code +Infinity} from {@code +Infinity}
-     * (or {@code -Infinity} from {@code -Infinity}) produces {@code NaN}. If either operand is
-     * {@code NaN}, the result at that position is {@code NaN}. No exception is thrown for these cases.</p>
-     *
      * @param other the matrix to subtract from this matrix; must not be {@code null}
      * @return a new {@code FloatMatrix} containing the element-wise difference (same dimensions as the inputs)
      * @throws IllegalArgumentException if {@code other} is {@code null} or the matrices have different dimensions
+     * @see #add(FloatMatrix)
      */
     public FloatMatrix subtract(final FloatMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
@@ -2486,6 +2573,15 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * <p>For large matrices, this operation may be parallelized automatically for better performance.</p>
      *
+     * <p><b>Note:</b> This is the linear-algebra matrix product, not element-wise multiplication.
+     * For element-wise multiplication use
+     * {@link #zipWith(FloatMatrix, com.landawn.abacus.util.Throwables.FloatBinaryOperator)}.</p>
+     *
+     * <p><b>Floating-point notes:</b> Standard IEEE-754 arithmetic applies; {@code NaN} or
+     * {@code Infinity} operands propagate into the corresponding result cells, and intermediate
+     * sums of {@code +Infinity} and {@code -Infinity} produce {@code NaN}. No exception is
+     * thrown for these cases.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix a = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
@@ -2501,15 +2597,6 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * a.matmul(FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}})); // throws IllegalArgumentException (columnCount != other.rowCount)
      * a.matmul((FloatMatrix) null);                                 // throws IllegalArgumentException (null other)
      * }</pre>
-     *
-     * <p><b>Note:</b> This is the linear-algebra matrix product, not element-wise multiplication.
-     * For element-wise multiplication use
-     * {@link #zipWith(FloatMatrix, com.landawn.abacus.util.Throwables.FloatBinaryOperator)}.</p>
-     *
-     * <p><b>Floating-point notes:</b> Standard IEEE-754 arithmetic applies; {@code NaN} or
-     * {@code Infinity} operands propagate into the corresponding result cells, and intermediate
-     * sums of {@code +Infinity} and {@code -Infinity} produce {@code NaN}. No exception is
-     * thrown for these cases.</p>
      *
      * @param other the matrix to multiply with this matrix; must not be {@code null}
      * @return a new {@code FloatMatrix} containing the matrix product with dimensions {@code this.rowCount × other.columnCount}
@@ -2713,8 +2800,16 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Performs element-wise operation on two matrices using the provided binary operator.
-     * The matrices must have the same dimensions.
+     * Performs element-wise operation on two matrices using a binary operator.
+     * The matrices must have the same dimensions. Corresponding elements from both matrices
+     * are combined using the provided function to produce the result matrix.
+     *
+     * <p>This is a generalized element-wise operation. For specific operations like addition,
+     * subtraction, or multiplication, consider using the dedicated methods {@link #add(FloatMatrix)},
+     * {@link #subtract(FloatMatrix)}, or {@link #matmul(FloatMatrix)}.</p>
+     *
+     * <p>The operation may be performed in parallel for large matrices to improve performance.
+     * Creates a new matrix; the original matrices are not modified.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2732,11 +2827,15 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @param <E> the type of exception that the zip function may throw
-     * @param other the second matrix; must not be {@code null}
-     * @param zipFunction the binary operator to apply element-wise; must not be {@code null}
-     * @return a new {@code FloatMatrix} with the results of the element-wise operation (same dimensions as the inputs)
-     * @throws IllegalArgumentException if {@code other} or {@code zipFunction} is {@code null}, or the matrices have different dimensions
+     * @param other the second matrix (must have the same dimensions as this matrix)
+     * @param zipFunction the binary operator to apply to corresponding elements; receives the
+     *                    element from this matrix as first argument and the element from
+     *                    {@code other} as second argument
+     * @return a new {@code FloatMatrix} with the results of the element-wise operation
+     * @throws IllegalArgumentException if {@code other} or {@code zipFunction} is {@code null},
+     *         or if the matrices have different shapes
      * @throws E if the zip function throws an exception
+     * @see #zipWith(FloatMatrix, FloatMatrix, Throwables.FloatTernaryOperator)
      */
     public <E extends Exception> FloatMatrix zipWith(final FloatMatrix other, final Throwables.FloatBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
@@ -2756,8 +2855,15 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Performs element-wise operation on three matrices using the provided ternary operator.
-     * All matrices must have the same dimensions.
+     * Performs element-wise operation on three matrices using a ternary operator.
+     * All matrices must have the same dimensions. Corresponding elements from all three matrices
+     * are combined using the provided function to produce the result matrix.
+     *
+     * <p>This is useful for operations that combine three matrices, such as weighted averages,
+     * conditional selection, or mathematical formulas involving three variables.</p>
+     *
+     * <p>The operation may be performed in parallel for large matrices to improve performance.
+     * Creates a new matrix; the original matrices are not modified.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2774,12 +2880,17 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @param <E> the type of exception that the zip function may throw
-     * @param other the second matrix; must not be {@code null}
-     * @param third the third matrix; must not be {@code null}
-     * @param zipFunction the ternary operator to apply element-wise; must not be {@code null}
-     * @return a new {@code FloatMatrix} with the results of the element-wise operation (same dimensions as the inputs)
-     * @throws IllegalArgumentException if {@code other}, {@code third}, or {@code zipFunction} is {@code null}, or the matrices have different dimensions
+     * @param other the second matrix (must have the same dimensions as this matrix)
+     * @param third the third matrix (must have the same dimensions as this matrix)
+     * @param zipFunction the ternary operator to apply to corresponding elements; receives the
+     *                    element from this matrix as first argument, the element from
+     *                    {@code other} as second argument, and the element from {@code third}
+     *                    as third argument
+     * @return a new {@code FloatMatrix} with the results of the element-wise operation
+     * @throws IllegalArgumentException if any of {@code other}, {@code third}, or {@code zipFunction}
+     *         is {@code null}, or if any of the matrices have different shapes
      * @throws E if the zip function throws an exception
+     * @see #zipWith(FloatMatrix, Throwables.FloatBinaryOperator)
      */
     public <E extends Exception> FloatMatrix zipWith(final FloatMatrix other, final FloatMatrix third, final Throwables.FloatTernaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
@@ -2801,8 +2912,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns a stream of elements on the diagonal from upper-left to lower-right.
-     * The matrix must be square (same number of rows and columns).
+     * Returns a stream of elements on the main diagonal (upper-left to lower-right).
+     * The matrix must be square.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2816,8 +2927,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}}).mainDiagonalStream(); // throws IllegalStateException (not square)
      * }</pre>
      *
-     * @return a FloatStream containing the diagonal elements from upper-left to lower-right
-     * @throws IllegalStateException if the matrix is not square
+     * @return a FloatStream of main-diagonal elements, or an empty stream if the matrix is empty
+     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
     public FloatStream mainDiagonalStream() {
@@ -2862,8 +2973,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns a stream of elements on the anti-diagonal from upper-right to lower-left.
-     * The matrix must be square (same number of rows and columns).
+     * Returns a stream of elements on the anti-diagonal (upper-right to lower-left).
+     * The matrix must be square.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2877,8 +2988,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}}).antiDiagonalStream(); // throws IllegalStateException (not square)
      * }</pre>
      *
-     * @return a FloatStream containing the anti-diagonal elements from upper-right to lower-left
-     * @throws IllegalStateException if the matrix is not square
+     * @return a FloatStream of anti-diagonal elements, or an empty stream if the matrix is empty
+     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
     public FloatStream antiDiagonalStream() {
@@ -2926,8 +3037,11 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
     /**
      * Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).
-     * Elements are returned in row-major order: all elements from the first row,
-     * then all elements from the second row, and so on.
+     * Elements are streamed row by row from the top-left corner to the bottom-right corner.
+     *
+     * <p>This method is useful for processing all matrix elements sequentially
+     * without concern for their row/column positions. The stream supports all
+     * standard FloatStream operations including sum, average, filter, map, etc.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2939,7 +3053,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix.of(new float[][] {{5.0f}}).horizontalStream().toArray(); // returns [5.0f]
      * }</pre>
      *
-     * @return a FloatStream containing all matrix elements traversed horizontally (left to right, top to bottom)
+     * @return a FloatStream of all elements in row-major order, or an empty stream if the matrix is empty
      */
     @Override
     public FloatStream horizontalStream() {
@@ -2948,20 +3062,25 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
     /**
      * Returns a stream of elements from a single row.
+     * The elements are streamed from left to right within the specified row.
+     *
+     * <p>This method is particularly useful when you need to process or analyze
+     * a specific row of the matrix independently. The returned stream can be
+     * used with all standard FloatStream operations.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
-     * matrix.horizontalStream(0).toArray();   // returns [1.0f, 2.0f]
-     * matrix.horizontalStream(1).toArray();   // returns [3.0f, 4.0f]
+     * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}, {4.0f, 5.0f, 6.0f}});
+     * matrix.horizontalStream(0).toArray();   // returns [1.0f, 2.0f, 3.0f]
+     * matrix.horizontalStream(1).sum();       // returns 15.0 (sum of second row)
      *
-     * matrix.horizontalStream(1).sum();       // returns 7.0
-     * matrix.horizontalStream(5);             // throws IndexOutOfBoundsException (row out of range)
+     * matrix.horizontalStream(-1);            // throws IndexOutOfBoundsException
+     * matrix.horizontalStream(2);             // throws IndexOutOfBoundsException (rowIndex >= rowCount)
      * }</pre>
      *
-     * @param rowIndex the row index (0-based)
-     * @return a FloatStream of elements from the specified row
-     * @throws IndexOutOfBoundsException if {@code rowIndex} is out of bounds
+     * @param rowIndex the index of the row to stream (0-based)
+     * @return a {@link FloatStream} of elements from the specified row
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      */
     @Override
     public FloatStream horizontalStream(final int rowIndex) {
@@ -2970,6 +3089,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
     /**
      * Returns a stream of elements from a range of rows in row-major order.
+     * Elements are streamed row by row from the starting row (inclusive) to
+     * the ending row (exclusive), with each row streamed from left to right.
+     *
+     * <p>This method allows for efficient processing of a subset of matrix rows.
+     * The stream maintains the row-major order, meaning all elements from one row
+     * are streamed before moving to the next row.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2983,8 +3108,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
      * @param toRowIndex the ending row index (exclusive)
-     * @return a FloatStream of elements from the specified row range
-     * @throws IndexOutOfBoundsException if indices are out of bounds
+     * @return a FloatStream of elements from the specified row range, or an empty stream if the matrix is empty
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount}, or {@code fromRowIndex > toRowIndex}
      */
     @Override
     public FloatStream horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
@@ -3059,9 +3184,11 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns a stream of all elements in the matrix, traversed vertically (column by column).
-     * Elements are returned in column-major order: all elements from the first column,
-     * then all elements from the second column, and so on.
+     * Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).
+     * Elements are streamed column by column from the top-left corner to the bottom-right corner.
+     *
+     * <p>It provides an alternative way to iterate through matrix
+     * elements compared to the row-major order of {@link #horizontalStream()}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3073,7 +3200,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix.of(new float[][] {{5.0f}}).verticalStream().toArray(); // returns [5.0f]
      * }</pre>
      *
-     * @return a FloatStream containing all matrix elements in column-major order
+     * @return a FloatStream of all elements in column-major order, or an empty stream if the matrix is empty
      */
     @Override
     @Beta
@@ -3083,20 +3210,24 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
     /**
      * Returns a stream of elements from a single column.
+     * The elements are streamed from top to bottom within the specified column.
+     *
+     * <p>This method is useful for column-wise operations such as calculating
+     * column sums, finding column maximums, or filtering column values.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
-     * matrix.verticalStream(0).toArray();   // returns [1.0f, 3.0f]
-     * matrix.verticalStream(1).toArray();   // returns [2.0f, 4.0f]
+     * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}, {4.0f, 5.0f, 6.0f}});
+     * matrix.verticalStream(1).toArray();   // returns [2.0f, 5.0f]
+     * matrix.verticalStream(0).sum();       // returns 5.0 (sum of first column)
      *
-     * matrix.verticalStream(1).sum();       // returns 6.0
-     * matrix.verticalStream(5);             // throws IndexOutOfBoundsException (column out of range)
+     * matrix.verticalStream(-1);            // throws IndexOutOfBoundsException
+     * matrix.verticalStream(3);             // throws IndexOutOfBoundsException (columnIndex >= columnCount)
      * }</pre>
      *
-     * @param columnIndex the column index (0-based)
-     * @return a FloatStream of elements from the specified column
-     * @throws IndexOutOfBoundsException if {@code columnIndex} is out of bounds
+     * @param columnIndex the index of the column to stream (0-based)
+     * @return a {@link FloatStream} of elements from the specified column
+     * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     @Override
     public FloatStream verticalStream(final int columnIndex) {
@@ -3105,6 +3236,11 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
     /**
      * Returns a stream of elements from a range of columns in column-major order.
+     * Elements are streamed column by column from the starting column (inclusive)
+     * to the ending column (exclusive), with each column streamed from top to bottom.
+     *
+     * <p>This method allows for efficient processing of a
+     * subset of matrix columns in column-major order.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3118,8 +3254,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
-     * @return a FloatStream of elements from the specified column range
-     * @throws IndexOutOfBoundsException if indices are out of bounds
+     * @return a FloatStream of elements from the specified column range in column-major order,
+     *         or an empty stream if the matrix is empty
+     * @throws IndexOutOfBoundsException if {@code fromColumnIndex < 0}, {@code toColumnIndex > columnCount},
+     *         or {@code fromColumnIndex > toColumnIndex}
      */
     @Override
     @Beta
@@ -3196,8 +3334,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns a stream where each element is a FloatStream representing a row.
-     * This allows processing the matrix row by row with stream operations.
+     * Returns a stream of FloatStream objects, where each FloatStream represents a complete row.
+     * This creates a stream of streams, allowing for row-by-row processing of the matrix.
+     *
+     * <p>This method is useful for operations that need to process entire rows as units,
+     * such as row-wise transformations, filtering rows based on conditions, or mapping
+     * rows to other values.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3209,7 +3351,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix.empty().rowStreams().count();     // returns 0 (no rows)
      * }</pre>
      *
-     * @return a Stream of FloatStream, one for each row
+     * @return a Stream of FloatStream objects, one for each row in the matrix
      */
     @Override
     public Stream<FloatStream> rowStreams() {
@@ -3217,7 +3359,11 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns a stream of FloatStream for a range of rows.
+     * Returns a stream of FloatStream objects for a range of rows.
+     * Each FloatStream in the result represents a complete row within the specified range.
+     *
+     * <p>This method allows for processing a subset of rows while maintaining the
+     * ability to work with complete rows as individual streams.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3231,8 +3377,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
      * @param toRowIndex the ending row index (exclusive)
-     * @return a Stream of FloatStream for the specified row range
-     * @throws IndexOutOfBoundsException if indices are out of bounds
+     * @return a Stream of FloatStream objects for the specified row range
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount},
+     *         or {@code fromRowIndex > toRowIndex}
      */
     @Override
     public Stream<FloatStream> rowStreams(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
@@ -3273,8 +3420,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns a stream where each element is a FloatStream representing a column.
-     * This allows processing the matrix column by column with stream operations.
+     * Returns a stream of FloatStream objects, where each FloatStream represents a complete column.
+     * This creates a stream of streams, allowing for column-by-column processing of the matrix.
+     *
+     * <p>This method is useful for operations that need to process
+     * entire columns as units, such as column-wise statistics, transformations, or filtering
+     * columns based on conditions.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3286,7 +3437,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix.empty().columnStreams().count();  // returns 0 (no columns)
      * }</pre>
      *
-     * @return a Stream of FloatStream, one for each column
+     * @return a Stream of FloatStream objects, one for each column in the matrix,
+     *         or an empty stream if the matrix is empty
      */
     @Override
     @Beta
@@ -3295,7 +3447,11 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns a stream of FloatStream for a range of columns.
+     * Returns a stream of FloatStream objects for a range of columns.
+     * Each FloatStream in the result represents a complete column within the specified range.
+     *
+     * <p>This method allows for processing a subset of columns
+     * while maintaining the ability to work with complete columns as individual streams.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3309,8 +3465,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
-     * @return a Stream of FloatStream for the specified column range
-     * @throws IndexOutOfBoundsException if indices are out of bounds
+     * @return a Stream of FloatStream objects for the specified column range,
+     *         or an empty stream if the matrix is empty
+     * @throws IndexOutOfBoundsException if {@code fromColumnIndex < 0}, {@code toColumnIndex > columnCount},
+     *         or {@code fromColumnIndex > toColumnIndex}
      */
     @Override
     @Beta
@@ -3388,12 +3546,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns the length of the specified array, or {@code 0} if {@code null}.
-     * This is an internal helper method used by the {@link AbstractMatrix} base class for
-     * determining array lengths safely without null pointer exceptions.
+     * Returns the length of the given row array.
+     * This is a hook called by {@link AbstractMatrix} during construction to determine the column
+     * count of each row when validating the rectangular shape of the backing array.
      *
-     * @param a the {@code float} array to check (may be {@code null})
-     * @return the length of the array, or {@code 0} if the array is {@code null}
+     * @param a the row array to measure; may be {@code null}
+     * @return the length of {@code a}, or {@code 0} if {@code a} is {@code null}
      */
     @Override
     protected int length(@SuppressWarnings("hiding") final float[] a) {
@@ -3402,10 +3560,15 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
     /**
      * Performs the specified action for each element in this matrix.
+     * Elements are processed in row-major order (row by row, left to right) when executed sequentially.
      *
-     * <p>When executed sequentially, the action is performed on all elements in row-major order
-     * (left to right, top to bottom). For large matrices, the operation may be parallelized
-     * automatically; in that case the order in which the action observes elements is not guaranteed.
+     * <p>The operation may be parallelized internally for large matrices to improve performance,
+     * based on internal heuristics. If parallelized, the order of execution is not guaranteed,
+     * but all elements will be processed exactly once.</p>
+     *
+     * <p><b>Note:</b> This method is for side-effect operations only (like printing, collecting,
+     * or accumulating). For transformations that create new matrices, use {@link #map(Throwables.FloatUnaryOperator)}
+     * or {@link #updateAll(Throwables.FloatUnaryOperator)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3426,19 +3589,21 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param action the action to perform on each element; must not be {@code null}
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the action throws an exception
+     * @see #forEach(int, int, int, int, Throwables.FloatConsumer)
      */
     public <E extends Exception> void forEach(final Throwables.FloatConsumer<E> action) throws E {
         forEach(0, rowCount, 0, columnCount, action);
     }
 
     /**
-     * Performs the specified action for each element in a sub-region of this matrix.
+     * Performs the specified action for each element in the specified sub-matrix region.
+     * Elements are processed in row-major order within the specified bounds when executed sequentially.
      *
-     * <p>When executed sequentially, the action is performed on elements within the specified row
-     * and column ranges in row-major order. This allows you to operate on a rectangular portion of
-     * the matrix without affecting other elements. For large sub-regions, the operation may be
-     * parallelized automatically; in that case the order in which the action observes elements is
-     * not guaranteed.
+     * <p>This method allows for processing a rectangular subset of the matrix.
+     * The operation may be parallelized internally if the sub-matrix is large enough
+     * to benefit from parallel processing; if parallelized, the order in which elements are
+     * visited is unspecified and the action must be thread-safe, but every element is still
+     * visited exactly once.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3461,8 +3626,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @param action the action to perform on each element; must not be {@code null}
-     * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount},
-     *         {@code fromRowIndex > toRowIndex}, or the analogous condition for the column range
+     * @throws IndexOutOfBoundsException if any index is out of bounds
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the action throws an exception
      */
@@ -3609,8 +3773,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns a string representation of this matrix.
-     * The format consists of matrix elements in a two-dimensional array format with rows enclosed in brackets.
+     * Returns a string representation of this matrix in a compact two-dimensional array format.
+     * The output shows all matrix elements with rows enclosed in brackets and
+     * elements separated by commas and spaces.
+     *
+     * <p>The format is suitable for debugging and logging. For pretty-printed output
+     * with each row on a separate line, use {@link #println()} instead.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3621,7 +3789,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix.of(new float[][] {{Float.NaN, Float.NEGATIVE_INFINITY}}).toString(); // returns "[[NaN, -Infinity]]"
      * }</pre>
      *
-     * @return a string representation of this matrix
+     * @return a string representation of this matrix in two-dimensional array format
+     * @see #println()
      */
     @Override
     public String toString() {

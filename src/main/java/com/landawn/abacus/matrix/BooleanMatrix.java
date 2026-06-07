@@ -42,6 +42,15 @@ import com.landawn.abacus.util.stream.Stream;
  *
  * <p>This is the {@code boolean} sibling of {@link ByteMatrix}, {@link IntMatrix}, {@link LongMatrix},
  * and the other primitive-element matrix classes in this package.</p>
+ *
+ * @see IntMatrix
+ * @see LongMatrix
+ * @see DoubleMatrix
+ * @see FloatMatrix
+ * @see ShortMatrix
+ * @see ByteMatrix
+ * @see CharMatrix
+ * @see Matrix
  */
 public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, Stream<Boolean>, Stream<Stream<Boolean>>, BooleanMatrix> {
 
@@ -467,9 +476,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Returns the element directly above the specified position, if it exists.
-     * This method provides safe access to the element directly above the given position
-     * without throwing an exception when at the top edge of the matrix.
+     * Returns the element directly above the specified position, or an empty {@link OptionalBoolean}
+     * if the position is on the top edge of the matrix.
+     * This method provides safe edge handling: an empty {@code OptionalBoolean} is returned for the top
+     * row instead of an out-of-bounds exception.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -495,9 +505,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Returns the element directly below the specified position, if it exists.
-     * This method provides safe access to the element directly below the given position
-     * without throwing an exception when at the bottom edge of the matrix.
+     * Returns the element directly below the specified position, or an empty {@link OptionalBoolean}
+     * if the position is on the bottom edge of the matrix.
+     * This method provides safe edge handling: an empty {@code OptionalBoolean} is returned for the
+     * bottom row instead of an out-of-bounds exception.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -523,9 +534,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Returns the element directly to the left of the specified position, if it exists.
-     * This method provides safe access to the element directly to the left of the given position
-     * without throwing an exception when at the leftmost edge of the matrix.
+     * Returns the element directly to the left of the specified position, or an empty
+     * {@link OptionalBoolean} if the position is on the leftmost edge of the matrix.
+     * This method provides safe edge handling: an empty {@code OptionalBoolean} is returned for the
+     * leftmost column instead of an out-of-bounds exception.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -551,9 +563,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Returns the element directly to the right of the specified position, if it exists.
-     * This method provides safe access to the element directly to the right of the given position
-     * without throwing an exception when at the rightmost edge of the matrix.
+     * Returns the element directly to the right of the specified position, or an empty
+     * {@link OptionalBoolean} if the position is on the rightmost edge of the matrix.
+     * This method provides safe edge handling: an empty {@code OptionalBoolean} is returned for the
+     * rightmost column instead of an out-of-bounds exception.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1097,7 +1110,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * @param <E> the type of exception that the mapper may throw
      * @param mapper the function that receives row index and column index (0-based) and returns
-     *             the new value for that position
+     *             the new value for that position; the returned {@code Boolean} is unboxed, so it
+     *             must not be {@code null}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws NullPointerException if {@code mapper} returns {@code null} for any position
      * @throws E if the mapper throws an exception
@@ -1283,9 +1297,12 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Fills the matrix with values from the provided two-dimensional array, starting from position (0, 0).
-     * The copy continues for the size of the input array or until the matrix boundaries are reached.
-     * Source rows that are {@code null} are skipped (the corresponding destination row is left untouched).
+     * Fills this matrix with values from another two-dimensional array, starting at position {@code (0, 0)}.
+     * Equivalent to {@code fill(0, 0, source)}.
+     * The source array can be smaller than this matrix; only the overlapping region is copied.
+     * If the source array is larger, only the portion that fits is copied. {@code null} rows in
+     * {@code source} are skipped (the corresponding row of this matrix is left unchanged).
+     * The matrix is modified in-place.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1301,16 +1318,18 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * @param source the two-dimensional boolean array to copy values from; must not be {@code null}
      * @throws IllegalArgumentException if {@code source} is {@code null}
+     * @see #fill(int, int, boolean[][])
      */
     public void fill(final boolean[][] source) {
         fill(0, 0, source);
     }
 
     /**
-     * Fills a portion of the matrix with values from the provided two-dimensional array.
-     * Copying starts at the specified position and continues for the size of the input array
-     * or until the matrix boundaries are reached. If the input array extends beyond the matrix
-     * boundaries, only the overlapping portion is copied.
+     * Fills a region of this matrix with values from another two-dimensional array, starting at the
+     * specified destination position.
+     * The source array can extend beyond this matrix's bounds; only the overlapping region is copied.
+     * The matrix is modified in-place. {@code null} rows in {@code source} are skipped (the
+     * corresponding destination row is left unchanged). Elements outside the matrix bounds are ignored.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1325,8 +1344,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * matrix.fill(0, 0, (boolean[][]) null);                     // throws IllegalArgumentException (null source)
      * }</pre>
      *
-     * @param destRowIndex the target row index in this matrix (0-based)
-     * @param destColumnIndex the target column index in this matrix (0-based)
+     * @param destRowIndex the target row index in this matrix (0-based, must satisfy {@code 0 <= destRowIndex <= rowCount})
+     * @param destColumnIndex the target column index in this matrix (0-based, must satisfy {@code 0 <= destColumnIndex <= columnCount})
      * @param source the source array to copy values from; must not be {@code null}
      * @throws IndexOutOfBoundsException if {@code destRowIndex < 0} or {@code destRowIndex > rowCount},
      *         or if {@code destColumnIndex < 0} or {@code destColumnIndex > columnCount}
@@ -1928,6 +1947,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @return a new matrix rotated 90 degrees clockwise (dimensions {@code columnCount × rowCount}),
      *         or an empty matrix if this matrix has zero columns
      * @throws IllegalArgumentException if the resulting (transposed) shape is not representable
+     * @see #rotate180()
+     * @see #rotate270()
+     * @see #transpose()
      */
     @Override
     public BooleanMatrix rotate90() {
@@ -1979,6 +2001,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * }</pre>
      *
      * @return a new matrix rotated 180 degrees
+     * @see #rotate90()
+     * @see #rotate270()
      */
     @Override
     public BooleanMatrix rotate180() {
@@ -2018,6 +2042,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @return a new matrix rotated 270 degrees clockwise (dimensions {@code columnCount × rowCount}),
      *         or an empty matrix if this matrix has zero columns
      * @throws IllegalArgumentException if the resulting (transposed) shape is not representable
+     * @see #rotate90()
+     * @see #rotate180()
+     * @see #transpose()
      */
     @Override
     public BooleanMatrix rotate270() {
@@ -2193,6 +2220,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is not positive,
      *         or if either resulting dimension would overflow {@code Integer.MAX_VALUE}
      * @see #repeatMatrix(int, int)
+     * @see <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">MATLAB repelem function</a>
      */
     @Override
     public BooleanMatrix repeatElements(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
@@ -2250,6 +2278,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is not positive,
      *         or if either resulting dimension would overflow {@code Integer.MAX_VALUE}
      * @see #repeatElements(int, int)
+     * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
     @Override
     public BooleanMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
@@ -2281,7 +2310,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Returns a {@link BooleanList} containing all matrix elements in row-major order.
+     * Returns a new {@link BooleanList} containing all elements of this matrix in row-major order.
+     * The returned list owns its data; modifications to it do not affect this matrix.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2297,6 +2327,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @return a new {@code BooleanList} of all elements in row-major order
      * @throws IllegalStateException if the matrix is too large to flatten
      *         (i.e. {@code (long) rowCount * columnCount > Integer.MAX_VALUE})
+     * @see #horizontalStream()
      */
     @Override
     public BooleanList flatten() {
@@ -2315,12 +2346,13 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Flattens all elements of this matrix into a single one-dimensional array, applies the given
-     * operation to that flattened array, and then copies the modified elements back into the matrix.
+     * Exposes the elements of this matrix to {@code action} as a single one-dimensional array
+     * laid out in row-major order, then propagates any modifications back into the matrix.
      *
      * <p>This enables operations that need a global view of all matrix elements (e.g., sorting all
-     * elements across the entire matrix). The operation receives a temporary flattened copy; after
-     * the operation completes, the modified values are written back into the matrix row by row.</p>
+     * elements across the entire matrix). The shape of this matrix is preserved; only element
+     * values change. See {@link Arrays#mutateAsFlat(boolean[][], Throwables.Consumer)} for the exact
+     * semantics of the underlying operation.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2824,7 +2856,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * <p>This method streams the diagonal elements starting from position (0,0) and
      * proceeding to position (n-1,n-1) where n is the dimension of the square matrix.
-     * This is useful for operations on diagonal matrices or extracting diagonal elements.</p>
+     * This is useful for operations on diagonal matrices or extracting diagonal elements.
+     * Because there is no primitive {@code BooleanStream}, this returns a {@code Stream<Boolean>}
+     * with boxed values.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2893,7 +2927,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * <p>This method streams the anti-diagonal elements starting from position (0,n-1)
      * and proceeding to position (n-1,0) where n is the dimension of the square matrix.
-     * This is useful for operations involving the secondary diagonal of a matrix.</p>
+     * This is useful for operations involving the secondary diagonal of a matrix.
+     * Because there is no primitive {@code BooleanStream}, this returns a {@code Stream<Boolean>}
+     * with boxed values.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3129,7 +3165,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * the leftmost column and proceeding to the rightmost column.
      *
      * <p>This method provides an alternative way to iterate through matrix
-     * elements compared to the row-major order of horizontalStream().</p>
+     * elements compared to the row-major order of horizontalStream(). Because there is no primitive
+     * {@code BooleanStream}, this returns a {@code Stream<Boolean>} with boxed values.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3295,7 +3332,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * <p>This method is useful for operations that need to process entire rows as units,
      * such as row-wise transformations, filtering rows based on conditions, or mapping
-     * rows to other values.</p>
+     * rows to other values. Because there is no primitive {@code BooleanStream}, each inner
+     * stream is a {@code Stream<Boolean>} with boxed values.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3398,7 +3436,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * <p>This method is useful for operations that need to process
      * entire columns as units, such as column-wise statistics, transformations, or filtering
-     * columns based on conditions.</p>
+     * columns based on conditions. Because there is no primitive {@code BooleanStream}, each inner
+     * stream is a {@code Stream<Boolean>} with boxed values.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3536,9 +3575,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
 
     /**
      * Returns the length of the given row array.
-     *
-     * <p>This is a hook used by {@link AbstractMatrix} during shape validation to determine
-     * the column count of an individual row.</p>
+     * This is a hook called by {@link AbstractMatrix} during construction to determine the column
+     * count of each row when validating the rectangular shape of the backing array.
      *
      * @param a the row array to measure; may be {@code null}
      * @return the length of {@code a}, or {@code 0} if {@code a} is {@code null}
@@ -3622,9 +3660,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @param action the action to be performed for each element in the sub-matrix
+     * @throws IndexOutOfBoundsException if any index is out of bounds
      * @throws IllegalArgumentException if {@code action} is {@code null}
-     * @throws IndexOutOfBoundsException if any index is out of bounds or {@code fromRowIndex > toRowIndex}
-     *         or {@code fromColumnIndex > toColumnIndex}
      * @throws E if the action throws an exception
      */
     public <E extends Exception> void forEach(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
@@ -3763,8 +3800,12 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Returns a string representation of this matrix.
-     * The format consists of matrix elements in a two-dimensional array format with rows enclosed in brackets.
+     * Returns a string representation of this matrix in a compact two-dimensional array format.
+     * The output shows all matrix elements with rows enclosed in brackets and
+     * elements separated by commas and spaces.
+     *
+     * <p>The format is suitable for debugging and logging. For pretty-printed output
+     * with each row on a separate line, use {@link #println()} instead.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3775,7 +3816,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * BooleanMatrix.empty().toString();   // returns "[]"
      * }</pre>
      *
-     * @return a string representation of this matrix
+     * @return a string representation of this matrix in two-dimensional array format
+     * @see #println()
      */
     @Override
     public String toString() {

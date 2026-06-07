@@ -306,6 +306,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param length the number of columns in the new matrix; must be {@code >= 0}
      * @return a new {@code IntMatrix} of dimensions {@code 1 x length} filled with random values
      * @throws IllegalArgumentException if {@code length} is negative
+     * @see #random(int, int)
      */
     public static IntMatrix random(final int length) {
         return random(1, length);
@@ -559,6 +560,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param antiDiagonal the array of anti-diagonal elements (can be {@code null} or empty)
      * @return a square matrix with the specified diagonals, or an empty matrix if both inputs are {@code null} or empty
      * @throws IllegalArgumentException if both arrays are non-empty and have different lengths
+     * @see #mainDiagonal(int[])
+     * @see #antiDiagonal(int[])
      */
     public static IntMatrix diagonals(final int[] mainDiagonal, final int[] antiDiagonal) throws IllegalArgumentException {
         N.checkArgument(N.isEmpty(mainDiagonal) || N.isEmpty(antiDiagonal) || mainDiagonal.length == antiDiagonal.length,
@@ -2185,8 +2188,12 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * IntMatrix.empty().rotate90().isEmpty(); // returns true
      * }</pre>
      *
-     * @return a new matrix that is this matrix rotated 90 degrees clockwise
+     * @return a new matrix rotated 90 degrees clockwise (dimensions {@code columnCount × rowCount}),
+     *         or an empty matrix if this matrix has zero columns
      * @throws IllegalArgumentException if the resulting (transposed) shape is not representable
+     * @see #rotate180()
+     * @see #rotate270()
+     * @see #transpose()
      */
     @Override
     public IntMatrix rotate90() {
@@ -2234,6 +2241,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * }</pre>
      *
      * @return a new matrix that is this matrix rotated 180 degrees
+     * @see #rotate90()
+     * @see #rotate270()
      */
     @Override
     public IntMatrix rotate180() {
@@ -2268,8 +2277,12 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * IntMatrix.empty().rotate270().isEmpty(); // returns true
      * }</pre>
      *
-     * @return a new matrix that is this matrix rotated 270 degrees clockwise
+     * @return a new matrix rotated 270 degrees clockwise (dimensions {@code columnCount × rowCount}),
+     *         or an empty matrix if this matrix has zero columns
      * @throws IllegalArgumentException if the resulting (transposed) shape is not representable
+     * @see #rotate90()
+     * @see #rotate180()
+     * @see #transpose()
      */
     @Override
     public IntMatrix rotate270() {
@@ -2536,6 +2549,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * @return a new {@link IntList} of all elements in row-major order
      * @throws IllegalStateException if {@code (long) rowCount * columnCount > Integer.MAX_VALUE}
+     * @see #horizontalStream()
      */
     @Override
     public IntList flatten() {
@@ -3914,8 +3928,12 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     }
 
     /**
-     * Returns a string representation of this matrix.
-     * The format consists of matrix elements in a two-dimensional array format with rows enclosed in brackets.
+     * Returns a string representation of this matrix in a compact two-dimensional array format.
+     * The output shows all matrix elements with rows enclosed in brackets and
+     * elements separated by commas and spaces.
+     *
+     * <p>The format is suitable for debugging and logging. For pretty-printed output
+     * with each row on a separate line, use {@link #println()} instead.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3927,7 +3945,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * IntMatrix.empty().toString();          // returns "[]"
      * }</pre>
      *
-     * @return a string representation of this matrix
+     * @return a string representation of this matrix in two-dimensional array format
+     * @see #println()
      */
     @Override
     public String toString() {

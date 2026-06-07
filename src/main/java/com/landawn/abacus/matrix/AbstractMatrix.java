@@ -384,7 +384,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * elements in row-major form, so a row corresponds to a contiguous slice of the
      * backing storage and can be aliased directly. A column is interleaved across rows
      * and cannot be returned as a live, single-array view without either copying or
-     * synthesising a wrapper. {@code columnCopy} is the supported accessor; for
+     * synthesizing a wrapper. {@code columnCopy} is the supported accessor; for
      * element-by-element iteration over a column use {@link #verticalStream(int)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
