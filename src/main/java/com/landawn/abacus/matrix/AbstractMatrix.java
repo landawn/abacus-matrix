@@ -1009,7 +1009,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * matrix.get(0, 0);                                       // returns 1 (original unchanged)
      *
      * IntMatrix single = IntMatrix.of(new int[][] {{42}});
-     * single.flipHorizontally().get(0, 0);                    // returns 42 (single column unchanged)
+     * single.flipHorizontally().get(0, 0);                    // returns 42 (1 x 1 unchanged)
      *
      * IntMatrix empty = IntMatrix.of(new int[0][0]);
      * empty.flipHorizontally().isEmpty();                     // returns true

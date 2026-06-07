@@ -3285,7 +3285,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).
      * Elements are streamed column by column from the top-left corner to the bottom-right corner.
      *
-     * <p>It provides an alternative way to iterate through matrix
+     * <p>This method provides an alternative way to iterate through matrix
      * elements compared to the row-major order of {@link #horizontalStream()}.</p>
      *
      * <p><b>Usage Examples:</b></p>

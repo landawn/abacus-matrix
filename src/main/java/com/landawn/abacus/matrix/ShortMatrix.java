@@ -450,8 +450,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <pre>{@code
      * Matrix<Short> boxed = Matrix.of(new Short[][] {{1, 2}, {3, 4}});
      * ShortMatrix primitive = ShortMatrix.unbox(boxed);
-     * primitive.get(0, 1);                    // returns 2
-     * primitive.get(1, 0);                    // returns 3
+     * primitive.get(0, 1);                    // returns (short) 2
+     * primitive.get(1, 0);                    // returns (short) 3
      *
      * Matrix<Short> withNull = Matrix.of(new Short[][] {{1, null}});
      * ShortMatrix.unbox(withNull).get(0, 1);     // returns 0 (null becomes 0)
@@ -889,7 +889,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     }
 
     /**
-     * Updates all elements in the specified column in-place by applying the specified operator to each element.
+     * Updates all elements in a column in-place by applying the specified operator to each element.
      * This modifies the matrix directly.
      *
      * <p>The operator is applied to each element in the specified column sequentially
@@ -3197,7 +3197,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).
      * Elements are streamed column by column from the top-left corner to the bottom-right corner.
      *
-     * <p>It provides an alternative way to iterate through matrix
+     * <p>This method provides an alternative way to iterate through matrix
      * elements compared to the row-major order of {@link #horizontalStream()}.</p>
      *
      * <p><b>Usage Examples:</b></p>

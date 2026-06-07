@@ -36,7 +36,7 @@ import com.landawn.abacus.util.stream.Stream;
  * Matrix implementation backed by a rectangular {@code double[][]}.
  *
  * <p>This type specializes {@link AbstractMatrix} for {@code double} values while keeping the data in
- * a validated backing array. Constructors and {@code of(...)} generally wrap the supplied storage
+ * a validated backing array. Constructors and {@link #of(double[]...)} generally wrap the supplied storage
  * directly, while factories, conversions, and mapping operations allocate new arrays.</p>
  *
  * <p>Cells introduced by growth or reshaping default to {@code 0.0d} unless an overload accepts an
@@ -975,7 +975,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     }
 
     /**
-     * Updates all elements in the specified column in-place by applying the given operator to each element.
+     * Updates all elements in a column in-place by applying the specified operator to each element.
      * This modifies the matrix directly.
      *
      * <p>The operator is applied to each element in the specified column sequentially
@@ -3402,7 +3402,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).
      * Elements are streamed column by column from the top-left corner to the bottom-right corner.
      *
-     * <p>It provides an alternative way to iterate through matrix
+     * <p>This method provides an alternative way to iterate through matrix
      * elements compared to the row-major order of {@link #horizontalStream()}.</p>
      *
      * <p><b>Usage Examples:</b></p>

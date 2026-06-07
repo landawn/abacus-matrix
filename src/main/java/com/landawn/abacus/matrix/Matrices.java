@@ -1390,6 +1390,8 @@ public final class Matrices {
      * {@link #zip(Collection, Throwables.ByteNFunction, boolean, Class)} with
      * {@code shareIntermediateArray = false}.</p>
      *
+     * <p>All matrices in the collection must have identical dimensions.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix m1 = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
@@ -2240,10 +2242,16 @@ public final class Matrices {
      *
      * <p>This method combines integer matrices by applying a function that takes an array of integers
      * (one from each matrix at each position) and returns a {@code Long}. The {@code shareIntermediateArray}
-     * parameter controls memory optimization as described in other zip methods.</p>
+     * parameter controls memory optimization:</p>
+     * <ul>
+     * <li>{@code true} and sequential execution: Reuses the same intermediate array for all positions,
+     *     reducing memory allocations but requiring the zip function to not retain references to the array</li>
+     * <li>{@code false} or parallel execution: Creates a new array for each position, safer but uses more memory</li>
+     * </ul>
      *
      * <p><b>Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
-     * store references to the array, as it will be mutated for subsequent positions.</p>
+     * store references to the array, as it will be mutated for subsequent positions. Only use this
+     * optimization if the function immediately processes and discards the array.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2469,10 +2477,16 @@ public final class Matrices {
      *
      * <p>This method combines integer matrices by applying a function that takes an array of integers
      * (one from each matrix at each position) and returns a {@code Double}. The {@code shareIntermediateArray}
-     * parameter controls memory optimization as described in other zip methods.</p>
+     * parameter controls memory optimization:</p>
+     * <ul>
+     * <li>{@code true} and sequential execution: Reuses the same intermediate array for all positions,
+     *     reducing memory allocations but requiring the zip function to not retain references to the array</li>
+     * <li>{@code false} or parallel execution: Creates a new array for each position, safer but uses more memory</li>
+     * </ul>
      *
      * <p><b>Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
-     * store references to the array.</p>
+     * store references to the array, as it will be mutated for subsequent positions. Only use this
+     * optimization if the function immediately processes and discards the array.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2584,8 +2598,9 @@ public final class Matrices {
      *
      * <p>This method performs element-wise combination of three long matrices using the provided
      * ternary operator. For each position (i, j), the function is called with the corresponding
-     * elements from all three matrices: {@code zipFunction.apply(a[i][j], b[i][j], c[i][j])}.
-     * All three matrices must have identical dimensions (same number of rows and columns).
+     * elements from all three matrices: {@code zipFunction.apply(a[i][j], b[i][j], c[i][j])}.</p>
+     *
+     * <p>All three matrices must have identical dimensions (same number of rows and columns).
      * The operation delegates to the {@link LongMatrix#zipWith(LongMatrix, LongMatrix, Throwables.LongTernaryOperator)} method.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -2747,7 +2762,12 @@ public final class Matrices {
      *
      * <p>This method combines long matrices by applying a function that takes an array of longs
      * (one from each matrix at each position). The {@code shareIntermediateArray} parameter controls
-     * memory optimization as described in other zip methods.</p>
+     * memory optimization:</p>
+     * <ul>
+     * <li>{@code true} and sequential execution: Reuses the same intermediate array for all positions,
+     *     reducing memory allocations but requiring the zip function to not retain references to the array</li>
+     * <li>{@code false} or parallel execution: Creates a new array for each position, safer but uses more memory</li>
+     * </ul>
      *
      * <p><b>Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
      * store references to the array, as it will be mutated for subsequent positions. Only use this
@@ -2982,10 +3002,16 @@ public final class Matrices {
      *
      * <p>This method combines long matrices by applying a function that takes an array of longs
      * (one from each matrix at each position) and returns a {@code Double}. The {@code shareIntermediateArray}
-     * parameter controls memory optimization as described in other zip methods.</p>
+     * parameter controls memory optimization:</p>
+     * <ul>
+     * <li>{@code true} and sequential execution: Reuses the same intermediate array for all positions,
+     *     reducing memory allocations but requiring the zip function to not retain references to the array</li>
+     * <li>{@code false} or parallel execution: Creates a new array for each position, safer but uses more memory</li>
+     * </ul>
      *
      * <p><b>Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
-     * store references to the array.</p>
+     * store references to the array, as it will be mutated for subsequent positions. Only use this
+     * optimization if the function immediately processes and discards the array.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3099,8 +3125,9 @@ public final class Matrices {
      *
      * <p>This method performs element-wise combination of three double matrices using the provided
      * ternary operator. For each position (i, j), the function is called with the corresponding
-     * elements from all three matrices: {@code zipFunction.apply(a[i][j], b[i][j], c[i][j])}.
-     * All three matrices must have identical dimensions (same number of rows and columns).
+     * elements from all three matrices: {@code zipFunction.apply(a[i][j], b[i][j], c[i][j])}.</p>
+     *
+     * <p>All three matrices must have identical dimensions (same number of rows and columns).
      * The operation delegates to the {@link DoubleMatrix#zipWith(DoubleMatrix, DoubleMatrix, Throwables.DoubleTernaryOperator)} method.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -3260,7 +3287,12 @@ public final class Matrices {
      *
      * <p>This method combines double matrices by applying a function that takes an array of doubles
      * (one from each matrix at each position). The {@code shareIntermediateArray} parameter controls
-     * memory optimization as described in other zip methods.</p>
+     * memory optimization:</p>
+     * <ul>
+     * <li>{@code true} and sequential execution: Reuses the same intermediate array for all positions,
+     *     reducing memory allocations but requiring the zip function to not retain references to the array</li>
+     * <li>{@code false} or parallel execution: Creates a new array for each position, safer but uses more memory</li>
+     * </ul>
      *
      * <p><b>Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
      * store references to the array, as it will be mutated for subsequent positions. Only use this

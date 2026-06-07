@@ -34,7 +34,7 @@ import com.landawn.abacus.util.stream.Stream;
  * Matrix implementation backed by a rectangular {@code boolean[][]}.
  *
  * <p>This type specializes {@link AbstractMatrix} for {@code boolean} values while keeping the data in
- * a validated backing array. Constructors and {@code of(...)} generally wrap the supplied storage
+ * a validated backing array. Constructors and {@link #of(boolean[]...)} generally wrap the supplied storage
  * directly, while factories, conversions, and mapping operations allocate new arrays.</p>
  *
  * <p>Cells introduced by growth or reshaping default to {@code false} unless an overload accepts an
@@ -498,8 +498,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * matrix.valueAbove(1, 9);             // throws IndexOutOfBoundsException (column out of range)
      * }</pre>
      *
-     * @param rowIndex the row index (0-based)
-     * @param columnIndex the column index (0-based)
+     * @param rowIndex the row index of the reference cell (0-based)
+     * @param columnIndex the column index of the reference cell (0-based)
      * @return an {@link OptionalBoolean} containing the element at position {@code (rowIndex - 1, columnIndex)},
      *         or empty if {@code rowIndex == 0}
      * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
@@ -527,8 +527,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * matrix.valueBelow(0, 9);             // throws IndexOutOfBoundsException (column out of range)
      * }</pre>
      *
-     * @param rowIndex the row index (0-based)
-     * @param columnIndex the column index (0-based)
+     * @param rowIndex the row index of the reference cell (0-based)
+     * @param columnIndex the column index of the reference cell (0-based)
      * @return an {@link OptionalBoolean} containing the element at position {@code (rowIndex + 1, columnIndex)},
      *         or empty if {@code rowIndex == rowCount - 1}
      * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
@@ -556,8 +556,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * matrix.valueLeft(0, 9);              // throws IndexOutOfBoundsException (column out of range)
      * }</pre>
      *
-     * @param rowIndex the row index (0-based)
-     * @param columnIndex the column index (0-based)
+     * @param rowIndex the row index of the reference cell (0-based)
+     * @param columnIndex the column index of the reference cell (0-based)
      * @return an {@link OptionalBoolean} containing the element at position {@code (rowIndex, columnIndex - 1)},
      *         or empty if {@code columnIndex == 0}
      * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
@@ -585,8 +585,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * matrix.valueRight(0, 9);             // throws IndexOutOfBoundsException (column out of range)
      * }</pre>
      *
-     * @param rowIndex the row index (0-based)
-     * @param columnIndex the column index (0-based)
+     * @param rowIndex the row index of the reference cell (0-based)
+     * @param columnIndex the column index of the reference cell (0-based)
      * @return an {@link OptionalBoolean} containing the element at position {@code (rowIndex, columnIndex + 1)},
      *         or empty if {@code columnIndex == columnCount - 1}
      * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
@@ -598,7 +598,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Returns the specified row as a boolean array.
+     * Returns the specified row as a live reference to the underlying {@code boolean[]} storage.
      *
      * <p><b>Note:</b> This method returns a reference to the internal array, not a copy.
      * Modifications to the returned array will affect the matrix. If you need an independent
@@ -618,6 +618,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return the specified row array (direct reference to internal storage)
      * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
+     * @see #rowCopy(int)
      */
     @Override
     public boolean[] rowView(final int rowIndex) throws IndexOutOfBoundsException {
@@ -627,7 +628,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Returns a defensive copy of the specified row.
+     * Returns a defensive copy of the specified row as a new {@code boolean[]}.
      * Changes to the returned array do not affect this matrix and vice versa.
      *
      * <p><b>Usage Examples:</b></p>
@@ -644,6 +645,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param rowIndex the index of the row to retrieve (0-based)
      * @return a new boolean array containing the values from the specified row
      * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
+     * @see #rowView(int)
+     * @see #columnCopy(int)
      */
     @Override
     public boolean[] rowCopy(final int rowIndex) throws IndexOutOfBoundsException {
@@ -653,7 +656,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Returns a copy of the specified column as a new boolean array.
+     * Returns a defensive copy of the specified column as a new {@code boolean[]}.
      *
      * <p>Unlike {@link #rowView(int)}, this method always returns a new array copy since
      * columns are not stored contiguously in memory. Modifications to the returned array
@@ -674,6 +677,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param columnIndex the index of the column to retrieve (0-based)
      * @return a new boolean array containing the values from the specified column
      * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
+     * @see #rowCopy(int)
+     * @see #rowView(int)
      */
     @Override
     public boolean[] columnCopy(final int columnIndex) throws IndexOutOfBoundsException {
@@ -795,7 +800,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Updates all elements in the specified column in-place by applying the specified operator to each element.
+     * Updates all elements in a column in-place by applying the specified operator to each element.
      * This modifies the matrix directly.
      *
      * <p>The operator is applied to each element in the specified column sequentially

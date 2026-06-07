@@ -1047,7 +1047,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     }
 
     /**
-     * Updates all elements in the specified column in-place by applying the specified operator to each element.
+     * Updates all elements in a column in-place by applying the specified operator to each element.
      * This modifies the matrix directly.
      *
      * <p>The operator is applied to each element in the specified column sequentially
@@ -3348,7 +3348,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).
      * Elements are streamed column by column from the top-left corner to the bottom-right corner.
      *
-     * <p>It provides an alternative way to iterate through matrix
+     * <p>This method provides an alternative way to iterate through matrix
      * elements compared to the row-major order of {@link #horizontalStream()}.</p>
      *
      * <p><b>Usage Examples:</b></p>

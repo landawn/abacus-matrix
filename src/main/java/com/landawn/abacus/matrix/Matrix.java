@@ -402,15 +402,16 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Matrix<String> matrix = Matrix.of(new String[][] {{"a", "b", "c"}, {"d", "e", "f"}});
      * matrix.get(Point.of(1, 2));   // returns "f" (same as matrix.get(1, 2))
      * matrix.get(Point.of(0, 0));   // returns "a"
-     * matrix.get(Point.of(5, 0));   // throws ArrayIndexOutOfBoundsException
      * matrix.get((Point) null);     // throws IllegalArgumentException
+     * matrix.get(Point.of(5, 0));   // throws ArrayIndexOutOfBoundsException
      * }</pre>
      *
      * @param point the point containing row and column indices (must not be {@code null})
      * @return the element at the specified point; may be {@code null} since {@code null} elements
      *         are permitted
-     * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
      * @throws IllegalArgumentException if {@code point} is {@code null}
+     * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
+     * @see #get(int, int)
      */
     @MayReturnNull
     public T get(final Point point) {
@@ -453,14 +454,14 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Matrix<String> matrix = Matrix.of(new String[][] {{"a", "b"}, {"c", "d"}});
      * matrix.set(Point.of(0, 1), "X");   // same as matrix.set(0, 1, "X")
      * matrix.get(0, 1);                  // returns "X"
-     * matrix.set(Point.of(5, 0), "x");   // throws ArrayIndexOutOfBoundsException
      * matrix.set((Point) null, "x");     // throws IllegalArgumentException
+     * matrix.set(Point.of(5, 0), "x");   // throws ArrayIndexOutOfBoundsException
      * }</pre>
      *
      * @param point the point containing row and column indices (must not be {@code null})
      * @param value the value to set; may be {@code null}
-     * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
      * @throws IllegalArgumentException if {@code point} is {@code null}
+     * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
      * @throws ArrayStoreException if {@code value} is non-{@code null} and not assignable to
      *         the row's runtime storage component type
      */
@@ -480,11 +481,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * matrix.valueAbove(1, 0).get();        // returns "A"
      * matrix.valueAbove(1, 1).get();        // returns "B"
      * matrix.valueAbove(0, 0).isEmpty();    // returns true (no row above the top edge)
-     * matrix.valueAbove(5, 0);              // throws IndexOutOfBoundsException
+     * matrix.valueAbove(5, 0);              // throws IndexOutOfBoundsException (row out of range)
      * }</pre>
      *
-     * @param rowIndex the row index (0-based)
-     * @param columnIndex the column index (0-based)
+     * @param rowIndex the row index of the reference cell (0-based)
+     * @param columnIndex the column index of the reference cell (0-based)
      * @return a {@link Nullable} containing the element at position {@code (rowIndex - 1, columnIndex)},
      *         or {@link Nullable#empty()} if {@code rowIndex == 0}. Note that a non-empty {@code Nullable}
      *         may itself contain {@code null} since {@code null} elements are permitted in the matrix.
@@ -506,11 +507,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * matrix.valueBelow(0, 0).get();        // returns "C"
      * matrix.valueBelow(0, 1).get();        // returns "D"
      * matrix.valueBelow(1, 0).isEmpty();    // returns true (no row below the bottom edge)
-     * matrix.valueBelow(0, 5);              // throws IndexOutOfBoundsException
+     * matrix.valueBelow(0, 5);              // throws IndexOutOfBoundsException (column out of range)
      * }</pre>
      *
-     * @param rowIndex the row index (0-based)
-     * @param columnIndex the column index (0-based)
+     * @param rowIndex the row index of the reference cell (0-based)
+     * @param columnIndex the column index of the reference cell (0-based)
      * @return a {@link Nullable} containing the element at position {@code (rowIndex + 1, columnIndex)},
      *         or {@link Nullable#empty()} if {@code rowIndex == rowCount - 1}. Note that a non-empty
      *         {@code Nullable} may itself contain {@code null} since {@code null} elements are permitted
@@ -533,11 +534,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * matrix.valueLeft(0, 1).get();        // returns "A"
      * matrix.valueLeft(1, 1).get();        // returns "C"
      * matrix.valueLeft(0, 0).isEmpty();    // returns true (no column to the left of the leftmost edge)
-     * matrix.valueLeft(5, 0);              // throws IndexOutOfBoundsException
+     * matrix.valueLeft(5, 0);              // throws IndexOutOfBoundsException (row out of range)
      * }</pre>
      *
-     * @param rowIndex the row index (0-based)
-     * @param columnIndex the column index (0-based)
+     * @param rowIndex the row index of the reference cell (0-based)
+     * @param columnIndex the column index of the reference cell (0-based)
      * @return a {@link Nullable} containing the element at position {@code (rowIndex, columnIndex - 1)},
      *         or {@link Nullable#empty()} if {@code columnIndex == 0}. Note that a non-empty
      *         {@code Nullable} may itself contain {@code null} since {@code null} elements are permitted
@@ -560,11 +561,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * matrix.valueRight(0, 0).get();        // returns "B"
      * matrix.valueRight(1, 0).get();        // returns "D"
      * matrix.valueRight(0, 1).isEmpty();    // returns true (no column to the right of the rightmost edge)
-     * matrix.valueRight(0, 5);              // throws IndexOutOfBoundsException
+     * matrix.valueRight(0, 5);              // throws IndexOutOfBoundsException (column out of range)
      * }</pre>
      *
-     * @param rowIndex the row index (0-based)
-     * @param columnIndex the column index (0-based)
+     * @param rowIndex the row index of the reference cell (0-based)
+     * @param columnIndex the column index of the reference cell (0-based)
      * @return a {@link Nullable} containing the element at position {@code (rowIndex, columnIndex + 1)},
      *         or {@link Nullable#empty()} if {@code columnIndex == columnCount - 1}. Note that a non-empty
      *         {@code Nullable} may itself contain {@code null} since {@code null} elements are permitted
@@ -1290,8 +1291,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Creates a {@link BooleanMatrix} by applying a boolean-valued function to each element.
      * This is useful for creating masks or performing element-wise comparisons.
-     * The mapper receives each element (which may be {@code null}) and must return a
-     * primitive {@code boolean}. The operation may be performed in parallel for large matrices.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
