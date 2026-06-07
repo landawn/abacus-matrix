@@ -97,10 +97,10 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.empty();
-     * matrix.rowCount();          // returns 0
-     * matrix.columnCount();       // returns 0
-     * matrix.elementCount();      // returns 0L
-     * matrix.isEmpty();           // returns true
+     * matrix.rowCount();                          // returns 0
+     * matrix.columnCount();                       // returns 0
+     * matrix.elementCount();                      // returns 0L
+     * matrix.isEmpty();                           // returns true
      * ByteMatrix.empty() == ByteMatrix.empty();   // true (same shared singleton)
      * }</pre>
      *
@@ -427,7 +427,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * matrix.get(1, 1);                       // returns (byte) 2 (overlap: main takes precedence)
      * // matrix is [[1, 0, 4], [0, 2, 0], [6, 0, 3]]
      *
-     * ByteMatrix.diagonals(null, null).isEmpty();                   // returns true
+     * ByteMatrix.diagonals(null, null).isEmpty();                    // returns true
      * ByteMatrix.diagonals(new byte[] {1, 2}, new byte[] {3, 4, 5}); // throws IllegalArgumentException (length mismatch)
      * }</pre>
      *
@@ -1247,7 +1247,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * matrix.replaceIf(b -> b == 0, (byte) 99);
      * matrix.get(0, 2);                       // returns (byte) 99 (was 0)
      *
-     * ByteMatrix.empty().replaceIf(b -> true, (byte) 1);                            // no-op on empty matrix
+     * ByteMatrix.empty().replaceIf(b -> true, (byte) 1);                             // no-op on empty matrix
      * matrix.replaceIf((Throwables.BytePredicate<RuntimeException>) null, (byte) 0); // throws IllegalArgumentException
      * }</pre>
      *
@@ -1876,7 +1876,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * ByteMatrix single = ByteMatrix.of(new byte[][] {{1}});
      * single.flipHorizontallyInPlace();
-     * single.get(0, 0);                            // returns (byte) 1 (single column unchanged)
+     * single.get(0, 0);                             // returns (byte) 1 (single column unchanged)
      * ByteMatrix.empty().flipHorizontallyInPlace(); // no-op on empty matrix
      * }</pre>
      *
@@ -1907,7 +1907,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * ByteMatrix single = ByteMatrix.of(new byte[][] {{1, 2}});
      * single.flipVerticallyInPlace();
-     * single.rowView(0);                         // returns [1, 2] (single row unchanged)
+     * single.rowView(0);                          // returns [1, 2] (single row unchanged)
      * ByteMatrix.empty().flipVerticallyInPlace(); // no-op on empty matrix
      * }</pre>
      *
@@ -1936,7 +1936,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * matrix.get(0, 0);                       // returns (byte) 1 (original unchanged)
      *
      * ByteMatrix single = ByteMatrix.of(new byte[][] {{5}});
-     * single.flipHorizontally().get(0, 0);            // returns (byte) 5 (single column unchanged)
+     * single.flipHorizontally().get(0, 0);             // returns (byte) 5 (single column unchanged)
      * ByteMatrix.empty().flipHorizontally().isEmpty(); // returns true
      * }</pre>
      *
@@ -1965,7 +1965,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * matrix.rowView(0);                      // returns [1, 2, 3] (original unchanged)
      *
      * ByteMatrix single = ByteMatrix.of(new byte[][] {{1, 2}});
-     * single.flipVertically().rowView(0);           // returns [1, 2] (single row unchanged)
+     * single.flipVertically().rowView(0);            // returns [1, 2] (single row unchanged)
      * ByteMatrix.empty().flipVertically().isEmpty(); // returns true
      * }</pre>
      *
@@ -1996,8 +1996,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * ByteMatrix wide = ByteMatrix.of(new byte[][] {{1, 2, 3}});  // 1x3
      * ByteMatrix tall = wide.rotate90();
-     * tall.rowCount();                        // returns 3 (dimensions swapped to 3x1)
-     * tall.get(0, 0);                         // returns (byte) 1
+     * tall.rowCount();                         // returns 3 (dimensions swapped to 3x1)
+     * tall.get(0, 0);                          // returns (byte) 1
      * ByteMatrix.empty().rotate90().isEmpty(); // returns true
      * }</pre>
      *
@@ -2049,7 +2049,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * rotated.get(2, 2);                      // returns (byte) 1
      *
      * ByteMatrix rect = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
-     * rect.rotate180().rowView(0);             // returns [4, 3] (same dimensions)
+     * rect.rotate180().rowView(0);              // returns [4, 3] (same dimensions)
      * ByteMatrix.empty().rotate180().isEmpty(); // returns true
      * }</pre>
      *
@@ -2085,8 +2085,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * ByteMatrix wide = ByteMatrix.of(new byte[][] {{1, 2, 3}});  // 1x3
      * ByteMatrix tall = wide.rotate270();
-     * tall.rowCount();                         // returns 3 (dimensions swapped to 3x1)
-     * tall.get(0, 0);                          // returns (byte) 3
+     * tall.rowCount();                          // returns 3 (dimensions swapped to 3x1)
+     * tall.get(0, 0);                           // returns (byte) 3
      * ByteMatrix.empty().rotate270().isEmpty(); // returns true
      * }</pre>
      *
@@ -2356,7 +2356,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * list.get(0);                            // returns (byte) 1
      * list.get(3);                            // returns (byte) 4 (row-major order)
      *
-     * ByteMatrix.empty().flatten().size();               // returns 0
+     * ByteMatrix.empty().flatten().size();                // returns 0
      * ByteMatrix.of(new byte[][] {{7}}).flatten().get(0); // returns (byte) 7 (single element)
      * }</pre>
      *
@@ -2483,7 +2483,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * c.get(1, 5);                            // returns (byte) 12
      *
      * ByteMatrix mismatch = ByteMatrix.of(new byte[][] {{1, 2, 3}});
-     * a.stackHorizontally(mismatch);         // throws IllegalArgumentException (row count differs)
+     * a.stackHorizontally(mismatch);          // throws IllegalArgumentException (row count differs)
      * a.stackHorizontally((ByteMatrix) null); // throws IllegalArgumentException (other is null)
      * }</pre>
      *
@@ -3108,7 +3108,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * matrix.horizontalStream().toArray();    // returns [1, 2, 3, 4]
      * matrix.horizontalStream().sum();        // returns 10
      *
-     * ByteMatrix.empty().horizontalStream().count();             // returns 0 (empty stream)
+     * ByteMatrix.empty().horizontalStream().count();              // returns 0 (empty stream)
      * ByteMatrix.of(new byte[][] {{7}}).horizontalStream().sum(); // returns 7 (single element)
      * }</pre>
      *
@@ -3255,7 +3255,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * matrix.verticalStream().toArray();      // returns [1, 3, 2, 4] (column-major)
      * matrix.verticalStream().sum();          // returns 10
      *
-     * ByteMatrix.empty().verticalStream().count();             // returns 0 (empty stream)
+     * ByteMatrix.empty().verticalStream().count();              // returns 0 (empty stream)
      * ByteMatrix.of(new byte[][] {{7}}).verticalStream().sum(); // returns 7 (single element)
      * }</pre>
      *
@@ -3407,7 +3407,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *     .mapToInt(row -> row.sum())
      *     .toArray();                         // returns [3, 7, 11]
      *
-     * ByteMatrix.empty().rowStreams().count();                  // returns 0 (no rows)
+     * ByteMatrix.empty().rowStreams().count();                   // returns 0 (no rows)
      * ByteMatrix.of(new byte[][] {{7, 8}}).rowStreams().count(); // returns 1 (single row)
      * }</pre>
      *
@@ -3497,7 +3497,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *     .mapToInt(col -> col.sum())
      *     .toArray();                         // returns [5, 7, 9]
      *
-     * ByteMatrix.empty().columnStreams().count();                    // returns 0 (no columns)
+     * ByteMatrix.empty().columnStreams().count();                     // returns 0 (no columns)
      * ByteMatrix.of(new byte[][] {{7}, {8}}).columnStreams().count(); // returns 1 (single column)
      * }</pre>
      *

@@ -1222,7 +1222,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * none.replaceIf(c -> c > 'z', '?'); // matches nothing
      * none.rowView(0);                   // returns ['a', 'b'] (unchanged)
      *
-     * CharMatrix.empty().replaceIf(c -> true, 'x');                          // no-op on empty matrix
+     * CharMatrix.empty().replaceIf(c -> true, 'x');                             // no-op on empty matrix
      * matrix.replaceIf((Throwables.CharPredicate<RuntimeException>) null, 'x'); // throws IllegalArgumentException
      * }</pre>
      *
@@ -1260,7 +1260,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * firstCol.replaceIf((i, j) -> j == 0, '*'); // replace first column
      * firstCol.rowView(0);                       // returns ['*', 'b']
      *
-     * CharMatrix.empty().replaceIf((i, j) -> true, 'x');                          // no-op on empty matrix
+     * CharMatrix.empty().replaceIf((i, j) -> true, 'x');                         // no-op on empty matrix
      * matrix.replaceIf((Throwables.IntBiPredicate<RuntimeException>) null, 'x'); // throws IllegalArgumentException
      * }</pre>
      *
@@ -2825,7 +2825,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * a.zipWith(b, (x, y) -> (char) Math.min(x, y)).rowView(0); // returns ['A', 'B'] (min of each pair)
      *
      * CharMatrix wrong = CharMatrix.of(new char[][] {{'x', 'y', 'z'}});
-     * a.zipWith(wrong, (x, y) -> x);                                       // throws IllegalArgumentException (different shapes)
+     * a.zipWith(wrong, (x, y) -> x);                                        // throws IllegalArgumentException (different shapes)
      * a.zipWith(b, (Throwables.CharBinaryOperator<RuntimeException>) null); // throws IllegalArgumentException (null function)
      * }</pre>
      *
@@ -2877,7 +2877,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * a.zipWith(b, c, (x, y, z) -> (char) Math.min(Math.min(x, y), z)).rowView(0); // returns ['a', 'b'] (min of each triple)
      *
      * CharMatrix wrong = CharMatrix.of(new char[][] {{'x', 'y', 'z'}});
-     * a.zipWith(b, wrong, (x, y, z) -> x);                                     // throws IllegalArgumentException (different shapes)
+     * a.zipWith(b, wrong, (x, y, z) -> x);                                      // throws IllegalArgumentException (different shapes)
      * a.zipWith(b, c, (Throwables.CharTernaryOperator<RuntimeException>) null); // throws IllegalArgumentException (null function)
      * }</pre>
      *
@@ -2921,7 +2921,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}, {'g', 'h', 'i'}});
      * matrix.mainDiagonalStream().toArray();  // returns ['a', 'e', 'i']
-     * matrix.mainDiagonalStream().sum();      // returns 312
+     * matrix.mainDiagonalStream().sum();      // returns 303
      *
      * CharMatrix.empty().mainDiagonalStream().count(); // returns 0 (empty stream)
      * CharMatrix nonSquare = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
@@ -2981,7 +2981,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}, {'g', 'h', 'i'}});
      * matrix.antiDiagonalStream().toArray();  // returns ['c', 'e', 'g']
-     * matrix.antiDiagonalStream().sum();      // returns 312
+     * matrix.antiDiagonalStream().sum();      // returns 303
      *
      * CharMatrix.empty().antiDiagonalStream().count(); // returns 0 (empty stream)
      * CharMatrix nonSquare = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
@@ -3049,7 +3049,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * matrix.horizontalStream().toArray();    // returns ['a', 'b', 'c', 'd']
      * matrix.horizontalStream().sum();        // returns 394
      *
-     * CharMatrix.empty().horizontalStream().count();              // returns 0 (empty stream)
+     * CharMatrix.empty().horizontalStream().count();                // returns 0 (empty stream)
      * CharMatrix.of(new char[][] {{'x'}}).horizontalStream().sum(); // returns 120 (single element)
      * }</pre>
      *
@@ -3196,7 +3196,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * matrix.verticalStream().toArray();      // returns ['a', 'c', 'b', 'd'] (column-major)
      * matrix.verticalStream().sum();          // returns 394
      *
-     * CharMatrix.empty().verticalStream().count();              // returns 0 (empty stream)
+     * CharMatrix.empty().verticalStream().count();                // returns 0 (empty stream)
      * CharMatrix.of(new char[][] {{'x'}}).verticalStream().sum(); // returns 120 (single element)
      * }</pre>
      *
