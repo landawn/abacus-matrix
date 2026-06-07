@@ -3,12 +3,12 @@
 
 Use multiple agents to fix all javadoc issues reported by running: mvn javadoc:javadoc.
 
-Use multiple agents to perform a thorough deep line by line review for all the classes under folder: ./src/main/java for performance improvements. 
+Use multiple agents to perform a thorough deep line by line review for all the classes under folder: ./src/main/java for performance improvements.
 Fix/implement all performance improvements you have found, and add or run unit tests for the fixes to existing test classes.
 
 -- ==========================================================
 
-Review all public methods in the classes located under foler: ./src/main/java/ for naming convention consistency, and provide suggestions for design and method naming improvements. 
+Review all public methods in the classes located under foler: ./src/main/java/ for naming convention consistency, and provide suggestions for design and method naming improvements.
 
 -- ==========================================================
 
@@ -98,8 +98,8 @@ Step 3 - Run mvn javadoc:javadoc to verify all changes are valid
 -- ==========================================================
 
 
-Read the Eclipse-generated HTML coverage reports located in ./report/coverage/260321/ batch by batch.
-Each batch contains 20 HTML files, ordered by highest "Missed Instructions" first (start with the classes that have the most uncovered instructions). 
+Read the Eclipse-generated HTML coverage reports located in ./report/coverage/260606/ batch by batch.
+Each batch contains 20 HTML files, ordered by highest "Missed Instructions" first (start with the classes that have the most uncovered instructions).
 For each class report in the batch:
 
   - Identify the lines that are not covered by existing tests.
@@ -124,7 +124,7 @@ The newly added unit tests must follow the requirements below:
     from the method name.
 
   - Use methods from Suppliers and IntFunctions to create Supplier and IntFunction instances for input parameters whenever appropriate.
-  
+
   - Avoid using size()/length() > 0 or < 0 in assertions. When possible, use assertEquals(expectedSizeOrLength, size()/length()) instead.
 
   - Before adding a test method, check whether a method with the same name already
