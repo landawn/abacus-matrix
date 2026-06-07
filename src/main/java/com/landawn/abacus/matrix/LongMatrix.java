@@ -1176,8 +1176,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     public <E extends Exception> void updateAll(final Throwables.LongUnaryOperator<E> operator) throws E {
         N.checkArgNotNull(operator, "operator");
-        final Throwables.IntBiConsumer<E> operation = (i, j) -> a[i][j] = operator.applyAsLong(a[i][j]);
-        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.applyAsLong(a[i][j]);
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
     }
 
     /**
@@ -1209,8 +1209,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Long, E> mapper) throws E {
         N.checkArgNotNull(mapper, "mapper");
-        final Throwables.IntBiConsumer<E> operation = (i, j) -> a[i][j] = mapper.apply(i, j);
-        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
     }
 
     /**
@@ -1240,8 +1240,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     public <E extends Exception> void replaceIf(final Throwables.LongPredicate<E> predicate, final long newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
-        final Throwables.IntBiConsumer<E> operation = (i, j) -> a[i][j] = predicate.test(a[i][j]) ? newValue : a[i][j];
-        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = predicate.test(a[i][j]) ? newValue : a[i][j];
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
     }
 
     /**
@@ -1272,8 +1272,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final long newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
-        final Throwables.IntBiConsumer<E> operation = (i, j) -> a[i][j] = predicate.test(i, j) ? newValue : a[i][j];
-        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = predicate.test(i, j) ? newValue : a[i][j];
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
     }
 
     /**
@@ -1305,9 +1305,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     public <E extends Exception> LongMatrix map(final Throwables.LongUnaryOperator<E> mapper) throws E {
         N.checkArgNotNull(mapper, "mapper");
         final long[][] result = new long[rowCount][columnCount];
-        final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = mapper.applyAsLong(a[i][j]);
+        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsLong(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
 
         return LongMatrix.of(result);
     }
@@ -1338,9 +1338,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     public <E extends Exception> IntMatrix mapToInt(final Throwables.LongToIntFunction<E> mapper) throws E {
         N.checkArgNotNull(mapper, "mapper");
         final int[][] result = new int[rowCount][columnCount];
-        final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = mapper.applyAsInt(a[i][j]);
+        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsInt(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
 
         return IntMatrix.of(result);
     }
@@ -1371,9 +1371,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     public <E extends Exception> DoubleMatrix mapToDouble(final Throwables.LongToDoubleFunction<E> mapper) throws E {
         N.checkArgNotNull(mapper, "mapper");
         final double[][] result = new double[rowCount][columnCount];
-        final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = mapper.applyAsDouble(a[i][j]);
+        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsDouble(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
 
         return DoubleMatrix.of(result);
     }
@@ -1406,9 +1406,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.LongFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E {
         N.checkArgNotNull(mapper, "mapper");
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
-        final Throwables.IntBiConsumer<E> operation = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
+        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, operation, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
 
         return Matrix.of(result);
     }
@@ -2551,9 +2551,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
         final long[][] otherArray = other.a;
         final long[][] result = new long[rowCount][columnCount];
-        final Throwables.IntBiConsumer<RuntimeException> cmd = (i, j) -> result[i][j] = a[i][j] + otherArray[i][j];
+        final Throwables.IntBiConsumer<RuntimeException> elementAction = (i, j) -> result[i][j] = a[i][j] + otherArray[i][j];
 
-        Matrices.forEachIndices(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
 
         return LongMatrix.of(result);
     }
@@ -2588,9 +2588,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
         final long[][] otherArray = other.a;
         final long[][] result = new long[rowCount][columnCount];
-        final Throwables.IntBiConsumer<RuntimeException> cmd = (i, j) -> result[i][j] = a[i][j] - otherArray[i][j];
+        final Throwables.IntBiConsumer<RuntimeException> elementAction = (i, j) -> result[i][j] = a[i][j] - otherArray[i][j];
 
-        Matrices.forEachIndices(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
 
         return LongMatrix.of(result);
     }
@@ -2637,9 +2637,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
         final long[][] otherArray = other.a;
         final long[][] result = new long[rowCount][other.columnCount];
-        final Throwables.IntTriConsumer<RuntimeException> cmd = (i, j, k) -> result[i][j] += a[i][k] * otherArray[k][j];
+        final Throwables.IntTriConsumer<RuntimeException> multiplyAction = (i, j, k) -> result[i][j] += a[i][k] * otherArray[k][j];
 
-        Matrices.forEachCartesianIndices(this, other, cmd);
+        Matrices.forEachCartesianIndices(this, other, multiplyAction);
 
         return LongMatrix.of(result);
     }
@@ -2844,9 +2844,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         final long[][] b = other.a;
         final long[][] result = new long[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> cmd = (i, j) -> result[i][j] = zipFunction.applyAsLong(a[i][j], b[i][j]);
+        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsLong(a[i][j], b[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
 
         return LongMatrix.of(result);
     }
@@ -2893,9 +2893,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         final long[][] c = third.a;
         final long[][] result = new long[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> cmd = (i, j) -> result[i][j] = zipFunction.applyAsLong(a[i][j], b[i][j], c[i][j]);
+        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsLong(a[i][j], b[i][j], c[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, cmd, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
 
         return LongMatrix.of(result);
     }
@@ -3594,8 +3594,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         N.checkArgNotNull(action, "action");
 
         if (Matrices.isParallelizable(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
-            final Throwables.IntBiConsumer<E> cmd = (i, j) -> action.accept(a[i][j]);
-            Matrices.forEachIndices(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, cmd, true);
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> action.accept(a[i][j]);
+            Matrices.forEachIndices(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, elementAction, true);
         } else {
             for (int i = fromRowIndex; i < toRowIndex; i++) {
                 final long[] aa = a[i];

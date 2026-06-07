@@ -1324,8 +1324,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @throws E if the action throws an exception
      */
     public <E extends Exception> void forEachIndices(final Throwables.BiIntObjConsumer<M, E> action) throws E {
-        final M matrix = (M) this;
         N.checkArgNotNull(action, "action");
+
+        final M matrix = (M) this;
 
         if (Matrices.isParallelizable(this)) {
             final Throwables.IntBiConsumer<E> elementAction = (i, j) -> action.accept(i, j, matrix);

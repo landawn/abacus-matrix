@@ -3659,7 +3659,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
                     }
 
                     @Override
-                    public void advance(final long n) throws IllegalArgumentException {
+                    public void advance(final long n) {
                         if (n <= 0) {
                             return;
                         }
