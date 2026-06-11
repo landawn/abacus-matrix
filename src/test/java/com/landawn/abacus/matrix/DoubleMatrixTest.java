@@ -6113,6 +6113,19 @@ class DoubleMatrixTest extends TestBase {
             assertEquals(3.0f, floatMatrix.get(1, 0));
             assertEquals(4.0f, floatMatrix.get(1, 1));
         }
+
+        @Test
+        public void testDoubleMatrix_toFloatMatrix_overflowRounding() {
+            // Far beyond the float range overflows to Infinity; slightly above Float.MAX_VALUE
+            // rounds down to Float.MAX_VALUE; NaN stays NaN.
+            double slightlyAboveFloatMax = 3.4028235E38; // > Float.MAX_VALUE but within float rounding range
+            DoubleMatrix doubleMatrix = DoubleMatrix.of(new double[][] { { Double.MAX_VALUE, -Double.MAX_VALUE }, { slightlyAboveFloatMax, Double.NaN } });
+            FloatMatrix floatMatrix = doubleMatrix.toFloatMatrix();
+            assertEquals(Float.POSITIVE_INFINITY, floatMatrix.get(0, 0));
+            assertEquals(Float.NEGATIVE_INFINITY, floatMatrix.get(0, 1));
+            assertEquals(Float.MAX_VALUE, floatMatrix.get(1, 0));
+            assertTrue(Float.isNaN(floatMatrix.get(1, 1)));
+        }
     }
 
     @Nested

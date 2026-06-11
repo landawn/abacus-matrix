@@ -493,6 +493,19 @@ class BooleanMatrixTest extends TestBase {
     }
 
     @Test
+    public void testFillWithIndices_sourceWiderThanRemainingColumnsIsClipped() {
+        // Pins the fill(int, int, boolean[][]) javadoc example: a source row extending past the
+        // matrix bounds is clipped, not an error.
+        BooleanMatrix matrix = BooleanMatrix.of(new boolean[4][4]);
+        matrix.fill(1, 2, new boolean[][] { { true, true, true } });
+        assertTrue(matrix.get(1, 2));
+        assertTrue(matrix.get(1, 3));
+        // Row 2 untouched, and nothing written outside the matrix.
+        assertFalse(matrix.get(2, 2));
+        assertFalse(matrix.get(1, 1));
+    }
+
+    @Test
     public void testCopy() {
         boolean[][] arr = { { true, false }, { false, true } };
         BooleanMatrix matrix = BooleanMatrix.of(arr);

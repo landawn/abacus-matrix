@@ -1898,7 +1898,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param padRight number of columns to add to the right; must be {@code >= 0}
      * @return a new {@code DoubleMatrix} with dimensions {@code (padTop+rowCount+padBottom) × (padLeft+columnCount+padRight)}
      * @throws IllegalArgumentException if any padding parameter is negative,
-     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
+     *         if the resulting dimensions would overflow {@code Integer.MAX_VALUE},
+     *         or if the resulting shape is not representable (zero rows with a non-zero column count)
      * @see #extend(int, int, int, int, double)
      * @see #resize(int, int)
      */
@@ -1953,7 +1954,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *                     {@code +/-Infinity}, or {@code -0.0})
      * @return a new {@code DoubleMatrix} with dimensions {@code (padTop+rowCount+padBottom) × (padLeft+columnCount+padRight)}
      * @throws IllegalArgumentException if any padding parameter is negative,
-     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
+     *         if the resulting dimensions would overflow {@code Integer.MAX_VALUE},
+     *         or if the resulting shape is not representable (zero rows with a non-zero column count)
      * @see #extend(int, int, int, int)
      * @see #resize(int, int, double)
      */
@@ -2971,9 +2973,11 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * <p><b>Warning:</b> This is a narrowing conversion that may lose precision.
      * Double values that cannot be exactly represented as float will be rounded
-     * to the nearest float value. Values whose magnitude exceeds {@link Float#MAX_VALUE}
-     * become {@code Float.POSITIVE_INFINITY} or {@code Float.NEGATIVE_INFINITY},
-     * and {@code NaN} doubles remain {@code NaN}.</p>
+     * to the nearest float value. Values whose magnitude is too large to round to a
+     * finite float (beyond the float rounding range, e.g. {@code Double.MAX_VALUE})
+     * become {@code Float.POSITIVE_INFINITY} or {@code Float.NEGATIVE_INFINITY};
+     * values only slightly above {@link Float#MAX_VALUE} round down to
+     * {@code Float.MAX_VALUE}. {@code NaN} doubles remain {@code NaN}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2982,7 +2986,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * floatMatrix.get(0, 0);       // returns 1.5f
      * floatMatrix.get(1, 1);       // returns 4.0f
      *
-     * // Magnitudes beyond Float.MAX_VALUE overflow to Infinity:
+     * // Magnitudes far beyond Float.MAX_VALUE overflow to Infinity:
      * DoubleMatrix big = DoubleMatrix.of(new double[][] {{Double.MAX_VALUE}});
      * big.toFloatMatrix().get(0, 0) == Float.POSITIVE_INFINITY; // returns true
      * }</pre>

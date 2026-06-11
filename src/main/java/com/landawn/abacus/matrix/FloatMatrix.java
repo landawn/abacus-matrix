@@ -1715,7 +1715,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param padRight number of columns to add to the right; must be {@code >= 0}
      * @return a new {@code FloatMatrix} with dimensions {@code (padTop+rowCount+padBottom) × (padLeft+columnCount+padRight)}
      * @throws IllegalArgumentException if any padding parameter is negative,
-     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
+     *         if the resulting dimensions would overflow {@code Integer.MAX_VALUE},
+     *         or if the resulting shape is not representable (zero rows with a non-zero column count)
      * @see #extend(int, int, int, int, float)
      * @see #resize(int, int)
      */
@@ -1770,7 +1771,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *                     {@code +/-Infinity}, or {@code -0.0f})
      * @return a new {@code FloatMatrix} with dimensions {@code (padTop+rowCount+padBottom) × (padLeft+columnCount+padRight)}
      * @throws IllegalArgumentException if any padding parameter is negative,
-     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
+     *         if the resulting dimensions would overflow {@code Integer.MAX_VALUE},
+     *         or if the resulting shape is not representable (zero rows with a non-zero column count)
      * @see #extend(int, int, int, int)
      * @see #resize(int, int, float)
      */

@@ -547,6 +547,7 @@ public final class Matrices {
      * @param columnCount the number of columns to iterate over, must be non-negative
      * @param action the action to execute for each position (i, j), receives row index and column index, must not be {@code null}
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
+     *        (if parallel streams are unavailable in the runtime, execution falls back to sequential)
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative, or if {@code action} is {@code null}
      * @throws E if the action throws an exception during execution
      * @see #forEachIndices(int, int, int, int, Throwables.IntBiConsumer, boolean)
@@ -599,6 +600,7 @@ public final class Matrices {
      * @param toColumnIndex the ending column index (exclusive), must be greater than or equal to {@code fromColumnIndex}
      * @param action the action to execute for each position (i, j), receives row index and column index, must not be {@code null}
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
+     *        (if parallel streams are unavailable in the runtime, execution falls back to sequential)
      * @throws IndexOutOfBoundsException if any index is negative, if {@code toRowIndex} is less than {@code fromRowIndex}, or if {@code toColumnIndex} is less than {@code fromColumnIndex}
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the action throws an exception during execution
@@ -612,7 +614,7 @@ public final class Matrices {
         final int rowCount = toRowIndex - fromRowIndex;
         final int columnCount = toColumnIndex - fromColumnIndex;
 
-        if (inParallel) {
+        if (inParallel && IS_PARALLEL_STREAM_SUPPORTED) {
             if (rowCount <= columnCount) {
                 //noinspection resource
                 IntStream.range(fromRowIndex, toRowIndex).parallel().forEach(i -> {
@@ -675,6 +677,7 @@ public final class Matrices {
      * @param columnCount the number of columns to iterate over, must be non-negative
      * @param mapper the function to apply at each position (i, j), receives row index and column index, must not be {@code null}
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
+     *        (if parallel streams are unavailable in the runtime, execution falls back to sequential)
      * @return a {@link Stream} of results from applying the function at each position, never {@code null}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}, or if {@code rowCount} or {@code columnCount} is negative
      * @see #mapIndices(int, int, int, int, Throwables.IntBiFunction, boolean)
@@ -697,11 +700,15 @@ public final class Matrices {
      * The iteration order is automatically optimized based on the relative sizes of the row and
      * column ranges to improve performance.</p>
      *
-     * <p>The order of elements in the stream depends on whether there are more rows or columns:</p>
+     * <p>For sequential execution, the order of elements in the stream depends on whether there are more rows or columns:</p>
      * <ul>
      * <li>If rows is less than or equal to columns: elements are ordered by rows first (row-major order).</li>
      * <li>If rows is greater than columns: elements are ordered by columns first (column-major order).</li>
      * </ul>
+     * <p>When {@code inParallel} is {@code true}, the encounter order of the returned stream is unspecified.</p>
+     *
+     * <p>If {@code mapper} throws a checked exception, it is wrapped in a {@code RuntimeException}
+     * and rethrown when the returned stream is consumed.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -722,6 +729,7 @@ public final class Matrices {
      * @param toColumnIndex the ending column index (exclusive), must be greater than or equal to fromColumnIndex
      * @param mapper the function to apply at each position (i, j), receives row index and column index, must not be {@code null}
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
+     *        (if parallel streams are unavailable in the runtime, execution falls back to sequential)
      * @return a {@link Stream} of results from applying the function at each position, never {@code null}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws IndexOutOfBoundsException if any index is negative, if {@code toRowIndex} is less than {@code fromRowIndex}, or if {@code toColumnIndex} is less than {@code fromColumnIndex}
@@ -737,7 +745,7 @@ public final class Matrices {
         final int columnCount = toColumnIndex - fromColumnIndex;
 
         if (rowCount <= columnCount) {
-            return IntStream.range(fromRowIndex, toRowIndex).transform(s -> inParallel ? s.parallel() : s).flatmapToObj(i -> {
+            return IntStream.range(fromRowIndex, toRowIndex).transform(s -> inParallel && IS_PARALLEL_STREAM_SUPPORTED ? s.parallel() : s).flatmapToObj(i -> {
                 final List<T> ret = new ArrayList<>(columnCount);
 
                 try {
@@ -751,19 +759,21 @@ public final class Matrices {
                 return ret;
             });
         } else {
-            return IntStream.range(fromColumnIndex, toColumnIndex).transform(s -> inParallel ? s.parallel() : s).flatmapToObj(j -> {
-                final List<T> ret = new ArrayList<>(rowCount);
+            return IntStream.range(fromColumnIndex, toColumnIndex)
+                    .transform(s -> inParallel && IS_PARALLEL_STREAM_SUPPORTED ? s.parallel() : s)
+                    .flatmapToObj(j -> {
+                        final List<T> ret = new ArrayList<>(rowCount);
 
-                try {
-                    for (int i = fromRowIndex; i < toRowIndex; i++) {
-                        ret.add(mapper.apply(i, j));
-                    }
-                } catch (final Exception e) {
-                    throw ExceptionUtil.toRuntimeException(e, true);
-                }
+                        try {
+                            for (int i = fromRowIndex; i < toRowIndex; i++) {
+                                ret.add(mapper.apply(i, j));
+                            }
+                        } catch (final Exception e) {
+                            throw ExceptionUtil.toRuntimeException(e, true);
+                        }
 
-                return ret;
-            });
+                        return ret;
+                    });
         }
     }
 
@@ -797,6 +807,7 @@ public final class Matrices {
      * @param columnCount the number of columns to iterate over, must be non-negative
      * @param mapper the function to apply at each position (i, j), receives row index and column index, must not be {@code null}
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
+     *        (if parallel streams are unavailable in the runtime, execution falls back to sequential)
      * @return an {@link IntStream} of results from applying the function at each position, never {@code null}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}, or if {@code rowCount} or {@code columnCount} is negative
      * @see #mapIndicesToInt(int, int, int, int, Throwables.IntBinaryOperator, boolean)
@@ -819,8 +830,13 @@ public final class Matrices {
      * an {@link IntStream}. This is optimized for primitive {@code int} operations, avoiding
      * boxing overhead associated with generic streams.</p>
      *
-     * <p>The iteration order is automatically optimized based on the relative sizes of the row
-     * and column ranges to improve cache locality and performance.</p>
+     * <p>For sequential execution, the iteration order is automatically optimized based on the relative
+     * sizes of the row and column ranges to improve cache locality and performance (row-major when the
+     * row range is not larger than the column range, column-major otherwise). When {@code inParallel}
+     * is {@code true}, the encounter order of the returned stream is unspecified.</p>
+     *
+     * <p>If {@code mapper} throws a checked exception, it is wrapped in a {@code RuntimeException}
+     * and rethrown when the returned stream is consumed.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -840,6 +856,7 @@ public final class Matrices {
      * @param toColumnIndex the ending column index (exclusive), must be greater than or equal to fromColumnIndex
      * @param mapper the function to apply at each position (i, j), receives row index and column index, must not be {@code null}
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
+     *        (if parallel streams are unavailable in the runtime, execution falls back to sequential)
      * @return an {@link IntStream} of results from applying the function at each position, never {@code null}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws IndexOutOfBoundsException if any index is negative, if {@code toRowIndex} is less than {@code fromRowIndex}, or if {@code toColumnIndex} is less than {@code fromColumnIndex}
@@ -855,7 +872,7 @@ public final class Matrices {
         final int columnCount = toColumnIndex - fromColumnIndex;
 
         if (rowCount <= columnCount) {
-            return IntStream.range(fromRowIndex, toRowIndex).transform(s -> inParallel ? s.parallel() : s).flatMapArray(i -> {
+            return IntStream.range(fromRowIndex, toRowIndex).transform(s -> inParallel && IS_PARALLEL_STREAM_SUPPORTED ? s.parallel() : s).flatMapArray(i -> {
                 final int[] ret = new int[columnCount];
 
                 try {
@@ -869,19 +886,21 @@ public final class Matrices {
                 return ret;
             });
         } else {
-            return IntStream.range(fromColumnIndex, toColumnIndex).transform(s -> inParallel ? s.parallel() : s).flatMapArray(j -> {
-                final int[] ret = new int[rowCount];
+            return IntStream.range(fromColumnIndex, toColumnIndex)
+                    .transform(s -> inParallel && IS_PARALLEL_STREAM_SUPPORTED ? s.parallel() : s)
+                    .flatMapArray(j -> {
+                        final int[] ret = new int[rowCount];
 
-                try {
-                    for (int i = fromRowIndex; i < toRowIndex; i++) {
-                        ret[i - fromRowIndex] = mapper.applyAsInt(i, j);
-                    }
-                } catch (final Exception e) {
-                    throw ExceptionUtil.toRuntimeException(e, true);
-                }
+                        try {
+                            for (int i = fromRowIndex; i < toRowIndex; i++) {
+                                ret[i - fromRowIndex] = mapper.applyAsInt(i, j);
+                            }
+                        } catch (final Exception e) {
+                            throw ExceptionUtil.toRuntimeException(e, true);
+                        }
 
-                return ret;
-            });
+                        return ret;
+                    });
         }
     }
 
@@ -1007,7 +1026,7 @@ public final class Matrices {
         final int columnCountA = a.columnCount;
         final int columnCountB = b.columnCount;
 
-        if (inParallel) {
+        if (inParallel && IS_PARALLEL_STREAM_SUPPORTED) {
             if (N.min(rowCountA, columnCountA, columnCountB) == rowCountA) {
                 if (N.min(columnCountA, columnCountB) == columnCountA) {
                     //noinspection resource
@@ -1618,8 +1637,7 @@ public final class Matrices {
         N.checkArgNotNull(b, "b");
         N.checkArgNotNull(c, "c");
         N.checkArgNotNull(zipFunction, "zipFunction");
-        checkShapeForZip(a, b);
-        checkShapeForZip(a, c);
+        checkShapeForZip(a, b, c);
 
         final int rowCount = a.rowCount;
         final int columnCount = a.columnCount;
@@ -2175,8 +2193,7 @@ public final class Matrices {
         N.checkArgNotNull(b, "b");
         N.checkArgNotNull(c, "c");
         N.checkArgNotNull(zipFunction, "zipFunction");
-        checkShapeForZip(a, b);
-        checkShapeForZip(a, c);
+        checkShapeForZip(a, b, c);
 
         final int rowCount = a.rowCount;
         final int columnCount = a.columnCount;
@@ -2414,8 +2431,7 @@ public final class Matrices {
         N.checkArgNotNull(b, "b");
         N.checkArgNotNull(c, "c");
         N.checkArgNotNull(zipFunction, "zipFunction");
-        checkShapeForZip(a, b);
-        checkShapeForZip(a, c);
+        checkShapeForZip(a, b, c);
 
         final int rowCount = a.rowCount;
         final int columnCount = a.columnCount;
@@ -2938,8 +2954,7 @@ public final class Matrices {
         N.checkArgNotNull(b, "b");
         N.checkArgNotNull(c, "c");
         N.checkArgNotNull(zipFunction, "zipFunction");
-        checkShapeForZip(a, b);
-        checkShapeForZip(a, c);
+        checkShapeForZip(a, b, c);
 
         final int rowCount = a.rowCount;
         final int columnCount = a.columnCount;
@@ -3586,11 +3601,10 @@ public final class Matrices {
      * <p>All matrices in the collection must have identical dimensions. Their element types need not
      * be identical; the result matrix uses the most specific element type assignable from every input
      * matrix's element type (see {@link #resolveCommonElementType(Matrix[])}). The operation
-     * is optimized for single and two-element collections:</p>
+     * is optimized for single-element collections:</p>
      * <ul>
      * <li>One matrix: Returns a copy of that matrix</li>
-     * <li>Two matrices: Directly applies the binary operator</li>
-     * <li>Three or more: Applies the operator sequentially, accumulating results</li>
+     * <li>Two or more: Applies the operator sequentially per cell, accumulating results (left fold)</li>
      * </ul>
      *
      * <p><b>Usage Examples:</b></p>
@@ -3725,7 +3739,11 @@ public final class Matrices {
      *
      * <p><b>Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
      * store references to the array, as it will be mutated for subsequent positions. Only use this
-     * optimization if the function immediately processes and discards the array.</p>
+     * optimization if the function immediately processes and discards the array. The runtime component
+     * type of the array passed to {@code zipFunction} is the resolved common element type of the input
+     * matrices (which may be more specific than the static {@code T}), so the function should treat the
+     * array as read-only: writing an element of an incompatible type into it would throw an
+     * {@code ArrayStoreException}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3912,6 +3930,13 @@ public final class Matrices {
     private static void checkShapeForZip(final AbstractMatrix<?, ?, ?, ?, ?> a, final AbstractMatrix<?, ?, ?, ?, ?> b) {
         N.checkArgument(isSameShape(a, b), "Cannot zip matrices with different shapes: first is {}x{} but second is {}x{}", a.rowCount, a.columnCount,
                 b.rowCount, b.columnCount);
+    }
+
+    private static void checkShapeForZip(final AbstractMatrix<?, ?, ?, ?, ?> a, final AbstractMatrix<?, ?, ?, ?, ?> b, final AbstractMatrix<?, ?, ?, ?, ?> c) {
+        checkShapeForZip(a, b);
+
+        N.checkArgument(isSameShape(a, c), "Cannot zip matrices with different shapes: first is {}x{} but third is {}x{}", a.rowCount, a.columnCount,
+                c.rowCount, c.columnCount);
     }
 
     private static void checkShapeForZip(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> coll) {

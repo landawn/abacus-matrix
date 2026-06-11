@@ -1951,7 +1951,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param padRight number of padding columns to add to the right of the original matrix; must be {@code >= 0}
      * @return a new IntMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
      * @throws IllegalArgumentException if any padding parameter is negative,
-     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
+     *         if the resulting dimensions would overflow {@code Integer.MAX_VALUE},
+     *         or if the resulting shape is not representable (zero rows with a non-zero column count)
      * @see #extend(int, int, int, int, int)
      * @see #resize(int, int)
      */
@@ -2003,7 +2004,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param defaultValue the value to fill all new padding cells with
      * @return a new IntMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
      * @throws IllegalArgumentException if any padding parameter is negative,
-     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
+     *         if the resulting dimensions would overflow {@code Integer.MAX_VALUE},
+     *         or if the resulting shape is not representable (zero rows with a non-zero column count)
      * @see #extend(int, int, int, int)
      * @see #resize(int, int, int)
      */

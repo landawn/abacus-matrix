@@ -1180,6 +1180,14 @@ class ByteMatrixTest extends TestBase {
     }
 
     @Test
+    public void testStreamRRange_javadocExampleRowMaxes() {
+        // Pins the rowStreams(int, int) javadoc example: OptionalByte.orElse requires a byte argument.
+        ByteMatrix matrix = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
+        int[] maxes = matrix.rowStreams(0, 2).mapToInt(row -> row.max().orElse((byte) 0)).toArray();
+        Assertions.assertArrayEquals(new int[] { 2, 4 }, maxes);
+    }
+
+    @Test
     public void testStreamC() {
         byte[][] a = { { 1, 2, 3 }, { 4, 5, 6 } };
         ByteMatrix matrix = ByteMatrix.of(a);

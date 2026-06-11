@@ -43,7 +43,7 @@ import com.landawn.abacus.util.stream.Stream;
  * explicit fill value. Arithmetic operations (e.g. {@link #add(CharMatrix)}, {@link #subtract(CharMatrix)},
  * {@link #matmul(CharMatrix)}) compute results on the unsigned 16-bit code unit as {@code int} and cast
  * back to {@code char}, so values wrap modulo {@code 65536} (the range {@code [0, 65535]}); for example
- * {@code 'a' + 1 == 'b'} and {@code (char) 65535 + 1} wraps to {@code 0}.</p>
+ * {@code 'a' + 1 == 'b'} and adding {@code 1} to a cell holding {@code (char) 65535} wraps the cell to {@code 0}.</p>
  *
  * @see IntMatrix
  * @see LongMatrix
@@ -1753,7 +1753,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param padRight number of padding columns to add to the right of the original matrix; must be {@code >= 0}
      * @return a new CharMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
      * @throws IllegalArgumentException if any padding parameter is negative,
-     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
+     *         if the resulting dimensions would overflow {@code Integer.MAX_VALUE},
+     *         or if the resulting shape is not representable (zero rows with a non-zero column count)
      * @see #extend(int, int, int, int, char)
      * @see #resize(int, int)
      */
@@ -1807,7 +1808,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param defaultValue the value to fill all new padding cells with
      * @return a new CharMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
      * @throws IllegalArgumentException if any padding parameter is negative,
-     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
+     *         if the resulting dimensions would overflow {@code Integer.MAX_VALUE},
+     *         or if the resulting shape is not representable (zero rows with a non-zero column count)
      * @see #extend(int, int, int, int)
      * @see #resize(int, int, char)
      */

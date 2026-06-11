@@ -1353,7 +1353,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * matrix.get(2, 2);                                                  // returns true
      * matrix.get(0, 0);                                                  // returns false (outside the copied region)
      *
-     * matrix.fill(1, 1, new boolean[][] {{true, true, true}});   // overflow is clipped to the matrix bounds
+     * matrix.fill(1, 2, new boolean[][] {{true, true, true}});   // only columns 2-3 fit; the third value is clipped
      * matrix.fill(-1, 0, new boolean[][] {{true}});              // throws IndexOutOfBoundsException (negative index)
      * matrix.fill(0, 0, (boolean[][]) null);                     // throws IllegalArgumentException (null source)
      * }</pre>
@@ -1704,7 +1704,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param padRight number of padding columns to add to the right of the original matrix; must be {@code >= 0}
      * @return a new {@code BooleanMatrix} with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
      * @throws IllegalArgumentException if any parameter is negative,
-     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
+     *         if the resulting dimensions would overflow {@code Integer.MAX_VALUE},
+     *         or if the resulting shape is not representable (zero rows with a non-zero column count)
      * @see #extend(int, int, int, int, boolean)
      * @see #resize(int, int)
      */
@@ -1762,7 +1763,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param defaultValue the value to fill all new padding cells with
      * @return a new {@code BooleanMatrix} with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
      * @throws IllegalArgumentException if any padding parameter is negative,
-     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
+     *         if the resulting dimensions would overflow {@code Integer.MAX_VALUE},
+     *         or if the resulting shape is not representable (zero rows with a non-zero column count)
      * @see #extend(int, int, int, int)
      * @see #resize(int, int, boolean)
      */

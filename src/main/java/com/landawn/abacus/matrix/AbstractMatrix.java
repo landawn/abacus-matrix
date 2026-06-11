@@ -810,9 +810,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param newColumnCount the number of columns in the reshaped matrix (must be positive)
      * @return a new matrix with the specified number of columns
      * @throws IllegalArgumentException if {@code newColumnCount <= 0}, if the implied row count
-     *         {@code ceil(elementCount / newColumnCount)} exceeds {@code Integer.MAX_VALUE}, or if the
+     *         {@code ceil(elementCount / newColumnCount)} exceeds {@code Integer.MAX_VALUE}, if the
      *         resulting shape is not representable (which occurs when this matrix is empty, since the
-     *         implied row count is then {@code 0} while {@code newColumnCount} is positive)
+     *         implied row count is then {@code 0} while {@code newColumnCount} is positive), or if the
+     *         total cell count {@code (long) newRowCount * newColumnCount} exceeds {@code Integer.MAX_VALUE}
      */
     public M reshape(final int newColumnCount) {
         N.checkArgument(newColumnCount > 0, "newColumnCount must be positive, but got: {}", newColumnCount);
@@ -992,7 +993,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param padLeft number of columns to add to the left of the matrix (must be {@code >= 0})
      * @param padRight number of columns to add to the right of the matrix (must be {@code >= 0})
      * @return a new matrix grown by the specified pad widths, with new cells filled with the type's default value
-     * @throws IllegalArgumentException if any pad value is negative or if the resulting dimensions overflow {@code Integer.MAX_VALUE}
+     * @throws IllegalArgumentException if any pad value is negative, if the resulting dimensions overflow {@code Integer.MAX_VALUE},
+     *         or if the resulting shape is not representable (zero rows with a non-zero column count)
      */
     public abstract M extend(int padTop, int padBottom, int padLeft, int padRight);
 

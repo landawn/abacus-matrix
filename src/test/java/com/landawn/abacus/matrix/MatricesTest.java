@@ -557,6 +557,17 @@ class MatricesTest extends TestBase {
     }
 
     @Test
+    public void testZipToLong_thirdMatrixShapeMismatch_reportsThird() {
+        // Regression: a shape mismatch on the third argument must be attributed to "third" in the
+        // diagnostic, not mislabeled as "second".
+        IntMatrix wrongShape = IntMatrix.of(new int[][] { { 1, 2, 3 } });
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> Matrices.zipToLong(intMatrix1, intMatrix2, wrongShape, (a, b, c) -> (long) (a + b + c)));
+        assertTrue(ex.getMessage().contains("third"), "Expected message to mention third, got: " + ex.getMessage());
+    }
+
+    @Test
     public void testZipIntMatrixToDouble() throws Exception {
         // Test binary
         DoubleMatrix result = Matrices.zipToDouble(intMatrix1, intMatrix2, (a, b) -> (double) a / b);

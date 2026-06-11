@@ -1768,7 +1768,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param padRight number of padding columns to add to the right of the original matrix; must be {@code >= 0}
      * @return a new ByteMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
      * @throws IllegalArgumentException if any parameter is negative,
-     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
+     *         if the resulting dimensions would overflow {@code Integer.MAX_VALUE},
+     *         or if the resulting shape is not representable (zero rows with a non-zero column count)
      * @see #extend(int, int, int, int, byte)
      * @see #resize(int, int)
      */
@@ -1820,7 +1821,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param defaultValue the value to fill all new padding cells with
      * @return a new ByteMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
      * @throws IllegalArgumentException if any padding parameter is negative,
-     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
+     *         if the resulting dimensions would overflow {@code Integer.MAX_VALUE},
+     *         or if the resulting shape is not representable (zero rows with a non-zero column count)
      * @see #extend(int, int, int, int)
      * @see #resize(int, int, byte)
      */
@@ -3447,7 +3449,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}, {5, 6}});
      * matrix.rowStreams(1, 3).count();        // returns 2 (rows 1 and 2)
      * matrix.rowStreams(0, 2)
-     *     .mapToInt(row -> row.max().orElse(0))
+     *     .mapToInt(row -> row.max().orElse((byte) 0))
      *     .toArray();                         // returns [2, 4]
      *
      * matrix.rowStreams(1, 1).count();        // returns 0 (empty range)

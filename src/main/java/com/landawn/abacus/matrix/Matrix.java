@@ -175,9 +175,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Creates a new matrix of the specified dimensions where every element is the provided {@code element}.
      *
      * <p>The matrix's element type is resolved from {@code element.getClass()}, so the result
-     * may have a more specific component type than the static {@code T}. Because {@code element}
-     * must be non-{@code null}, this factory cannot be used to produce an empty-but-typed
-     * placeholder matrix.</p>
+     * may have a more specific component type than the static {@code T}. Enum constants resolve
+     * to their declaring enum class (even constants with constant-specific class bodies), so any
+     * constant of the same enum can later be stored via {@link #set(int, int, Object)}. Because
+     * {@code element} must be non-{@code null}, this factory cannot be used to produce an
+     * empty-but-typed placeholder matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -209,14 +211,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         checkRepresentableShape(rowCount, columnCount);
 
         @SuppressWarnings("unchecked")
-        final T[][] a = Array.newInstance(element.getClass(), rowCount, columnCount);
+        final Class<T> resolvedElementType = (Class<T>) (element instanceof Enum ? ((Enum<?>) element).getDeclaringClass() : element.getClass());
+
+        final T[][] a = Array.newInstance(resolvedElementType, rowCount, columnCount);
 
         for (T[] ea : a) {
             N.fill(ea, element);
         }
-
-        @SuppressWarnings("unchecked")
-        final Class<T> resolvedElementType = (Class<T>) element.getClass();
 
         return new Matrix<>(a, resolvedElementType);
     }
@@ -779,6 +780,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws E if the operator throws an exception
      * @throws IndexOutOfBoundsException if {@code rowIndex} is negative or greater than or equal to {@code rowCount}
      * @throws IllegalArgumentException if {@code operator} is {@code null}
+     * @throws ArrayStoreException if the operator returns a value that is not assignable to the row's
+     *         runtime storage component type
      */
     public <E extends Exception> void updateRow(final int rowIndex, final Throwables.UnaryOperator<T, E> operator)
             throws IndexOutOfBoundsException, IllegalArgumentException, E {
@@ -817,6 +820,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws E if the operator throws an exception
      * @throws IndexOutOfBoundsException if {@code columnIndex} is negative or greater than or equal to {@code columnCount}
      * @throws IllegalArgumentException if {@code operator} is {@code null}
+     * @throws ArrayStoreException if the operator returns a value that is not assignable to the
+     *         corresponding row's runtime storage component type
      */
     public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.UnaryOperator<T, E> operator)
             throws IndexOutOfBoundsException, IllegalArgumentException, E {
@@ -924,6 +929,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws E if the operator throws an exception
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      * @throws IllegalArgumentException if {@code operator} is {@code null}
+     * @throws ArrayStoreException if the operator returns a value that is not assignable to the
+     *         corresponding row's runtime storage component type
      */
     public <E extends Exception> void updateMainDiagonal(final Throwables.UnaryOperator<T, E> operator) throws IllegalStateException, E {
         checkIsSquare();
@@ -1033,6 +1040,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws E if the operator throws an exception
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      * @throws IllegalArgumentException if {@code operator} is {@code null}
+     * @throws ArrayStoreException if the operator returns a value that is not assignable to the
+     *         corresponding row's runtime storage component type
      */
     public <E extends Exception> void updateAntiDiagonal(final Throwables.UnaryOperator<T, E> operator) throws IllegalStateException, E {
         checkIsSquare();
@@ -1071,6 +1080,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param operator the operator to apply to each element (must not be {@code null})
      * @throws E if the operator throws an exception
      * @throws IllegalArgumentException if {@code operator} is {@code null}
+     * @throws ArrayStoreException if the operator returns a value that is not assignable to the
+     *         corresponding row's runtime storage component type
      */
     public <E extends Exception> void updateAll(final Throwables.UnaryOperator<T, E> operator) throws E {
         N.checkArgNotNull(operator, "operator");
@@ -1112,6 +1123,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param mapper the function that takes row and column indices and returns the new value (must not be {@code null})
      * @throws E if the mapper throws an exception
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
+     * @throws ArrayStoreException if the mapper returns a value that is not assignable to the
+     *         corresponding row's runtime storage component type
      */
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends T, E> mapper) throws E {
         N.checkArgNotNull(mapper, "mapper");
@@ -1154,6 +1167,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param newValue the value to use as replacement (may be {@code null})
      * @throws E if the predicate throws an exception
      * @throws IllegalArgumentException if {@code predicate} is {@code null}
+     * @throws ArrayStoreException if {@code newValue} is non-{@code null} and not assignable to the
+     *         corresponding row's runtime storage component type
      */
     public <E extends Exception> void replaceIf(final Throwables.Predicate<? super T, E> predicate, final T newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
@@ -1195,6 +1210,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param newValue the value to use as replacement (may be {@code null})
      * @throws E if the predicate throws an exception
      * @throws IllegalArgumentException if {@code predicate} is {@code null}
+     * @throws ArrayStoreException if {@code newValue} is non-{@code null} and not assignable to the
+     *         corresponding row's runtime storage component type
      */
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final T newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
@@ -1576,6 +1593,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @param value the value to fill the matrix with (may be {@code null})
+     * @throws ArrayStoreException if {@code value} is non-{@code null} and not assignable to the
+     *         corresponding row's runtime storage component type
      */
     public void fill(final T value) {
         for (int i = 0; i < rowCount; i++) {
@@ -1609,6 +1628,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param source the source two-dimensional array to copy values from (must not be {@code null})
      * @throws IllegalArgumentException if {@code source} is {@code null}
+     * @throws ArrayStoreException if any copied element of {@code source} is not assignable to the
+     *         corresponding row's runtime storage component type
      */
     public void fill(final T[][] source) {
         fill(0, 0, source);
@@ -1639,6 +1660,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws IndexOutOfBoundsException if {@code destRowIndex < 0} or {@code destRowIndex > rowCount},
      *         or if {@code destColumnIndex < 0} or {@code destColumnIndex > columnCount}
      * @throws IllegalArgumentException if {@code source} is {@code null}
+     * @throws ArrayStoreException if any copied element of {@code source} is not assignable to the
+     *         corresponding row's runtime storage component type
      */
     public void fill(final int destRowIndex, final int destColumnIndex, final T[][] source) throws IndexOutOfBoundsException, IllegalArgumentException {
         N.checkArgNotNull(source, "source");
@@ -1858,6 +1881,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
      *         if the resulting shape is not representable (zero rows with a non-zero column count),
      *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
+     * @throws ArrayStoreException if {@code defaultValue} is non-{@code null} and not assignable to
+     *         this matrix's runtime element type
      * @see #resize(int, int)
      * @see #extend(int, int, int, int, Object)
      */
@@ -1939,7 +1964,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param padRight number of columns to add to the right; must be {@code >= 0}
      * @return a new Matrix with dimensions {@code (padTop+rowCount+padBottom) × (padLeft+columnCount+padRight)}
      * @throws IllegalArgumentException if any padding parameter is negative,
-     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
+     *         if the resulting dimensions would overflow {@code Integer.MAX_VALUE},
+     *         or if the resulting shape is not representable (zero rows with a non-zero column count)
      * @see #extend(int, int, int, int, Object)
      * @see #resize(int, int)
      */
@@ -1994,7 +2020,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param defaultValue the value used to fill all newly added cells; may be {@code null}
      * @return a new Matrix with dimensions {@code (padTop+rowCount+padBottom) × (padLeft+columnCount+padRight)}
      * @throws IllegalArgumentException if any padding parameter is negative,
-     *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
+     *         if the resulting dimensions would overflow {@code Integer.MAX_VALUE},
+     *         or if the resulting shape is not representable (zero rows with a non-zero column count)
+     * @throws ArrayStoreException if {@code defaultValue} is non-{@code null} and not assignable to
+     *         this matrix's runtime element type
      * @see #extend(int, int, int, int)
      * @see #resize(int, int, Object)
      */

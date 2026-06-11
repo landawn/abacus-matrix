@@ -1565,6 +1565,33 @@ class MatrixTest extends TestBase {
     }
 
     @Test
+    public void testRepeatSupportsEnumConstantsWithClassBodies() {
+        // Regression: ADD's runtime class is an anonymous subclass of Op, so the backing array
+        // must use the declaring enum class for other constants of the same enum to be storable.
+        enum Op {
+            ADD {
+                @Override
+                int apply(int a, int b) {
+                    return a + b;
+                }
+            },
+            SUB {
+                @Override
+                int apply(int a, int b) {
+                    return a - b;
+                }
+            };
+
+            abstract int apply(int a, int b);
+        }
+
+        Matrix<Op> matrix = Matrix.repeat(2, 2, Op.ADD);
+        matrix.set(0, 0, Op.SUB); // must not throw ArrayStoreException
+        Assertions.assertEquals(Op.SUB, matrix.get(0, 0));
+        Assertions.assertEquals(Op.ADD, matrix.get(1, 1));
+    }
+
+    @Test
     public void testDiagonalSupportsWiderGenericTypeAfterRowView() {
         Number[] mainDiag = new Number[] { 1 };
         Matrix<Number> matrix = Matrix.mainDiagonal(mainDiag);

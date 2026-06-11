@@ -6153,6 +6153,16 @@ class IntMatrixTest extends TestBase {
     }
 
     @Test
+    public void testExtend_emptyMatrixColumnOnlyPaddingNotRepresentable() {
+        // Column-only padding of an empty matrix implies a 0 x N shape, which is not representable.
+        IntMatrix empty = IntMatrix.empty();
+        assertThrows(IllegalArgumentException.class, () -> empty.extend(0, 0, 1, 0));
+        assertThrows(IllegalArgumentException.class, () -> empty.extend(0, 0, 0, 2, 9));
+        // All-zero padding is a plain copy and stays representable.
+        assertEquals(0, empty.extend(0, 0, 0, 0).rowCount());
+    }
+
+    @Test
     public void testMainDiagonalStream_iteratesEachDiagonalElementOnce() {
         IntMatrix m = IntMatrix.of(new int[][] { { 11, 12, 13 }, { 21, 22, 23 }, { 31, 32, 33 } });
         int[] diag = m.mainDiagonalStream().toArray();

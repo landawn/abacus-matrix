@@ -934,6 +934,15 @@ class CharMatrixTest extends TestBase {
     }
 
     @Test
+    public void testAdd_wrapsModulo65536() {
+        // Pins the class-javadoc claim: adding 1 to a cell holding (char) 65535 wraps the cell to 0.
+        CharMatrix max = CharMatrix.of(new char[][] { { (char) 65535 } });
+        CharMatrix one = CharMatrix.of(new char[][] { { (char) 1 } });
+        Assertions.assertEquals((char) 0, max.add(one).get(0, 0));
+        Assertions.assertEquals((char) 65535, CharMatrix.of(new char[][] { { (char) 0 } }).subtract(one).get(0, 0));
+    }
+
+    @Test
     public void testSubtract() {
         char[][] a = { { 'd', 'e' }, { 'f', 'g' } };
         char[][] b = { { 1, 2 }, { 3, 4 } };
