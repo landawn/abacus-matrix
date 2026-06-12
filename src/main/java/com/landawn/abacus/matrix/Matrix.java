@@ -178,8 +178,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * may have a more specific component type than the static {@code T}. Enum constants resolve
      * to their declaring enum class (even constants with constant-specific class bodies), so any
      * constant of the same enum can later be stored via {@link #set(int, int, Object)}. Because
-     * {@code element} must be non-{@code null}, this factory cannot be used to produce an
-     * empty-but-typed placeholder matrix.</p>
+     * {@code element} must be non-{@code null}, producing a typed empty matrix still requires a
+     * non-{@code null} sample element, such as {@code Matrix.repeat(0, 0, "a")}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1681,9 +1681,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     }
 
     /**
-     * Returns a copy of this matrix.
-     * The returned matrix is a completely independent copy; modifications to one
-     * do not affect the other.
+     * Returns a structural copy of this matrix.
+     * The returned matrix has independent row storage, so replacing elements in one matrix
+     * does not affect the other. Element object references are copied, not cloned; mutable
+     * element objects remain shared.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1695,7 +1696,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * copy.equals(original); // returns false (after the edit)
      * }</pre>
      *
-     * @return a new matrix that is a copy of this matrix with full independence guarantee
+     * @return a new matrix with independent row storage and the same element references
      */
     @Override
     public Matrix<T> copy() {
@@ -1709,8 +1710,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     }
 
     /**
-     * Creates a copy of a row range from this matrix.
-     * The returned matrix contains only the specified rows and is completely independent from the original matrix.
+     * Creates a structural copy of a row range from this matrix.
+     * The returned matrix contains only the specified rows and has independent row storage.
+     * Element object references are copied, not cloned; mutable element objects remain shared
+     * with the original matrix.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
