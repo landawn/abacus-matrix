@@ -464,7 +464,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * {@code [startInclusive, endInclusive]} stepped by {@code step}.
      * The step size can be positive (for ascending sequences) or negative (for descending sequences).
      * {@code endInclusive} is included only if it is reachable from {@code startInclusive} via {@code step};
-     * otherwise the largest reachable value below it is the last element. If the step direction does not
+     * otherwise the last element is the reachable value nearest to {@code endInclusive} without stepping past it. If the step direction does not
      * advance toward {@code endInclusive}, a {@code 1x0} matrix is returned.
      *
      * <p><b>Usage Examples:</b></p>
@@ -544,8 +544,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
 
     /**
      * Creates a square matrix from the specified main diagonal and anti-diagonal elements.
-     * All other elements are set to zero. If both arrays are provided, they must have the same length.
-     * The resulting matrix has dimensions n×n where n is the length of the non-empty diagonal array.
+     * All other elements are set to zero. If both arrays are non-empty, they must have the same length.
+     * The resulting matrix has dimensions {@code n x n}, where {@code n} is the length of the non-empty diagonal array.
      * When both diagonals are provided and they overlap (at the center element of odd-sized matrices),
      * the main diagonal value takes precedence.
      *
@@ -561,8 +561,10 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * IntMatrix.diagonals(new int[] {1, 2}, new int[] {3, 4, 5}); // throws IllegalArgumentException (length mismatch)
      * }</pre>
      *
-     * @param mainDiagonal the array of main diagonal elements; may be {@code null} or empty if {@code antiDiagonal} is non-{@code null}
-     * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} or empty if {@code mainDiagonal} is non-{@code null}
+     * @param mainDiagonal the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non-{@code null};
+     *        may be empty
+     * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non-{@code null};
+     *        may be empty
      * @return a square matrix with the specified diagonals, or an empty matrix when both arrays are empty (at least one being a non-{@code null} zero-length array)
      * @throws IllegalArgumentException if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null}, or if both arrays are non-empty and have different lengths
      * @see #mainDiagonal(int[])
@@ -1012,7 +1014,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * This modifies the matrix directly.
      *
      * <p>The operator is applied to each element in the specified row sequentially
-     * from left to right (column 0 to column columnCount-1).</p>
+     * from left to right (column {@code 0} to column {@code columnCount - 1}).</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1051,7 +1053,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * This modifies the matrix directly.
      *
      * <p>The operator is applied to each element in the specified column sequentially
-     * from top to bottom (row 0 to row rowCount-1).</p>
+     * from top to bottom (row {@code 0} to row {@code rowCount - 1}).</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1318,8 +1320,19 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      */
     public <E extends Exception> void updateAll(final Throwables.IntUnaryOperator<E> operator) throws E {
         N.checkArgNotNull(operator, "operator");
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.applyAsInt(a[i][j]);
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+
+        if (Matrices.isParallelizable(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.applyAsInt(a[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final int[] row = a[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    row[j] = operator.applyAsInt(row[j]);
+                }
+            }
+        }
     }
 
     /**
@@ -1783,14 +1796,14 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     }
 
     /**
-     * Returns a new matrix whose dimensions are exactly {@code newRowCount × newColumnCount},
+     * Returns a new matrix whose dimensions are exactly {@code newRowCount x newColumnCount},
      * anchored at the top-left corner of this matrix. New cells are filled with {@code 0}.
      *
      * <ul>
-     *   <li><b>If a dimension shrinks</b> — elements beyond the new boundary are discarded
+     *   <li><b>If a dimension shrinks</b> - elements beyond the new boundary are discarded
      *       (excess rows removed from the bottom, excess columns removed from the right).</li>
-     *   <li><b>If a dimension grows</b> — new cells are filled with {@code 0}.</li>
-     *   <li><b>Mixed case</b> — each dimension is treated independently, so it is valid
+     *   <li><b>If a dimension grows</b> - new cells are filled with {@code 0}.</li>
+     *   <li><b>Mixed case</b> - each dimension is treated independently, so it is valid
      *       to grow rows while truncating columns, or vice versa.</li>
      * </ul>
      *
@@ -1805,12 +1818,12 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      *
-     * // Grow: both dimensions larger — new cells filled with 0
+     * // Grow: both dimensions larger - new cells filled with 0
      * IntMatrix grown = matrix.resize(4, 4);
      * grown.get(3, 3);                        // returns 0 (new cell)
      * grown.get(0, 0);                        // returns 1 (preserved)
      *
-     * // Truncate: both dimensions smaller — bottom rows and right columns discarded
+     * // Truncate: both dimensions smaller - bottom rows and right columns discarded
      * IntMatrix truncated = matrix.resize(2, 2);
      * truncated.columnCount();                // returns 2
      * truncated.get(1, 1);                    // returns 5
@@ -1835,14 +1848,14 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     }
 
     /**
-     * Returns a new matrix whose dimensions are exactly {@code newRowCount × newColumnCount},
+     * Returns a new matrix whose dimensions are exactly {@code newRowCount x newColumnCount},
      * anchored at the top-left corner of this matrix.
      *
      * <ul>
-     *   <li><b>If a dimension shrinks</b> — elements beyond the new boundary are discarded.
+     *   <li><b>If a dimension shrinks</b> - elements beyond the new boundary are discarded.
      *       {@code defaultValue} is <em>not</em> used in this case.</li>
-     *   <li><b>If a dimension grows</b> — new cells are filled with {@code defaultValue}.</li>
-     *   <li><b>Mixed case</b> — each dimension is treated independently, so it is valid
+     *   <li><b>If a dimension grows</b> - new cells are filled with {@code defaultValue}.</li>
+     *   <li><b>Mixed case</b> - each dimension is treated independently, so it is valid
      *       to grow rows while truncating columns, or vice versa.</li>
      * </ul>
      *
@@ -1949,7 +1962,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param padBottom number of padding rows to add below the original matrix; must be {@code >= 0}
      * @param padLeft number of padding columns to add to the left of the original matrix; must be {@code >= 0}
      * @param padRight number of padding columns to add to the right of the original matrix; must be {@code >= 0}
-     * @return a new IntMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
+     * @return a new IntMatrix with dimensions {@code (padTop + rowCount + padBottom) x (padLeft + columnCount + padRight)}
      * @throws IllegalArgumentException if any padding parameter is negative,
      *         if the resulting dimensions would overflow {@code Integer.MAX_VALUE},
      *         or if the resulting shape is not representable (zero rows with a non-zero column count)
@@ -2002,7 +2015,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param padLeft number of padding columns to add to the left of the original matrix; must be {@code >= 0}
      * @param padRight number of padding columns to add to the right of the original matrix; must be {@code >= 0}
      * @param defaultValue the value to fill all new padding cells with
-     * @return a new IntMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
+     * @return a new IntMatrix with dimensions {@code (padTop + rowCount + padBottom) x (padLeft + columnCount + padRight)}
      * @throws IllegalArgumentException if any padding parameter is negative,
      *         if the resulting dimensions would overflow {@code Integer.MAX_VALUE},
      *         or if the resulting shape is not representable (zero rows with a non-zero column count)
@@ -2200,7 +2213,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * IntMatrix.empty().rotate90().isEmpty(); // returns true
      * }</pre>
      *
-     * @return a new matrix rotated 90 degrees clockwise (dimensions {@code columnCount × rowCount}),
+     * @return a new matrix rotated 90 degrees clockwise (dimensions {@code columnCount x rowCount}),
      *         or an empty matrix if this matrix has zero columns
      * @see #rotate180()
      * @see #rotate270()
@@ -2288,7 +2301,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * IntMatrix.empty().rotate270().isEmpty(); // returns true
      * }</pre>
      *
-     * @return a new matrix rotated 270 degrees clockwise (dimensions {@code columnCount × rowCount}),
+     * @return a new matrix rotated 270 degrees clockwise (dimensions {@code columnCount x rowCount}),
      *         or an empty matrix if this matrix has zero columns
      * @see #rotate90()
      * @see #rotate180()
@@ -3089,7 +3102,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * nonSquare.mainDiagonalStream();         // throws IllegalStateException (not square)
      * }</pre>
      *
-     * @return an IntStream of main-diagonal elements, or an empty stream if the matrix is empty
+     * @return an IntStream of main-diagonal elements, or an empty stream if this is the empty {@code 0x0} matrix
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
@@ -3149,7 +3162,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * nonSquare.antiDiagonalStream();         // throws IllegalStateException (not square)
      * }</pre>
      *
-     * @return an IntStream of anti-diagonal elements, or an empty stream if the matrix is empty
+     * @return an IntStream of anti-diagonal elements, or an empty stream if this is the empty {@code 0x0} matrix
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
@@ -3830,7 +3843,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     /**
      * Prints this matrix to standard output and returns the formatted string that was printed.
      * Each row is printed on a separate line with elements separated by commas and enclosed in
-     * square brackets. An empty matrix prints {@code []}.
+     * square brackets. A matrix with zero rows prints {@code []}.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

@@ -317,8 +317,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * BooleanMatrix.diagonals(new boolean[] {true}, new boolean[] {true, false}); // throws IllegalArgumentException (length mismatch)
      * }</pre>
      *
-     * @param mainDiagonal the array of main diagonal elements; may be {@code null} or empty if {@code antiDiagonal} is non-{@code null}
-     * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} or empty if {@code mainDiagonal} is non-{@code null}
+     * @param mainDiagonal the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non-{@code null};
+     *        may be empty
+     * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non-{@code null};
+     *        may be empty
      * @return a square matrix with the specified diagonals, or an empty matrix when both arrays are empty (at least one being a non-{@code null} zero-length array)
      * @throws IllegalArgumentException if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null}, or if both arrays are non-empty and have different lengths
      */
@@ -3705,7 +3707,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * Prints this matrix to standard output and returns the formatted string.
      *
      * <p>Each row is formatted as {@code [e1, e2, ...]} and rows are separated by
-     * {@link #ARRAY_PRINT_SEPARATOR}. If the matrix is empty, {@code []} is printed.
+     * {@link #ARRAY_PRINT_SEPARATOR}. If the matrix has zero rows, {@code []} is printed.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

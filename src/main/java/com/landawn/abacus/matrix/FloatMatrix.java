@@ -359,7 +359,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
     /**
      * Creates a square matrix from the specified main diagonal and anti-diagonal elements.
-     * All other elements are set to zero. If both arrays are provided, they must have the same length.
+     * All other elements are set to zero. If both arrays are non-empty, they must have the same length.
      * The resulting matrix has dimensions n×n where n is the length of the non-empty diagonal array.
      * When both diagonals are provided and they overlap (at the center element of odd-sized matrices),
      * the main diagonal value takes precedence.
@@ -3666,7 +3666,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     /**
      * Prints this matrix to standard output and returns the formatted string.
      * Each row is printed on a separate line with elements separated by commas
-     * and enclosed in square brackets. An empty matrix prints as {@code "[]"}.
+     * and enclosed in square brackets. A matrix with zero rows prints as {@code "[]"}.
      *
      * <p>Each float element is formatted by Java's default {@link Float#toString(float)},
      * which yields {@code "NaN"}, {@code "Infinity"}, {@code "-Infinity"}, or

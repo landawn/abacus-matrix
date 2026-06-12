@@ -477,6 +477,18 @@ class LongMatrixTest extends TestBase {
     }
 
     @Test
+    public void testUpdateAllUnarySequentialTallMatrixUsesRowMajorOrder() throws Exception {
+        final LongMatrix matrix = LongMatrix.repeat(3, 2, 0L);
+        final AtomicInteger next = new AtomicInteger();
+
+        Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.updateAll(x -> next.incrementAndGet()));
+
+        assertArrayEquals(new long[] { 1L, 2L }, matrix.rowCopy(0));
+        assertArrayEquals(new long[] { 3L, 4L }, matrix.rowCopy(1));
+        assertArrayEquals(new long[] { 5L, 6L }, matrix.rowCopy(2));
+    }
+
+    @Test
     public void testUpdateAllWithIndices() {
         long[][] a = { { 0L, 0L }, { 0L, 0L } };
         LongMatrix matrix = LongMatrix.of(a);

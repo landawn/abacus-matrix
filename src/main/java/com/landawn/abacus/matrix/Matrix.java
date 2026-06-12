@@ -3740,7 +3740,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Prints this matrix to standard output and returns the printed string.
      * Each row is printed on a separate line with elements separated by commas
-     * and enclosed in square brackets. Empty matrices print as {@code "[]"}.
+     * and enclosed in square brackets. Matrices with zero rows print as {@code "[]"}.
      * {@code null} elements are rendered as {@code "null"}.
      *
      * <p><b>Usage Examples:</b></p>

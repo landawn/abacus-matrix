@@ -34,9 +34,10 @@ import com.landawn.abacus.util.stream.Stream;
  * centralizes behavior common to both primitive and object matrices, including shape validation,
  * coordinate navigation, row and column access, reshaping, and stream-oriented traversal.</p>
  *
- * <p>Several APIs intentionally expose live storage for performance-sensitive code, notably
- * {@link #internalArray()}, {@link #rowView(int)}, and
- * {@link #mutateAsFlat(Throwables.Consumer)}. Callers that need isolation should prefer
+ * <p>Several APIs intentionally cross the usual defensive-copy boundary for performance-sensitive code:
+ * {@link #internalArray()} and {@link #rowView(int)} expose live storage, while
+ * {@link #mutateAsFlat(Throwables.Consumer)} lets callers mutate the matrix through a flattened array.
+ * Callers that need isolation should prefer
  * copy-producing operations such as {@link #copy()}, {@link #flatten()}, and {@link #rowCopy(int)}.</p>
  *
  * <p>Per-element iteration uses two complementary entry points. The index-only
@@ -151,8 +152,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     final A[] a;
 
     /**
-     * The element type of this matrix. For primitive matrices this is the matching
-     * primitive class (e.g. {@code int.class}); for {@link Matrix} it is the runtime element class.
+     * The element type tracked for this matrix. For primitive matrices this is the matching
+     * primitive class (e.g. {@code int.class}); for {@link Matrix} it is the backing array
+     * component type, or an explicit element type selected by the factory.
      * Read via {@link #elementType()}.
      */
     final Class<?> elementType;
@@ -230,7 +232,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
     /**
      * Validates that a matrix of the specified shape can be materialized, i.e. that its total cell count
-     * fits within an {@code int} (the addressable size of a single backing row array).
+     * fits within an {@code int}, which is required by operations that materialize a flat traversal buffer.
      *
      * @param rowCount the row count
      * @param columnCount the column count
@@ -293,7 +295,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     /**
      * Returns the element type of this matrix.
      * For primitive matrices, this returns the corresponding primitive class (e.g., {@code int.class} for {@link IntMatrix}).
-     * For object matrices, this returns the element's class type.
+     * For object matrices, this returns the backing array component type, or an explicit element type selected by the factory;
+     * it may be a supertype of individual stored values.
      *
      * <p>This method is useful for reflection-based operations and type checking at runtime.</p>
      *
@@ -562,9 +565,12 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     public abstract String println();
 
     /**
-     * Returns a copy of this matrix.
-     * The returned matrix is a completely independent copy with its own underlying array;
-     * modifications to one matrix do not affect the other.
+     * Returns a structural copy of this matrix.
+     * The returned matrix has its own row arrays, so replacing elements or mutating primitive
+     * cells through one matrix does not modify the other's storage.
+     *
+     * <p>For object matrices, element references are copied, not the referenced objects
+     * themselves; mutating a shared mutable element can still be observed through both matrices.</p>
      *
      * <p>This method creates new array instances and copies all element values.
      * For large matrices, this operation can be memory and time intensive.</p>
@@ -588,8 +594,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
     /**
      * Returns a copy of a row range from this matrix.
-     * The returned matrix contains only the specified rows (with all columns) and is completely
-     * independent from the original matrix.
+     * The returned matrix contains only the specified rows (with all columns) and has its own row arrays.
+     * For object matrices, element references are copied, not the referenced objects themselves.
      *
      * <p>This is equivalent to calling {@code copy(fromRowIndex, toRowIndex, 0, columnCount)}.</p>
      *
@@ -601,7 +607,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * IntMatrix lastRow = matrix.copy(2, 3);                   // returns {{5, 6}}
      *
-     * IntMatrix none = matrix.copy(1, 1);                      // returns the canonical empty 0 x 0 matrix
+     * IntMatrix none = matrix.copy(1, 1);                      // returns an empty 0 x 0 matrix
      * none.rowCount();                                         // returns 0
      *
      * matrix.copy(0, 4);                                       // throws IndexOutOfBoundsException (toRowIndex > rowCount)
@@ -612,7 +618,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param toRowIndex the ending row index (exclusive)
      * @return a new matrix containing the specified rows with dimensions
      *         {@code (toRowIndex - fromRowIndex) × columnCount}; when the row range is empty
-     *         ({@code fromRowIndex == toRowIndex}) the result is the canonical empty {@code 0 x 0} matrix
+     *         ({@code fromRowIndex == toRowIndex}) the result is an empty {@code 0 x 0} matrix
      *         (the column count is not preserved)
      * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount},
      *         or {@code fromRowIndex > toRowIndex}
@@ -621,8 +627,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
     /**
      * Returns a copy of a rectangular region from this matrix.
-     * The returned matrix contains only the specified rows and columns and is completely
-     * independent from the original matrix.
+     * The returned matrix contains only the specified rows and columns and has its own row arrays.
+     * For object matrices, element references are copied, not the referenced objects themselves.
      *
      * <p>This method allows you to extract any rectangular subregion of the matrix.</p>
      *
@@ -646,7 +652,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param toColumnIndex the ending column index (exclusive)
      * @return a new matrix containing the specified region with dimensions
      *         {@code (toRowIndex - fromRowIndex) × (toColumnIndex - fromColumnIndex)}; when the row range is empty
-     *         ({@code fromRowIndex == toRowIndex}) the result is the canonical empty {@code 0 x 0} matrix
+     *         ({@code fromRowIndex == toRowIndex}) the result is an empty {@code 0 x 0} matrix
      *         (the column count is not preserved), whereas an empty column range with a non-empty row range
      *         correctly yields {@code (toRowIndex - fromRowIndex) x 0}
      * @throws IndexOutOfBoundsException if any index is out of bounds, {@code fromRowIndex > toRowIndex},

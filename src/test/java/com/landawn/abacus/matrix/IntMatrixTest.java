@@ -468,6 +468,18 @@ class IntMatrixTest extends TestBase {
     }
 
     @Test
+    public void testUpdateAllUnarySequentialTallMatrixUsesRowMajorOrder() throws Exception {
+        final IntMatrix m = IntMatrix.repeat(3, 2, 0);
+        final AtomicInteger next = new AtomicInteger();
+
+        Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> m.updateAll(x -> next.incrementAndGet()));
+
+        assertArrayEquals(new int[] { 1, 2 }, m.rowCopy(0));
+        assertArrayEquals(new int[] { 3, 4 }, m.rowCopy(1));
+        assertArrayEquals(new int[] { 5, 6 }, m.rowCopy(2));
+    }
+
+    @Test
     public void testUpdateAllNullOperator() {
         IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
         IntMatrix emptyLike = IntMatrix.of(new int[][] { {}, {} });

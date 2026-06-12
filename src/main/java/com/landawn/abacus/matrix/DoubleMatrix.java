@@ -198,8 +198,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * <p>All rows must have the same length as the first row (rectangular array required).</p>
      *
-     * <p><b>Note:</b> Long values with more than 53 significant bits may lose precision when
-     * converted to double, since double has a 52-bit mantissa. For example,
+     * <p><b>Note:</b> Long values that require more than 53 bits of precision may lose precision when
+     * converted to double, since a double has 53 bits of significand precision (52 stored fraction bits
+     * plus an implicit leading bit for normal values). For example,
      * {@code Long.MAX_VALUE} (9223372036854775807) cannot be represented exactly as a double.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -211,7 +212,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * DoubleMatrix empty = DoubleMatrix.from((long[][]) null);
      * empty.isEmpty();             // returns true
      *
-     * // Precision loss for large magnitudes (> 53 significant bits):
+     * // Precision loss for values requiring more than 53 bits of precision:
      * DoubleMatrix big = DoubleMatrix.from(new long[][] {{Long.MAX_VALUE}});
      * big.get(0, 0);               // returns 9.223372036854776E18 (not exact)
      *
@@ -472,7 +473,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
 
     /**
      * Creates a square matrix from the specified main diagonal and anti-diagonal elements.
-     * All other elements are set to zero. If both arrays are provided, they must have the same length.
+     * All other elements are set to zero. If both arrays are non-empty, they must have the same length.
      * The resulting matrix has dimensions n×n where n is the length of the non-empty diagonal array.
      * When both diagonals are provided and they overlap (at the center element of odd-sized matrices),
      * the main diagonal value takes precedence.
@@ -3874,7 +3875,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     /**
      * Prints this matrix to standard output and returns the formatted string.
      * Each row is printed on a separate line with elements separated by commas
-     * and enclosed in square brackets. An empty matrix prints as {@code "[]"}.
+     * and enclosed in square brackets. A matrix with zero rows prints as {@code "[]"}.
      *
      * <p>Each double element is formatted by Java's default {@link Double#toString(double)},
      * which yields {@code "NaN"}, {@code "Infinity"}, {@code "-Infinity"}, or

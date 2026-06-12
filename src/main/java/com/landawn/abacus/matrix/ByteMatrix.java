@@ -42,9 +42,9 @@ import com.landawn.abacus.util.stream.Stream;
  * <p>Cells introduced by growth or reshaping default to {@code 0} unless an overload accepts an
  * explicit fill value.</p>
  *
- * <p><b>Byte arithmetic:</b> the built-in element-wise arithmetic ({@link #add(ByteMatrix)},
- * {@link #subtract(ByteMatrix)}, and {@link #matmul(ByteMatrix)}) is performed using Java's standard
- * numeric promotion to {@code int} and the result is narrowed back to {@code byte} (via an explicit
+ * <p><b>Byte arithmetic:</b> the built-in byte arithmetic operations ({@link #add(ByteMatrix)},
+ * {@link #subtract(ByteMatrix)}, and {@link #matmul(ByteMatrix)}) use Java's standard
+ * numeric promotion to {@code int} and narrow each stored result back to {@code byte} (via an explicit
  * cast for {@code add}/{@code subtract}, or via the implicit narrowing of the {@code +=} accumulation
  * in {@code matmul}), so values outside {@code [Byte.MIN_VALUE, Byte.MAX_VALUE]} wrap modulo 256.
  * The {@code zipWith}/{@code map} variants instead store whatever {@code byte} the supplied operator
@@ -3742,7 +3742,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     /**
      * Prints this matrix to standard output and returns the formatted string that was printed.
      * Each row is printed on a separate line with elements separated by commas and enclosed in
-     * square brackets. An empty matrix prints {@code []}.
+     * square brackets. A matrix with zero rows prints {@code []}.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

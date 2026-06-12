@@ -93,7 +93,7 @@ public final class Matrices {
      * <ul>
      * <li>{@link ParallelMode#FORCE_ON} - requests parallel execution whenever the runtime supports it.</li>
      * <li>{@link ParallelMode#FORCE_OFF} - forces sequential execution regardless of matrix size.</li>
-     * <li>{@link ParallelMode#AUTO} - automatically decides based on matrix size (threshold: 8192 elements).</li>
+     * <li>{@link ParallelMode#AUTO} - automatically decides based on runtime support and matrix size (threshold: 8192 elements).</li>
      * </ul>
      *
      * <p><b>Usage Examples:</b></p>
@@ -131,8 +131,8 @@ public final class Matrices {
      *     the runtime supports it, regardless of matrix size.</li>
      * <li>{@link ParallelMode#FORCE_OFF} - forces all matrix operations to use sequential processing,
      *     regardless of matrix size. Use this to avoid parallelization overhead for small matrices.</li>
-     * <li>{@link ParallelMode#AUTO} - automatically decides based on matrix size. Operations
-     *     on matrices with 8192 or more elements use parallel processing; smaller matrices use sequential processing.</li>
+     * <li>{@link ParallelMode#AUTO} - automatically decides based on runtime support and matrix size. Operations
+     *     on matrices with 8192 or more elements use parallel processing when parallel stream support is available; smaller matrices use sequential processing.</li>
      * </ul>
      *
      * <p><b>Usage Examples:</b></p>
@@ -983,7 +983,7 @@ public final class Matrices {
      * {@code a.rowCount}, {@code a.columnCount} (= {@code b.rowCount}), and {@code b.columnCount}. In sequential
      * mode the smallest dimension is used for the outermost loop to maximize cache locality.</p>
      *
-     * <p>When parallel execution is enabled, the outermost loop is parallelized while inner
+     * <p>When parallel execution is requested and supported, the outermost loop is parallelized while inner
      * loops remain sequential. To avoid concurrent writes to the same accumulator cell, the
      * {@code k} loop (over {@code a.columnCount} = {@code b.rowCount}) is never parallelized: when
      * {@code a.rowCount} is the smallest dimension the parallel loop is over {@code i}, and
@@ -1007,7 +1007,7 @@ public final class Matrices {
      * @param a the first matrix (left operand), must not be {@code null}
      * @param b the second matrix (right operand), must not be {@code null}
      * @param action the accumulator function called for each (i, j, k) triple in the multiplication, must not be {@code null}
-     * @param inParallel {@code true} to force parallel execution; {@code false} for sequential execution
+     * @param inParallel {@code true} to request parallel execution when parallel stream support is available; {@code false} for sequential execution
      * @throws IllegalArgumentException if {@code a} or {@code b} is {@code null}, if matrix dimensions are incompatible ({@code a.columnCount != b.rowCount}), or if {@code action} is {@code null}
      * @see #forEachCartesianIndices(AbstractMatrix, AbstractMatrix, Throwables.IntTriConsumer)
      */
@@ -3383,8 +3383,8 @@ public final class Matrices {
      *
      * <p>This method performs element-wise combination of two matrices with potentially different
      * element types. For each position (i, j), the function is called with elements from both matrices:
-     * {@code zipFunction.apply(a[i][j], b[i][j])}. The result matrix has the same element type as
-     * the first matrix.</p>
+     * {@code zipFunction.apply(a[i][j], b[i][j])}. The result matrix uses the first matrix's runtime
+     * element type.</p>
      *
      * <p>Both matrices must have identical dimensions (same number of rows and columns).
      * This operation delegates to the {@link Matrix#zipWith(Matrix, Throwables.BiFunction)} method.</p>
@@ -3413,6 +3413,7 @@ public final class Matrices {
      * @param zipFunction the function to combine corresponding elements from both matrices, must not be {@code null}
      * @return a new {@link Matrix} of type A containing the combined values, never {@code null}
      * @throws IllegalArgumentException if the matrices have different shapes or if any argument is {@code null}
+     * @throws ArrayStoreException if {@code zipFunction} returns a value that is not assignable to the first matrix's runtime element type
      * @throws E if the zip function throws an exception during execution
      * @see #zip(Matrix, Matrix, Throwables.BiFunction, Class)
      * @see #zip(Matrix, Matrix, Matrix, Throwables.TriFunction)
@@ -3484,7 +3485,7 @@ public final class Matrices {
      * <p>This method performs element-wise combination of three matrices with potentially different
      * element types. For each position (i, j), the function is called with the corresponding
      * elements from all three matrices: {@code zipFunction.apply(a[i][j], b[i][j], c[i][j])}.
-     * The result matrix has the same element type as the first matrix.</p>
+     * The result matrix uses the first matrix's runtime element type.</p>
      *
      * <p>All three matrices must have identical dimensions (same number of rows and columns).
      * This operation delegates to the {@link Matrix#zipWith(Matrix, Matrix, Throwables.TriFunction)} method.</p>
@@ -3516,6 +3517,7 @@ public final class Matrices {
      * @param zipFunction the function to combine corresponding elements from all three matrices, must not be {@code null}
      * @return a new {@link Matrix} of type A containing the combined values, never {@code null}
      * @throws IllegalArgumentException if the matrices have different shapes or if any argument is {@code null}
+     * @throws ArrayStoreException if {@code zipFunction} returns a value that is not assignable to the first matrix's runtime element type
      * @throws E if the zip function throws an exception during execution
      * @see #zip(Matrix, Matrix, Throwables.BiFunction)
      * @see #zip(Matrix, Matrix, Matrix, Throwables.TriFunction, Class)

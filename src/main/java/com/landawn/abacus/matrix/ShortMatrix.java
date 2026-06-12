@@ -3679,7 +3679,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     /**
      * Prints this matrix to standard output and returns the formatted string that was printed.
      * Each row is printed on a separate line with elements separated by commas and enclosed in
-     * square brackets. An empty matrix prints {@code []}.
+     * square brackets. A matrix with zero rows prints {@code []}.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

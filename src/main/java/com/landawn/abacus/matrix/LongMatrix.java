@@ -355,7 +355,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * {@code [startInclusive, endInclusive]} stepped by {@code step}.
      * The step size can be positive (for ascending sequences) or negative (for descending sequences).
      * {@code endInclusive} is included only if it is reachable from {@code startInclusive} via {@code step};
-     * otherwise the largest reachable value below it is the last element. If the step direction does not
+     * otherwise the last element is the reachable value nearest to {@code endInclusive} without stepping past it. If the step direction does not
      * advance toward {@code endInclusive}, a {@code 1x0} matrix is returned.
      *
      * <p><b>Usage Examples:</b></p>
@@ -435,8 +435,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
     /**
      * Creates a square matrix from the specified main diagonal and anti-diagonal elements.
-     * All other elements are set to zero. If both arrays are provided, they must have the same length.
-     * The resulting matrix has dimensions n×n where n is the length of the non-empty diagonal array.
+     * All other elements are set to zero. At least one array must be non-{@code null}; if both arrays
+     * contain elements, they must have the same length.
+     * The resulting matrix has dimensions {@code n x n}, where {@code n} is the length of the
+     * non-empty diagonal array. If neither input contains any elements, the shared empty matrix is returned.
      * When both diagonals are provided and they overlap (at the center element of odd-sized matrices),
      * the main diagonal value takes precedence.
      *
@@ -452,10 +454,12 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * LongMatrix.diagonals(new long[] {1L, 2L}, new long[] {3L, 4L, 5L}); // throws IllegalArgumentException (length mismatch)
      * }</pre>
      *
-     * @param mainDiagonal the array of main diagonal elements; may be {@code null} or empty if {@code antiDiagonal} is non-{@code null}
-     * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} or empty if {@code mainDiagonal} is non-{@code null}
-     * @return a square matrix with the specified diagonals, or an empty matrix when both arrays are empty (at least one being a non-{@code null} zero-length array)
-     * @throws IllegalArgumentException if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null}, or if both arrays are non-empty and have different lengths
+     * @param mainDiagonal the array of main-diagonal elements; may be {@code null} if {@code antiDiagonal} is non-{@code null};
+     *        may be empty
+     * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non-{@code null};
+     *        may be empty
+     * @return a square matrix with the specified diagonals, or the shared empty matrix if neither input contains any elements
+     * @throws IllegalArgumentException if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null}, or if both arrays contain elements and have different lengths
      * @see #mainDiagonal(long[])
      * @see #antiDiagonal(long[])
      */
@@ -1209,8 +1213,19 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     public <E extends Exception> void updateAll(final Throwables.LongUnaryOperator<E> operator) throws E {
         N.checkArgNotNull(operator, "operator");
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.applyAsLong(a[i][j]);
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+
+        if (Matrices.isParallelizable(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.applyAsLong(a[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final long[] row = a[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    row[j] = operator.applyAsLong(row[j]);
+                }
+            }
+        }
     }
 
     /**
@@ -3767,7 +3782,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     /**
      * Prints this matrix to standard output and returns the formatted string that was printed.
      * Each row is printed on a separate line with elements separated by commas and enclosed in
-     * square brackets. An empty matrix prints {@code []}.
+     * square brackets. A matrix with zero rows prints {@code []}.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
