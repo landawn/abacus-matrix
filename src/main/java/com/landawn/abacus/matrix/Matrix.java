@@ -1231,6 +1231,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Creates a new matrix by applying a transformation function to each element.
      * The result matrix has the same element type as the original.
      * This is a convenience method that uses the same element type for input and output.
+     * The operation may be performed in parallel for large matrices.
      *
      * <p><b>Note:</b> because the result reuses this matrix's runtime element type, an {@link ArrayStoreException}
      * is thrown if {@code mapper} returns a value that is not assignable to that type. Use
@@ -1267,6 +1268,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Creates a new matrix by applying a transformation function to each element.
      * The result matrix can have a different element type than the original.
      * The target element type must be explicitly specified.
+     * The operation may be performed in parallel for large matrices.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1308,6 +1310,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Creates a {@link BooleanMatrix} by applying a boolean-valued function to each element.
      * This is useful for creating masks or performing element-wise comparisons.
+     * The operation may be performed in parallel for large matrices.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1343,6 +1346,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Creates a byte matrix by applying a byte-valued function to each element.
      * Any narrowing conversion behavior depends on the mapper implementation.
+     * The operation may be performed in parallel for large matrices.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1376,6 +1380,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Creates a char matrix by applying a char-valued function to each element.
      * This is useful for character-based transformations.
+     * The operation may be performed in parallel for large matrices.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1411,6 +1416,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Creates a short matrix by applying a short-valued function to each element.
      * Any narrowing conversion behavior depends on the mapper implementation.
+     * The operation may be performed in parallel for large matrices.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1444,6 +1450,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Creates an int matrix by applying an int-valued function to each element.
      * This is one of the most commonly used primitive type conversions.
+     * The operation may be performed in parallel for large matrices.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1478,6 +1485,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Creates a long matrix by applying a long-valued function to each element.
      * Useful for operations that require 64-bit integer precision.
+     * The operation may be performed in parallel for large matrices.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1511,6 +1519,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Creates a float matrix by applying a float-valued function to each element.
      * Useful for single-precision floating-point operations.
+     * The operation may be performed in parallel for large matrices.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1544,6 +1553,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Creates a double matrix by applying a double-valued function to each element.
      * Useful for double-precision floating-point operations.
+     * The operation may be performed in parallel for large matrices.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2843,7 +2853,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Combines three matrices element-wise using the specified ternary function.
      * The function is applied to corresponding elements from all three matrices.
-     * All matrices must have the same dimensions.
+     * All matrices must have the same dimensions. The operation may be performed
+     * in parallel for large matrices.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

@@ -2180,7 +2180,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * @param newRowCount the number of rows in the reshaped matrix; must be non-negative
      * @param newColumnCount the number of columns in the reshaped matrix; must be non-negative
-     * @return a new {@code BooleanMatrix} with the specified shape
+     * @return a new {@code BooleanMatrix} with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative, if the resulting shape is not
      *         representable (zero rows with a non-zero column count), if the total cell count {@code (long) newRowCount * newColumnCount}
      *         exceeds {@code Integer.MAX_VALUE}, or if the new shape is too small to hold every existing element
