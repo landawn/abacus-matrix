@@ -1127,8 +1127,19 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     public <E extends Exception> void updateAll(final Throwables.FloatUnaryOperator<E> operator) throws E {
         N.checkArgNotNull(operator, "operator");
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.applyAsFloat(a[i][j]);
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+
+        if (Matrices.isParallelizable(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.applyAsFloat(a[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final float[] row = a[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    row[j] = operator.applyAsFloat(row[j]);
+                }
+            }
+        }
     }
 
     /**

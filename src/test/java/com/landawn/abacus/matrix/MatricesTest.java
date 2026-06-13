@@ -4552,7 +4552,7 @@ class MatricesTest extends TestBase {
         }
     }
 
-    // === Missing coverage: newMatrixArray, forEachCartesianIndices ===
+    // === Additional coverage: newMatrixArray, forEachCartesianIndices ===
 
     @Test
     public void testNewMatrixArray() {

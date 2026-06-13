@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -440,6 +441,18 @@ class ShortMatrixTest extends TestBase {
         assertEquals((short) 2, m.get(0, 0));
         assertEquals((short) 4, m.get(0, 1));
         assertEquals((short) 18, m.get(2, 2));
+    }
+
+    @Test
+    public void testUpdateAllUnarySequentialTallMatrixUsesRowMajorOrder() throws Exception {
+        final ShortMatrix m = ShortMatrix.repeat(3, 2, (short) 0);
+        final AtomicInteger next = new AtomicInteger();
+
+        Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> m.updateAll(x -> (short) next.incrementAndGet()));
+
+        assertArrayEquals(new short[] { 1, 2 }, m.rowCopy(0));
+        assertArrayEquals(new short[] { 3, 4 }, m.rowCopy(1));
+        assertArrayEquals(new short[] { 5, 6 }, m.rowCopy(2));
     }
 
     @Test

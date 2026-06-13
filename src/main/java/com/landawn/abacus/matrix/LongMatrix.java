@@ -3041,7 +3041,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * nonSquare.mainDiagonalStream();         // throws IllegalStateException (not square)
      * }</pre>
      *
-     * @return a LongStream of main-diagonal elements, or an empty stream if the matrix is empty
+     * @return a LongStream of main-diagonal elements, or an empty stream if this is the empty {@code 0x0} matrix
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
@@ -3101,7 +3101,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * nonSquare.antiDiagonalStream();         // throws IllegalStateException (not square)
      * }</pre>
      *
-     * @return a LongStream of anti-diagonal elements, or an empty stream if the matrix is empty
+     * @return a LongStream of anti-diagonal elements, or an empty stream if this is the empty {@code 0x0} matrix
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override

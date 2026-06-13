@@ -437,6 +437,18 @@ class DoubleMatrixTest extends TestBase {
     }
 
     @Test
+    public void testUpdateAllUnarySequentialTallMatrixUsesRowMajorOrder() throws Exception {
+        final DoubleMatrix tall = DoubleMatrix.repeat(3, 2, 0.0);
+        final AtomicInteger next = new AtomicInteger();
+
+        Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> tall.updateAll(x -> (double) next.incrementAndGet()));
+
+        assertArrayEquals(new double[] { 1.0, 2.0 }, tall.rowCopy(0), 0.0);
+        assertArrayEquals(new double[] { 3.0, 4.0 }, tall.rowCopy(1), 0.0);
+        assertArrayEquals(new double[] { 5.0, 6.0 }, tall.rowCopy(2), 0.0);
+    }
+
+    @Test
     public void testUpdateAllWithIndices() {
         double[][] arr = { { 1.0, 2.0 }, { 3.0, 4.0 } };
         DoubleMatrix matrix = DoubleMatrix.of(arr);

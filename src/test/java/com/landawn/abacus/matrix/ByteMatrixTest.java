@@ -471,6 +471,18 @@ class ByteMatrixTest extends TestBase {
     }
 
     @Test
+    public void testUpdateAllUnarySequentialTallMatrixUsesRowMajorOrder() throws Exception {
+        final ByteMatrix matrix = ByteMatrix.repeat(3, 2, (byte) 0);
+        final AtomicInteger next = new AtomicInteger();
+
+        Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.updateAll(x -> (byte) next.incrementAndGet()));
+
+        assertArrayEquals(new byte[] { 1, 2 }, matrix.rowCopy(0));
+        assertArrayEquals(new byte[] { 3, 4 }, matrix.rowCopy(1));
+        assertArrayEquals(new byte[] { 5, 6 }, matrix.rowCopy(2));
+    }
+
+    @Test
     public void testUpdateAllWithIndices() {
         byte[][] a = { { 0, 0 }, { 0, 0 } };
         ByteMatrix matrix = ByteMatrix.of(a);

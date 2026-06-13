@@ -460,6 +460,18 @@ class CharMatrixTest extends TestBase {
     }
 
     @Test
+    public void testUpdateAllUnarySequentialTallMatrixUsesRowMajorOrder() throws Exception {
+        final CharMatrix matrix = CharMatrix.repeat(3, 2, (char) 0);
+        final AtomicInteger next = new AtomicInteger();
+
+        Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.updateAll(x -> (char) next.incrementAndGet()));
+
+        assertArrayEquals(new char[] { 1, 2 }, matrix.rowCopy(0));
+        assertArrayEquals(new char[] { 3, 4 }, matrix.rowCopy(1));
+        assertArrayEquals(new char[] { 5, 6 }, matrix.rowCopy(2));
+    }
+
+    @Test
     public void testUpdateAllWithIndices() {
         char[][] a = { { 'a', 'b' }, { 'c', 'd' } };
         CharMatrix matrix = CharMatrix.of(a);

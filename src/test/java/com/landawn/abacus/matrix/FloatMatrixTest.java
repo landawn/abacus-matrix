@@ -443,6 +443,18 @@ class FloatMatrixTest extends TestBase {
     }
 
     @Test
+    public void testUpdateAllUnarySequentialTallMatrixUsesRowMajorOrder() throws Exception {
+        final FloatMatrix tall = FloatMatrix.repeat(3, 2, 0.0f);
+        final AtomicInteger next = new AtomicInteger();
+
+        Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> tall.updateAll(x -> (float) next.incrementAndGet()));
+
+        assertArrayEquals(new float[] { 1.0f, 2.0f }, tall.rowCopy(0), DELTA);
+        assertArrayEquals(new float[] { 3.0f, 4.0f }, tall.rowCopy(1), DELTA);
+        assertArrayEquals(new float[] { 5.0f, 6.0f }, tall.rowCopy(2), DELTA);
+    }
+
+    @Test
     public void testUpdateAllWithIndices() {
         FloatMatrix m = FloatMatrix.of(new float[][] { { 0.0f, 0.0f }, { 0.0f, 0.0f } });
         m.updateAll((i, j) -> i * 10.0f + j);

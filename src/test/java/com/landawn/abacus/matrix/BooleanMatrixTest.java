@@ -388,6 +388,18 @@ class BooleanMatrixTest extends TestBase {
     }
 
     @Test
+    public void testUpdateAllUnarySequentialTallMatrixUsesRowMajorOrder() throws Exception {
+        final BooleanMatrix matrix = BooleanMatrix.repeat(3, 2, false);
+        final AtomicInteger next = new AtomicInteger();
+
+        Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.updateAll(x -> next.incrementAndGet() % 2 == 1));
+
+        assertArrayEquals(new boolean[] { true, false }, matrix.rowCopy(0));
+        assertArrayEquals(new boolean[] { true, false }, matrix.rowCopy(1));
+        assertArrayEquals(new boolean[] { true, false }, matrix.rowCopy(2));
+    }
+
+    @Test
     public void testUpdateAllWithIndices() {
         boolean[][] arr = { { true, false }, { false, true } };
         BooleanMatrix matrix = BooleanMatrix.of(arr);

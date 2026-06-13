@@ -1096,8 +1096,19 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     public <E extends Exception> void updateAll(final Throwables.BooleanUnaryOperator<E> operator) throws E {
         N.checkArgNotNull(operator, "operator");
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.applyAsBoolean(a[i][j]);
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+
+        if (Matrices.isParallelizable(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.applyAsBoolean(a[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final boolean[] row = a[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    row[j] = operator.applyAsBoolean(row[j]);
+                }
+            }
+        }
     }
 
     /**

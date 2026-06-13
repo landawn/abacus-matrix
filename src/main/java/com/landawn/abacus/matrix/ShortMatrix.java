@@ -1160,8 +1160,19 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      */
     public <E extends Exception> void updateAll(final Throwables.ShortUnaryOperator<E> operator) throws E {
         N.checkArgNotNull(operator, "operator");
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.applyAsShort(a[i][j]);
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+
+        if (Matrices.isParallelizable(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.applyAsShort(a[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final short[] row = a[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    row[j] = operator.applyAsShort(row[j]);
+                }
+            }
+        }
     }
 
     /**
