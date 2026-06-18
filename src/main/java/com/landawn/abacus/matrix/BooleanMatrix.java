@@ -260,6 +260,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @see #diagonals(boolean[], boolean[])
      */
     public static BooleanMatrix mainDiagonal(final boolean[] mainDiagonal) {
+        N.checkArgNotNull(mainDiagonal, "mainDiagonal");
+
         return diagonals(mainDiagonal, null);
     }
 
@@ -292,6 +294,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @see #diagonals(boolean[], boolean[])
      */
     public static BooleanMatrix antiDiagonal(final boolean[] antiDiagonal) {
+        N.checkArgNotNull(antiDiagonal, "antiDiagonal");
+
         return diagonals(null, antiDiagonal);
     }
 
@@ -328,7 +332,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
         N.checkArgument(mainDiagonal != null || antiDiagonal != null, "Both 'mainDiagonal' and 'antiDiagonal' can't be null");
 
         N.checkArgument(N.isEmpty(mainDiagonal) || N.isEmpty(antiDiagonal) || mainDiagonal.length == antiDiagonal.length,
-                "The length of 'mainDiagonal' and 'antiDiagonal' must be same");
+                "The lengths of 'mainDiagonal' and 'antiDiagonal' must be the same: mainDiagonal length={}, antiDiagonal length={}",
+                N.len(mainDiagonal), N.len(antiDiagonal));
 
         if (N.isEmpty(mainDiagonal) && N.isEmpty(antiDiagonal)) {
             return EMPTY_BOOLEAN_MATRIX;
@@ -1381,10 +1386,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     public void fill(final int destRowIndex, final int destColumnIndex, final boolean[][] source) throws IndexOutOfBoundsException, IllegalArgumentException {
         N.checkArgNotNull(source, "source");
         if (destRowIndex < 0 || destRowIndex > rowCount) {
-            throw new IndexOutOfBoundsException(formatMsg("destRowIndex({}) must be between 0 and rowCount({})", destRowIndex, rowCount));
+            throw new IndexOutOfBoundsException(formatMsg("destRowIndex({}) must be in [0, rowCount({})]", destRowIndex, rowCount));
         }
         if (destColumnIndex < 0 || destColumnIndex > columnCount) {
-            throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be between 0 and columnCount({})", destColumnIndex, columnCount));
+            throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be in [0, columnCount({})]", destColumnIndex, columnCount));
         }
 
         for (int i = 0, minLen = N.min(rowCount - destRowIndex, source.length); i < minLen; i++) {
@@ -2862,8 +2867,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
         N.checkArgNotNull(other, "other");
         N.checkArgNotNull(third, "third");
         N.checkArgNotNull(zipFunction, "zipFunction");
-        N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: all matrices must be {}x{}", rowCount,
-                columnCount);
+        N.checkArgument(isSameShape(other) && isSameShape(third),
+                "Cannot zip matrices with different shapes: this is {}x{}, other is {}x{}, third is {}x{}", rowCount, columnCount, other.rowCount,
+                other.columnCount, third.rowCount, third.columnCount);
 
         final boolean[][] otherData = other.a;
         final boolean[][] thirdData = third.a;
@@ -3622,7 +3628,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * <p>The operation may be parallelized internally for large matrices to improve performance,
      * based on internal heuristics. If parallelized, the order of execution is not guaranteed,
-     * but all elements will be processed exactly once.</p>
+     * but all elements will be processed exactly once. If parallelized, {@code action} must be
+     * thread-safe.</p>
      *
      * <p><b>Note:</b> This method is for side-effect operations only (like printing, collecting,
      * or accumulating). For transformations that create new matrices, use {@link #map(Throwables.BooleanUnaryOperator)}
@@ -3632,16 +3639,16 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] {{true, false}, {false, true}});
      *
-     * int[] trueCount = {0};
-     * matrix.forEach(value -> { if (value) trueCount[0]++; });
-     * // trueCount[0] is now 2
+     * java.util.concurrent.atomic.AtomicInteger trueCount = new java.util.concurrent.atomic.AtomicInteger();
+     * matrix.forEach(value -> { if (value) trueCount.incrementAndGet(); });
+     * // trueCount.get() is now 2
      *
-     * StringBuilder sb = new StringBuilder();
-     * matrix.forEach(value -> sb.append(value ? "T" : "F"));
-     * // sb.toString() is now "TFFT" (row-major order)
+     * java.util.concurrent.atomic.AtomicInteger visited = new java.util.concurrent.atomic.AtomicInteger();
+     * matrix.forEach(value -> visited.incrementAndGet());
+     * // visited.get() is now 4
      *
      * matrix.forEach((Throwables.BooleanConsumer<RuntimeException>) null); // throws IllegalArgumentException (null action)
-     * BooleanMatrix.empty().forEach(value -> trueCount[0]++);              // no-op on empty matrix
+     * BooleanMatrix.empty().forEach(value -> trueCount.incrementAndGet()); // no-op on empty matrix
      * }</pre>
      *
      * @param <E> the type of exception that the action may throw

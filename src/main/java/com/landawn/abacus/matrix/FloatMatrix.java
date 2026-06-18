@@ -322,6 +322,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @see #diagonals(float[], float[])
      */
     public static FloatMatrix mainDiagonal(final float[] mainDiagonal) {
+        N.checkArgNotNull(mainDiagonal, "mainDiagonal");
+
         return diagonals(mainDiagonal, null);
     }
 
@@ -354,6 +356,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @see #diagonals(float[], float[])
      */
     public static FloatMatrix antiDiagonal(final float[] antiDiagonal) {
+        N.checkArgNotNull(antiDiagonal, "antiDiagonal");
+
         return diagonals(null, antiDiagonal);
     }
 
@@ -391,7 +395,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
         N.checkArgument(mainDiagonal != null || antiDiagonal != null, "Both 'mainDiagonal' and 'antiDiagonal' can't be null");
 
         N.checkArgument(N.isEmpty(mainDiagonal) || N.isEmpty(antiDiagonal) || mainDiagonal.length == antiDiagonal.length,
-                "The length of 'mainDiagonal' and 'antiDiagonal' must be same");
+                "The lengths of 'mainDiagonal' and 'antiDiagonal' must be the same: mainDiagonal length={}, antiDiagonal length={}",
+                N.len(mainDiagonal), N.len(antiDiagonal));
 
         if (N.isEmpty(mainDiagonal) && N.isEmpty(antiDiagonal)) {
             return EMPTY_FLOAT_MATRIX;
@@ -1414,10 +1419,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     public void fill(final int destRowIndex, final int destColumnIndex, final float[][] source) throws IndexOutOfBoundsException, IllegalArgumentException {
         N.checkArgNotNull(source, "source");
         if (destRowIndex < 0 || destRowIndex > rowCount) {
-            throw new IndexOutOfBoundsException(formatMsg("destRowIndex({}) must be between 0 and rowCount({})", destRowIndex, rowCount));
+            throw new IndexOutOfBoundsException(formatMsg("destRowIndex({}) must be in [0, rowCount({})]", destRowIndex, rowCount));
         }
         if (destColumnIndex < 0 || destColumnIndex > columnCount) {
-            throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be between 0 and columnCount({})", destColumnIndex, columnCount));
+            throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be in [0, columnCount({})]", destColumnIndex, columnCount));
         }
 
         for (int i = 0, minLen = N.min(rowCount - destRowIndex, source.length); i < minLen; i++) {
@@ -2917,8 +2922,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
         N.checkArgNotNull(other, "other");
         N.checkArgNotNull(third, "third");
         N.checkArgNotNull(zipFunction, "zipFunction");
-        N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: all matrices must be {}x{}", rowCount,
-                columnCount);
+        N.checkArgument(isSameShape(other) && isSameShape(third),
+                "Cannot zip matrices with different shapes: this is {}x{}, other is {}x{}, third is {}x{}", rowCount, columnCount, other.rowCount,
+                other.columnCount, third.rowCount, third.columnCount);
 
         final float[][] secondMatrix = other.a;
         final float[][] thirdMatrix = third.a;
@@ -3588,7 +3594,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * <p>The operation may be parallelized internally for large matrices to improve performance,
      * based on internal heuristics. If parallelized, the order of execution is not guaranteed,
-     * but all elements will be processed exactly once.</p>
+     * but all elements will be processed exactly once. If parallelized, {@code action} must be
+     * thread-safe.</p>
      *
      * <p><b>Note:</b> This method is for side-effect operations only (like printing, collecting,
      * or accumulating). For transformations that create new matrices, use {@link #map(Throwables.FloatUnaryOperator)}
@@ -3597,16 +3604,15 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
-     * float[] sum = {0.0f};
-     * matrix.forEach(value -> sum[0] += value);
-     * sum[0];                            // returns 10.0f
+     * java.util.concurrent.atomic.DoubleAdder sum = new java.util.concurrent.atomic.DoubleAdder();
+     * matrix.forEach(value -> sum.add(value));
+     * sum.sum();                          // returns 10.0
      *
-     * List<Float> values = new ArrayList<>();
-     * matrix.forEach(value -> values.add(value));
-     * values.size();                     // returns 4 ([1.0f, 2.0f, 3.0f, 4.0f] in row-major order)
-     * int[] count = {0};
-     * FloatMatrix.empty().forEach(value -> count[0]++);
-     * count[0];                          // returns 0 (no elements)
+     * java.util.concurrent.atomic.AtomicInteger count = new java.util.concurrent.atomic.AtomicInteger();
+     * matrix.forEach(value -> count.incrementAndGet());
+     * count.get();                       // returns 4
+     * FloatMatrix.empty().forEach(value -> count.incrementAndGet());
+     * count.get();                       // still returns 4 (no elements)
      * }</pre>
      *
      * @param <E> the type of exception that the action may throw

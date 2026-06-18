@@ -71,7 +71,9 @@ public final class Matrices {
                 tmp = true;
             }
         } catch (final Exception e) {
-            // ignore.
+            if (logger.isDebugEnabled()) {
+                logger.debug("Parallel stream support detection failed; matrix operations will fall back to sequential execution", e);
+            }
         }
 
         IS_PARALLEL_STREAM_SUPPORTED = tmp;
@@ -3960,7 +3962,17 @@ public final class Matrices {
     private static void checkShapeForZip(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> coll) {
         checkMatricesNotEmptyAndNoNullElements(coll);
 
-        N.checkArgument(isSameShape(coll), "Cannot zip matrices with different shapes: all matrices must have the same dimensions");
+        final Iterator<? extends AbstractMatrix<?, ?, ?, ?, ?>> iterator = coll.iterator();
+        final AbstractMatrix<?, ?, ?, ?, ?> first = iterator.next();
+        int idx = 1;
+
+        while (iterator.hasNext()) {
+            final AbstractMatrix<?, ?, ?, ?, ?> current = iterator.next();
+
+            N.checkArgument(isSameShape(first, current), "Cannot zip matrices with different shapes: matrices[0] is {}x{} but matrices[{}] is {}x{}",
+                    first.rowCount, first.columnCount, idx, current.rowCount, current.columnCount);
+            idx++;
+        }
     }
 
     private static void checkMatricesNotEmptyAndNoNullElements(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> matrices) {

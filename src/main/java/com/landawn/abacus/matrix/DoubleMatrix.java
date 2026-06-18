@@ -436,6 +436,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @see #diagonals(double[], double[])
      */
     public static DoubleMatrix mainDiagonal(final double[] mainDiagonal) {
+        N.checkArgNotNull(mainDiagonal, "mainDiagonal");
+
         return diagonals(mainDiagonal, null);
     }
 
@@ -468,6 +470,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @see #diagonals(double[], double[])
      */
     public static DoubleMatrix antiDiagonal(final double[] antiDiagonal) {
+        N.checkArgNotNull(antiDiagonal, "antiDiagonal");
+
         return diagonals(null, antiDiagonal);
     }
 
@@ -505,7 +509,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
         N.checkArgument(mainDiagonal != null || antiDiagonal != null, "Both 'mainDiagonal' and 'antiDiagonal' can't be null");
 
         N.checkArgument(N.isEmpty(mainDiagonal) || N.isEmpty(antiDiagonal) || mainDiagonal.length == antiDiagonal.length,
-                "The length of 'mainDiagonal' and 'antiDiagonal' must be same");
+                "The lengths of 'mainDiagonal' and 'antiDiagonal' must be the same: mainDiagonal length={}, antiDiagonal length={}",
+                N.len(mainDiagonal), N.len(antiDiagonal));
 
         if (N.isEmpty(mainDiagonal) && N.isEmpty(antiDiagonal)) {
             return EMPTY_DOUBLE_MATRIX;
@@ -1597,10 +1602,10 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     public void fill(final int destRowIndex, final int destColumnIndex, final double[][] source) throws IndexOutOfBoundsException, IllegalArgumentException {
         N.checkArgNotNull(source, "source");
         if (destRowIndex < 0 || destRowIndex > rowCount) {
-            throw new IndexOutOfBoundsException(formatMsg("destRowIndex({}) must be between 0 and rowCount({})", destRowIndex, rowCount));
+            throw new IndexOutOfBoundsException(formatMsg("destRowIndex({}) must be in [0, rowCount({})]", destRowIndex, rowCount));
         }
         if (destColumnIndex < 0 || destColumnIndex > columnCount) {
-            throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be between 0 and columnCount({})", destColumnIndex, columnCount));
+            throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be in [0, columnCount({})]", destColumnIndex, columnCount));
         }
 
         for (int i = 0, minLen = N.min(rowCount - destRowIndex, source.length); i < minLen; i++) {
@@ -3126,8 +3131,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
         N.checkArgNotNull(other, "other");
         N.checkArgNotNull(third, "third");
         N.checkArgNotNull(zipFunction, "zipFunction");
-        N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: all matrices must be {}x{}", rowCount,
-                columnCount);
+        N.checkArgument(isSameShape(other) && isSameShape(third),
+                "Cannot zip matrices with different shapes: this is {}x{}, other is {}x{}, third is {}x{}", rowCount, columnCount, other.rowCount,
+                other.columnCount, third.rowCount, third.columnCount);
 
         final double[][] otherData = other.a;
         final double[][] thirdData = third.a;
@@ -3797,7 +3803,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * <p>The operation may be parallelized internally for large matrices to improve performance,
      * based on internal heuristics. If parallelized, the order of execution is not guaranteed,
-     * but all elements will be processed exactly once.</p>
+     * but all elements will be processed exactly once. If parallelized, {@code action} must be
+     * thread-safe.</p>
      *
      * <p><b>Note:</b> This method is for side-effect operations only (like printing, collecting,
      * or accumulating). For transformations that create new matrices, use {@link #map(Throwables.DoubleUnaryOperator)}
@@ -3806,16 +3813,15 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
-     * double[] sum = {0.0};
-     * matrix.forEach(value -> sum[0] += value);
-     * sum[0];                            // returns 10.0
+     * java.util.concurrent.atomic.DoubleAdder sum = new java.util.concurrent.atomic.DoubleAdder();
+     * matrix.forEach(value -> sum.add(value));
+     * sum.sum();                          // returns 10.0
      *
-     * List<Double> values = new ArrayList<>();
-     * matrix.forEach(value -> values.add(value));
-     * values.size();                     // returns 4 ([1.0, 2.0, 3.0, 4.0] in row-major order)
-     * int[] count = {0};
-     * DoubleMatrix.empty().forEach(value -> count[0]++);
-     * count[0];                          // returns 0 (no elements)
+     * java.util.concurrent.atomic.AtomicInteger count = new java.util.concurrent.atomic.AtomicInteger();
+     * matrix.forEach(value -> count.incrementAndGet());
+     * count.get();                       // returns 4
+     * DoubleMatrix.empty().forEach(value -> count.incrementAndGet());
+     * count.get();                       // still returns 4 (no elements)
      * }</pre>
      *
      * @param <E> the type of exception that the action may throw

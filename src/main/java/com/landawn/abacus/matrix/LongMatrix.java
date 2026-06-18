@@ -402,6 +402,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @see #diagonals(long[], long[])
      */
     public static LongMatrix mainDiagonal(final long[] mainDiagonal) {
+        N.checkArgNotNull(mainDiagonal, "mainDiagonal");
+
         return diagonals(mainDiagonal, null);
     }
 
@@ -430,6 +432,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @see #diagonals(long[], long[])
      */
     public static LongMatrix antiDiagonal(final long[] antiDiagonal) {
+        N.checkArgNotNull(antiDiagonal, "antiDiagonal");
+
         return diagonals(null, antiDiagonal);
     }
 
@@ -467,7 +471,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         N.checkArgument(mainDiagonal != null || antiDiagonal != null, "Both 'mainDiagonal' and 'antiDiagonal' can't be null");
 
         N.checkArgument(N.isEmpty(mainDiagonal) || N.isEmpty(antiDiagonal) || mainDiagonal.length == antiDiagonal.length,
-                "The length of 'mainDiagonal' and 'antiDiagonal' must be same");
+                "The lengths of 'mainDiagonal' and 'antiDiagonal' must be the same: mainDiagonal length={}, antiDiagonal length={}",
+                N.len(mainDiagonal), N.len(antiDiagonal));
 
         if (N.isEmpty(mainDiagonal) && N.isEmpty(antiDiagonal)) {
             return EMPTY_LONG_MATRIX;
@@ -1569,10 +1574,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     public void fill(final int destRowIndex, final int destColumnIndex, final long[][] source) throws IndexOutOfBoundsException, IllegalArgumentException {
         N.checkArgNotNull(source, "source");
         if (destRowIndex < 0 || destRowIndex > rowCount) {
-            throw new IndexOutOfBoundsException(formatMsg("destRowIndex({}) must be between 0 and rowCount({})", destRowIndex, rowCount));
+            throw new IndexOutOfBoundsException(formatMsg("destRowIndex({}) must be in [0, rowCount({})]", destRowIndex, rowCount));
         }
         if (destColumnIndex < 0 || destColumnIndex > columnCount) {
-            throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be between 0 and columnCount({})", destColumnIndex, columnCount));
+            throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be in [0, columnCount({})]", destColumnIndex, columnCount));
         }
 
         for (int i = 0, minLen = N.min(rowCount - destRowIndex, source.length); i < minLen; i++) {
@@ -3012,8 +3017,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         N.checkArgNotNull(other, "other");
         N.checkArgNotNull(third, "third");
         N.checkArgNotNull(zipFunction, "zipFunction");
-        N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: all matrices must be {}x{}", rowCount,
-                columnCount);
+        N.checkArgument(isSameShape(other) && isSameShape(third),
+                "Cannot zip matrices with different shapes: this is {}x{}, other is {}x{}, third is {}x{}", rowCount, columnCount, other.rowCount,
+                other.columnCount, third.rowCount, third.columnCount);
 
         final long[][] b = other.a;
         final long[][] c = third.a;
@@ -3689,7 +3695,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * <p>The operation may be parallelized internally for large matrices to improve performance,
      * based on internal heuristics. If parallelized, the order of execution is not guaranteed,
-     * but all elements will be processed exactly once.</p>
+     * but all elements will be processed exactly once. If parallelized, {@code action} must be
+     * thread-safe.</p>
      *
      * <p><b>Note:</b> This method is for side-effect operations only (like printing, collecting,
      * or accumulating). For transformations that create new matrices, use {@link #map(Throwables.LongUnaryOperator)}
@@ -3699,17 +3706,17 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
      *
-     * long[] sum = {0L};
-     * matrix.forEach(value -> sum[0] += value);
-     * sum[0];                                 // 10L (sum of all elements)
+     * java.util.concurrent.atomic.AtomicLong sum = new java.util.concurrent.atomic.AtomicLong();
+     * matrix.forEach(sum::addAndGet);
+     * sum.get();                              // 10L (sum of all elements)
      *
-     * int[] count = {0};
-     * matrix.forEach(value -> count[0]++);
-     * count[0];                               // 4 (number of elements)
+     * java.util.concurrent.atomic.AtomicInteger count = new java.util.concurrent.atomic.AtomicInteger();
+     * matrix.forEach(value -> count.incrementAndGet());
+     * count.get();                            // 4 (number of elements)
      *
-     * long[] emptySum = {0L};
-     * LongMatrix.empty().forEach(value -> emptySum[0] += value);
-     * emptySum[0];                                                      // 0 (no elements visited)
+     * java.util.concurrent.atomic.AtomicLong emptySum = new java.util.concurrent.atomic.AtomicLong();
+     * LongMatrix.empty().forEach(emptySum::addAndGet);
+     * emptySum.get();                                                   // 0 (no elements visited)
      * matrix.forEach((Throwables.LongConsumer<RuntimeException>) null); // throws IllegalArgumentException
      * }</pre>
      *

@@ -353,6 +353,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @see #diagonals(char[], char[])
      */
     public static CharMatrix mainDiagonal(final char[] mainDiagonal) {
+        N.checkArgNotNull(mainDiagonal, "mainDiagonal");
+
         return diagonals(mainDiagonal, null);
     }
 
@@ -384,12 +386,14 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @see #diagonals(char[], char[])
      */
     public static CharMatrix antiDiagonal(final char[] antiDiagonal) {
+        N.checkArgNotNull(antiDiagonal, "antiDiagonal");
+
         return diagonals(null, antiDiagonal);
     }
 
     /**
      * Creates a square matrix from the specified main diagonal and anti-diagonal elements.
-     * All other elements are set to zero (the null character '\u0000'). If both arrays are provided, they must have the same length.
+     * All other elements are set to zero (the null character '\u0000'). If both arrays are non-empty, they must have the same length.
      * The resulting matrix has dimensions n×n where n is the length of the non-empty diagonal array.
      * When both diagonals are provided and they overlap (at the center element of odd-sized matrices),
      * the main diagonal value takes precedence.
@@ -421,7 +425,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
         N.checkArgument(mainDiagonal != null || antiDiagonal != null, "Both 'mainDiagonal' and 'antiDiagonal' can't be null");
 
         N.checkArgument(N.isEmpty(mainDiagonal) || N.isEmpty(antiDiagonal) || mainDiagonal.length == antiDiagonal.length,
-                "The length of 'mainDiagonal' and 'antiDiagonal' must be same");
+                "The lengths of 'mainDiagonal' and 'antiDiagonal' must be the same: mainDiagonal length={}, antiDiagonal length={}",
+                N.len(mainDiagonal), N.len(antiDiagonal));
 
         if (N.isEmpty(mainDiagonal) && N.isEmpty(antiDiagonal)) {
             return EMPTY_CHAR_MATRIX;
@@ -1443,8 +1448,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[3][3]);
      * matrix.fill(1, 1, new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * // Result (' ' = the null character):
-     * //   [[' ', ' ', ' '], [' ', 'a', 'b'], [' ', 'c', 'd']]
+     * // Result ('\0' = the null character):
+     * //   [['\0', '\0', '\0'], ['\0', 'a', 'b'], ['\0', 'c', 'd']]
      * matrix.get(1, 1);           // returns 'a'
      * matrix.get(2, 2);           // returns 'd'
      *
@@ -1466,10 +1471,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     public void fill(final int destRowIndex, final int destColumnIndex, final char[][] source) throws IndexOutOfBoundsException, IllegalArgumentException {
         N.checkArgNotNull(source, "source");
         if (destRowIndex < 0 || destRowIndex > rowCount) {
-            throw new IndexOutOfBoundsException(formatMsg("destRowIndex({}) must be between 0 and rowCount({})", destRowIndex, rowCount));
+            throw new IndexOutOfBoundsException(formatMsg("destRowIndex({}) must be in [0, rowCount({})]", destRowIndex, rowCount));
         }
         if (destColumnIndex < 0 || destColumnIndex > columnCount) {
-            throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be between 0 and columnCount({})", destColumnIndex, columnCount));
+            throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be in [0, columnCount({})]", destColumnIndex, columnCount));
         }
 
         for (int i = 0, minLen = N.min(rowCount - destRowIndex, source.length); i < minLen; i++) {
@@ -2920,8 +2925,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
         N.checkArgNotNull(other, "other");
         N.checkArgNotNull(third, "third");
         N.checkArgNotNull(zipFunction, "zipFunction");
-        N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: all matrices must be {}x{}", rowCount,
-                columnCount);
+        N.checkArgument(isSameShape(other) && isSameShape(third),
+                "Cannot zip matrices with different shapes: this is {}x{}, other is {}x{}, third is {}x{}", rowCount, columnCount, other.rowCount,
+                other.columnCount, third.rowCount, third.columnCount);
 
         final char[][] otherData = other.a;
         final char[][] thirdData = third.a;
@@ -3597,7 +3603,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * <p>The operation may be parallelized internally for large matrices to improve performance,
      * based on internal heuristics. If parallelized, the order of execution is not guaranteed,
-     * but all elements will be processed exactly once.</p>
+     * but all elements will be processed exactly once. If parallelized, {@code action} must be
+     * thread-safe.</p>
      *
      * <p><b>Note:</b> This method is for side-effect operations only (like printing, collecting,
      * or accumulating). For transformations that create new matrices, use {@link #map(Throwables.CharUnaryOperator)}
@@ -3606,17 +3613,16 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * StringBuilder sb = new StringBuilder();
-     * matrix.forEach(ch -> sb.append(ch));
-     * sb.toString();              // returns "abcd" (row-major order)
+     * java.util.concurrent.atomic.AtomicInteger count = new java.util.concurrent.atomic.AtomicInteger();
+     * matrix.forEach(ch -> count.incrementAndGet());
+     * count.get();                // returns 4
      *
-     * List<Character> chars = new ArrayList<>();
-     * matrix.forEach(chars::add);
-     * chars.size();               // returns 4
+     * java.util.concurrent.atomic.AtomicInteger codePointSum = new java.util.concurrent.atomic.AtomicInteger();
+     * matrix.forEach(codePointSum::addAndGet);
+     * codePointSum.get();         // returns 394 ('a' + 'b' + 'c' + 'd')
      *
-     * StringBuilder empty = new StringBuilder();
-     * CharMatrix.empty().forEach(empty::append);
-     * empty.length();             // returns 0 (no elements visited)
+     * CharMatrix.empty().forEach(ch -> count.incrementAndGet());
+     * count.get();                // still returns 4 (no elements visited)
      * }</pre>
      *
      * @param <E> the type of exception that the action may throw
