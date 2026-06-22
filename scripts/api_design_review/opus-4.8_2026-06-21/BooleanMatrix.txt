@@ -1,0 +1,53 @@
+API Design Review — BooleanMatrix
+MODEL opus-4.8 | DATE 2026-06-21 | file: src/main/java/com/landawn/abacus/matrix/BooleanMatrix.java (3863 lines)
+All findings verified against source. BooleanMatrix is the odd-one-out: no arithmetic, and a boxed
+Stream<Boolean> element stream (no BooleanStream exists).
+
+1. OVERALL ASSESSMENT
+Clean, mature, and internally consistent. It follows the baseline for factories (of/empty/random/repeat/
+diagonals), get/set (raw -> AIOOBE), value{Above,Below,Left,Right} (returning OptionalBoolean — the correct
+primitive-optional analogue of IntMatrix's OptionalInt, 514/543/572/601), the in-place/copy transform pairs,
+the full stream family, boxed/unbox, zipWith (binary+ternary), map/mapToObj, updateAll (value + position
+overloads), replaceIf, forEach, and equals/hashCode/toString/println. The boxed Stream<Boolean> is handled
+uniformly and each Javadoc explains the absence of a primitive BooleanStream. The no-arithmetic /
+no-numeric-reduction design is appropriate, and the boolean-specific additions (and/or/xor at 2437/2472/2507,
+countTrue/allTrue/anyTrue) are well implemented and documented. The one clear gap is the missing unary
+complement; the rest are minor symmetry items. No @Deprecated members; no correctness bugs.
+
+2. NAMING ISSUES
+None actionable.
+
+3. RETURN-TYPE & PARAMETER ISSUES
+None. value* correctly returns OptionalBoolean (consistent with OptionalInt, not Nullable<Boolean>);
+countTrue() correctly returns long (documented overflow rationale, ~2541); the boxed Stream<Boolean> return is
+unavoidable and consistently applied.
+
+4. MISPLACED METHODS
+None.
+
+5. MISSING METHODS
+
+not() / negate() (element-wise logical NOT) | BooleanMatrix.java:2437-2519 (has and/or/xor; verified no
+not/negate) | Confidence High | recommend: add public BooleanMatrix not().
+  > public BooleanMatrix and(...) / or(...) / xor(...) exist; grep confirms no not/negate.
+  The unary complement is the only one of the four core boolean operations users must hand-roll (map(b->!b)).
+  Adding not() completes the logical-operator set and mirrors the convenience rationale that justified
+  and/or/xor existing alongside zipWith.
+
+noneTrue() (and optionally allFalse()/anyFalse()) | BooleanMatrix.java:2575/2607 (has allTrue/anyTrue) |
+Confidence Low | recommend: consider adding noneTrue() (= !anyTrue()).
+  Minor predicate-symmetry gap. CHECK: whether any sibling/base defines a generic allMatch/anyMatch/noneMatch
+  family BooleanMatrix should mirror instead (grep found none) — so this is purely an internal-symmetry call.
+
+6. DEPRECATION/REMOVAL CANDIDATES
+None.
+
+CROSS-CLASS NOTES
+- No Matrices.zip overload for BooleanMatrix — DEFENSIBLE, not a real gap: the static zip family is for
+  combining numeric matrices, and BooleanMatrix already exposes the equivalent via instance zipWith plus the
+  dedicated and/or/xor. Keep; note in Matrices class Javadoc if full hub symmetry is desired.
+- OptionalBoolean for value* is the correct primitive-optional analogue of OptionalInt — consistent.
+- The boolean-only surface (and/or/xor, countTrue/allTrue/anyTrue) is a legitimate type-specific extension,
+  not a divergence — but it makes the missing not() stand out as the one asymmetry within its own logical set.
+- Stream/forEach method names match the base and IntMatrix exactly; only the unavoidable boxed Stream<Boolean>
+  element type differs from IntStream.

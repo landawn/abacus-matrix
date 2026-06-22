@@ -1,0 +1,77 @@
+API Design Review — Matrices
+MODEL opus-4.8 | DATE 2026-06-21 | file: src/main/java/com/landawn/abacus/matrix/Matrices.java (3989 lines)
+Role: final class of static factory + cross-matrix ops (zip) + ThreadLocal ParallelMode control + shared
+index/shape helpers. All findings verified against source.
+NOTE: the reviewing agent's claim that "IntMatrix.multiply" exists was checked and is FALSE — matrix
+multiplication is named matmul and lives on the instance matrix classes (IntMatrix.java:2848 etc.); Matrices
+only exposes forEachCartesianIndices as the iteration primitive. Corrected below.
+
+1. OVERALL ASSESSMENT
+A well-built static hub cleanly separating four concerns: ParallelMode policy, shape/index helpers, n-ary
+stacking, and element-wise zipping. The ParallelMode API (getParallelMode/setParallelMode/isParallelizable×2/
+runWithParallelMode, 119-505) is consistent, null-safe, and its thread-local contract is documented
+thoroughly. forEachIndices, mapIndices, mapIndicesToInt and forEachCartesianIndices form internally
+consistent overload families (full-range convenience + explicit-range/parallel forms) with carefully
+documented cache-locality, parallel-order, and checked-exception-wrapping semantics. isSameShape,
+stackVertically/stackHorizontally, newMatrixArray and resolveCommonElementType are clean. The dominant
+healthy area is the zip machinery: the 5-method zip family (binary, ternary, Collection binary-fold,
+Collection NFunction ×2) is faithfully mirrored across Byte/Int/Long/Double and the generic Matrix, and the
+widening converters (zipToInt from Byte; zipToLong/zipToDouble from Int; zipToDouble from Long) are internally
+consistent. The actionable problems are almost entirely about WHICH primitive types are covered (systematic
+gaps), plus one shape-check wording inconsistency.
+
+2. NAMING ISSUES
+None actionable.
+
+3. RETURN-TYPE & PARAMETER ISSUES
+
+zip(XMatrix,XMatrix,binaryOp) / zip(...,c,...) shape-check placement vs the zipToXxx / Collection forms |
+Matrices.java:1270,1316 (Byte); 1832,1878 (Int); 2619,2665 (Long); 3148,3196 (Double) | Confidence Medium |
+recommend: route all 2-/3-arg zip overloads through checkShapeForZip for one uniform error message.
+  > zipToXxx/Collection forms call checkShapeForZip(a, b) directly (e.g. Matrices.java:1579), whereas the
+    2-/3-arg zip overloads validate shape only inside the delegated a.zipWith(...).
+  Functionally equivalent, but siblings in the same family emit different shape-mismatch wording.
+
+zip(Collection<Matrix<T>>, BinaryOperator<T,E>) @throws ArrayStoreException note | Matrices.java:3656 |
+Confidence Low | recommend: keep; verify wording against newMatrixArray's actual component type.
+  > doc: "ArrayStoreException if zipFunction returns a value not assignable to the resolved common element type."
+  The result array is allocated via resolveCommonElementType (~3677) and written ret[j] = zipFunction.apply(...).
+  CHECK: confirm newMatrixArray yields an array whose component type is exactly the resolved type (not Object[]
+  under erasure); if it is Object[]-typed, the ArrayStoreException would not fire and the doc is inaccurate.
+
+4. MISPLACED METHODS
+None. matmul/add/subtract correctly live on the instance matrix classes (they are typed fluent binary ops,
+not multi-matrix utilities) and delegate their cartesian iteration to Matrices.forEachCartesianIndices —
+a sound split. Recommend a one-line class-Javadoc note that matmul itself is intentionally NOT in Matrices
+(the doc mentions forEachCartesianIndices "used to express matrix multiplication", which can imply otherwise).
+
+5. MISSING METHODS  (highest-value findings for this class)
+
+Static zip family missing for Short, Char, Float, Boolean | present only for Byte/Int/Long/Double + generic
+Matrix (e.g. Byte at 1270-1505; Double at 3148-3397) | Confidence High | recommend: add the full zip family
+for ShortMatrix, CharMatrix, FloatMatrix; decide on BooleanMatrix.
+  > Verified by full grep of static zip signatures: no zip(ShortMatrix...), zip(CharMatrix...),
+    zip(FloatMatrix...), or zip(BooleanMatrix...) exists.
+  Every matrix class has instance zipWith, so the static mirrors are trivial. FloatMatrix is the most glaring
+  gap (DoubleMatrix has the full family; Float none). For BooleanMatrix the absence is defensible — instance
+  zipWith + and/or/xor cover it — but state that rationale in the class Javadoc if kept.
+
+zipToXxx widening converters incomplete vs the promotion lattice | Matrices.java:1574 (zipToInt Byte->Int),
+2138/2382 (zipToLong/zipToDouble from Int), 2909 (zipToDouble from Long) | Confidence Medium | recommend:
+either round out the lattice or document the curated subset as intentional.
+  Current: Byte->Int only; Int->{Long,Double}; Long->Double. Missing by the same logic: Short->Int, Char->Int,
+  Byte->{Long,Double}, Short/Char->{Long,Double}, Float->Double. The subset is defensible ("one converter per
+  natural overflow risk") but asymmetric (Byte gets only ->Int while Int gets both ->Long and ->Double) and
+  undocumented as deliberate.
+
+6. DEPRECATION/REMOVAL CANDIDATES
+None. No @Deprecated members; no redundancy after accounting for the per-type mirroring.
+
+CROSS-CLASS NOTES
+- Coverage divergence (primary): instance zipWith exists for all primitive types, but static Matrices.zip
+  exists only for Byte/Int/Long/Double + generic Matrix. Short/Char/Float/Boolean have none; Float is the
+  clearest inconsistency.
+- Converter-lattice asymmetry (zipToXxx) as above.
+- matmul placement: instance-only by design; Matrices owns only the cartesian iteration primitive. Add a
+  clarifying class-doc note.
+- Shape-check wording divergence between zip vs zipToXxx/Collection forms.

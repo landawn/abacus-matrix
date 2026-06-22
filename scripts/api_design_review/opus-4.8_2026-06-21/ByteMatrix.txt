@@ -1,0 +1,52 @@
+API Design Review — ByteMatrix
+MODEL opus-4.8 | DATE 2026-06-21 | file: src/main/java/com/landawn/abacus/matrix/ByteMatrix.java (3899 lines)
+All findings verified against source.
+
+1. OVERALL ASSESSMENT
+A clean, mature specialization that conforms closely to the IntMatrix baseline and the narrow-integer tier
+(Byte/Short/Char). Factory, accessor, diagonal, update/replace, transform, reshape/resize/extend, stacking,
+arithmetic, conversion, zip, stream, and forEach families are internally consistent, correctly validated, and
+honestly documented. Byte sign/overflow — the highest-risk area for this type — is handled exemplarily: the
+class Javadoc and each of add/subtract/matmul/updateAll/map/zipWith document modulo-256 wrapping, the cast vs
+implicit-narrowing distinction, and the widen-first remedy via toIntMatrix()/toLongMatrix(). Conversions are
+complete for the convention (toInt 2753, toLong 2778, toFloat 2822, toDouble 2866). There are no
+class-specific correctness or design defects; ByteMatrix's only items are participation in family-wide gaps.
+
+2. NAMING ISSUES
+None.
+
+3. RETURN-TYPE & PARAMETER ISSUES
+None class-specific. (get/set->AIOOBE; value*->OptionalByte + IOOBE; updateAll position overload boxes like
+all siblings — family-wide, see SUMMARY.)
+
+4. MISPLACED METHODS
+None.
+
+5. MISSING METHODS
+
+CONSIDERED & REJECTED — toShortMatrix() | ByteMatrix.java:2753 (conversion block) | Confidence High (rejection)
+| recommend: KEEP AS-IS (do not add).
+  > Verified by grep: no toByteMatrix/toShortMatrix/toCharMatrix exists on ANY class. The family convention is
+    "convert to each of {int,long,float,double} except self," not "cover every widening edge." byte->short is a
+    widening edge, but short is not a conversion target anywhere, so ByteMatrix is CONSISTENT. (The Wave-2
+    agent flagged this as a High missing-method; verification against the actual convention rejects it.)
+
+mapToInt/mapToLong/mapToDouble (narrow-tier coverage) | ByteMatrix.java:1399 (only mapToObj) | Confidence Low |
+recommend: optional — add to pair with the existing toIntMatrix/toLongMatrix/toDoubleMatrix converters; decide
+at the family level.
+  > Byte/Short/Char all lack primitive mapTo* (consistent tier), but they DO expose toXxxMatrix converters, so
+    a mapToInt would pair naturally. Low priority because the absence is uniform across the narrow tier.
+
+Whole-matrix reductions sum/min/max | absent | Confidence Medium | see SUMMARY (family-wide; for byte, the
+overflow-safe path Matrices.zipToInt already returns IntMatrix).
+
+6. DEPRECATION/REMOVAL CANDIDATES
+None. No @Deprecated members.
+
+CROSS-CLASS NOTES
+- from correctly absent (byte is the narrowest integral — nothing widens into it).
+- Conversion set is complete per the {int,long,float,double}-except-self convention.
+- mapToObj-only matches the narrow tier; the primitive mapTo* and whole-matrix reductions are shared family
+  gaps, not Byte-specific.
+- ByteMatrix is the only narrow type with a Matrices static zip + zipToInt(Byte->Int) (Matrices.java:1270/1574);
+  Short/Char lack even that (see SUMMARY).

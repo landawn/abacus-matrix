@@ -1,0 +1,48 @@
+API Design Review — LongMatrix
+MODEL opus-4.8 | DATE 2026-06-21 | file: src/main/java/com/landawn/abacus/matrix/LongMatrix.java (3928 lines)
+All findings verified against source.
+
+1. OVERALL ASSESSMENT
+A mature, faithful specialization of AbstractMatrix. Implementations match their Javadoc; edge cases (empty,
+non-rectangular, shape-overflow guards) are handled consistently; long overflow for add/subtract/matmul is
+documented accurately. Exception conventions (get/set->AIOOBE, value*/index->IOOBE, square/state->ISE,
+null/value->IAE) match the family. The conversion ladder is complete and correct: toIntMatrix (narrowing,
+documented with the (int)Long.MAX_VALUE==-1 warning, 2821), toFloatMatrix (2867), toDoubleMatrix (2914) —
+i.e. converters to {int,float,double} = the three main numeric types other than long. mapToInt/mapToDouble/
+mapToObj, boxed/unbox, zipWith, streams, and factories are all consistent. The one substantive class-specific
+divergence is an incomplete from(...) factory family; the rest are family-wide gaps tracked in SUMMARY.
+
+2. NAMING ISSUES
+None actionable.
+
+3. RETURN-TYPE & PARAMETER ISSUES
+None class-specific. (Position-based updateAll(IntBiFunction<? extends Long>) (1266) boxes like all siblings —
+family-wide, see SUMMARY; here a primitive (int,int)->long interface does not exist, so it is harder to fix
+than IntMatrix's case.)
+
+4. MISPLACED METHODS
+None.
+
+5. MISSING METHODS
+
+from(byte[]...) / from(short[]...) / from(char[]...) | LongMatrix.java:155 (only from(int[]...) exists) |
+Confidence High | recommend: add the three narrower-integral widenings to mirror IntMatrix.
+  > public static LongMatrix from(final int[]... a) {     // the only from overload
+  byte/short/char all widen losslessly to long, and the lead class IntMatrix provides exactly these three
+  (from char/byte/short at IntMatrix.java:155/210/264). This is the headline gap for LongMatrix.
+
+mapToFloat(LongToFloatFunction) | LongMatrix.java:1406/1440 (has mapToInt/mapToDouble; no mapToFloat) |
+Confidence Medium | recommend: add mapToFloat (family-wide gap; LongMatrix has toFloatMatrix but no mapToFloat).
+  > See SUMMARY — no primitive matrix has mapToFloat though all expose toFloatMatrix() and Matrix<T> has it.
+
+Whole-matrix reductions sum()/average()/min()/max() | (absent) | Confidence Medium | recommend: add uniformly
+across the numeric family with overflow-safe types (long sum() / OptionalDouble average()). See SUMMARY.
+
+6. DEPRECATION/REMOVAL CANDIDATES
+None. No @Deprecated members.
+
+CROSS-CLASS NOTES
+- from coverage is the divergence: IntMatrix covers all narrower integral types; LongMatrix covers only int.
+- toIntMatrix (narrowing) is NOT anomalous — the family convention is "convert to each of {int,long,float,
+  double} except self," and narrowing converters are documented. Consistent.
+- mapToFloat and reductions are shared family gaps, not Long-specific.

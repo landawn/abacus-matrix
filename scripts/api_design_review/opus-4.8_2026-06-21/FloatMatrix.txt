@@ -1,0 +1,60 @@
+API Design Review — FloatMatrix
+MODEL opus-4.8 | DATE 2026-06-21 | file: src/main/java/com/landawn/abacus/matrix/FloatMatrix.java (3829 lines)
+All findings verified against source. FloatMatrix is the primitive class with the MOST coverage gaps.
+
+1. OVERALL ASSESSMENT
+The instance-level surface (get/set, value*, diagonals, update*/replaceIf/map, transforms, arithmetic,
+streams, boxed/unbox, equals/hashCode) faithfully mirrors the family, and IEEE-754 semantics are handled
+responsibly: equals/hashCode use floatToIntBits/deepEquals (NaN==NaN, +0.0f != -0.0f) with clear docs;
+replaceIf, add/subtract/matmul, mutateAsFlat and println carry accurate NaN/Infinity notes; the narrowing
+toIntMatrix/toLongMatrix document saturation and NaN->0; and the -0.0f default-value fast-path in
+resize/extend (Float.floatToRawIntBits(defaultValue) != 0) is correct. Conversions are complete and
+consistent (toDouble 2711, toInt 2748, toLong 2804 = the three main numeric types other than float). The
+actionable items are all coverage gaps — and FloatMatrix is the clear outlier on two of them: it has ZERO
+primitive mapTo* methods, and Matrices has NO static zip family for it.
+
+2. NAMING ISSUES
+None actionable.
+
+3. RETURN-TYPE & PARAMETER ISSUES
+None class-specific. Validation policy correctly applied (get/set->AIOOBE; value*/range->IOOBE via
+checkRowColumnIndex; null/shape->IAE; square/overflow->ISE). OptionalFloat used consistently for value*.
+
+4. MISPLACED METHODS
+None.
+
+5. MISSING METHODS
+
+Primitive mapToInt / mapToLong / mapToDouble | FloatMatrix.java:1323 (only mapToObj exists) | Confidence High |
+recommend: add mapToInt(FloatToIntFunction), mapToLong(FloatToLongFunction), mapToDouble(FloatToDoubleFunction).
+  > public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.FloatFunction<? extends R, E> mapper, final Class<R> targetElementType)
+  FloatMatrix has ZERO primitive-to-primitive mapTo methods, while its numeric peers each have two
+  (IntMatrix: mapToLong/mapToDouble; LongMatrix: mapToInt/mapToDouble; DoubleMatrix: mapToInt/mapToLong).
+  toIntMatrix/toLongMatrix/toDoubleMatrix already exist but are blanket casts, NOT substitutes for an
+  arbitrary per-element function. This is the clearest mapTo* outlier in the family.
+
+Static Matrices.zip family for FloatMatrix | absent (cf. DoubleMatrix block at Matrices.java:3148) |
+Confidence High | recommend: add the FloatMatrix static zip overloads to Matrices, mirroring DoubleMatrix.
+  > Matrices has the full 5-overload static zip family for Byte/Int/Long/Double but none for Float.
+  FloatMatrix already has instance zipWith (2865/2920); the static mirrors are trivial. This is the single
+  most glaring static-coverage gap in the package (Double has it, Float does not).
+
+from(long[]...) (+ from(byte[]/short[]/char[])) | FloatMatrix.java:169 (only from(int[]...)) | Confidence High
+(for long) / Medium (for byte/short/char) | recommend: add from(long[]...) to match DoubleMatrix, then the
+remaining integral widenings.
+  > public static FloatMatrix from(final int[]... a) {     // the only from overload
+  All of byte/short/char/int/long widen to float; DoubleMatrix offers from(int/long/float) (167/226/283).
+  from(long[]) is the priority (Double has it; long->float is a defined widening).
+
+mapToFloat — N/A (float is the self type).
+Whole-matrix reductions sum/average/min/max | absent | Confidence Medium | see SUMMARY (family-wide).
+
+6. DEPRECATION/REMOVAL CANDIDATES
+None. No @Deprecated members.
+
+CROSS-CLASS NOTES
+- mapTo*: FloatMatrix has 0 vs Int/Long/Double's 2 each (and Matrix<T>'s 4). Genuine outlier.
+- Matrices.zip: 0 overloads vs DoubleMatrix's 5. Genuine gap.
+- from: 1 overload (int) vs DoubleMatrix's 3. At minimum add from(long).
+- range/rangeClosed correctly absent (integer-only factories; also absent from Double).
+- All other families at full parity; -0.0f handling verified correct.

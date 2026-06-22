@@ -1,0 +1,68 @@
+API Design Review — AbstractMatrix
+MODEL opus-4.8 | DATE 2026-06-21 | file: src/main/java/com/landawn/abacus/matrix/AbstractMatrix.java (2429 lines)
+Role: abstract sealed base; defines the template-method skeleton + naming/return/exception conventions
+inherited by the 8 primitive matrices and Matrix<T>. All findings verified against source.
+
+1. OVERALL ASSESSMENT
+A well-structured, internally consistent template base. The shape/index validation helpers, the
+exception-message constants, the CRTP self-return type (M), and the explicitly documented unsafe-API
+boundary (rowView / internalArray / mutateAsFlat vs. copy / flatten / rowCopy) are clean and well
+justified. Healthy families: the transform abstracts (rotate90/180/270, transpose, flipHorizontally/
+Vertically(+InPlace), extend, repeatElements/repeatMatrix, stackVertically/Horizontally), the reshape
+pair, the count/shape accessors (rowCount/columnCount/elementCount/isEmpty/isSameShape), the *Points
+stream families, the horizontal/vertical/row/columnStream(s) families, and accept/apply. There are no
+@Deprecated members and no genuinely redundant methods after accounting for inheritance/mirroring. The
+actionable items are a small set of naming/return-shape consistency points; none indicate broken behavior.
+
+2. NAMING ISSUES
+
+getMainDiagonal() / getAntiDiagonal() | AbstractMatrix.java:1638,1688 | Confidence Medium |
+recommend: add mainDiagonal()/antiDiagonal() (or mainDiagonalArray()/antiDiagonalArray()) as the canonical
+names; treat the get* spelling as the alias to retire.
+  These are the ONLY get-prefixed array accessors in the family. Sibling array/list/stream accessors omit
+  "get": rowCopy (403), columnCopy (433), flatten, internalArray, and the diagonal stream/points members
+  mainDiagonalStream (2018) / mainDiagonalPoints. The get* prefix here is inconsistent with the class's own
+  accessor convention. (Setters are setMainDiagonal/setAntiDiagonal at 1663/…, mirrored by setRow/setColumn
+  on subclasses, so a get/set pairing argument does not hold across the class — rowCopy has no getRow.)
+  Cross-class: implemented identically in all 9 subclasses, so a rename must be applied uniformly.
+
+3. RETURN-TYPE & PARAMETER ISSUES
+
+isSameShape(M m) | AbstractMatrix.java:900 | Confidence Medium | recommend: (a) widen the parameter to
+AbstractMatrix<?,?,?,?,?> so shapes of different element types can be compared, and (b) return false on null
+instead of throwing.
+  > public boolean isSameShape(final M m) { N.checkArgNotNull(m, "m"); return rowCount == m.rowCount && ...
+  Two problems: (1) the parameter is the self-type M, so you cannot ask whether an IntMatrix has the same
+  shape as a DoubleMatrix even though shape is element-type-independent; (2) a boolean isXxx predicate that
+  throws IllegalArgumentException on null is surprising — returning false is the least-surprising contract.
+
+forEachIndices(Throwables.BiIntObjConsumer<M,E>) [+ ranged overload] | AbstractMatrix.java:1360,1415 |
+Confidence Low | recommend: keep, but consider dropping the (i,j,matrix) variants.
+  > final Throwables.IntBiConsumer<E> elementAction = (i, j) -> action.accept(i, j, matrix);  // matrix == (M) this
+  The third parameter is always (M) this, which callers can already capture by closure (the (i,j) overloads'
+  own examples do exactly that). The variant doubles the forEachIndices overload count for marginal value.
+  CHECK: confirm whether real call sites rely on the matrix parameter (e.g. to avoid effectively-final
+  capture) before removing.
+
+4. MISPLACED METHODS
+None.
+
+5. MISSING METHODS
+None specific to this class. (Family-wide gaps — whole-matrix reductions, mapToXxx coverage, from()
+factories, static zip mirrors — are tracked in SUMMARY.txt and in the relevant subclass reports; they are
+not base-class abstracts today.)
+
+6. DEPRECATION/REMOVAL CANDIDATES
+None. No @Deprecated members; no method is redundant after accounting for inheritance/mirroring. The
+overlap among horizontalStream/verticalStream/rowStreams/columnStreams and the *Points families is only
+superficial (element-vs-position, flat-vs-nested) — each is distinct.
+
+CROSS-CLASS NOTES
+- Accessor-prefix convention: array/list/stream accessors omit "get" everywhere except getMainDiagonal/
+  getAntiDiagonal (see §2).
+- The exception conventions established here (and honored by all subclasses) are: null/value -> IAE,
+  index/range -> IndexOutOfBoundsException, not-square -> IllegalStateException; with get/set deliberately
+  keeping ArrayIndexOutOfBoundsException via raw array access (defined in subclasses). This split is
+  consistent family-wide and matches the project's validation-exception policy.
+- isSameShape's self-type restriction is inherited by all 9 subclasses; widening it is a base-class-only edit
+  but verify the subclass call sites still compile.

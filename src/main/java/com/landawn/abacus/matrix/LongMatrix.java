@@ -462,8 +462,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *        may be empty
      * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non-{@code null};
      *        may be empty
-     * @return a square matrix with the specified diagonals, or the shared empty matrix if neither input contains any elements
-     * @throws IllegalArgumentException if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null}, or if both arrays contain elements and have different lengths
+     * @return a square matrix with the specified diagonals, or an empty matrix when both arrays are empty (at least one being a non-{@code null} zero-length array)
+     * @throws IllegalArgumentException if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null}, or if both arrays are non-empty and have different lengths
      * @see #mainDiagonal(long[])
      * @see #antiDiagonal(long[])
      */

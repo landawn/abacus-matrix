@@ -873,6 +873,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * matrix.updateRow(0, c -> (char) (c + 1)); // shifts row 0 by +1 -> ['B', 'C', 'D']
      * matrix.updateRow(5, c -> c);              // throws IndexOutOfBoundsException (row out of bounds)
+     * matrix.updateRow(0, null);                // throws IllegalArgumentException (operator is null)
      * }</pre>
      *
      * @param <E> the type of exception that the operator may throw
@@ -911,6 +912,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * matrix.updateColumn(0, c -> (char) (c + 1)); // shifts column 0 by +1
      * matrix.updateColumn(5, c -> c);              // throws IndexOutOfBoundsException (column out of bounds)
+     * matrix.updateColumn(0, null);                // throws IllegalArgumentException (operator is null)
      * }</pre>
      *
      * @param <E> the type of exception that the operator may throw

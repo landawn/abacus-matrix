@@ -1,0 +1,73 @@
+API Design Review — IntMatrix
+MODEL opus-4.8 | DATE 2026-06-21 | file: src/main/java/com/landawn/abacus/matrix/IntMatrix.java (3989 lines)
+Role: lead/reference primitive matrix; sets the conventions the other 7 primitives mirror.
+All findings verified against source.
+
+1. OVERALL ASSESSMENT
+Large, mature, and remarkably consistent — the de-facto reference for the family. The factory family
+(of/from/random/repeat/range/rangeClosed/mainDiagonal/antiDiagonal/diagonals/unbox), element access
+(get/set/valueAbove/valueBelow/valueLeft/valueRight), the ~12 transform methods, conversion methods
+(boxed/toLongMatrix/toFloatMatrix/toDoubleMatrix/mapToLong/mapToDouble/mapToObj), arithmetic (add/subtract/
+matmul/zipWith), and the full stream family are coherent, well-documented, and correctly mirror AbstractMatrix
+and the siblings. Int overflow semantics are documented honestly. Its from(char/byte/short) set is the most
+complete in the family and is the pattern the wide types under-cover. The actionable items are few:
+a boxing/null hazard in position-based updateAll, a missing whole-matrix reduction family (made valuable by
+int's overflow-proneness), and participation in two family-wide coverage gaps (mapToFloat, static zip exists
+here so that's fine). No correctness bugs.
+
+2. NAMING ISSUES
+None actionable.
+
+3. RETURN-TYPE & PARAMETER ISSUES
+
+updateAll(Throwables.IntBiFunction<? extends Integer, E>) | IntMatrix.java:1373 | Confidence Medium |
+recommend: change the parameter to a primitive (int row, int col) -> int functional interface
+(Throwables.IntBinaryOperator) to remove boxing and the null-unbox trap.
+  > final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);   // box + implicit unbox
+  The mapper returns Integer which is auto-unboxed, so a null return throws NPE mid-iteration (documented at
+  1370, but a surprising trap in a primitive API). The value-based sibling updateAll(IntUnaryOperator) (1326)
+  is fully primitive. NB: this boxed shape is uniform across all 9 classes, but IntMatrix is the one type
+  where a primitive (int,int)->int interface already exists (Throwables.IntBinaryOperator, used by zip), so
+  it is the cleanest to fix; the other primitive types lack a (int,int)->prim interface (see SUMMARY).
+
+valueAbove/valueBelow/valueLeft/valueRight vs get/set exception type | IntMatrix.java:755,783,811,839 vs 651 |
+Confidence Low | recommend: keep; document the deliberate split.
+  > value*: checkRowColumnIndex(...) -> IndexOutOfBoundsException (755) ; get: return a[r][c] -> AIOOBE (651)
+  Two adjacent element-access families throw different out-of-bounds subtypes. This MATCHES the project's
+  validation-exception policy (get/set keep AIOOBE; index/range -> IOOBE), so the recommendation is to add a
+  short note rather than change behavior. CHECK: only act if the policy itself is revisited.
+
+4. MISPLACED METHODS
+None. add/subtract/matmul (2759/2801/2848) are typed fluent binary ops mirrored across siblings; instance
+placement is correct (they delegate cartesian iteration to Matrices.forEachCartesianIndices).
+
+5. MISSING METHODS
+
+Whole-matrix reductions: sum()/average()/min()/max() | (absent; would live on IntMatrix, mirrored to all
+numeric primitives) | Confidence Medium | recommend: add, with overflow-safe return types — long sum(),
+OptionalDouble average(), OptionalInt min()/max().
+  > Verified by grep: no top-level sum/min/max/average on any matrix class — only stream-internal count().
+  Users must currently write streamH().sum(), and IntStream.sum() itself returns int and silently overflows,
+  so the stream workaround is an overflow trap. Given the class repeatedly warns about int wrap, a first-class
+  long sum() is meaningfully safer. CHECK: confirm Matrices does not already provide these as statics; if it
+  does, this is a @see/doc gap instead.
+
+mapToFloat(IntToFloatFunction) | IntMatrix.java:1513/1547 (has mapToLong/mapToDouble; no mapToFloat) |
+Confidence Medium | recommend: add mapToFloat to complete the primitive mapTo set.
+  > IntMatrix exposes toFloatMatrix() (2951) but no mapToFloat, breaking the "convert-to-X implies map-to-X"
+    pairing. This is a family-wide gap (no primitive matrix has mapToFloat though Matrix<T> does); see SUMMARY.
+
+6. DEPRECATION/REMOVAL CANDIDATES
+None. No @Deprecated members; the two zipWith overloads, three from widenings, and paired in-place/copy
+flip* methods are all justified.
+
+CROSS-CLASS NOTES (conventions this class sets; what siblings should mirror)
+- from = widening conversion, of = same-type wrap. IntMatrix establishes from(char/byte/short) — the most
+  complete narrower-source set. LongMatrix (int only), FloatMatrix (int only), DoubleMatrix (int/long/float)
+  under-cover; ShortMatrix has none (could add from(byte)). See SUMMARY.
+- Conversions target {int,long,float,double} except self — IntMatrix has toLong/toFloat/toDouble; this
+  convention is clean family-wide.
+- Exception split (get/set AIOOBE; value*/range IOOBE; null/value IAE; not-square ISE) is the family standard.
+- Reductions are stream-only today; if added, do so uniformly across all 8 primitives with overflow-safe
+  return types.
+- mapToFloat absent here is part of a family-wide mapTo* inconsistency (FloatMatrix has zero primitive mapTo).

@@ -1,0 +1,64 @@
+API Design Review — Matrix<T>
+MODEL opus-4.8 | DATE 2026-06-21 | file: src/main/java/com/landawn/abacus/matrix/Matrix.java (3905 lines)
+Role: generic object matrix (the non-primitive subclass). All findings verified against source.
+
+1. OVERALL ASSESSMENT
+Mature and internally consistent. The factory family (of/empty/repeat/mainDiagonal/antiDiagonal/diagonals),
+accessors (get/set/valueAbove|Below|Left|Right returning Nullable<T>), in-place updaters (updateRow/
+updateColumn/updateAll/updateMainDiagonal/updateAntiDiagonal/replaceIf), shape transforms (copy/resize/
+extend/reshape/rotate*/transpose/flip*/repeatElements/repeatMatrix), stacking/zip families, the full
+stream/points families, and the mapToInt/mapToLong/mapToFloat/mapToDouble family are all clear, correctly
+documented, and consistent (IAE for null/value/shape; AIOOBE for get/set; IOOBE for ranged accessors; ISE
+for non-square). Notably, Matrix<T> is the ONLY class with the complete primitive mapTo* set including
+mapToFloat (1480/1514/1548/1583) — see cross-class notes. Javadoc matches implementation, including the
+runtime-component-type / ArrayStoreException notes. Actionable items are a naming asymmetry against the
+primitive siblings and two Low-confidence consistency points. No correctness bugs.
+
+2. NAMING ISSUES
+
+map(Function<? super T,R,E>, Class<R>) | Matrix.java:1304 | Confidence Medium | recommend: add
+mapToObj(Function, Class) as the canonical name; keep map(UnaryOperator) (1267) as the same-type convenience.
+  > public <R, E extends Exception> Matrix<R> map(final Throwables.Function<? super T, R, E> mapper, final Class<R> targetElementType)
+  The primitive siblings name their object-producing transform mapToObj (e.g. IntMatrix.java:1584). Here the
+  type-changing object->object transform is overloaded onto map, while object->primitive uses mapToInt/...
+  Adding mapToObj(mapper, Class) makes the cross-class transform vocabulary uniform (mapToInt, mapToObj, …).
+
+3. RETURN-TYPE & PARAMETER ISSUES
+
+toColumnDataset(Collection<String> columnNames) | Matrix.java:3744 (param validated at 3747) | Confidence Low |
+recommend: keep behavior; consider clearer param naming/doc.
+  > N.checkArgument(columnNames.size() == rowCount, "The size(...) of specified columnNames and row count(...) ...")
+  The parameter is named columnNames but its size must equal rowCount, because each matrix ROW becomes a
+  Dataset COLUMN. The Javadoc explains this, but the name still reads as a mismatch. Per ground-rule 5 the
+  clearer choice is a name/contract phrased around "one Dataset column per matrix row."
+  CHECK: whether Dataset/RowDataset conventions elsewhere already standardize on columnNames for produced
+  columns; if so keep for library consistency.
+
+4. MISPLACED METHODS
+
+toRowDataset(Collection<String>) / toColumnDataset(Collection<String>) | Matrix.java:3690,3744 (both @Beta) |
+Confidence Low | recommend: keep on Matrix, or move to Matrices.
+  > @Beta public Dataset toRowDataset(...) / @Beta public Dataset toColumnDataset(...)
+  These are the only Matrix<->Dataset bridges and live only on the object matrix. Reasonable here (object
+  cells map naturally to Dataset), but as @Beta cross-type converters they are also candidates for the
+  Matrices utility hub for discoverability. CHECK: whether Matrices already hosts any Matrix<->Dataset
+  conversions; if it does, these belong there.
+
+5. MISSING METHODS
+None unique to this class. (Matrix<T> is the reference for the complete mapTo* set; the gap is on the
+primitive side — see SUMMARY and the FloatMatrix/Long/Double reports.)
+
+6. DEPRECATION/REMOVAL CANDIDATES
+None. No @Deprecated members. mutateAsFlat (2664) is an intentionally-unsafe, documented escape hatch
+mirrored across the family — keep.
+
+CROSS-CLASS NOTES
+- Transform vocabulary: primitives use mapToObj(mapper, Class); Matrix<T> overloads this onto map(mapper,
+  Class). Aligning on mapToObj across all 9 classes is the single most impactful naming-consistency item here.
+- Matrix<T> has the FULL primitive mapTo set (mapToInt/mapToLong/mapToFloat/mapToDouble, 1480-1583). The
+  primitive matrices are inconsistent: Int/Long/Double have 2 each, FloatMatrix has none, and mapToFloat is
+  absent on every primitive matrix though they all expose toFloatMatrix(). (See SUMMARY item.)
+- value* accessors return Nullable<T> here vs OptionalInt/OptionalLong/... on primitives — the correct
+  by-design mapping, not an inconsistency.
+- Dataset converters exist only on Matrix<T> (defensible); the round-trip from a primitive matrix is via
+  boxed() -> Matrix -> toRowDataset(), which is undiscoverable — worth a doc @see.

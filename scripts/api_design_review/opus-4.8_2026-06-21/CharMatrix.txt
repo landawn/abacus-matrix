@@ -1,0 +1,33 @@
+API Design Review — CharMatrix
+MODEL opus-4.8 | DATE 2026-06-21 | file: src/main/java/com/landawn/abacus/matrix/CharMatrix.java (3838 lines)
+All findings verified against source.
+
+1. OVERALL ASSESSMENT
+A clean, well-mirrored member of the narrow-integral tier. It follows the IntMatrix baseline for factories,
+accessors, transforms, streams, and equality, and correctly diverges where char semantics demand: no from
+(no clean narrower widening source), no static Matrices.zip, and exactly the conventional conversion set
+(toIntMatrix 2710, toLongMatrix 2731, toFloatMatrix 2771, toDoubleMatrix 2811 — char->{int,long,float,double}).
+The unsigned-16-bit wrap-around semantics of add/subtract/matmul are documented thoroughly and consistently
+(class header + each method, with the toIntMatrix() escape hatch). Validation conventions match the family
+(get/set->AIOOBE; value*->OptionalChar + IOOBE). No class-specific actionable findings: the items that looked
+like gaps are deliberate tier-wide conventions (see below). No @Deprecated members.
+
+There are NO class-specific findings for sections 2–6. CharMatrix's only relevant items are family-wide and are
+tracked in SUMMARY:
+  - No static Matrices.zip(CharMatrix,...) — hub gap shared with Short/Float (Medium; for char, arguably
+    lower value since char arithmetic is rare).
+  - No primitive mapToInt/mapToLong/mapToDouble — uniform across the narrow tier (Low; would pair with the
+    existing toXxxMatrix converters).
+  - No whole-matrix reductions — family-wide (Medium).
+
+Verified NON-findings (considered and dismissed):
+  - No from(...) factory: correct — char has no clean narrower widening source (byte->char is not a clean
+    widening in Java); Short/Byte at the same tier also have none.
+  - No toCharMatrix self-conversion: correct (no class converts to itself).
+  - Arithmetic on char (add/subtract/matmul, 2547/2591/2636): conceptually unusual but uniform with the
+    integral tier (ShortMatrix has the identical three) and clearly documented — not a removal candidate.
+
+CROSS-CLASS NOTES
+- All divergences from IntMatrix (no from, no mapToXxx, no static zip) are correct/tier-appropriate; CharMatrix
+  tracks the Byte/Short narrow tier rather than IntMatrix exactly.
+- Conversion set and exception conventions are at full parity with the family.

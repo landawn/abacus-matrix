@@ -1,0 +1,55 @@
+API Design Review — DoubleMatrix
+MODEL opus-4.8 | DATE 2026-06-21 | file: src/main/java/com/landawn/abacus/matrix/DoubleMatrix.java (4038 lines)
+All findings verified against source.
+
+1. OVERALL ASSESSMENT
+A clean, faithful mirror of the IntMatrix baseline with correctly specialized floating-point behavior.
+Across the public surface the families are internally consistent: get/set raw access -> AIOOBE; value*
+-> OptionalDouble after checkRowColumnIndex (IOOBE); diagonal/row/column/update/transform/arithmetic/stream
+families match their counterparts in naming, parameter order, return types, and validation. NaN/Infinity/-0.0
+semantics are unusually well documented (equals, replaceIf, add/subtract/matmul, mutateAsFlat sort ordering,
+from(float[]), the toXxxMatrix narrowers, and println all carry accurate notes; the doubleToRawLongBits!=0
+default-value fast-path in resize/extend is correct). Conversions are complete and consistent (toIntMatrix
+2909, toLongMatrix 2964, toFloatMatrix 3013 = the three main numeric types other than double; all narrowing,
+all documented). The only actionable items are the missing mapToFloat (asymmetric vs the existing
+toFloatMatrix) and the family-wide from()/reductions gaps.
+
+2. NAMING ISSUES
+None actionable.
+
+3. RETURN-TYPE & PARAMETER ISSUES
+None class-specific.
+
+4. MISPLACED METHODS
+None.
+
+5. MISSING METHODS
+
+mapToFloat(DoubleToFloatFunction) | DoubleMatrix.java:1436/1470 (has mapToInt/mapToLong; no mapToFloat) |
+Confidence Medium | recommend: add mapToFloat to complete the mapTo set (map, mapToInt, mapToLong, mapToFloat,
+mapToObj).
+  > public FloatMatrix toFloatMatrix() {   // converter exists at 3013, but no mapToFloat
+  The pairing elsewhere is "if you can convert to X, you can map-to X"; DoubleMatrix breaks it only for float.
+  CHECK: confirm a Throwables.DoubleToFloatFunction interface exists (FloatMatrix currently has no primitive
+  mapTo at all, so there is no in-family precedent for this exact signature) — that availability is the only
+  open question.
+
+from(byte[]/short[]/char[]) | DoubleMatrix.java:167-310 (has from int/long/float) | Confidence Low |
+recommend: address at the family level (decide whether wide types expose all narrower-source from overloads),
+not patch Double alone.
+  > byte/short/char all widen to double, but the gap is shared by Long/Float, so it is a family curation
+    decision rather than a Double-specific divergence. CHECK: whether the team wants from exhaustive over the
+    widening lattice or deliberately minimal.
+
+Whole-matrix reductions sum/average/min/max | absent | Confidence Medium | see SUMMARY (family-wide).
+
+6. DEPRECATION/REMOVAL CANDIDATES
+None. No @Deprecated members.
+
+CROSS-CLASS NOTES
+- Conversions: only narrowing toInt/toLong/toFloat (correct — double is widest; the "to {int,long,float,double}
+  except self" convention holds). No widening targets exist, correctly.
+- mapToInt/mapToLong present (mirrors LongMatrix's narrowing mapTo); mapToFloat is the lone gap (family-wide).
+- from differs from IntMatrix (int/long/float vs char/byte/short) as expected since from widens toward the
+  class's own type; the lattice gap is shared with Long/Float.
+- range/rangeClosed correctly absent (integer-only).

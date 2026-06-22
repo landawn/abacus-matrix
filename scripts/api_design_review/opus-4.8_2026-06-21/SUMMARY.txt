@@ -1,0 +1,123 @@
+API Design Review — SUMMARY (cross-class)
+MODEL opus-4.8 | DATE 2026-06-21 | scope: com.landawn.abacus.matrix (12 classes) under ./src/main/java
+EXECUTION: PARALLEL (1 sub-agent per class/batch); every finding verified against source by the orchestrator.
+
+Overall: the family is mature, well-documented, and internally consistent on the big things (the abstract
+template skeleton, the ~hundreds of mirrored methods per class, exception conventions, the toXxxMatrix
+conversion convention, NaN/overflow documentation). NO correctness bugs were found. The actionable findings
+are almost entirely CONSISTENCY / COMPLETENESS gaps where one or more primitive specializations diverge from
+the pattern that the others (or the generic Matrix<T>) establish.
+
+================================================================================
+1. CONSISTENCY ISSUES SPANNING MULTIPLE CLASSES
+================================================================================
+
+C1. mapToXxx primitive-mapper family is incomplete and uneven. (HIGH)
+    Matrix<T> has the full set mapToInt/mapToLong/mapToFloat/mapToDouble (Matrix.java:1480-1583). Among the
+    primitives: IntMatrix has mapToLong/mapToDouble; LongMatrix mapToInt/mapToDouble; DoubleMatrix mapToInt/
+    mapToLong; and FloatMatrix has NONE (only mapToObj). Byte/Short/Char have none.
+    Two sub-issues:
+      (a) FloatMatrix is a clear outlier — it should gain mapToInt/mapToLong/mapToDouble like its numeric
+          peers. (FloatMatrix.java:1323)
+      (b) mapToFloat is missing on EVERY primitive matrix even though all of them expose toFloatMatrix(),
+          breaking the "convert-to-X implies map-to-X" pairing specifically for float. (Matrix<T> has it.)
+
+C2. Static Matrices.zip family is missing for Short, Char, Float (Boolean defensible). (HIGH)
+    The full 5-overload static zip family exists only for Byte/Int/Long/Double + generic Matrix
+    (Matrices.java 1270/1832/2619/3148/3440). FloatMatrix is the most glaring omission (Double has it). All
+    these classes already have instance zipWith, so the static mirrors are mechanical. Boolean's absence is
+    defensible (instance zipWith + and/or/xor cover it) but should be documented as intentional.
+
+C3. from(...) widening-factory family is unevenly populated. (MEDIUM-HIGH; needs a policy decision)
+    IntMatrix.from covers char/byte/short (most complete). LongMatrix.from = int only; FloatMatrix.from = int
+    only (Double has from(long)); DoubleMatrix.from = int/long/float; ShortMatrix.from = none (byte->short is
+    a valid widening). Decide which source types `from` should accept, then apply uniformly. Concrete gaps:
+    LongMatrix.from(byte/short/char); FloatMatrix.from(long) [+byte/short/char]; DoubleMatrix.from(byte/short/
+    char); ShortMatrix.from(byte).
+
+C4. Whole-matrix reductions are absent everywhere. (MEDIUM)
+    No sum/average/min/max on any matrix class — users must go through streamH()/streamV(), and IntStream.sum()
+    returns int and silently overflows. A first-class, overflow-safe reduction family (long sum() for the
+    integral types, OptionalDouble average(), Optional<prim> min()/max()) would be a meaningful, consistent
+    addition across the 8 numeric matrices.
+
+C5. zipToXxx widening-converter lattice is asymmetric. (MEDIUM)
+    Matrices: zipToInt(Byte->Int), zipToLong/zipToDouble(Int), zipToDouble(Long). Missing Short/Char source
+    converters, Byte->Long/Double, Float->Double. Either round out or document the curated subset as deliberate.
+
+C6. Object->object transform naming: map(mapper, Class) vs mapToObj(mapper, Class). (MEDIUM)
+    Primitives name the type-changing transform mapToObj (IntMatrix.java:1584); Matrix<T> overloads it onto
+    map (Matrix.java:1304). Align on mapToObj across all nine classes for a uniform map/mapToXxx/mapToObj set.
+
+C7. Diagonal array accessors are get-prefixed; row/column accessors are not. (MEDIUM)
+    getMainDiagonal()/getAntiDiagonal() (AbstractMatrix.java:1638/1688) are the only get-prefixed array
+    accessors; siblings are rowCopy/columnCopy/flatten/mainDiagonalStream (no get). Add mainDiagonal()/
+    antiDiagonal() as canonical; applies to all 9 subclasses.
+
+C8. Position-based updateAll boxes in all 9 classes. (LOW-MEDIUM)
+    updateAll(IntBiFunction<? extends Wrapper>) auto-unboxes the return (NPE on null return) while the
+    value-based updateAll(<prim>UnaryOperator) is primitive. Uniform, so consistent — but a primitive smell.
+    Only IntMatrix can be cleanly fixed today (Throwables.IntBinaryOperator exists); other types lack a
+    (int,int)->prim interface. Treat as a low-priority polish unless those FIs are added.
+
+C9. Exception-type split (by design): get/set -> ArrayIndexOutOfBoundsException; value*/ranged ->
+    IndexOutOfBoundsException. (LOW / DOC) Matches the project's validation-exception policy; recommend a short
+    documented note acknowledging the deliberate split rather than any change.
+
+================================================================================
+2. PRIORITIZED ACTION PLAN
+================================================================================
+Tags: P1 = clear win, low risk | P2 = worthwhile, needs a design decision | P3 = nice-to-have.
+Compat: "additive" = pure addition, no break; "rename" = add-new(+optionally deprecate/remove old);
+"behavior" = changes existing semantics.
+
+--- P1 (do these; low risk, mostly additive) ---
+P1.1  Add FloatMatrix.mapToInt/mapToLong/mapToDouble. [C1a] Effort: S. Compat: additive.
+P1.2  Add static Matrices.zip family for FloatMatrix (mirror the DoubleMatrix block). [C2] Effort: M.
+      Compat: additive. (Then ShortMatrix/CharMatrix — see P2.)
+P1.3  Add BooleanMatrix.not(). [BooleanMatrix.java:2437 area] Effort: S. Compat: additive.
+P1.4  Add the headline from() widenings: LongMatrix.from(byte/short/char), FloatMatrix.from(long),
+      ShortMatrix.from(byte). [C3, concrete subset] Effort: S-M. Compat: additive.
+
+--- P2 (worthwhile; decide policy first, then apply uniformly) ---
+P2.1  mapToFloat across all primitives (pairs with existing toFloatMatrix). [C1b] Needs: confirm
+      Throwables.{Int,Long,Double,...}ToFloatFunction exist. Effort: M. Compat: additive.
+P2.2  Whole-matrix reductions sum/average/min/max with overflow-safe return types, across the 8 numeric
+      matrices. [C4] Decision: return-type contract + scope. Effort: L. Compat: additive.
+P2.3  from() policy decision (which source types) + uniform fill incl. DoubleMatrix.from(byte/short/char) and
+      the rest of C3. Effort: M. Compat: additive.
+P2.4  Add mapToObj(mapper, Class) to Matrix<T>; optionally deprecate/remove the map(Function,Class) overload.
+      [C6] Effort: S. Compat: rename (additive if old kept).
+P2.5  Add mainDiagonal()/antiDiagonal() (canonical) across the 9 classes; deprecate getMainDiagonal/
+      getAntiDiagonal. [C7] Effort: M (touches base + 9 subclasses). Compat: rename.
+P2.6  Static Matrices.zip for ShortMatrix/CharMatrix (+ zipToInt for Short). [C2] Effort: M. Compat: additive.
+P2.7  zipToXxx lattice: round out OR document the curated subset. [C5] Effort: S (doc) / M (fill). Compat: additive.
+P2.8  isSameShape: widen parameter to AbstractMatrix<?,?,?,?,?> and return false on null instead of throwing.
+      [AbstractMatrix.java:900] Effort: S. Compat: behavior (null no longer throws) + source-compatible param
+      widening — decide intentionally.
+
+--- P3 (nice-to-have / doc-only) ---
+P3.1  BooleanMatrix.noneTrue() (and maybe allFalse/anyFalse). Effort: S. Compat: additive.
+P3.2  Narrow-tier (Byte/Short/Char) mapToInt/mapToLong/mapToDouble to pair with their toXxxMatrix converters.
+      Effort: M. Compat: additive. (Only if the team wants full mapTo parity.)
+P3.3  Consider dropping the forEachIndices(...BiIntObjConsumer<M>) (i,j,matrix) variants (value == (M)this).
+      [AbstractMatrix.java:1360/1415] Effort: S. Compat: removal — verify call sites first.
+P3.4  Doc: unify Matrices zip vs zipToXxx shape-mismatch wording (route 2-/3-arg zip through checkShapeForZip).
+      [K] Effort: S. Compat: additive (message text only).
+P3.5  Doc: note the deliberate get/set-AIOOBE vs value*-IOOBE split [C9]; note matmul is intentionally
+      instance-only (not in Matrices); add @see for the Matrix<->Dataset round-trip via boxed(). Effort: S.
+P3.6  updateAll boxing: only if (int,int)->prim FIs are introduced; otherwise leave (uniform). [C8]
+
+================================================================================
+NON-FINDINGS worth recording (verified, deliberately NOT flagged)
+================================================================================
+- matmul is the consistent matrix-multiply name across all 7 numeric primitives (no `multiply` exists; an
+  agent's "IntMatrix.multiply" claim was a verification error). matmul is instance-only by design.
+- toXxxMatrix conversion convention is clean: each numeric matrix converts to {int,long,float,double} except
+  itself (some narrowing, all documented). => ByteMatrix "missing toShortMatrix" was CONSIDERED AND REJECTED
+  (short/byte/char are never conversion targets anywhere).
+- Byte/Char correctly have no from() (byte is narrowest; char has no clean narrower source).
+- range/rangeClosed correctly exist only on IntMatrix/LongMatrix (integer-stepping) and are absent from
+  Float/Double.
+- BooleanMatrix's boxed Stream<Boolean> and OptionalBoolean usage are correct and consistent; arithmetic
+  absence is correct.

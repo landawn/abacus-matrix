@@ -1,0 +1,9 @@
+API Design Review — ParallelMode
+MODEL opus-4.8 | DATE 2026-06-21 | file: src/main/java/com/landawn/abacus/matrix/ParallelMode.java (70 lines)
+
+1. OVERALL ASSESSMENT
+A 3-value enum {FORCE_ON, FORCE_OFF, AUTO} that expresses the thread-local parallelization policy
+consumed by Matrices. Each value is thoroughly and accurately documented, the default (AUTO) is stated,
+and the @see links to the Matrices accessors are correct. No actionable API findings.
+
+(Sections 2–6 omitted — nothing actionable.)
