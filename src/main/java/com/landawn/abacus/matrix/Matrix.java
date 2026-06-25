@@ -3687,6 +3687,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @see Dataset
      * @see #toColumnDataset(Collection)
      */
+    @SuppressWarnings("deprecation")
     @Beta
     public Dataset toRowDataset(final Collection<String> columnNames) throws IllegalArgumentException {
         N.checkArgNotNull(columnNames, "columnNames");
@@ -3741,6 +3742,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @see RowDataset
      * @see #toRowDataset(Collection)
      */
+    @SuppressWarnings("deprecation")
     @Beta
     public Dataset toColumnDataset(final Collection<String> columnNames) throws IllegalArgumentException {
         N.checkArgNotNull(columnNames, "columnNames");

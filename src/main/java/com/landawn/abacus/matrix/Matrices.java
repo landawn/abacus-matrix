@@ -373,19 +373,18 @@ public final class Matrices {
      * Matrices.isSameShape(Arrays.asList((IntMatrix) null));     // returns false (single null element)
      * }</pre>
      *
-     * @param <M> the type of matrix, must extend {@link AbstractMatrix}
      * @param matrices the collection of matrices to check, may be {@code null} or empty
      * @return {@code true} if all matrices have the same number of rows and columns, or if the collection
      *         is {@code null} or empty; {@code false} if any matrix has different dimensions or if any
      *         element in the collection is {@code null}
      */
-    public static <M extends AbstractMatrix<?, ?, ?, ?, ?>> boolean isSameShape(final Collection<? extends M> matrices) {
+    public static boolean isSameShape(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> matrices) {
         if (N.isEmpty(matrices)) {
             return true;
         }
 
-        final Iterator<? extends M> iterator = matrices.iterator();
-        final M first = iterator.next();
+        final Iterator<? extends AbstractMatrix<?, ?, ?, ?, ?>> iterator = matrices.iterator();
+        final AbstractMatrix<?, ?, ?, ?, ?> first = iterator.next();
 
         if (first == null) {
             return false;
@@ -393,7 +392,7 @@ public final class Matrices {
 
         final int rowCount = first.rowCount;
         final int columnCount = first.columnCount;
-        M next = null;
+        AbstractMatrix<?, ?, ?, ?, ?> next = null;
 
         while (iterator.hasNext()) {
             next = iterator.next();
