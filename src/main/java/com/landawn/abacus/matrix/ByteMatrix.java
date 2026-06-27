@@ -455,8 +455,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         N.checkArgument(mainDiagonal != null || antiDiagonal != null, "Both 'mainDiagonal' and 'antiDiagonal' can't be null");
 
         N.checkArgument(N.isEmpty(mainDiagonal) || N.isEmpty(antiDiagonal) || mainDiagonal.length == antiDiagonal.length,
-                "The lengths of 'mainDiagonal' and 'antiDiagonal' must be the same: mainDiagonal length={}, antiDiagonal length={}",
-                N.len(mainDiagonal), N.len(antiDiagonal));
+                "The lengths of 'mainDiagonal' and 'antiDiagonal' must be the same: mainDiagonal length={}, antiDiagonal length={}", N.len(mainDiagonal),
+                N.len(antiDiagonal));
 
         if (N.isEmpty(mainDiagonal) && N.isEmpty(antiDiagonal)) {
             return EMPTY_BYTE_MATRIX;
@@ -528,7 +528,6 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param columnIndex the column index (0-based)
      * @return the byte element at position {@code (rowIndex, columnIndex)}
      * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
-     * @see #get(Point)
      */
     public byte get(final int rowIndex, final int columnIndex) {
         return a[rowIndex][columnIndex];
@@ -577,7 +576,6 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param columnIndex the column index (0-based)
      * @param value the new byte value to store at the specified position
      * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
-     * @see #set(Point, byte)
      */
     public void set(final int rowIndex, final int columnIndex, final byte value) {
         a[rowIndex][columnIndex] = value;
@@ -2988,9 +2986,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         N.checkArgNotNull(other, "other");
         N.checkArgNotNull(third, "third");
         N.checkArgNotNull(zipFunction, "zipFunction");
-        N.checkArgument(isSameShape(other) && isSameShape(third),
-                "Cannot zip matrices with different shapes: this is {}x{}, other is {}x{}, third is {}x{}", rowCount, columnCount, other.rowCount,
-                other.columnCount, third.rowCount, third.columnCount);
+        N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: this is {}x{}, other is {}x{}, third is {}x{}",
+                rowCount, columnCount, other.rowCount, other.columnCount, third.rowCount, third.columnCount);
 
         final byte[][] b = other.a;
         final byte[][] c = third.a;

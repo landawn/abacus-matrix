@@ -327,13 +327,15 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *        may be empty
      * @return a square matrix with the specified diagonals, or an empty matrix when both arrays are empty (at least one being a non-{@code null} zero-length array)
      * @throws IllegalArgumentException if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null}, or if both arrays are non-empty and have different lengths
+     * @see #mainDiagonal(boolean[])
+     * @see #antiDiagonal(boolean[])
      */
     public static BooleanMatrix diagonals(final boolean[] mainDiagonal, final boolean[] antiDiagonal) throws IllegalArgumentException {
         N.checkArgument(mainDiagonal != null || antiDiagonal != null, "Both 'mainDiagonal' and 'antiDiagonal' can't be null");
 
         N.checkArgument(N.isEmpty(mainDiagonal) || N.isEmpty(antiDiagonal) || mainDiagonal.length == antiDiagonal.length,
-                "The lengths of 'mainDiagonal' and 'antiDiagonal' must be the same: mainDiagonal length={}, antiDiagonal length={}",
-                N.len(mainDiagonal), N.len(antiDiagonal));
+                "The lengths of 'mainDiagonal' and 'antiDiagonal' must be the same: mainDiagonal length={}, antiDiagonal length={}", N.len(mainDiagonal),
+                N.len(antiDiagonal));
 
         if (N.isEmpty(mainDiagonal) && N.isEmpty(antiDiagonal)) {
             return EMPTY_BOOLEAN_MATRIX;
@@ -2867,9 +2869,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
         N.checkArgNotNull(other, "other");
         N.checkArgNotNull(third, "third");
         N.checkArgNotNull(zipFunction, "zipFunction");
-        N.checkArgument(isSameShape(other) && isSameShape(third),
-                "Cannot zip matrices with different shapes: this is {}x{}, other is {}x{}, third is {}x{}", rowCount, columnCount, other.rowCount,
-                other.columnCount, third.rowCount, third.columnCount);
+        N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: this is {}x{}, other is {}x{}, third is {}x{}",
+                rowCount, columnCount, other.rowCount, other.columnCount, third.rowCount, third.columnCount);
 
         final boolean[][] otherData = other.a;
         final boolean[][] thirdData = third.a;

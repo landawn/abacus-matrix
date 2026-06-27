@@ -578,8 +578,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
         N.checkArgument(mainDiagonal != null || antiDiagonal != null, "Both 'mainDiagonal' and 'antiDiagonal' can't be null");
 
         N.checkArgument(N.isEmpty(mainDiagonal) || N.isEmpty(antiDiagonal) || mainDiagonal.length == antiDiagonal.length,
-                "The lengths of 'mainDiagonal' and 'antiDiagonal' must be the same: mainDiagonal length={}, antiDiagonal length={}",
-                N.len(mainDiagonal), N.len(antiDiagonal));
+                "The lengths of 'mainDiagonal' and 'antiDiagonal' must be the same: mainDiagonal length={}, antiDiagonal length={}", N.len(mainDiagonal),
+                N.len(antiDiagonal));
 
         if (N.isEmpty(mainDiagonal) && N.isEmpty(antiDiagonal)) {
             return EMPTY_INT_MATRIX;
@@ -3078,9 +3078,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
         N.checkArgNotNull(other, "other");
         N.checkArgNotNull(third, "third");
         N.checkArgNotNull(zipFunction, "zipFunction");
-        N.checkArgument(isSameShape(other) && isSameShape(third),
-                "Cannot zip matrices with different shapes: this is {}x{}, other is {}x{}, third is {}x{}", rowCount, columnCount, other.rowCount,
-                other.columnCount, third.rowCount, third.columnCount);
+        N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: this is {}x{}, other is {}x{}, third is {}x{}",
+                rowCount, columnCount, other.rowCount, other.columnCount, third.rowCount, third.columnCount);
 
         final int[][] otherData = other.a;
         final int[][] thirdData = third.a;

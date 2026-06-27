@@ -342,8 +342,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         N.checkArgument(mainDiagonal != null || antiDiagonal != null, "Both 'mainDiagonal' and 'antiDiagonal' can't be null");
 
         N.checkArgument(N.isEmpty(mainDiagonal) || N.isEmpty(antiDiagonal) || mainDiagonal.length == antiDiagonal.length,
-                "The lengths of 'mainDiagonal' and 'antiDiagonal' must be the same: mainDiagonal length={}, antiDiagonal length={}",
-                N.len(mainDiagonal), N.len(antiDiagonal));
+                "The lengths of 'mainDiagonal' and 'antiDiagonal' must be the same: mainDiagonal length={}, antiDiagonal length={}", N.len(mainDiagonal),
+                N.len(antiDiagonal));
 
         final int len = N.max(N.len(mainDiagonal), N.len(antiDiagonal));
         final Class<?> leftComponentClass = mainDiagonal == null ? null : mainDiagonal.getClass().getComponentType();
@@ -2931,9 +2931,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         N.checkArgNotNull(third, "third");
         N.checkArgNotNull(zipFunction, "zipFunction");
         N.checkArgNotNull(targetElementType, "targetElementType");
-        N.checkArgument(Matrices.isSameShape(this, other, third),
-                "Cannot zip matrices with different shapes: this is {}x{}, other is {}x{}, third is {}x{}", rowCount, columnCount, other.rowCount,
-                other.columnCount, third.rowCount, third.columnCount);
+        N.checkArgument(Matrices.isSameShape(this, other, third), "Cannot zip matrices with different shapes: this is {}x{}, other is {}x{}, third is {}x{}",
+                rowCount, columnCount, other.rowCount, other.columnCount, third.rowCount, third.columnCount);
 
         final B[][] b = other.a;
         final C[][] c = third.a;
