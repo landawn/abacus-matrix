@@ -170,7 +170,7 @@ public final class Matrices {
      * <li>The total number of elements in the matrix (rows × columns)</li>
      * </ul>
      *
-     * <p>This is a convenience method that delegates to {@link #isParallelizable(AbstractMatrix, long)}
+     * <p>This is a convenience method that delegates to {@link #shouldRunInParallel(AbstractMatrix, long)}
      * using the matrix's total element count.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -179,25 +179,25 @@ public final class Matrices {
      * IntMatrix large = IntMatrix.of(new int[200][200]);             // 40000 elements
      *
      * Matrices.setParallelMode(ParallelMode.FORCE_OFF);
-     * Matrices.isParallelizable(small);                    // returns false (forced off)
-     * Matrices.isParallelizable(large);                    // returns false (forced off)
+     * Matrices.shouldRunInParallel(small);                    // returns false (forced off)
+     * Matrices.shouldRunInParallel(large);                    // returns false (forced off)
      *
      * Matrices.setParallelMode(ParallelMode.AUTO);         // restore default; under AUTO the
      *                                                      // small matrix is never parallelized
-     * Matrices.isParallelizable(small);                    // returns false (4 < 8192)
+     * Matrices.shouldRunInParallel(small);                    // returns false (4 < 8192)
      *
-     * Matrices.isParallelizable((IntMatrix) null);         // throws IllegalArgumentException
+     * Matrices.shouldRunInParallel((IntMatrix) null);         // throws IllegalArgumentException
      * }</pre>
      *
      * @param m the matrix to evaluate for parallelization, must not be {@code null}
      * @return {@code true} if parallel processing should be used for this matrix; {@code false} for sequential processing
      * @throws IllegalArgumentException if {@code m} is {@code null}
-     * @see #isParallelizable(AbstractMatrix, long)
+     * @see #shouldRunInParallel(AbstractMatrix, long)
      * @see #setParallelMode(ParallelMode)
      */
-    public static boolean isParallelizable(final AbstractMatrix<?, ?, ?, ?, ?> m) {
+    public static boolean shouldRunInParallel(final AbstractMatrix<?, ?, ?, ?, ?> m) {
         N.checkArgNotNull(m, "m");
-        return isParallelizable(m, m.elementCount);
+        return shouldRunInParallel(m, m.elementCount);
     }
 
     /**
@@ -225,12 +225,12 @@ public final class Matrices {
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
      *
      * Matrices.setParallelMode(ParallelMode.FORCE_OFF);
-     * Matrices.isParallelizable(matrix, 100000L);          // returns false (forced off, count ignored)
+     * Matrices.shouldRunInParallel(matrix, 100000L);          // returns false (forced off, count ignored)
      *
      * Matrices.setParallelMode(ParallelMode.AUTO);         // restore default
-     * Matrices.isParallelizable(matrix, 5000L);            // returns false (5000 < 8192)
+     * Matrices.shouldRunInParallel(matrix, 5000L);            // returns false (5000 < 8192)
      *
-     * Matrices.isParallelizable((IntMatrix) null, 100L);   // throws IllegalArgumentException
+     * Matrices.shouldRunInParallel((IntMatrix) null, 100L);   // throws IllegalArgumentException
      * }</pre>
      *
      * @param m the matrix being evaluated; only checked for {@code null}, the matrix's own
@@ -241,7 +241,7 @@ public final class Matrices {
      * @see #setParallelMode(ParallelMode)
      * @see ParallelMode
      */
-    public static boolean isParallelizable(final AbstractMatrix<?, ?, ?, ?, ?> m, final long count) {
+    public static boolean shouldRunInParallel(final AbstractMatrix<?, ?, ?, ?, ?> m, final long count) {
         N.checkArgNotNull(m, "m");
 
         if (!IS_PARALLEL_STREAM_SUPPORTED) {
@@ -929,7 +929,7 @@ public final class Matrices {
      * <p>Parallelization is automatically determined based on the total number of multiply-add
      * operations ({@code a.rowCount * a.columnCount * b.columnCount}, saturated against
      * {@link Long#MAX_VALUE}) and the current thread settings via
-     * {@link #isParallelizable(AbstractMatrix, long)}.</p>
+     * {@link #shouldRunInParallel(AbstractMatrix, long)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -967,7 +967,7 @@ public final class Matrices {
                 "Matrix dimensions incompatible for multiplication: a is {}x{}, b is {}x{} (a.columnCount must equal b.rowCount)", a.rowCount, a.columnCount,
                 b.rowCount, b.columnCount);
 
-        forEachCartesianIndices(a, b, action, Matrices.isParallelizable(a, saturatedMultiply(a.elementCount, b.columnCount)));
+        forEachCartesianIndices(a, b, action, Matrices.shouldRunInParallel(a, saturatedMultiply(a.elementCount, b.columnCount)));
     }
 
     /**
@@ -1364,7 +1364,7 @@ public final class Matrices {
      * @throws E if the zip function throws an exception during execution
      * @see #zip(ByteMatrix, ByteMatrix, Throwables.ByteBinaryOperator)
      * @see #zip(ByteMatrix, ByteMatrix, ByteMatrix, Throwables.ByteTernaryOperator)
-     * @see #zip(Collection, Throwables.ByteNFunction, Class)
+     * @see #zipToObj(Collection, Throwables.ByteNFunction, Class)
      */
     public static <E extends Exception> ByteMatrix zip(final Collection<ByteMatrix> coll, final Throwables.ByteBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
@@ -1393,143 +1393,9 @@ public final class Matrices {
             }
         };
 
-        forEachIndices(rowCount, columnCount, action, Matrices.isParallelizable(matrices[0]));
+        forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(matrices[0]));
 
         return new ByteMatrix(result);
-    }
-
-    /**
-     * Combines multiple {@link ByteMatrix} objects element-wise using a function that operates on byte arrays.
-     *
-     * <p>This method combines an arbitrary number of byte matrices by applying a function that takes
-     * an array of bytes (one from each matrix at each position) and produces a result of any type.
-     * At each position (i, j), an array containing [m1[i][j], m2[i][j], m3[i][j], ...] is passed
-     * to the zip function.</p>
-     *
-     * <p>This is a convenience method that calls
-     * {@link #zip(Collection, Throwables.ByteNFunction, boolean, Class)} with
-     * {@code shareIntermediateArray = false}.</p>
-     *
-     * <p>All matrices in the collection must have identical dimensions.</p>
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * ByteMatrix m1 = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
-     * ByteMatrix m2 = ByteMatrix.of(new byte[][] {{5, 6}, {7, 8}});
-     * ByteMatrix m3 = ByteMatrix.of(new byte[][] {{9, 10}, {11, 12}});
-     *
-     * Matrix<Integer> sum = Matrices.zip(Arrays.asList(m1, m2, m3), arr -> {
-     *     int s = 0;
-     *     for (byte b : arr) s += b;
-     *     return s;
-     * }, Integer.class);
-     * // sum is [[15, 18], [21, 24]]  (sum.get(0, 0) == 15)
-     *
-     * Matrix<Integer> count = Matrices.zip(Arrays.asList(m1, m2, m3), arr -> arr.length, Integer.class);
-     * // count is filled with 3 at every position (count.get(0, 0) == 3)
-     *
-     * ByteMatrix wrong = ByteMatrix.of(new byte[][] {{1, 2, 3}});                  // different shape
-     * Matrices.zip(Arrays.asList(m1, wrong), arr -> 0, Integer.class);             // throws IllegalArgumentException (shape mismatch)
-     * Matrices.zip(Collections.<ByteMatrix> emptyList(), arr -> 0, Integer.class); // throws IllegalArgumentException (empty)
-     * }</pre>
-     *
-     * @param <R> the type of elements in the result matrix
-     * @param <E> the type of exception that the zip function might throw
-     * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the function that takes an array of bytes (one from each matrix) and returns a result of type R, must not be {@code null}
-     * @param targetElementType the class of the result element type, must not be {@code null}
-     * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
-     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
-     * @throws E if the zip function throws an exception during execution
-     * @see #zip(Collection, Throwables.ByteNFunction, boolean, Class)
-     * @see #zip(Collection, Throwables.ByteBinaryOperator)
-     */
-    public static <R, E extends Exception> Matrix<R> zip(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction,
-            final Class<R> targetElementType) throws E {
-        return zip(coll, zipFunction, false, targetElementType);
-    }
-
-    /**
-     * Combines multiple {@link ByteMatrix} objects element-wise using a function that operates on byte arrays,
-     * with control over intermediate array sharing.
-     *
-     * <p>This method combines byte matrices by applying a function that takes an array of bytes
-     * (one from each matrix at each position). The {@code shareIntermediateArray} parameter controls
-     * memory optimization:</p>
-     * <ul>
-     * <li>{@code true} and sequential execution: Reuses the same intermediate array for all positions,
-     *     reducing memory allocations but requiring the zip function to not retain references to the array</li>
-     * <li>{@code false} or parallel execution: Creates a new array for each position, safer but uses more memory</li>
-     * </ul>
-     *
-     * <p><b>Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
-     * store references to the array, as it will be mutated for subsequent positions. Only use this
-     * optimization if the function immediately processes and discards the array.</p>
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * ByteMatrix m1 = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
-     * ByteMatrix m2 = ByteMatrix.of(new byte[][] {{5, 6}, {7, 8}});
-     * ByteMatrix m3 = ByteMatrix.of(new byte[][] {{8, 8}, {8, 8}});
-     *
-     * Matrix<Integer> xor = Matrices.zip(Arrays.asList(m1, m2, m3),
-     *     arr -> arr[0] ^ arr[1] ^ arr[2], true, Integer.class);
-     * // xor.get(0, 0) == (1 ^ 5 ^ 8) == 12
-     *
-     * Matrix<Integer> sum = Matrices.zip(Arrays.asList(m1, m2, m3), arr -> {
-     *     int s = 0;
-     *     for (byte b : arr) s += b;
-     *     return s;
-     * }, false, Integer.class);
-     * // sum.get(0, 0) == 1 + 5 + 8 == 14
-     *
-     * ByteMatrix wrong = ByteMatrix.of(new byte[][] {{1, 2, 3}});               // different shape
-     * Matrices.zip(Arrays.asList(m1, wrong), arr -> 0, false, Integer.class);   // throws IllegalArgumentException (shape mismatch)
-     * Matrices.zip(Arrays.asList(m1, m2), arr -> 0, false, null);               // throws IllegalArgumentException (null type)
-     * }</pre>
-     *
-     * @param <R> the type of elements in the result matrix
-     * @param <E> the type of exception that the zip function might throw
-     * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the function that takes an array of bytes (one from each matrix) and returns a result of type R, must not be {@code null}
-     * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
-     *                               {@code false} to create new arrays for each position
-     * @param targetElementType the class of the result element type, must not be {@code null}
-     * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
-     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
-     * @throws E if the zip function throws an exception during execution
-     * @see #zip(Collection, Throwables.ByteNFunction, Class)
-     * @see #zip(Collection, Throwables.ByteBinaryOperator)
-     */
-    public static <R, E extends Exception> Matrix<R> zip(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction,
-            final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E {
-        checkShapeForZip(coll);
-        N.checkArgNotNull(zipFunction, "zipFunction");
-        N.checkArgNotNull(targetElementType, "targetElementType");
-
-        final int size = coll.size();
-        final ByteMatrix[] matrices = coll.toArray(new ByteMatrix[size]);
-
-        final int rowCount = matrices[0].rowCount;
-        final int columnCount = matrices[0].columnCount;
-        final boolean zipInParallel = Matrices.isParallelizable(matrices[0]);
-        final boolean shareArray = shareIntermediateArray && !zipInParallel;
-        final byte[] intermediateArray = new byte[size];
-        final R[][] result = newMatrixArray(rowCount, columnCount, targetElementType);
-
-        final Throwables.IntBiConsumer<E> action = (i, j) -> {
-            final byte[] tmp = shareArray ? intermediateArray : N.clone(intermediateArray);
-
-            for (int k = 0; k < size; k++) {
-                tmp[k] = matrices[k].a[i][j];
-            }
-
-            result[i][j] = zipFunction.apply(tmp);
-        };
-
-        forEachIndices(rowCount, columnCount, action, zipInParallel);
-
-        return new Matrix<>(result);
     }
 
     /**
@@ -1585,7 +1451,7 @@ public final class Matrices {
 
         final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j]);
 
-        forEachIndices(rowCount, columnCount, action, Matrices.isParallelizable(a));
+        forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(a));
 
         return new IntMatrix(result);
     }
@@ -1651,7 +1517,7 @@ public final class Matrices {
 
         final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j], ca[i][j]);
 
-        forEachIndices(rowCount, columnCount, action, Matrices.isParallelizable(a));
+        forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(a));
 
         return new IntMatrix(result);
     }
@@ -1771,7 +1637,7 @@ public final class Matrices {
 
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
-        final boolean zipInParallel = Matrices.isParallelizable(matrices[0]);
+        final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0]);
         final boolean shareArray = shareIntermediateArray && !zipInParallel;
         final byte[] intermediateArray = new byte[size];
         final int[][] result = new int[rowCount][columnCount];
@@ -1789,6 +1655,140 @@ public final class Matrices {
         forEachIndices(rowCount, columnCount, action, zipInParallel);
 
         return new IntMatrix(result);
+    }
+
+    /**
+     * Combines multiple {@link ByteMatrix} objects element-wise using a function that operates on byte arrays.
+     *
+     * <p>This method combines an arbitrary number of byte matrices by applying a function that takes
+     * an array of bytes (one from each matrix at each position) and produces a result of any type.
+     * At each position (i, j), an array containing [m1[i][j], m2[i][j], m3[i][j], ...] is passed
+     * to the zip function.</p>
+     *
+     * <p>This is a convenience method that calls
+     * {@link #zipToObj(Collection, Throwables.ByteNFunction, boolean, Class)} with
+     * {@code shareIntermediateArray = false}.</p>
+     *
+     * <p>All matrices in the collection must have identical dimensions.</p>
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * ByteMatrix m1 = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
+     * ByteMatrix m2 = ByteMatrix.of(new byte[][] {{5, 6}, {7, 8}});
+     * ByteMatrix m3 = ByteMatrix.of(new byte[][] {{9, 10}, {11, 12}});
+     *
+     * Matrix<Integer> sum = Matrices.zipToObj(Arrays.asList(m1, m2, m3), arr -> {
+     *     int s = 0;
+     *     for (byte b : arr) s += b;
+     *     return s;
+     * }, Integer.class);
+     * // sum is [[15, 18], [21, 24]]  (sum.get(0, 0) == 15)
+     *
+     * Matrix<Integer> count = Matrices.zipToObj(Arrays.asList(m1, m2, m3), arr -> arr.length, Integer.class);
+     * // count is filled with 3 at every position (count.get(0, 0) == 3)
+     *
+     * ByteMatrix wrong = ByteMatrix.of(new byte[][] {{1, 2, 3}});                  // different shape
+     * Matrices.zipToObj(Arrays.asList(m1, wrong), arr -> 0, Integer.class);             // throws IllegalArgumentException (shape mismatch)
+     * Matrices.zipToObj(Collections.<ByteMatrix> emptyList(), arr -> 0, Integer.class); // throws IllegalArgumentException (empty)
+     * }</pre>
+     *
+     * @param <R> the type of elements in the result matrix
+     * @param <E> the type of exception that the zip function might throw
+     * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
+     * @param zipFunction the function that takes an array of bytes (one from each matrix) and returns a result of type R, must not be {@code null}
+     * @param targetElementType the class of the result element type, must not be {@code null}
+     * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
+     * @throws E if the zip function throws an exception during execution
+     * @see #zipToObj(Collection, Throwables.ByteNFunction, boolean, Class)
+     * @see #zip(Collection, Throwables.ByteBinaryOperator)
+     */
+    public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction,
+            final Class<R> targetElementType) throws E {
+        return zipToObj(coll, zipFunction, false, targetElementType);
+    }
+
+    /**
+     * Combines multiple {@link ByteMatrix} objects element-wise using a function that operates on byte arrays,
+     * with control over intermediate array sharing.
+     *
+     * <p>This method combines byte matrices by applying a function that takes an array of bytes
+     * (one from each matrix at each position). The {@code shareIntermediateArray} parameter controls
+     * memory optimization:</p>
+     * <ul>
+     * <li>{@code true} and sequential execution: Reuses the same intermediate array for all positions,
+     *     reducing memory allocations but requiring the zip function to not retain references to the array</li>
+     * <li>{@code false} or parallel execution: Creates a new array for each position, safer but uses more memory</li>
+     * </ul>
+     *
+     * <p><b>Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
+     * store references to the array, as it will be mutated for subsequent positions. Only use this
+     * optimization if the function immediately processes and discards the array.</p>
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * ByteMatrix m1 = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
+     * ByteMatrix m2 = ByteMatrix.of(new byte[][] {{5, 6}, {7, 8}});
+     * ByteMatrix m3 = ByteMatrix.of(new byte[][] {{8, 8}, {8, 8}});
+     *
+     * Matrix<Integer> xor = Matrices.zipToObj(Arrays.asList(m1, m2, m3),
+     *     arr -> arr[0] ^ arr[1] ^ arr[2], true, Integer.class);
+     * // xor.get(0, 0) == (1 ^ 5 ^ 8) == 12
+     *
+     * Matrix<Integer> sum = Matrices.zipToObj(Arrays.asList(m1, m2, m3), arr -> {
+     *     int s = 0;
+     *     for (byte b : arr) s += b;
+     *     return s;
+     * }, false, Integer.class);
+     * // sum.get(0, 0) == 1 + 5 + 8 == 14
+     *
+     * ByteMatrix wrong = ByteMatrix.of(new byte[][] {{1, 2, 3}});               // different shape
+     * Matrices.zipToObj(Arrays.asList(m1, wrong), arr -> 0, false, Integer.class);   // throws IllegalArgumentException (shape mismatch)
+     * Matrices.zipToObj(Arrays.asList(m1, m2), arr -> 0, false, null);               // throws IllegalArgumentException (null type)
+     * }</pre>
+     *
+     * @param <R> the type of elements in the result matrix
+     * @param <E> the type of exception that the zip function might throw
+     * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
+     * @param zipFunction the function that takes an array of bytes (one from each matrix) and returns a result of type R, must not be {@code null}
+     * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
+     *                               {@code false} to create new arrays for each position
+     * @param targetElementType the class of the result element type, must not be {@code null}
+     * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
+     * @throws E if the zip function throws an exception during execution
+     * @see #zipToObj(Collection, Throwables.ByteNFunction, Class)
+     * @see #zip(Collection, Throwables.ByteBinaryOperator)
+     */
+    public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction,
+            final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E {
+        checkShapeForZip(coll);
+        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(targetElementType, "targetElementType");
+
+        final int size = coll.size();
+        final ByteMatrix[] matrices = coll.toArray(new ByteMatrix[size]);
+
+        final int rowCount = matrices[0].rowCount;
+        final int columnCount = matrices[0].columnCount;
+        final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0]);
+        final boolean shareArray = shareIntermediateArray && !zipInParallel;
+        final byte[] intermediateArray = new byte[size];
+        final R[][] result = newMatrixArray(rowCount, columnCount, targetElementType);
+
+        final Throwables.IntBiConsumer<E> action = (i, j) -> {
+            final byte[] tmp = shareArray ? intermediateArray : N.clone(intermediateArray);
+
+            for (int k = 0; k < size; k++) {
+                tmp[k] = matrices[k].a[i][j];
+            }
+
+            result[i][j] = zipFunction.apply(tmp);
+        };
+
+        forEachIndices(rowCount, columnCount, action, zipInParallel);
+
+        return new Matrix<>(result);
     }
 
     /**
@@ -1929,7 +1929,7 @@ public final class Matrices {
      * @throws E if the zip function throws an exception during execution
      * @see #zip(IntMatrix, IntMatrix, Throwables.IntBinaryOperator)
      * @see #zip(IntMatrix, IntMatrix, IntMatrix, Throwables.IntTernaryOperator)
-     * @see #zip(Collection, Throwables.IntNFunction, Class)
+     * @see #zipToObj(Collection, Throwables.IntNFunction, Class)
      */
     public static <E extends Exception> IntMatrix zip(final Collection<IntMatrix> coll, final Throwables.IntBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
@@ -1958,143 +1958,9 @@ public final class Matrices {
             }
         };
 
-        forEachIndices(rowCount, columnCount, action, Matrices.isParallelizable(matrices[0]));
+        forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(matrices[0]));
 
         return new IntMatrix(result);
-    }
-
-    /**
-     * Combines multiple {@link IntMatrix} objects element-wise using a function that operates on integer arrays.
-     *
-     * <p>This method combines an arbitrary number of integer matrices by applying a function that takes
-     * an array of integers (one from each matrix at each position) and produces a result of any type.
-     * At each position (i, j), an array containing [m1[i][j], m2[i][j], m3[i][j], ...] is passed
-     * to the zip function.</p>
-     *
-     * <p>This is a convenience method that calls
-     * {@link #zip(Collection, Throwables.IntNFunction, boolean, Class)} with
-     * {@code shareIntermediateArray = false}.</p>
-     *
-     * <p>All matrices in the collection must have identical dimensions.</p>
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * IntMatrix m1 = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * IntMatrix m2 = IntMatrix.of(new int[][] {{5, 6}, {7, 8}});
-     * IntMatrix m3 = IntMatrix.of(new int[][] {{9, 10}, {11, 12}});
-     *
-     * Matrix<Integer> sum = Matrices.zip(Arrays.asList(m1, m2, m3),
-     *     arr -> java.util.Arrays.stream(arr).sum(), Integer.class);
-     * // sum is [[15, 18], [21, 24]]  (sum.get(0, 0) == 15)
-     *
-     * Matrix<String> joined = Matrices.zip(Arrays.asList(m1, m2, m3),
-     *     arr -> arr[0] + "-" + arr[1] + "-" + arr[2], String.class);
-     * // joined.get(0, 0) equals "1-5-9"
-     *
-     * IntMatrix wrong = IntMatrix.of(new int[][] {{1, 2, 3}});                    // different shape
-     * Matrices.zip(Arrays.asList(m1, wrong), arr -> 0, Integer.class);            // throws IllegalArgumentException (shape mismatch)
-     * Matrices.zip(Collections.<IntMatrix> emptyList(), arr -> 0, Integer.class); // throws IllegalArgumentException (empty)
-     * }</pre>
-     *
-     * @param <R> the type of elements in the result matrix
-     * @param <E> the type of exception that the zip function might throw
-     * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the function that takes an array of integers (one from each matrix) and returns a result of type R, must not be {@code null}
-     * @param targetElementType the class of the result element type, must not be {@code null}
-     * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
-     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
-     * @throws E if the zip function throws an exception during execution
-     * @see #zip(Collection, Throwables.IntNFunction, boolean, Class)
-     * @see #zip(Collection, Throwables.IntBinaryOperator)
-     */
-    public static <R, E extends Exception> Matrix<R> zip(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction,
-            final Class<R> targetElementType) throws E {
-        return zip(coll, zipFunction, false, targetElementType);
-    }
-
-    /**
-     * Combines multiple {@link IntMatrix} objects element-wise using a function that operates on integer arrays,
-     * with control over intermediate array sharing.
-     *
-     * <p>This method combines integer matrices by applying a function that takes an array of integers
-     * (one from each matrix at each position). The {@code shareIntermediateArray} parameter controls
-     * memory optimization:</p>
-     * <ul>
-     * <li>{@code true} and sequential execution: Reuses the same intermediate array for all positions,
-     *     reducing memory allocations but requiring the zip function to not retain references to the array</li>
-     * <li>{@code false} or parallel execution: Creates a new array for each position, safer but uses more memory</li>
-     * </ul>
-     *
-     * <p><b>Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
-     * store references to the array, as it will be mutated for subsequent positions. Only use this
-     * optimization if the function immediately processes and discards the array.</p>
-     *
-     * <p>All matrices in the collection must have identical dimensions.</p>
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * IntMatrix m1 = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * IntMatrix m2 = IntMatrix.of(new int[][] {{5, 6}, {7, 8}});
-     * IntMatrix m3 = IntMatrix.of(new int[][] {{9, 10}, {11, 12}});
-     *
-     * Matrix<Double> median = Matrices.zip(Arrays.asList(m1, m2, m3), arr -> {
-     *     int[] sorted = java.util.Arrays.copyOf(arr, arr.length);
-     *     java.util.Arrays.sort(sorted);
-     *     return (double) sorted[sorted.length / 2];
-     * }, false, Double.class);
-     * // median.get(0, 0) == 5.0  (median of {1, 5, 9})
-     *
-     * Matrix<Integer> sum = Matrices.zip(Arrays.asList(m1, m2, m3),
-     *     arr -> java.util.Arrays.stream(arr).sum(), true, Integer.class);
-     * // sum.get(0, 0) == 15
-     *
-     * IntMatrix wrong = IntMatrix.of(new int[][] {{1, 2, 3}});                  // different shape
-     * Matrices.zip(Arrays.asList(m1, wrong), arr -> 0, false, Integer.class);   // throws IllegalArgumentException (shape mismatch)
-     * Matrices.zip(Arrays.asList(m1, m2), arr -> 0, false, null);               // throws IllegalArgumentException (null type)
-     * }</pre>
-     *
-     * @param <R> the type of elements in the result matrix
-     * @param <E> the type of exception that the zip function might throw
-     * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the function that takes an array of integers (one from each matrix) and returns a result of type R, must not be {@code null}
-     * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
-     *                               {@code false} to create new arrays for each position
-     * @param targetElementType the class of the result element type, must not be {@code null}
-     * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
-     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
-     * @throws E if the zip function throws an exception during execution
-     * @see #zip(Collection, Throwables.IntNFunction, Class)
-     * @see #zip(Collection, Throwables.IntBinaryOperator)
-     */
-    public static <R, E extends Exception> Matrix<R> zip(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction,
-            final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E {
-        checkShapeForZip(coll);
-        N.checkArgNotNull(zipFunction, "zipFunction");
-        N.checkArgNotNull(targetElementType, "targetElementType");
-
-        final int size = coll.size();
-        final IntMatrix[] matrices = coll.toArray(new IntMatrix[size]);
-
-        final int rowCount = matrices[0].rowCount;
-        final int columnCount = matrices[0].columnCount;
-        final boolean zipInParallel = Matrices.isParallelizable(matrices[0]);
-        final boolean shareArray = shareIntermediateArray && !zipInParallel;
-        final int[] intermediateArray = new int[size];
-        final R[][] result = newMatrixArray(rowCount, columnCount, targetElementType);
-
-        final Throwables.IntBiConsumer<E> action = (i, j) -> {
-            final int[] tmp = shareArray ? intermediateArray : N.clone(intermediateArray);
-
-            for (int k = 0; k < size; k++) {
-                tmp[k] = matrices[k].a[i][j];
-            }
-
-            result[i][j] = zipFunction.apply(tmp);
-        };
-
-        forEachIndices(rowCount, columnCount, action, zipInParallel);
-
-        return new Matrix<>(result);
     }
 
     /**
@@ -2149,7 +2015,7 @@ public final class Matrices {
 
         final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j]);
 
-        forEachIndices(rowCount, columnCount, action, Matrices.isParallelizable(a));
+        forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(a));
 
         return new LongMatrix(result);
     }
@@ -2211,7 +2077,7 @@ public final class Matrices {
 
         final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j], ca[i][j]);
 
-        forEachIndices(rowCount, columnCount, action, Matrices.isParallelizable(a));
+        forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(a));
 
         return new LongMatrix(result);
     }
@@ -2323,7 +2189,7 @@ public final class Matrices {
 
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
-        final boolean zipInParallel = Matrices.isParallelizable(matrices[0]);
+        final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0]);
         final boolean shareArray = shareIntermediateArray && !zipInParallel;
         final int[] intermediateArray = new int[size];
         final long[][] result = new long[rowCount][columnCount];
@@ -2393,7 +2259,7 @@ public final class Matrices {
 
         final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j]);
 
-        forEachIndices(rowCount, columnCount, action, Matrices.isParallelizable(a));
+        forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(a));
 
         return new DoubleMatrix(result);
     }
@@ -2453,7 +2319,7 @@ public final class Matrices {
 
         final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j], ca[i][j]);
 
-        forEachIndices(rowCount, columnCount, action, Matrices.isParallelizable(a));
+        forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(a));
 
         return new DoubleMatrix(result);
     }
@@ -2558,7 +2424,7 @@ public final class Matrices {
 
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
-        final boolean zipInParallel = Matrices.isParallelizable(matrices[0]);
+        final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0]);
         final boolean shareArray = shareIntermediateArray && !zipInParallel;
         final int[] intermediateArray = new int[size];
         final double[][] result = new double[rowCount][columnCount];
@@ -2576,6 +2442,140 @@ public final class Matrices {
         forEachIndices(rowCount, columnCount, action, zipInParallel);
 
         return new DoubleMatrix(result);
+    }
+
+    /**
+     * Combines multiple {@link IntMatrix} objects element-wise using a function that operates on integer arrays.
+     *
+     * <p>This method combines an arbitrary number of integer matrices by applying a function that takes
+     * an array of integers (one from each matrix at each position) and produces a result of any type.
+     * At each position (i, j), an array containing [m1[i][j], m2[i][j], m3[i][j], ...] is passed
+     * to the zip function.</p>
+     *
+     * <p>This is a convenience method that calls
+     * {@link #zipToObj(Collection, Throwables.IntNFunction, boolean, Class)} with
+     * {@code shareIntermediateArray = false}.</p>
+     *
+     * <p>All matrices in the collection must have identical dimensions.</p>
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * IntMatrix m1 = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
+     * IntMatrix m2 = IntMatrix.of(new int[][] {{5, 6}, {7, 8}});
+     * IntMatrix m3 = IntMatrix.of(new int[][] {{9, 10}, {11, 12}});
+     *
+     * Matrix<Integer> sum = Matrices.zipToObj(Arrays.asList(m1, m2, m3),
+     *     arr -> java.util.Arrays.stream(arr).sum(), Integer.class);
+     * // sum is [[15, 18], [21, 24]]  (sum.get(0, 0) == 15)
+     *
+     * Matrix<String> joined = Matrices.zipToObj(Arrays.asList(m1, m2, m3),
+     *     arr -> arr[0] + "-" + arr[1] + "-" + arr[2], String.class);
+     * // joined.get(0, 0) equals "1-5-9"
+     *
+     * IntMatrix wrong = IntMatrix.of(new int[][] {{1, 2, 3}});                    // different shape
+     * Matrices.zipToObj(Arrays.asList(m1, wrong), arr -> 0, Integer.class);            // throws IllegalArgumentException (shape mismatch)
+     * Matrices.zipToObj(Collections.<IntMatrix> emptyList(), arr -> 0, Integer.class); // throws IllegalArgumentException (empty)
+     * }</pre>
+     *
+     * @param <R> the type of elements in the result matrix
+     * @param <E> the type of exception that the zip function might throw
+     * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
+     * @param zipFunction the function that takes an array of integers (one from each matrix) and returns a result of type R, must not be {@code null}
+     * @param targetElementType the class of the result element type, must not be {@code null}
+     * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
+     * @throws E if the zip function throws an exception during execution
+     * @see #zipToObj(Collection, Throwables.IntNFunction, boolean, Class)
+     * @see #zip(Collection, Throwables.IntBinaryOperator)
+     */
+    public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction,
+            final Class<R> targetElementType) throws E {
+        return zipToObj(coll, zipFunction, false, targetElementType);
+    }
+
+    /**
+     * Combines multiple {@link IntMatrix} objects element-wise using a function that operates on integer arrays,
+     * with control over intermediate array sharing.
+     *
+     * <p>This method combines integer matrices by applying a function that takes an array of integers
+     * (one from each matrix at each position). The {@code shareIntermediateArray} parameter controls
+     * memory optimization:</p>
+     * <ul>
+     * <li>{@code true} and sequential execution: Reuses the same intermediate array for all positions,
+     *     reducing memory allocations but requiring the zip function to not retain references to the array</li>
+     * <li>{@code false} or parallel execution: Creates a new array for each position, safer but uses more memory</li>
+     * </ul>
+     *
+     * <p><b>Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
+     * store references to the array, as it will be mutated for subsequent positions. Only use this
+     * optimization if the function immediately processes and discards the array.</p>
+     *
+     * <p>All matrices in the collection must have identical dimensions.</p>
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * IntMatrix m1 = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
+     * IntMatrix m2 = IntMatrix.of(new int[][] {{5, 6}, {7, 8}});
+     * IntMatrix m3 = IntMatrix.of(new int[][] {{9, 10}, {11, 12}});
+     *
+     * Matrix<Double> median = Matrices.zipToObj(Arrays.asList(m1, m2, m3), arr -> {
+     *     int[] sorted = java.util.Arrays.copyOf(arr, arr.length);
+     *     java.util.Arrays.sort(sorted);
+     *     return (double) sorted[sorted.length / 2];
+     * }, false, Double.class);
+     * // median.get(0, 0) == 5.0  (median of {1, 5, 9})
+     *
+     * Matrix<Integer> sum = Matrices.zipToObj(Arrays.asList(m1, m2, m3),
+     *     arr -> java.util.Arrays.stream(arr).sum(), true, Integer.class);
+     * // sum.get(0, 0) == 15
+     *
+     * IntMatrix wrong = IntMatrix.of(new int[][] {{1, 2, 3}});                  // different shape
+     * Matrices.zipToObj(Arrays.asList(m1, wrong), arr -> 0, false, Integer.class);   // throws IllegalArgumentException (shape mismatch)
+     * Matrices.zipToObj(Arrays.asList(m1, m2), arr -> 0, false, null);               // throws IllegalArgumentException (null type)
+     * }</pre>
+     *
+     * @param <R> the type of elements in the result matrix
+     * @param <E> the type of exception that the zip function might throw
+     * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
+     * @param zipFunction the function that takes an array of integers (one from each matrix) and returns a result of type R, must not be {@code null}
+     * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
+     *                               {@code false} to create new arrays for each position
+     * @param targetElementType the class of the result element type, must not be {@code null}
+     * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
+     * @throws E if the zip function throws an exception during execution
+     * @see #zipToObj(Collection, Throwables.IntNFunction, Class)
+     * @see #zip(Collection, Throwables.IntBinaryOperator)
+     */
+    public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction,
+            final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E {
+        checkShapeForZip(coll);
+        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(targetElementType, "targetElementType");
+
+        final int size = coll.size();
+        final IntMatrix[] matrices = coll.toArray(new IntMatrix[size]);
+
+        final int rowCount = matrices[0].rowCount;
+        final int columnCount = matrices[0].columnCount;
+        final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0]);
+        final boolean shareArray = shareIntermediateArray && !zipInParallel;
+        final int[] intermediateArray = new int[size];
+        final R[][] result = newMatrixArray(rowCount, columnCount, targetElementType);
+
+        final Throwables.IntBiConsumer<E> action = (i, j) -> {
+            final int[] tmp = shareArray ? intermediateArray : N.clone(intermediateArray);
+
+            for (int k = 0; k < size; k++) {
+                tmp[k] = matrices[k].a[i][j];
+            }
+
+            result[i][j] = zipFunction.apply(tmp);
+        };
+
+        forEachIndices(rowCount, columnCount, action, zipInParallel);
+
+        return new Matrix<>(result);
     }
 
     /**
@@ -2705,7 +2705,7 @@ public final class Matrices {
      * @throws E if the zip function throws an exception during execution
      * @see #zip(LongMatrix, LongMatrix, Throwables.LongBinaryOperator)
      * @see #zip(LongMatrix, LongMatrix, LongMatrix, Throwables.LongTernaryOperator)
-     * @see #zip(Collection, Throwables.LongNFunction, Class)
+     * @see #zipToObj(Collection, Throwables.LongNFunction, Class)
      */
     public static <E extends Exception> LongMatrix zip(final Collection<LongMatrix> coll, final Throwables.LongBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
@@ -2734,140 +2734,9 @@ public final class Matrices {
             }
         };
 
-        forEachIndices(rowCount, columnCount, action, Matrices.isParallelizable(matrices[0]));
+        forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(matrices[0]));
 
         return new LongMatrix(result);
-    }
-
-    /**
-     * Combines multiple {@link LongMatrix} objects element-wise using a function that operates on long arrays.
-     *
-     * <p>This method combines an arbitrary number of long matrices by applying a function that takes
-     * an array of longs (one from each matrix at each position) and produces a result of any type.
-     * This is a convenience method that calls {@link #zip(Collection, Throwables.LongNFunction, boolean, Class)}
-     * with {@code shareIntermediateArray = false}.</p>
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * LongMatrix m1 = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
-     * LongMatrix m2 = LongMatrix.of(new long[][] {{5L, 6L}, {7L, 8L}});
-     * LongMatrix m3 = LongMatrix.of(new long[][] {{9L, 10L}, {11L, 12L}});
-     *
-     * Matrix<Long> range = Matrices.zip(Arrays.asList(m1, m2, m3), arr -> {
-     *     long max = java.util.Arrays.stream(arr).max().orElse(0L);
-     *     long min = java.util.Arrays.stream(arr).min().orElse(0L);
-     *     return max - min;
-     * }, Long.class);
-     * // range.get(0, 0) == 8L  (9 - 1)
-     *
-     * Matrix<Long> sum = Matrices.zip(Arrays.asList(m1, m2, m3),
-     *     arr -> java.util.Arrays.stream(arr).sum(), Long.class);
-     * // sum.get(0, 0) == 15L
-     *
-     * LongMatrix wrong = LongMatrix.of(new long[][] {{1L, 2L, 3L}});             // different shape
-     * Matrices.zip(Arrays.asList(m1, wrong), arr -> 0L, Long.class);             // throws IllegalArgumentException (shape mismatch)
-     * Matrices.zip(Collections.<LongMatrix> emptyList(), arr -> 0L, Long.class); // throws IllegalArgumentException (empty)
-     * }</pre>
-     *
-     * @param <R> the type of elements in the result matrix
-     * @param <E> the type of exception that the zip function might throw
-     * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the function that takes an array of longs (one from each matrix) and returns a result of type R, must not be {@code null}
-     * @param targetElementType the class of the result element type, must not be {@code null}
-     * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
-     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
-     * @throws E if the zip function throws an exception during execution
-     * @see #zip(Collection, Throwables.LongNFunction, boolean, Class)
-     * @see #zip(Collection, Throwables.LongBinaryOperator)
-     */
-    public static <R, E extends Exception> Matrix<R> zip(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction,
-            final Class<R> targetElementType) throws E {
-        return zip(coll, zipFunction, false, targetElementType);
-    }
-
-    /**
-     * Combines multiple {@link LongMatrix} objects element-wise using a function that operates on long arrays,
-     * with control over intermediate array sharing.
-     *
-     * <p>This method combines long matrices by applying a function that takes an array of longs
-     * (one from each matrix at each position). The {@code shareIntermediateArray} parameter controls
-     * memory optimization:</p>
-     * <ul>
-     * <li>{@code true} and sequential execution: Reuses the same intermediate array for all positions,
-     *     reducing memory allocations but requiring the zip function to not retain references to the array</li>
-     * <li>{@code false} or parallel execution: Creates a new array for each position, safer but uses more memory</li>
-     * </ul>
-     *
-     * <p><b>Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
-     * store references to the array, as it will be mutated for subsequent positions. Only use this
-     * optimization if the function immediately processes and discards the array.</p>
-     *
-     * <p>All matrices in the collection must have identical dimensions.</p>
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * LongMatrix m1 = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
-     * LongMatrix m2 = LongMatrix.of(new long[][] {{5L, 6L}, {7L, 8L}});
-     * LongMatrix m3 = LongMatrix.of(new long[][] {{9L, 10L}, {11L, 12L}});
-     *
-     * Matrix<java.math.BigInteger> sums = Matrices.zip(Arrays.asList(m1, m2, m3),
-     *     arr -> java.math.BigInteger.valueOf(java.util.Arrays.stream(arr).sum()), true, java.math.BigInteger.class);
-     * // sums.get(0, 0) equals BigInteger.valueOf(15)
-     *
-     * Matrix<Long> product = Matrices.zip(Arrays.asList(m1, m2, m3), arr -> {
-     *     long p = 1L;
-     *     for (long v : arr) p *= v;
-     *     return p;
-     * }, false, Long.class);
-     * // product.get(0, 0) == 1L * 5L * 9L == 45L
-     *
-     * LongMatrix wrong = LongMatrix.of(new long[][] {{1L, 2L, 3L}});           // different shape
-     * Matrices.zip(Arrays.asList(m1, wrong), arr -> 0L, false, Long.class);    // throws IllegalArgumentException (shape mismatch)
-     * Matrices.zip(Arrays.asList(m1, m2), arr -> 0L, false, null);             // throws IllegalArgumentException (null type)
-     * }</pre>
-     *
-     * @param <R> the type of elements in the result matrix
-     * @param <E> the type of exception that the zip function might throw
-     * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the function that takes an array of longs (one from each matrix) and returns a result of type R, must not be {@code null}
-     * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
-     *                               {@code false} to create new arrays for each position
-     * @param targetElementType the class of the result element type, must not be {@code null}
-     * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
-     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
-     * @throws E if the zip function throws an exception during execution
-     * @see #zip(Collection, Throwables.LongNFunction, Class)
-     * @see #zip(Collection, Throwables.LongBinaryOperator)
-     */
-    public static <R, E extends Exception> Matrix<R> zip(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction,
-            final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E {
-        checkShapeForZip(coll);
-        N.checkArgNotNull(zipFunction, "zipFunction");
-        N.checkArgNotNull(targetElementType, "targetElementType");
-
-        final int size = coll.size();
-        final LongMatrix[] matrices = coll.toArray(new LongMatrix[size]);
-
-        final int rowCount = matrices[0].rowCount;
-        final int columnCount = matrices[0].columnCount;
-        final boolean zipInParallel = Matrices.isParallelizable(matrices[0]);
-        final boolean shareArray = shareIntermediateArray && !zipInParallel;
-        final long[] intermediateArray = new long[size];
-        final R[][] result = newMatrixArray(rowCount, columnCount, targetElementType);
-
-        final Throwables.IntBiConsumer<E> action = (i, j) -> {
-            final long[] tmp = shareArray ? intermediateArray : N.clone(intermediateArray);
-
-            for (int k = 0; k < size; k++) {
-                tmp[k] = matrices[k].a[i][j];
-            }
-
-            result[i][j] = zipFunction.apply(tmp);
-        };
-
-        forEachIndices(rowCount, columnCount, action, zipInParallel);
-
-        return new Matrix<>(result);
     }
 
     /**
@@ -2920,7 +2789,7 @@ public final class Matrices {
 
         final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j]);
 
-        forEachIndices(rowCount, columnCount, action, Matrices.isParallelizable(a));
+        forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(a));
 
         return new DoubleMatrix(result);
     }
@@ -2980,7 +2849,7 @@ public final class Matrices {
 
         final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j], ca[i][j]);
 
-        forEachIndices(rowCount, columnCount, action, Matrices.isParallelizable(a));
+        forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(a));
 
         return new DoubleMatrix(result);
     }
@@ -3087,7 +2956,7 @@ public final class Matrices {
 
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
-        final boolean zipInParallel = Matrices.isParallelizable(matrices[0]);
+        final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0]);
         final boolean shareArray = shareIntermediateArray && !zipInParallel;
         final long[] intermediateArray = new long[size];
         final double[][] result = new double[rowCount][columnCount];
@@ -3105,6 +2974,137 @@ public final class Matrices {
         forEachIndices(rowCount, columnCount, action, zipInParallel);
 
         return new DoubleMatrix(result);
+    }
+
+    /**
+     * Combines multiple {@link LongMatrix} objects element-wise using a function that operates on long arrays.
+     *
+     * <p>This method combines an arbitrary number of long matrices by applying a function that takes
+     * an array of longs (one from each matrix at each position) and produces a result of any type.
+     * This is a convenience method that calls {@link #zipToObj(Collection, Throwables.LongNFunction, boolean, Class)}
+     * with {@code shareIntermediateArray = false}.</p>
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * LongMatrix m1 = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
+     * LongMatrix m2 = LongMatrix.of(new long[][] {{5L, 6L}, {7L, 8L}});
+     * LongMatrix m3 = LongMatrix.of(new long[][] {{9L, 10L}, {11L, 12L}});
+     *
+     * Matrix<Long> range = Matrices.zipToObj(Arrays.asList(m1, m2, m3), arr -> {
+     *     long max = java.util.Arrays.stream(arr).max().orElse(0L);
+     *     long min = java.util.Arrays.stream(arr).min().orElse(0L);
+     *     return max - min;
+     * }, Long.class);
+     * // range.get(0, 0) == 8L  (9 - 1)
+     *
+     * Matrix<Long> sum = Matrices.zipToObj(Arrays.asList(m1, m2, m3),
+     *     arr -> java.util.Arrays.stream(arr).sum(), Long.class);
+     * // sum.get(0, 0) == 15L
+     *
+     * LongMatrix wrong = LongMatrix.of(new long[][] {{1L, 2L, 3L}});             // different shape
+     * Matrices.zipToObj(Arrays.asList(m1, wrong), arr -> 0L, Long.class);             // throws IllegalArgumentException (shape mismatch)
+     * Matrices.zipToObj(Collections.<LongMatrix> emptyList(), arr -> 0L, Long.class); // throws IllegalArgumentException (empty)
+     * }</pre>
+     *
+     * @param <R> the type of elements in the result matrix
+     * @param <E> the type of exception that the zip function might throw
+     * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
+     * @param zipFunction the function that takes an array of longs (one from each matrix) and returns a result of type R, must not be {@code null}
+     * @param targetElementType the class of the result element type, must not be {@code null}
+     * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
+     * @throws E if the zip function throws an exception during execution
+     * @see #zipToObj(Collection, Throwables.LongNFunction, boolean, Class)
+     * @see #zip(Collection, Throwables.LongBinaryOperator)
+     */
+    public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction,
+            final Class<R> targetElementType) throws E {
+        return zipToObj(coll, zipFunction, false, targetElementType);
+    }
+
+    /**
+     * Combines multiple {@link LongMatrix} objects element-wise using a function that operates on long arrays,
+     * with control over intermediate array sharing.
+     *
+     * <p>This method combines long matrices by applying a function that takes an array of longs
+     * (one from each matrix at each position). The {@code shareIntermediateArray} parameter controls
+     * memory optimization:</p>
+     * <ul>
+     * <li>{@code true} and sequential execution: Reuses the same intermediate array for all positions,
+     *     reducing memory allocations but requiring the zip function to not retain references to the array</li>
+     * <li>{@code false} or parallel execution: Creates a new array for each position, safer but uses more memory</li>
+     * </ul>
+     *
+     * <p><b>Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
+     * store references to the array, as it will be mutated for subsequent positions. Only use this
+     * optimization if the function immediately processes and discards the array.</p>
+     *
+     * <p>All matrices in the collection must have identical dimensions.</p>
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * LongMatrix m1 = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
+     * LongMatrix m2 = LongMatrix.of(new long[][] {{5L, 6L}, {7L, 8L}});
+     * LongMatrix m3 = LongMatrix.of(new long[][] {{9L, 10L}, {11L, 12L}});
+     *
+     * Matrix<java.math.BigInteger> sums = Matrices.zipToObj(Arrays.asList(m1, m2, m3),
+     *     arr -> java.math.BigInteger.valueOf(java.util.Arrays.stream(arr).sum()), true, java.math.BigInteger.class);
+     * // sums.get(0, 0) equals BigInteger.valueOf(15)
+     *
+     * Matrix<Long> product = Matrices.zipToObj(Arrays.asList(m1, m2, m3), arr -> {
+     *     long p = 1L;
+     *     for (long v : arr) p *= v;
+     *     return p;
+     * }, false, Long.class);
+     * // product.get(0, 0) == 1L * 5L * 9L == 45L
+     *
+     * LongMatrix wrong = LongMatrix.of(new long[][] {{1L, 2L, 3L}});           // different shape
+     * Matrices.zipToObj(Arrays.asList(m1, wrong), arr -> 0L, false, Long.class);    // throws IllegalArgumentException (shape mismatch)
+     * Matrices.zipToObj(Arrays.asList(m1, m2), arr -> 0L, false, null);             // throws IllegalArgumentException (null type)
+     * }</pre>
+     *
+     * @param <R> the type of elements in the result matrix
+     * @param <E> the type of exception that the zip function might throw
+     * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
+     * @param zipFunction the function that takes an array of longs (one from each matrix) and returns a result of type R, must not be {@code null}
+     * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
+     *                               {@code false} to create new arrays for each position
+     * @param targetElementType the class of the result element type, must not be {@code null}
+     * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
+     * @throws E if the zip function throws an exception during execution
+     * @see #zipToObj(Collection, Throwables.LongNFunction, Class)
+     * @see #zip(Collection, Throwables.LongBinaryOperator)
+     */
+    public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction,
+            final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E {
+        checkShapeForZip(coll);
+        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(targetElementType, "targetElementType");
+
+        final int size = coll.size();
+        final LongMatrix[] matrices = coll.toArray(new LongMatrix[size]);
+
+        final int rowCount = matrices[0].rowCount;
+        final int columnCount = matrices[0].columnCount;
+        final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0]);
+        final boolean shareArray = shareIntermediateArray && !zipInParallel;
+        final long[] intermediateArray = new long[size];
+        final R[][] result = newMatrixArray(rowCount, columnCount, targetElementType);
+
+        final Throwables.IntBiConsumer<E> action = (i, j) -> {
+            final long[] tmp = shareArray ? intermediateArray : N.clone(intermediateArray);
+
+            for (int k = 0; k < size; k++) {
+                tmp[k] = matrices[k].a[i][j];
+            }
+
+            result[i][j] = zipFunction.apply(tmp);
+        };
+
+        forEachIndices(rowCount, columnCount, action, zipInParallel);
+
+        return new Matrix<>(result);
     }
 
     /**
@@ -3236,7 +3236,7 @@ public final class Matrices {
      * @throws E if the zip function throws an exception during execution
      * @see #zip(DoubleMatrix, DoubleMatrix, Throwables.DoubleBinaryOperator)
      * @see #zip(DoubleMatrix, DoubleMatrix, DoubleMatrix, Throwables.DoubleTernaryOperator)
-     * @see #zip(Collection, Throwables.DoubleNFunction, Class)
+     * @see #zipToObj(Collection, Throwables.DoubleNFunction, Class)
      */
     public static <E extends Exception> DoubleMatrix zip(final Collection<DoubleMatrix> coll, final Throwables.DoubleBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
@@ -3265,7 +3265,7 @@ public final class Matrices {
             }
         };
 
-        forEachIndices(rowCount, columnCount, action, Matrices.isParallelizable(matrices[0]));
+        forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(matrices[0]));
 
         return new DoubleMatrix(result);
     }
@@ -3275,7 +3275,7 @@ public final class Matrices {
      *
      * <p>This method combines an arbitrary number of double matrices by applying a function that takes
      * an array of doubles (one from each matrix at each position) and produces a result of any type.
-     * This is a convenience method that calls {@link #zip(Collection, Throwables.DoubleNFunction, boolean, Class)}
+     * This is a convenience method that calls {@link #zipToObj(Collection, Throwables.DoubleNFunction, boolean, Class)}
      * with {@code shareIntermediateArray = false}.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -3284,17 +3284,17 @@ public final class Matrices {
      * DoubleMatrix m2 = DoubleMatrix.of(new double[][] {{5.0, 6.0}, {7.0, 8.0}});
      * DoubleMatrix m3 = DoubleMatrix.of(new double[][] {{9.0, 10.0}, {11.0, 12.0}});
      *
-     * Matrix<Double> avg = Matrices.zip(Arrays.asList(m1, m2, m3),
+     * Matrix<Double> avg = Matrices.zipToObj(Arrays.asList(m1, m2, m3),
      *     arr -> java.util.Arrays.stream(arr).average().orElse(0.0), Double.class);
      * // avg.get(0, 0) == 5.0  ((1.0 + 5.0 + 9.0) / 3)
      *
-     * Matrix<Double> sum = Matrices.zip(Arrays.asList(m1, m2, m3),
+     * Matrix<Double> sum = Matrices.zipToObj(Arrays.asList(m1, m2, m3),
      *     arr -> java.util.Arrays.stream(arr).sum(), Double.class);
      * // sum.get(1, 1) == 24.0
      *
      * DoubleMatrix wrong = DoubleMatrix.of(new double[][] {{1.0, 2.0, 3.0}});         // different shape
-     * Matrices.zip(Arrays.asList(m1, wrong), arr -> 0.0, Double.class);               // throws IllegalArgumentException (shape mismatch)
-     * Matrices.zip(Collections.<DoubleMatrix> emptyList(), arr -> 0.0, Double.class); // throws IllegalArgumentException (empty)
+     * Matrices.zipToObj(Arrays.asList(m1, wrong), arr -> 0.0, Double.class);               // throws IllegalArgumentException (shape mismatch)
+     * Matrices.zipToObj(Collections.<DoubleMatrix> emptyList(), arr -> 0.0, Double.class); // throws IllegalArgumentException (empty)
      * }</pre>
      *
      * @param <R> the type of elements in the result matrix
@@ -3305,12 +3305,12 @@ public final class Matrices {
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
      * @throws E if the zip function throws an exception during execution
-     * @see #zip(Collection, Throwables.DoubleNFunction, boolean, Class)
+     * @see #zipToObj(Collection, Throwables.DoubleNFunction, boolean, Class)
      * @see #zip(Collection, Throwables.DoubleBinaryOperator)
      */
-    public static <R, E extends Exception> Matrix<R> zip(final Collection<DoubleMatrix> coll, final Throwables.DoubleNFunction<? extends R, E> zipFunction,
+    public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<DoubleMatrix> coll, final Throwables.DoubleNFunction<? extends R, E> zipFunction,
             final Class<R> targetElementType) throws E {
-        return zip(coll, zipFunction, false, targetElementType);
+        return zipToObj(coll, zipFunction, false, targetElementType);
     }
 
     /**
@@ -3338,17 +3338,17 @@ public final class Matrices {
      * DoubleMatrix m2 = DoubleMatrix.of(new double[][] {{5.0, 6.0}, {7.0, 8.0}});
      * DoubleMatrix m3 = DoubleMatrix.of(new double[][] {{9.0, 10.0}, {11.0, 12.0}});
      *
-     * Matrix<Double> avg = Matrices.zip(Arrays.asList(m1, m2, m3),
+     * Matrix<Double> avg = Matrices.zipToObj(Arrays.asList(m1, m2, m3),
      *     arr -> java.util.Arrays.stream(arr).average().orElse(0.0), true, Double.class);
      * // avg.get(0, 0) == 5.0  ((1.0 + 5.0 + 9.0) / 3)
      *
-     * Matrix<Double> max = Matrices.zip(Arrays.asList(m1, m2, m3),
+     * Matrix<Double> max = Matrices.zipToObj(Arrays.asList(m1, m2, m3),
      *     arr -> java.util.Arrays.stream(arr).max().orElse(0.0), false, Double.class);
      * // max.get(1, 1) == 12.0
      *
      * DoubleMatrix wrong = DoubleMatrix.of(new double[][] {{1.0, 2.0, 3.0}});   // different shape
-     * Matrices.zip(Arrays.asList(m1, wrong), arr -> 0.0, false, Double.class);  // throws IllegalArgumentException (shape mismatch)
-     * Matrices.zip(Arrays.asList(m1, m2), arr -> 0.0, false, null);             // throws IllegalArgumentException (null type)
+     * Matrices.zipToObj(Arrays.asList(m1, wrong), arr -> 0.0, false, Double.class);  // throws IllegalArgumentException (shape mismatch)
+     * Matrices.zipToObj(Arrays.asList(m1, m2), arr -> 0.0, false, null);             // throws IllegalArgumentException (null type)
      * }</pre>
      *
      * @param <R> the type of elements in the result matrix
@@ -3361,10 +3361,10 @@ public final class Matrices {
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
      * @throws E if the zip function throws an exception during execution
-     * @see #zip(Collection, Throwables.DoubleNFunction, Class)
+     * @see #zipToObj(Collection, Throwables.DoubleNFunction, Class)
      * @see #zip(Collection, Throwables.DoubleBinaryOperator)
      */
-    public static <R, E extends Exception> Matrix<R> zip(final Collection<DoubleMatrix> coll, final Throwables.DoubleNFunction<? extends R, E> zipFunction,
+    public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<DoubleMatrix> coll, final Throwables.DoubleNFunction<? extends R, E> zipFunction,
             final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E {
         checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, "zipFunction");
@@ -3375,7 +3375,7 @@ public final class Matrices {
 
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
-        final boolean zipInParallel = Matrices.isParallelizable(matrices[0]);
+        final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0]);
         final boolean shareArray = shareIntermediateArray && !zipInParallel;
         final double[] intermediateArray = new double[size];
         final R[][] result = newMatrixArray(rowCount, columnCount, targetElementType);
@@ -3685,7 +3685,7 @@ public final class Matrices {
             }
         };
 
-        forEachIndices(rowCount, columnCount, action, Matrices.isParallelizable(matrices[0]));
+        forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(matrices[0]));
 
         return new Matrix<>(result);
     }
@@ -3808,7 +3808,7 @@ public final class Matrices {
 
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
-        final boolean zipInParallel = Matrices.isParallelizable(matrices[0]);
+        final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0]);
         final boolean shareArray = shareIntermediateArray && !zipInParallel;
         final Class<T> elementType = resolveCommonElementType(matrices);
         final T[] intermediateArray = N.newArray(elementType, size);

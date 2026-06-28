@@ -8,7 +8,7 @@ only exposes forEachCartesianIndices as the iteration primitive. Corrected below
 
 1. OVERALL ASSESSMENT
 A well-built static hub cleanly separating four concerns: ParallelMode policy, shape/index helpers, n-ary
-stacking, and element-wise zipping. The ParallelMode API (getParallelMode/setParallelMode/isParallelizable×2/
+stacking, and element-wise zipping. The ParallelMode API (getParallelMode/setParallelMode/shouldRunInParallel×2/
 runWithParallelMode, 119-505) is consistent, null-safe, and its thread-local contract is documented
 thoroughly. forEachIndices, mapIndices, mapIndicesToInt and forEachCartesianIndices form internally
 consistent overload families (full-range convenience + explicit-range/parallel forms) with carefully

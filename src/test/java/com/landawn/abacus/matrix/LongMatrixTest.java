@@ -945,7 +945,7 @@ class LongMatrixTest extends TestBase {
         LongMatrix matrix = LongMatrix.of(a);
 
         List<Long> collected = new ArrayList<>();
-        matrix.mutateAsFlat(row -> {
+        matrix.mutateFlattened(row -> {
             for (long val : row) {
                 collected.add(val);
             }
@@ -1586,9 +1586,9 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testLongMatrix_mutateAsFlat() {
+        public void testLongMatrix_mutateFlattened() {
             LongMatrix matrix = LongMatrix.of(new long[][] { { 5, 3 }, { 4, 1 } });
-            matrix.mutateAsFlat(arr -> java.util.Arrays.sort(arr));
+            matrix.mutateFlattened(arr -> java.util.Arrays.sort(arr));
             assertEquals(1L, matrix.get(0, 0));
             assertEquals(3L, matrix.get(0, 1));
             assertEquals(4L, matrix.get(1, 0));
@@ -2737,7 +2737,7 @@ class LongMatrixTest extends TestBase {
         public void testFlatOp() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             List<Long> sums = new ArrayList<>();
-            m.mutateAsFlat(row -> {
+            m.mutateFlattened(row -> {
                 long sum = 0;
                 for (long val : row) {
                     sum += val;
@@ -3566,7 +3566,7 @@ class LongMatrixTest extends TestBase {
         public void testFlatOp() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
             final int[] count = { 0 };
-            m.mutateAsFlat(row -> count[0] += row.length);
+            m.mutateFlattened(row -> count[0] += row.length);
             assertEquals(4, count[0]);
         }
 
@@ -4370,7 +4370,7 @@ class LongMatrixTest extends TestBase {
         public void testFlatOp() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
             final long[] sum = { 0L };
-            m.mutateAsFlat(row -> {
+            m.mutateFlattened(row -> {
                 for (long val : row) {
                     sum[0] += val;
                 }
@@ -5507,10 +5507,10 @@ class LongMatrixTest extends TestBase {
         // ============ FlatOp Test ============
 
         @Test
-        public void test_mutateAsFlat() {
+        public void test_mutateFlattened() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
             AtomicInteger count = new AtomicInteger(0);
-            m.mutateAsFlat(row -> count.addAndGet(row.length));
+            m.mutateFlattened(row -> count.addAndGet(row.length));
             assertEquals(4, count.get());
         }
 

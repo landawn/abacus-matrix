@@ -1178,7 +1178,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     public <E extends Exception> void updateAll(final Throwables.FloatUnaryOperator<E> operator) throws E {
         N.checkArgNotNull(operator, "operator");
 
-        if (Matrices.isParallelizable(this)) {
+        if (Matrices.shouldRunInParallel(this)) {
             final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.applyAsFloat(a[i][j]);
             Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
         } else {
@@ -1223,7 +1223,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Float, E> mapper) throws E {
         N.checkArgNotNull(mapper, "mapper");
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
     }
 
     /**
@@ -1266,7 +1266,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     public <E extends Exception> void replaceIf(final Throwables.FloatPredicate<E> predicate, final float newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = predicate.test(a[i][j]) ? newValue : a[i][j];
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
     }
 
     /**
@@ -1299,7 +1299,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final float newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = predicate.test(i, j) ? newValue : a[i][j];
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
     }
 
     /**
@@ -1334,7 +1334,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
         final float[][] result = new float[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsFloat(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
         return FloatMatrix.of(result);
     }
@@ -1371,7 +1371,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
         return Matrix.of(result);
     }
@@ -2423,27 +2423,27 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{5.0f, 3.0f}, {4.0f, 1.0f}});
-     * matrix.mutateAsFlat(arr -> java.util.Arrays.sort(arr)); // global sort, then row-major write-back
+     * matrix.mutateFlattened(arr -> java.util.Arrays.sort(arr)); // global sort, then row-major write-back
      * matrix.get(0, 0);                                       // returns 1.0f
      * matrix.get(1, 1);                                       // returns 5.0f
      *
      * FloatMatrix counts = FloatMatrix.of(new float[][] {{0.0f, 0.0f}});
-     * counts.mutateAsFlat(arr -> { for (int k = 0; k < arr.length; k++) arr[k] = k; });
+     * counts.mutateFlattened(arr -> { for (int k = 0; k < arr.length; k++) arr[k] = k; });
      * counts.get(0, 1);                                                    // returns 1.0f
-     * FloatMatrix.empty().mutateAsFlat(arr -> java.util.Arrays.sort(arr)); // no-op on empty matrix (no exception)
+     * FloatMatrix.empty().mutateFlattened(arr -> java.util.Arrays.sort(arr)); // no-op on empty matrix (no exception)
      * }</pre>
      *
      * @param <E> the type of exception that the action may throw
      * @param action the operation to apply to the flattened array
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the operation throws an exception
-     * @see Arrays#mutateAsFlat(float[][], Throwables.Consumer)
+     * @see Arrays#mutateFlattened(float[][], Throwables.Consumer)
      */
     @Override
-    public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super float[], E> action) throws E {
+    public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super float[], E> action) throws E {
         N.checkArgNotNull(action, "action");
 
-        Arrays.mutateAsFlat(a, action);
+        Arrays.mutateFlattened(a, action);
     }
 
     /**
@@ -2582,7 +2582,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
         final float[][] result = new float[rowCount][columnCount];
         final Throwables.IntBiConsumer<RuntimeException> elementAction = (i, j) -> result[i][j] = a[i][j] + otherMatrix[i][j];
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
         return FloatMatrix.of(result);
     }
@@ -2626,7 +2626,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
         final float[][] result = new float[rowCount][columnCount];
         final Throwables.IntBiConsumer<RuntimeException> elementAction = (i, j) -> result[i][j] = a[i][j] - otherMatrix[i][j];
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
         return FloatMatrix.of(result);
     }
@@ -2920,7 +2920,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsFloat(a[i][j], secondMatrix[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
         return FloatMatrix.of(result);
     }
@@ -2977,7 +2977,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsFloat(a[i][j], secondMatrix[i][j], thirdMatrix[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
         return FloatMatrix.of(result);
     }
@@ -3107,7 +3107,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).
+     * Returns a stream of all elements in this matrix, traversed in row-major order (left to right, top to bottom).
      * Elements are streamed row by row from the top-left corner to the bottom-right corner.
      *
      * <p>This method is useful for processing all matrix elements sequentially
@@ -3261,7 +3261,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).
+     * Returns a stream of all elements in this matrix, traversed in column-major order (top to bottom, left to right).
      * Elements are streamed column by column from the top-left corner to the bottom-right corner.
      *
      * <p>This method provides an alternative way to iterate through matrix
@@ -3719,7 +3719,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
         N.checkArgNotNull(action, "action");
 
-        if (Matrices.isParallelizable(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
+        if (Matrices.shouldRunInParallel(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
             final Throwables.IntBiConsumer<E> elementAction = (i, j) -> action.accept(a[i][j]);
             Matrices.forEachIndices(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, elementAction, true);
         } else {

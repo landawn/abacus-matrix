@@ -1210,7 +1210,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     public <E extends Exception> void updateAll(final Throwables.ShortUnaryOperator<E> operator) throws E {
         N.checkArgNotNull(operator, "operator");
 
-        if (Matrices.isParallelizable(this)) {
+        if (Matrices.shouldRunInParallel(this)) {
             final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.applyAsShort(a[i][j]);
             Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
         } else {
@@ -1257,7 +1257,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Short, E> mapper) throws E {
         N.checkArgNotNull(mapper, "mapper");
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
     }
 
     /**
@@ -1291,7 +1291,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     public <E extends Exception> void replaceIf(final Throwables.ShortPredicate<E> predicate, final short newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = predicate.test(a[i][j]) ? newValue : a[i][j];
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
     }
 
     /**
@@ -1327,7 +1327,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final short newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = predicate.test(i, j) ? newValue : a[i][j];
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
     }
 
     /**
@@ -1364,7 +1364,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
         final short[][] result = new short[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsShort(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
         return ShortMatrix.of(result);
     }
@@ -1402,7 +1402,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
         return Matrix.of(result);
     }
@@ -2416,34 +2416,34 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * <p>This enables operations that need a global view of all matrix elements (e.g., sorting all
      * elements across the entire matrix). The shape of this matrix is preserved; only element
-     * values change. See {@link Arrays#mutateAsFlat(short[][], Throwables.Consumer)} for the exact
+     * values change. See {@link Arrays#mutateFlattened(short[][], Throwables.Consumer)} for the exact
      * semantics of the underlying operation.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{5, 3}, {4, 1}});
-     * matrix.mutateAsFlat(arr -> java.util.Arrays.sort(arr));
+     * matrix.mutateFlattened(arr -> java.util.Arrays.sort(arr));
      * matrix.rowCopy(0);                      // returns [1, 3]
      * matrix.rowCopy(1);                      // returns [4, 5] (sorted globally, placed back row-major)
      *
      * int[] captured = new int[1];
-     * matrix.mutateAsFlat(arr -> captured[0] = arr.length);
+     * matrix.mutateFlattened(arr -> captured[0] = arr.length);
      * captured[0];                            // returns 4 (flat view length)
      *
-     * ShortMatrix.empty().mutateAsFlat(arr -> { });  // no-op on empty matrix
+     * ShortMatrix.empty().mutateFlattened(arr -> { });  // no-op on empty matrix
      * }</pre>
      *
      * @param <E> the type of exception that the operation may throw
      * @param action the operation to apply to the flattened array
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the operation throws an exception
-     * @see Arrays#mutateAsFlat(short[][], Throwables.Consumer)
+     * @see Arrays#mutateFlattened(short[][], Throwables.Consumer)
      */
     @Override
-    public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super short[], E> action) throws E {
+    public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super short[], E> action) throws E {
         N.checkArgNotNull(action, "action");
 
-        Arrays.mutateAsFlat(a, action);
+        Arrays.mutateFlattened(a, action);
     }
 
     /**
@@ -2581,7 +2581,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
         final short[][] result = new short[rowCount][columnCount];
         final Throwables.IntBiConsumer<RuntimeException> elementAction = (i, j) -> result[i][j] = (short) (a[i][j] + otherArray[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
         return ShortMatrix.of(result);
     }
@@ -2625,7 +2625,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
         final short[][] result = new short[rowCount][columnCount];
         final Throwables.IntBiConsumer<RuntimeException> elementAction = (i, j) -> result[i][j] = (short) (a[i][j] - otherArray[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
         return ShortMatrix.of(result);
     }
@@ -2919,7 +2919,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
 
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsShort(a[i][j], arrayB[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
         return ShortMatrix.of(result);
     }
@@ -2979,7 +2979,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
 
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsShort(a[i][j], arrayB[i][j], arrayC[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
         return ShortMatrix.of(result);
     }
@@ -3107,7 +3107,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     }
 
     /**
-     * Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).
+     * Returns a stream of all elements in this matrix, traversed in row-major order (left to right, top to bottom).
      * Elements are streamed row by row from the top-left corner to the bottom-right corner.
      *
      * <p>This method is useful for processing all matrix elements sequentially
@@ -3261,7 +3261,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     }
 
     /**
-     * Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).
+     * Returns a stream of all elements in this matrix, traversed in column-major order (top to bottom, left to right).
      * Elements are streamed column by column from the top-left corner to the bottom-right corner.
      *
      * <p>This method provides an alternative way to iterate through matrix
@@ -3732,7 +3732,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
         N.checkArgNotNull(action, "action");
 
-        if (Matrices.isParallelizable(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
+        if (Matrices.shouldRunInParallel(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
             final Throwables.IntBiConsumer<E> elementAction = (i, j) -> action.accept(a[i][j]);
             Matrices.forEachIndices(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, elementAction, true);
         } else {

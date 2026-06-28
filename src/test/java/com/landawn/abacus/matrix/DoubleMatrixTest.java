@@ -872,7 +872,7 @@ class DoubleMatrixTest extends TestBase {
         DoubleMatrix matrix = DoubleMatrix.of(arr);
 
         int[] count = { 0 };
-        matrix.mutateAsFlat(array -> count[0] += array.length);
+        matrix.mutateFlattened(array -> count[0] += array.length);
         assertEquals(4, count[0]);
     }
 
@@ -2502,7 +2502,7 @@ class DoubleMatrixTest extends TestBase {
         public void testFlatOp() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
             List<Double> sums = new ArrayList<>();
-            m.mutateAsFlat(row -> {
+            m.mutateFlattened(row -> {
                 double sum = 0.0;
                 for (double val : row) {
                     sum += val;
@@ -4105,7 +4105,7 @@ class DoubleMatrixTest extends TestBase {
         public void testFlatOp() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             final double[] sum = { 0.0 };
-            m.mutateAsFlat(row -> {
+            m.mutateFlattened(row -> {
                 for (double val : row) {
                     sum[0] += val;
                 }
@@ -5517,10 +5517,10 @@ class DoubleMatrixTest extends TestBase {
         // ============ FlatOp Test ============
 
         @Test
-        public void test_mutateAsFlat() {
+        public void test_mutateFlattened() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             AtomicInteger count = new AtomicInteger(0);
-            m.mutateAsFlat(row -> count.addAndGet(row.length));
+            m.mutateFlattened(row -> count.addAndGet(row.length));
             assertEquals(4, count.get());
         }
 
@@ -5981,9 +5981,9 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testDoubleMatrix_mutateAsFlat() {
+        public void testDoubleMatrix_mutateFlattened() {
             DoubleMatrix matrix = DoubleMatrix.of(new double[][] { { 5.0, 3.0 }, { 4.0, 1.0 } });
-            matrix.mutateAsFlat(arr -> java.util.Arrays.sort(arr));
+            matrix.mutateFlattened(arr -> java.util.Arrays.sort(arr));
             assertEquals(1.0, matrix.get(0, 0));
             assertEquals(3.0, matrix.get(0, 1));
             assertEquals(4.0, matrix.get(1, 0));

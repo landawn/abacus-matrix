@@ -1373,7 +1373,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     public <E extends Exception> void updateAll(final Throwables.IntUnaryOperator<E> operator) throws E {
         N.checkArgNotNull(operator, "operator");
 
-        if (Matrices.isParallelizable(this)) {
+        if (Matrices.shouldRunInParallel(this)) {
             final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.applyAsInt(a[i][j]);
             Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
         } else {
@@ -1420,7 +1420,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Integer, E> mapper) throws E {
         N.checkArgNotNull(mapper, "mapper");
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
     }
 
     /**
@@ -1454,7 +1454,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     public <E extends Exception> void replaceIf(final Throwables.IntPredicate<E> predicate, final int newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = predicate.test(a[i][j]) ? newValue : a[i][j];
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
     }
 
     /**
@@ -1490,7 +1490,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final int newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = predicate.test(i, j) ? newValue : a[i][j];
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
     }
 
     /**
@@ -1527,7 +1527,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
         final int[][] result = new int[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsInt(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
         return IntMatrix.of(result);
     }
@@ -1562,7 +1562,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
         final long[][] result = new long[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsLong(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
         return LongMatrix.of(result);
     }
@@ -1596,7 +1596,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
         final double[][] result = new double[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsDouble(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
         return DoubleMatrix.of(result);
     }
@@ -1634,7 +1634,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
         return Matrix.of(result);
     }
@@ -2648,34 +2648,34 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * <p>This enables operations that need a global view of all matrix elements (e.g., sorting all
      * elements across the entire matrix). The shape of this matrix is preserved; only element
-     * values change. See {@link Arrays#mutateAsFlat(int[][], Throwables.Consumer)} for the exact
+     * values change. See {@link Arrays#mutateFlattened(int[][], Throwables.Consumer)} for the exact
      * semantics of the underlying operation.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{5, 3}, {4, 1}});
-     * matrix.mutateAsFlat(arr -> java.util.Arrays.sort(arr));
+     * matrix.mutateFlattened(arr -> java.util.Arrays.sort(arr));
      * matrix.rowCopy(0);                      // returns [1, 3]
      * matrix.rowCopy(1);                      // returns [4, 5] (sorted globally, placed back row-major)
      *
      * int[] captured = new int[1];
-     * matrix.mutateAsFlat(arr -> captured[0] = arr.length);
+     * matrix.mutateFlattened(arr -> captured[0] = arr.length);
      * captured[0];                            // returns 4 (flat view length)
      *
-     * IntMatrix.empty().mutateAsFlat(arr -> { });  // no-op on empty matrix
+     * IntMatrix.empty().mutateFlattened(arr -> { });  // no-op on empty matrix
      * }</pre>
      *
      * @param <E> the type of exception that the operation may throw
      * @param action the operation to apply to the flattened array
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the operation throws an exception
-     * @see Arrays#mutateAsFlat(int[][], Throwables.Consumer)
+     * @see Arrays#mutateFlattened(int[][], Throwables.Consumer)
      */
     @Override
-    public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super int[], E> action) throws E {
+    public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super int[], E> action) throws E {
         N.checkArgNotNull(action, "action");
 
-        Arrays.mutateAsFlat(a, action);
+        Arrays.mutateFlattened(a, action);
     }
 
     /**
@@ -2812,7 +2812,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
         final int[][] result = new int[rowCount][columnCount];
         final Throwables.IntBiConsumer<RuntimeException> elementAction = (i, j) -> result[i][j] = a[i][j] + otherData[i][j];
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
         return IntMatrix.of(result);
     }
@@ -2854,7 +2854,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
         final int[][] result = new int[rowCount][columnCount];
         final Throwables.IntBiConsumer<RuntimeException> elementAction = (i, j) -> result[i][j] = a[i][j] - otherData[i][j];
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
         return IntMatrix.of(result);
     }
@@ -3077,7 +3077,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
 
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsInt(a[i][j], otherData[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
         return IntMatrix.of(result);
     }
@@ -3137,7 +3137,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
 
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsInt(a[i][j], otherData[i][j], thirdData[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.isParallelizable(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
         return IntMatrix.of(result);
     }
@@ -3265,7 +3265,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     }
 
     /**
-     * Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).
+     * Returns a stream of all elements in this matrix, traversed in row-major order (left to right, top to bottom).
      * Elements are streamed row by row from the top-left corner to the bottom-right corner.
      *
      * <p>This method is useful for processing all matrix elements sequentially
@@ -3419,7 +3419,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     }
 
     /**
-     * Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).
+     * Returns a stream of all elements in this matrix, traversed in column-major order (top to bottom, left to right).
      * Elements are streamed column by column from the top-left corner to the bottom-right corner.
      *
      * <p>This method provides an alternative way to iterate through matrix
@@ -3890,7 +3890,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
         N.checkArgNotNull(action, "action");
 
-        if (Matrices.isParallelizable(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
+        if (Matrices.shouldRunInParallel(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
             final Throwables.IntBiConsumer<E> elementAction = (i, j) -> action.accept(a[i][j]);
             Matrices.forEachIndices(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, elementAction, true);
         } else {

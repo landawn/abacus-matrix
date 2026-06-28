@@ -20,7 +20,7 @@ package com.landawn.abacus.matrix;
  *
  * <p>The active value for the current thread is set through
  * {@link Matrices#setParallelMode(ParallelMode)}, retrieved through {@link Matrices#getParallelMode()},
- * and consulted by helpers such as {@link Matrices#isParallelizable(AbstractMatrix, long)}. The three
+ * and consulted by helpers such as {@link Matrices#shouldRunInParallel(AbstractMatrix, long)}. The three
  * available policies trade off explicit control against automatic heuristics:</p>
  * <ul>
  *   <li>{@link #FORCE_ON} requests parallel execution whenever the required runtime support is present,
@@ -35,7 +35,7 @@ package com.landawn.abacus.matrix;
  *
  * @see Matrices#setParallelMode(ParallelMode)
  * @see Matrices#getParallelMode()
- * @see Matrices#isParallelizable(AbstractMatrix, long)
+ * @see Matrices#shouldRunInParallel(AbstractMatrix, long)
  * @see Matrices#runWithParallelMode(ParallelMode, com.landawn.abacus.util.Throwables.Runnable)
  */
 public enum ParallelMode {
@@ -60,7 +60,7 @@ public enum ParallelMode {
     /**
      * Uses parallel execution for the current thread only when the runtime supports it <i>and</i> the
      * per-operation element count meets the size threshold checked by
-     * {@link Matrices#isParallelizable(AbstractMatrix, long)}.
+     * {@link Matrices#shouldRunInParallel(AbstractMatrix, long)}.
      *
      * <p>This is the default mode and is recommended for most workloads: small operations stay
      * sequential to avoid parallel-dispatch overhead, while larger operations automatically benefit

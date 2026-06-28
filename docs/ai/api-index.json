@@ -765,13 +765,13 @@
               "see_also": []
             },
             {
-              "name": "mutateAsFlat",
+              "name": "mutateFlattened",
               "kind": "instance",
               "modifiers": [
                 "public",
                 "abstract"
               ],
-              "signature": "public abstract <E extends Exception> void mutateAsFlat(Throwables.Consumer<? super A, E> action) throws E",
+              "signature": "public abstract <E extends Exception> void mutateFlattened(Throwables.Consumer<? super A, E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -3690,12 +3690,12 @@
               ]
             },
             {
-              "name": "mutateAsFlat",
+              "name": "mutateFlattened",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super boolean[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super boolean[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -3723,7 +3723,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "Arrays#mutateAsFlat(boolean[][], Throwables.Consumer)"
+                "Arrays#mutateFlattened(boolean[][], Throwables.Consumer)"
               ]
             },
             {
@@ -6572,12 +6572,12 @@
               ]
             },
             {
-              "name": "mutateAsFlat",
+              "name": "mutateFlattened",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super byte[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super byte[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -6605,7 +6605,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "Arrays#mutateAsFlat(byte[][], Throwables.Consumer)"
+                "Arrays#mutateFlattened(byte[][], Throwables.Consumer)"
               ]
             },
             {
@@ -9471,12 +9471,12 @@
               ]
             },
             {
-              "name": "mutateAsFlat",
+              "name": "mutateFlattened",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super char[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super char[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -9504,7 +9504,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "Arrays#mutateAsFlat(char[][], Throwables.Consumer)"
+                "Arrays#mutateFlattened(char[][], Throwables.Consumer)"
               ]
             },
             {
@@ -12374,12 +12374,12 @@
               ]
             },
             {
-              "name": "mutateAsFlat",
+              "name": "mutateFlattened",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super double[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super double[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -12409,7 +12409,7 @@
               ],
               "examples": [],
               "see_also": [
-                "Arrays#mutateAsFlat(double[][], Throwables.Consumer)"
+                "Arrays#mutateFlattened(double[][], Throwables.Consumer)"
               ]
             },
             {
@@ -15140,12 +15140,12 @@
               ]
             },
             {
-              "name": "mutateAsFlat",
+              "name": "mutateFlattened",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super float[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super float[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -15175,7 +15175,7 @@
               ],
               "examples": [],
               "see_also": [
-                "Arrays#mutateAsFlat(float[][], Throwables.Consumer)"
+                "Arrays#mutateFlattened(float[][], Throwables.Consumer)"
               ]
             },
             {
@@ -18164,12 +18164,12 @@
               ]
             },
             {
-              "name": "mutateAsFlat",
+              "name": "mutateFlattened",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super int[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super int[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -18197,7 +18197,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "Arrays#mutateAsFlat(int[][], Throwables.Consumer)"
+                "Arrays#mutateFlattened(int[][], Throwables.Consumer)"
               ]
             },
             {
@@ -21137,12 +21137,12 @@
               ]
             },
             {
-              "name": "mutateAsFlat",
+              "name": "mutateFlattened",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super long[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super long[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -21170,7 +21170,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "Arrays#mutateAsFlat(long[][], Throwables.Consumer)"
+                "Arrays#mutateFlattened(long[][], Throwables.Consumer)"
               ]
             },
             {
@@ -22047,13 +22047,13 @@
               ]
             },
             {
-              "name": "isParallelizable",
+              "name": "shouldRunInParallel",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static boolean isParallelizable(final AbstractMatrix<?, ?, ?, ?, ?> m)",
+              "signature": "public static boolean shouldRunInParallel(final AbstractMatrix<?, ?, ?, ?, ?> m)",
               "return_type": "boolean",
               "type_params": [],
               "params": [
@@ -22072,18 +22072,18 @@
               ],
               "examples": [],
               "see_also": [
-                "#isParallelizable(AbstractMatrix, long)",
+                "#shouldRunInParallel(AbstractMatrix, long)",
                 "#setParallelMode(ParallelMode)"
               ]
             },
             {
-              "name": "isParallelizable",
+              "name": "shouldRunInParallel",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static boolean isParallelizable(final AbstractMatrix<?, ?, ?, ?, ?> m, final long count)",
+              "signature": "public static boolean shouldRunInParallel(final AbstractMatrix<?, ?, ?, ?, ?> m, final long count)",
               "return_type": "boolean",
               "type_params": [],
               "params": [
@@ -23038,17 +23038,17 @@
               "see_also": [
                 "#zip(ByteMatrix, ByteMatrix, Throwables.ByteBinaryOperator)",
                 "#zip(ByteMatrix, ByteMatrix, ByteMatrix, Throwables.ByteTernaryOperator)",
-                "#zip(Collection, Throwables.ByteNFunction, Class)"
+                "#zipToObj(Collection, Throwables.ByteNFunction, Class)"
               ]
             },
             {
-              "name": "zip",
+              "name": "zipToObj",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static <R, E extends Exception> Matrix<R> zip(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E",
+              "signature": "public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E",
               "return_type": "Matrix<R>",
               "type_params": [
                 {
@@ -23096,18 +23096,18 @@
               ],
               "examples": [],
               "see_also": [
-                "#zip(Collection, Throwables.ByteNFunction, boolean, Class)",
+                "#zipToObj(Collection, Throwables.ByteNFunction, boolean, Class)",
                 "#zip(Collection, Throwables.ByteBinaryOperator)"
               ]
             },
             {
-              "name": "zip",
+              "name": "zipToObj",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static <R, E extends Exception> Matrix<R> zip(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E",
+              "signature": "public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E",
               "return_type": "Matrix<R>",
               "type_params": [
                 {
@@ -23166,7 +23166,7 @@
               ],
               "examples": [],
               "see_also": [
-                "#zip(Collection, Throwables.ByteNFunction, Class)",
+                "#zipToObj(Collection, Throwables.ByteNFunction, Class)",
                 "#zip(Collection, Throwables.ByteBinaryOperator)"
               ]
             },
@@ -23554,17 +23554,17 @@
               "see_also": [
                 "#zip(IntMatrix, IntMatrix, Throwables.IntBinaryOperator)",
                 "#zip(IntMatrix, IntMatrix, IntMatrix, Throwables.IntTernaryOperator)",
-                "#zip(Collection, Throwables.IntNFunction, Class)"
+                "#zipToObj(Collection, Throwables.IntNFunction, Class)"
               ]
             },
             {
-              "name": "zip",
+              "name": "zipToObj",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static <R, E extends Exception> Matrix<R> zip(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E",
+              "signature": "public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E",
               "return_type": "Matrix<R>",
               "type_params": [
                 {
@@ -23612,18 +23612,18 @@
               ],
               "examples": [],
               "see_also": [
-                "#zip(Collection, Throwables.IntNFunction, boolean, Class)",
+                "#zipToObj(Collection, Throwables.IntNFunction, boolean, Class)",
                 "#zip(Collection, Throwables.IntBinaryOperator)"
               ]
             },
             {
-              "name": "zip",
+              "name": "zipToObj",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static <R, E extends Exception> Matrix<R> zip(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E",
+              "signature": "public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E",
               "return_type": "Matrix<R>",
               "type_params": [
                 {
@@ -23683,7 +23683,7 @@
               ],
               "examples": [],
               "see_also": [
-                "#zip(Collection, Throwables.IntNFunction, Class)",
+                "#zipToObj(Collection, Throwables.IntNFunction, Class)",
                 "#zip(Collection, Throwables.IntBinaryOperator)"
               ]
             },
@@ -24280,17 +24280,17 @@
               "see_also": [
                 "#zip(LongMatrix, LongMatrix, Throwables.LongBinaryOperator)",
                 "#zip(LongMatrix, LongMatrix, LongMatrix, Throwables.LongTernaryOperator)",
-                "#zip(Collection, Throwables.LongNFunction, Class)"
+                "#zipToObj(Collection, Throwables.LongNFunction, Class)"
               ]
             },
             {
-              "name": "zip",
+              "name": "zipToObj",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static <R, E extends Exception> Matrix<R> zip(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E",
+              "signature": "public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E",
               "return_type": "Matrix<R>",
               "type_params": [
                 {
@@ -24336,18 +24336,18 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#zip(Collection, Throwables.LongNFunction, boolean, Class)",
+                "#zipToObj(Collection, Throwables.LongNFunction, boolean, Class)",
                 "#zip(Collection, Throwables.LongBinaryOperator)"
               ]
             },
             {
-              "name": "zip",
+              "name": "zipToObj",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static <R, E extends Exception> Matrix<R> zip(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E",
+              "signature": "public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E",
               "return_type": "Matrix<R>",
               "type_params": [
                 {
@@ -24407,7 +24407,7 @@
               ],
               "examples": [],
               "see_also": [
-                "#zip(Collection, Throwables.LongNFunction, Class)",
+                "#zipToObj(Collection, Throwables.LongNFunction, Class)",
                 "#zip(Collection, Throwables.LongBinaryOperator)"
               ]
             },
@@ -24789,17 +24789,17 @@
               "see_also": [
                 "#zip(DoubleMatrix, DoubleMatrix, Throwables.DoubleBinaryOperator)",
                 "#zip(DoubleMatrix, DoubleMatrix, DoubleMatrix, Throwables.DoubleTernaryOperator)",
-                "#zip(Collection, Throwables.DoubleNFunction, Class)"
+                "#zipToObj(Collection, Throwables.DoubleNFunction, Class)"
               ]
             },
             {
-              "name": "zip",
+              "name": "zipToObj",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static <R, E extends Exception> Matrix<R> zip(final Collection<DoubleMatrix> coll, final Throwables.DoubleNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E",
+              "signature": "public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<DoubleMatrix> coll, final Throwables.DoubleNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E",
               "return_type": "Matrix<R>",
               "type_params": [
                 {
@@ -24845,18 +24845,18 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#zip(Collection, Throwables.DoubleNFunction, boolean, Class)",
+                "#zipToObj(Collection, Throwables.DoubleNFunction, boolean, Class)",
                 "#zip(Collection, Throwables.DoubleBinaryOperator)"
               ]
             },
             {
-              "name": "zip",
+              "name": "zipToObj",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static <R, E extends Exception> Matrix<R> zip(final Collection<DoubleMatrix> coll, final Throwables.DoubleNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E",
+              "signature": "public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<DoubleMatrix> coll, final Throwables.DoubleNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E",
               "return_type": "Matrix<R>",
               "type_params": [
                 {
@@ -24916,7 +24916,7 @@
               ],
               "examples": [],
               "see_also": [
-                "#zip(Collection, Throwables.DoubleNFunction, Class)",
+                "#zipToObj(Collection, Throwables.DoubleNFunction, Class)",
                 "#zip(Collection, Throwables.DoubleBinaryOperator)"
               ]
             },
@@ -27572,12 +27572,12 @@
               "see_also": []
             },
             {
-              "name": "mutateAsFlat",
+              "name": "mutateFlattened",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super T[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super T[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -27605,7 +27605,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "Arrays.ff#mutateAsFlat(Object[][], Throwables.Consumer)"
+                "Arrays.ff#mutateFlattened(Object[][], Throwables.Consumer)"
               ]
             },
             {
@@ -28506,7 +28506,7 @@
               ],
               "type": "ParallelMode",
               "value": "new ParallelMode()",
-              "javadoc_summary": "Uses parallel execution for the current thread only when the runtime supports it <i> and </i> the per-operation element count meets the size threshold checked by {@link Matrices#isParallelizable(AbstractMatrix, long)} ."
+              "javadoc_summary": "Uses parallel execution for the current thread only when the runtime supports it <i> and </i> the per-operation element count meets the size threshold checked by {@link Matrices#shouldRunInParallel(AbstractMatrix, long)} ."
             }
           ]
         },
@@ -30543,12 +30543,12 @@
               ]
             },
             {
-              "name": "mutateAsFlat",
+              "name": "mutateFlattened",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super short[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super short[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -30576,7 +30576,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "Arrays#mutateAsFlat(short[][], Throwables.Consumer)"
+                "Arrays#mutateFlattened(short[][], Throwables.Consumer)"
               ]
             },
             {

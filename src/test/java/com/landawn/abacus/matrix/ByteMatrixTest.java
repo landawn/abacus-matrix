@@ -919,7 +919,7 @@ class ByteMatrixTest extends TestBase {
         ByteMatrix matrix = ByteMatrix.of(a);
 
         List<Byte> collected = new ArrayList<>();
-        matrix.mutateAsFlat(row -> {
+        matrix.mutateFlattened(row -> {
             for (byte b : row) {
                 collected.add(b);
             }
@@ -2380,7 +2380,7 @@ class ByteMatrixTest extends TestBase {
         public void testFlatOp() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             List<Integer> sums = new ArrayList<>();
-            m.mutateAsFlat(row -> {
+            m.mutateFlattened(row -> {
                 int sum = 0;
                 for (byte val : row) {
                     sum += val;
@@ -3579,7 +3579,7 @@ class ByteMatrixTest extends TestBase {
         public void testFlatOp() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
             AtomicInteger count = new AtomicInteger(0);
-            m.mutateAsFlat(row -> count.addAndGet(row.length));
+            m.mutateFlattened(row -> count.addAndGet(row.length));
             assertEquals(4, count.get());
         }
 
@@ -5403,9 +5403,9 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_mutateAsFlat() {
+        public void test_mutateFlattened() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-            m.mutateAsFlat(arr -> {
+            m.mutateFlattened(arr -> {
                 for (int i = 0; i < arr.length; i++) {
                     arr[i] = (byte) (arr[i] * 2);
                 }
@@ -5827,9 +5827,9 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testByteMatrix_mutateAsFlat() {
+        public void testByteMatrix_mutateFlattened() {
             ByteMatrix matrix = ByteMatrix.of(new byte[][] { { 5, 3 }, { 4, 1 } });
-            matrix.mutateAsFlat(arr -> java.util.Arrays.sort(arr));
+            matrix.mutateFlattened(arr -> java.util.Arrays.sort(arr));
             // matrix is now [[1, 3], [4, 5]]
             assertEquals((byte) 1, matrix.get(0, 0));
             assertEquals((byte) 3, matrix.get(0, 1));

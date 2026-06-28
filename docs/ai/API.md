@@ -6446,8 +6446,8 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
   - `E` — if the zip function throws an exception during execution
-- **See also:** #zip(ByteMatrix, ByteMatrix, Throwables.ByteBinaryOperator), #zip(ByteMatrix, ByteMatrix, ByteMatrix, Throwables.ByteTernaryOperator), #zip(Collection, Throwables.ByteNFunction, Class)
-- **Signature:** `public static <R, E extends Exception> Matrix<R> zip(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E`
+- **See also:** #zip(ByteMatrix, ByteMatrix, Throwables.ByteBinaryOperator), #zip(ByteMatrix, ByteMatrix, ByteMatrix, Throwables.ByteTernaryOperator), #zipToObj(Collection, Throwables.ByteNFunction, Class)
+- **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E`
 - **Summary:** Combines multiple {@link ByteMatrix} objects element-wise using a function that operates on byte arrays.
 - **Contract:**
   - </p> <p> All matrices in the collection must have identical dimensions.
@@ -6458,8 +6458,8 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
 - **Throws:**
   - `E` — if the zip function throws an exception during execution
-- **See also:** #zip(Collection, Throwables.ByteNFunction, boolean, Class), #zip(Collection, Throwables.ByteBinaryOperator)
-- **Signature:** `public static <R, E extends Exception> Matrix<R> zip(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E`
+- **See also:** #zipToObj(Collection, Throwables.ByteNFunction, boolean, Class), #zip(Collection, Throwables.ByteBinaryOperator)
+- **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E`
 - **Summary:** Combines multiple {@link ByteMatrix} objects element-wise using a function that operates on byte arrays, with control over intermediate array sharing.
 - **Contract:**
   - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
@@ -6473,7 +6473,7 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
   - `E` — if the zip function throws an exception during execution
-- **See also:** #zip(Collection, Throwables.ByteNFunction, Class), #zip(Collection, Throwables.ByteBinaryOperator)
+- **See also:** #zipToObj(Collection, Throwables.ByteNFunction, Class), #zip(Collection, Throwables.ByteBinaryOperator)
 - **Signature:** `public static <E extends Exception> IntMatrix zip(final IntMatrix a, final IntMatrix b, final Throwables.IntBinaryOperator<E> zipFunction) throws E`
 - **Summary:** Combines two {@link IntMatrix} objects element-wise using a binary operator.
 - **Contract:**
@@ -6510,8 +6510,8 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
   - `E` — if the zip function throws an exception during execution
-- **See also:** #zip(IntMatrix, IntMatrix, Throwables.IntBinaryOperator), #zip(IntMatrix, IntMatrix, IntMatrix, Throwables.IntTernaryOperator), #zip(Collection, Throwables.IntNFunction, Class)
-- **Signature:** `public static <R, E extends Exception> Matrix<R> zip(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E`
+- **See also:** #zip(IntMatrix, IntMatrix, Throwables.IntBinaryOperator), #zip(IntMatrix, IntMatrix, IntMatrix, Throwables.IntTernaryOperator), #zipToObj(Collection, Throwables.IntNFunction, Class)
+- **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E`
 - **Summary:** Combines multiple {@link IntMatrix} objects element-wise using a function that operates on integer arrays.
 - **Contract:**
   - </p> <p> All matrices in the collection must have identical dimensions.
@@ -6522,8 +6522,8 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
 - **Throws:**
   - `E` — if the zip function throws an exception during execution
-- **See also:** #zip(Collection, Throwables.IntNFunction, boolean, Class), #zip(Collection, Throwables.IntBinaryOperator)
-- **Signature:** `public static <R, E extends Exception> Matrix<R> zip(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E`
+- **See also:** #zipToObj(Collection, Throwables.IntNFunction, boolean, Class), #zip(Collection, Throwables.IntBinaryOperator)
+- **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E`
 - **Summary:** Combines multiple {@link IntMatrix} objects element-wise using a function that operates on integer arrays, with control over intermediate array sharing.
 - **Contract:**
   - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
@@ -6538,7 +6538,7 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
   - `E` — if the zip function throws an exception during execution
-- **See also:** #zip(Collection, Throwables.IntNFunction, Class), #zip(Collection, Throwables.IntBinaryOperator)
+- **See also:** #zipToObj(Collection, Throwables.IntNFunction, Class), #zip(Collection, Throwables.IntBinaryOperator)
 - **Signature:** `public static <E extends Exception> LongMatrix zip(final LongMatrix a, final LongMatrix b, final Throwables.LongBinaryOperator<E> zipFunction) throws E`
 - **Summary:** Combines two {@link LongMatrix} objects element-wise using a binary operator.
 - **Contract:**
@@ -6575,8 +6575,8 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
   - `E` — if the zip function throws an exception during execution
-- **See also:** #zip(LongMatrix, LongMatrix, Throwables.LongBinaryOperator), #zip(LongMatrix, LongMatrix, LongMatrix, Throwables.LongTernaryOperator), #zip(Collection, Throwables.LongNFunction, Class)
-- **Signature:** `public static <R, E extends Exception> Matrix<R> zip(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E`
+- **See also:** #zip(LongMatrix, LongMatrix, Throwables.LongBinaryOperator), #zip(LongMatrix, LongMatrix, LongMatrix, Throwables.LongTernaryOperator), #zipToObj(Collection, Throwables.LongNFunction, Class)
+- **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E`
 - **Summary:** Combines multiple {@link LongMatrix} objects element-wise using a function that operates on long arrays.
 - **Parameters:**
   - `coll` (`Collection<LongMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
@@ -6585,8 +6585,8 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
 - **Throws:**
   - `E` — if the zip function throws an exception during execution
-- **See also:** #zip(Collection, Throwables.LongNFunction, boolean, Class), #zip(Collection, Throwables.LongBinaryOperator)
-- **Signature:** `public static <R, E extends Exception> Matrix<R> zip(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E`
+- **See also:** #zipToObj(Collection, Throwables.LongNFunction, boolean, Class), #zip(Collection, Throwables.LongBinaryOperator)
+- **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E`
 - **Summary:** Combines multiple {@link LongMatrix} objects element-wise using a function that operates on long arrays, with control over intermediate array sharing.
 - **Contract:**
   - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
@@ -6601,7 +6601,7 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
   - `E` — if the zip function throws an exception during execution
-- **See also:** #zip(Collection, Throwables.LongNFunction, Class), #zip(Collection, Throwables.LongBinaryOperator)
+- **See also:** #zipToObj(Collection, Throwables.LongNFunction, Class), #zip(Collection, Throwables.LongBinaryOperator)
 - **Signature:** `public static <E extends Exception> DoubleMatrix zip(final DoubleMatrix a, final DoubleMatrix b, final Throwables.DoubleBinaryOperator<E> zipFunction) throws E`
 - **Summary:** Combines two {@link DoubleMatrix} objects element-wise using a binary operator.
 - **Contract:**
@@ -6638,8 +6638,8 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
   - `E` — if the zip function throws an exception during execution
-- **See also:** #zip(DoubleMatrix, DoubleMatrix, Throwables.DoubleBinaryOperator), #zip(DoubleMatrix, DoubleMatrix, DoubleMatrix, Throwables.DoubleTernaryOperator), #zip(Collection, Throwables.DoubleNFunction, Class)
-- **Signature:** `public static <R, E extends Exception> Matrix<R> zip(final Collection<DoubleMatrix> coll, final Throwables.DoubleNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E`
+- **See also:** #zip(DoubleMatrix, DoubleMatrix, Throwables.DoubleBinaryOperator), #zip(DoubleMatrix, DoubleMatrix, DoubleMatrix, Throwables.DoubleTernaryOperator), #zipToObj(Collection, Throwables.DoubleNFunction, Class)
+- **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<DoubleMatrix> coll, final Throwables.DoubleNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E`
 - **Summary:** Combines multiple {@link DoubleMatrix} objects element-wise using a function that operates on double arrays.
 - **Parameters:**
   - `coll` (`Collection<DoubleMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
@@ -6648,8 +6648,8 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
 - **Throws:**
   - `E` — if the zip function throws an exception during execution
-- **See also:** #zip(Collection, Throwables.DoubleNFunction, boolean, Class), #zip(Collection, Throwables.DoubleBinaryOperator)
-- **Signature:** `public static <R, E extends Exception> Matrix<R> zip(final Collection<DoubleMatrix> coll, final Throwables.DoubleNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E`
+- **See also:** #zipToObj(Collection, Throwables.DoubleNFunction, boolean, Class), #zip(Collection, Throwables.DoubleBinaryOperator)
+- **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<DoubleMatrix> coll, final Throwables.DoubleNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E`
 - **Summary:** Combines multiple {@link DoubleMatrix} objects element-wise using a function that operates on double arrays, with control over intermediate array sharing.
 - **Contract:**
   - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
@@ -6664,7 +6664,7 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
   - `E` — if the zip function throws an exception during execution
-- **See also:** #zip(Collection, Throwables.DoubleNFunction, Class), #zip(Collection, Throwables.DoubleBinaryOperator)
+- **See also:** #zipToObj(Collection, Throwables.DoubleNFunction, Class), #zip(Collection, Throwables.DoubleBinaryOperator)
 - **Signature:** `public static <A, B, E extends Exception> Matrix<A> zip(final Matrix<A> a, final Matrix<B> b, final Throwables.BiFunction<? super A, ? super B, A, E> zipFunction) throws E`
 - **Summary:** Combines two generic {@link Matrix} objects element-wise using a binary function.
 - **Contract:**

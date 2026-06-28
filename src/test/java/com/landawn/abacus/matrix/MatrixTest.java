@@ -1058,7 +1058,7 @@ class MatrixTest extends TestBase {
     public void testFlatOp() throws Exception {
         Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 3, 1, 4 }, { 1, 5, 9 } });
 
-        matrix.mutateAsFlat(arrays -> {
+        matrix.mutateFlattened(arrays -> {
             Arrays.sort(arrays);
         });
 
@@ -2932,7 +2932,7 @@ class MatrixTest extends TestBase {
         public void testFlatOp() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B", "C" }, { "D", "E", "F" }, { "G", "H", "I" } });
             List<Integer> rowLengths = new ArrayList<>();
-            m.mutateAsFlat(row -> {
+            m.mutateFlattened(row -> {
                 rowLengths.add(row.length);
             });
             assertEquals(1, rowLengths.size());
@@ -3780,7 +3780,7 @@ class MatrixTest extends TestBase {
         public void testFlatOp_emptyMatrix() {
             Matrix<String> empty = Matrix.of(new String[0][0]);
             List<Integer> lengths = new ArrayList<>();
-            empty.mutateAsFlat(row -> lengths.add(row.length));
+            empty.mutateFlattened(row -> lengths.add(row.length));
             assertEquals(0, lengths.size());
         }
     }
@@ -5431,7 +5431,7 @@ class MatrixTest extends TestBase {
         public void testFlatOp_strings() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
             List<String> captured = new java.util.ArrayList<>();
-            m.mutateAsFlat(arr -> {
+            m.mutateFlattened(arr -> {
                 for (String val : arr) {
                     captured.add(val);
                 }
@@ -5444,7 +5444,7 @@ class MatrixTest extends TestBase {
         public void testFlatOp_integers() {
             Matrix<Integer> m = Matrix.of(new Integer[][] { { 3, 1 }, { 4, 2 } });
             List<Integer> captured = new java.util.ArrayList<>();
-            m.mutateAsFlat(arr -> {
+            m.mutateFlattened(arr -> {
                 for (Integer val : arr) {
                     captured.add(val);
                 }
@@ -6686,11 +6686,11 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void test_mutateAsFlat_appliesOperationToEachRow() {
+        public void test_mutateFlattened_appliesOperationToEachRow() {
             Integer[][] arr = { { 1, 2 }, { 3, 4 } };
             Matrix<Integer> m = new Matrix<>(arr);
             final int[] sum = { 0 };
-            m.mutateAsFlat(row -> {
+            m.mutateFlattened(row -> {
                 for (Integer val : row) {
                     sum[0] += val;
                 }

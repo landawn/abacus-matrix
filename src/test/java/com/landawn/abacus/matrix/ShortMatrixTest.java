@@ -868,7 +868,7 @@ class ShortMatrixTest extends TestBase {
     @Test
     public void testFlatOp() {
         List<Short> sums = new ArrayList<>();
-        matrix.mutateAsFlat(row -> {
+        matrix.mutateFlattened(row -> {
             short sum = 0;
             for (short val : row) {
                 sum += val;
@@ -1514,9 +1514,9 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testShortMatrix_mutateAsFlat() {
+        public void testShortMatrix_mutateFlattened() {
             ShortMatrix matrix = ShortMatrix.of(new short[][] { { 5, 3 }, { 4, 1 } });
-            matrix.mutateAsFlat(arr -> java.util.Arrays.sort(arr));
+            matrix.mutateFlattened(arr -> java.util.Arrays.sort(arr));
             // matrix is now [[1, 3], [4, 5]]
             assertEquals((short) 1, matrix.get(0, 0));
             assertEquals((short) 3, matrix.get(0, 1));
@@ -2648,7 +2648,7 @@ class ShortMatrixTest extends TestBase {
         public void testFlatOp() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             List<Integer> sums = new ArrayList<>();
-            m.mutateAsFlat(row -> {
+            m.mutateFlattened(row -> {
                 int sum = 0;
                 for (short val : row) {
                     sum += val;
@@ -3497,7 +3497,7 @@ class ShortMatrixTest extends TestBase {
         public void testFlatOp_empty() {
             ShortMatrix empty = ShortMatrix.empty();
             List<Integer> results = new ArrayList<>();
-            empty.mutateAsFlat(row -> results.add(row.length));
+            empty.mutateFlattened(row -> results.add(row.length));
             assertTrue(results.isEmpty());
         }
 
@@ -3678,7 +3678,7 @@ class ShortMatrixTest extends TestBase {
         public void testFlatOp() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
             final int[] count = { 0 };
-            m.mutateAsFlat(row -> count[0] += row.length);
+            m.mutateFlattened(row -> count[0] += row.length);
             assertEquals(4, count[0]);
         }
 
@@ -4649,7 +4649,7 @@ class ShortMatrixTest extends TestBase {
         public void testFlatOp() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
             final int[] sum = { 0 };
-            m.mutateAsFlat(row -> {
+            m.mutateFlattened(row -> {
                 for (short val : row) {
                     sum[0] += val;
                 }
@@ -5693,11 +5693,11 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_mutateAsFlat_appliesOperationToEachRow() {
+        public void test_mutateFlattened_appliesOperationToEachRow() {
             short[][] arr = { { 1, 2 }, { 3, 4 } };
             ShortMatrix m = new ShortMatrix(arr);
             final int[] sum = { 0 };
-            m.mutateAsFlat(row -> {
+            m.mutateFlattened(row -> {
                 for (short val : row) {
                     sum[0] += val;
                 }

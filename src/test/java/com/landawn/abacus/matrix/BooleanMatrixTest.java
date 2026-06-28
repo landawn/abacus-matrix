@@ -807,7 +807,7 @@ class BooleanMatrixTest extends TestBase {
         BooleanMatrix matrix = BooleanMatrix.of(arr);
 
         int[] count = { 0 };
-        matrix.mutateAsFlat(array -> count[0] += array.length);
+        matrix.mutateFlattened(array -> count[0] += array.length);
         assertEquals(4, count[0]);
     }
 
@@ -2116,7 +2116,7 @@ class BooleanMatrixTest extends TestBase {
         public void testFlatOp() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false, true }, { false, true, false }, { true, false, true } });
             List<Integer> trueCounts = new ArrayList<>();
-            m.mutateAsFlat(row -> {
+            m.mutateFlattened(row -> {
                 int count = 0;
                 for (boolean val : row) {
                     if (val) {
@@ -3467,7 +3467,7 @@ class BooleanMatrixTest extends TestBase {
         public void testFlatOp() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
             AtomicInteger count = new AtomicInteger(0);
-            m.mutateAsFlat(row -> count.addAndGet(row.length));
+            m.mutateFlattened(row -> count.addAndGet(row.length));
             assertEquals(4, count.get());
         }
 
@@ -5107,9 +5107,9 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_mutateAsFlat() {
+        public void test_mutateFlattened() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
-            m.mutateAsFlat(arr -> {
+            m.mutateFlattened(arr -> {
                 for (int i = 0; i < arr.length; i++) {
                     arr[i] = !arr[i];
                 }
@@ -5616,9 +5616,9 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testBooleanMatrix_mutateAsFlat() {
+        public void testBooleanMatrix_mutateFlattened() {
             BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
-            matrix.mutateAsFlat(arr -> java.util.Arrays.fill(arr, true));
+            matrix.mutateFlattened(arr -> java.util.Arrays.fill(arr, true));
             // matrix is now [[true, true], [true, true]]
             assertTrue(matrix.get(0, 0));
             assertTrue(matrix.get(0, 1));

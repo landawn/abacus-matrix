@@ -908,7 +908,7 @@ class CharMatrixTest extends TestBase {
         CharMatrix matrix = CharMatrix.of(a);
 
         List<Character> collected = new ArrayList<>();
-        matrix.mutateAsFlat(row -> {
+        matrix.mutateFlattened(row -> {
             for (char c : row) {
                 collected.add(c);
             }
@@ -2320,7 +2320,7 @@ class CharMatrixTest extends TestBase {
         public void testFlatOp() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B', 'C' }, { 'D', 'E', 'F' }, { 'G', 'H', 'I' } });
             List<Integer> sums = new ArrayList<>();
-            m.mutateAsFlat(row -> {
+            m.mutateFlattened(row -> {
                 int sum = 0;
                 for (char val : row) {
                     sum += val;
@@ -3652,7 +3652,7 @@ class CharMatrixTest extends TestBase {
         public void testFlatOp() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
             AtomicInteger count = new AtomicInteger(0);
-            m.mutateAsFlat(row -> count.addAndGet(row.length));
+            m.mutateFlattened(row -> count.addAndGet(row.length));
             assertEquals(4, count.get());
         }
 
@@ -5725,9 +5725,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_mutateAsFlat() {
+        public void test_mutateFlattened() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            m.mutateAsFlat(arr -> {
+            m.mutateFlattened(arr -> {
                 for (int i = 0; i < arr.length; i++) {
                     arr[i] = (char) (arr[i] + 1);
                 }
@@ -6258,9 +6258,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCharMatrix_mutateAsFlat() {
+        public void testCharMatrix_mutateFlattened() {
             CharMatrix matrix = CharMatrix.of(new char[][] { { 'd', 'b' }, { 'c', 'a' } });
-            matrix.mutateAsFlat(arr -> java.util.Arrays.sort(arr));
+            matrix.mutateFlattened(arr -> java.util.Arrays.sort(arr));
             // matrix is now [['a', 'b'], ['c', 'd']]
             assertEquals('a', matrix.get(0, 0));
             assertEquals('b', matrix.get(0, 1));

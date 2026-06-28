@@ -339,7 +339,7 @@ class AbstractMatrixTest extends TestBase {
     public void testFlatOp() throws Exception {
         IntMatrix matrix = IntMatrix.of(new int[][] { { 3, 1, 4 }, { 1, 5, 9 } });
 
-        matrix.mutateAsFlat(arrays -> java.util.Arrays.sort(arrays));
+        matrix.mutateFlattened(arrays -> java.util.Arrays.sort(arrays));
 
         Assertions.assertEquals(1, matrix.get(0, 0));
         Assertions.assertEquals(1, matrix.get(0, 1));
@@ -1143,7 +1143,7 @@ class AbstractMatrixTest extends TestBase {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             List<Integer> values = new ArrayList<>();
 
-            m.mutateAsFlat(arr -> {
+            m.mutateFlattened(arr -> {
                 for (int val : arr) {
                     values.add(val);
                 }
@@ -2296,7 +2296,7 @@ class AbstractMatrixTest extends TestBase {
         public void testFlatOp_intMatrix() {
             IntMatrix m = IntMatrix.of(new int[][] { { 3, 1 }, { 4, 2 } });
             AtomicInteger sum = new AtomicInteger(0);
-            m.mutateAsFlat(arr -> {
+            m.mutateFlattened(arr -> {
                 for (int val : arr) {
                     sum.addAndGet(val);
                 }
@@ -2308,7 +2308,7 @@ class AbstractMatrixTest extends TestBase {
         public void testFlatOp_doubleMatrix() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.5, 2.5 }, { 3.5, 4.5 } });
             final double[] sum = { 0.0 };
-            m.mutateAsFlat(arr -> {
+            m.mutateFlattened(arr -> {
                 for (double val : arr) {
                     sum[0] += val;
                 }
@@ -2320,7 +2320,7 @@ class AbstractMatrixTest extends TestBase {
         public void testFlatOp_objectMatrix() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
             StringBuilder sb = new StringBuilder();
-            m.mutateAsFlat(arr -> {
+            m.mutateFlattened(arr -> {
                 for (String val : arr) {
                     sb.append(val);
                 }
@@ -3598,10 +3598,10 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testAbstractMatrix_mutateAsFlat() {
-            // From mutateAsFlat Javadoc
+        public void testAbstractMatrix_mutateFlattened() {
+            // From mutateFlattened Javadoc
             IntMatrix matrix = IntMatrix.of(new int[][] { { 3, 1, 4 }, { 1, 5, 9 } });
-            matrix.mutateAsFlat(a -> java.util.Arrays.sort(a)); // Sorts all elements
+            matrix.mutateFlattened(a -> java.util.Arrays.sort(a)); // Sorts all elements
             // Matrix becomes [[1, 1, 3], [4, 5, 9]] (elements sorted in row-major order)
             assertEquals(1, matrix.get(0, 0));
             assertEquals(1, matrix.get(0, 1));

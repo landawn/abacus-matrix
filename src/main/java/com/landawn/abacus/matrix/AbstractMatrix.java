@@ -36,7 +36,7 @@ import com.landawn.abacus.util.stream.Stream;
  *
  * <p>Several APIs intentionally cross the usual defensive-copy boundary for performance-sensitive code:
  * {@link #internalArray()} and {@link #rowView(int)} expose live storage, while
- * {@link #mutateAsFlat(Throwables.Consumer)} lets callers mutate the matrix through a flattened array.
+ * {@link #mutateFlattened(Throwables.Consumer)} lets callers mutate the matrix through a flattened array.
  * Callers that need isolation should prefer
  * copy-producing operations such as {@link #copy()}, {@link #flatten()}, and {@link #rowCopy(int)}.</p>
  *
@@ -1192,18 +1192,18 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{3, 1, 4}, {1, 5, 9}});
-     * matrix.mutateAsFlat(flat -> java.util.Arrays.sort(flat));   // sorts all elements in row-major order
+     * matrix.mutateFlattened(flat -> java.util.Arrays.sort(flat));   // sorts all elements in row-major order
      * matrix.get(0, 0);                                           // returns 1 (matrix becomes {{1, 1, 3}, {4, 5, 9}})
      * matrix.get(1, 2);                                           // returns 9
      *
-     * matrix.mutateAsFlat(flat -> { for (int i = 0; i < flat.length; i++) flat[i] *= 2; });   // doubles all elements
+     * matrix.mutateFlattened(flat -> { for (int i = 0; i < flat.length; i++) flat[i] *= 2; });   // doubles all elements
      * matrix.get(0, 0);                                                                       // returns 2
      *
      * IntMatrix empty = IntMatrix.of(new int[0][0]);
-     * empty.mutateAsFlat(flat -> java.util.Arrays.sort(flat));    // no-op on an empty matrix; stays empty
+     * empty.mutateFlattened(flat -> java.util.Arrays.sort(flat));    // no-op on an empty matrix; stays empty
      *
      * // Checked exceptions propagate to the caller (do not wrap in try/catch inside the block)
-     * matrix.mutateAsFlat(flat -> { throw new java.io.IOException(); });   // throws IOException
+     * matrix.mutateFlattened(flat -> { throw new java.io.IOException(); });   // throws IOException
      * }</pre>
      *
      * @param <E> the type of exception that the operation might throw
@@ -1211,7 +1211,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the operation throws an exception
      */
-    public abstract <E extends Exception> void mutateAsFlat(Throwables.Consumer<? super A, E> action) throws E;
+    public abstract <E extends Exception> void mutateFlattened(Throwables.Consumer<? super A, E> action) throws E;
 
     /**
      * Performs the specified action for each element position in the matrix.
@@ -1252,7 +1252,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     public <E extends Exception> void forEachIndices(final Throwables.IntBiConsumer<E> action) throws E {
         N.checkArgNotNull(action, "action");
 
-        if (Matrices.isParallelizable(this)) {
+        if (Matrices.shouldRunInParallel(this)) {
             //noinspection FunctionalExpressionCanBeFolded
             final Throwables.IntBiConsumer<E> elementAction = action::accept;
             Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
@@ -1311,7 +1311,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
         N.checkArgNotNull(action, "action");
 
-        if (Matrices.isParallelizable(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
+        if (Matrices.shouldRunInParallel(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
             //noinspection FunctionalExpressionCanBeFolded
             final Throwables.IntBiConsumer<E> elementAction = action::accept;
             Matrices.forEachIndices(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, elementAction, true);
@@ -1362,7 +1362,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
         final M matrix = (M) this;
 
-        if (Matrices.isParallelizable(this)) {
+        if (Matrices.shouldRunInParallel(this)) {
             final Throwables.IntBiConsumer<E> elementAction = (i, j) -> action.accept(i, j, matrix);
             Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
         } else {
@@ -1420,7 +1420,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
         final M matrix = (M) this;
 
-        if (Matrices.isParallelizable(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
+        if (Matrices.shouldRunInParallel(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
             final Throwables.IntBiConsumer<E> elementAction = (i, j) -> action.accept(i, j, matrix);
             Matrices.forEachIndices(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, elementAction, true);
         } else {
@@ -1738,7 +1738,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     }
 
     /**
-     * Returns a stream of points for a specific row in horizontal order (left to right).
+     * Returns a stream of points for a specific row in row-major order (left to right).
      *
      * <p>This is equivalent to calling {@code rowMajorPoints(rowIndex, rowIndex + 1)}.</p>
      *
@@ -1821,7 +1821,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     }
 
     /**
-     * Returns a stream of points for a specific column in vertical order (top to bottom).
+     * Returns a stream of points for a specific column in column-major order (top to bottom).
      *
      * <p>This is equivalent to calling {@code columnMajorPoints(columnIndex, columnIndex + 1)}.</p>
      *
