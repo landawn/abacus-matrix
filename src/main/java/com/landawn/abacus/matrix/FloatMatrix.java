@@ -70,8 +70,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     /**
      * Constructs a {@code FloatMatrix} backed by the supplied two-dimensional array.
      *
-     * <p>If {@code a} is {@code null}, this creates an empty {@code 0x0} matrix. Otherwise the array
-     * is used directly after rectangular-shape validation, so later modifications to either the input
+     * <p>The supplied array is used directly after rectangular-shape validation, so later modifications to either the input
      * array or the matrix remain visible through the other view. Call {@link #copy()} if you need an
      * independently owned matrix.</p>
      *
@@ -83,17 +82,17 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * data[0][0] = 9.0f;                         // backing array is shared
      * matrix.get(0, 0);                          // returns 9.0f (change is visible)
      *
-     * new FloatMatrix(null).rowCount();                      // returns 0 (empty matrix)
+     * new FloatMatrix(null);                      // throws IllegalArgumentException
      * new FloatMatrix(new float[0][0]).isEmpty();            // returns true
      * new FloatMatrix(new float[][] {{1.0f}, {2.0f, 3.0f}}); // throws IllegalArgumentException (not rectangular)
      * }</pre>
      *
-     * @param a the two-dimensional float array to wrap, or {@code null} for an empty matrix
+     * @param a the two-dimensional float array to wrap, must not be {@code null}
      * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
     public FloatMatrix(final float[][] a) {
-        super(a == null ? new float[0][0] : a, float.class);
+        super(N.checkArgNotNull(a, "Matrix array cannot be null"), float.class);
     }
 
     /**
@@ -127,18 +126,19 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * matrix.get(0, 1);                         // returns 2.0f
      * matrix.rowCount();                        // returns 2
      *
-     * FloatMatrix.of((float[][]) null).isEmpty();           // returns true
+     * FloatMatrix.of((float[][]) null);           // throws IllegalArgumentException
      * FloatMatrix.of(new float[0][0]).columnCount();        // returns 0
      * FloatMatrix.of(new float[][] {{1.0f}, {2.0f, 3.0f}}); // throws IllegalArgumentException (not rectangular)
      * }</pre>
      *
-     * @param a the two-dimensional float array to create the matrix from, or {@code null}/empty for an empty matrix
-     * @return a new {@code FloatMatrix} wrapping the provided data, or the shared empty {@code FloatMatrix} if input is {@code null} or empty
+     * @param a the two-dimensional float array to create the matrix from, or empty for an empty matrix; must not be {@code null}
+     * @return a new {@code FloatMatrix} wrapping the provided data, or the shared empty {@code FloatMatrix} if input is empty
      * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
     public static FloatMatrix of(final float[]... a) {
-        return N.isEmpty(a) ? EMPTY_FLOAT_MATRIX : new FloatMatrix(a);
+        N.checkArgNotNull(a, "Matrix array cannot be null");
+        return a.length == 0 ? EMPTY_FLOAT_MATRIX : new FloatMatrix(a);
     }
 
     /**
@@ -155,19 +155,21 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * data[0][0] = 10;
      * matrix.get(0, 0);                       // returns 1.0 (copy is independent)
      *
-     * FloatMatrix.copyOf((float[][]) null).isEmpty();  // returns true
+     * FloatMatrix.copyOf((float[][]) null);  // throws IllegalArgumentException
      * FloatMatrix.copyOf(new float[][] {{1, 2}, {3}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
      *
-     * @param a the two-dimensional float array to copy, or {@code null}/empty for an empty matrix
-     * @return a new {@code FloatMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is {@code null} or empty
+     * @param a the two-dimensional float array to copy, or empty for an empty matrix; must not be {@code null}
+     * @return a new {@code FloatMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is empty
      * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      * @see #of(float[][])
      * @see #copy()
      */
     public static FloatMatrix copyOf(final float[]... a) {
-        if (N.isEmpty(a)) {
+        N.checkArgNotNull(a, "Matrix array cannot be null");
+
+        if (a.length == 0) {
             return EMPTY_FLOAT_MATRIX;
         }
 
@@ -201,18 +203,20 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * // Precision: 16_777_217 has 25 significant bits and rounds when stored as float
      * FloatMatrix.from(new int[][] {{16777217}}).get(0, 0); // returns 1.6777216E7f (rounded)
-     * FloatMatrix.from((int[][]) null).isEmpty();           // returns true
+     * FloatMatrix.from((int[][]) null);                     // throws IllegalArgumentException
      * FloatMatrix.from(new int[0][0]).columnCount();        // returns 0
      * FloatMatrix.from(new int[][] {{1}, {2, 3}});          // throws IllegalArgumentException (rows differ in length)
      * }</pre>
      *
-     * @param a the two-dimensional int array to convert to a float matrix, or {@code null}/empty for an empty matrix
-     * @return a new {@code FloatMatrix} with converted values, or the shared empty {@code FloatMatrix} if input is {@code null} or empty
+     * @param a the two-dimensional int array to convert to a float matrix, or empty for an empty matrix; must not be {@code null}
+     * @return a new {@code FloatMatrix} with converted values, or the shared empty {@code FloatMatrix} if input is empty
      * @throws IllegalArgumentException if any row is {@code null} or if rows have different lengths (non-rectangular array)
      * @see IntMatrix#toFloatMatrix()
      */
     public static FloatMatrix from(final int[]... a) {
-        if (N.isEmpty(a)) {
+        N.checkArgNotNull(a, "Matrix array cannot be null");
+
+        if (a.length == 0) {
             return EMPTY_FLOAT_MATRIX;
         }
 
@@ -429,9 +433,11 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix.diagonals(new float[] {1.0f}, new float[] {1.0f, 2.0f});                             // throws IllegalArgumentException (length mismatch)
      * }</pre>
      *
-     * @param mainDiagonal the array of main diagonal elements; may be {@code null} or empty if {@code antiDiagonal} is non-{@code null}
-     * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} or empty if {@code mainDiagonal} is non-{@code null}
-     * @return a square matrix with the specified diagonals, or an empty matrix when both arrays are empty (at least one being a non-{@code null} zero-length array)
+     * @param mainDiagonal the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non-{@code null};
+     *        may be empty
+     * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non-{@code null};
+     *        may be empty
+     * @return a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
      * @throws IllegalArgumentException if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null}, or if both arrays are non-empty and have different lengths
      * @see #mainDiagonal(float[])
      * @see #antiDiagonal(float[])

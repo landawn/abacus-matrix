@@ -36,9 +36,7 @@ class CharMatrixTest extends TestBase {
         Assertions.assertEquals(2, matrix.rowCount());
         Assertions.assertEquals(2, matrix.columnCount());
 
-        CharMatrix nullMatrix = new CharMatrix(null);
-        Assertions.assertEquals(0, nullMatrix.rowCount());
-        Assertions.assertEquals(0, nullMatrix.columnCount());
+        assertThrows(IllegalArgumentException.class, () -> new CharMatrix(null));
     }
 
     @Test
@@ -66,8 +64,8 @@ class CharMatrixTest extends TestBase {
         m.set(1, 1, 'z');
         assertEquals('d', arr[1][1]);
 
-        // null/empty -> shared empty matrix
-        assertTrue(CharMatrix.copyOf((char[][]) null).isEmpty());
+        // null -> rejected; empty -> shared empty matrix
+        assertThrows(IllegalArgumentException.class, () -> CharMatrix.copyOf((char[][]) null));
         assertTrue(CharMatrix.copyOf(new char[0][0]).isEmpty());
 
         // non-rectangular -> IllegalArgumentException
@@ -84,8 +82,7 @@ class CharMatrixTest extends TestBase {
         CharMatrix emptyMatrix = CharMatrix.of();
         Assertions.assertTrue(emptyMatrix.isEmpty());
 
-        CharMatrix nullMatrix = CharMatrix.of((char[][]) null);
-        Assertions.assertTrue(nullMatrix.isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> CharMatrix.of((char[][]) null));
     }
 
     @Test
@@ -1348,10 +1345,7 @@ class CharMatrixTest extends TestBase {
 
         @Test
         public void testConstructor_withNullArray() {
-            CharMatrix m = new CharMatrix(null);
-            assertEquals(0, m.rowCount());
-            assertEquals(0, m.columnCount());
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> new CharMatrix(null));
         }
 
         @Test
@@ -1394,8 +1388,7 @@ class CharMatrixTest extends TestBase {
 
         @Test
         public void testOf_withNullArray() {
-            CharMatrix m = CharMatrix.of((char[][]) null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> CharMatrix.of((char[][]) null));
         }
 
         @Test

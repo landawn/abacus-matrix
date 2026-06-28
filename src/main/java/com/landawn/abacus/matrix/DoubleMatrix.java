@@ -70,8 +70,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     /**
      * Constructs a {@code DoubleMatrix} backed by the supplied two-dimensional array.
      *
-     * <p>If {@code a} is {@code null}, this creates an empty {@code 0x0} matrix. Otherwise the array
-     * is used directly after rectangular-shape validation, so later modifications to either the input
+     * <p>The supplied array is used directly after rectangular-shape validation, so later modifications to either the input
      * array or the matrix remain visible through the other view. Call {@link #copy()} if you need an
      * independently owned matrix.</p>
      *
@@ -84,19 +83,17 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * data[0][0] = 9.0;
      * matrix.get(0, 0);            // returns 9.0 (backing array is shared)
      *
-     * DoubleMatrix empty = new DoubleMatrix((double[][]) null);
-     * empty.rowCount();            // returns 0
-     * empty.columnCount();         // returns 0
+     * new DoubleMatrix((double[][]) null); // throws IllegalArgumentException
      *
      * new DoubleMatrix(new double[][] {{1.0, 2.0}, {3.0}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
      *
-     * @param a the two-dimensional double array to wrap, or {@code null} for an empty matrix
+     * @param a the two-dimensional double array to wrap, must not be {@code null}
      * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
     public DoubleMatrix(final double[][] a) {
-        super(a == null ? new double[0][0] : a, double.class);
+        super(N.checkArgNotNull(a, "Matrix array cannot be null"), double.class);
     }
 
     /**
@@ -130,8 +127,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * matrix.get(1, 1);            // returns 4.0
      * matrix.rowCount();           // returns 2
      *
-     * DoubleMatrix empty = DoubleMatrix.of((double[][]) null);
-     * empty.isEmpty();             // returns true
+     * DoubleMatrix.of((double[][]) null);  // throws IllegalArgumentException
      *
      * DoubleMatrix none = DoubleMatrix.of();
      * none.isEmpty();              // returns true (no rows supplied)
@@ -139,13 +135,14 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * DoubleMatrix.of(new double[][] {{1.0}, {2.0, 3.0}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
      *
-     * @param a the two-dimensional double array to create the matrix from, or {@code null}/empty for an empty matrix
-     * @return a new {@code DoubleMatrix} wrapping the provided data, or the shared empty {@code DoubleMatrix} if the input is {@code null} or empty
+     * @param a the two-dimensional double array to create the matrix from, or empty for an empty matrix; must not be {@code null}
+     * @return a new {@code DoubleMatrix} wrapping the provided data, or the shared empty {@code DoubleMatrix} if the input is empty
      * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
     public static DoubleMatrix of(final double[]... a) {
-        return N.isEmpty(a) ? EMPTY_DOUBLE_MATRIX : new DoubleMatrix(a);
+        N.checkArgNotNull(a, "Matrix array cannot be null");
+        return a.length == 0 ? EMPTY_DOUBLE_MATRIX : new DoubleMatrix(a);
     }
 
     /**
@@ -162,19 +159,21 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * data[0][0] = 10;
      * matrix.get(0, 0);                       // returns 1.0 (copy is independent)
      *
-     * DoubleMatrix.copyOf((double[][]) null).isEmpty();  // returns true
+     * DoubleMatrix.copyOf((double[][]) null);  // throws IllegalArgumentException
      * DoubleMatrix.copyOf(new double[][] {{1, 2}, {3}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
      *
-     * @param a the two-dimensional double array to copy, or {@code null}/empty for an empty matrix
-     * @return a new {@code DoubleMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is {@code null} or empty
+     * @param a the two-dimensional double array to copy, or empty for an empty matrix; must not be {@code null}
+     * @return a new {@code DoubleMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is empty
      * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      * @see #of(double[][])
      * @see #copy()
      */
     public static DoubleMatrix copyOf(final double[]... a) {
-        if (N.isEmpty(a)) {
+        N.checkArgNotNull(a, "Matrix array cannot be null");
+
+        if (a.length == 0) {
             return EMPTY_DOUBLE_MATRIX;
         }
 
@@ -198,19 +197,20 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * matrix.get(0, 1);            // returns 2.0
      * matrix.get(1, 0);            // returns 3.0
      *
-     * DoubleMatrix empty = DoubleMatrix.from((int[][]) null);
-     * empty.isEmpty();             // returns true
+     * DoubleMatrix.from((int[][]) null); // throws IllegalArgumentException
      *
      * DoubleMatrix.from(new int[][] {{1, 2}, {3}}); // throws IllegalArgumentException (rows differ in length)
      * }</pre>
      *
-     * @param a the two-dimensional int array to convert to a double matrix, or {@code null}/empty for an empty matrix
-     * @return a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if input is {@code null} or empty
+     * @param a the two-dimensional int array to convert to a double matrix, or empty for an empty matrix; must not be {@code null}
+     * @return a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if input is empty
      * @throws IllegalArgumentException if any row is {@code null} or if rows have different lengths (non-rectangular array)
      * @see IntMatrix#toDoubleMatrix()
      */
     public static DoubleMatrix from(final int[]... a) {
-        if (N.isEmpty(a)) {
+        N.checkArgNotNull(a, "Matrix array cannot be null");
+
+        if (a.length == 0) {
             return EMPTY_DOUBLE_MATRIX;
         }
 
@@ -254,8 +254,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * matrix.get(1, 0);            // returns 3.0
      * matrix.get(0, 1);            // returns 2.0
      *
-     * DoubleMatrix empty = DoubleMatrix.from((long[][]) null);
-     * empty.isEmpty();             // returns true
+     * DoubleMatrix.from((long[][]) null); // throws IllegalArgumentException
      *
      * // Precision loss for values requiring more than 53 bits of precision:
      * DoubleMatrix big = DoubleMatrix.from(new long[][] {{Long.MAX_VALUE}});
@@ -264,13 +263,15 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * DoubleMatrix.from(new long[][] {{1L}, {2L, 3L}}); // throws IllegalArgumentException (rows differ in length)
      * }</pre>
      *
-     * @param a the two-dimensional long array to convert to a double matrix, or {@code null}/empty for an empty matrix
-     * @return a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if input is {@code null} or empty
+     * @param a the two-dimensional long array to convert to a double matrix, or empty for an empty matrix; must not be {@code null}
+     * @return a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if input is empty
      * @throws IllegalArgumentException if any row is {@code null} or if rows have different lengths (non-rectangular array)
      * @see LongMatrix#toDoubleMatrix()
      */
     public static DoubleMatrix from(final long[]... a) {
-        if (N.isEmpty(a)) {
+        N.checkArgNotNull(a, "Matrix array cannot be null");
+
+        if (a.length == 0) {
             return EMPTY_DOUBLE_MATRIX;
         }
 
@@ -311,8 +312,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * matrix.get(1, 1);            // returns 4.0
      * matrix.get(0, 0);            // returns 1.0
      *
-     * DoubleMatrix empty = DoubleMatrix.from((float[][]) null);
-     * empty.isEmpty();             // returns true
+     * DoubleMatrix.from((float[][]) null); // throws IllegalArgumentException
      *
      * // Special float values widen exactly:
      * DoubleMatrix special = DoubleMatrix.from(new float[][] {{Float.NaN, Float.POSITIVE_INFINITY}});
@@ -322,13 +322,15 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * DoubleMatrix.from(new float[][] {{1.0f}, {2.0f, 3.0f}}); // throws IllegalArgumentException (rows differ in length)
      * }</pre>
      *
-     * @param a the two-dimensional float array to convert to a double matrix, or {@code null}/empty for an empty matrix
-     * @return a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if input is {@code null} or empty
+     * @param a the two-dimensional float array to convert to a double matrix, or empty for an empty matrix; must not be {@code null}
+     * @return a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if input is empty
      * @throws IllegalArgumentException if any row is {@code null} or if rows have different lengths (non-rectangular array)
      * @see FloatMatrix#toDoubleMatrix()
      */
     public static DoubleMatrix from(final float[]... a) {
-        if (N.isEmpty(a)) {
+        N.checkArgNotNull(a, "Matrix array cannot be null");
+
+        if (a.length == 0) {
             return EMPTY_DOUBLE_MATRIX;
         }
 
@@ -545,9 +547,11 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * DoubleMatrix.diagonals(new double[] {1.0}, new double[] {1.0, 2.0});                          // throws IllegalArgumentException (length mismatch)
      * }</pre>
      *
-     * @param mainDiagonal the array of main diagonal elements; may be {@code null} or empty if {@code antiDiagonal} is non-{@code null}
-     * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} or empty if {@code mainDiagonal} is non-{@code null}
-     * @return a square matrix with the specified diagonals, or an empty matrix when both arrays are empty (at least one being a non-{@code null} zero-length array)
+     * @param mainDiagonal the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non-{@code null};
+     *        may be empty
+     * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non-{@code null};
+     *        may be empty
+     * @return a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
      * @throws IllegalArgumentException if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null}, or if both arrays are non-empty and have different lengths
      * @see #mainDiagonal(double[])
      * @see #antiDiagonal(double[])

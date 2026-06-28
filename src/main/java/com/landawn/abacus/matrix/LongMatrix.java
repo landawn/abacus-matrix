@@ -65,8 +65,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     /**
      * Constructs a {@code LongMatrix} backed by the supplied two-dimensional array.
      *
-     * <p>If {@code a} is {@code null}, this creates an empty {@code 0x0} matrix. Otherwise the array
-     * is used directly after rectangular-shape validation, so later modifications to either the input
+     * <p>The supplied array is used directly after rectangular-shape validation, so later modifications to either the input
      * array or the matrix remain visible through the other view. Call {@link #copy()} if you need an
      * independently owned matrix.</p>
      *
@@ -78,16 +77,16 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * data[0][0] = 10L;
      * matrix.get(0, 0);                       // returns 10L (backing array is shared)
      *
-     * new LongMatrix(null).rowCount();               // returns 0 (empty 0x0 matrix)
+     * new LongMatrix(null);               // throws IllegalArgumentException
      * new LongMatrix(new long[][] {{1L}, {2L, 3L}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
      *
-     * @param a the two-dimensional long array to wrap, or {@code null} for an empty matrix
+     * @param a the two-dimensional long array to wrap, must not be {@code null}
      * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
     public LongMatrix(final long[][] a) {
-        super(a == null ? new long[0][0] : a, long.class);
+        super(N.checkArgNotNull(a, "Matrix array cannot be null"), long.class);
     }
 
     /**
@@ -120,18 +119,19 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * matrix.get(0, 1);                       // returns 2L
      * matrix.rowCount();                      // returns 2
      *
-     * LongMatrix.of((long[][]) null).isEmpty();     // returns true
+     * LongMatrix.of((long[][]) null);     // throws IllegalArgumentException
      * LongMatrix.of().isEmpty();                    // returns true (no rows)
      * LongMatrix.of(new long[][] {{1L, 2L}, {3L}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
      *
-     * @param a the two-dimensional long array to wrap, or {@code null}/empty for an empty matrix
-     * @return a new {@code LongMatrix} backed by {@code a}, or the shared empty matrix if {@code a} is {@code null} or empty
+     * @param a the two-dimensional long array to wrap, or empty for an empty matrix; must not be {@code null}
+     * @return a new {@code LongMatrix} backed by {@code a}, or the shared empty matrix if {@code a} is empty
      * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
     public static LongMatrix of(final long[]... a) {
-        return N.isEmpty(a) ? EMPTY_LONG_MATRIX : new LongMatrix(a);
+        N.checkArgNotNull(a, "Matrix array cannot be null");
+        return a.length == 0 ? EMPTY_LONG_MATRIX : new LongMatrix(a);
     }
 
     /**
@@ -148,19 +148,21 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * data[0][0] = 10;
      * matrix.get(0, 0);                       // returns 1 (copy is independent)
      *
-     * LongMatrix.copyOf((long[][]) null).isEmpty();  // returns true
+     * LongMatrix.copyOf((long[][]) null);  // throws IllegalArgumentException
      * LongMatrix.copyOf(new long[][] {{1, 2}, {3}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
      *
-     * @param a the two-dimensional long array to copy, or {@code null}/empty for an empty matrix
-     * @return a new {@code LongMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is {@code null} or empty
+     * @param a the two-dimensional long array to copy, or empty for an empty matrix; must not be {@code null}
+     * @return a new {@code LongMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is empty
      * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      * @see #of(long[][])
      * @see #copy()
      */
     public static LongMatrix copyOf(final long[]... a) {
-        if (N.isEmpty(a)) {
+        N.checkArgNotNull(a, "Matrix array cannot be null");
+
+        if (a.length == 0) {
             return EMPTY_LONG_MATRIX;
         }
 
@@ -187,18 +189,20 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * matrix.get(0, 0);                       // returns 1L (int 1 widened to long)
      * matrix.get(1, 1);                       // returns 4L
      *
-     * LongMatrix.from((int[][]) null).isEmpty();       // returns true
+     * LongMatrix.from((int[][]) null);                 // throws IllegalArgumentException
      * LongMatrix.from(new int[][] {{1}, {2, 3}});      // throws IllegalArgumentException (jagged rows)
      * }</pre>
      *
-     * @param a the two-dimensional int array to convert, or {@code null}/empty for an empty matrix
-     * @return a new {@code LongMatrix} with the widened values, or the shared empty matrix if {@code a} is {@code null} or empty
+     * @param a the two-dimensional int array to convert, or empty for an empty matrix; must not be {@code null}
+     * @return a new {@code LongMatrix} with the widened values, or the shared empty matrix if {@code a} is empty
      * @throws IllegalArgumentException if the first row is {@code null}, or if any other row is {@code null}
      *         or has a length different from the first row
      * @see IntMatrix#toLongMatrix()
      */
     public static LongMatrix from(final int[]... a) {
-        if (N.isEmpty(a)) {
+        N.checkArgNotNull(a, "Matrix array cannot be null");
+
+        if (a.length == 0) {
             return EMPTY_LONG_MATRIX;
         }
 
@@ -507,7 +511,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *        may be empty
      * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non-{@code null};
      *        may be empty
-     * @return a square matrix with the specified diagonals, or an empty matrix when both arrays are empty (at least one being a non-{@code null} zero-length array)
+     * @return a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
      * @throws IllegalArgumentException if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null}, or if both arrays are non-empty and have different lengths
      * @see #mainDiagonal(long[])
      * @see #antiDiagonal(long[])

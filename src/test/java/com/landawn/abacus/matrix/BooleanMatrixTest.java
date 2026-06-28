@@ -30,9 +30,7 @@ class BooleanMatrixTest extends TestBase {
     @Test
     public void testConstructor() {
         // Test with null array
-        BooleanMatrix matrix1 = new BooleanMatrix(null);
-        assertEquals(0, matrix1.rowCount());
-        assertEquals(0, matrix1.columnCount());
+        assertThrows(IllegalArgumentException.class, () -> new BooleanMatrix(null));
 
         // Test with valid array
         boolean[][] arr = { { true, false }, { false, true } };
@@ -66,8 +64,8 @@ class BooleanMatrixTest extends TestBase {
         m.set(1, 1, false);
         assertTrue(arr[1][1]);
 
-        // null/empty -> shared empty matrix
-        assertTrue(BooleanMatrix.copyOf((boolean[][]) null).isEmpty());
+        // null -> rejected; empty -> shared empty matrix
+        assertThrows(IllegalArgumentException.class, () -> BooleanMatrix.copyOf((boolean[][]) null));
         assertTrue(BooleanMatrix.copyOf(new boolean[0][0]).isEmpty());
 
         // non-rectangular -> IllegalArgumentException
@@ -77,8 +75,7 @@ class BooleanMatrixTest extends TestBase {
     @Test
     public void testOf() {
         // Test with null/empty
-        BooleanMatrix empty = BooleanMatrix.of((boolean[][]) null);
-        assertTrue(empty.isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> BooleanMatrix.of((boolean[][]) null));
 
         // Test with valid array
         boolean[][] arr = { { true, false }, { false, true } };
@@ -1188,10 +1185,7 @@ class BooleanMatrixTest extends TestBase {
 
         @Test
         public void testConstructor_withNullArray() {
-            BooleanMatrix m = new BooleanMatrix(null);
-            assertEquals(0, m.rowCount());
-            assertEquals(0, m.columnCount());
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> new BooleanMatrix(null));
         }
 
         @Test
@@ -1234,8 +1228,7 @@ class BooleanMatrixTest extends TestBase {
 
         @Test
         public void testOf_withNullArray() {
-            BooleanMatrix m = BooleanMatrix.of((boolean[][]) null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> BooleanMatrix.of((boolean[][]) null));
         }
 
         @Test

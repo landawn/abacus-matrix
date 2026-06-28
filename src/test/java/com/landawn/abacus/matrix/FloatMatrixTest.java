@@ -51,9 +51,7 @@ class FloatMatrixTest extends TestBase {
         assertEquals(1.0f, m.get(0, 0), DELTA);
 
         // Test with null array
-        FloatMatrix nullMatrix = new FloatMatrix(null);
-        assertEquals(0, nullMatrix.rowCount());
-        assertEquals(0, nullMatrix.columnCount());
+        assertThrows(IllegalArgumentException.class, () -> new FloatMatrix(null));
     }
 
     @Test
@@ -73,8 +71,8 @@ class FloatMatrixTest extends TestBase {
         m.set(1, 1, 88);
         assertEquals(4f, arr[1][1]);
 
-        // null/empty -> shared empty matrix
-        assertTrue(FloatMatrix.copyOf((float[][]) null).isEmpty());
+        // null -> rejected; empty -> shared empty matrix
+        assertThrows(IllegalArgumentException.class, () -> FloatMatrix.copyOf((float[][]) null));
         assertTrue(FloatMatrix.copyOf(new float[0][0]).isEmpty());
 
         // non-rectangular -> IllegalArgumentException
@@ -90,8 +88,7 @@ class FloatMatrixTest extends TestBase {
         assertEquals(2, m.columnCount());
 
         // Test with null/empty
-        FloatMatrix empty1 = FloatMatrix.of(null);
-        assertTrue(empty1.isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> FloatMatrix.of((float[][]) null));
 
         FloatMatrix empty2 = FloatMatrix.of(new float[0][0]);
         assertTrue(empty2.isEmpty());
@@ -107,8 +104,7 @@ class FloatMatrixTest extends TestBase {
         assertEquals(4.0f, m.get(1, 1), DELTA);
 
         // Test with null/empty
-        FloatMatrix empty = FloatMatrix.from((int[][]) null);
-        assertTrue(empty.isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> FloatMatrix.from((int[][]) null));
     }
 
     @Test
@@ -1260,8 +1256,7 @@ class FloatMatrixTest extends TestBase {
 
         @Test
         public void testCreateFromIntArray_withNull() {
-            FloatMatrix m = FloatMatrix.from((int[][]) null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> FloatMatrix.from((int[][]) null));
         }
 
         @Test
@@ -4171,10 +4166,7 @@ class FloatMatrixTest extends TestBase {
 
         @Test
         public void test_constructor_withNullArray() {
-            FloatMatrix m = new FloatMatrix(null);
-            assertEquals(0, m.rowCount());
-            assertEquals(0, m.columnCount());
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> new FloatMatrix(null));
         }
 
         @Test
@@ -4204,8 +4196,7 @@ class FloatMatrixTest extends TestBase {
 
         @Test
         public void test_of_withNullArray() {
-            FloatMatrix m = FloatMatrix.of((float[][]) null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> FloatMatrix.of((float[][]) null));
         }
 
         @Test

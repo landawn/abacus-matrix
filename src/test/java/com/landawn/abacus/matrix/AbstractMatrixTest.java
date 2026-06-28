@@ -1534,10 +1534,7 @@ class AbstractMatrixTest extends TestBase {
 
         @Test
         public void testConstructor_nullArray() {
-            IntMatrix m = IntMatrix.of(null);
-            assertTrue(m.isEmpty());
-            assertEquals(0, m.rowCount());
-            assertEquals(0, m.columnCount());
+            assertThrows(IllegalArgumentException.class, () -> IntMatrix.of((int[][]) null));
         }
 
         @Test

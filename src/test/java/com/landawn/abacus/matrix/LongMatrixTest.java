@@ -36,9 +36,7 @@ class LongMatrixTest extends TestBase {
         Assertions.assertEquals(2, matrix.rowCount());
         Assertions.assertEquals(2, matrix.columnCount());
 
-        LongMatrix nullMatrix = new LongMatrix(null);
-        Assertions.assertEquals(0, nullMatrix.rowCount());
-        Assertions.assertEquals(0, nullMatrix.columnCount());
+        assertThrows(IllegalArgumentException.class, () -> new LongMatrix(null));
     }
 
     @Test
@@ -66,8 +64,8 @@ class LongMatrixTest extends TestBase {
         m.set(1, 1, 88L);
         assertEquals(4L, arr[1][1]);
 
-        // null/empty -> shared empty matrix
-        assertTrue(LongMatrix.copyOf((long[][]) null).isEmpty());
+        // null -> rejected; empty -> shared empty matrix
+        assertThrows(IllegalArgumentException.class, () -> LongMatrix.copyOf((long[][]) null));
         assertTrue(LongMatrix.copyOf(new long[0][0]).isEmpty());
 
         // non-rectangular -> IllegalArgumentException
@@ -84,8 +82,7 @@ class LongMatrixTest extends TestBase {
         LongMatrix emptyMatrix = LongMatrix.of();
         Assertions.assertTrue(emptyMatrix.isEmpty());
 
-        LongMatrix nullMatrix = LongMatrix.of((long[][]) null);
-        Assertions.assertTrue(nullMatrix.isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> LongMatrix.of((long[][]) null));
     }
 
     @Test
@@ -97,8 +94,7 @@ class LongMatrixTest extends TestBase {
         Assertions.assertEquals(1L, matrix.get(0, 0));
         Assertions.assertEquals(4L, matrix.get(1, 1));
 
-        LongMatrix emptyMatrix = LongMatrix.from((int[][]) null);
-        Assertions.assertTrue(emptyMatrix.isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> LongMatrix.from((int[][]) null));
     }
 
     @Test
@@ -1786,8 +1782,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testCreateFromIntArray_withNull() {
-            LongMatrix m = LongMatrix.from((int[][]) null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> LongMatrix.from((int[][]) null));
         }
 
         @Test
@@ -4637,10 +4632,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_constructor_withNullArray() {
-            LongMatrix m = new LongMatrix(null);
-            assertEquals(0, m.rowCount());
-            assertEquals(0, m.columnCount());
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> new LongMatrix(null));
         }
 
         @Test
@@ -4670,8 +4662,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_of_withNullArray() {
-            LongMatrix m = LongMatrix.of((long[][]) null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> LongMatrix.of((long[][]) null));
         }
 
         @Test

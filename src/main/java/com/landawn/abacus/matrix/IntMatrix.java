@@ -65,8 +65,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     /**
      * Constructs an {@code IntMatrix} backed by the supplied two-dimensional array.
      *
-     * <p>If {@code a} is {@code null}, this creates an empty {@code 0x0} matrix. Otherwise the array
-     * is used directly after rectangular-shape validation, so later modifications to either the input
+     * <p>The supplied array is used directly after rectangular-shape validation, so later modifications to either the input
      * array or the matrix remain visible through the other view. Call {@link #copy()} if you need an
      * independently owned matrix.</p>
      *
@@ -78,16 +77,16 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * data[0][0] = 10;
      * matrix.get(0, 0);                       // returns 10 (backing array is shared)
      *
-     * new IntMatrix(null).rowCount();           // returns 0 (empty 0x0 matrix)
+     * new IntMatrix(null);           // throws IllegalArgumentException
      * new IntMatrix(new int[][] {{1}, {2, 3}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
      *
-     * @param a the two-dimensional int array to wrap, or {@code null} for an empty matrix
+     * @param a the two-dimensional int array to wrap, must not be {@code null}
      * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
     public IntMatrix(final int[][] a) {
-        super(a == null ? new int[0][0] : a, int.class);
+        super(N.checkArgNotNull(a, "Matrix array cannot be null"), int.class);
     }
 
     /**
@@ -120,18 +119,19 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * matrix.get(0, 1);                       // returns 2
      * matrix.rowCount();                      // returns 2
      *
-     * IntMatrix.of((int[][]) null).isEmpty();  // returns true
+     * IntMatrix.of((int[][]) null);  // throws IllegalArgumentException
      * IntMatrix.of().isEmpty();                // returns true (no rows)
      * IntMatrix.of(new int[][] {{1, 2}, {3}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
      *
-     * @param a the two-dimensional int array to wrap, or {@code null}/empty for an empty matrix
-     * @return a new {@code IntMatrix} backed by {@code a}, or the shared empty matrix if {@code a} is {@code null} or empty
+     * @param a the two-dimensional int array to wrap, or empty for an empty matrix; must not be {@code null}
+     * @return a new {@code IntMatrix} backed by {@code a}, or the shared empty matrix if {@code a} is empty
      * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
     public static IntMatrix of(final int[]... a) {
-        return N.isEmpty(a) ? EMPTY_INT_MATRIX : new IntMatrix(a);
+        N.checkArgNotNull(a, "Matrix array cannot be null");
+        return a.length == 0 ? EMPTY_INT_MATRIX : new IntMatrix(a);
     }
 
     /**
@@ -148,19 +148,21 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * data[0][0] = 10;
      * matrix.get(0, 0);                       // returns 1 (copy is independent)
      *
-     * IntMatrix.copyOf((int[][]) null).isEmpty();  // returns true
+     * IntMatrix.copyOf((int[][]) null);  // throws IllegalArgumentException
      * IntMatrix.copyOf(new int[][] {{1, 2}, {3}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
      *
-     * @param a the two-dimensional int array to copy, or {@code null}/empty for an empty matrix
-     * @return a new {@code IntMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is {@code null} or empty
+     * @param a the two-dimensional int array to copy, or empty for an empty matrix; must not be {@code null}
+     * @return a new {@code IntMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is empty
      * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      * @see #of(int[][])
      * @see #copy()
      */
     public static IntMatrix copyOf(final int[]... a) {
-        if (N.isEmpty(a)) {
+        N.checkArgNotNull(a, "Matrix array cannot be null");
+
+        if (a.length == 0) {
             return EMPTY_INT_MATRIX;
         }
 
@@ -187,18 +189,20 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * matrix.get(0, 0);                       // returns 65 ('A')
      * matrix.get(1, 1);                       // returns 68 ('D')
      *
-     * IntMatrix.from((char[][]) null).isEmpty();        // returns true
+     * IntMatrix.from((char[][]) null);                  // throws IllegalArgumentException
      * IntMatrix.from(new char[][] {{'A'}, {'B', 'C'}}); // throws IllegalArgumentException (jagged rows)
      * }</pre>
      *
-     * @param a the two-dimensional char array to convert, or {@code null}/empty for an empty matrix
-     * @return a new {@code IntMatrix} with the widened values, or the shared empty matrix if {@code a} is {@code null} or empty
+     * @param a the two-dimensional char array to convert, or empty for an empty matrix; must not be {@code null}
+     * @return a new {@code IntMatrix} with the widened values, or the shared empty matrix if {@code a} is empty
      * @throws IllegalArgumentException if the first row is {@code null}, or if any other row is {@code null}
      *         or has a length different from the first row
      * @see CharMatrix#toIntMatrix()
      */
     public static IntMatrix from(final char[]... a) {
-        if (N.isEmpty(a)) {
+        N.checkArgNotNull(a, "Matrix array cannot be null");
+
+        if (a.length == 0) {
             return EMPTY_INT_MATRIX;
         }
 
@@ -243,18 +247,20 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * signed.get(0, 0);                       // returns -1 (sign-extended)
      * signed.get(0, 1);                       // returns -128 (sign-extended)
      *
-     * IntMatrix.from((byte[][]) null).isEmpty();  // returns true
+     * IntMatrix.from((byte[][]) null);            // throws IllegalArgumentException
      * IntMatrix.from(new byte[][] {{1}, {2, 3}}); // throws IllegalArgumentException (jagged rows)
      * }</pre>
      *
-     * @param a the two-dimensional byte array to convert, or {@code null}/empty for an empty matrix
-     * @return a new {@code IntMatrix} with the widened values, or the shared empty matrix if {@code a} is {@code null} or empty
+     * @param a the two-dimensional byte array to convert, or empty for an empty matrix; must not be {@code null}
+     * @return a new {@code IntMatrix} with the widened values, or the shared empty matrix if {@code a} is empty
      * @throws IllegalArgumentException if the first row is {@code null}, or if any other row is {@code null}
      *         or has a length different from the first row
      * @see ByteMatrix#toIntMatrix()
      */
     public static IntMatrix from(final byte[]... a) {
-        if (N.isEmpty(a)) {
+        N.checkArgNotNull(a, "Matrix array cannot be null");
+
+        if (a.length == 0) {
             return EMPTY_INT_MATRIX;
         }
 
@@ -298,18 +304,20 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * IntMatrix signed = IntMatrix.from(new short[][] {{-1, -32768}});
      * signed.get(0, 1);                       // returns -32768 (sign-extended)
      *
-     * IntMatrix.from((short[][]) null).isEmpty();  // returns true
+     * IntMatrix.from((short[][]) null);            // throws IllegalArgumentException
      * IntMatrix.from(new short[][] {{1}, {2, 3}}); // throws IllegalArgumentException (jagged rows)
      * }</pre>
      *
-     * @param a the two-dimensional short array to convert, or {@code null}/empty for an empty matrix
-     * @return a new {@code IntMatrix} with the widened values, or the shared empty matrix if {@code a} is {@code null} or empty
+     * @param a the two-dimensional short array to convert, or empty for an empty matrix; must not be {@code null}
+     * @return a new {@code IntMatrix} with the widened values, or the shared empty matrix if {@code a} is empty
      * @throws IllegalArgumentException if the first row is {@code null}, or if any other row is {@code null}
      *         or has a length different from the first row
      * @see ShortMatrix#toIntMatrix()
      */
     public static IntMatrix from(final short[]... a) {
-        if (N.isEmpty(a)) {
+        N.checkArgNotNull(a, "Matrix array cannot be null");
+
+        if (a.length == 0) {
             return EMPTY_INT_MATRIX;
         }
 
@@ -616,7 +624,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *        may be empty
      * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non-{@code null};
      *        may be empty
-     * @return a square matrix with the specified diagonals, or an empty matrix when both arrays are empty (at least one being a non-{@code null} zero-length array)
+     * @return a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
      * @throws IllegalArgumentException if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null}, or if both arrays are non-empty and have different lengths
      * @see #mainDiagonal(int[])
      * @see #antiDiagonal(int[])

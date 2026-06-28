@@ -74,8 +74,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     /**
      * Constructs a {@code ByteMatrix} backed by the supplied two-dimensional array.
      *
-     * <p>If {@code a} is {@code null}, this creates an empty {@code 0x0} matrix. Otherwise the array
-     * is used directly after rectangular-shape validation, so later modifications to either the input
+     * <p>The supplied array is used directly after rectangular-shape validation, so later modifications to either the input
      * array or the matrix remain visible through the other view. Call {@link #copy()} if you need an
      * independently owned matrix.</p>
      *
@@ -87,18 +86,17 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * data[0][0] = (byte) 99;                            // also mutates the matrix (no copy)
      * matrix.get(0, 0);                                  // returns (byte) 99
      *
-     * ByteMatrix empty = new ByteMatrix((byte[][]) null);
-     * empty.rowCount();                                  // returns 0 (null becomes a 0x0 matrix)
+     * new ByteMatrix((byte[][]) null);                   // throws IllegalArgumentException
      *
      * new ByteMatrix(new byte[][] {{1, 2}, {3}});        // throws IllegalArgumentException (not rectangular)
      * }</pre>
      *
-     * @param a the two-dimensional byte array to wrap, or {@code null} for an empty matrix
+     * @param a the two-dimensional byte array to wrap, must not be {@code null}
      * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
     public ByteMatrix(final byte[][] a) {
-        super(a == null ? new byte[0][0] : a, byte.class);
+        super(N.checkArgNotNull(a, "Matrix array cannot be null"), byte.class);
     }
 
     /**
@@ -133,8 +131,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * matrix.rowCount();                                 // returns 2
      * matrix.get(1, 2);                                  // returns (byte) 6
      *
-     * ByteMatrix empty = ByteMatrix.of((byte[][]) null);
-     * empty.isEmpty();                                   // returns true
+     * ByteMatrix.of((byte[][]) null);                    // throws IllegalArgumentException
      *
      * ByteMatrix none = ByteMatrix.of(new byte[0][0]);
      * none.rowCount();                                   // returns 0
@@ -142,14 +139,15 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * ByteMatrix.of(new byte[][] {{1, 2}, {3}});         // throws IllegalArgumentException (not rectangular)
      * }</pre>
      *
-     * @param a the two-dimensional byte array to wrap; may be {@code null} or empty
+     * @param a the two-dimensional byte array to wrap; must not be {@code null}; may be empty
      * @return a new {@code ByteMatrix} wrapping the provided data, or the shared empty {@code ByteMatrix}
-     *         if {@code a} is {@code null} or empty
+     *         if {@code a} is empty
      * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
     public static ByteMatrix of(final byte[]... a) {
-        return N.isEmpty(a) ? EMPTY_BYTE_MATRIX : new ByteMatrix(a);
+        N.checkArgNotNull(a, "Matrix array cannot be null");
+        return a.length == 0 ? EMPTY_BYTE_MATRIX : new ByteMatrix(a);
     }
 
     /**
@@ -166,19 +164,21 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * data[0][0] = 10;
      * matrix.get(0, 0);                       // returns 1 (copy is independent)
      *
-     * ByteMatrix.copyOf((byte[][]) null).isEmpty();  // returns true
+     * ByteMatrix.copyOf((byte[][]) null);  // throws IllegalArgumentException
      * ByteMatrix.copyOf(new byte[][] {{1, 2}, {3}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
      *
-     * @param a the two-dimensional byte array to copy, or {@code null}/empty for an empty matrix
-     * @return a new {@code ByteMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is {@code null} or empty
+     * @param a the two-dimensional byte array to copy, or empty for an empty matrix; must not be {@code null}
+     * @return a new {@code ByteMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is empty
      * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      * @see #of(byte[][])
      * @see #copy()
      */
     public static ByteMatrix copyOf(final byte[]... a) {
-        if (N.isEmpty(a)) {
+        N.checkArgNotNull(a, "Matrix array cannot be null");
+
+        if (a.length == 0) {
             return EMPTY_BYTE_MATRIX;
         }
 
@@ -488,9 +488,11 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * ByteMatrix.diagonals(new byte[] {1, 2}, new byte[] {3, 4, 5}); // throws IllegalArgumentException (length mismatch)
      * }</pre>
      *
-     * @param mainDiagonal the array of main diagonal elements; may be {@code null} or empty if {@code antiDiagonal} is non-{@code null}
-     * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} or empty if {@code mainDiagonal} is non-{@code null}
-     * @return a square matrix with the specified diagonals, or an empty matrix when both arrays are empty (at least one being a non-{@code null} zero-length array)
+     * @param mainDiagonal the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non-{@code null};
+     *        may be empty
+     * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non-{@code null};
+     *        may be empty
+     * @return a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
      * @throws IllegalArgumentException if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null}, or if both arrays are non-empty and have different lengths
      * @see #mainDiagonal(byte[])
      * @see #antiDiagonal(byte[])

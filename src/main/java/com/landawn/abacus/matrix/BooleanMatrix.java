@@ -59,8 +59,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     /**
      * Constructs a {@code BooleanMatrix} backed by the supplied two-dimensional array.
      *
-     * <p>If {@code a} is {@code null}, this creates an empty {@code 0x0} matrix. Otherwise the array
-     * is used directly after rectangular-shape validation, so later modifications to either the input
+     * <p>The supplied array is used directly after rectangular-shape validation, so later modifications to either the input
      * array or the matrix remain visible through the other view. Call {@link #copy()} if you need an
      * independently owned matrix.</p>
      *
@@ -73,17 +72,17 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * data[0][0] = false;              // also mutates the matrix (no defensive copy)
      * matrix.get(0, 0);                // returns false
      *
-     * new BooleanMatrix(null).rowCount();                         // returns 0 (empty 0x0 matrix)
+     * new BooleanMatrix(null);                         // throws IllegalArgumentException
      * new BooleanMatrix(new boolean[0][0]).columnCount();         // returns 0
      * new BooleanMatrix(new boolean[][] {{true}, {true, false}}); // throws IllegalArgumentException (jagged rows)
      * }</pre>
      *
-     * @param a the two-dimensional boolean array to wrap, or {@code null} for an empty matrix
+     * @param a the two-dimensional boolean array to wrap, must not be {@code null}
      * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
     public BooleanMatrix(final boolean[][] a) {
-        super(a == null ? new boolean[0][0] : a, boolean.class);
+        super(N.checkArgNotNull(a, "Matrix array cannot be null"), boolean.class);
     }
 
     /**
@@ -120,18 +119,19 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * matrix.get(1, 0);                               // returns false
      * matrix.rowCount();                              // returns 2
      *
-     * BooleanMatrix.of((boolean[][]) null).isEmpty();            // returns true (null -> empty singleton)
+     * BooleanMatrix.of((boolean[][]) null);            // throws IllegalArgumentException
      * BooleanMatrix.of().isEmpty();                              // returns true (no rows -> empty singleton)
      * BooleanMatrix.of(new boolean[][] {{true}, {true, false}}); // throws IllegalArgumentException (jagged rows)
      * }</pre>
      *
-     * @param a the two-dimensional boolean array to wrap; may be {@code null} or empty, in which case the empty matrix singleton is returned
-     * @return a new {@code BooleanMatrix} backed by {@code a}, or the empty {@code BooleanMatrix} if {@code a} is {@code null} or empty
+     * @param a the two-dimensional boolean array to wrap; must not be {@code null}; may be empty, in which case the empty matrix singleton is returned
+     * @return a new {@code BooleanMatrix} backed by {@code a}, or the empty {@code BooleanMatrix} if {@code a} is empty
      * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
     public static BooleanMatrix of(final boolean[]... a) {
-        return N.isEmpty(a) ? EMPTY_BOOLEAN_MATRIX : new BooleanMatrix(a);
+        N.checkArgNotNull(a, "Matrix array cannot be null");
+        return a.length == 0 ? EMPTY_BOOLEAN_MATRIX : new BooleanMatrix(a);
     }
 
     /**
@@ -148,19 +148,21 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * data[0][0] = false;
      * matrix.get(0, 0);                       // returns true (copy is independent)
      *
-     * BooleanMatrix.copyOf((boolean[][]) null).isEmpty();            // returns true
+     * BooleanMatrix.copyOf((boolean[][]) null);            // throws IllegalArgumentException
      * BooleanMatrix.copyOf(new boolean[][] {{true, false}, {true}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
      *
-     * @param a the two-dimensional boolean array to copy, or {@code null}/empty for an empty matrix
-     * @return a new {@code BooleanMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is {@code null} or empty
+     * @param a the two-dimensional boolean array to copy, or empty for an empty matrix; must not be {@code null}
+     * @return a new {@code BooleanMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is empty
      * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      * @see #of(boolean[][])
      * @see #copy()
      */
     public static BooleanMatrix copyOf(final boolean[]... a) {
-        if (N.isEmpty(a)) {
+        N.checkArgNotNull(a, "Matrix array cannot be null");
+
+        if (a.length == 0) {
             return EMPTY_BOOLEAN_MATRIX;
         }
 
@@ -364,7 +366,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *        may be empty
      * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non-{@code null};
      *        may be empty
-     * @return a square matrix with the specified diagonals, or an empty matrix when both arrays are empty (at least one being a non-{@code null} zero-length array)
+     * @return a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
      * @throws IllegalArgumentException if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null}, or if both arrays are non-empty and have different lengths
      * @see #mainDiagonal(boolean[])
      * @see #antiDiagonal(boolean[])

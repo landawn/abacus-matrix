@@ -76,8 +76,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     /**
      * Constructs a {@code ShortMatrix} backed by the supplied two-dimensional array.
      *
-     * <p>If {@code a} is {@code null}, this creates an empty {@code 0x0} matrix. Otherwise the array
-     * is used directly after rectangular-shape validation, so later modifications to either the input
+     * <p>The supplied array is used directly after rectangular-shape validation, so later modifications to either the input
      * array or the matrix remain visible through the other view. Call {@link #copy()} if you need an
      * independently owned matrix.</p>
      *
@@ -88,17 +87,17 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * matrix.get(0, 0);                            // returns (short) 1
      * data[0][0] = 99;                             // shared storage: matrix.get(0, 0) now returns (short) 99
      *
-     * new ShortMatrix((short[][]) null).rowCount();   // returns 0 (null -> empty 0x0 matrix)
+     * new ShortMatrix((short[][]) null);              // throws IllegalArgumentException
      * new ShortMatrix(new short[0][0]).columnCount(); // returns 0
      * new ShortMatrix(new short[][] {{1, 2}, {3}});   // throws IllegalArgumentException (jagged rows)
      * }</pre>
      *
-     * @param a the two-dimensional short array to wrap, or {@code null} for an empty matrix
+     * @param a the two-dimensional short array to wrap, must not be {@code null}
      * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
     public ShortMatrix(final short[][] a) {
-        super(a == null ? new short[0][0] : a, short.class);
+        super(N.checkArgNotNull(a, "Matrix array cannot be null"), short.class);
     }
 
     /**
@@ -132,18 +131,19 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * matrix.get(0, 1);                          // returns (short) 2
      * matrix.rowCount();                         // returns 2
      *
-     * ShortMatrix.of((short[][]) null).isEmpty();   // returns true (null -> empty matrix)
+     * ShortMatrix.of((short[][]) null);   // throws IllegalArgumentException
      * ShortMatrix.of(new short[0][0]).isEmpty();    // returns true (empty input -> empty matrix)
      * ShortMatrix.of(new short[][] {{1, 2}, {3}});  // throws IllegalArgumentException (jagged rows)
      * }</pre>
      *
-     * @param a the two-dimensional short array to create the matrix from, or {@code null}/empty for an empty matrix
-     * @return a new {@code ShortMatrix} wrapping the provided data, or the shared empty {@code ShortMatrix} if input is {@code null} or empty
+     * @param a the two-dimensional short array to create the matrix from, or empty for an empty matrix; must not be {@code null}
+     * @return a new {@code ShortMatrix} wrapping the provided data, or the shared empty {@code ShortMatrix} if input is empty
      * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
     public static ShortMatrix of(final short[]... a) {
-        return N.isEmpty(a) ? EMPTY_SHORT_MATRIX : new ShortMatrix(a);
+        N.checkArgNotNull(a, "Matrix array cannot be null");
+        return a.length == 0 ? EMPTY_SHORT_MATRIX : new ShortMatrix(a);
     }
 
     /**
@@ -160,19 +160,21 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * data[0][0] = 10;
      * matrix.get(0, 0);                       // returns 1 (copy is independent)
      *
-     * ShortMatrix.copyOf((short[][]) null).isEmpty();  // returns true
+     * ShortMatrix.copyOf((short[][]) null);  // throws IllegalArgumentException
      * ShortMatrix.copyOf(new short[][] {{1, 2}, {3}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
      *
-     * @param a the two-dimensional short array to copy, or {@code null}/empty for an empty matrix
-     * @return a new {@code ShortMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is {@code null} or empty
+     * @param a the two-dimensional short array to copy, or empty for an empty matrix; must not be {@code null}
+     * @return a new {@code ShortMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is empty
      * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      * @see #of(short[][])
      * @see #copy()
      */
     public static ShortMatrix copyOf(final short[]... a) {
-        if (N.isEmpty(a)) {
+        N.checkArgNotNull(a, "Matrix array cannot be null");
+
+        if (a.length == 0) {
             return EMPTY_SHORT_MATRIX;
         }
 
@@ -455,9 +457,11 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * ShortMatrix.diagonals(new short[] {1, 2}, new short[] {3, 4, 5});  // throws IllegalArgumentException (length mismatch)
      * }</pre>
      *
-     * @param mainDiagonal the array of main diagonal elements; may be {@code null} or empty if {@code antiDiagonal} is non-{@code null}
-     * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} or empty if {@code mainDiagonal} is non-{@code null}
-     * @return a square matrix with the specified diagonals, or an empty matrix when both arrays are empty (at least one being a non-{@code null} zero-length array)
+     * @param mainDiagonal the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non-{@code null};
+     *        may be empty
+     * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non-{@code null};
+     *        may be empty
+     * @return a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
      * @throws IllegalArgumentException if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null}, or if both arrays are non-empty and have different lengths
      * @see #mainDiagonal(short[])
      * @see #antiDiagonal(short[])

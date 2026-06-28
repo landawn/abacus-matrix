@@ -48,9 +48,7 @@ class IntMatrixTest extends TestBase {
         assertEquals(1, m.get(0, 0));
 
         // Test with null array
-        IntMatrix nullMatrix = new IntMatrix(null);
-        assertEquals(0, nullMatrix.rowCount());
-        assertEquals(0, nullMatrix.columnCount());
+        assertThrows(IllegalArgumentException.class, () -> new IntMatrix(null));
     }
 
     @Test
@@ -70,8 +68,8 @@ class IntMatrixTest extends TestBase {
         m.set(1, 1, 88);
         assertEquals(4, arr[1][1]);
 
-        // null/empty -> shared empty matrix
-        assertTrue(IntMatrix.copyOf((int[][]) null).isEmpty());
+        // null -> rejected; empty -> shared empty matrix
+        assertThrows(IllegalArgumentException.class, () -> IntMatrix.copyOf((int[][]) null));
         assertTrue(IntMatrix.copyOf(new int[0][0]).isEmpty());
 
         // non-rectangular -> IllegalArgumentException
@@ -87,8 +85,7 @@ class IntMatrixTest extends TestBase {
         assertEquals(2, m.columnCount());
 
         // Test with null/empty
-        IntMatrix empty1 = IntMatrix.of(null);
-        assertTrue(empty1.isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> IntMatrix.of((int[][]) null));
 
         IntMatrix empty2 = IntMatrix.of(new int[0][0]);
         assertTrue(empty2.isEmpty());
@@ -104,8 +101,7 @@ class IntMatrixTest extends TestBase {
         assertEquals(68, m.get(1, 1)); // 'D'
 
         // Test with null/empty
-        IntMatrix empty = IntMatrix.from((char[][]) null);
-        assertTrue(empty.isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> IntMatrix.from((char[][]) null));
     }
 
     @Test
@@ -118,8 +114,7 @@ class IntMatrixTest extends TestBase {
         assertEquals(4, m.get(1, 1));
 
         // Test with null/empty
-        IntMatrix empty = IntMatrix.from((byte[][]) null);
-        assertTrue(empty.isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> IntMatrix.from((byte[][]) null));
     }
 
     @Test
@@ -132,8 +127,7 @@ class IntMatrixTest extends TestBase {
         assertEquals(4, m.get(1, 1));
 
         // Test with null/empty
-        IntMatrix empty = IntMatrix.from((short[][]) null);
-        assertTrue(empty.isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> IntMatrix.from((short[][]) null));
     }
 
     @Test
@@ -1385,8 +1379,7 @@ class IntMatrixTest extends TestBase {
 
         @Test
         public void testCreateFromCharArray_withNull() {
-            IntMatrix m = IntMatrix.from((char[][]) null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> IntMatrix.from((char[][]) null));
         }
 
         @Test
@@ -1415,8 +1408,7 @@ class IntMatrixTest extends TestBase {
 
         @Test
         public void testCreateFromByteArray_withNull() {
-            IntMatrix m = IntMatrix.from((byte[][]) null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> IntMatrix.from((byte[][]) null));
         }
 
         @Test
@@ -1433,8 +1425,7 @@ class IntMatrixTest extends TestBase {
 
         @Test
         public void testCreateFromShortArray_withNull() {
-            IntMatrix m = IntMatrix.from((short[][]) null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> IntMatrix.from((short[][]) null));
         }
 
         @Test
@@ -3921,10 +3912,7 @@ class IntMatrixTest extends TestBase {
 
         @Test
         public void test_constructor_withNullArray() {
-            IntMatrix m = new IntMatrix(null);
-            assertEquals(0, m.rowCount());
-            assertEquals(0, m.columnCount());
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> new IntMatrix(null));
         }
 
         @Test
@@ -3954,8 +3942,7 @@ class IntMatrixTest extends TestBase {
 
         @Test
         public void test_of_withNullArray() {
-            IntMatrix m = IntMatrix.of((int[][]) null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> IntMatrix.of((int[][]) null));
         }
 
         @Test

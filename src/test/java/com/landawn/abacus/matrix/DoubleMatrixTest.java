@@ -31,9 +31,7 @@ class DoubleMatrixTest extends TestBase {
     @Test
     public void testConstructor() {
         // Test with null array
-        DoubleMatrix matrix1 = new DoubleMatrix(null);
-        assertEquals(0, matrix1.rowCount());
-        assertEquals(0, matrix1.columnCount());
+        assertThrows(IllegalArgumentException.class, () -> new DoubleMatrix(null));
 
         // Test with valid array
         double[][] arr = { { 1.0, 2.0 }, { 3.0, 4.0 } };
@@ -67,8 +65,8 @@ class DoubleMatrixTest extends TestBase {
         m.set(1, 1, 88);
         assertEquals(4.0, arr[1][1]);
 
-        // null/empty -> shared empty matrix
-        assertTrue(DoubleMatrix.copyOf((double[][]) null).isEmpty());
+        // null -> rejected; empty -> shared empty matrix
+        assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.copyOf((double[][]) null));
         assertTrue(DoubleMatrix.copyOf(new double[0][0]).isEmpty());
 
         // non-rectangular -> IllegalArgumentException
@@ -78,8 +76,7 @@ class DoubleMatrixTest extends TestBase {
     @Test
     public void testOf() {
         // Test with null/empty
-        DoubleMatrix empty = DoubleMatrix.of((double[][]) null);
-        assertTrue(empty.isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.of((double[][]) null));
 
         // Test with valid array
         double[][] arr = { { 1.0, 2.0 }, { 3.0, 4.0 } };
@@ -97,8 +94,8 @@ class DoubleMatrixTest extends TestBase {
         assertEquals(1.0, matrix.get(0, 0));
         assertEquals(4.0, matrix.get(1, 1));
 
-        // Test empty
-        assertTrue(DoubleMatrix.from((int[][]) null).isEmpty());
+        // Test null
+        assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.from((int[][]) null));
     }
 
     @Test
@@ -1526,8 +1523,7 @@ class DoubleMatrixTest extends TestBase {
 
         @Test
         public void testCreateFromIntArray_withNull() {
-            DoubleMatrix m = DoubleMatrix.from((int[][]) null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.from((int[][]) null));
         }
 
         @Test
@@ -1566,8 +1562,7 @@ class DoubleMatrixTest extends TestBase {
 
         @Test
         public void testCreateFromLongArray_withNull() {
-            DoubleMatrix m = DoubleMatrix.from((long[][]) null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.from((long[][]) null));
         }
 
         @Test
@@ -1594,8 +1589,7 @@ class DoubleMatrixTest extends TestBase {
 
         @Test
         public void testCreateFromFloatArray_withNull() {
-            DoubleMatrix m = DoubleMatrix.from((float[][]) null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.from((float[][]) null));
         }
 
         @Test
@@ -4641,10 +4635,7 @@ class DoubleMatrixTest extends TestBase {
 
         @Test
         public void test_constructor_withNullArray() {
-            DoubleMatrix m = new DoubleMatrix(null);
-            assertEquals(0, m.rowCount());
-            assertEquals(0, m.columnCount());
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> new DoubleMatrix(null));
         }
 
         @Test
@@ -4674,8 +4665,7 @@ class DoubleMatrixTest extends TestBase {
 
         @Test
         public void test_of_withNullArray() {
-            DoubleMatrix m = DoubleMatrix.of((double[][]) null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.of((double[][]) null));
         }
 
         @Test

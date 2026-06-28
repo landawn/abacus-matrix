@@ -39,9 +39,7 @@ class ByteMatrixTest extends TestBase {
         Assertions.assertEquals(2, matrix.rowCount());
         Assertions.assertEquals(2, matrix.columnCount());
 
-        ByteMatrix nullMatrix = new ByteMatrix(null);
-        Assertions.assertEquals(0, nullMatrix.rowCount());
-        Assertions.assertEquals(0, nullMatrix.columnCount());
+        assertThrows(IllegalArgumentException.class, () -> new ByteMatrix(null));
     }
 
     @Test
@@ -69,8 +67,8 @@ class ByteMatrixTest extends TestBase {
         m.set(1, 1, (byte) 88);
         assertEquals((byte) 4, arr[1][1]);
 
-        // null/empty -> shared empty matrix
-        assertTrue(ByteMatrix.copyOf((byte[][]) null).isEmpty());
+        // null -> rejected; empty -> shared empty matrix
+        assertThrows(IllegalArgumentException.class, () -> ByteMatrix.copyOf((byte[][]) null));
         assertTrue(ByteMatrix.copyOf(new byte[0][0]).isEmpty());
 
         // non-rectangular -> IllegalArgumentException
@@ -87,8 +85,7 @@ class ByteMatrixTest extends TestBase {
         ByteMatrix emptyMatrix = ByteMatrix.of();
         Assertions.assertTrue(emptyMatrix.isEmpty());
 
-        ByteMatrix nullMatrix = ByteMatrix.of((byte[][]) null);
-        Assertions.assertTrue(nullMatrix.isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> ByteMatrix.of((byte[][]) null));
     }
 
     @Test
@@ -1425,10 +1422,7 @@ class ByteMatrixTest extends TestBase {
 
         @Test
         public void testConstructor_withNullArray() {
-            ByteMatrix m = new ByteMatrix(null);
-            assertEquals(0, m.rowCount());
-            assertEquals(0, m.columnCount());
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> new ByteMatrix(null));
         }
 
         @Test
@@ -1471,8 +1465,7 @@ class ByteMatrixTest extends TestBase {
 
         @Test
         public void testOf_withNullArray() {
-            ByteMatrix m = ByteMatrix.of((byte[][]) null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> ByteMatrix.of((byte[][]) null));
         }
 
         @Test

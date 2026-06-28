@@ -48,9 +48,7 @@ class ShortMatrixTest extends TestBase {
         assertEquals((short) 1, m.get(0, 0));
 
         // Test with null array
-        ShortMatrix nullMatrix = new ShortMatrix(null);
-        assertEquals(0, nullMatrix.rowCount());
-        assertEquals(0, nullMatrix.columnCount());
+        assertThrows(IllegalArgumentException.class, () -> new ShortMatrix(null));
     }
 
     @Test
@@ -70,8 +68,8 @@ class ShortMatrixTest extends TestBase {
         m.set(1, 1, (short) 88);
         assertEquals((short) 4, arr[1][1]);
 
-        // null/empty -> shared empty matrix
-        assertTrue(ShortMatrix.copyOf((short[][]) null).isEmpty());
+        // null -> rejected; empty -> shared empty matrix
+        assertThrows(IllegalArgumentException.class, () -> ShortMatrix.copyOf((short[][]) null));
         assertTrue(ShortMatrix.copyOf(new short[0][0]).isEmpty());
 
         // non-rectangular -> IllegalArgumentException
@@ -87,8 +85,7 @@ class ShortMatrixTest extends TestBase {
         assertEquals(2, m.columnCount());
 
         // Test with null/empty
-        ShortMatrix empty1 = ShortMatrix.of(null);
-        assertTrue(empty1.isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> ShortMatrix.of((short[][]) null));
 
         ShortMatrix empty2 = ShortMatrix.of(new short[0][0]);
         assertTrue(empty2.isEmpty());
@@ -1768,8 +1765,7 @@ class ShortMatrixTest extends TestBase {
 
         @Test
         public void testOf_withNullArray() {
-            ShortMatrix m = ShortMatrix.of((short[][]) null);
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> ShortMatrix.of((short[][]) null));
         }
 
         @Test
@@ -4922,10 +4918,7 @@ class ShortMatrixTest extends TestBase {
 
         @Test
         public void test_constructor_withNullArray() {
-            ShortMatrix m = new ShortMatrix(null);
-            assertEquals(0, m.rowCount());
-            assertEquals(0, m.columnCount());
-            assertTrue(m.isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> new ShortMatrix(null));
         }
 
         @Test
@@ -4966,8 +4959,7 @@ class ShortMatrixTest extends TestBase {
 
         @Test
         public void test_of_withNullArray() {
-            ShortMatrix m = ShortMatrix.of((short[][]) null);
-            assertSame(ShortMatrix.empty(), m);
+            assertThrows(IllegalArgumentException.class, () -> ShortMatrix.of((short[][]) null));
         }
 
         @Test

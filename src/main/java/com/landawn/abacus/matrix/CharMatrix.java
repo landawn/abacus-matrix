@@ -67,8 +67,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     /**
      * Constructs a {@code CharMatrix} backed by the supplied two-dimensional array.
      *
-     * <p>If {@code a} is {@code null}, this creates an empty {@code 0x0} matrix. Otherwise the array
-     * is used directly after rectangular-shape validation, so later modifications to either the input
+     * <p>The supplied array is used directly after rectangular-shape validation, so later modifications to either the input
      * array or the matrix remain visible through the other view. Call {@link #copy()} if you need an
      * independently owned matrix.</p>
      *
@@ -80,17 +79,16 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * data[0][0] = 'x';                  // backing array is shared
      * matrix.get(0, 0);                  // returns 'x' (mutation is visible)
      *
-     * CharMatrix empty = new CharMatrix((char[][]) null);
-     * empty.rowCount();                                 // returns 0 (null -> empty 0x0 matrix)
+     * new CharMatrix((char[][]) null);                  // throws IllegalArgumentException
      * new CharMatrix(new char[][] {{'a', 'b'}, {'c'}}); // throws IllegalArgumentException (jagged rows)
      * }</pre>
      *
-     * @param a the two-dimensional char array to wrap, or {@code null} for an empty matrix
+     * @param a the two-dimensional char array to wrap, must not be {@code null}
      * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
     public CharMatrix(final char[][] a) {
-        super(a == null ? new char[0][0] : a, char.class);
+        super(N.checkArgNotNull(a, "Matrix array cannot be null"), char.class);
     }
 
     /**
@@ -123,17 +121,18 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * matrix.get(1, 0);                  // returns 'c'
      * matrix.get(0, 1);                  // returns 'b'
      *
-     * CharMatrix.of((char[][]) null).isEmpty(); // returns true
+     * CharMatrix.of((char[][]) null); // throws IllegalArgumentException
      * CharMatrix.of(new char[0][0]).isEmpty();  // returns true
      * }</pre>
      *
-     * @param a the two-dimensional char array to wrap, or {@code null}/empty for an empty matrix
-     * @return a new {@code CharMatrix} backed by {@code a}, or the shared empty matrix if {@code a} is {@code null} or empty
+     * @param a the two-dimensional char array to wrap, or empty for an empty matrix; must not be {@code null}
+     * @return a new {@code CharMatrix} backed by {@code a}, or the shared empty matrix if {@code a} is empty
      * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
     public static CharMatrix of(final char[]... a) {
-        return N.isEmpty(a) ? EMPTY_CHAR_MATRIX : new CharMatrix(a);
+        N.checkArgNotNull(a, "Matrix array cannot be null");
+        return a.length == 0 ? EMPTY_CHAR_MATRIX : new CharMatrix(a);
     }
 
     /**
@@ -150,19 +149,21 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * data[0][0] = 'x';
      * matrix.get(0, 0);                       // returns 'a' (copy is independent)
      *
-     * CharMatrix.copyOf((char[][]) null).isEmpty();        // returns true
+     * CharMatrix.copyOf((char[][]) null);        // throws IllegalArgumentException
      * CharMatrix.copyOf(new char[][] {{'a', 'b'}, {'c'}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
      *
-     * @param a the two-dimensional char array to copy, or {@code null}/empty for an empty matrix
-     * @return a new {@code CharMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is {@code null} or empty
+     * @param a the two-dimensional char array to copy, or empty for an empty matrix; must not be {@code null}
+     * @return a new {@code CharMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is empty
      * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      * @see #of(char[][])
      * @see #copy()
      */
     public static CharMatrix copyOf(final char[]... a) {
-        if (N.isEmpty(a)) {
+        N.checkArgNotNull(a, "Matrix array cannot be null");
+
+        if (a.length == 0) {
             return EMPTY_CHAR_MATRIX;
         }
 
@@ -458,9 +459,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * CharMatrix.diagonals(new char[] {'a', 'b'}, new char[] {'x', 'y', 'z'}); // throws IllegalArgumentException (length mismatch)
      * }</pre>
      *
-     * @param mainDiagonal the array of main diagonal elements; may be {@code null} or empty if {@code antiDiagonal} is non-{@code null}
-     * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} or empty if {@code mainDiagonal} is non-{@code null}
-     * @return a square matrix with the specified diagonals, or an empty matrix when both arrays are empty (at least one being a non-{@code null} zero-length array)
+     * @param mainDiagonal the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non-{@code null};
+     *        may be empty
+     * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non-{@code null};
+     *        may be empty
+     * @return a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
      * @throws IllegalArgumentException if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null}, or if both arrays are non-empty and have different lengths
      * @see #mainDiagonal(char[])
      * @see #antiDiagonal(char[])
