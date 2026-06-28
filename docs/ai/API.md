@@ -355,18 +355,18 @@ Shared implementation base for the matrix types in this package.
   - The matrix must be square (rowCount == columnCount), and the supplied array must contain exactly {@code rowCount} elements.
 - **Parameters:**
   - `antiDiagonal` (`A`) — the new values for the anti-diagonal; must be non- {@code null} and have length equal to {@code rowCount}
-##### horizontalPoints(...) -> Stream<Point>
-- **Signature:** `public Stream<Point> horizontalPoints()`
+##### rowMajorPoints(...) -> Stream<Point>
+- **Signature:** `public Stream<Point> rowMajorPoints()`
 - **Summary:** Returns a stream of all points in the matrix in row-major order (horizontal traversal).
 - **Parameters:**
   - (none)
 - **Returns:** a stream of all {@link Point} objects in row-major order
-- **Signature:** `public Stream<Point> horizontalPoints(final int rowIndex)`
+- **Signature:** `public Stream<Point> rowMajorPoints(final int rowIndex)`
 - **Summary:** Returns a stream of points for a specific row in horizontal order (left to right).
 - **Parameters:**
   - `rowIndex` (`int`) — the row index (0-based)
 - **Returns:** a stream of {@link Point} objects for all columns in the specified row
-- **Signature:** `@SuppressWarnings("resource") public Stream<Point> horizontalPoints(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@SuppressWarnings("resource") public Stream<Point> rowMajorPoints(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of points for a range of rows in row-major order (horizontal traversal).
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -374,18 +374,18 @@ Shared implementation base for the matrix types in this package.
 - **Returns:** a stream of {@link Point} objects in the specified row range, in row-major order
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
-##### verticalPoints(...) -> Stream<Point>
-- **Signature:** `public Stream<Point> verticalPoints()`
+##### columnMajorPoints(...) -> Stream<Point>
+- **Signature:** `public Stream<Point> columnMajorPoints()`
 - **Summary:** Returns a stream of all points in the matrix in column-major order (vertical traversal).
 - **Parameters:**
   - (none)
 - **Returns:** a stream of all {@link Point} objects in column-major order
-- **Signature:** `public Stream<Point> verticalPoints(final int columnIndex)`
+- **Signature:** `public Stream<Point> columnMajorPoints(final int columnIndex)`
 - **Summary:** Returns a stream of points for a specific column in vertical order (top to bottom).
 - **Parameters:**
   - `columnIndex` (`int`) — the column index (0-based)
 - **Returns:** a stream of {@link Point} objects for all rows in the specified column
-- **Signature:** `@SuppressWarnings("resource") public Stream<Point> verticalPoints(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@SuppressWarnings("resource") public Stream<Point> columnMajorPoints(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of points for a range of columns in column-major order (vertical traversal).
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -437,35 +437,35 @@ Shared implementation base for the matrix types in this package.
 - **Parameters:**
   - (none)
 - **Returns:** a stream of anti-diagonal elements
-##### horizontalStream(...) -> ES
-- **Signature:** `public abstract ES horizontalStream()`
+##### rowMajorStream(...) -> ES
+- **Signature:** `public abstract ES rowMajorStream()`
 - **Summary:** Returns a stream of all elements in row-major order (horizontal traversal).
 - **Parameters:**
   - (none)
 - **Returns:** a stream of all elements in row-major order
-- **Signature:** `public abstract ES horizontalStream(final int rowIndex)`
+- **Signature:** `public abstract ES rowMajorStream(final int rowIndex)`
 - **Summary:** Returns a stream of elements from a specific row.
 - **Parameters:**
   - `rowIndex` (`int`) — the row index (0-based)
 - **Returns:** a stream of elements in the specified row
-- **Signature:** `public abstract ES horizontalStream(final int fromRowIndex, final int toRowIndex)`
+- **Signature:** `public abstract ES rowMajorStream(final int fromRowIndex, final int toRowIndex)`
 - **Summary:** Returns a stream of elements from a range of rows in row-major order.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
   - `toRowIndex` (`int`) — the ending row index (exclusive)
 - **Returns:** a stream of elements in the specified row range
-##### verticalStream(...) -> ES
-- **Signature:** `public abstract ES verticalStream()`
+##### columnMajorStream(...) -> ES
+- **Signature:** `public abstract ES columnMajorStream()`
 - **Summary:** Returns a stream of all elements in column-major order (vertical traversal).
 - **Parameters:**
   - (none)
 - **Returns:** a stream of all elements in column-major order
-- **Signature:** `public abstract ES verticalStream(final int columnIndex)`
+- **Signature:** `public abstract ES columnMajorStream(final int columnIndex)`
 - **Summary:** Returns a stream of elements from a specific column.
 - **Parameters:**
   - `columnIndex` (`int`) — the column index (0-based)
 - **Returns:** a stream of elements in the specified column
-- **Signature:** `public abstract ES verticalStream(final int fromColumnIndex, final int toColumnIndex)`
+- **Signature:** `public abstract ES columnMajorStream(final int fromColumnIndex, final int toColumnIndex)`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -1025,7 +1025,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new {@code BooleanList} of all elements in row-major order
-- **See also:** #horizontalStream()
+- **See also:** #rowMajorStream()
 ##### mutateAsFlat(...) -> void
 - **Signature:** `@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super boolean[], E> action) throws E`
 - **Summary:** Exposes the elements of this matrix to {@code action} as a single one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix.
@@ -1160,20 +1160,20 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a {@code Stream<Boolean>} containing the anti-diagonal elements from top-right to bottom-left, or an empty stream if the matrix is empty (0 × 0)
-##### horizontalStream(...) -> Stream<Boolean>
-- **Signature:** `@Override public Stream<Boolean> horizontalStream()`
+##### rowMajorStream(...) -> Stream<Boolean>
+- **Signature:** `@Override public Stream<Boolean> rowMajorStream()`
 - **Summary:** Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).
 - **Parameters:**
   - (none)
 - **Returns:** a {@code Stream<Boolean>} of all elements in row-major order, or an empty stream if the matrix is empty
-- **Signature:** `@Override public Stream<Boolean> horizontalStream(final int rowIndex)`
+- **Signature:** `@Override public Stream<Boolean> rowMajorStream(final int rowIndex)`
 - **Summary:** Returns a stream of elements from a single row.
 - **Contract:**
   - <p> This method is particularly useful when you need to process or analyze a specific row of the matrix independently.
 - **Parameters:**
   - `rowIndex` (`int`) — the index of the row to stream (0-based)
 - **Returns:** a {@code Stream<Boolean>} of elements from the specified row
-- **Signature:** `@Override public Stream<Boolean> horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public Stream<Boolean> rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of rows in row-major order.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -1181,18 +1181,18 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Returns:** a {@code Stream<Boolean>} of elements from the specified row range, or an empty stream if the matrix is empty
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
-##### verticalStream(...) -> Stream<Boolean>
-- **Signature:** `@Override @Beta public Stream<Boolean> verticalStream()`
+##### columnMajorStream(...) -> Stream<Boolean>
+- **Signature:** `@Override @Beta public Stream<Boolean> columnMajorStream()`
 - **Summary:** Returns a stream of all elements in column-major order (vertical).
 - **Parameters:**
   - (none)
 - **Returns:** a {@code Stream<Boolean>} of all elements in column-major order, or an empty stream if the matrix is empty
-- **Signature:** `@Override public Stream<Boolean> verticalStream(final int columnIndex)`
+- **Signature:** `@Override public Stream<Boolean> columnMajorStream(final int columnIndex)`
 - **Summary:** Returns a stream of elements from a single column.
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** a {@code Stream<Boolean>} of elements from the specified column
-- **Signature:** `@Override @Beta public Stream<Boolean> verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override @Beta public Stream<Boolean> columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -1840,7 +1840,7 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new {@link ByteList} of all elements in row-major order
-- **See also:** #horizontalStream()
+- **See also:** #rowMajorStream()
 ##### mutateAsFlat(...) -> void
 - **Signature:** `@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super byte[], E> action) throws E`
 - **Summary:** Exposes the elements of this matrix to {@code action} as a single one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix.
@@ -1982,20 +1982,20 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a ByteStream of anti-diagonal elements, or an empty stream if this is the empty 0x0 matrix
-##### horizontalStream(...) -> ByteStream
-- **Signature:** `@Override public ByteStream horizontalStream()`
+##### rowMajorStream(...) -> ByteStream
+- **Signature:** `@Override public ByteStream rowMajorStream()`
 - **Summary:** Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).
 - **Parameters:**
   - (none)
 - **Returns:** a ByteStream of all elements in row-major order, or an empty stream if the matrix is empty
-- **Signature:** `@Override public ByteStream horizontalStream(final int rowIndex)`
+- **Signature:** `@Override public ByteStream rowMajorStream(final int rowIndex)`
 - **Summary:** Returns a stream of elements from a single row.
 - **Contract:**
   - <p> This method is particularly useful when you need to process or analyze a specific row of the matrix independently.
 - **Parameters:**
   - `rowIndex` (`int`) — the index of the row to stream (0-based)
 - **Returns:** a {@link ByteStream} of elements from the specified row
-- **Signature:** `@Override public ByteStream horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public ByteStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of rows in row-major order.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -2003,18 +2003,18 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Returns:** a ByteStream of elements from the specified row range, or an empty stream if the matrix is empty
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
-##### verticalStream(...) -> ByteStream
-- **Signature:** `@Override @Beta public ByteStream verticalStream()`
+##### columnMajorStream(...) -> ByteStream
+- **Signature:** `@Override @Beta public ByteStream columnMajorStream()`
 - **Summary:** Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).
 - **Parameters:**
   - (none)
 - **Returns:** a ByteStream of all elements in column-major order, or an empty stream if the matrix is empty
-- **Signature:** `@Override public ByteStream verticalStream(final int columnIndex)`
+- **Signature:** `@Override public ByteStream columnMajorStream(final int columnIndex)`
 - **Summary:** Returns a stream of elements from a single column.
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** a {@link ByteStream} of elements from the specified column
-- **Signature:** `@Override @Beta public ByteStream verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override @Beta public ByteStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -2650,7 +2650,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new {@link CharList} of all elements in row-major order
-- **See also:** #horizontalStream()
+- **See also:** #rowMajorStream()
 ##### mutateAsFlat(...) -> void
 - **Signature:** `@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super char[], E> action) throws E`
 - **Summary:** Exposes the elements of this matrix to {@code action} as a single one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix.
@@ -2788,20 +2788,20 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a CharStream of anti-diagonal elements, or an empty stream if the matrix is empty
-##### horizontalStream(...) -> CharStream
-- **Signature:** `@Override public CharStream horizontalStream()`
+##### rowMajorStream(...) -> CharStream
+- **Signature:** `@Override public CharStream rowMajorStream()`
 - **Summary:** Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).
 - **Parameters:**
   - (none)
 - **Returns:** a CharStream of all elements in row-major order, or an empty stream if the matrix is empty
-- **Signature:** `@Override public CharStream horizontalStream(final int rowIndex)`
+- **Signature:** `@Override public CharStream rowMajorStream(final int rowIndex)`
 - **Summary:** Returns a stream of elements from a single row.
 - **Contract:**
   - <p> This method is particularly useful when you need to process or analyze a specific row of the matrix independently.
 - **Parameters:**
   - `rowIndex` (`int`) — the index of the row to stream (0-based)
 - **Returns:** a {@link CharStream} of elements from the specified row
-- **Signature:** `@Override public CharStream horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public CharStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of rows in row-major order.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -2809,18 +2809,18 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Returns:** a CharStream of elements from the specified row range, or an empty stream if the matrix is empty
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
-##### verticalStream(...) -> CharStream
-- **Signature:** `@Override @Beta public CharStream verticalStream()`
+##### columnMajorStream(...) -> CharStream
+- **Signature:** `@Override @Beta public CharStream columnMajorStream()`
 - **Summary:** Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).
 - **Parameters:**
   - (none)
 - **Returns:** a CharStream of all elements in column-major order, or an empty stream if the matrix is empty
-- **Signature:** `@Override public CharStream verticalStream(final int columnIndex)`
+- **Signature:** `@Override public CharStream columnMajorStream(final int columnIndex)`
 - **Summary:** Returns a stream of elements from a single column.
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** a {@link CharStream} of elements from the specified column
-- **Signature:** `@Override @Beta public CharStream verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override @Beta public CharStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -3467,7 +3467,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new {@link DoubleList} of all elements in row-major order
-- **See also:** #horizontalStream()
+- **See also:** #rowMajorStream()
 ##### mutateAsFlat(...) -> void
 - **Signature:** `@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super double[], E> action) throws E`
 - **Summary:** Flattens all elements of this matrix into a single one-dimensional array, applies the given operation to that flattened array, and then copies the (possibly modified) elements back into the matrix in row-major order.
@@ -3601,20 +3601,20 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a DoubleStream of anti-diagonal elements, or an empty stream if the matrix is empty
-##### horizontalStream(...) -> DoubleStream
-- **Signature:** `@Override public DoubleStream horizontalStream()`
+##### rowMajorStream(...) -> DoubleStream
+- **Signature:** `@Override public DoubleStream rowMajorStream()`
 - **Summary:** Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).
 - **Parameters:**
   - (none)
 - **Returns:** a DoubleStream of all elements in row-major order, or an empty stream if the matrix is empty
-- **Signature:** `@Override public DoubleStream horizontalStream(final int rowIndex)`
+- **Signature:** `@Override public DoubleStream rowMajorStream(final int rowIndex)`
 - **Summary:** Returns a stream of elements from a single row.
 - **Contract:**
   - <p> This method is particularly useful when you need to process or analyze a specific row of the matrix independently.
 - **Parameters:**
   - `rowIndex` (`int`) — the index of the row to stream (0-based)
 - **Returns:** a {@link DoubleStream} of elements from the specified row
-- **Signature:** `@Override public DoubleStream horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public DoubleStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of rows in row-major order.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -3622,18 +3622,18 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Returns:** a DoubleStream of elements from the specified row range, or an empty stream if the matrix is empty
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
-##### verticalStream(...) -> DoubleStream
-- **Signature:** `@Override @Beta public DoubleStream verticalStream()`
+##### columnMajorStream(...) -> DoubleStream
+- **Signature:** `@Override @Beta public DoubleStream columnMajorStream()`
 - **Summary:** Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).
 - **Parameters:**
   - (none)
 - **Returns:** a DoubleStream of all elements in column-major order, or an empty stream if the matrix is empty
-- **Signature:** `@Override public DoubleStream verticalStream(final int columnIndex)`
+- **Signature:** `@Override public DoubleStream columnMajorStream(final int columnIndex)`
 - **Summary:** Returns a stream of elements from a single column.
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** a {@link DoubleStream} of elements from the specified column
-- **Signature:** `@Override @Beta public DoubleStream verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override @Beta public DoubleStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -4251,7 +4251,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new {@link FloatList} of all elements in row-major order
-- **See also:** #horizontalStream()
+- **See also:** #rowMajorStream()
 ##### mutateAsFlat(...) -> void
 - **Signature:** `@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super float[], E> action) throws E`
 - **Summary:** Flattens all elements of this matrix into a single one-dimensional array, applies the given operation to that flattened array, and then copies the (possibly modified) elements back into the matrix in row-major order.
@@ -4386,20 +4386,20 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a FloatStream of anti-diagonal elements, or an empty stream if the matrix is empty
-##### horizontalStream(...) -> FloatStream
-- **Signature:** `@Override public FloatStream horizontalStream()`
+##### rowMajorStream(...) -> FloatStream
+- **Signature:** `@Override public FloatStream rowMajorStream()`
 - **Summary:** Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).
 - **Parameters:**
   - (none)
 - **Returns:** a FloatStream of all elements in row-major order, or an empty stream if the matrix is empty
-- **Signature:** `@Override public FloatStream horizontalStream(final int rowIndex)`
+- **Signature:** `@Override public FloatStream rowMajorStream(final int rowIndex)`
 - **Summary:** Returns a stream of elements from a single row.
 - **Contract:**
   - <p> This method is particularly useful when you need to process or analyze a specific row of the matrix independently.
 - **Parameters:**
   - `rowIndex` (`int`) — the index of the row to stream (0-based)
 - **Returns:** a {@link FloatStream} of elements from the specified row
-- **Signature:** `@Override public FloatStream horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public FloatStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of rows in row-major order.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -4407,18 +4407,18 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Returns:** a FloatStream of elements from the specified row range, or an empty stream if the matrix is empty
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
-##### verticalStream(...) -> FloatStream
-- **Signature:** `@Override @Beta public FloatStream verticalStream()`
+##### columnMajorStream(...) -> FloatStream
+- **Signature:** `@Override @Beta public FloatStream columnMajorStream()`
 - **Summary:** Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).
 - **Parameters:**
   - (none)
 - **Returns:** a FloatStream of all elements in column-major order, or an empty stream if the matrix is empty
-- **Signature:** `@Override public FloatStream verticalStream(final int columnIndex)`
+- **Signature:** `@Override public FloatStream columnMajorStream(final int columnIndex)`
 - **Summary:** Returns a stream of elements from a single column.
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** a {@link FloatStream} of elements from the specified column
-- **Signature:** `@Override @Beta public FloatStream verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override @Beta public FloatStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -5095,7 +5095,7 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new {@link IntList} of all elements in row-major order
-- **See also:** #horizontalStream()
+- **See also:** #rowMajorStream()
 ##### mutateAsFlat(...) -> void
 - **Signature:** `@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super int[], E> action) throws E`
 - **Summary:** Exposes the elements of this matrix to {@code action} as a single one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix.
@@ -5228,20 +5228,20 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** an IntStream of anti-diagonal elements, or an empty stream if this is the empty {@code 0x0} matrix
-##### horizontalStream(...) -> IntStream
-- **Signature:** `@Override public IntStream horizontalStream()`
+##### rowMajorStream(...) -> IntStream
+- **Signature:** `@Override public IntStream rowMajorStream()`
 - **Summary:** Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).
 - **Parameters:**
   - (none)
 - **Returns:** an IntStream of all elements in row-major order, or an empty stream if the matrix is empty
-- **Signature:** `@Override public IntStream horizontalStream(final int rowIndex)`
+- **Signature:** `@Override public IntStream rowMajorStream(final int rowIndex)`
 - **Summary:** Returns a stream of elements from a single row.
 - **Contract:**
   - <p> This method is particularly useful when you need to process or analyze a specific row of the matrix independently.
 - **Parameters:**
   - `rowIndex` (`int`) — the index of the row to stream (0-based)
 - **Returns:** an {@link IntStream} of elements from the specified row
-- **Signature:** `@Override public IntStream horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public IntStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of rows in row-major order.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -5249,18 +5249,18 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Returns:** an IntStream of elements from the specified row range, or an empty stream if the matrix is empty
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
-##### verticalStream(...) -> IntStream
-- **Signature:** `@Override @Beta public IntStream verticalStream()`
+##### columnMajorStream(...) -> IntStream
+- **Signature:** `@Override @Beta public IntStream columnMajorStream()`
 - **Summary:** Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).
 - **Parameters:**
   - (none)
 - **Returns:** an IntStream of all elements in column-major order, or an empty stream if the matrix is empty
-- **Signature:** `@Override public IntStream verticalStream(final int columnIndex)`
+- **Signature:** `@Override public IntStream columnMajorStream(final int columnIndex)`
 - **Summary:** Returns a stream of elements from a single column.
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** an {@link IntStream} of elements from the specified column
-- **Signature:** `@Override @Beta public IntStream verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override @Beta public IntStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -5924,7 +5924,7 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new {@link LongList} of all elements in row-major order
-- **See also:** #horizontalStream()
+- **See also:** #rowMajorStream()
 ##### mutateAsFlat(...) -> void
 - **Signature:** `@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super long[], E> action) throws E`
 - **Summary:** Exposes the elements of this matrix to {@code action} as a single one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix.
@@ -6056,20 +6056,20 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a LongStream of anti-diagonal elements, or an empty stream if this is the empty {@code 0x0} matrix
-##### horizontalStream(...) -> LongStream
-- **Signature:** `@Override public LongStream horizontalStream()`
+##### rowMajorStream(...) -> LongStream
+- **Signature:** `@Override public LongStream rowMajorStream()`
 - **Summary:** Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).
 - **Parameters:**
   - (none)
 - **Returns:** a LongStream of all elements in row-major order, or an empty stream if the matrix is empty
-- **Signature:** `@Override public LongStream horizontalStream(final int rowIndex)`
+- **Signature:** `@Override public LongStream rowMajorStream(final int rowIndex)`
 - **Summary:** Returns a stream of elements from a single row.
 - **Contract:**
   - <p> This method is particularly useful when you need to process or analyze a specific row of the matrix independently.
 - **Parameters:**
   - `rowIndex` (`int`) — the index of the row to stream (0-based)
 - **Returns:** a {@link LongStream} of elements from the specified row
-- **Signature:** `@Override public LongStream horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public LongStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of rows in row-major order.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -6077,18 +6077,18 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Returns:** a LongStream of elements from the specified row range, or an empty stream if the matrix is empty
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
-##### verticalStream(...) -> LongStream
-- **Signature:** `@Override @Beta public LongStream verticalStream()`
+##### columnMajorStream(...) -> LongStream
+- **Signature:** `@Override @Beta public LongStream columnMajorStream()`
 - **Summary:** Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).
 - **Parameters:**
   - (none)
 - **Returns:** a LongStream of all elements in column-major order, or an empty stream if the matrix is empty
-- **Signature:** `@Override public LongStream verticalStream(final int columnIndex)`
+- **Signature:** `@Override public LongStream columnMajorStream(final int columnIndex)`
 - **Summary:** Returns a stream of elements from a single column.
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** a {@link LongStream} of elements from the specified column
-- **Signature:** `@Override @Beta public LongStream verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override @Beta public LongStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -7615,18 +7615,18 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a {@link Stream} of anti-diagonal elements from top-right to bottom-left, or an empty stream if the matrix is empty
-##### horizontalStream(...) -> Stream<T>
-- **Signature:** `@Override public Stream<T> horizontalStream()`
+##### rowMajorStream(...) -> Stream<T>
+- **Signature:** `@Override public Stream<T> rowMajorStream()`
 - **Summary:** Returns a stream of all elements in row-major order (horizontal).
 - **Parameters:**
   - (none)
 - **Returns:** a {@link Stream} of all elements in row-major order, or an empty stream if the matrix is empty
-- **Signature:** `@Override public Stream<T> horizontalStream(final int rowIndex)`
+- **Signature:** `@Override public Stream<T> rowMajorStream(final int rowIndex)`
 - **Summary:** Returns a stream of elements from a single row.
 - **Parameters:**
   - `rowIndex` (`int`) — the index of the row to stream (0-based)
 - **Returns:** a {@link Stream} of elements from the specified row
-- **Signature:** `@Override public Stream<T> horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public Stream<T> rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of rows in row-major order.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -7634,18 +7634,18 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Returns:** a {@link Stream} of elements from the specified row range, or an empty stream if the matrix is empty
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex} or {@code toRowIndex} is out of range
-##### verticalStream(...) -> Stream<T>
-- **Signature:** `@Override @Beta public Stream<T> verticalStream()`
+##### columnMajorStream(...) -> Stream<T>
+- **Signature:** `@Override @Beta public Stream<T> columnMajorStream()`
 - **Summary:** Returns a stream of all elements in column-major order (vertical).
 - **Parameters:**
   - (none)
 - **Returns:** a {@link Stream} of all elements in column-major order, or an empty stream if the matrix is empty
-- **Signature:** `@Override public Stream<T> verticalStream(final int columnIndex)`
+- **Signature:** `@Override public Stream<T> columnMajorStream(final int columnIndex)`
 - **Summary:** Returns a stream of elements from a single column.
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** a {@link Stream} of elements from the specified column
-- **Signature:** `@Beta @Override public Stream<T> verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Beta @Override public Stream<T> columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -8320,7 +8320,7 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new {@link ShortList} of all elements in row-major order
-- **See also:** #horizontalStream()
+- **See also:** #rowMajorStream()
 ##### mutateAsFlat(...) -> void
 - **Signature:** `@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super short[], E> action) throws E`
 - **Summary:** Exposes the elements of this matrix to {@code action} as a single one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix.
@@ -8458,20 +8458,20 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a ShortStream of anti-diagonal elements, or an empty stream if this is the empty 0x0 matrix
-##### horizontalStream(...) -> ShortStream
-- **Signature:** `@Override public ShortStream horizontalStream()`
+##### rowMajorStream(...) -> ShortStream
+- **Signature:** `@Override public ShortStream rowMajorStream()`
 - **Summary:** Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).
 - **Parameters:**
   - (none)
 - **Returns:** a ShortStream of all elements in row-major order, or an empty stream if the matrix is empty
-- **Signature:** `@Override public ShortStream horizontalStream(final int rowIndex)`
+- **Signature:** `@Override public ShortStream rowMajorStream(final int rowIndex)`
 - **Summary:** Returns a stream of elements from a single row.
 - **Contract:**
   - <p> This method is particularly useful when you need to process or analyze a specific row of the matrix independently.
 - **Parameters:**
   - `rowIndex` (`int`) — the index of the row to stream (0-based)
 - **Returns:** a {@link ShortStream} of elements from the specified row
-- **Signature:** `@Override public ShortStream horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public ShortStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of rows in row-major order.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -8479,18 +8479,18 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Returns:** a ShortStream of elements from the specified row range, or an empty stream if the matrix is empty
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
-##### verticalStream(...) -> ShortStream
-- **Signature:** `@Override @Beta public ShortStream verticalStream()`
+##### columnMajorStream(...) -> ShortStream
+- **Signature:** `@Override @Beta public ShortStream columnMajorStream()`
 - **Summary:** Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).
 - **Parameters:**
   - (none)
 - **Returns:** a ShortStream of all elements in column-major order, or an empty stream if the matrix is empty
-- **Signature:** `@Override public ShortStream verticalStream(final int columnIndex)`
+- **Signature:** `@Override public ShortStream columnMajorStream(final int columnIndex)`
 - **Summary:** Returns a stream of elements from a single column.
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** a {@link ShortStream} of elements from the specified column
-- **Signature:** `@Override @Beta public ShortStream verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override @Beta public ShortStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)

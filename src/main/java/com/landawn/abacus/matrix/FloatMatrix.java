@@ -51,7 +51,7 @@ import com.landawn.abacus.util.stream.Stream;
  *
  * <p><b>Aggregations:</b> this class does not provide dedicated reduction methods such as
  * {@code sum()}, {@code min()}, {@code max()} or {@code average()}. Compute such aggregations
- * through the streaming API instead &mdash; for example {@code horizontalStream().sum()} over all
+ * through the streaming API instead &mdash; for example {@code rowMajorStream().sum()} over all
  * elements, or {@code rowStreams()} / {@code columnStreams()} for per-row or per-column reductions.</p>
  *
  * @see IntMatrix
@@ -139,6 +139,45 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     public static FloatMatrix of(final float[]... a) {
         return N.isEmpty(a) ? EMPTY_FLOAT_MATRIX : new FloatMatrix(a);
+    }
+
+    /**
+     * Creates a {@code FloatMatrix} that owns a defensive deep copy of the supplied two-dimensional array.
+     *
+     * <p>Unlike {@link #of(float[][])}, which wraps the caller's array without copying, this factory clones
+     * every row into a freshly-allocated backing array. Subsequent modifications to {@code a} (or its rows)
+     * are therefore <b>not</b> visible through the returned matrix, and vice versa.</p>
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * float[][] data = {{1, 2}, {3, 4}};
+     * FloatMatrix matrix = FloatMatrix.copyOf(data);
+     * data[0][0] = 10;
+     * matrix.get(0, 0);                       // returns 1.0 (copy is independent)
+     *
+     * FloatMatrix.copyOf((float[][]) null).isEmpty();  // returns true
+     * FloatMatrix.copyOf(new float[][] {{1, 2}, {3}}); // throws IllegalArgumentException (non-rectangular)
+     * }</pre>
+     *
+     * @param a the two-dimensional float array to copy, or {@code null}/empty for an empty matrix
+     * @return a new {@code FloatMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is {@code null} or empty
+     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     *         different lengths (i.e. the array is not rectangular)
+     * @see #of(float[][])
+     * @see #copy()
+     */
+    public static FloatMatrix copyOf(final float[]... a) {
+        if (N.isEmpty(a)) {
+            return EMPTY_FLOAT_MATRIX;
+        }
+
+        final float[][] c = new float[a.length][];
+
+        for (int i = 0, len = a.length; i < len; i++) {
+            c[i] = a[i] == null ? null : a[i].clone();
+        }
+
+        return new FloatMatrix(c);
     }
 
     /**
@@ -2351,7 +2390,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @return a new {@link FloatList} of all elements in row-major order
      * @throws IllegalStateException if {@code (long) rowCount * columnCount > Integer.MAX_VALUE}
-     * @see #horizontalStream()
+     * @see #rowMajorStream()
      */
     @Override
     public FloatList flatten() {
@@ -3078,18 +3117,18 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
-     * matrix.horizontalStream().toArray();   // returns [1.0f, 2.0f, 3.0f, 4.0f]
-     * matrix.horizontalStream().sum();       // returns 10.0
+     * matrix.rowMajorStream().toArray();   // returns [1.0f, 2.0f, 3.0f, 4.0f]
+     * matrix.rowMajorStream().sum();       // returns 10.0
      *
-     * FloatMatrix.empty().horizontalStream().count();                      // returns 0 (empty stream)
-     * FloatMatrix.of(new float[][] {{5.0f}}).horizontalStream().toArray(); // returns [5.0f]
+     * FloatMatrix.empty().rowMajorStream().count();                      // returns 0 (empty stream)
+     * FloatMatrix.of(new float[][] {{5.0f}}).rowMajorStream().toArray(); // returns [5.0f]
      * }</pre>
      *
      * @return a FloatStream of all elements in row-major order, or an empty stream if the matrix is empty
      */
     @Override
-    public FloatStream horizontalStream() {
-        return horizontalStream(0, rowCount);
+    public FloatStream rowMajorStream() {
+        return rowMajorStream(0, rowCount);
     }
 
     /**
@@ -3106,11 +3145,11 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}, {4.0f, 5.0f, 6.0f}});
-     * matrix.horizontalStream(0).toArray();   // returns [1.0f, 2.0f, 3.0f]
-     * matrix.horizontalStream(1).sum();       // returns 15.0 (sum of second row)
+     * matrix.rowMajorStream(0).toArray();   // returns [1.0f, 2.0f, 3.0f]
+     * matrix.rowMajorStream(1).sum();       // returns 15.0 (sum of second row)
      *
-     * matrix.horizontalStream(-1);            // throws IndexOutOfBoundsException
-     * matrix.horizontalStream(2);             // throws IndexOutOfBoundsException (rowIndex >= rowCount)
+     * matrix.rowMajorStream(-1);            // throws IndexOutOfBoundsException
+     * matrix.rowMajorStream(2);             // throws IndexOutOfBoundsException (rowIndex >= rowCount)
      * }</pre>
      *
      * @param rowIndex the index of the row to stream (0-based)
@@ -3119,10 +3158,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @see #rowStreams()
      */
     @Override
-    public FloatStream horizontalStream(final int rowIndex) {
+    public FloatStream rowMajorStream(final int rowIndex) {
         checkRowIndex(rowIndex);
 
-        return horizontalStream(rowIndex, rowIndex + 1);
+        return rowMajorStream(rowIndex, rowIndex + 1);
     }
 
     /**
@@ -3137,11 +3176,11 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}, {5.0f, 6.0f}});
-     * matrix.horizontalStream(1, 3).toArray();   // returns [3.0f, 4.0f, 5.0f, 6.0f]
-     * matrix.horizontalStream(0, 1).toArray();   // returns [1.0f, 2.0f]
+     * matrix.rowMajorStream(1, 3).toArray();   // returns [3.0f, 4.0f, 5.0f, 6.0f]
+     * matrix.rowMajorStream(0, 1).toArray();   // returns [1.0f, 2.0f]
      *
-     * matrix.horizontalStream(1, 1).count();     // returns 0 (empty range)
-     * matrix.horizontalStream(0, 5);             // throws IndexOutOfBoundsException (toRowIndex > rowCount)
+     * matrix.rowMajorStream(1, 1).count();     // returns 0 (empty range)
+     * matrix.rowMajorStream(0, 5);             // throws IndexOutOfBoundsException (toRowIndex > rowCount)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -3150,7 +3189,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount}, or {@code fromRowIndex > toRowIndex}
      */
     @Override
-    public FloatStream horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
+    public FloatStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
         if (isEmpty()) {
@@ -3226,24 +3265,24 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * Elements are streamed column by column from the top-left corner to the bottom-right corner.
      *
      * <p>This method provides an alternative way to iterate through matrix
-     * elements compared to the row-major order of {@link #horizontalStream()}.</p>
+     * elements compared to the row-major order of {@link #rowMajorStream()}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
-     * matrix.verticalStream().toArray();   // returns [1.0f, 3.0f, 2.0f, 4.0f]
-     * matrix.verticalStream().sum();       // returns 10.0
+     * matrix.columnMajorStream().toArray();   // returns [1.0f, 3.0f, 2.0f, 4.0f]
+     * matrix.columnMajorStream().sum();       // returns 10.0
      *
-     * FloatMatrix.empty().verticalStream().count();                      // returns 0 (empty stream)
-     * FloatMatrix.of(new float[][] {{5.0f}}).verticalStream().toArray(); // returns [5.0f]
+     * FloatMatrix.empty().columnMajorStream().count();                      // returns 0 (empty stream)
+     * FloatMatrix.of(new float[][] {{5.0f}}).columnMajorStream().toArray(); // returns [5.0f]
      * }</pre>
      *
      * @return a FloatStream of all elements in column-major order, or an empty stream if the matrix is empty
      */
     @Override
     @Beta
-    public FloatStream verticalStream() {
-        return verticalStream(0, columnCount);
+    public FloatStream columnMajorStream() {
+        return columnMajorStream(0, columnCount);
     }
 
     /**
@@ -3256,11 +3295,11 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}, {4.0f, 5.0f, 6.0f}});
-     * matrix.verticalStream(1).toArray();   // returns [2.0f, 5.0f]
-     * matrix.verticalStream(0).sum();       // returns 5.0 (sum of first column)
+     * matrix.columnMajorStream(1).toArray();   // returns [2.0f, 5.0f]
+     * matrix.columnMajorStream(0).sum();       // returns 5.0 (sum of first column)
      *
-     * matrix.verticalStream(-1);            // throws IndexOutOfBoundsException
-     * matrix.verticalStream(3);             // throws IndexOutOfBoundsException (columnIndex >= columnCount)
+     * matrix.columnMajorStream(-1);            // throws IndexOutOfBoundsException
+     * matrix.columnMajorStream(3);             // throws IndexOutOfBoundsException (columnIndex >= columnCount)
      * }</pre>
      *
      * @param columnIndex the index of the column to stream (0-based)
@@ -3268,10 +3307,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     @Override
-    public FloatStream verticalStream(final int columnIndex) {
+    public FloatStream columnMajorStream(final int columnIndex) {
         checkColumnIndex(columnIndex);
 
-        return verticalStream(columnIndex, columnIndex + 1);
+        return columnMajorStream(columnIndex, columnIndex + 1);
     }
 
     /**
@@ -3285,11 +3324,11 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}, {4.0f, 5.0f, 6.0f}});
-     * matrix.verticalStream(1, 3).toArray();   // returns [2.0f, 5.0f, 3.0f, 6.0f]
-     * matrix.verticalStream(0, 1).toArray();   // returns [1.0f, 4.0f]
+     * matrix.columnMajorStream(1, 3).toArray();   // returns [2.0f, 5.0f, 3.0f, 6.0f]
+     * matrix.columnMajorStream(0, 1).toArray();   // returns [1.0f, 4.0f]
      *
-     * matrix.verticalStream(1, 1).count();     // returns 0 (empty range)
-     * matrix.verticalStream(0, 5);             // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
+     * matrix.columnMajorStream(1, 1).count();     // returns 0 (empty range)
+     * matrix.columnMajorStream(0, 5);             // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
      * }</pre>
      *
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
@@ -3301,7 +3340,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     @Override
     @Beta
-    public FloatStream verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
+    public FloatStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
         if (isEmpty()) {
@@ -3382,7 +3421,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * rows to other values.</p>
      *
      * <p>This yields one stream per row. To instead stream the elements of a single row as one
-     * flat stream, use {@link #horizontalStream(int)}.</p>
+     * flat stream, use {@link #rowMajorStream(int)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3395,7 +3434,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @return a Stream of FloatStream objects, one for each row in the matrix
-     * @see #horizontalStream(int)
+     * @see #rowMajorStream(int)
      */
     @Override
     public Stream<FloatStream> rowStreams() {

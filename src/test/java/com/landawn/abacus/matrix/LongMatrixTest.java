@@ -50,6 +50,31 @@ class LongMatrixTest extends TestBase {
     }
 
     @Test
+    public void testCopyOf() {
+        long[][] arr = { { 1L, 2L }, { 3L, 4L } };
+        LongMatrix m = LongMatrix.copyOf(arr);
+        assertEquals(2, m.rowCount());
+        assertEquals(2, m.columnCount());
+        assertEquals(1L, m.get(0, 0));
+        assertEquals(4L, m.get(1, 1));
+
+        // Mutating the source array must not affect the copy
+        arr[0][0] = 99L;
+        assertEquals(1L, m.get(0, 0));
+
+        // Mutating the copy must not affect the source array
+        m.set(1, 1, 88L);
+        assertEquals(4L, arr[1][1]);
+
+        // null/empty -> shared empty matrix
+        assertTrue(LongMatrix.copyOf((long[][]) null).isEmpty());
+        assertTrue(LongMatrix.copyOf(new long[0][0]).isEmpty());
+
+        // non-rectangular -> IllegalArgumentException
+        assertThrows(IllegalArgumentException.class, () -> LongMatrix.copyOf(new long[][] { { 1L, 2L }, { 3L } }));
+    }
+
+    @Test
     public void testOf() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
         LongMatrix matrix = LongMatrix.of(a);
@@ -1130,11 +1155,11 @@ class LongMatrixTest extends TestBase {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
         LongMatrix matrix = LongMatrix.of(a);
 
-        long[] all = matrix.horizontalStream().toArray();
+        long[] all = matrix.rowMajorStream().toArray();
         Assertions.assertArrayEquals(new long[] { 1L, 2L, 3L, 4L, 5L, 6L }, all);
 
         LongMatrix empty = LongMatrix.empty();
-        Assertions.assertTrue(empty.horizontalStream().toList().isEmpty());
+        Assertions.assertTrue(empty.rowMajorStream().toList().isEmpty());
     }
 
     @Test
@@ -1142,7 +1167,7 @@ class LongMatrixTest extends TestBase {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
         LongMatrix matrix = LongMatrix.of(a);
 
-        long[] row1 = matrix.horizontalStream(1).toArray();
+        long[] row1 = matrix.rowMajorStream(1).toArray();
         Assertions.assertArrayEquals(new long[] { 4L, 5L, 6L }, row1);
     }
 
@@ -1151,11 +1176,11 @@ class LongMatrixTest extends TestBase {
         long[][] a = { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } };
         LongMatrix matrix = LongMatrix.of(a);
 
-        long[] range = matrix.horizontalStream(1, 3).toArray();
+        long[] range = matrix.rowMajorStream(1, 3).toArray();
         Assertions.assertArrayEquals(new long[] { 3L, 4L, 5L, 6L }, range);
 
-        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.horizontalStream(-1, 2));
-        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.horizontalStream(0, 4));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowMajorStream(-1, 2));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowMajorStream(0, 4));
     }
 
     @Test
@@ -1163,7 +1188,7 @@ class LongMatrixTest extends TestBase {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
         LongMatrix matrix = LongMatrix.of(a);
 
-        long[] all = matrix.verticalStream().toArray();
+        long[] all = matrix.columnMajorStream().toArray();
         Assertions.assertArrayEquals(new long[] { 1L, 4L, 2L, 5L, 3L, 6L }, all);
     }
 
@@ -1172,7 +1197,7 @@ class LongMatrixTest extends TestBase {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
         LongMatrix matrix = LongMatrix.of(a);
 
-        long[] col1 = matrix.verticalStream(1).toArray();
+        long[] col1 = matrix.columnMajorStream(1).toArray();
         Assertions.assertArrayEquals(new long[] { 2L, 5L }, col1);
     }
 
@@ -1181,7 +1206,7 @@ class LongMatrixTest extends TestBase {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
         LongMatrix matrix = LongMatrix.of(a);
 
-        long[] range = matrix.verticalStream(1, 3).toArray();
+        long[] range = matrix.columnMajorStream(1, 3).toArray();
         Assertions.assertArrayEquals(new long[] { 2L, 5L, 3L, 6L }, range);
     }
 
@@ -1628,21 +1653,21 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testLongMatrix_horizontalStreamSum() {
             LongMatrix matrix = LongMatrix.of(new long[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            long sum = matrix.horizontalStream().sum();
+            long sum = matrix.rowMajorStream().sum();
             assertEquals(21L, sum);
         }
 
         @Test
         public void testLongMatrix_horizontalStreamRow() {
             LongMatrix matrix = LongMatrix.of(new long[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            long rowSum = matrix.horizontalStream(1).sum();
+            long rowSum = matrix.rowMajorStream(1).sum();
             assertEquals(15L, rowSum);
         }
 
         @Test
         public void testLongMatrix_horizontalStreamRange() {
             LongMatrix matrix = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            long[] subset = matrix.horizontalStream(0, 2).toArray();
+            long[] subset = matrix.rowMajorStream(0, 2).toArray();
             assertArrayEquals(new long[] { 1, 2, 3, 4 }, subset);
         }
 
@@ -3047,64 +3072,64 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testStreamH() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
-            long[] all = m.horizontalStream().toArray();
+            long[] all = m.rowMajorStream().toArray();
             assertArrayEquals(new long[] { 1L, 2L, 3L, 4L, 5L, 6L }, all);
         }
 
         @Test
         public void testStreamH_empty() {
             LongMatrix empty = LongMatrix.empty();
-            assertEquals(0, empty.horizontalStream().toArray().length);
+            assertEquals(0, empty.rowMajorStream().toArray().length);
         }
 
         @Test
         public void testStreamH_withRow_outOfBounds() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.horizontalStream(-1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.horizontalStream(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(2));
         }
 
         @Test
         public void testStreamH_withRange_outOfBounds() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.horizontalStream(-1, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.horizontalStream(0, 3));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.horizontalStream(2, 1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(-1, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(2, 1));
         }
 
         @Test
         public void testStreamV() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
-            long[] all = m.verticalStream().toArray();
+            long[] all = m.columnMajorStream().toArray();
             assertArrayEquals(new long[] { 1L, 4L, 2L, 5L, 3L, 6L }, all);
         }
 
         @Test
         public void testStreamV_empty() {
             LongMatrix empty = LongMatrix.empty();
-            assertEquals(0, empty.verticalStream().toArray().length);
+            assertEquals(0, empty.columnMajorStream().toArray().length);
         }
 
         @Test
         public void testStreamV_withColumn_outOfBounds() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.verticalStream(-1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.verticalStream(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(2));
         }
 
         @Test
         public void testStreamV_withRange() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
-            long[] columnCount = m.verticalStream(1, 3).toArray();
+            long[] columnCount = m.columnMajorStream(1, 3).toArray();
             assertArrayEquals(new long[] { 2L, 5L, 8L, 3L, 6L, 9L }, columnCount);
         }
 
         @Test
         public void testStreamV_withRange_outOfBounds() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.verticalStream(-1, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.verticalStream(0, 3));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.verticalStream(2, 1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(-1, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(2, 1));
         }
 
         @Test
@@ -3260,26 +3285,26 @@ class LongMatrixTest extends TestBase {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
 
             // Test sum
-            long totalSum = m.horizontalStream().sum();
+            long totalSum = m.rowMajorStream().sum();
             assertEquals(45L, totalSum); // 1+2+3+4+5+6+7+8+9 = 45
 
             // Test sum of specific row
-            long row1Sum = m.horizontalStream(1).sum();
+            long row1Sum = m.rowMajorStream(1).sum();
             assertEquals(15L, row1Sum); // 4+5+6 = 15
 
             // Test sum of specific column
-            long col0Sum = m.verticalStream(0).sum();
+            long col0Sum = m.columnMajorStream(0).sum();
             assertEquals(12L, col0Sum); // 1+4+7 = 12
 
             // Test min/max
-            long min = m.horizontalStream().min().orElse(0L);
+            long min = m.rowMajorStream().min().orElse(0L);
             assertEquals(1L, min);
 
-            long max = m.horizontalStream().max().orElse(0L);
+            long max = m.rowMajorStream().max().orElse(0L);
             assertEquals(9L, max);
 
             // Test average
-            double avg = m.horizontalStream().average().orElse(0.0);
+            double avg = m.rowMajorStream().average().orElse(0.0);
             assertEquals(5.0, avg, 0.0001);
 
             // Test diagonal operations
@@ -3357,7 +3382,7 @@ class LongMatrixTest extends TestBase {
             assertEquals(300L, largeSum.get(9, 9)); // 100 + 200 = 300
 
             // Test sum of all elements
-            long totalSum = largeSum.horizontalStream().sum();
+            long totalSum = largeSum.rowMajorStream().sum();
             assertEquals(15150L, totalSum); // 3*(1+2+...+100) = 3*5050 = 15150
         }
 
@@ -3700,43 +3725,43 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testStreamH_withRowIndex() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
-            long[] row1 = m.horizontalStream(1).toArray();
+            long[] row1 = m.rowMajorStream(1).toArray();
             assertArrayEquals(new long[] { 4L, 5L, 6L }, row1);
         }
 
         @Test
         public void testStreamH_withRowRange() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
-            long[] rows = m.horizontalStream(1, 3).toArray();
+            long[] rows = m.rowMajorStream(1, 3).toArray();
             assertArrayEquals(new long[] { 4L, 5L, 6L, 7L, 8L, 9L }, rows);
         }
 
         @Test
         public void testStreamH_outOfBounds() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.horizontalStream(-1, 1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.horizontalStream(0, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(-1, 1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(0, 2));
         }
 
         @Test
         public void testStreamV_withColumnIndex() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
-            long[] col1 = m.verticalStream(1).toArray();
+            long[] col1 = m.columnMajorStream(1).toArray();
             assertArrayEquals(new long[] { 2L, 5L }, col1);
         }
 
         @Test
         public void testStreamV_withColumnRange() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
-            long[] columnCount = m.verticalStream(1, 3).toArray();
+            long[] columnCount = m.columnMajorStream(1, 3).toArray();
             assertArrayEquals(new long[] { 2L, 5L, 3L, 6L }, columnCount);
         }
 
         @Test
         public void testStreamV_outOfBounds() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.verticalStream(-1, 1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.verticalStream(0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(-1, 1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(0, 3));
         }
 
         // ============ Stream of Streams Tests ============
@@ -3764,7 +3789,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testPointsH() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            List<Point> points = m.horizontalPoints().toList();
+            List<Point> points = m.rowMajorPoints().toList();
             assertEquals(4, points.size());
             assertEquals(Point.of(0, 0), points.get(0));
             assertEquals(Point.of(0, 1), points.get(1));
@@ -3775,7 +3800,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testPointsV() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            List<Point> points = m.verticalPoints().toList();
+            List<Point> points = m.columnMajorPoints().toList();
             assertEquals(4, points.size());
             assertEquals(Point.of(0, 0), points.get(0));
             assertEquals(Point.of(1, 0), points.get(1));
@@ -4490,14 +4515,14 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testStreamH_rowRange() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
-            long[] rows = m.horizontalStream(1, 3).toArray();
+            long[] rows = m.rowMajorStream(1, 3).toArray();
             assertArrayEquals(new long[] { 3L, 4L, 5L, 6L }, rows);
         }
 
         @Test
         public void testStreamV_columnRange() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
-            long[] columnCount = m.verticalStream(0, 2).toArray();
+            long[] columnCount = m.columnMajorStream(0, 2).toArray();
             assertArrayEquals(new long[] { 1L, 4L, 2L, 5L }, columnCount);
         }
 
@@ -5632,42 +5657,42 @@ class LongMatrixTest extends TestBase {
         @Test
         public void test_horizontalStream() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            long sum = m.horizontalStream().sum();
+            long sum = m.rowMajorStream().sum();
             assertEquals(10L, sum);
         }
 
         @Test
         public void test_streamH_byRowIndex() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            long sum = m.horizontalStream(0).sum();
+            long sum = m.rowMajorStream(0).sum();
             assertEquals(3L, sum);
         }
 
         @Test
         public void test_streamH_withRange() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
-            long sum = m.horizontalStream(1, 3).sum();
+            long sum = m.rowMajorStream(1, 3).sum();
             assertEquals(18L, sum);
         }
 
         @Test
         public void test_verticalStream() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            long sum = m.verticalStream().sum();
+            long sum = m.columnMajorStream().sum();
             assertEquals(10L, sum);
         }
 
         @Test
         public void test_streamV_byColumnIndex() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            long sum = m.verticalStream(0).sum();
+            long sum = m.columnMajorStream(0).sum();
             assertEquals(4L, sum);
         }
 
         @Test
         public void test_streamV_withRange() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
-            long sum = m.verticalStream(1, 3).sum();
+            long sum = m.columnMajorStream(1, 3).sum();
             assertEquals(16L, sum);
         }
 
@@ -5881,28 +5906,28 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testPointsHorizontal() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
-            List<Sheet.Point> points = m.horizontalPoints().toList();
+            List<Sheet.Point> points = m.rowMajorPoints().toList();
             assertEquals(4, points.size());
         }
 
         @Test
         public void testPointsHorizontal_SingleRow() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
-            List<Sheet.Point> points = m.horizontalPoints(0).toList();
+            List<Sheet.Point> points = m.rowMajorPoints(0).toList();
             assertEquals(2, points.size());
         }
 
         @Test
         public void testPointsVertical() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
-            List<Sheet.Point> points = m.verticalPoints().toList();
+            List<Sheet.Point> points = m.columnMajorPoints().toList();
             assertEquals(4, points.size());
         }
 
         @Test
         public void testPointsVertical_SingleColumn() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
-            List<Sheet.Point> points = m.verticalPoints(1).toList();
+            List<Sheet.Point> points = m.columnMajorPoints(1).toList();
             assertEquals(2, points.size());
         }
 
@@ -5984,7 +6009,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testStreamHorizontalIteratorAdvanceAndExhaustion_EdgeCase() {
         LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-        var iterator = matrix.horizontalStream(0, 2).iterator();
+        var iterator = matrix.rowMajorStream(0, 2).iterator();
 
         assertTrue(iterator instanceof com.landawn.abacus.util.stream.LongIteratorEx);
 
@@ -6105,11 +6130,11 @@ class LongMatrixTest extends TestBase {
 
     @Test
     public void testVerticalStream_advanceCrossesColumnBoundary() {
-        // Verify advance crosses column boundaries for verticalStream.
+        // Verify advance crosses column boundaries for columnMajorStream.
         LongMatrix m = LongMatrix.of(new long[][] { { 1L, 4L, 7L }, { 2L, 5L, 8L }, { 3L, 6L, 9L } });
 
-        var it = (com.landawn.abacus.util.stream.LongIteratorEx) m.verticalStream().iterator();
-        // verticalStream() → 1,2,3 (col 0) | 4,5,6 (col 1) | 7,8,9 (col 2)
+        var it = (com.landawn.abacus.util.stream.LongIteratorEx) m.columnMajorStream().iterator();
+        // columnMajorStream() → 1,2,3 (col 0) | 4,5,6 (col 1) | 7,8,9 (col 2)
         assertEquals(9L, it.count());
         it.advance(4);
         // After advancing 4 elements we have skipped 1,2,3,4; next should be 5.

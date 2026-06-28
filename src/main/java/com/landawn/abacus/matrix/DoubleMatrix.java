@@ -51,7 +51,7 @@ import com.landawn.abacus.util.stream.Stream;
  *
  * <p><b>Aggregations:</b> this class does not provide dedicated reduction methods such as
  * {@code sum()}, {@code min()}, {@code max()} or {@code average()}. Compute such aggregations
- * through the streaming API instead &mdash; for example {@code horizontalStream().sum()} over all
+ * through the streaming API instead &mdash; for example {@code rowMajorStream().sum()} over all
  * elements, or {@code rowStreams()} / {@code columnStreams()} for per-row or per-column reductions.</p>
  *
  * @see IntMatrix
@@ -146,6 +146,45 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     public static DoubleMatrix of(final double[]... a) {
         return N.isEmpty(a) ? EMPTY_DOUBLE_MATRIX : new DoubleMatrix(a);
+    }
+
+    /**
+     * Creates a {@code DoubleMatrix} that owns a defensive deep copy of the supplied two-dimensional array.
+     *
+     * <p>Unlike {@link #of(double[][])}, which wraps the caller's array without copying, this factory clones
+     * every row into a freshly-allocated backing array. Subsequent modifications to {@code a} (or its rows)
+     * are therefore <b>not</b> visible through the returned matrix, and vice versa.</p>
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * double[][] data = {{1, 2}, {3, 4}};
+     * DoubleMatrix matrix = DoubleMatrix.copyOf(data);
+     * data[0][0] = 10;
+     * matrix.get(0, 0);                       // returns 1.0 (copy is independent)
+     *
+     * DoubleMatrix.copyOf((double[][]) null).isEmpty();  // returns true
+     * DoubleMatrix.copyOf(new double[][] {{1, 2}, {3}}); // throws IllegalArgumentException (non-rectangular)
+     * }</pre>
+     *
+     * @param a the two-dimensional double array to copy, or {@code null}/empty for an empty matrix
+     * @return a new {@code DoubleMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is {@code null} or empty
+     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     *         different lengths (i.e. the array is not rectangular)
+     * @see #of(double[][])
+     * @see #copy()
+     */
+    public static DoubleMatrix copyOf(final double[]... a) {
+        if (N.isEmpty(a)) {
+            return EMPTY_DOUBLE_MATRIX;
+        }
+
+        final double[][] c = new double[a.length][];
+
+        for (int i = 0, len = a.length; i < len; i++) {
+            c[i] = a[i] == null ? null : a[i].clone();
+        }
+
+        return new DoubleMatrix(c);
     }
 
     /**
@@ -2538,7 +2577,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * @return a new {@link DoubleList} of all elements in row-major order
      * @throws IllegalStateException if {@code (long) rowCount * columnCount > Integer.MAX_VALUE}
-     * @see #horizontalStream()
+     * @see #rowMajorStream()
      */
     @Override
     public DoubleList flatten() {
@@ -3288,18 +3327,18 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
-     * matrix.horizontalStream().toArray();   // returns [1.0, 2.0, 3.0, 4.0]
-     * matrix.horizontalStream().sum();       // returns 10.0
+     * matrix.rowMajorStream().toArray();   // returns [1.0, 2.0, 3.0, 4.0]
+     * matrix.rowMajorStream().sum();       // returns 10.0
      *
-     * DoubleMatrix.empty().horizontalStream().count();                      // returns 0 (empty stream)
-     * DoubleMatrix.of(new double[][] {{5.0}}).horizontalStream().toArray(); // returns [5.0]
+     * DoubleMatrix.empty().rowMajorStream().count();                      // returns 0 (empty stream)
+     * DoubleMatrix.of(new double[][] {{5.0}}).rowMajorStream().toArray(); // returns [5.0]
      * }</pre>
      *
      * @return a DoubleStream of all elements in row-major order, or an empty stream if the matrix is empty
      */
     @Override
-    public DoubleStream horizontalStream() {
-        return horizontalStream(0, rowCount);
+    public DoubleStream rowMajorStream() {
+        return rowMajorStream(0, rowCount);
     }
 
     /**
@@ -3316,11 +3355,11 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}});
-     * matrix.horizontalStream(0).toArray();   // returns [1.0, 2.0, 3.0]
-     * matrix.horizontalStream(1).sum();       // returns 15.0 (sum of second row)
+     * matrix.rowMajorStream(0).toArray();   // returns [1.0, 2.0, 3.0]
+     * matrix.rowMajorStream(1).sum();       // returns 15.0 (sum of second row)
      *
-     * matrix.horizontalStream(-1);            // throws IndexOutOfBoundsException
-     * matrix.horizontalStream(2);             // throws IndexOutOfBoundsException (rowIndex >= rowCount)
+     * matrix.rowMajorStream(-1);            // throws IndexOutOfBoundsException
+     * matrix.rowMajorStream(2);             // throws IndexOutOfBoundsException (rowIndex >= rowCount)
      * }</pre>
      *
      * @param rowIndex the index of the row to stream (0-based)
@@ -3329,10 +3368,10 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @see #rowStreams()
      */
     @Override
-    public DoubleStream horizontalStream(final int rowIndex) {
+    public DoubleStream rowMajorStream(final int rowIndex) {
         checkRowIndex(rowIndex);
 
-        return horizontalStream(rowIndex, rowIndex + 1);
+        return rowMajorStream(rowIndex, rowIndex + 1);
     }
 
     /**
@@ -3347,11 +3386,11 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0}, {3.0, 4.0}, {5.0, 6.0}});
-     * matrix.horizontalStream(1, 3).toArray();   // returns [3.0, 4.0, 5.0, 6.0]
-     * matrix.horizontalStream(0, 1).toArray();   // returns [1.0, 2.0]
+     * matrix.rowMajorStream(1, 3).toArray();   // returns [3.0, 4.0, 5.0, 6.0]
+     * matrix.rowMajorStream(0, 1).toArray();   // returns [1.0, 2.0]
      *
-     * matrix.horizontalStream(1, 1).count();     // returns 0 (empty range)
-     * matrix.horizontalStream(0, 5);             // throws IndexOutOfBoundsException (toRowIndex > rowCount)
+     * matrix.rowMajorStream(1, 1).count();     // returns 0 (empty range)
+     * matrix.rowMajorStream(0, 5);             // throws IndexOutOfBoundsException (toRowIndex > rowCount)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -3360,7 +3399,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount}, or {@code fromRowIndex > toRowIndex}
      */
     @Override
-    public DoubleStream horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
+    public DoubleStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
         if (isEmpty()) {
@@ -3436,24 +3475,24 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * Elements are streamed column by column from the top-left corner to the bottom-right corner.
      *
      * <p>This method provides an alternative way to iterate through matrix
-     * elements compared to the row-major order of {@link #horizontalStream()}.</p>
+     * elements compared to the row-major order of {@link #rowMajorStream()}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
-     * matrix.verticalStream().toArray();   // returns [1.0, 3.0, 2.0, 4.0]
-     * matrix.verticalStream().sum();       // returns 10.0
+     * matrix.columnMajorStream().toArray();   // returns [1.0, 3.0, 2.0, 4.0]
+     * matrix.columnMajorStream().sum();       // returns 10.0
      *
-     * DoubleMatrix.empty().verticalStream().count();                      // returns 0 (empty stream)
-     * DoubleMatrix.of(new double[][] {{5.0}}).verticalStream().toArray(); // returns [5.0]
+     * DoubleMatrix.empty().columnMajorStream().count();                      // returns 0 (empty stream)
+     * DoubleMatrix.of(new double[][] {{5.0}}).columnMajorStream().toArray(); // returns [5.0]
      * }</pre>
      *
      * @return a DoubleStream of all elements in column-major order, or an empty stream if the matrix is empty
      */
     @Override
     @Beta
-    public DoubleStream verticalStream() {
-        return verticalStream(0, columnCount);
+    public DoubleStream columnMajorStream() {
+        return columnMajorStream(0, columnCount);
     }
 
     /**
@@ -3466,11 +3505,11 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}});
-     * matrix.verticalStream(1).toArray();   // returns [2.0, 5.0]
-     * matrix.verticalStream(0).sum();       // returns 5.0 (sum of first column)
+     * matrix.columnMajorStream(1).toArray();   // returns [2.0, 5.0]
+     * matrix.columnMajorStream(0).sum();       // returns 5.0 (sum of first column)
      *
-     * matrix.verticalStream(-1);            // throws IndexOutOfBoundsException
-     * matrix.verticalStream(3);             // throws IndexOutOfBoundsException (columnIndex >= columnCount)
+     * matrix.columnMajorStream(-1);            // throws IndexOutOfBoundsException
+     * matrix.columnMajorStream(3);             // throws IndexOutOfBoundsException (columnIndex >= columnCount)
      * }</pre>
      *
      * @param columnIndex the index of the column to stream (0-based)
@@ -3478,10 +3517,10 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     @Override
-    public DoubleStream verticalStream(final int columnIndex) {
+    public DoubleStream columnMajorStream(final int columnIndex) {
         checkColumnIndex(columnIndex);
 
-        return verticalStream(columnIndex, columnIndex + 1);
+        return columnMajorStream(columnIndex, columnIndex + 1);
     }
 
     /**
@@ -3495,11 +3534,11 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}});
-     * matrix.verticalStream(1, 3).toArray();   // returns [2.0, 5.0, 3.0, 6.0]
-     * matrix.verticalStream(0, 1).toArray();   // returns [1.0, 4.0]
+     * matrix.columnMajorStream(1, 3).toArray();   // returns [2.0, 5.0, 3.0, 6.0]
+     * matrix.columnMajorStream(0, 1).toArray();   // returns [1.0, 4.0]
      *
-     * matrix.verticalStream(1, 1).count();     // returns 0 (empty range)
-     * matrix.verticalStream(0, 5);             // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
+     * matrix.columnMajorStream(1, 1).count();     // returns 0 (empty range)
+     * matrix.columnMajorStream(0, 5);             // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
      * }</pre>
      *
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
@@ -3511,7 +3550,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     @Override
     @Beta
-    public DoubleStream verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
+    public DoubleStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
         if (isEmpty()) {
@@ -3592,7 +3631,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * rows to other values.</p>
      *
      * <p>This yields one stream per row. To instead stream the elements of a single row as one
-     * flat stream, use {@link #horizontalStream(int)}.</p>
+     * flat stream, use {@link #rowMajorStream(int)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3605,7 +3644,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @return a Stream of DoubleStream objects, one for each row in the matrix
-     * @see #horizontalStream(int)
+     * @see #rowMajorStream(int)
      */
     @Override
     public Stream<DoubleStream> rowStreams() {

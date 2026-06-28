@@ -135,6 +135,45 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
+     * Creates a {@code BooleanMatrix} that owns a defensive deep copy of the supplied two-dimensional array.
+     *
+     * <p>Unlike {@link #of(boolean[][])}, which wraps the caller's array without copying, this factory clones
+     * every row into a freshly-allocated backing array. Subsequent modifications to {@code a} (or its rows)
+     * are therefore <b>not</b> visible through the returned matrix, and vice versa.</p>
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * boolean[][] data = {{true, false}, {false, true}};
+     * BooleanMatrix matrix = BooleanMatrix.copyOf(data);
+     * data[0][0] = false;
+     * matrix.get(0, 0);                       // returns true (copy is independent)
+     *
+     * BooleanMatrix.copyOf((boolean[][]) null).isEmpty();            // returns true
+     * BooleanMatrix.copyOf(new boolean[][] {{true, false}, {true}}); // throws IllegalArgumentException (non-rectangular)
+     * }</pre>
+     *
+     * @param a the two-dimensional boolean array to copy, or {@code null}/empty for an empty matrix
+     * @return a new {@code BooleanMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is {@code null} or empty
+     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     *         different lengths (i.e. the array is not rectangular)
+     * @see #of(boolean[][])
+     * @see #copy()
+     */
+    public static BooleanMatrix copyOf(final boolean[]... a) {
+        if (N.isEmpty(a)) {
+            return EMPTY_BOOLEAN_MATRIX;
+        }
+
+        final boolean[][] c = new boolean[a.length][];
+
+        for (int i = 0, len = a.length; i < len; i++) {
+            c[i] = a[i] == null ? null : a[i].clone();
+        }
+
+        return new BooleanMatrix(c);
+    }
+
+    /**
      * Creates a new {@code 1 × length} matrix filled with pseudo-randomly generated boolean values.
      *
      * <p><b>Usage Examples:</b></p>
@@ -2360,7 +2399,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @return a new {@code BooleanList} of all elements in row-major order
      * @throws IllegalStateException if the matrix is too large to flatten
      *         (i.e. {@code (long) rowCount * columnCount > Integer.MAX_VALUE})
-     * @see #horizontalStream()
+     * @see #rowMajorStream()
      */
     @Override
     public BooleanList flatten() {
@@ -3039,18 +3078,18 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] {{true, false}, {false, true}});
-     * matrix.horizontalStream().toList();                 // returns [true, false, false, true]
-     * matrix.horizontalStream().filter(b -> b).count();   // returns 2
-     * matrix.horizontalStream().findFirst().get();        // returns true
+     * matrix.rowMajorStream().toList();                 // returns [true, false, false, true]
+     * matrix.rowMajorStream().filter(b -> b).count();   // returns 2
+     * matrix.rowMajorStream().findFirst().get();        // returns true
      *
-     * BooleanMatrix.empty().horizontalStream().count();   // returns 0 (empty stream)
+     * BooleanMatrix.empty().rowMajorStream().count();   // returns 0 (empty stream)
      * }</pre>
      *
      * @return a {@code Stream<Boolean>} of all elements in row-major order, or an empty stream if the matrix is empty
      */
     @Override
-    public Stream<Boolean> horizontalStream() {
-        return horizontalStream(0, rowCount);
+    public Stream<Boolean> rowMajorStream() {
+        return rowMajorStream(0, rowCount);
     }
 
     /**
@@ -3069,12 +3108,12 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *     {true,  false, true},
      *     {false, true,  false}
      * });
-     * matrix.horizontalStream(0).toList();                 // returns [true, false, true]
-     * matrix.horizontalStream(1).anyMatch(b -> b);         // returns true
-     * matrix.horizontalStream(0).filter(b -> b).count();   // returns 2
+     * matrix.rowMajorStream(0).toList();                 // returns [true, false, true]
+     * matrix.rowMajorStream(1).anyMatch(b -> b);         // returns true
+     * matrix.rowMajorStream(0).filter(b -> b).count();   // returns 2
      *
-     * matrix.horizontalStream(5);   // throws IndexOutOfBoundsException (row >= rowCount)
-     * matrix.horizontalStream(-1);  // throws IndexOutOfBoundsException (negative row)
+     * matrix.rowMajorStream(5);   // throws IndexOutOfBoundsException (row >= rowCount)
+     * matrix.rowMajorStream(-1);  // throws IndexOutOfBoundsException (negative row)
      * }</pre>
      *
      * @param rowIndex the index of the row to stream (0-based)
@@ -3083,10 +3122,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @see #rowStreams()
      */
     @Override
-    public Stream<Boolean> horizontalStream(final int rowIndex) {
+    public Stream<Boolean> rowMajorStream(final int rowIndex) {
         checkRowIndex(rowIndex);
 
-        return horizontalStream(rowIndex, rowIndex + 1);
+        return rowMajorStream(rowIndex, rowIndex + 1);
     }
 
     /**
@@ -3105,12 +3144,12 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *     {false, true},
      *     {true,  true}
      * });
-     * matrix.horizontalStream(1, 3).toList();                 // returns [false, true, true, true] (rows 1 and 2)
-     * matrix.horizontalStream(0, 2).filter(b -> b).count();   // returns 2 (rows 0 and 1)
-     * matrix.horizontalStream(1, 1).count();                  // returns 0 (empty range)
+     * matrix.rowMajorStream(1, 3).toList();                 // returns [false, true, true, true] (rows 1 and 2)
+     * matrix.rowMajorStream(0, 2).filter(b -> b).count();   // returns 2 (rows 0 and 1)
+     * matrix.rowMajorStream(1, 1).count();                  // returns 0 (empty range)
      *
-     * matrix.horizontalStream(0, 9);   // throws IndexOutOfBoundsException (toRowIndex > rowCount)
-     * matrix.horizontalStream(2, 1);   // throws IndexOutOfBoundsException (fromRowIndex > toRowIndex)
+     * matrix.rowMajorStream(0, 9);   // throws IndexOutOfBoundsException (toRowIndex > rowCount)
+     * matrix.rowMajorStream(2, 1);   // throws IndexOutOfBoundsException (fromRowIndex > toRowIndex)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -3120,7 +3159,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *         or {@code fromRowIndex > toRowIndex}
      */
     @Override
-    public Stream<Boolean> horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
+    public Stream<Boolean> rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
         if (isEmpty()) {
@@ -3204,25 +3243,25 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * the leftmost column and proceeding to the rightmost column.
      *
      * <p>This method provides an alternative way to iterate through matrix
-     * elements compared to the row-major order of horizontalStream(). Because there is no primitive
+     * elements compared to the row-major order of rowMajorStream(). Because there is no primitive
      * {@code BooleanStream}, this returns a {@code Stream<Boolean>} with boxed values.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] {{true, false}, {false, true}});
-     * matrix.verticalStream().toList();                // returns [true, false, false, true] (column-major)
-     * matrix.verticalStream().filter(b -> b).count();  // returns 2
-     * matrix.verticalStream().findFirst().get();       // returns true
+     * matrix.columnMajorStream().toList();                // returns [true, false, false, true] (column-major)
+     * matrix.columnMajorStream().filter(b -> b).count();  // returns 2
+     * matrix.columnMajorStream().findFirst().get();       // returns true
      *
-     * BooleanMatrix.empty().verticalStream().count();   // returns 0 (empty stream)
+     * BooleanMatrix.empty().columnMajorStream().count();   // returns 0 (empty stream)
      * }</pre>
      *
      * @return a {@code Stream<Boolean>} of all elements in column-major order, or an empty stream if the matrix is empty
      */
     @Override
     @Beta
-    public Stream<Boolean> verticalStream() {
-        return verticalStream(0, columnCount);
+    public Stream<Boolean> columnMajorStream() {
+        return columnMajorStream(0, columnCount);
     }
 
     /**
@@ -3238,12 +3277,12 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *     {true, false, true},
      *     {true, true,  false}
      * });
-     * matrix.verticalStream(0).toList();                 // returns [true, true]
-     * matrix.verticalStream(0).allMatch(b -> b);         // returns true
-     * matrix.verticalStream(1).filter(b -> b).count();   // returns 1
+     * matrix.columnMajorStream(0).toList();                 // returns [true, true]
+     * matrix.columnMajorStream(0).allMatch(b -> b);         // returns true
+     * matrix.columnMajorStream(1).filter(b -> b).count();   // returns 1
      *
-     * matrix.verticalStream(5);    // throws IndexOutOfBoundsException (column >= columnCount)
-     * matrix.verticalStream(-1);   // throws IndexOutOfBoundsException (negative column)
+     * matrix.columnMajorStream(5);    // throws IndexOutOfBoundsException (column >= columnCount)
+     * matrix.columnMajorStream(-1);   // throws IndexOutOfBoundsException (negative column)
      * }</pre>
      *
      * @param columnIndex the index of the column to stream (0-based)
@@ -3251,10 +3290,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     @Override
-    public Stream<Boolean> verticalStream(final int columnIndex) {
+    public Stream<Boolean> columnMajorStream(final int columnIndex) {
         checkColumnIndex(columnIndex);
 
-        return verticalStream(columnIndex, columnIndex + 1);
+        return columnMajorStream(columnIndex, columnIndex + 1);
     }
 
     /**
@@ -3271,12 +3310,12 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *     {true,  false, true},
      *     {false, true,  false}
      * });
-     * matrix.verticalStream(1, 3).toList();                 // returns [false, true, true, false] (columns 1 and 2, column-major)
-     * matrix.verticalStream(0, 2).filter(b -> b).count();   // returns 2
-     * matrix.verticalStream(1, 1).count();                  // returns 0 (empty range)
+     * matrix.columnMajorStream(1, 3).toList();                 // returns [false, true, true, false] (columns 1 and 2, column-major)
+     * matrix.columnMajorStream(0, 2).filter(b -> b).count();   // returns 2
+     * matrix.columnMajorStream(1, 1).count();                  // returns 0 (empty range)
      *
-     * matrix.verticalStream(0, 9);   // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
-     * matrix.verticalStream(3, 1);   // throws IndexOutOfBoundsException (fromColumnIndex > toColumnIndex)
+     * matrix.columnMajorStream(0, 9);   // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
+     * matrix.columnMajorStream(3, 1);   // throws IndexOutOfBoundsException (fromColumnIndex > toColumnIndex)
      * }</pre>
      *
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
@@ -3288,7 +3327,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     @Override
     @Beta
-    public Stream<Boolean> verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
+    public Stream<Boolean> columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
         if (isEmpty()) {
@@ -3377,7 +3416,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * stream is a {@code Stream<Boolean>} with boxed values.</p>
      *
      * <p>This yields one stream per row. To instead stream the elements of a single row as one
-     * flat stream, use {@link #horizontalStream(int)}.</p>
+     * flat stream, use {@link #rowMajorStream(int)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3399,7 +3438,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * }</pre>
      *
      * @return a {@code Stream<Stream<Boolean>>}, one inner stream per row in the matrix
-     * @see #horizontalStream(int)
+     * @see #rowMajorStream(int)
      */
     @Override
     public Stream<Stream<Boolean>> rowStreams() {

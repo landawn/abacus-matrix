@@ -172,6 +172,48 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     }
 
     /**
+     * Creates a {@code Matrix} that owns a defensive deep copy of the supplied two-dimensional array.
+     *
+     * <p>Unlike {@link #of(Object[][])}, which wraps the caller's array without copying, this factory clones
+     * every row into a freshly-allocated backing array. Subsequent modifications to {@code a} (or its rows)
+     * are therefore <b>not</b> visible through the returned matrix, and vice versa. The element references
+     * themselves are not cloned (each row is shallow-copied, like {@link #copy()}).</p>
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * String[][] data = {{"a", "b"}, {"c", "d"}};
+     * Matrix<String> matrix = Matrix.copyOf(data);
+     * data[0][0] = "x";
+     * matrix.get(0, 0);                            // returns "a" (copy is independent)
+     *
+     * Matrix.copyOf((String[][]) null);                          // throws IllegalArgumentException
+     * Matrix.copyOf(new String[] {"a"}, new String[] {"b", "c"}); // throws IllegalArgumentException (not rectangular)
+     * }</pre>
+     *
+     * @param <T> the type of elements in the matrix
+     * @param a the two-dimensional array to copy (must not be {@code null})
+     * @return a new {@code Matrix} backed by a deep copy of {@code a}
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if any row is {@code null}, or if rows have
+     *         different lengths (non-rectangular array)
+     * @see #of(Object[][])
+     * @see #copy()
+     */
+    @SafeVarargs
+    public static <T> Matrix<T> copyOf(final T[]... a) {
+        if (N.isEmpty(a)) {
+            return new Matrix<>(a);
+        }
+
+        final T[][] c = a.clone();
+
+        for (int i = 0, len = c.length; i < len; i++) {
+            c[i] = c[i] == null ? null : c[i].clone();
+        }
+
+        return new Matrix<>(c);
+    }
+
+    /**
      * Creates a new matrix of the specified dimensions where every element is the provided {@code element}.
      *
      * <p>The matrix's element type is resolved from {@code element.getClass()}, so the result
@@ -3079,17 +3121,17 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Integer> matrix = Matrix.of(new Integer[][] {{1, 2}, {3, 4}});
-     * matrix.horizontalStream().toArray();   // returns [1, 2, 3, 4]
+     * matrix.rowMajorStream().toArray();   // returns [1, 2, 3, 4]
      *
      * Matrix<Integer> empty = Matrix.empty();
-     * empty.horizontalStream().count();      // returns 0 (empty stream)
+     * empty.rowMajorStream().count();      // returns 0 (empty stream)
      * }</pre>
      *
      * @return a {@link Stream} of all elements in row-major order, or an empty stream if the matrix is empty
      */
     @Override
-    public Stream<T> horizontalStream() {
-        return horizontalStream(0, rowCount);
+    public Stream<T> rowMajorStream() {
+        return rowMajorStream(0, rowCount);
     }
 
     /**
@@ -3102,9 +3144,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Integer> matrix = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * matrix.horizontalStream(1).toArray();   // returns [4, 5, 6]
-     * matrix.horizontalStream(0).toArray();   // returns [1, 2, 3]
-     * matrix.horizontalStream(5);             // throws IndexOutOfBoundsException
+     * matrix.rowMajorStream(1).toArray();   // returns [4, 5, 6]
+     * matrix.rowMajorStream(0).toArray();   // returns [1, 2, 3]
+     * matrix.rowMajorStream(5);             // throws IndexOutOfBoundsException
      * }</pre>
      *
      * @param rowIndex the index of the row to stream (0-based)
@@ -3113,10 +3155,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @see #rowStreams()
      */
     @Override
-    public Stream<T> horizontalStream(final int rowIndex) {
+    public Stream<T> rowMajorStream(final int rowIndex) {
         checkRowIndex(rowIndex);
 
-        return horizontalStream(rowIndex, rowIndex + 1);
+        return rowMajorStream(rowIndex, rowIndex + 1);
     }
 
     /**
@@ -3126,9 +3168,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Integer> matrix = Matrix.of(new Integer[][] {{1, 2}, {3, 4}, {5, 6}});
-     * matrix.horizontalStream(1, 3).toArray();   // returns [3, 4, 5, 6]
-     * matrix.horizontalStream(0, 2).toArray();   // returns [1, 2, 3, 4]
-     * matrix.horizontalStream(0, 5);             // throws IndexOutOfBoundsException
+     * matrix.rowMajorStream(1, 3).toArray();   // returns [3, 4, 5, 6]
+     * matrix.rowMajorStream(0, 2).toArray();   // returns [1, 2, 3, 4]
+     * matrix.rowMajorStream(0, 5);             // throws IndexOutOfBoundsException
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -3137,7 +3179,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws IndexOutOfBoundsException if {@code fromRowIndex} or {@code toRowIndex} is out of range
      */
     @Override
-    public Stream<T> horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
+    public Stream<T> rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
         if (isEmpty()) {
@@ -3223,18 +3265,18 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Integer> matrix = Matrix.of(new Integer[][] {{1, 2}, {3, 4}});
-     * matrix.verticalStream().toArray();   // returns [1, 3, 2, 4]
+     * matrix.columnMajorStream().toArray();   // returns [1, 3, 2, 4]
      *
      * Matrix<Integer> empty = Matrix.empty();
-     * empty.verticalStream().count();      // returns 0 (empty stream)
+     * empty.columnMajorStream().count();      // returns 0 (empty stream)
      * }</pre>
      *
      * @return a {@link Stream} of all elements in column-major order, or an empty stream if the matrix is empty
      */
     @Override
     @Beta
-    public Stream<T> verticalStream() {
-        return verticalStream(0, columnCount);
+    public Stream<T> columnMajorStream() {
+        return columnMajorStream(0, columnCount);
     }
 
     /**
@@ -3244,9 +3286,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Integer> matrix = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * matrix.verticalStream(1).toArray();   // returns [2, 5, 8]
-     * matrix.verticalStream(0).toArray();   // returns [1, 4, 7]
-     * matrix.verticalStream(5);             // throws IndexOutOfBoundsException
+     * matrix.columnMajorStream(1).toArray();   // returns [2, 5, 8]
+     * matrix.columnMajorStream(0).toArray();   // returns [1, 4, 7]
+     * matrix.columnMajorStream(5);             // throws IndexOutOfBoundsException
      * }</pre>
      *
      * @param columnIndex the index of the column to stream (0-based)
@@ -3254,10 +3296,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws IndexOutOfBoundsException if {@code columnIndex} is negative or greater than or equal to {@code columnCount}
      */
     @Override
-    public Stream<T> verticalStream(final int columnIndex) {
+    public Stream<T> columnMajorStream(final int columnIndex) {
         checkColumnIndex(columnIndex);
 
-        return verticalStream(columnIndex, columnIndex + 1);
+        return columnMajorStream(columnIndex, columnIndex + 1);
     }
 
     /**
@@ -3267,9 +3309,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Integer> matrix = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
-     * matrix.verticalStream(1, 3).toArray();   // returns [2, 5, 3, 6]
-     * matrix.verticalStream(0, 2).toArray();   // returns [1, 4, 2, 5]
-     * matrix.verticalStream(0, 5);             // throws IndexOutOfBoundsException
+     * matrix.columnMajorStream(1, 3).toArray();   // returns [2, 5, 3, 6]
+     * matrix.columnMajorStream(0, 2).toArray();   // returns [1, 4, 2, 5]
+     * matrix.columnMajorStream(0, 5);             // throws IndexOutOfBoundsException
      * }</pre>
      *
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
@@ -3279,7 +3321,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     @Beta
     @Override
-    public Stream<T> verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
+    public Stream<T> columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
         if (isEmpty()) {
@@ -3364,7 +3406,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * provides the elements of that row from left to right.
      *
      * <p>This yields one stream per row. To instead stream the elements of a single row as one
-     * flat stream, use {@link #horizontalStream(int)}.</p>
+     * flat stream, use {@link #rowMajorStream(int)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3377,7 +3419,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @return a {@link Stream} of row streams, with one inner stream per row in the matrix
-     * @see #horizontalStream(int)
+     * @see #rowMajorStream(int)
      */
     @Override
     public Stream<Stream<T>> rowStreams() {

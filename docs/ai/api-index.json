@@ -1196,12 +1196,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalPoints",
+              "name": "rowMajorPoints",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public Stream<Point> horizontalPoints()",
+              "signature": "public Stream<Point> rowMajorPoints()",
               "return_type": "Stream<Point>",
               "type_params": [],
               "params": [],
@@ -1212,12 +1212,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalPoints",
+              "name": "rowMajorPoints",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public Stream<Point> horizontalPoints(final int rowIndex)",
+              "signature": "public Stream<Point> rowMajorPoints(final int rowIndex)",
               "return_type": "Stream<Point>",
               "type_params": [],
               "params": [
@@ -1235,12 +1235,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalPoints",
+              "name": "rowMajorPoints",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@SuppressWarnings(\"resource\") public Stream<Point> horizontalPoints(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
+              "signature": "@SuppressWarnings(\"resource\") public Stream<Point> rowMajorPoints(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "Stream<Point>",
               "type_params": [],
               "params": [
@@ -1269,12 +1269,12 @@
               "see_also": []
             },
             {
-              "name": "verticalPoints",
+              "name": "columnMajorPoints",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public Stream<Point> verticalPoints()",
+              "signature": "public Stream<Point> columnMajorPoints()",
               "return_type": "Stream<Point>",
               "type_params": [],
               "params": [],
@@ -1285,12 +1285,12 @@
               "see_also": []
             },
             {
-              "name": "verticalPoints",
+              "name": "columnMajorPoints",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public Stream<Point> verticalPoints(final int columnIndex)",
+              "signature": "public Stream<Point> columnMajorPoints(final int columnIndex)",
               "return_type": "Stream<Point>",
               "type_params": [],
               "params": [
@@ -1308,12 +1308,12 @@
               "see_also": []
             },
             {
-              "name": "verticalPoints",
+              "name": "columnMajorPoints",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@SuppressWarnings(\"resource\") public Stream<Point> verticalPoints(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@SuppressWarnings(\"resource\") public Stream<Point> columnMajorPoints(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "Stream<Point>",
               "type_params": [],
               "params": [
@@ -1480,13 +1480,13 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public",
                 "abstract"
               ],
-              "signature": "public abstract ES horizontalStream()",
+              "signature": "public abstract ES rowMajorStream()",
               "return_type": "ES",
               "type_params": [],
               "params": [],
@@ -1497,13 +1497,13 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public",
                 "abstract"
               ],
-              "signature": "public abstract ES horizontalStream(final int rowIndex)",
+              "signature": "public abstract ES rowMajorStream(final int rowIndex)",
               "return_type": "ES",
               "type_params": [],
               "params": [
@@ -1521,13 +1521,13 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public",
                 "abstract"
               ],
-              "signature": "public abstract ES horizontalStream(final int fromRowIndex, final int toRowIndex)",
+              "signature": "public abstract ES rowMajorStream(final int fromRowIndex, final int toRowIndex)",
               "return_type": "ES",
               "type_params": [],
               "params": [
@@ -1551,13 +1551,13 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public",
                 "abstract"
               ],
-              "signature": "public abstract ES verticalStream()",
+              "signature": "public abstract ES columnMajorStream()",
               "return_type": "ES",
               "type_params": [],
               "params": [],
@@ -1568,13 +1568,13 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public",
                 "abstract"
               ],
-              "signature": "public abstract ES verticalStream(final int columnIndex)",
+              "signature": "public abstract ES columnMajorStream(final int columnIndex)",
               "return_type": "ES",
               "type_params": [],
               "params": [
@@ -1592,13 +1592,13 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public",
                 "abstract"
               ],
-              "signature": "public abstract ES verticalStream(final int fromColumnIndex, final int toColumnIndex)",
+              "signature": "public abstract ES columnMajorStream(final int fromColumnIndex, final int toColumnIndex)",
               "return_type": "ES",
               "type_params": [],
               "params": [
@@ -3686,7 +3686,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#horizontalStream()"
+                "#rowMajorStream()"
               ]
             },
             {
@@ -4094,12 +4094,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public Stream<Boolean> horizontalStream()",
+              "signature": "@Override public Stream<Boolean> rowMajorStream()",
               "return_type": "Stream<Boolean>",
               "type_params": [],
               "params": [],
@@ -4110,12 +4110,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public Stream<Boolean> horizontalStream(final int rowIndex)",
+              "signature": "@Override public Stream<Boolean> rowMajorStream(final int rowIndex)",
               "return_type": "Stream<Boolean>",
               "type_params": [],
               "params": [
@@ -4135,12 +4135,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public Stream<Boolean> horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public Stream<Boolean> rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "Stream<Boolean>",
               "type_params": [],
               "params": [
@@ -4169,12 +4169,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public Stream<Boolean> verticalStream()",
+              "signature": "@Override @Beta public Stream<Boolean> columnMajorStream()",
               "return_type": "Stream<Boolean>",
               "type_params": [],
               "params": [],
@@ -4185,12 +4185,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public Stream<Boolean> verticalStream(final int columnIndex)",
+              "signature": "@Override public Stream<Boolean> columnMajorStream(final int columnIndex)",
               "return_type": "Stream<Boolean>",
               "type_params": [],
               "params": [
@@ -4208,12 +4208,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public Stream<Boolean> verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override @Beta public Stream<Boolean> columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "Stream<Boolean>",
               "type_params": [],
               "params": [
@@ -6568,7 +6568,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#horizontalStream()"
+                "#rowMajorStream()"
               ]
             },
             {
@@ -7009,12 +7009,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public ByteStream horizontalStream()",
+              "signature": "@Override public ByteStream rowMajorStream()",
               "return_type": "ByteStream",
               "type_params": [],
               "params": [],
@@ -7025,12 +7025,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public ByteStream horizontalStream(final int rowIndex)",
+              "signature": "@Override public ByteStream rowMajorStream(final int rowIndex)",
               "return_type": "ByteStream",
               "type_params": [],
               "params": [
@@ -7050,12 +7050,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public ByteStream horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public ByteStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "ByteStream",
               "type_params": [],
               "params": [
@@ -7084,12 +7084,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public ByteStream verticalStream()",
+              "signature": "@Override @Beta public ByteStream columnMajorStream()",
               "return_type": "ByteStream",
               "type_params": [],
               "params": [],
@@ -7100,12 +7100,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public ByteStream verticalStream(final int columnIndex)",
+              "signature": "@Override public ByteStream columnMajorStream(final int columnIndex)",
               "return_type": "ByteStream",
               "type_params": [],
               "params": [
@@ -7123,12 +7123,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public ByteStream verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override @Beta public ByteStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "ByteStream",
               "type_params": [],
               "params": [
@@ -9467,7 +9467,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#horizontalStream()"
+                "#rowMajorStream()"
               ]
             },
             {
@@ -9891,12 +9891,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public CharStream horizontalStream()",
+              "signature": "@Override public CharStream rowMajorStream()",
               "return_type": "CharStream",
               "type_params": [],
               "params": [],
@@ -9907,12 +9907,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public CharStream horizontalStream(final int rowIndex)",
+              "signature": "@Override public CharStream rowMajorStream(final int rowIndex)",
               "return_type": "CharStream",
               "type_params": [],
               "params": [
@@ -9932,12 +9932,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public CharStream horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public CharStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "CharStream",
               "type_params": [],
               "params": [
@@ -9966,12 +9966,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public CharStream verticalStream()",
+              "signature": "@Override @Beta public CharStream columnMajorStream()",
               "return_type": "CharStream",
               "type_params": [],
               "params": [],
@@ -9982,12 +9982,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public CharStream verticalStream(final int columnIndex)",
+              "signature": "@Override public CharStream columnMajorStream(final int columnIndex)",
               "return_type": "CharStream",
               "type_params": [],
               "params": [
@@ -10005,12 +10005,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public CharStream verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override @Beta public CharStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "CharStream",
               "type_params": [],
               "params": [
@@ -12370,7 +12370,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#horizontalStream()"
+                "#rowMajorStream()"
               ]
             },
             {
@@ -12780,12 +12780,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public DoubleStream horizontalStream()",
+              "signature": "@Override public DoubleStream rowMajorStream()",
               "return_type": "DoubleStream",
               "type_params": [],
               "params": [],
@@ -12796,12 +12796,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public DoubleStream horizontalStream(final int rowIndex)",
+              "signature": "@Override public DoubleStream rowMajorStream(final int rowIndex)",
               "return_type": "DoubleStream",
               "type_params": [],
               "params": [
@@ -12821,12 +12821,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public DoubleStream horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public DoubleStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "DoubleStream",
               "type_params": [],
               "params": [
@@ -12855,12 +12855,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public DoubleStream verticalStream()",
+              "signature": "@Override @Beta public DoubleStream columnMajorStream()",
               "return_type": "DoubleStream",
               "type_params": [],
               "params": [],
@@ -12871,12 +12871,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public DoubleStream verticalStream(final int columnIndex)",
+              "signature": "@Override public DoubleStream columnMajorStream(final int columnIndex)",
               "return_type": "DoubleStream",
               "type_params": [],
               "params": [
@@ -12894,12 +12894,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public DoubleStream verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override @Beta public DoubleStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "DoubleStream",
               "type_params": [],
               "params": [
@@ -15136,7 +15136,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#horizontalStream()"
+                "#rowMajorStream()"
               ]
             },
             {
@@ -15547,12 +15547,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public FloatStream horizontalStream()",
+              "signature": "@Override public FloatStream rowMajorStream()",
               "return_type": "FloatStream",
               "type_params": [],
               "params": [],
@@ -15563,12 +15563,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public FloatStream horizontalStream(final int rowIndex)",
+              "signature": "@Override public FloatStream rowMajorStream(final int rowIndex)",
               "return_type": "FloatStream",
               "type_params": [],
               "params": [
@@ -15588,12 +15588,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public FloatStream horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public FloatStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "FloatStream",
               "type_params": [],
               "params": [
@@ -15622,12 +15622,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public FloatStream verticalStream()",
+              "signature": "@Override @Beta public FloatStream columnMajorStream()",
               "return_type": "FloatStream",
               "type_params": [],
               "params": [],
@@ -15638,12 +15638,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public FloatStream verticalStream(final int columnIndex)",
+              "signature": "@Override public FloatStream columnMajorStream(final int columnIndex)",
               "return_type": "FloatStream",
               "type_params": [],
               "params": [
@@ -15661,12 +15661,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public FloatStream verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override @Beta public FloatStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "FloatStream",
               "type_params": [],
               "params": [
@@ -18160,7 +18160,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#horizontalStream()"
+                "#rowMajorStream()"
               ]
             },
             {
@@ -18571,12 +18571,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public IntStream horizontalStream()",
+              "signature": "@Override public IntStream rowMajorStream()",
               "return_type": "IntStream",
               "type_params": [],
               "params": [],
@@ -18587,12 +18587,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public IntStream horizontalStream(final int rowIndex)",
+              "signature": "@Override public IntStream rowMajorStream(final int rowIndex)",
               "return_type": "IntStream",
               "type_params": [],
               "params": [
@@ -18612,12 +18612,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public IntStream horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public IntStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "IntStream",
               "type_params": [],
               "params": [
@@ -18646,12 +18646,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public IntStream verticalStream()",
+              "signature": "@Override @Beta public IntStream columnMajorStream()",
               "return_type": "IntStream",
               "type_params": [],
               "params": [],
@@ -18662,12 +18662,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public IntStream verticalStream(final int columnIndex)",
+              "signature": "@Override public IntStream columnMajorStream(final int columnIndex)",
               "return_type": "IntStream",
               "type_params": [],
               "params": [
@@ -18685,12 +18685,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public IntStream verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override @Beta public IntStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "IntStream",
               "type_params": [],
               "params": [
@@ -21133,7 +21133,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#horizontalStream()"
+                "#rowMajorStream()"
               ]
             },
             {
@@ -21543,12 +21543,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public LongStream horizontalStream()",
+              "signature": "@Override public LongStream rowMajorStream()",
               "return_type": "LongStream",
               "type_params": [],
               "params": [],
@@ -21559,12 +21559,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public LongStream horizontalStream(final int rowIndex)",
+              "signature": "@Override public LongStream rowMajorStream(final int rowIndex)",
               "return_type": "LongStream",
               "type_params": [],
               "params": [
@@ -21584,12 +21584,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public LongStream horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public LongStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "LongStream",
               "type_params": [],
               "params": [
@@ -21618,12 +21618,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public LongStream verticalStream()",
+              "signature": "@Override @Beta public LongStream columnMajorStream()",
               "return_type": "LongStream",
               "type_params": [],
               "params": [],
@@ -21634,12 +21634,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public LongStream verticalStream(final int columnIndex)",
+              "signature": "@Override public LongStream columnMajorStream(final int columnIndex)",
               "return_type": "LongStream",
               "type_params": [],
               "params": [
@@ -21657,12 +21657,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public LongStream verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override @Beta public LongStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "LongStream",
               "type_params": [],
               "params": [
@@ -27964,12 +27964,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public Stream<T> horizontalStream()",
+              "signature": "@Override public Stream<T> rowMajorStream()",
               "return_type": "Stream<T>",
               "type_params": [],
               "params": [],
@@ -27980,12 +27980,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public Stream<T> horizontalStream(final int rowIndex)",
+              "signature": "@Override public Stream<T> rowMajorStream(final int rowIndex)",
               "return_type": "Stream<T>",
               "type_params": [],
               "params": [
@@ -28003,12 +28003,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public Stream<T> horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public Stream<T> rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "Stream<T>",
               "type_params": [],
               "params": [
@@ -28037,12 +28037,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public Stream<T> verticalStream()",
+              "signature": "@Override @Beta public Stream<T> columnMajorStream()",
               "return_type": "Stream<T>",
               "type_params": [],
               "params": [],
@@ -28053,12 +28053,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public Stream<T> verticalStream(final int columnIndex)",
+              "signature": "@Override public Stream<T> columnMajorStream(final int columnIndex)",
               "return_type": "Stream<T>",
               "type_params": [],
               "params": [
@@ -28076,12 +28076,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Beta @Override public Stream<T> verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Beta @Override public Stream<T> columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "Stream<T>",
               "type_params": [],
               "params": [
@@ -30539,7 +30539,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#horizontalStream()"
+                "#rowMajorStream()"
               ]
             },
             {
@@ -30963,12 +30963,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public ShortStream horizontalStream()",
+              "signature": "@Override public ShortStream rowMajorStream()",
               "return_type": "ShortStream",
               "type_params": [],
               "params": [],
@@ -30979,12 +30979,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public ShortStream horizontalStream(final int rowIndex)",
+              "signature": "@Override public ShortStream rowMajorStream(final int rowIndex)",
               "return_type": "ShortStream",
               "type_params": [],
               "params": [
@@ -31004,12 +31004,12 @@
               "see_also": []
             },
             {
-              "name": "horizontalStream",
+              "name": "rowMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public ShortStream horizontalStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public ShortStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "ShortStream",
               "type_params": [],
               "params": [
@@ -31038,12 +31038,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public ShortStream verticalStream()",
+              "signature": "@Override @Beta public ShortStream columnMajorStream()",
               "return_type": "ShortStream",
               "type_params": [],
               "params": [],
@@ -31054,12 +31054,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public ShortStream verticalStream(final int columnIndex)",
+              "signature": "@Override public ShortStream columnMajorStream(final int columnIndex)",
               "return_type": "ShortStream",
               "type_params": [],
               "params": [
@@ -31077,12 +31077,12 @@
               "see_also": []
             },
             {
-              "name": "verticalStream",
+              "name": "columnMajorStream",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public ShortStream verticalStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override @Beta public ShortStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "ShortStream",
               "type_params": [],
               "params": [
