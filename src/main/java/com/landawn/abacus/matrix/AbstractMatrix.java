@@ -2069,6 +2069,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Returns a stream of elements from a specific row.
      * Elements are streamed from left to right within the row.
      *
+     * <p>This streams the elements of the single specified row, flattened into one stream. To
+     * instead obtain every row as its own stream (a stream of streams), use {@link #rowStreams()}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
@@ -2084,6 +2087,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param rowIndex the row index (0-based)
      * @return a stream of elements in the specified row
      * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
+     * @see #rowStreams()
      */
     public abstract ES horizontalStream(final int rowIndex);
 
@@ -2185,6 +2189,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * <p>This is equivalent to calling {@code rowStreams(0, rowCount)}.</p>
      *
+     * <p>This yields one stream per row. To instead stream the elements of a single row as one
+     * flat stream, use {@link #horizontalStream(int)}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
@@ -2200,6 +2207,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * }</pre>
      *
      * @return a stream of row streams
+     * @see #horizontalStream(int)
      */
     public abstract RS rowStreams();
 

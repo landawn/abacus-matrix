@@ -52,6 +52,11 @@ import com.landawn.abacus.util.stream.Stream;
  * itself. To preserve the full magnitude, widen first via {@link #toIntMatrix()} or
  * {@link #toLongMatrix()}.</p>
  *
+ * <p><b>Aggregations:</b> this class does not provide dedicated reduction methods such as
+ * {@code sum()}, {@code min()}, {@code max()} or {@code average()}. Compute such aggregations
+ * through the streaming API instead &mdash; for example {@code horizontalStream().sum()} over all
+ * elements, or {@code rowStreams()} / {@code columnStreams()} for per-row or per-column reductions.</p>
+ *
  * @see IntMatrix
  * @see LongMatrix
  * @see DoubleMatrix
@@ -3155,6 +3160,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * a specific row of the matrix independently. The returned stream can be
      * used with all standard ByteStream operations.</p>
      *
+     * <p>This streams the elements of the single specified row, flattened into one stream. To
+     * instead obtain every row as its own stream (a stream of streams), use {@link #rowStreams()}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2, 3}, {4, 5, 6}});
@@ -3168,6 +3176,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param rowIndex the index of the row to stream (0-based)
      * @return a {@link ByteStream} of elements from the specified row
      * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
+     * @see #rowStreams()
      */
     @Override
     public ByteStream horizontalStream(final int rowIndex) {
@@ -3432,6 +3441,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * such as row-wise transformations, filtering rows based on conditions, or mapping
      * rows to other values.</p>
      *
+     * <p>This yields one stream per row. To instead stream the elements of a single row as one
+     * flat stream, use {@link #horizontalStream(int)}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}, {5, 6}});
@@ -3445,6 +3457,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * }</pre>
      *
      * @return a Stream of ByteStream objects, one for each row in the matrix
+     * @see #horizontalStream(int)
      */
     @Override
     public Stream<ByteStream> rowStreams() {

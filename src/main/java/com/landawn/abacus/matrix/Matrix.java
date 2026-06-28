@@ -3096,6 +3096,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Returns a stream of elements from a single row.
      * The elements are streamed from left to right within the specified row.
      *
+     * <p>This streams the elements of the single specified row, flattened into one stream. To
+     * instead obtain every row as its own stream (a stream of streams), use {@link #rowStreams()}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Integer> matrix = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
@@ -3107,6 +3110,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param rowIndex the index of the row to stream (0-based)
      * @return a {@link Stream} of elements from the specified row
      * @throws IndexOutOfBoundsException if {@code rowIndex} is negative or greater than or equal to {@code rowCount}
+     * @see #rowStreams()
      */
     @Override
     public Stream<T> horizontalStream(final int rowIndex) {
@@ -3359,6 +3363,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * The outer stream iterates over rows from top to bottom, and each inner stream
      * provides the elements of that row from left to right.
      *
+     * <p>This yields one stream per row. To instead stream the elements of a single row as one
+     * flat stream, use {@link #horizontalStream(int)}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Integer> matrix = Matrix.of(new Integer[][] {{1, 2}, {3, 4}, {5, 6}});
@@ -3370,6 +3377,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @return a {@link Stream} of row streams, with one inner stream per row in the matrix
+     * @see #horizontalStream(int)
      */
     @Override
     public Stream<Stream<T>> rowStreams() {

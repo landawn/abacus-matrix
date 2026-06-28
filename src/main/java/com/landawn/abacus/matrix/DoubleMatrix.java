@@ -49,6 +49,11 @@ import com.landawn.abacus.util.stream.Stream;
  * {@link Double#doubleToLongBits(double)} semantics (so {@code NaN} equals {@code NaN} and
  * {@code +0.0} does <em>not</em> equal {@code -0.0}); see {@link #equals(Object)}.</p>
  *
+ * <p><b>Aggregations:</b> this class does not provide dedicated reduction methods such as
+ * {@code sum()}, {@code min()}, {@code max()} or {@code average()}. Compute such aggregations
+ * through the streaming API instead &mdash; for example {@code horizontalStream().sum()} over all
+ * elements, or {@code rowStreams()} / {@code columnStreams()} for per-row or per-column reductions.</p>
+ *
  * @see IntMatrix
  * @see LongMatrix
  * @see FloatMatrix
@@ -163,6 +168,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param a the two-dimensional int array to convert to a double matrix, or {@code null}/empty for an empty matrix
      * @return a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if input is {@code null} or empty
      * @throws IllegalArgumentException if any row is {@code null} or if rows have different lengths (non-rectangular array)
+     * @see IntMatrix#toDoubleMatrix()
      */
     public static DoubleMatrix from(final int[]... a) {
         if (N.isEmpty(a)) {
@@ -222,6 +228,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param a the two-dimensional long array to convert to a double matrix, or {@code null}/empty for an empty matrix
      * @return a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if input is {@code null} or empty
      * @throws IllegalArgumentException if any row is {@code null} or if rows have different lengths (non-rectangular array)
+     * @see LongMatrix#toDoubleMatrix()
      */
     public static DoubleMatrix from(final long[]... a) {
         if (N.isEmpty(a)) {
@@ -279,6 +286,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param a the two-dimensional float array to convert to a double matrix, or {@code null}/empty for an empty matrix
      * @return a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if input is {@code null} or empty
      * @throws IllegalArgumentException if any row is {@code null} or if rows have different lengths (non-rectangular array)
+     * @see FloatMatrix#toDoubleMatrix()
      */
     public static DoubleMatrix from(final float[]... a) {
         if (N.isEmpty(a)) {
@@ -3302,6 +3310,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * a specific row of the matrix independently. The returned stream can be
      * used with all standard DoubleStream operations.</p>
      *
+     * <p>This streams the elements of the single specified row, flattened into one stream. To
+     * instead obtain every row as its own stream (a stream of streams), use {@link #rowStreams()}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}});
@@ -3315,6 +3326,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param rowIndex the index of the row to stream (0-based)
      * @return a {@link DoubleStream} of elements from the specified row
      * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
+     * @see #rowStreams()
      */
     @Override
     public DoubleStream horizontalStream(final int rowIndex) {
@@ -3579,6 +3591,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * such as row-wise transformations, filtering rows based on conditions, or mapping
      * rows to other values.</p>
      *
+     * <p>This yields one stream per row. To instead stream the elements of a single row as one
+     * flat stream, use {@link #horizontalStream(int)}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
@@ -3590,6 +3605,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @return a Stream of DoubleStream objects, one for each row in the matrix
+     * @see #horizontalStream(int)
      */
     @Override
     public Stream<DoubleStream> rowStreams() {

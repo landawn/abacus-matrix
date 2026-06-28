@@ -3060,6 +3060,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * <p>This method is particularly useful when you need to process or analyze
      * a specific row of the matrix independently.</p>
      *
+     * <p>This streams the elements of the single specified row, flattened into one stream. To
+     * instead obtain every row as its own stream (a stream of streams), use {@link #rowStreams()}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] {
@@ -3077,6 +3080,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param rowIndex the index of the row to stream (0-based)
      * @return a {@code Stream<Boolean>} of elements from the specified row
      * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
+     * @see #rowStreams()
      */
     @Override
     public Stream<Boolean> horizontalStream(final int rowIndex) {
@@ -3372,6 +3376,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * rows to other values. Because there is no primitive {@code BooleanStream}, each inner
      * stream is a {@code Stream<Boolean>} with boxed values.</p>
      *
+     * <p>This yields one stream per row. To instead stream the elements of a single row as one
+     * flat stream, use {@link #horizontalStream(int)}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] {
@@ -3392,6 +3399,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * }</pre>
      *
      * @return a {@code Stream<Stream<Boolean>>}, one inner stream per row in the matrix
+     * @see #horizontalStream(int)
      */
     @Override
     public Stream<Stream<Boolean>> rowStreams() {

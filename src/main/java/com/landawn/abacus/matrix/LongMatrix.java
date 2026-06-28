@@ -44,6 +44,11 @@ import com.landawn.abacus.util.stream.Stream;
  * {@link #matmul(LongMatrix)}) follow standard Java {@code long} semantics: overflow silently wraps
  * around modulo 2<sup>64</sup>.</p>
  *
+ * <p><b>Aggregations:</b> this class does not provide dedicated reduction methods such as
+ * {@code sum()}, {@code min()}, {@code max()} or {@code average()}. Compute such aggregations
+ * through the streaming API instead &mdash; for example {@code horizontalStream().sum()} over all
+ * elements, or {@code rowStreams()} / {@code columnStreams()} for per-row or per-column reductions.</p>
+ *
  * @see IntMatrix
  * @see DoubleMatrix
  * @see FloatMatrix
@@ -151,6 +156,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @return a new {@code LongMatrix} with the widened values, or the shared empty matrix if {@code a} is {@code null} or empty
      * @throws IllegalArgumentException if the first row is {@code null}, or if any other row is {@code null}
      *         or has a length different from the first row
+     * @see IntMatrix#toLongMatrix()
      */
     public static LongMatrix from(final int[]... a) {
         if (N.isEmpty(a)) {
@@ -2910,6 +2916,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * @return a new {@link DoubleMatrix} with the converted values
      * @see #mapToDouble(Throwables.LongToDoubleFunction)
+     * @see DoubleMatrix#from(long[][])
      */
     public DoubleMatrix toDoubleMatrix() {
         return DoubleMatrix.from(a);
@@ -3186,6 +3193,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * a specific row of the matrix independently. The returned stream can be
      * used with all standard LongStream operations.</p>
      *
+     * <p>This streams the elements of the single specified row, flattened into one stream. To
+     * instead obtain every row as its own stream (a stream of streams), use {@link #rowStreams()}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
@@ -3199,6 +3209,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param rowIndex the index of the row to stream (0-based)
      * @return a {@link LongStream} of elements from the specified row
      * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
+     * @see #rowStreams()
      */
     @Override
     public LongStream horizontalStream(final int rowIndex) {
@@ -3463,6 +3474,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * such as row-wise transformations, filtering rows based on conditions, or mapping
      * rows to other values.</p>
      *
+     * <p>This yields one stream per row. To instead stream the elements of a single row as one
+     * flat stream, use {@link #horizontalStream(int)}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}, {5L, 6L}});
@@ -3476,6 +3490,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * }</pre>
      *
      * @return a Stream of LongStream objects, one for each row in the matrix
+     * @see #horizontalStream(int)
      */
     @Override
     public Stream<LongStream> rowStreams() {

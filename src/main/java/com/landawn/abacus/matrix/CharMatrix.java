@@ -45,6 +45,11 @@ import com.landawn.abacus.util.stream.Stream;
  * back to {@code char}, so values wrap modulo {@code 65536} (the range {@code [0, 65535]}); for example
  * {@code 'a' + 1 == 'b'} and adding {@code 1} to a cell holding {@code (char) 65535} wraps the cell to {@code 0}.</p>
  *
+ * <p><b>Aggregations:</b> this class does not provide dedicated reduction methods such as
+ * {@code sum()}, {@code min()}, {@code max()} or {@code average()}. Compute such aggregations
+ * through the streaming API instead &mdash; for example {@code horizontalStream().sum()} over all
+ * elements, or {@code rowStreams()} / {@code columnStreams()} for per-row or per-column reductions.</p>
+ *
  * @see IntMatrix
  * @see LongMatrix
  * @see DoubleMatrix
@@ -2708,6 +2713,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * }</pre>
      *
      * @return a new IntMatrix with the same dimensions containing the int values of the characters
+     * @see IntMatrix#from(char[][])
      */
     public IntMatrix toIntMatrix() {
         return IntMatrix.from(a);
@@ -3096,6 +3102,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * a specific row of the matrix independently. The returned stream can be
      * used with all standard CharStream operations.</p>
      *
+     * <p>This streams the elements of the single specified row, flattened into one stream. To
+     * instead obtain every row as its own stream (a stream of streams), use {@link #rowStreams()}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
@@ -3109,6 +3118,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param rowIndex the index of the row to stream (0-based)
      * @return a {@link CharStream} of elements from the specified row
      * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
+     * @see #rowStreams()
      */
     @Override
     public CharStream horizontalStream(final int rowIndex) {
@@ -3373,6 +3383,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * such as row-wise transformations, filtering rows based on conditions, or mapping
      * rows to other values.</p>
      *
+     * <p>This yields one stream per row. To instead stream the elements of a single row as one
+     * flat stream, use {@link #horizontalStream(int)}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}, {'e', 'f'}});
@@ -3386,6 +3399,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * }</pre>
      *
      * @return a Stream of CharStream objects, one for each row in the matrix
+     * @see #horizontalStream(int)
      */
     @Override
     public Stream<CharStream> rowStreams() {

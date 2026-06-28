@@ -49,6 +49,11 @@ import com.landawn.abacus.util.stream.Stream;
  * {@link Float#floatToIntBits(float)} semantics (so {@code NaN} equals {@code NaN} and
  * {@code +0.0f} does <em>not</em> equal {@code -0.0f}); see {@link #equals(Object)}.</p>
  *
+ * <p><b>Aggregations:</b> this class does not provide dedicated reduction methods such as
+ * {@code sum()}, {@code min()}, {@code max()} or {@code average()}. Compute such aggregations
+ * through the streaming API instead &mdash; for example {@code horizontalStream().sum()} over all
+ * elements, or {@code rowStreams()} / {@code columnStreams()} for per-row or per-column reductions.</p>
+ *
  * @see IntMatrix
  * @see LongMatrix
  * @see DoubleMatrix
@@ -165,6 +170,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param a the two-dimensional int array to convert to a float matrix, or {@code null}/empty for an empty matrix
      * @return a new {@code FloatMatrix} with converted values, or the shared empty {@code FloatMatrix} if input is {@code null} or empty
      * @throws IllegalArgumentException if any row is {@code null} or if rows have different lengths (non-rectangular array)
+     * @see IntMatrix#toFloatMatrix()
      */
     public static FloatMatrix from(final int[]... a) {
         if (N.isEmpty(a)) {
@@ -2707,6 +2713,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @return a new {@code DoubleMatrix} with values widened from {@code float} to {@code double}, with the same shape as this matrix
+     * @see DoubleMatrix#from(float[][])
      */
     public DoubleMatrix toDoubleMatrix() {
         return DoubleMatrix.from(a);
@@ -3093,6 +3100,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * a specific row of the matrix independently. The returned stream can be
      * used with all standard FloatStream operations.</p>
      *
+     * <p>This streams the elements of the single specified row, flattened into one stream. To
+     * instead obtain every row as its own stream (a stream of streams), use {@link #rowStreams()}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}, {4.0f, 5.0f, 6.0f}});
@@ -3106,6 +3116,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param rowIndex the index of the row to stream (0-based)
      * @return a {@link FloatStream} of elements from the specified row
      * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
+     * @see #rowStreams()
      */
     @Override
     public FloatStream horizontalStream(final int rowIndex) {
@@ -3370,6 +3381,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * such as row-wise transformations, filtering rows based on conditions, or mapping
      * rows to other values.</p>
      *
+     * <p>This yields one stream per row. To instead stream the elements of a single row as one
+     * flat stream, use {@link #horizontalStream(int)}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
@@ -3381,6 +3395,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @return a Stream of FloatStream objects, one for each row in the matrix
+     * @see #horizontalStream(int)
      */
     @Override
     public Stream<FloatStream> rowStreams() {

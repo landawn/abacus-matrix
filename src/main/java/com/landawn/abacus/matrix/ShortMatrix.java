@@ -54,6 +54,11 @@ import com.landawn.abacus.util.stream.Stream;
  * out-of-range result is performed by the caller's lambda. To preserve the full magnitude, widen first
  * via {@link #toIntMatrix()} or {@link #toLongMatrix()}.</p>
  *
+ * <p><b>Aggregations:</b> this class does not provide dedicated reduction methods such as
+ * {@code sum()}, {@code min()}, {@code max()} or {@code average()}. Compute such aggregations
+ * through the streaming API instead &mdash; for example {@code horizontalStream().sum()} over all
+ * elements, or {@code rowStreams()} / {@code columnStreams()} for per-row or per-column reductions.</p>
+ *
  * @see IntMatrix
  * @see LongMatrix
  * @see DoubleMatrix
@@ -2695,6 +2700,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @return a new {@code IntMatrix} with values converted from short to int
+     * @see IntMatrix#from(short[][])
      */
     public IntMatrix toIntMatrix() {
         return IntMatrix.from(a);
@@ -3094,6 +3100,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * a specific row of the matrix independently. The returned stream can be
      * used with all standard ShortStream operations.</p>
      *
+     * <p>This streams the elements of the single specified row, flattened into one stream. To
+     * instead obtain every row as its own stream (a stream of streams), use {@link #rowStreams()}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2, 3}, {4, 5, 6}});
@@ -3107,6 +3116,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param rowIndex the index of the row to stream (0-based)
      * @return a {@link ShortStream} of elements from the specified row
      * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
+     * @see #rowStreams()
      */
     @Override
     public ShortStream horizontalStream(final int rowIndex) {
@@ -3371,6 +3381,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * such as row-wise transformations, filtering rows based on conditions, or mapping
      * rows to other values.</p>
      *
+     * <p>This yields one stream per row. To instead stream the elements of a single row as one
+     * flat stream, use {@link #horizontalStream(int)}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2}, {3, 4}, {5, 6}});
@@ -3384,6 +3397,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @return a Stream of ShortStream objects, one for each row in the matrix
+     * @see #horizontalStream(int)
      */
     @Override
     public Stream<ShortStream> rowStreams() {

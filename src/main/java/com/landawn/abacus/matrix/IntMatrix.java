@@ -44,6 +44,11 @@ import com.landawn.abacus.util.stream.Stream;
  * {@link #matmul(IntMatrix)}) follow standard Java {@code int} semantics: overflow silently wraps
  * around modulo 2<sup>32</sup>.</p>
  *
+ * <p><b>Aggregations:</b> this class does not provide dedicated reduction methods such as
+ * {@code sum()}, {@code min()}, {@code max()} or {@code average()}. Compute such aggregations
+ * through the streaming API instead &mdash; for example {@code horizontalStream().sum()} over all
+ * elements, or {@code rowStreams()} / {@code columnStreams()} for per-row or per-column reductions.</p>
+ *
  * @see LongMatrix
  * @see DoubleMatrix
  * @see FloatMatrix
@@ -151,6 +156,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @return a new {@code IntMatrix} with the widened values, or the shared empty matrix if {@code a} is {@code null} or empty
      * @throws IllegalArgumentException if the first row is {@code null}, or if any other row is {@code null}
      *         or has a length different from the first row
+     * @see CharMatrix#toIntMatrix()
      */
     public static IntMatrix from(final char[]... a) {
         if (N.isEmpty(a)) {
@@ -206,6 +212,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @return a new {@code IntMatrix} with the widened values, or the shared empty matrix if {@code a} is {@code null} or empty
      * @throws IllegalArgumentException if the first row is {@code null}, or if any other row is {@code null}
      *         or has a length different from the first row
+     * @see ByteMatrix#toIntMatrix()
      */
     public static IntMatrix from(final byte[]... a) {
         if (N.isEmpty(a)) {
@@ -260,6 +267,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @return a new {@code IntMatrix} with the widened values, or the shared empty matrix if {@code a} is {@code null} or empty
      * @throws IllegalArgumentException if the first row is {@code null}, or if any other row is {@code null}
      *         or has a length different from the first row
+     * @see ShortMatrix#toIntMatrix()
      */
     public static IntMatrix from(final short[]... a) {
         if (N.isEmpty(a)) {
@@ -2920,6 +2928,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * @return a new {@link LongMatrix} with the widened values
      * @see #mapToLong(Throwables.IntToLongFunction)
+     * @see LongMatrix#from(int[][])
      */
     public LongMatrix toLongMatrix() {
         return LongMatrix.from(a);
@@ -2947,6 +2956,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * }</pre>
      *
      * @return a new {@link FloatMatrix} with the converted values
+     * @see FloatMatrix#from(int[][])
      */
     public FloatMatrix toFloatMatrix() {
         return FloatMatrix.from(a);
@@ -2971,6 +2981,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * @return a new {@link DoubleMatrix} with the widened values
      * @see #mapToDouble(Throwables.IntToDoubleFunction)
+     * @see DoubleMatrix#from(int[][])
      */
     public DoubleMatrix toDoubleMatrix() {
         return DoubleMatrix.from(a);
@@ -3247,6 +3258,9 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * a specific row of the matrix independently. The returned stream can be
      * used with all standard IntStream operations.</p>
      *
+     * <p>This streams the elements of the single specified row, flattened into one stream. To
+     * instead obtain every row as its own stream (a stream of streams), use {@link #rowStreams()}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
@@ -3260,6 +3274,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param rowIndex the index of the row to stream (0-based)
      * @return an {@link IntStream} of elements from the specified row
      * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
+     * @see #rowStreams()
      */
     @Override
     public IntStream horizontalStream(final int rowIndex) {
@@ -3524,6 +3539,9 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * such as row-wise transformations, filtering rows based on conditions, or mapping
      * rows to other values.</p>
      *
+     * <p>This yields one stream per row. To instead stream the elements of a single row as one
+     * flat stream, use {@link #horizontalStream(int)}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}, {5, 6}});
@@ -3537,6 +3555,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * }</pre>
      *
      * @return a Stream of IntStream objects, one for each row in the matrix
+     * @see #horizontalStream(int)
      */
     @Override
     public Stream<IntStream> rowStreams() {
