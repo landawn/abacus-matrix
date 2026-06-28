@@ -1040,21 +1040,21 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}, {7L, 8L, 9L}});
-     * matrix.getMainDiagonal();              // returns [1, 5, 9]
+     * matrix.mainDiagonalCopy();              // returns [1, 5, 9]
      *
      * LongMatrix small = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
-     * small.getMainDiagonal();               // returns [1, 4]
+     * small.mainDiagonalCopy();               // returns [1, 4]
      *
-     * LongMatrix.empty().getMainDiagonal();   // returns [] (0x0 is square)
+     * LongMatrix.empty().mainDiagonalCopy();   // returns [] (0x0 is square)
      * LongMatrix nonSquare = LongMatrix.of(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
-     * nonSquare.getMainDiagonal();           // throws IllegalStateException (not square)
+     * nonSquare.mainDiagonalCopy();           // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a new long array containing a copy of the main diagonal elements
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
-    public long[] getMainDiagonal() throws IllegalStateException {
+    public long[] mainDiagonalCopy() throws IllegalStateException {
         checkIsSquare();
 
         final long[] res = new long[rowCount];
@@ -1077,7 +1077,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
      * matrix.setMainDiagonal(new long[] {9L, 8L});
-     * matrix.getMainDiagonal();              // returns [9, 8]
+     * matrix.mainDiagonalCopy();              // returns [9, 8]
      * matrix.get(1, 1);                      // returns 8L (diagonal element updated)
      *
      * matrix.setMainDiagonal(new long[] {1L}); // throws IllegalArgumentException (length != rowCount)
@@ -1108,7 +1108,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
      * matrix.updateMainDiagonal(x -> x * x);
-     * matrix.getMainDiagonal();              // returns [1, 16]
+     * matrix.mainDiagonalCopy();              // returns [1, 16]
      * matrix.get(0, 1);                      // returns 2L (off-diagonal unchanged)
      *
      * matrix.updateMainDiagonal(null);       // throws IllegalArgumentException (operator is null)
@@ -1142,21 +1142,21 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}, {7L, 8L, 9L}});
-     * matrix.getAntiDiagonal();              // returns [3, 5, 7]
+     * matrix.antiDiagonalCopy();              // returns [3, 5, 7]
      *
      * LongMatrix small = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
-     * small.getAntiDiagonal();               // returns [2, 3]
+     * small.antiDiagonalCopy();               // returns [2, 3]
      *
-     * LongMatrix.empty().getAntiDiagonal();   // returns [] (0x0 is square)
+     * LongMatrix.empty().antiDiagonalCopy();   // returns [] (0x0 is square)
      * LongMatrix nonSquare = LongMatrix.of(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
-     * nonSquare.getAntiDiagonal();           // throws IllegalStateException (not square)
+     * nonSquare.antiDiagonalCopy();           // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a new long array containing a copy of the anti-diagonal elements
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
-    public long[] getAntiDiagonal() throws IllegalStateException {
+    public long[] antiDiagonalCopy() throws IllegalStateException {
         checkIsSquare();
 
         final long[] res = new long[rowCount];
@@ -1180,7 +1180,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
      * matrix.setAntiDiagonal(new long[] {9L, 8L});
-     * matrix.getAntiDiagonal();              // returns [9, 8]
+     * matrix.antiDiagonalCopy();              // returns [9, 8]
      * matrix.get(0, 1);                      // returns 9L (anti-diagonal cell)
      *
      * matrix.setAntiDiagonal(new long[] {1L}); // throws IllegalArgumentException (length != rowCount)
@@ -1211,7 +1211,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
      * matrix.updateAntiDiagonal(x -> -x);
-     * matrix.getAntiDiagonal();              // returns [-2, -3]
+     * matrix.antiDiagonalCopy();              // returns [-2, -3]
      * matrix.get(0, 0);                      // returns 1L (off anti-diagonal unchanged)
      *
      * matrix.updateAntiDiagonal(null);       // throws IllegalArgumentException (operator is null)
@@ -3841,7 +3841,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
     /**
      * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1, 2]\n[3, 4]"}); a
-     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #println(Appendable)}.
+     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #appendTo(Appendable)}.
      *
      * @return the formatted multi-line representation of this matrix
      */

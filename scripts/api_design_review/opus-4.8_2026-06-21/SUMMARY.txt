@@ -50,7 +50,7 @@ C6. Object->object transform naming: map(mapper, Class) vs mapToObj(mapper, Clas
     map (Matrix.java:1304). Align on mapToObj across all nine classes for a uniform map/mapToXxx/mapToObj set.
 
 C7. Diagonal array accessors are get-prefixed; row/column accessors are not. (MEDIUM)
-    getMainDiagonal()/getAntiDiagonal() (AbstractMatrix.java:1638/1688) are the only get-prefixed array
+    mainDiagonalCopy()/antiDiagonalCopy() (AbstractMatrix.java:1638/1688) are the only get-prefixed array
     accessors; siblings are rowCopy/columnCopy/flatten/mainDiagonalStream (no get). Add mainDiagonal()/
     antiDiagonal() as canonical; applies to all 9 subclasses.
 
@@ -88,8 +88,8 @@ P2.3  from() policy decision (which source types) + uniform fill incl. DoubleMat
       the rest of C3. Effort: M. Compat: additive.
 P2.4  Add mapToObj(mapper, Class) to Matrix<T>; optionally deprecate/remove the map(Function,Class) overload.
       [C6] Effort: S. Compat: rename (additive if old kept).
-P2.5  Add mainDiagonal()/antiDiagonal() (canonical) across the 9 classes; deprecate getMainDiagonal/
-      getAntiDiagonal. [C7] Effort: M (touches base + 9 subclasses). Compat: rename.
+P2.5  Add mainDiagonal()/antiDiagonal() (canonical) across the 9 classes; deprecate mainDiagonalCopy/
+      antiDiagonalCopy. [C7] Effort: M (touches base + 9 subclasses). Compat: rename.
 P2.6  Static Matrices.zip for ShortMatrix/CharMatrix (+ zipToInt for Short). [C2] Effort: M. Compat: additive.
 P2.7  zipToXxx lattice: round out OR document the curated subset. [C5] Effort: S (doc) / M (fill). Compat: additive.
 P2.8  isSameShape: widen parameter to AbstractMatrix<?,?,?,?,?> and return false on null instead of throwing.

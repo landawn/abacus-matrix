@@ -901,19 +901,19 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *     {false, true,  false},
      *     {false, false, false}
      * });
-     * boolean[] diagonal = matrix.getMainDiagonal();   // returns [true, true, false]
+     * boolean[] diagonal = matrix.mainDiagonalCopy();   // returns [true, true, false]
      * diagonal[0] = false;                             // copy is independent; matrix unchanged
      * matrix.get(0, 0);                                // returns true
      *
      * BooleanMatrix wide = BooleanMatrix.of(new boolean[][] {{true, false, true}});
-     * wide.getMainDiagonal();   // throws IllegalStateException (not square: 1x3)
+     * wide.mainDiagonalCopy();   // throws IllegalStateException (not square: 1x3)
      * }</pre>
      *
      * @return a new boolean array containing a copy of the main diagonal elements
      * @throws IllegalStateException if the matrix is not square ({@code rowCount != columnCount})
      */
     @Override
-    public boolean[] getMainDiagonal() throws IllegalStateException {
+    public boolean[] mainDiagonalCopy() throws IllegalStateException {
         checkIsSquare();
 
         final boolean[] res = new boolean[rowCount];
@@ -1014,19 +1014,19 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *     {false, true,  false},
      *     {false, false, false}
      * });
-     * boolean[] antiDiag = matrix.getAntiDiagonal();   // returns [true, true, false] (a[0][2], a[1][1], a[2][0])
+     * boolean[] antiDiag = matrix.antiDiagonalCopy();   // returns [true, true, false] (a[0][2], a[1][1], a[2][0])
      * antiDiag[0] = false;                             // copy is independent; matrix unchanged
      * matrix.get(0, 2);                                // returns true
      *
      * BooleanMatrix wide = BooleanMatrix.of(new boolean[][] {{true, false, true}});
-     * wide.getAntiDiagonal();   // throws IllegalStateException (not square: 1x3)
+     * wide.antiDiagonalCopy();   // throws IllegalStateException (not square: 1x3)
      * }</pre>
      *
      * @return a new boolean array containing a copy of the anti-diagonal elements
      * @throws IllegalStateException if the matrix is not square ({@code rowCount != columnCount})
      */
     @Override
-    public boolean[] getAntiDiagonal() throws IllegalStateException {
+    public boolean[] antiDiagonalCopy() throws IllegalStateException {
         checkIsSquare();
 
         final boolean[] res = new boolean[rowCount];
@@ -3771,7 +3771,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
 
     /**
      * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1, 2]\n[3, 4]"}); a
-     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #println(Appendable)}.
+     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #appendTo(Appendable)}.
      *
      * @return the formatted multi-line representation of this matrix
      */

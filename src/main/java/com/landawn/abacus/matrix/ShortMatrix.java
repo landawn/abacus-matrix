@@ -986,21 +986,21 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * matrix.getMainDiagonal();              // returns [1, 5, 9]
+     * matrix.mainDiagonalCopy();              // returns [1, 5, 9]
      *
      * ShortMatrix small = ShortMatrix.of(new short[][] {{1, 2}, {3, 4}});
-     * small.getMainDiagonal();               // returns [1, 4]
+     * small.mainDiagonalCopy();               // returns [1, 4]
      *
-     * ShortMatrix.empty().getMainDiagonal();   // returns [] (0x0 is square)
+     * ShortMatrix.empty().mainDiagonalCopy();   // returns [] (0x0 is square)
      * ShortMatrix nonSquare = ShortMatrix.of(new short[][] {{1, 2, 3}, {4, 5, 6}});
-     * nonSquare.getMainDiagonal();           // throws IllegalStateException (not square)
+     * nonSquare.mainDiagonalCopy();           // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a new short array containing a copy of the main diagonal elements
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
-    public short[] getMainDiagonal() throws IllegalStateException {
+    public short[] mainDiagonalCopy() throws IllegalStateException {
         checkIsSquare();
 
         final short[] result = new short[rowCount];
@@ -1023,7 +1023,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2}, {3, 4}});
      * matrix.setMainDiagonal(new short[] {9, 8});
-     * matrix.getMainDiagonal();              // returns [9, 8]
+     * matrix.mainDiagonalCopy();              // returns [9, 8]
      * matrix.get(1, 1);                      // returns 8 (diagonal element updated)
      *
      * matrix.setMainDiagonal(new short[] {1}); // throws IllegalArgumentException (length != rowCount)
@@ -1054,7 +1054,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2}, {3, 4}});
      * matrix.updateMainDiagonal(x -> (short) (x * x));
-     * matrix.getMainDiagonal();              // returns [1, 16]
+     * matrix.mainDiagonalCopy();              // returns [1, 16]
      * matrix.get(0, 1);                      // returns 2 (off-diagonal unchanged)
      *
      * matrix.updateMainDiagonal(null);       // throws IllegalArgumentException (operator is null)
@@ -1088,21 +1088,21 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * matrix.getAntiDiagonal();              // returns [3, 5, 7]
+     * matrix.antiDiagonalCopy();              // returns [3, 5, 7]
      *
      * ShortMatrix small = ShortMatrix.of(new short[][] {{1, 2}, {3, 4}});
-     * small.getAntiDiagonal();               // returns [2, 3]
+     * small.antiDiagonalCopy();               // returns [2, 3]
      *
-     * ShortMatrix.empty().getAntiDiagonal();   // returns [] (0x0 is square)
+     * ShortMatrix.empty().antiDiagonalCopy();   // returns [] (0x0 is square)
      * ShortMatrix nonSquare = ShortMatrix.of(new short[][] {{1, 2, 3}, {4, 5, 6}});
-     * nonSquare.getAntiDiagonal();           // throws IllegalStateException (not square)
+     * nonSquare.antiDiagonalCopy();           // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a new short array containing a copy of the anti-diagonal elements
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
-    public short[] getAntiDiagonal() throws IllegalStateException {
+    public short[] antiDiagonalCopy() throws IllegalStateException {
         checkIsSquare();
 
         final short[] result = new short[rowCount];
@@ -1126,7 +1126,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2}, {3, 4}});
      * matrix.setAntiDiagonal(new short[] {9, 8});
-     * matrix.getAntiDiagonal();              // returns [9, 8]
+     * matrix.antiDiagonalCopy();              // returns [9, 8]
      * matrix.get(0, 1);                      // returns 9 (anti-diagonal cell)
      *
      * matrix.setAntiDiagonal(new short[] {1}); // throws IllegalArgumentException (length != rowCount)
@@ -1157,7 +1157,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2}, {3, 4}});
      * matrix.updateAntiDiagonal(x -> (short) -x);
-     * matrix.getAntiDiagonal();              // returns [-2, -3]
+     * matrix.antiDiagonalCopy();              // returns [-2, -3]
      * matrix.get(0, 0);                      // returns 1 (off anti-diagonal unchanged)
      *
      * matrix.updateAntiDiagonal(null);       // throws IllegalArgumentException (operator is null)
@@ -3748,7 +3748,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
 
     /**
      * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1, 2]\n[3, 4]"}); a
-     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #println(Appendable)}.
+     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #appendTo(Appendable)}.
      *
      * @return the formatted multi-line representation of this matrix
      */

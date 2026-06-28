@@ -337,14 +337,14 @@ class BooleanMatrixTest extends TestBase {
         boolean[][] arr = { { true, false }, { false, true } };
         BooleanMatrix matrix = BooleanMatrix.of(arr);
 
-        boolean[] diag = matrix.getMainDiagonal();
+        boolean[] diag = matrix.mainDiagonalCopy();
         assertEquals(2, diag.length);
         assertTrue(diag[0]);
         assertTrue(diag[1]);
 
         // Test non-square matrix
         BooleanMatrix nonSquare = BooleanMatrix.of(new boolean[][] { { true, false, true } });
-        assertThrows(IllegalStateException.class, () -> nonSquare.getMainDiagonal());
+        assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalCopy());
     }
 
     @Test
@@ -374,7 +374,7 @@ class BooleanMatrixTest extends TestBase {
         boolean[][] arr = { { true, false }, { false, true } };
         BooleanMatrix matrix = BooleanMatrix.of(arr);
 
-        boolean[] diag = matrix.getAntiDiagonal();
+        boolean[] diag = matrix.antiDiagonalCopy();
         assertEquals(2, diag.length);
         assertFalse(diag[0]);
         assertFalse(diag[1]);
@@ -1572,13 +1572,13 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false, true }, { false, true, false }, { true, false, true } });
-            assertArrayEquals(new boolean[] { true, true, true }, m.getMainDiagonal());
+            assertArrayEquals(new boolean[] { true, true, true }, m.mainDiagonalCopy());
         }
 
         @Test
         public void testGetLU2RD_nonSquare() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false } });
-            assertThrows(IllegalStateException.class, () -> m.getMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
         }
 
         @Test
@@ -1621,13 +1621,13 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testGetRU2LD() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false, true }, { false, true, false }, { true, false, true } });
-            assertArrayEquals(new boolean[] { true, true, true }, m.getAntiDiagonal());
+            assertArrayEquals(new boolean[] { true, true, true }, m.antiDiagonalCopy());
         }
 
         @Test
         public void testGetRU2LD_nonSquare() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false } });
-            assertThrows(IllegalStateException.class, () -> m.getAntiDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
         }
 
         @Test
@@ -3102,14 +3102,14 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false, true }, { false, true, false }, { true, false, true } });
-            boolean[] diag = m.getMainDiagonal();
+            boolean[] diag = m.mainDiagonalCopy();
             assertArrayEquals(new boolean[] { true, true, true }, diag);
         }
 
         @Test
         public void testGetLU2RD_nonSquare() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false, true }, { false, true, false } });
-            assertThrows(IllegalStateException.class, () -> m.getMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
         }
 
         @Test
@@ -4028,7 +4028,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD_singleElement() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true } });
-            assertArrayEquals(new boolean[] { true }, m.getMainDiagonal());
+            assertArrayEquals(new boolean[] { true }, m.mainDiagonalCopy());
         }
 
         @Test
@@ -4049,7 +4049,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testGetRU2LD_nonSquare() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false, true }, { false, true, false } });
-            assertThrows(IllegalStateException.class, () -> m.getAntiDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
         }
 
         @Test
@@ -4812,16 +4812,16 @@ class BooleanMatrixTest extends TestBase {
         // ============ Diagonal Access Tests ============
 
         @Test
-        public void test_getMainDiagonal() {
+        public void test_mainDiagonalCopy() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false, false }, { false, true, false }, { false, false, true } });
-            boolean[] diag = m.getMainDiagonal();
+            boolean[] diag = m.mainDiagonalCopy();
             assertArrayEquals(new boolean[] { true, true, true }, diag);
         }
 
         @Test
-        public void test_getMainDiagonal_nonSquare() {
+        public void test_mainDiagonalCopy_nonSquare() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true }, { true, false } });
-            assertThrows(IllegalStateException.class, () -> m.getMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
         }
 
         @Test
@@ -4849,9 +4849,9 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_getAntiDiagonal() {
+        public void test_antiDiagonalCopy() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { false, false, true }, { false, true, false }, { true, false, false } });
-            boolean[] diag = m.getAntiDiagonal();
+            boolean[] diag = m.antiDiagonalCopy();
             assertArrayEquals(new boolean[] { true, true, true }, diag);
         }
 
@@ -5344,16 +5344,16 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testBooleanMatrix_getMainDiagonal() {
+        public void testBooleanMatrix_mainDiagonalCopy() {
             BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] { { true, false, false }, { false, true, false }, { false, false, true } });
-            boolean[] diagonal = matrix.getMainDiagonal();
+            boolean[] diagonal = matrix.mainDiagonalCopy();
             assertArrayEquals(new boolean[] { true, true, true }, diagonal);
         }
 
         @Test
-        public void testBooleanMatrix_getAntiDiagonal() {
+        public void testBooleanMatrix_antiDiagonalCopy() {
             BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] { { false, false, true }, { false, true, false }, { true, false, false } });
-            boolean[] antiDiag = matrix.getAntiDiagonal();
+            boolean[] antiDiag = matrix.antiDiagonalCopy();
             assertArrayEquals(new boolean[] { true, true, true }, antiDiag);
         }
 

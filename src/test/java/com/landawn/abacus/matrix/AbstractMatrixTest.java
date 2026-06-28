@@ -2837,30 +2837,30 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testPrintln_appendable() throws java.io.IOException {
+        public void testAppendTo() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             StringBuilder sb = new StringBuilder();
-            m.println(sb);
+            m.appendTo(sb);
             assertEquals(m.toMultilineString(), sb.toString());
             assertTrue(sb.toString().contains("1"));
             assertTrue(sb.toString().contains("4"));
         }
 
         @Test
-        public void testPrintln_appendable_emptyMatrix() throws java.io.IOException {
+        public void testAppendTo_emptyMatrix() {
             StringBuilder sb = new StringBuilder();
-            IntMatrix.empty().println(sb);
+            IntMatrix.empty().appendTo(sb);
             assertEquals("[]", sb.toString());
         }
 
         @Test
-        public void testPrintln_appendable_null() {
+        public void testAppendTo_null() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> m.println((Appendable) null));
+            org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> m.appendTo((Appendable) null));
         }
 
         @Test
-        public void testPrintln_appendable_propagatesIOException() {
+        public void testAppendTo_propagatesIOException() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             Appendable throwing = new Appendable() {
                 @Override
@@ -2878,7 +2878,7 @@ class AbstractMatrixTest extends TestBase {
                     throw new java.io.IOException("boom");
                 }
             };
-            org.junit.jupiter.api.Assertions.assertThrows(java.io.IOException.class, () -> m.println(throwing));
+            org.junit.jupiter.api.Assertions.assertThrows(java.io.UncheckedIOException.class, () -> m.appendTo(throwing));
         }
     }
 
@@ -3938,8 +3938,8 @@ class AbstractMatrixTest extends TestBase {
             assertEquals("a", col[0]);
 
             Matrix<String> diagonal = Matrix.mainDiagonal(new String[] { "x", "y" });
-            String[] main = diagonal.getMainDiagonal();
-            String[] anti = diagonal.getAntiDiagonal();
+            String[] main = diagonal.mainDiagonalCopy();
+            String[] anti = diagonal.antiDiagonalCopy();
             assertEquals(String.class, main.getClass().getComponentType());
             assertEquals(String.class, anti.getClass().getComponentType());
             assertEquals("x", main[0]);

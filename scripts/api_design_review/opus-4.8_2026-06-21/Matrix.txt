@@ -25,7 +25,7 @@ mapToObj(Function, Class) as the canonical name; keep map(UnaryOperator) (1267) 
 
 3. RETURN-TYPE & PARAMETER ISSUES
 
-toColumnDataset(Collection<String> columnNames) | Matrix.java:3744 (param validated at 3747) | Confidence Low |
+toTransposedDataset(Collection<String> columnNames) | Matrix.java:3744 (param validated at 3747) | Confidence Low |
 recommend: keep behavior; consider clearer param naming/doc.
   > N.checkArgument(columnNames.size() == rowCount, "The size(...) of specified columnNames and row count(...) ...")
   The parameter is named columnNames but its size must equal rowCount, because each matrix ROW becomes a
@@ -36,9 +36,9 @@ recommend: keep behavior; consider clearer param naming/doc.
 
 4. MISPLACED METHODS
 
-toRowDataset(Collection<String>) / toColumnDataset(Collection<String>) | Matrix.java:3690,3744 (both @Beta) |
+toDataset(Collection<String>) / toTransposedDataset(Collection<String>) | Matrix.java:3690,3744 (both @Beta) |
 Confidence Low | recommend: keep on Matrix, or move to Matrices.
-  > @Beta public Dataset toRowDataset(...) / @Beta public Dataset toColumnDataset(...)
+  > @Beta public Dataset toDataset(...) / @Beta public Dataset toTransposedDataset(...)
   These are the only Matrix<->Dataset bridges and live only on the object matrix. Reasonable here (object
   cells map naturally to Dataset), but as @Beta cross-type converters they are also candidates for the
   Matrices utility hub for discoverability. CHECK: whether Matrices already hosts any Matrix<->Dataset
@@ -61,4 +61,4 @@ CROSS-CLASS NOTES
 - value* accessors return Nullable<T> here vs OptionalInt/OptionalLong/... on primitives — the correct
   by-design mapping, not an inconsistency.
 - Dataset converters exist only on Matrix<T> (defensible); the round-trip from a primitive matrix is via
-  boxed() -> Matrix -> toRowDataset(), which is undiscoverable — worth a doc @see.
+  boxed() -> Matrix -> toDataset(), which is undiscoverable — worth a doc @see.

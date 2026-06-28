@@ -988,20 +988,20 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}, {'g', 'h', 'i'}});
-     * matrix.getMainDiagonal();   // returns ['a', 'e', 'i']
+     * matrix.mainDiagonalCopy();   // returns ['a', 'e', 'i']
      *
      * CharMatrix single = CharMatrix.of(new char[][] {{'x'}});
-     * single.getMainDiagonal();   // returns ['x']
+     * single.mainDiagonalCopy();   // returns ['x']
      *
      * CharMatrix nonSquare = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
-     * nonSquare.getMainDiagonal(); // throws IllegalStateException (not square)
+     * nonSquare.mainDiagonalCopy(); // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a new char array containing a copy of the main diagonal elements
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
-    public char[] getMainDiagonal() throws IllegalStateException {
+    public char[] mainDiagonalCopy() throws IllegalStateException {
         checkIsSquare();
 
         final char[] res = new char[rowCount];
@@ -1026,7 +1026,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *                                                 {'d', 'e', 'f'},
      *                                                 {'g', 'h', 'i'}});
      * matrix.setMainDiagonal(new char[] {'x', 'y', 'z'});
-     * matrix.getMainDiagonal();   // returns ['x', 'y', 'z']
+     * matrix.mainDiagonalCopy();   // returns ['x', 'y', 'z']
      * matrix.get(0, 1);           // returns 'b' (off-diagonal unchanged)
      *
      * matrix.setMainDiagonal(new char[] {'x', 'y'}); // throws IllegalArgumentException (length mismatch)
@@ -1058,7 +1058,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
      * matrix.updateMainDiagonal(c -> Character.toUpperCase(c));
-     * matrix.getMainDiagonal();   // returns ['A', 'D']
+     * matrix.mainDiagonalCopy();   // returns ['A', 'D']
      * matrix.get(0, 1);           // returns 'b' (off-diagonal unchanged)
      * matrix.get(1, 0);           // returns 'c' (off-diagonal unchanged)
      *
@@ -1095,20 +1095,20 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'},
      *                                                 {'d', 'e', 'f'},
      *                                                 {'g', 'h', 'i'}});
-     * matrix.getAntiDiagonal();   // returns ['c', 'e', 'g']
+     * matrix.antiDiagonalCopy();   // returns ['c', 'e', 'g']
      *
      * CharMatrix single = CharMatrix.of(new char[][] {{'x'}});
-     * single.getAntiDiagonal();   // returns ['x']
+     * single.antiDiagonalCopy();   // returns ['x']
      *
      * CharMatrix nonSquare = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
-     * nonSquare.getAntiDiagonal(); // throws IllegalStateException (not square)
+     * nonSquare.antiDiagonalCopy(); // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a new char array containing a copy of the anti-diagonal elements
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
-    public char[] getAntiDiagonal() throws IllegalStateException {
+    public char[] antiDiagonalCopy() throws IllegalStateException {
         checkIsSquare();
 
         final char[] res = new char[rowCount];
@@ -1134,7 +1134,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *                                                 {'d', 'e', 'f'},
      *                                                 {'g', 'h', 'i'}});
      * matrix.setAntiDiagonal(new char[] {'x', 'y', 'z'});
-     * matrix.getAntiDiagonal();   // returns ['x', 'y', 'z']
+     * matrix.antiDiagonalCopy();   // returns ['x', 'y', 'z']
      * matrix.get(0, 0);           // returns 'a' (off-anti-diagonal unchanged)
      *
      * matrix.setAntiDiagonal(new char[] {'x', 'y'}); // throws IllegalArgumentException (length mismatch)
@@ -1166,7 +1166,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
      * matrix.updateAntiDiagonal(c -> Character.toUpperCase(c));
-     * matrix.getAntiDiagonal();   // returns ['B', 'C']
+     * matrix.antiDiagonalCopy();   // returns ['B', 'C']
      * matrix.get(0, 0);           // returns 'a' (off-anti-diagonal unchanged)
      * matrix.get(1, 1);           // returns 'd' (off-anti-diagonal unchanged)
      *
@@ -3762,7 +3762,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
     /**
      * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1, 2]\n[3, 4]"}); a
-     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #println(Appendable)}.
+     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #appendTo(Appendable)}.
      *
      * @return the formatted multi-line representation of this matrix
      */

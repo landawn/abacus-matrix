@@ -384,14 +384,14 @@ class DoubleMatrixTest extends TestBase {
         double[][] arr = { { 1.0, 2.0 }, { 3.0, 4.0 } };
         DoubleMatrix matrix = DoubleMatrix.of(arr);
 
-        double[] diag = matrix.getMainDiagonal();
+        double[] diag = matrix.mainDiagonalCopy();
         assertEquals(2, diag.length);
         assertEquals(1.0, diag[0]);
         assertEquals(4.0, diag[1]);
 
         // Test non-square matrix
         DoubleMatrix nonSquare = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 } });
-        assertThrows(IllegalStateException.class, () -> nonSquare.getMainDiagonal());
+        assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalCopy());
     }
 
     @Test
@@ -421,7 +421,7 @@ class DoubleMatrixTest extends TestBase {
         double[][] arr = { { 1.0, 2.0 }, { 3.0, 4.0 } };
         DoubleMatrix matrix = DoubleMatrix.of(arr);
 
-        double[] diag = matrix.getAntiDiagonal();
+        double[] diag = matrix.antiDiagonalCopy();
         assertEquals(2, diag.length);
         assertEquals(2.0, diag[0]);
         assertEquals(3.0, diag[1]);
@@ -1935,13 +1935,13 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
-            assertArrayEquals(new double[] { 1.0, 5.0, 9.0 }, m.getMainDiagonal(), DELTA);
+            assertArrayEquals(new double[] { 1.0, 5.0, 9.0 }, m.mainDiagonalCopy(), DELTA);
         }
 
         @Test
         public void testGetLU2RD_nonSquare() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 } });
-            assertThrows(IllegalStateException.class, () -> m.getMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
         }
 
         @Test
@@ -1984,13 +1984,13 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testGetRU2LD() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
-            assertArrayEquals(new double[] { 3.0, 5.0, 7.0 }, m.getAntiDiagonal(), DELTA);
+            assertArrayEquals(new double[] { 3.0, 5.0, 7.0 }, m.antiDiagonalCopy(), DELTA);
         }
 
         @Test
         public void testGetRU2LD_nonSquare() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 } });
-            assertThrows(IllegalStateException.class, () -> m.getAntiDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
         }
 
         @Test
@@ -3697,7 +3697,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
-            double[] diagonal = m.getMainDiagonal();
+            double[] diagonal = m.mainDiagonalCopy();
             assertArrayEquals(new double[] { 1.0, 5.0, 9.0 }, diagonal);
         }
 
@@ -3726,14 +3726,14 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testGetRU2LD() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
-            double[] diagonal = m.getAntiDiagonal();
+            double[] diagonal = m.antiDiagonalCopy();
             assertArrayEquals(new double[] { 3.0, 5.0, 7.0 }, diagonal);
         }
 
         @Test
         public void testGetRU2LD_nonSquare() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 }, { 5.0, 6.0 } });
-            assertThrows(IllegalStateException.class, () -> m.getAntiDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
         }
 
         @Test
@@ -5050,23 +5050,23 @@ class DoubleMatrixTest extends TestBase {
         // ============ Diagonal Get/Set Tests ============
 
         @Test
-        public void test_getMainDiagonal() {
+        public void test_mainDiagonalCopy() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
-            double[] diag = m.getMainDiagonal();
+            double[] diag = m.mainDiagonalCopy();
             assertArrayEquals(new double[] { 1.0, 5.0, 9.0 }, diag, 0.0);
         }
 
         @Test
-        public void test_getMainDiagonal_nonSquare() {
+        public void test_mainDiagonalCopy_nonSquare() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 }, { 5.0, 6.0 } });
-            assertThrows(IllegalStateException.class, () -> m.getMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
         }
 
         @Test
         public void test_setMainDiagonal() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             m.setMainDiagonal(new double[] { 9.0, 8.0 });
-            assertArrayEquals(new double[] { 9.0, 8.0 }, m.getMainDiagonal(), 0.0);
+            assertArrayEquals(new double[] { 9.0, 8.0 }, m.mainDiagonalCopy(), 0.0);
         }
 
         @Test
@@ -5085,13 +5085,13 @@ class DoubleMatrixTest extends TestBase {
         public void test_updateMainDiagonal() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             m.updateMainDiagonal(x -> x * 2);
-            assertArrayEquals(new double[] { 2.0, 8.0 }, m.getMainDiagonal(), 0.0);
+            assertArrayEquals(new double[] { 2.0, 8.0 }, m.mainDiagonalCopy(), 0.0);
         }
 
         @Test
-        public void test_getAntiDiagonal() {
+        public void test_antiDiagonalCopy() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
-            double[] diag = m.getAntiDiagonal();
+            double[] diag = m.antiDiagonalCopy();
             assertArrayEquals(new double[] { 3.0, 5.0, 7.0 }, diag, 0.0);
         }
 
@@ -5099,14 +5099,14 @@ class DoubleMatrixTest extends TestBase {
         public void test_setAntiDiagonal() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             m.setAntiDiagonal(new double[] { 9.0, 8.0 });
-            assertArrayEquals(new double[] { 9.0, 8.0 }, m.getAntiDiagonal(), 0.0);
+            assertArrayEquals(new double[] { 9.0, 8.0 }, m.antiDiagonalCopy(), 0.0);
         }
 
         @Test
         public void test_updateAntiDiagonal() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             m.updateAntiDiagonal(x -> x * 2);
-            double[] diag = m.getAntiDiagonal();
+            double[] diag = m.antiDiagonalCopy();
             assertEquals(4.0, diag[0], 0.0);
             assertEquals(6.0, diag[1], 0.0);
         }
@@ -5917,16 +5917,16 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testDoubleMatrix_getMainDiagonal() {
+        public void testDoubleMatrix_mainDiagonalCopy() {
             DoubleMatrix matrix = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
-            double[] diagonal = matrix.getMainDiagonal();
+            double[] diagonal = matrix.mainDiagonalCopy();
             assertArrayEquals(new double[] { 1.0, 5.0, 9.0 }, diagonal);
         }
 
         @Test
-        public void testDoubleMatrix_getAntiDiagonal() {
+        public void testDoubleMatrix_antiDiagonalCopy() {
             DoubleMatrix matrix = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
-            double[] diagonal = matrix.getAntiDiagonal();
+            double[] diagonal = matrix.antiDiagonalCopy();
             assertArrayEquals(new double[] { 3.0, 5.0, 7.0 }, diagonal);
         }
 

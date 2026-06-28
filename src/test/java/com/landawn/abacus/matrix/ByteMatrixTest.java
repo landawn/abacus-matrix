@@ -421,11 +421,11 @@ class ByteMatrixTest extends TestBase {
         byte[][] a = { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } };
         ByteMatrix matrix = ByteMatrix.of(a);
 
-        byte[] diagonal = matrix.getMainDiagonal();
+        byte[] diagonal = matrix.mainDiagonalCopy();
         Assertions.assertArrayEquals(new byte[] { 1, 5, 9 }, diagonal);
 
         ByteMatrix nonSquare = ByteMatrix.of(new byte[][] { { 1, 2 } });
-        Assertions.assertThrows(IllegalStateException.class, () -> nonSquare.getMainDiagonal());
+        Assertions.assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalCopy());
     }
 
     @Test
@@ -457,7 +457,7 @@ class ByteMatrixTest extends TestBase {
         byte[][] a = { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } };
         ByteMatrix matrix = ByteMatrix.of(a);
 
-        byte[] diagonal = matrix.getAntiDiagonal();
+        byte[] diagonal = matrix.antiDiagonalCopy();
         Assertions.assertArrayEquals(new byte[] { 3, 5, 7 }, diagonal);
     }
 
@@ -1849,13 +1849,13 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            assertArrayEquals(new byte[] { 1, 5, 9 }, m.getMainDiagonal());
+            assertArrayEquals(new byte[] { 1, 5, 9 }, m.mainDiagonalCopy());
         }
 
         @Test
         public void testGetLU2RD_nonSquare() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.getMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
         }
 
         @Test
@@ -1889,13 +1889,13 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testGetRU2LD() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            assertArrayEquals(new byte[] { 3, 5, 7 }, m.getAntiDiagonal());
+            assertArrayEquals(new byte[] { 3, 5, 7 }, m.antiDiagonalCopy());
         }
 
         @Test
         public void testGetRU2LD_nonSquare() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.getAntiDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
         }
 
         @Test
@@ -3241,7 +3241,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD_nonSquare() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.getMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
         }
 
         @Test
@@ -4198,7 +4198,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD_singleElement() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 42 } });
-            assertArrayEquals(new byte[] { 42 }, m.getMainDiagonal());
+            assertArrayEquals(new byte[] { 42 }, m.mainDiagonalCopy());
         }
 
         @Test
@@ -4228,14 +4228,14 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testGetRU2LD() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 0, 0, 1 }, { 0, 2, 0 }, { 3, 0, 0 } });
-            byte[] diag = m.getAntiDiagonal();
+            byte[] diag = m.antiDiagonalCopy();
             assertArrayEquals(new byte[] { 1, 2, 3 }, diag);
         }
 
         @Test
         public void testGetRU2LD_nonSquare() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.getAntiDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
         }
 
         @Test
@@ -5098,16 +5098,16 @@ class ByteMatrixTest extends TestBase {
         // ============ Diagonal Access Tests ============
 
         @Test
-        public void test_getMainDiagonal() {
+        public void test_mainDiagonalCopy() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            byte[] diag = m.getMainDiagonal();
+            byte[] diag = m.mainDiagonalCopy();
             assertArrayEquals(new byte[] { 1, 5, 9 }, diag);
         }
 
         @Test
-        public void test_getMainDiagonal_nonSquare() {
+        public void test_mainDiagonalCopy_nonSquare() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.getMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
         }
 
         @Test
@@ -5135,9 +5135,9 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_getAntiDiagonal() {
+        public void test_antiDiagonalCopy() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            byte[] diag = m.getAntiDiagonal();
+            byte[] diag = m.antiDiagonalCopy();
             assertArrayEquals(new byte[] { 3, 5, 7 }, diag);
         }
 
@@ -5711,16 +5711,16 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testByteMatrix_getMainDiagonal() {
+        public void testByteMatrix_mainDiagonalCopy() {
             ByteMatrix matrix = ByteMatrix.of(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            byte[] diagonal = matrix.getMainDiagonal();
+            byte[] diagonal = matrix.mainDiagonalCopy();
             assertArrayEquals(new byte[] { 1, 5, 9 }, diagonal);
         }
 
         @Test
-        public void testByteMatrix_getAntiDiagonal() {
+        public void testByteMatrix_antiDiagonalCopy() {
             ByteMatrix matrix = ByteMatrix.of(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            byte[] diagonal = matrix.getAntiDiagonal();
+            byte[] diagonal = matrix.antiDiagonalCopy();
             assertArrayEquals(new byte[] { 3, 5, 7 }, diagonal);
         }
 

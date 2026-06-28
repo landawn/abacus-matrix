@@ -427,11 +427,11 @@ class LongMatrixTest extends TestBase {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } };
         LongMatrix matrix = LongMatrix.of(a);
 
-        long[] diagonal = matrix.getMainDiagonal();
+        long[] diagonal = matrix.mainDiagonalCopy();
         Assertions.assertArrayEquals(new long[] { 1L, 5L, 9L }, diagonal);
 
         LongMatrix nonSquare = LongMatrix.of(new long[][] { { 1L, 2L } });
-        Assertions.assertThrows(IllegalStateException.class, () -> nonSquare.getMainDiagonal());
+        Assertions.assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalCopy());
     }
 
     @Test
@@ -463,7 +463,7 @@ class LongMatrixTest extends TestBase {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } };
         LongMatrix matrix = LongMatrix.of(a);
 
-        long[] diagonal = matrix.getAntiDiagonal();
+        long[] diagonal = matrix.antiDiagonalCopy();
         Assertions.assertArrayEquals(new long[] { 3L, 5L, 7L }, diagonal);
     }
 
@@ -1452,9 +1452,9 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testLongMatrix_getMainDiagonal() {
+        public void testLongMatrix_mainDiagonalCopy() {
             LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
-            long[] diagonal = matrix.getMainDiagonal();
+            long[] diagonal = matrix.mainDiagonalCopy();
             assertArrayEquals(new long[] { 1L, 5L, 9L }, diagonal);
         }
 
@@ -1469,9 +1469,9 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testLongMatrix_getAntiDiagonal() {
+        public void testLongMatrix_antiDiagonalCopy() {
             LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
-            long[] diagonal = matrix.getAntiDiagonal();
+            long[] diagonal = matrix.antiDiagonalCopy();
             assertArrayEquals(new long[] { 3L, 5L, 7L }, diagonal);
         }
 
@@ -2177,13 +2177,13 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
-            assertArrayEquals(new long[] { 1L, 5L, 9L }, m.getMainDiagonal());
+            assertArrayEquals(new long[] { 1L, 5L, 9L }, m.mainDiagonalCopy());
         }
 
         @Test
         public void testGetLU2RD_nonSquare() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
-            assertThrows(IllegalStateException.class, () -> m.getMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
         }
 
         @Test
@@ -2226,13 +2226,13 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testGetRU2LD() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
-            assertArrayEquals(new long[] { 3L, 5L, 7L }, m.getAntiDiagonal());
+            assertArrayEquals(new long[] { 3L, 5L, 7L }, m.antiDiagonalCopy());
         }
 
         @Test
         public void testGetRU2LD_nonSquare() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
-            assertThrows(IllegalStateException.class, () -> m.getAntiDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
         }
 
         @Test
@@ -5058,23 +5058,23 @@ class LongMatrixTest extends TestBase {
         // ============ Diagonal Get/Set Tests ============
 
         @Test
-        public void test_getMainDiagonal() {
+        public void test_mainDiagonalCopy() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
-            long[] diag = m.getMainDiagonal();
+            long[] diag = m.mainDiagonalCopy();
             assertArrayEquals(new long[] { 1L, 5L, 9L }, diag);
         }
 
         @Test
-        public void test_getMainDiagonal_nonSquare() {
+        public void test_mainDiagonalCopy_nonSquare() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
-            assertThrows(IllegalStateException.class, () -> m.getMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
         }
 
         @Test
         public void test_setMainDiagonal() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.setMainDiagonal(new long[] { 9L, 8L });
-            assertArrayEquals(new long[] { 9L, 8L }, m.getMainDiagonal());
+            assertArrayEquals(new long[] { 9L, 8L }, m.mainDiagonalCopy());
         }
 
         @Test
@@ -5093,13 +5093,13 @@ class LongMatrixTest extends TestBase {
         public void test_updateMainDiagonal() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.updateMainDiagonal(x -> x * 2);
-            assertArrayEquals(new long[] { 2L, 8L }, m.getMainDiagonal());
+            assertArrayEquals(new long[] { 2L, 8L }, m.mainDiagonalCopy());
         }
 
         @Test
-        public void test_getAntiDiagonal() {
+        public void test_antiDiagonalCopy() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
-            long[] diag = m.getAntiDiagonal();
+            long[] diag = m.antiDiagonalCopy();
             assertArrayEquals(new long[] { 3L, 5L, 7L }, diag);
         }
 
@@ -5107,14 +5107,14 @@ class LongMatrixTest extends TestBase {
         public void test_setAntiDiagonal() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.setAntiDiagonal(new long[] { 9L, 8L });
-            assertArrayEquals(new long[] { 9L, 8L }, m.getAntiDiagonal());
+            assertArrayEquals(new long[] { 9L, 8L }, m.antiDiagonalCopy());
         }
 
         @Test
         public void test_updateAntiDiagonal() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.updateAntiDiagonal(x -> x * 2);
-            long[] diag = m.getAntiDiagonal();
+            long[] diag = m.antiDiagonalCopy();
             assertEquals(4L, diag[0]);
             assertEquals(6L, diag[1]);
         }

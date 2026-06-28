@@ -385,12 +385,12 @@ class FloatMatrixTest extends TestBase {
 
     @Test
     public void testGetLU2RD() {
-        float[] diagonal = matrix.getMainDiagonal();
+        float[] diagonal = matrix.mainDiagonalCopy();
         assertArrayEquals(new float[] { 1.0f, 5.0f, 9.0f }, diagonal, DELTA);
 
         // Test non-square matrix
         FloatMatrix nonSquare = FloatMatrix.of(new float[][] { { 1.0f, 2.0f } });
-        assertThrows(IllegalStateException.class, () -> nonSquare.getMainDiagonal());
+        assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalCopy());
     }
 
     @Test
@@ -424,12 +424,12 @@ class FloatMatrixTest extends TestBase {
 
     @Test
     public void testGetRU2LD() {
-        float[] antiDiagonal = matrix.getAntiDiagonal();
+        float[] antiDiagonal = matrix.antiDiagonalCopy();
         assertArrayEquals(new float[] { 3.0f, 5.0f, 7.0f }, antiDiagonal, DELTA);
 
         // Test non-square matrix
         FloatMatrix nonSquare = FloatMatrix.of(new float[][] { { 1.0f, 2.0f } });
-        assertThrows(IllegalStateException.class, () -> nonSquare.getAntiDiagonal());
+        assertThrows(IllegalStateException.class, () -> nonSquare.antiDiagonalCopy());
     }
 
     @Test
@@ -1637,13 +1637,13 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
-            assertArrayEquals(new float[] { 1.0f, 5.0f, 9.0f }, m.getMainDiagonal(), DELTA);
+            assertArrayEquals(new float[] { 1.0f, 5.0f, 9.0f }, m.mainDiagonalCopy(), DELTA);
         }
 
         @Test
         public void testGetLU2RD_nonSquare() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f } });
-            assertThrows(IllegalStateException.class, () -> m.getMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
         }
 
         @Test
@@ -1686,13 +1686,13 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testGetRU2LD() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
-            assertArrayEquals(new float[] { 3.0f, 5.0f, 7.0f }, m.getAntiDiagonal(), DELTA);
+            assertArrayEquals(new float[] { 3.0f, 5.0f, 7.0f }, m.antiDiagonalCopy(), DELTA);
         }
 
         @Test
         public void testGetRU2LD_nonSquare() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f } });
-            assertThrows(IllegalStateException.class, () -> m.getAntiDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
         }
 
         @Test
@@ -3244,7 +3244,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
-            float[] diagonal = m.getMainDiagonal();
+            float[] diagonal = m.mainDiagonalCopy();
             assertArrayEquals(new float[] { 1.0f, 5.0f, 9.0f }, diagonal);
         }
 
@@ -3273,14 +3273,14 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testGetRU2LD() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
-            float[] diagonal = m.getAntiDiagonal();
+            float[] diagonal = m.antiDiagonalCopy();
             assertArrayEquals(new float[] { 3.0f, 5.0f, 7.0f }, diagonal);
         }
 
         @Test
         public void testGetRU2LD_nonSquare() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f }, { 5.0f, 6.0f } });
-            assertThrows(IllegalStateException.class, () -> m.getAntiDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
         }
 
         @Test
@@ -4536,23 +4536,23 @@ class FloatMatrixTest extends TestBase {
         // ============ Diagonal Get/Set Tests ============
 
         @Test
-        public void test_getMainDiagonal() {
+        public void test_mainDiagonalCopy() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
-            float[] diag = m.getMainDiagonal();
+            float[] diag = m.mainDiagonalCopy();
             assertArrayEquals(new float[] { 1.0f, 5.0f, 9.0f }, diag, 0.0f);
         }
 
         @Test
-        public void test_getMainDiagonal_nonSquare() {
+        public void test_mainDiagonalCopy_nonSquare() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f }, { 5.0f, 6.0f } });
-            assertThrows(IllegalStateException.class, () -> m.getMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
         }
 
         @Test
         public void test_setMainDiagonal() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             m.setMainDiagonal(new float[] { 9.0f, 8.0f });
-            assertArrayEquals(new float[] { 9.0f, 8.0f }, m.getMainDiagonal(), 0.0f);
+            assertArrayEquals(new float[] { 9.0f, 8.0f }, m.mainDiagonalCopy(), 0.0f);
         }
 
         @Test
@@ -4571,13 +4571,13 @@ class FloatMatrixTest extends TestBase {
         public void test_updateMainDiagonal() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             m.updateMainDiagonal(x -> x * 2);
-            assertArrayEquals(new float[] { 2.0f, 8.0f }, m.getMainDiagonal(), 0.0f);
+            assertArrayEquals(new float[] { 2.0f, 8.0f }, m.mainDiagonalCopy(), 0.0f);
         }
 
         @Test
-        public void test_getAntiDiagonal() {
+        public void test_antiDiagonalCopy() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
-            float[] diag = m.getAntiDiagonal();
+            float[] diag = m.antiDiagonalCopy();
             assertArrayEquals(new float[] { 3.0f, 5.0f, 7.0f }, diag, 0.0f);
         }
 
@@ -4585,14 +4585,14 @@ class FloatMatrixTest extends TestBase {
         public void test_setAntiDiagonal() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             m.setAntiDiagonal(new float[] { 9.0f, 8.0f });
-            assertArrayEquals(new float[] { 9.0f, 8.0f }, m.getAntiDiagonal(), 0.0f);
+            assertArrayEquals(new float[] { 9.0f, 8.0f }, m.antiDiagonalCopy(), 0.0f);
         }
 
         @Test
         public void test_updateAntiDiagonal() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             m.updateAntiDiagonal(x -> x * 2);
-            float[] diag = m.getAntiDiagonal();
+            float[] diag = m.antiDiagonalCopy();
             assertEquals(4.0f, diag[0], 0.0f);
             assertEquals(6.0f, diag[1], 0.0f);
         }
@@ -5350,16 +5350,16 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFloatMatrix_getMainDiagonal() {
+        public void testFloatMatrix_mainDiagonalCopy() {
             FloatMatrix matrix = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
-            float[] diagonal = matrix.getMainDiagonal();
+            float[] diagonal = matrix.mainDiagonalCopy();
             assertArrayEquals(new float[] { 1.0f, 5.0f, 9.0f }, diagonal);
         }
 
         @Test
-        public void testFloatMatrix_getAntiDiagonal() {
+        public void testFloatMatrix_antiDiagonalCopy() {
             FloatMatrix matrix = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
-            float[] diagonal = matrix.getAntiDiagonal();
+            float[] diagonal = matrix.antiDiagonalCopy();
             assertArrayEquals(new float[] { 3.0f, 5.0f, 7.0f }, diagonal);
         }
 

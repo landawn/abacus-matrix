@@ -1075,18 +1075,18 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}, {7.0, 8.0, 9.0}});
-     * matrix.getMainDiagonal();   // returns [1.0, 5.0, 9.0]
+     * matrix.mainDiagonalCopy();   // returns [1.0, 5.0, 9.0]
      *
-     * DoubleMatrix.of(new double[][] {{5.0}}).getMainDiagonal();             // returns [5.0] (1x1)
-     * DoubleMatrix.empty().getMainDiagonal();                                // returns [] (empty, square 0x0)
-     * DoubleMatrix.of(new double[][] {{1.0, 2.0, 3.0}}).getMainDiagonal();   // throws IllegalStateException (not square)
+     * DoubleMatrix.of(new double[][] {{5.0}}).mainDiagonalCopy();             // returns [5.0] (1x1)
+     * DoubleMatrix.empty().mainDiagonalCopy();                                // returns [] (empty, square 0x0)
+     * DoubleMatrix.of(new double[][] {{1.0, 2.0, 3.0}}).mainDiagonalCopy();   // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a new double array containing a copy of the main diagonal elements
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
-    public double[] getMainDiagonal() throws IllegalStateException {
+    public double[] mainDiagonalCopy() throws IllegalStateException {
         checkIsSquare();
 
         final double[] res = new double[rowCount];
@@ -1176,18 +1176,18 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}, {7.0, 8.0, 9.0}});
-     * matrix.getAntiDiagonal();   // returns [3.0, 5.0, 7.0]
+     * matrix.antiDiagonalCopy();   // returns [3.0, 5.0, 7.0]
      *
-     * DoubleMatrix.of(new double[][] {{5.0}}).getAntiDiagonal();             // returns [5.0] (1x1)
-     * DoubleMatrix.empty().getAntiDiagonal();                                // returns [] (empty, square 0x0)
-     * DoubleMatrix.of(new double[][] {{1.0, 2.0, 3.0}}).getAntiDiagonal();   // throws IllegalStateException (not square)
+     * DoubleMatrix.of(new double[][] {{5.0}}).antiDiagonalCopy();             // returns [5.0] (1x1)
+     * DoubleMatrix.empty().antiDiagonalCopy();                                // returns [] (empty, square 0x0)
+     * DoubleMatrix.of(new double[][] {{1.0, 2.0, 3.0}}).antiDiagonalCopy();   // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a new double array containing a copy of the anti-diagonal elements
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
-    public double[] getAntiDiagonal() throws IllegalStateException {
+    public double[] antiDiagonalCopy() throws IllegalStateException {
         checkIsSquare();
 
         final double[] res = new double[rowCount];
@@ -3945,7 +3945,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
 
     /**
      * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1, 2]\n[3, 4]"}); a
-     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #println(Appendable)}.
+     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #appendTo(Appendable)}.
      *
      * @return the formatted multi-line representation of this matrix
      */

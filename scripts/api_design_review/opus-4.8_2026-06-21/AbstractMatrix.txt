@@ -16,7 +16,7 @@ actionable items are a small set of naming/return-shape consistency points; none
 
 2. NAMING ISSUES
 
-getMainDiagonal() / getAntiDiagonal() | AbstractMatrix.java:1638,1688 | Confidence Medium |
+mainDiagonalCopy() / antiDiagonalCopy() | AbstractMatrix.java:1638,1688 | Confidence Medium |
 recommend: add mainDiagonal()/antiDiagonal() (or mainDiagonalArray()/antiDiagonalArray()) as the canonical
 names; treat the get* spelling as the alias to retire.
   These are the ONLY get-prefixed array accessors in the family. Sibling array/list/stream accessors omit
@@ -58,8 +58,8 @@ overlap among horizontalStream/verticalStream/rowStreams/columnStreams and the *
 superficial (element-vs-position, flat-vs-nested) — each is distinct.
 
 CROSS-CLASS NOTES
-- Accessor-prefix convention: array/list/stream accessors omit "get" everywhere except getMainDiagonal/
-  getAntiDiagonal (see §2).
+- Accessor-prefix convention: array/list/stream accessors omit "get" everywhere except mainDiagonalCopy/
+  antiDiagonalCopy (see §2).
 - The exception conventions established here (and honored by all subclasses) are: null/value -> IAE,
   index/range -> IndexOutOfBoundsException, not-square -> IllegalStateException; with get/set deliberately
   keeping ArrayIndexOutOfBoundsException via raw array access (defined in subclasses). This split is

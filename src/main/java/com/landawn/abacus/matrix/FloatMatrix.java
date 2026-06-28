@@ -958,18 +958,18 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}, {4.0f, 5.0f, 6.0f}, {7.0f, 8.0f, 9.0f}});
-     * matrix.getMainDiagonal();   // returns [1.0f, 5.0f, 9.0f]
+     * matrix.mainDiagonalCopy();   // returns [1.0f, 5.0f, 9.0f]
      *
-     * FloatMatrix.of(new float[][] {{5.0f}}).getMainDiagonal();             // returns [5.0f] (1x1)
-     * FloatMatrix.empty().getMainDiagonal();                                // returns [] (empty, square 0x0)
-     * FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}}).getMainDiagonal(); // throws IllegalStateException (not square)
+     * FloatMatrix.of(new float[][] {{5.0f}}).mainDiagonalCopy();             // returns [5.0f] (1x1)
+     * FloatMatrix.empty().mainDiagonalCopy();                                // returns [] (empty, square 0x0)
+     * FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}}).mainDiagonalCopy(); // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a new float array containing a copy of the main diagonal elements
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
-    public float[] getMainDiagonal() throws IllegalStateException {
+    public float[] mainDiagonalCopy() throws IllegalStateException {
         checkIsSquare();
 
         final float[] diagonal = new float[rowCount];
@@ -1059,18 +1059,18 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}, {4.0f, 5.0f, 6.0f}, {7.0f, 8.0f, 9.0f}});
-     * matrix.getAntiDiagonal();   // returns [3.0f, 5.0f, 7.0f]
+     * matrix.antiDiagonalCopy();   // returns [3.0f, 5.0f, 7.0f]
      *
-     * FloatMatrix.of(new float[][] {{5.0f}}).getAntiDiagonal();             // returns [5.0f] (1x1)
-     * FloatMatrix.empty().getAntiDiagonal();                                // returns [] (empty, square 0x0)
-     * FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}}).getAntiDiagonal(); // throws IllegalStateException (not square)
+     * FloatMatrix.of(new float[][] {{5.0f}}).antiDiagonalCopy();             // returns [5.0f] (1x1)
+     * FloatMatrix.empty().antiDiagonalCopy();                                // returns [] (empty, square 0x0)
+     * FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}}).antiDiagonalCopy(); // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a new float array containing a copy of the anti-diagonal elements
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
-    public float[] getAntiDiagonal() throws IllegalStateException {
+    public float[] antiDiagonalCopy() throws IllegalStateException {
         checkIsSquare();
 
         final float[] diagonal = new float[rowCount];
@@ -3735,7 +3735,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
     /**
      * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1, 2]\n[3, 4]"}); a
-     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #println(Appendable)}.
+     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #appendTo(Appendable)}.
      *
      * @return the formatted multi-line representation of this matrix
      */

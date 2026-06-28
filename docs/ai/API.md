@@ -138,7 +138,7 @@ Shared implementation base for the matrix types in this package.
   - (none)
 - **Returns:** a new matrix that is the transpose of this matrix, with dimensions {@code columnCount × rowCount} ; a matrix with zero columns (an {@code N x 0} shape) transposes to the empty {@code 0 x 0} matrix, because the swapped shape {@code 0 x N} (zero rows with a non-zero column count) is not representable
 ##### reshape(...) -> M
-- **Signature:** `public M reshape(final int newColumnCount)`
+- **Signature:** `public M reshapeByColumnCount(final int newColumnCount)`
 - **Summary:** Returns a new matrix with the elements of this matrix rearranged into the specified number of columns.
 - **Contract:**
   - If the total element count is not evenly divisible by the new column count, the last row will be padded with default values ( {@code 0} for numeric types, {@code false} for boolean, {@code null} for objects).
@@ -536,7 +536,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
   - `a` (`boolean[][]`) — the two-dimensional boolean array to wrap; may be {@code null} or empty, in which case the empty matrix singleton is returned
 - **Returns:** a new {@code BooleanMatrix} backed by {@code a} , or the empty {@code BooleanMatrix} if {@code a} is {@code null} or empty
 ##### random(...) -> BooleanMatrix
-- **Signature:** `public static BooleanMatrix random(final int length)`
+- **Signature:** `public static BooleanMatrix randomRow(final int length)`
 - **Summary:** Creates a new {@code 1 × length} matrix filled with pseudo-randomly generated boolean values.
 - **Parameters:**
   - `length` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
@@ -1312,7 +1312,7 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
   - `a` (`byte[][]`) — the two-dimensional byte array to wrap; may be {@code null} or empty
 - **Returns:** a new {@code ByteMatrix} wrapping the provided data, or the shared empty {@code ByteMatrix} if {@code a} is {@code null} or empty
 ##### random(...) -> ByteMatrix
-- **Signature:** `public static ByteMatrix random(final int length)`
+- **Signature:** `public static ByteMatrix randomRow(final int length)`
 - **Summary:** Creates a new {@code 1 x length} matrix filled with random byte values uniformly distributed across the full byte range {@code \[Byte.MIN_VALUE, Byte.MAX_VALUE\]} .
 - **Parameters:**
   - `length` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
@@ -1893,8 +1893,8 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code other} is {@code null} , or if the matrices have different shapes
 - **See also:** #add(ByteMatrix)
-##### matmul(...) -> ByteMatrix
-- **Signature:** `public ByteMatrix matmul(final ByteMatrix other) throws IllegalArgumentException`
+##### matrixMultiply(...) -> ByteMatrix
+- **Signature:** `public ByteMatrix matrixMultiply(final ByteMatrix other) throws IllegalArgumentException`
 - **Summary:** Performs matrix multiplication (Cayley product) with another matrix.
 - **Contract:**
   - The number of columns in this matrix must equal the number of rows in {@code other} .
@@ -2127,7 +2127,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
   - `a` (`char[][]`) — the two-dimensional char array to wrap, or {@code null} /empty for an empty matrix
 - **Returns:** a new {@code CharMatrix} backed by {@code a} , or the shared empty matrix if {@code a} is {@code null} or empty
 ##### random(...) -> CharMatrix
-- **Signature:** `public static CharMatrix random(final int length)`
+- **Signature:** `public static CharMatrix randomRow(final int length)`
 - **Summary:** Creates a new {@code 1 x length} matrix filled with random char values drawn uniformly from the full unsigned 16-bit range {@code \[0, 65535\]} .
 - **Parameters:**
   - `length` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
@@ -2705,8 +2705,8 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code other} is {@code null} , or if the matrices have different shapes
 - **See also:** #add(CharMatrix)
-##### matmul(...) -> CharMatrix
-- **Signature:** `public CharMatrix matmul(final CharMatrix other) throws IllegalArgumentException`
+##### matrixMultiply(...) -> CharMatrix
+- **Signature:** `public CharMatrix matrixMultiply(final CharMatrix other) throws IllegalArgumentException`
 - **Summary:** Performs matrix multiplication (Cayley product) with another matrix.
 - **Contract:**
   - The number of columns in this matrix must equal the number of rows in {@code other} .
@@ -2956,7 +2956,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
   - `a` (`float[][]`) — the two-dimensional float array to convert to a double matrix, or {@code null} /empty for an empty matrix
 - **Returns:** a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if input is {@code null} or empty
 ##### random(...) -> DoubleMatrix
-- **Signature:** `public static DoubleMatrix random(final int length)`
+- **Signature:** `public static DoubleMatrix randomRow(final int length)`
 - **Summary:** Creates a new {@code 1 x length} matrix filled with random double values uniformly distributed in {@code \[0.0, 1.0)} .
 - **Parameters:**
   - `length` (`int`) — the number of columns in the new matrix
@@ -3524,8 +3524,8 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code other} is {@code null} or the matrices have different dimensions
 - **See also:** #add(DoubleMatrix)
-##### matmul(...) -> DoubleMatrix
-- **Signature:** `public DoubleMatrix matmul(final DoubleMatrix other) throws IllegalArgumentException`
+##### matrixMultiply(...) -> DoubleMatrix
+- **Signature:** `public DoubleMatrix matrixMultiply(final DoubleMatrix other) throws IllegalArgumentException`
 - **Summary:** Performs matrix multiplication of this matrix with another matrix.
 - **Contract:**
   - The number of columns in this matrix must equal the number of rows in the other matrix.
@@ -3757,7 +3757,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
   - `a` (`int[][]`) — the two-dimensional int array to convert to a float matrix, or {@code null} /empty for an empty matrix
 - **Returns:** a new {@code FloatMatrix} with converted values, or the shared empty {@code FloatMatrix} if input is {@code null} or empty
 ##### random(...) -> FloatMatrix
-- **Signature:** `public static FloatMatrix random(final int length)`
+- **Signature:** `public static FloatMatrix randomRow(final int length)`
 - **Summary:** Creates a new {@code 1 x length} matrix filled with random float values uniformly distributed in {@code \[0.0f, 1.0f)} .
 - **Parameters:**
   - `length` (`int`) — the number of columns in the new matrix
@@ -4308,8 +4308,8 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code other} is {@code null} or the matrices have different dimensions
 - **See also:** #add(FloatMatrix)
-##### matmul(...) -> FloatMatrix
-- **Signature:** `public FloatMatrix matmul(final FloatMatrix other) throws IllegalArgumentException`
+##### matrixMultiply(...) -> FloatMatrix
+- **Signature:** `public FloatMatrix matrixMultiply(final FloatMatrix other) throws IllegalArgumentException`
 - **Summary:** Performs matrix multiplication of this matrix with another matrix.
 - **Contract:**
   - The number of columns in this matrix must equal the number of rows in the other matrix.
@@ -4553,7 +4553,7 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
   - `a` (`short[][]`) — the two-dimensional short array to convert, or {@code null} /empty for an empty matrix
 - **Returns:** a new {@code IntMatrix} with the widened values, or the shared empty matrix if {@code a} is {@code null} or empty
 ##### random(...) -> IntMatrix
-- **Signature:** `public static IntMatrix random(final int length)`
+- **Signature:** `public static IntMatrix randomRow(final int length)`
 - **Summary:** Creates a new {@code 1 x length} matrix filled with pseudo-random {@code int} values drawn uniformly from the entire {@code int} range.
 - **Parameters:**
   - `length` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
@@ -5149,8 +5149,8 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code other} is {@code null} , or if the matrices have different shapes
 - **See also:** #add(IntMatrix)
-##### matmul(...) -> IntMatrix
-- **Signature:** `public IntMatrix matmul(final IntMatrix other) throws IllegalArgumentException`
+##### matrixMultiply(...) -> IntMatrix
+- **Signature:** `public IntMatrix matrixMultiply(final IntMatrix other) throws IllegalArgumentException`
 - **Summary:** Performs matrix multiplication (Cayley product) with another matrix.
 - **Contract:**
   - The number of columns in this matrix must equal the number of rows in {@code other} .
@@ -5381,7 +5381,7 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
   - `a` (`int[][]`) — the two-dimensional int array to convert, or {@code null} /empty for an empty matrix
 - **Returns:** a new {@code LongMatrix} with the widened values, or the shared empty matrix if {@code a} is {@code null} or empty
 ##### random(...) -> LongMatrix
-- **Signature:** `public static LongMatrix random(final int length)`
+- **Signature:** `public static LongMatrix randomRow(final int length)`
 - **Summary:** Creates a new {@code 1 x length} matrix filled with pseudo-random {@code long} values drawn uniformly from the entire {@code long} range.
 - **Parameters:**
   - `length` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
@@ -5977,8 +5977,8 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code other} is {@code null} , or if the matrices have different shapes
 - **See also:** #add(LongMatrix)
-##### matmul(...) -> LongMatrix
-- **Signature:** `public LongMatrix matmul(final LongMatrix other) throws IllegalArgumentException`
+##### matrixMultiply(...) -> LongMatrix
+- **Signature:** `public LongMatrix matrixMultiply(final LongMatrix other) throws IllegalArgumentException`
 - **Summary:** Performs matrix multiplication (Cayley product) with another matrix.
 - **Contract:**
   - The number of columns in this matrix must equal the number of rows in {@code other} .
@@ -7796,7 +7796,7 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
   - `a` (`short[][]`) — the two-dimensional short array to create the matrix from, or {@code null} /empty for an empty matrix
 - **Returns:** a new {@code ShortMatrix} wrapping the provided data, or the shared empty {@code ShortMatrix} if input is {@code null} or empty
 ##### random(...) -> ShortMatrix
-- **Signature:** `public static ShortMatrix random(final int length)`
+- **Signature:** `public static ShortMatrix randomRow(final int length)`
 - **Summary:** Creates a new {@code 1 x length} matrix filled with pseudo-random {@code short} values drawn uniformly from the entire {@code short} range.
 - **Parameters:**
   - `length` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
@@ -8375,8 +8375,8 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code other} is {@code null} , or if the matrices have different shapes
 - **See also:** #add(ShortMatrix)
-##### matmul(...) -> ShortMatrix
-- **Signature:** `public ShortMatrix matmul(final ShortMatrix other) throws IllegalArgumentException`
+##### matrixMultiply(...) -> ShortMatrix
+- **Signature:** `public ShortMatrix matrixMultiply(final ShortMatrix other) throws IllegalArgumentException`
 - **Summary:** Performs matrix multiplication (Cayley product) with another matrix.
 - **Contract:**
   - The number of columns in this matrix must equal the number of rows in {@code other} .

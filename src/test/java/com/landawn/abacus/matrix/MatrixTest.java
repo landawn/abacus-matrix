@@ -506,7 +506,7 @@ class MatrixTest extends TestBase {
     public void testGetLU2RD() {
         Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
 
-        Integer[] diagonal = matrix.getMainDiagonal();
+        Integer[] diagonal = matrix.mainDiagonalCopy();
         Assertions.assertArrayEquals(new Integer[] { 1, 5, 9 }, diagonal);
     }
 
@@ -515,7 +515,7 @@ class MatrixTest extends TestBase {
         Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 } });
 
         Assertions.assertThrows(IllegalStateException.class, () -> {
-            matrix.getMainDiagonal();
+            matrix.mainDiagonalCopy();
         });
     }
 
@@ -553,7 +553,7 @@ class MatrixTest extends TestBase {
     public void testGetRU2LD() {
         Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
 
-        Integer[] diagonal = matrix.getAntiDiagonal();
+        Integer[] diagonal = matrix.antiDiagonalCopy();
         Assertions.assertArrayEquals(new Integer[] { 3, 5, 7 }, diagonal);
     }
 
@@ -1403,7 +1403,7 @@ class MatrixTest extends TestBase {
         Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 } });
         List<String> columnNames = Arrays.asList("A", "B", "C");
 
-        Dataset dataset = matrix.toRowDataset(columnNames);
+        Dataset dataset = matrix.toDataset(columnNames);
 
         Assertions.assertEquals(2, dataset.size());
         Assertions.assertEquals(3, dataset.columnCount());
@@ -1416,7 +1416,7 @@ class MatrixTest extends TestBase {
         List<String> columnNames = Arrays.asList("A", "B");
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            matrix.toRowDataset(columnNames);
+            matrix.toDataset(columnNames);
         });
     }
 
@@ -1424,14 +1424,14 @@ class MatrixTest extends TestBase {
     public void testToDatasetHNullColumnNames() {
         Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2, 3 } });
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.toRowDataset(null));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.toDataset(null));
     }
 
     @Test
     public void testToDatasetHRejectsRowsWithZeroColumns() {
         Matrix<String> matrix = Matrix.of(new String[3][0]);
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.toRowDataset(List.of()));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.toDataset(List.of()));
     }
 
     @Test
@@ -1439,7 +1439,7 @@ class MatrixTest extends TestBase {
         Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 } });
         List<String> columnNames = Arrays.asList("Row1", "Row2");
 
-        Dataset dataset = matrix.toColumnDataset(columnNames);
+        Dataset dataset = matrix.toTransposedDataset(columnNames);
 
         Assertions.assertEquals(3, dataset.size());
         Assertions.assertEquals(2, dataset.columnCount());
@@ -1452,7 +1452,7 @@ class MatrixTest extends TestBase {
         List<String> columnNames = Arrays.asList("Row1", "Row2");
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            matrix.toColumnDataset(columnNames);
+            matrix.toTransposedDataset(columnNames);
         });
     }
 
@@ -1460,7 +1460,7 @@ class MatrixTest extends TestBase {
     public void testToDatasetVNullColumnNames() {
         Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2 } });
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.toColumnDataset(null));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.toTransposedDataset(null));
     }
 
     @Test
@@ -1816,16 +1816,16 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testMatrix_getMainDiagonal() {
+        public void testMatrix_mainDiagonalCopy() {
             Matrix<Integer> m = Matrix.of(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            Integer[] diag = m.getMainDiagonal();
+            Integer[] diag = m.mainDiagonalCopy();
             assertArrayEquals(new Integer[] { 1, 5, 9 }, diag);
         }
 
         @Test
-        public void testMatrix_getAntiDiagonal() {
+        public void testMatrix_antiDiagonalCopy() {
             Matrix<Integer> m = Matrix.of(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            Integer[] diag = m.getAntiDiagonal();
+            Integer[] diag = m.antiDiagonalCopy();
             assertArrayEquals(new Integer[] { 3, 5, 7 }, diag);
         }
 
@@ -2349,13 +2349,13 @@ class MatrixTest extends TestBase {
         @Test
         public void testGetLU2RD() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B", "C" }, { "D", "E", "F" }, { "G", "H", "I" } });
-            assertArrayEquals(new String[] { "A", "E", "I" }, m.getMainDiagonal());
+            assertArrayEquals(new String[] { "A", "E", "I" }, m.mainDiagonalCopy());
         }
 
         @Test
         public void testGetLU2RD_nonSquare() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" } });
-            assertThrows(IllegalStateException.class, () -> m.getMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
         }
 
         @Test
@@ -2398,13 +2398,13 @@ class MatrixTest extends TestBase {
         @Test
         public void testGetRU2LD() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B", "C" }, { "D", "E", "F" }, { "G", "H", "I" } });
-            assertArrayEquals(new String[] { "C", "E", "G" }, m.getAntiDiagonal());
+            assertArrayEquals(new String[] { "C", "E", "G" }, m.antiDiagonalCopy());
         }
 
         @Test
         public void testGetRU2LD_nonSquare() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" } });
-            assertThrows(IllegalStateException.class, () -> m.getAntiDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
         }
 
         @Test
@@ -3431,7 +3431,7 @@ class MatrixTest extends TestBase {
         public void testToDatasetH() {
             Matrix<Integer> m = Matrix.of(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             List<String> columnNames = Arrays.asList("A", "B", "C");
-            Dataset dataset = m.toRowDataset(columnNames);
+            Dataset dataset = m.toDataset(columnNames);
 
             assertNotNull(dataset);
             assertEquals(3, dataset.columnNames().size());
@@ -3444,14 +3444,14 @@ class MatrixTest extends TestBase {
         public void testToDatasetH_wrongColumnCount() {
             Matrix<Integer> m = Matrix.of(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             List<String> columnNames = Arrays.asList("A", "B");
-            assertThrows(IllegalArgumentException.class, () -> m.toRowDataset(columnNames));
+            assertThrows(IllegalArgumentException.class, () -> m.toDataset(columnNames));
         }
 
         @Test
         public void testToDatasetV() {
             Matrix<Integer> m = Matrix.of(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             List<String> columnNames = Arrays.asList("Row1", "Row2");
-            Dataset dataset = m.toColumnDataset(columnNames);
+            Dataset dataset = m.toTransposedDataset(columnNames);
 
             assertNotNull(dataset);
             assertEquals(2, dataset.columnNames().size());
@@ -3464,7 +3464,7 @@ class MatrixTest extends TestBase {
         public void testToDatasetV_wrongColumnCount() {
             Matrix<Integer> m = Matrix.of(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             List<String> columnNames = Arrays.asList("A", "B", "C");
-            assertThrows(IllegalArgumentException.class, () -> m.toColumnDataset(columnNames));
+            assertThrows(IllegalArgumentException.class, () -> m.toTransposedDataset(columnNames));
         }
 
         @Test
@@ -4046,7 +4046,7 @@ class MatrixTest extends TestBase {
         @Test
         public void testGetLU2RD_nonSquare() {
             Matrix<Integer> m = Matrix.of(new Integer[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.getMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
         }
 
         @Test
@@ -4070,7 +4070,7 @@ class MatrixTest extends TestBase {
         @Test
         public void testGetRU2LD_nonSquare() {
             Matrix<Integer> m = Matrix.of(new Integer[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.getAntiDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
         }
 
         @Test
@@ -4647,7 +4647,7 @@ class MatrixTest extends TestBase {
         @Test
         public void testGetLU2RD_strings() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
-            String[] diag = m.getMainDiagonal();
+            String[] diag = m.mainDiagonalCopy();
             assertArrayEquals(new String[] { "A", "D" }, diag);
         }
 
@@ -4690,7 +4690,7 @@ class MatrixTest extends TestBase {
         @Test
         public void testGetRU2LD_strings() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B" }, { "C", "D" } });
-            String[] diag = m.getAntiDiagonal();
+            String[] diag = m.antiDiagonalCopy();
             assertArrayEquals(new String[] { "B", "C" }, diag);
         }
 
@@ -6209,17 +6209,17 @@ class MatrixTest extends TestBase {
         // ============ Diagonal Tests ============
 
         @Test
-        public void test_getMainDiagonal_returnsMainDiagonal() {
+        public void test_mainDiagonalCopy_returnsMainDiagonal() {
             String[][] arr = { { "a", "b", "c" }, { "d", "e", "f" }, { "g", "h", "i" } };
             Matrix<String> m = new Matrix<>(arr);
-            String[] diag = m.getMainDiagonal();
+            String[] diag = m.mainDiagonalCopy();
             assertArrayEquals(new String[] { "a", "e", "i" }, diag);
         }
 
         @Test
-        public void test_getMainDiagonal_nonSquare_throwsException() {
+        public void test_mainDiagonalCopy_nonSquare_throwsException() {
             Matrix<String> m = Matrix.of(new String[][] { { "a", "b", "c" }, { "d", "e", "f" } });
-            assertThrows(IllegalStateException.class, () -> m.getMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
         }
 
         @Test
@@ -6249,10 +6249,10 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void test_getAntiDiagonal_returnsAntiDiagonal() {
+        public void test_antiDiagonalCopy_returnsAntiDiagonal() {
             String[][] arr = { { "a", "b", "c" }, { "d", "e", "f" }, { "g", "h", "i" } };
             Matrix<String> m = new Matrix<>(arr);
-            String[] diag = m.getAntiDiagonal();
+            String[] diag = m.antiDiagonalCopy();
             assertArrayEquals(new String[] { "c", "e", "g" }, diag);
         }
 
@@ -6868,7 +6868,7 @@ class MatrixTest extends TestBase {
         public void test_toDatasetH_convertsToDataset() {
             String[][] arr = { { "a", "b" }, { "c", "d" } };
             Matrix<String> m = new Matrix<>(arr);
-            Dataset ds = m.toRowDataset(Arrays.asList("col1", "col2"));
+            Dataset ds = m.toDataset(Arrays.asList("col1", "col2"));
             assertNotNull(ds);
             assertEquals(2, ds.size());
         }
@@ -6877,7 +6877,7 @@ class MatrixTest extends TestBase {
         public void test_toDatasetV_convertsToDataset() {
             String[][] arr = { { "a", "b" }, { "c", "d" } };
             Matrix<String> m = new Matrix<>(arr);
-            Dataset ds = m.toColumnDataset(Arrays.asList("col1", "col2"));
+            Dataset ds = m.toTransposedDataset(Arrays.asList("col1", "col2"));
             assertNotNull(ds);
             assertEquals(2, ds.size());
         }

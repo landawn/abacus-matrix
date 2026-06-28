@@ -49,7 +49,7 @@ Jot observations the moment they appear; consolidate into SUMMARY at the end.
    Float->Double. Curated subset, but undocumented as intentional + asymmetric (Byte gets only ->Int,
    Int gets ->Long and ->Double). Medium.
 
-8. **Diagonal accessors are `get`-prefixed** (`getMainDiagonal`/`getAntiDiagonal`, AbstractMatrix:1638/1688)
+8. **Diagonal accessors are `get`-prefixed** (`mainDiagonalCopy`/`antiDiagonalCopy`, AbstractMatrix:1638/1688)
    while row/column accessors are NOT (`rowCopy`/`columnCopy`, 403/433). Only `get`-prefixed array
    accessors in the family. Setters: setMainDiagonal/setRow. Naming inconsistency. Medium.
 
@@ -62,8 +62,8 @@ Jot observations the moment they appear; consolidate into SUMMARY at the end.
     the project's established validation-exception policy (get/set keep AIOOBE; index/range -> IOOBE).
     By-design; recommend documenting the deliberate split. Low.
 
-11. **Matrix Dataset converters** (`toRowDataset`/`toColumnDataset`, @Beta, Matrix:3690/3744) exist only on
-    Matrix<T>. `toColumnDataset`'s param is named `columnNames` but validated against `rowCount` (3747) —
+11. **Matrix Dataset converters** (`toDataset`/`toTransposedDataset`, @Beta, Matrix:3690/3744) exist only on
+    Matrix<T>. `toTransposedDataset`'s param is named `columnNames` but validated against `rowCount` (3747) —
     each matrix ROW becomes a Dataset COLUMN. Documented but mildly confusing. Low.
 
 12. `forEachIndices` has a `(i,j,matrix)` variant (AbstractMatrix:1360/1415) that passes `(M)this` — marginal

@@ -865,8 +865,8 @@ class MatricesTest extends TestBase {
                 N.println(mx);
                 N.println(mx.boxed());
 
-                mx.boxed().toRowDataset(N.asList("a", "b", "c", "d")).println();
-                mx.boxed().toColumnDataset(N.asList("a", "b")).println();
+                mx.boxed().toDataset(N.asList("a", "b", "c", "d")).println();
+                mx.boxed().toTransposedDataset(N.asList("a", "b")).println();
             });
         }
     }

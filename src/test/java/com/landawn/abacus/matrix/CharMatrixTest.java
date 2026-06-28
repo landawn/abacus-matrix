@@ -410,11 +410,11 @@ class CharMatrixTest extends TestBase {
         char[][] a = { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } };
         CharMatrix matrix = CharMatrix.of(a);
 
-        char[] diagonal = matrix.getMainDiagonal();
+        char[] diagonal = matrix.mainDiagonalCopy();
         Assertions.assertArrayEquals(new char[] { 'a', 'e', 'i' }, diagonal);
 
         CharMatrix nonSquare = CharMatrix.of(new char[][] { { 'a', 'b' } });
-        Assertions.assertThrows(IllegalStateException.class, () -> nonSquare.getMainDiagonal());
+        Assertions.assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalCopy());
     }
 
     @Test
@@ -446,7 +446,7 @@ class CharMatrixTest extends TestBase {
         char[][] a = { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } };
         CharMatrix matrix = CharMatrix.of(a);
 
-        char[] diagonal = matrix.getAntiDiagonal();
+        char[] diagonal = matrix.antiDiagonalCopy();
         Assertions.assertArrayEquals(new char[] { 'c', 'e', 'g' }, diagonal);
     }
 
@@ -1772,13 +1772,13 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B', 'C' }, { 'D', 'E', 'F' }, { 'G', 'H', 'I' } });
-            assertArrayEquals(new char[] { 'A', 'E', 'I' }, m.getMainDiagonal());
+            assertArrayEquals(new char[] { 'A', 'E', 'I' }, m.mainDiagonalCopy());
         }
 
         @Test
         public void testGetLU2RD_nonSquare() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B' } });
-            assertThrows(IllegalStateException.class, () -> m.getMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
         }
 
         @Test
@@ -1821,13 +1821,13 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testGetRU2LD() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B', 'C' }, { 'D', 'E', 'F' }, { 'G', 'H', 'I' } });
-            assertArrayEquals(new char[] { 'C', 'E', 'G' }, m.getAntiDiagonal());
+            assertArrayEquals(new char[] { 'C', 'E', 'G' }, m.antiDiagonalCopy());
         }
 
         @Test
         public void testGetRU2LD_nonSquare() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B' } });
-            assertThrows(IllegalStateException.class, () -> m.getAntiDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
         }
 
         @Test
@@ -3255,7 +3255,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD_nonSquare() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } });
-            assertThrows(IllegalStateException.class, () -> m.getMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
         }
 
         @Test
@@ -4397,7 +4397,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD_singleElement() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'x' } });
-            assertArrayEquals(new char[] { 'x' }, m.getMainDiagonal());
+            assertArrayEquals(new char[] { 'x' }, m.mainDiagonalCopy());
         }
 
         @Test
@@ -4437,14 +4437,14 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testGetRU2LD() {
             CharMatrix m = CharMatrix.of(new char[][] { { ' ', ' ', 'a' }, { ' ', 'b', ' ' }, { 'c', ' ', ' ' } });
-            char[] diag = m.getAntiDiagonal();
+            char[] diag = m.antiDiagonalCopy();
             assertArrayEquals(new char[] { 'a', 'b', 'c' }, diag);
         }
 
         @Test
         public void testGetRU2LD_nonSquare() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } });
-            assertThrows(IllegalStateException.class, () -> m.getAntiDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
         }
 
         @Test
@@ -5420,16 +5420,16 @@ class CharMatrixTest extends TestBase {
         // ============ Diagonal Access Tests ============
 
         @Test
-        public void test_getMainDiagonal() {
+        public void test_mainDiagonalCopy() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } });
-            char[] diag = m.getMainDiagonal();
+            char[] diag = m.mainDiagonalCopy();
             assertArrayEquals(new char[] { 'a', 'e', 'i' }, diag);
         }
 
         @Test
-        public void test_getMainDiagonal_nonSquare() {
+        public void test_mainDiagonalCopy_nonSquare() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' }, { 'e', 'f' } });
-            assertThrows(IllegalStateException.class, () -> m.getMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
         }
 
         @Test
@@ -5457,9 +5457,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_getAntiDiagonal() {
+        public void test_antiDiagonalCopy() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } });
-            char[] diag = m.getAntiDiagonal();
+            char[] diag = m.antiDiagonalCopy();
             assertArrayEquals(new char[] { 'c', 'e', 'g' }, diag);
         }
 
@@ -6032,16 +6032,16 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCharMatrix_getMainDiagonal() {
+        public void testCharMatrix_mainDiagonalCopy() {
             CharMatrix matrix = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } });
-            char[] diagonal = matrix.getMainDiagonal();
+            char[] diagonal = matrix.mainDiagonalCopy();
             assertArrayEquals(new char[] { 'a', 'e', 'i' }, diagonal);
         }
 
         @Test
-        public void testCharMatrix_getAntiDiagonal() {
+        public void testCharMatrix_antiDiagonalCopy() {
             CharMatrix matrix = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } });
-            char[] diagonal = matrix.getAntiDiagonal();
+            char[] diagonal = matrix.antiDiagonalCopy();
             assertArrayEquals(new char[] { 'c', 'e', 'g' }, diagonal);
         }
 

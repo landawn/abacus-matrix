@@ -891,20 +891,20 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Integer> m = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * m.getMainDiagonal();   // returns [1, 5, 9]
+     * m.mainDiagonalCopy();   // returns [1, 5, 9]
      *
      * Matrix<Integer> single = Matrix.of(new Integer[][] {{42}});
-     * single.getMainDiagonal();   // returns [42]
+     * single.mainDiagonalCopy();   // returns [42]
      *
      * Matrix<Integer> nonSquare = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
-     * nonSquare.getMainDiagonal();   // throws IllegalStateException (not square)
+     * nonSquare.mainDiagonalCopy();   // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a new array containing the diagonal elements from top-left to bottom-right
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
-    public T[] getMainDiagonal() throws IllegalStateException {
+    public T[] mainDiagonalCopy() throws IllegalStateException {
         checkIsSquare();
 
         final T[] res = N.newArray(elementType, rowCount);
@@ -927,7 +927,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <pre>{@code
      * Matrix<Integer> m = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      * m.setMainDiagonal(new Integer[] {10, 20, 30});
-     * m.getMainDiagonal();   // returns [10, 20, 30]
+     * m.mainDiagonalCopy();   // returns [10, 20, 30]
      * m.get(0, 1);           // returns 2 (off-diagonal unchanged)
      *
      * Matrix<Integer> nonSquare = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
@@ -961,10 +961,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <pre>{@code
      * Matrix<Integer> matrix = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      * matrix.updateMainDiagonal(x -> x * 2);
-     * matrix.getMainDiagonal();   // returns [2, 10, 18]
+     * matrix.mainDiagonalCopy();   // returns [2, 10, 18]
      *
      * matrix.updateMainDiagonal(x -> 0);
-     * matrix.getMainDiagonal();   // returns [0, 0, 0]
+     * matrix.mainDiagonalCopy();   // returns [0, 0, 0]
      *
      * Matrix<Integer> nonSquare = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
      * nonSquare.updateMainDiagonal(x -> x);   // throws IllegalStateException (not square)
@@ -999,20 +999,20 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Integer> m = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * m.getAntiDiagonal();   // returns [3, 5, 7]
+     * m.antiDiagonalCopy();   // returns [3, 5, 7]
      *
      * Matrix<Integer> single = Matrix.of(new Integer[][] {{42}});
-     * single.getAntiDiagonal();   // returns [42]
+     * single.antiDiagonalCopy();   // returns [42]
      *
      * Matrix<Integer> nonSquare = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
-     * nonSquare.getAntiDiagonal();   // throws IllegalStateException (not square)
+     * nonSquare.antiDiagonalCopy();   // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a new array containing the anti-diagonal elements from top-right to bottom-left
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
-    public T[] getAntiDiagonal() throws IllegalStateException {
+    public T[] antiDiagonalCopy() throws IllegalStateException {
         checkIsSquare();
 
         final T[] res = N.newArray(elementType, rowCount);
@@ -1036,7 +1036,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <pre>{@code
      * Matrix<Integer> m = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      * m.setAntiDiagonal(new Integer[] {10, 20, 30});
-     * m.getAntiDiagonal();   // returns [10, 20, 30]
+     * m.antiDiagonalCopy();   // returns [10, 20, 30]
      * m.get(0, 2);           // returns 10
      * m.get(2, 0);           // returns 30
      *
@@ -1071,11 +1071,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <pre>{@code
      * Matrix<Integer> matrix = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      * matrix.updateAntiDiagonal(x -> -x);
-     * matrix.getAntiDiagonal();   // returns [-3, -5, -7]
+     * matrix.antiDiagonalCopy();   // returns [-3, -5, -7]
      *
      * Matrix<String> strMatrix = Matrix.of(new String[][] {{"A", "B"}, {"C", "D"}});
      * strMatrix.updateAntiDiagonal(String::toLowerCase);
-     * strMatrix.getAntiDiagonal();   // returns ["b", "c"]
+     * strMatrix.antiDiagonalCopy();   // returns ["b", "c"]
      *
      * Matrix<Integer> nonSquare = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
      * nonSquare.updateAntiDiagonal(x -> x);   // throws IllegalStateException (not square)
@@ -1243,7 +1243,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <pre>{@code
      * Matrix<Integer> matrix = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      * matrix.replaceIf((i, j) -> i == j, 0);   // replace diagonal elements with zero
-     * matrix.getMainDiagonal();                // returns [0, 0, 0]
+     * matrix.mainDiagonalCopy();                // returns [0, 0, 0]
      *
      * matrix.replaceIf((i, j) -> i < j, null); // replace upper triangle with null
      * matrix.get(0, 1);                        // returns null
@@ -3715,7 +3715,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Integer> matrix = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
-     * Dataset dataset = matrix.toRowDataset(N.asList("A", "B", "C"));
+     * Dataset dataset = matrix.toDataset(N.asList("A", "B", "C"));
      * // Dataset with:
      * // A  B  C
      * // -------
@@ -3724,8 +3724,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * dataset.getColumn("A");   // returns [1, 4]
      * dataset.size();           // returns 2 (one row per matrix row)
      *
-     * matrix.toRowDataset(null);                  // throws IllegalArgumentException (null names)
-     * matrix.toRowDataset(N.asList("A", "B"));    // throws IllegalArgumentException (size != columnCount)
+     * matrix.toDataset(null);                  // throws IllegalArgumentException (null names)
+     * matrix.toDataset(N.asList("A", "B"));    // throws IllegalArgumentException (size != columnCount)
      * }</pre>
      *
      * @param columnNames the names to assign to each column in the resulting Dataset; size must equal {@code columnCount}
@@ -3734,11 +3734,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws IllegalArgumentException if {@code columnNames} is {@code null}, if its size
      *         does not equal {@code columnCount}, or if this matrix has rows but no columns
      * @see Dataset
-     * @see #toColumnDataset(Collection)
+     * @see #toTransposedDataset(Collection)
      */
     @SuppressWarnings("deprecation")
     @Beta
-    public Dataset toRowDataset(final Collection<String> columnNames) throws IllegalArgumentException {
+    public Dataset toDataset(final Collection<String> columnNames) throws IllegalArgumentException {
         N.checkArgNotNull(columnNames, "columnNames");
         N.checkArgument(columnNames.size() == columnCount, "The size({}) of specified columnNames and column count({}) of this Matrix are not equal",
                 columnNames.size(), columnCount);
@@ -3769,7 +3769,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Integer> matrix = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
-     * Dataset dataset = matrix.toColumnDataset(N.asList("Row1", "Row2"));
+     * Dataset dataset = matrix.toTransposedDataset(N.asList("Row1", "Row2"));
      * // Dataset with:
      * // Row1  Row2
      * // ----------
@@ -3779,8 +3779,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * dataset.getColumn("Row1");   // returns [1, 2, 3]
      * dataset.getColumn("Row2");   // returns [4, 5, 6]
      *
-     * matrix.toColumnDataset(null);                // throws IllegalArgumentException (null names)
-     * matrix.toColumnDataset(N.asList("Row1"));    // throws IllegalArgumentException (size != rowCount)
+     * matrix.toTransposedDataset(null);                // throws IllegalArgumentException (null names)
+     * matrix.toTransposedDataset(N.asList("Row1"));    // throws IllegalArgumentException (size != rowCount)
      * }</pre>
      *
      * @param columnNames the column names of the resulting Dataset; size must equal {@code rowCount}
@@ -3789,11 +3789,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *         does not equal {@code rowCount}
      * @see Dataset
      * @see RowDataset
-     * @see #toRowDataset(Collection)
+     * @see #toDataset(Collection)
      */
     @SuppressWarnings("deprecation")
     @Beta
-    public Dataset toColumnDataset(final Collection<String> columnNames) throws IllegalArgumentException {
+    public Dataset toTransposedDataset(final Collection<String> columnNames) throws IllegalArgumentException {
         N.checkArgNotNull(columnNames, "columnNames");
         N.checkArgument(columnNames.size() == rowCount, "The size({}) of specified columnNames and row count({}) of this Matrix are not equal",
                 columnNames.size(), rowCount);
@@ -3810,7 +3810,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
     /**
      * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1, 2]\n[3, 4]"}); a
-     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #println(Appendable)}.
+     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #appendTo(Appendable)}.
      *
      * @return the formatted multi-line representation of this matrix
      */

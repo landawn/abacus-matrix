@@ -410,12 +410,12 @@ class IntMatrixTest extends TestBase {
 
     @Test
     public void testGetLU2RD() {
-        int[] diagonal = matrix.getMainDiagonal();
+        int[] diagonal = matrix.mainDiagonalCopy();
         assertArrayEquals(new int[] { 1, 5, 9 }, diagonal);
 
         // Test non-square matrix
         IntMatrix nonSquare = IntMatrix.of(new int[][] { { 1, 2 } });
-        assertThrows(IllegalStateException.class, () -> nonSquare.getMainDiagonal());
+        assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalCopy());
     }
 
     @Test
@@ -449,12 +449,12 @@ class IntMatrixTest extends TestBase {
 
     @Test
     public void testGetRU2LD() {
-        int[] antiDiagonal = matrix.getAntiDiagonal();
+        int[] antiDiagonal = matrix.antiDiagonalCopy();
         assertArrayEquals(new int[] { 3, 5, 7 }, antiDiagonal);
 
         // Test non-square matrix
         IntMatrix nonSquare = IntMatrix.of(new int[][] { { 1, 2 } });
-        assertThrows(IllegalStateException.class, () -> nonSquare.getAntiDiagonal());
+        assertThrows(IllegalStateException.class, () -> nonSquare.antiDiagonalCopy());
     }
 
     @Test
@@ -1767,13 +1767,13 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            assertArrayEquals(new int[] { 1, 5, 9 }, m.getMainDiagonal());
+            assertArrayEquals(new int[] { 1, 5, 9 }, m.mainDiagonalCopy());
         }
 
         @Test
         public void testGetLU2RD_nonSquare() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.getMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
         }
 
         @Test
@@ -1816,13 +1816,13 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testGetRU2LD() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            assertArrayEquals(new int[] { 3, 5, 7 }, m.getAntiDiagonal());
+            assertArrayEquals(new int[] { 3, 5, 7 }, m.antiDiagonalCopy());
         }
 
         @Test
         public void testGetRU2LD_nonSquare() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.getAntiDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
         }
 
         @Test
@@ -4386,23 +4386,23 @@ class IntMatrixTest extends TestBase {
         // ============ Diagonal Get/Set Tests ============
 
         @Test
-        public void test_getMainDiagonal() {
+        public void test_mainDiagonalCopy() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            int[] diag = m.getMainDiagonal();
+            int[] diag = m.mainDiagonalCopy();
             assertArrayEquals(new int[] { 1, 5, 9 }, diag);
         }
 
         @Test
-        public void test_getMainDiagonal_nonSquare() {
+        public void test_mainDiagonalCopy_nonSquare() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.getMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
         }
 
         @Test
         public void test_setMainDiagonal() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             m.setMainDiagonal(new int[] { 9, 8 });
-            assertArrayEquals(new int[] { 9, 8 }, m.getMainDiagonal());
+            assertArrayEquals(new int[] { 9, 8 }, m.mainDiagonalCopy());
         }
 
         @Test
@@ -4421,13 +4421,13 @@ class IntMatrixTest extends TestBase {
         public void test_updateMainDiagonal() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             m.updateMainDiagonal(x -> x * 2);
-            assertArrayEquals(new int[] { 2, 8 }, m.getMainDiagonal());
+            assertArrayEquals(new int[] { 2, 8 }, m.mainDiagonalCopy());
         }
 
         @Test
-        public void test_getAntiDiagonal() {
+        public void test_antiDiagonalCopy() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            int[] diag = m.getAntiDiagonal();
+            int[] diag = m.antiDiagonalCopy();
             assertArrayEquals(new int[] { 3, 5, 7 }, diag);
         }
 
@@ -4435,14 +4435,14 @@ class IntMatrixTest extends TestBase {
         public void test_setAntiDiagonal() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             m.setAntiDiagonal(new int[] { 9, 8 });
-            assertArrayEquals(new int[] { 9, 8 }, m.getAntiDiagonal());
+            assertArrayEquals(new int[] { 9, 8 }, m.antiDiagonalCopy());
         }
 
         @Test
         public void test_updateAntiDiagonal() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             m.updateAntiDiagonal(x -> x * 2);
-            int[] diag = m.getAntiDiagonal();
+            int[] diag = m.antiDiagonalCopy();
             assertEquals(4, diag[0]);
             assertEquals(6, diag[1]);
         }
@@ -5186,9 +5186,9 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void testIntMatrix_getMainDiagonal() {
+        public void testIntMatrix_mainDiagonalCopy() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            int[] diagonal = matrix.getMainDiagonal();
+            int[] diagonal = matrix.mainDiagonalCopy();
             assertArrayEquals(new int[] { 1, 5, 9 }, diagonal);
         }
 
@@ -5204,9 +5204,9 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void testIntMatrix_getAntiDiagonal() {
+        public void testIntMatrix_antiDiagonalCopy() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            int[] diagonal = matrix.getAntiDiagonal();
+            int[] diagonal = matrix.antiDiagonalCopy();
             assertArrayEquals(new int[] { 3, 5, 7 }, diagonal);
         }
 

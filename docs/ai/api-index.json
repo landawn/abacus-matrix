@@ -427,7 +427,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "public M reshape(final int newColumnCount)",
+              "signature": "public M reshapeByColumnCount(final int newColumnCount)",
               "return_type": "M",
               "type_params": [],
               "params": [
@@ -1106,13 +1106,13 @@
               "see_also": []
             },
             {
-              "name": "getMainDiagonal",
+              "name": "mainDiagonalCopy",
               "kind": "instance",
               "modifiers": [
                 "public",
                 "abstract"
               ],
-              "signature": "public abstract A getMainDiagonal()",
+              "signature": "public abstract A mainDiagonalCopy()",
               "return_type": "A",
               "type_params": [],
               "params": [],
@@ -1151,13 +1151,13 @@
               "see_also": []
             },
             {
-              "name": "getAntiDiagonal",
+              "name": "antiDiagonalCopy",
               "kind": "instance",
               "modifiers": [
                 "public",
                 "abstract"
               ],
-              "signature": "public abstract A getAntiDiagonal()",
+              "signature": "public abstract A antiDiagonalCopy()",
               "return_type": "A",
               "type_params": [],
               "params": [],
@@ -1884,7 +1884,7 @@
                 "public",
                 "static"
               ],
-              "signature": "public static BooleanMatrix random(final int length)",
+              "signature": "public static BooleanMatrix randomRow(final int length)",
               "return_type": "BooleanMatrix",
               "type_params": [],
               "params": [
@@ -2606,12 +2606,12 @@
               "see_also": []
             },
             {
-              "name": "getMainDiagonal",
+              "name": "mainDiagonalCopy",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public boolean[] getMainDiagonal() throws IllegalStateException",
+              "signature": "@Override public boolean[] mainDiagonalCopy() throws IllegalStateException",
               "return_type": "boolean[]",
               "type_params": [],
               "params": [],
@@ -2704,12 +2704,12 @@
               "see_also": []
             },
             {
-              "name": "getAntiDiagonal",
+              "name": "antiDiagonalCopy",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public boolean[] getAntiDiagonal() throws IllegalStateException",
+              "signature": "@Override public boolean[] antiDiagonalCopy() throws IllegalStateException",
               "return_type": "boolean[]",
               "type_params": [],
               "params": [],
@@ -4621,7 +4621,7 @@
                 "public",
                 "static"
               ],
-              "signature": "public static ByteMatrix random(final int length)",
+              "signature": "public static ByteMatrix randomRow(final int length)",
               "return_type": "ByteMatrix",
               "type_params": [],
               "params": [
@@ -5491,12 +5491,12 @@
               "see_also": []
             },
             {
-              "name": "getMainDiagonal",
+              "name": "mainDiagonalCopy",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public byte[] getMainDiagonal() throws IllegalStateException",
+              "signature": "@Override public byte[] mainDiagonalCopy() throws IllegalStateException",
               "return_type": "byte[]",
               "type_params": [],
               "params": [],
@@ -5589,12 +5589,12 @@
               "see_also": []
             },
             {
-              "name": "getAntiDiagonal",
+              "name": "antiDiagonalCopy",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public byte[] getAntiDiagonal() throws IllegalStateException",
+              "signature": "@Override public byte[] antiDiagonalCopy() throws IllegalStateException",
               "return_type": "byte[]",
               "type_params": [],
               "params": [],
@@ -6738,12 +6738,12 @@
               ]
             },
             {
-              "name": "matmul",
+              "name": "matrixMultiply",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public ByteMatrix matmul(final ByteMatrix other) throws IllegalArgumentException",
+              "signature": "public ByteMatrix matrixMultiply(final ByteMatrix other) throws IllegalArgumentException",
               "return_type": "ByteMatrix",
               "type_params": [],
               "params": [
@@ -7529,7 +7529,7 @@
                 "public",
                 "static"
               ],
-              "signature": "public static CharMatrix random(final int length)",
+              "signature": "public static CharMatrix randomRow(final int length)",
               "return_type": "CharMatrix",
               "type_params": [],
               "params": [
@@ -8388,12 +8388,12 @@
               "see_also": []
             },
             {
-              "name": "getMainDiagonal",
+              "name": "mainDiagonalCopy",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public char[] getMainDiagonal() throws IllegalStateException",
+              "signature": "@Override public char[] mainDiagonalCopy() throws IllegalStateException",
               "return_type": "char[]",
               "type_params": [],
               "params": [],
@@ -8486,12 +8486,12 @@
               "see_also": []
             },
             {
-              "name": "getAntiDiagonal",
+              "name": "antiDiagonalCopy",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public char[] getAntiDiagonal() throws IllegalStateException",
+              "signature": "@Override public char[] antiDiagonalCopy() throws IllegalStateException",
               "return_type": "char[]",
               "type_params": [],
               "params": [],
@@ -9639,12 +9639,12 @@
               ]
             },
             {
-              "name": "matmul",
+              "name": "matrixMultiply",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public CharMatrix matmul(final CharMatrix other) throws IllegalArgumentException",
+              "signature": "public CharMatrix matrixMultiply(final CharMatrix other) throws IllegalArgumentException",
               "return_type": "CharMatrix",
               "type_params": [],
               "params": [
@@ -10490,7 +10490,7 @@
                 "public",
                 "static"
               ],
-              "signature": "public static DoubleMatrix random(final int length)",
+              "signature": "public static DoubleMatrix randomRow(final int length)",
               "return_type": "DoubleMatrix",
               "type_params": [],
               "params": [
@@ -11213,12 +11213,12 @@
               "see_also": []
             },
             {
-              "name": "getMainDiagonal",
+              "name": "mainDiagonalCopy",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public double[] getMainDiagonal() throws IllegalStateException",
+              "signature": "@Override public double[] mainDiagonalCopy() throws IllegalStateException",
               "return_type": "double[]",
               "type_params": [],
               "params": [],
@@ -11311,12 +11311,12 @@
               "see_also": []
             },
             {
-              "name": "getAntiDiagonal",
+              "name": "antiDiagonalCopy",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public double[] getAntiDiagonal() throws IllegalStateException",
+              "signature": "@Override public double[] antiDiagonalCopy() throws IllegalStateException",
               "return_type": "double[]",
               "type_params": [],
               "params": [],
@@ -12544,12 +12544,12 @@
               ]
             },
             {
-              "name": "matmul",
+              "name": "matrixMultiply",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public DoubleMatrix matmul(final DoubleMatrix other) throws IllegalArgumentException",
+              "signature": "public DoubleMatrix matrixMultiply(final DoubleMatrix other) throws IllegalArgumentException",
               "return_type": "DoubleMatrix",
               "type_params": [],
               "params": [
@@ -13329,7 +13329,7 @@
                 "public",
                 "static"
               ],
-              "signature": "public static FloatMatrix random(final int length)",
+              "signature": "public static FloatMatrix randomRow(final int length)",
               "return_type": "FloatMatrix",
               "type_params": [],
               "params": [
@@ -14054,12 +14054,12 @@
               "see_also": []
             },
             {
-              "name": "getMainDiagonal",
+              "name": "mainDiagonalCopy",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public float[] getMainDiagonal() throws IllegalStateException",
+              "signature": "@Override public float[] mainDiagonalCopy() throws IllegalStateException",
               "return_type": "float[]",
               "type_params": [],
               "params": [],
@@ -14152,12 +14152,12 @@
               "see_also": []
             },
             {
-              "name": "getAntiDiagonal",
+              "name": "antiDiagonalCopy",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public float[] getAntiDiagonal() throws IllegalStateException",
+              "signature": "@Override public float[] antiDiagonalCopy() throws IllegalStateException",
               "return_type": "float[]",
               "type_params": [],
               "params": [],
@@ -15310,12 +15310,12 @@
               ]
             },
             {
-              "name": "matmul",
+              "name": "matrixMultiply",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public FloatMatrix matmul(final FloatMatrix other) throws IllegalArgumentException",
+              "signature": "public FloatMatrix matrixMultiply(final FloatMatrix other) throws IllegalArgumentException",
               "return_type": "FloatMatrix",
               "type_params": [],
               "params": [
@@ -16145,7 +16145,7 @@
                 "public",
                 "static"
               ],
-              "signature": "public static IntMatrix random(final int length)",
+              "signature": "public static IntMatrix randomRow(final int length)",
               "return_type": "IntMatrix",
               "type_params": [],
               "params": [
@@ -17009,12 +17009,12 @@
               "see_also": []
             },
             {
-              "name": "getMainDiagonal",
+              "name": "mainDiagonalCopy",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public int[] getMainDiagonal() throws IllegalStateException",
+              "signature": "@Override public int[] mainDiagonalCopy() throws IllegalStateException",
               "return_type": "int[]",
               "type_params": [],
               "params": [],
@@ -17107,12 +17107,12 @@
               "see_also": []
             },
             {
-              "name": "getAntiDiagonal",
+              "name": "antiDiagonalCopy",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public int[] getAntiDiagonal() throws IllegalStateException",
+              "signature": "@Override public int[] antiDiagonalCopy() throws IllegalStateException",
               "return_type": "int[]",
               "type_params": [],
               "params": [],
@@ -18331,12 +18331,12 @@
               ]
             },
             {
-              "name": "matmul",
+              "name": "matrixMultiply",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public IntMatrix matmul(final IntMatrix other) throws IllegalArgumentException",
+              "signature": "public IntMatrix matrixMultiply(final IntMatrix other) throws IllegalArgumentException",
               "return_type": "IntMatrix",
               "type_params": [],
               "params": [
@@ -19117,7 +19117,7 @@
                 "public",
                 "static"
               ],
-              "signature": "public static LongMatrix random(final int length)",
+              "signature": "public static LongMatrix randomRow(final int length)",
               "return_type": "LongMatrix",
               "type_params": [],
               "params": [
@@ -19982,12 +19982,12 @@
               "see_also": []
             },
             {
-              "name": "getMainDiagonal",
+              "name": "mainDiagonalCopy",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public long[] getMainDiagonal() throws IllegalStateException",
+              "signature": "@Override public long[] mainDiagonalCopy() throws IllegalStateException",
               "return_type": "long[]",
               "type_params": [],
               "params": [],
@@ -20080,12 +20080,12 @@
               "see_also": []
             },
             {
-              "name": "getAntiDiagonal",
+              "name": "antiDiagonalCopy",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public long[] getAntiDiagonal() throws IllegalStateException",
+              "signature": "@Override public long[] antiDiagonalCopy() throws IllegalStateException",
               "return_type": "long[]",
               "type_params": [],
               "params": [],
@@ -21303,12 +21303,12 @@
               ]
             },
             {
-              "name": "matmul",
+              "name": "matrixMultiply",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public LongMatrix matmul(final LongMatrix other) throws IllegalArgumentException",
+              "signature": "public LongMatrix matrixMultiply(final LongMatrix other) throws IllegalArgumentException",
               "return_type": "LongMatrix",
               "type_params": [],
               "params": [
@@ -26218,12 +26218,12 @@
               "see_also": []
             },
             {
-              "name": "getMainDiagonal",
+              "name": "mainDiagonalCopy",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public T[] getMainDiagonal() throws IllegalStateException",
+              "signature": "@Override public T[] mainDiagonalCopy() throws IllegalStateException",
               "return_type": "T[]",
               "type_params": [],
               "params": [],
@@ -26316,12 +26316,12 @@
               "see_also": []
             },
             {
-              "name": "getAntiDiagonal",
+              "name": "antiDiagonalCopy",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public T[] getAntiDiagonal() throws IllegalStateException",
+              "signature": "@Override public T[] antiDiagonalCopy() throws IllegalStateException",
               "return_type": "T[]",
               "type_params": [],
               "params": [],
@@ -28317,12 +28317,12 @@
               "see_also": []
             },
             {
-              "name": "toRowDataset",
+              "name": "toDataset",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Beta public Dataset toRowDataset(final Collection<String> columnNames) throws IllegalArgumentException",
+              "signature": "@Beta public Dataset toDataset(final Collection<String> columnNames) throws IllegalArgumentException",
               "return_type": "Dataset",
               "type_params": [],
               "params": [
@@ -28346,16 +28346,16 @@
               "examples": [],
               "see_also": [
                 "Dataset",
-                "#toColumnDataset(Collection)"
+                "#toTransposedDataset(Collection)"
               ]
             },
             {
-              "name": "toColumnDataset",
+              "name": "toTransposedDataset",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Beta public Dataset toColumnDataset(final Collection<String> columnNames) throws IllegalArgumentException",
+              "signature": "@Beta public Dataset toTransposedDataset(final Collection<String> columnNames) throws IllegalArgumentException",
               "return_type": "Dataset",
               "type_params": [],
               "params": [
@@ -28380,7 +28380,7 @@
               "see_also": [
                 "Dataset",
                 "RowDataset",
-                "#toRowDataset(Collection)"
+                "#toDataset(Collection)"
               ]
             },
             {
@@ -28598,7 +28598,7 @@
                 "public",
                 "static"
               ],
-              "signature": "public static ShortMatrix random(final int length)",
+              "signature": "public static ShortMatrix randomRow(final int length)",
               "return_type": "ShortMatrix",
               "type_params": [],
               "params": [
@@ -29462,12 +29462,12 @@
               "see_also": []
             },
             {
-              "name": "getMainDiagonal",
+              "name": "mainDiagonalCopy",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public short[] getMainDiagonal() throws IllegalStateException",
+              "signature": "@Override public short[] mainDiagonalCopy() throws IllegalStateException",
               "return_type": "short[]",
               "type_params": [],
               "params": [],
@@ -29560,12 +29560,12 @@
               "see_also": []
             },
             {
-              "name": "getAntiDiagonal",
+              "name": "antiDiagonalCopy",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public short[] getAntiDiagonal() throws IllegalStateException",
+              "signature": "@Override public short[] antiDiagonalCopy() throws IllegalStateException",
               "return_type": "short[]",
               "type_params": [],
               "params": [],
@@ -30711,12 +30711,12 @@
               ]
             },
             {
-              "name": "matmul",
+              "name": "matrixMultiply",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public ShortMatrix matmul(final ShortMatrix other) throws IllegalArgumentException",
+              "signature": "public ShortMatrix matrixMultiply(final ShortMatrix other) throws IllegalArgumentException",
               "return_type": "ShortMatrix",
               "type_params": [],
               "params": [

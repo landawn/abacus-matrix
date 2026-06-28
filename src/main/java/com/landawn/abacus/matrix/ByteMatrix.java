@@ -1024,21 +1024,21 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * matrix.getMainDiagonal();                   // returns [1, 5, 9]
+     * matrix.mainDiagonalCopy();                   // returns [1, 5, 9]
      *
      * ByteMatrix small = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
-     * small.getMainDiagonal();                    // returns [1, 4]
+     * small.mainDiagonalCopy();                    // returns [1, 4]
      *
-     * ByteMatrix.empty().getMainDiagonal();       // returns [] (0x0 is square)
+     * ByteMatrix.empty().mainDiagonalCopy();       // returns [] (0x0 is square)
      * ByteMatrix nonSquare = ByteMatrix.of(new byte[][] {{1, 2, 3}, {4, 5, 6}});
-     * nonSquare.getMainDiagonal();                // throws IllegalStateException (not square)
+     * nonSquare.mainDiagonalCopy();                // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a new byte array containing a copy of the main diagonal elements
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
-    public byte[] getMainDiagonal() throws IllegalStateException {
+    public byte[] mainDiagonalCopy() throws IllegalStateException {
         checkIsSquare();
 
         final byte[] res = new byte[rowCount];
@@ -1061,7 +1061,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
      * matrix.setMainDiagonal(new byte[] {9, 8});
-     * matrix.getMainDiagonal();              // returns [9, 8]
+     * matrix.mainDiagonalCopy();              // returns [9, 8]
      * matrix.get(1, 1);                      // returns (byte) 8 (diagonal element updated)
      *
      * matrix.setMainDiagonal(new byte[] {1}); // throws IllegalArgumentException (length != rowCount)
@@ -1092,7 +1092,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
      * matrix.updateMainDiagonal(b -> (byte) (b * b));
-     * matrix.getMainDiagonal();                   // returns [1, 16]
+     * matrix.mainDiagonalCopy();                   // returns [1, 16]
      * matrix.get(0, 1);                           // returns (byte) 2 (off-diagonal unchanged)
      *
      * matrix.updateMainDiagonal(null);            // throws IllegalArgumentException (operator is null)
@@ -1126,21 +1126,21 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * matrix.getAntiDiagonal();                   // returns [3, 5, 7]
+     * matrix.antiDiagonalCopy();                   // returns [3, 5, 7]
      *
      * ByteMatrix small = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
-     * small.getAntiDiagonal();                    // returns [2, 3]
+     * small.antiDiagonalCopy();                    // returns [2, 3]
      *
-     * ByteMatrix.empty().getAntiDiagonal();       // returns [] (0x0 is square)
+     * ByteMatrix.empty().antiDiagonalCopy();       // returns [] (0x0 is square)
      * ByteMatrix nonSquare = ByteMatrix.of(new byte[][] {{1, 2, 3}, {4, 5, 6}});
-     * nonSquare.getAntiDiagonal();                // throws IllegalStateException (not square)
+     * nonSquare.antiDiagonalCopy();                // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a new byte array containing a copy of the anti-diagonal elements
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
-    public byte[] getAntiDiagonal() throws IllegalStateException {
+    public byte[] antiDiagonalCopy() throws IllegalStateException {
         checkIsSquare();
 
         final byte[] res = new byte[rowCount];
@@ -1164,7 +1164,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
      * matrix.setAntiDiagonal(new byte[] {9, 8});
-     * matrix.getAntiDiagonal();              // returns [9, 8]
+     * matrix.antiDiagonalCopy();              // returns [9, 8]
      * matrix.get(0, 1);                      // returns (byte) 9 (anti-diagonal cell)
      *
      * matrix.setAntiDiagonal(new byte[] {1}); // throws IllegalArgumentException (length != rowCount)
@@ -1195,7 +1195,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
      * matrix.updateAntiDiagonal(b -> (byte) -b);
-     * matrix.getAntiDiagonal();                   // returns [-2, -3]
+     * matrix.antiDiagonalCopy();                   // returns [-2, -3]
      * matrix.get(0, 0);                           // returns (byte) 1 (off anti-diagonal unchanged)
      *
      * matrix.updateAntiDiagonal(null);            // throws IllegalArgumentException (operator is null)
@@ -3808,7 +3808,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
 
     /**
      * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1, 2]\n[3, 4]"}); a
-     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #println(Appendable)}.
+     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #appendTo(Appendable)}.
      *
      * @return the formatted multi-line representation of this matrix
      */

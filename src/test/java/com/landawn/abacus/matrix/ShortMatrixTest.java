@@ -386,12 +386,12 @@ class ShortMatrixTest extends TestBase {
 
     @Test
     public void testGetLU2RD() {
-        short[] diagonal = matrix.getMainDiagonal();
+        short[] diagonal = matrix.mainDiagonalCopy();
         assertArrayEquals(new short[] { 1, 5, 9 }, diagonal);
 
         // Test non-square matrix
         ShortMatrix nonSquare = ShortMatrix.of(new short[][] { { 1, 2 } });
-        assertThrows(IllegalStateException.class, () -> nonSquare.getMainDiagonal());
+        assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalCopy());
     }
 
     @Test
@@ -425,12 +425,12 @@ class ShortMatrixTest extends TestBase {
 
     @Test
     public void testGetRU2LD() {
-        short[] antiDiagonal = matrix.getAntiDiagonal();
+        short[] antiDiagonal = matrix.antiDiagonalCopy();
         assertArrayEquals(new short[] { 3, 5, 7 }, antiDiagonal);
 
         // Test non-square matrix
         ShortMatrix nonSquare = ShortMatrix.of(new short[][] { { 1, 2 } });
-        assertThrows(IllegalStateException.class, () -> nonSquare.getAntiDiagonal());
+        assertThrows(IllegalStateException.class, () -> nonSquare.antiDiagonalCopy());
     }
 
     @Test
@@ -1251,16 +1251,16 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testShortMatrix_getMainDiagonal() {
+        public void testShortMatrix_mainDiagonalCopy() {
             ShortMatrix matrix = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            short[] diagonal = matrix.getMainDiagonal();
+            short[] diagonal = matrix.mainDiagonalCopy();
             assertArrayEquals(new short[] { 1, 5, 9 }, diagonal);
         }
 
         @Test
-        public void testShortMatrix_getAntiDiagonal() {
+        public void testShortMatrix_antiDiagonalCopy() {
             ShortMatrix matrix = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            short[] diagonal = matrix.getAntiDiagonal();
+            short[] diagonal = matrix.antiDiagonalCopy();
             assertArrayEquals(new short[] { 3, 5, 7 }, diagonal);
         }
 
@@ -2137,13 +2137,13 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            assertArrayEquals(new short[] { 1, 5, 9 }, m.getMainDiagonal());
+            assertArrayEquals(new short[] { 1, 5, 9 }, m.mainDiagonalCopy());
         }
 
         @Test
         public void testGetLU2RD_nonSquare() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.getMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
         }
 
         @Test
@@ -2186,13 +2186,13 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testGetRU2LD() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            assertArrayEquals(new short[] { 3, 5, 7 }, m.getAntiDiagonal());
+            assertArrayEquals(new short[] { 3, 5, 7 }, m.antiDiagonalCopy());
         }
 
         @Test
         public void testGetRU2LD_nonSquare() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.getAntiDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
         }
 
         @Test
@@ -4280,7 +4280,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD_nonSquare() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.getMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
         }
 
         @Test
@@ -5286,17 +5286,17 @@ class ShortMatrixTest extends TestBase {
         // ============ Diagonal Tests ============
 
         @Test
-        public void test_getMainDiagonal_returnsMainDiagonal() {
+        public void test_mainDiagonalCopy_returnsMainDiagonal() {
             short[][] arr = { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } };
             ShortMatrix m = new ShortMatrix(arr);
-            short[] diag = m.getMainDiagonal();
+            short[] diag = m.mainDiagonalCopy();
             assertArrayEquals(new short[] { 1, 5, 9 }, diag);
         }
 
         @Test
-        public void test_getMainDiagonal_nonSquare_throwsException() {
+        public void test_mainDiagonalCopy_nonSquare_throwsException() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.getMainDiagonal());
+            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
         }
 
         @Test
@@ -5326,10 +5326,10 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_getAntiDiagonal_returnsAntiDiagonal() {
+        public void test_antiDiagonalCopy_returnsAntiDiagonal() {
             short[][] arr = { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } };
             ShortMatrix m = new ShortMatrix(arr);
-            short[] diag = m.getAntiDiagonal();
+            short[] diag = m.antiDiagonalCopy();
             assertArrayEquals(new short[] { 3, 5, 7 }, diag);
         }
 

@@ -15,6 +15,7 @@
 package com.landawn.abacus.matrix;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
@@ -533,75 +534,6 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     public boolean isEmpty() {
         return elementCount == 0;
     }
-
-    /**
-     * Prints this matrix to standard output in a formatted, human-readable manner.
-     * Each concrete implementation provides its own formatting based on the element type.
-     * This method is primarily intended for debugging and logging purposes.
-     *
-     * <p>The exact output format depends on the matrix type:
-     * <ul>
-     *   <li>Numeric matrices typically display values aligned in rows and columns</li>
-     *   <li>Object matrices display using the {@code toString()} method of elements</li>
-     * </ul>
-     *
-     * <p>To capture the formatted rendering instead of printing it, use {@link #println(Appendable)}.</p>
-     *
-     * <p><b>Usage Examples:</b> (the exact rendering is implementation-defined; the strings below are
-     * only an illustration of one possible format)</p>
-     * <pre>{@code
-     * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * matrix.println();                                        // prints something such as "[1, 2]\n[3, 4]"
-     *
-     * IntMatrix single = IntMatrix.of(new int[][] {{1, 2, 3}});
-     * single.println();                                        // prints for example "[1, 2, 3]"
-     *
-     * IntMatrix empty = IntMatrix.of(new int[0][0]);
-     * empty.println();                                         // prints for example "[]"
-     *
-     * IntMatrix rowsNoCols = IntMatrix.of(new int[2][0]);
-     * rowsNoCols.println();                                    // prints for example "[]\n[]" (two empty rows)
-     * }</pre>
-     *
-     * @see #println(Appendable)
-     */
-    public void println() {
-        N.println(toMultilineString());
-    }
-
-    /**
-     * Appends this matrix's formatted, multi-line rendering to the given {@code output}.
-     *
-     * <p>This is the non-printing counterpart of {@link #println()}: the same row-per-line rendering
-     * (for example {@code "[1, 2]\n[3, 4]"}) is written to {@code output} instead of standard output,
-     * with no trailing line separator added. To capture the rendering as a {@code String}, pass a
-     * {@link StringBuilder}.</p>
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * StringBuilder sb = new StringBuilder();
-     * matrix.println(sb);                                      // sb now holds something such as "[1, 2]\n[3, 4]"
-     * }</pre>
-     *
-     * @param output the destination to append the rendering to; must not be {@code null}
-     * @throws IllegalArgumentException if {@code output} is {@code null}
-     * @throws IOException if {@code output} throws while appending
-     * @see #println()
-     */
-    public void println(final Appendable output) throws IOException {
-        N.checkArgNotNull(output, "output");
-
-        output.append(toMultilineString());
-    }
-
-    /**
-     * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1, 2]\n[3, 4]"}); a
-     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #println(Appendable)}.
-     *
-     * @return the formatted multi-line representation of this matrix
-     */
-    abstract String toMultilineString();
 
     /**
      * Returns a structural copy of this matrix.
@@ -1660,21 +1592,21 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * int[] diag = matrix.getMainDiagonal();                  // returns [1, 5, 9]
+     * int[] diag = matrix.mainDiagonalCopy();                  // returns [1, 5, 9]
      * diag[0] = 99;                                           // copy; does NOT affect the matrix
      * matrix.get(0, 0);                                       // returns 1 (original unchanged)
      *
      * IntMatrix single = IntMatrix.of(new int[][] {{42}});
-     * single.getMainDiagonal();                               // returns [42]
+     * single.mainDiagonalCopy();                               // returns [42]
      *
      * IntMatrix nonSquare = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * nonSquare.getMainDiagonal();                            // throws IllegalStateException (not square)
+     * nonSquare.mainDiagonalCopy();                            // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a new array containing the main diagonal values
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
-    public abstract A getMainDiagonal();
+    public abstract A mainDiagonalCopy();
 
     /**
      * Sets the elements on the main diagonal (upper-left to lower-right).
@@ -1710,21 +1642,21 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * int[] diag = matrix.getAntiDiagonal();                  // returns [3, 5, 7]
+     * int[] diag = matrix.antiDiagonalCopy();                  // returns [3, 5, 7]
      * diag[0] = 99;                                           // copy; does NOT affect the matrix
      * matrix.get(0, 2);                                       // returns 3 (original unchanged)
      *
      * IntMatrix single = IntMatrix.of(new int[][] {{42}});
-     * single.getAntiDiagonal();                               // returns [42]
+     * single.antiDiagonalCopy();                               // returns [42]
      *
      * IntMatrix nonSquare = IntMatrix.of(new int[][] {{1, 2}, {3, 4}, {5, 6}});
-     * nonSquare.getAntiDiagonal();                            // throws IllegalStateException (not square)
+     * nonSquare.antiDiagonalCopy();                            // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a new array containing the anti-diagonal values
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
-    public abstract A getAntiDiagonal();
+    public abstract A antiDiagonalCopy();
 
     /**
      * Sets the elements on the anti-diagonal (upper-right to lower-left).
@@ -2396,6 +2328,79 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         N.checkArgNotNull(mapper, "mapper");
         return mapper.apply((M) this);
     }
+
+    /**
+     * Appends this matrix's formatted, multi-line rendering to the given {@code output}.
+     *
+     * <p>This is the non-printing counterpart of {@link #println()}: the same row-per-line rendering
+     * (for example {@code "[1, 2]\n[3, 4]"}) is written to {@code output} instead of standard output,
+     * with no trailing line separator added. To capture the rendering as a {@code String}, pass a
+     * {@link StringBuilder}.</p>
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
+     * StringBuilder sb = new StringBuilder();
+     * matrix.appendTo(sb);                                     // sb now holds something such as "[1, 2]\n[3, 4]"
+     * }</pre>
+     *
+     * @param output the destination to append the rendering to; must not be {@code null}
+     * @throws IllegalArgumentException if {@code output} is {@code null}
+     * @throws UncheckedIOException if {@code output} throws an {@link IOException} while appending
+     * @see #println()
+     */
+    public void appendTo(final Appendable output) {
+        N.checkArgNotNull(output, "output");
+
+        try {
+            output.append(toMultilineString());
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /**
+     * Prints this matrix to standard output in a formatted, human-readable manner.
+     * Each concrete implementation provides its own formatting based on the element type.
+     * This method is primarily intended for debugging and logging purposes.
+     *
+     * <p>The exact output format depends on the matrix type:
+     * <ul>
+     *   <li>Numeric matrices typically display values aligned in rows and columns</li>
+     *   <li>Object matrices display using the {@code toString()} method of elements</li>
+     * </ul>
+     *
+     * <p>To capture the formatted rendering instead of printing it, use {@link #appendTo(Appendable)}.</p>
+     *
+     * <p><b>Usage Examples:</b> (the exact rendering is implementation-defined; the strings below are
+     * only an illustration of one possible format)</p>
+     * <pre>{@code
+     * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
+     * matrix.println();                                        // prints something such as "[1, 2]\n[3, 4]"
+     *
+     * IntMatrix single = IntMatrix.of(new int[][] {{1, 2, 3}});
+     * single.println();                                        // prints for example "[1, 2, 3]"
+     *
+     * IntMatrix empty = IntMatrix.of(new int[0][0]);
+     * empty.println();                                         // prints for example "[]"
+     *
+     * IntMatrix rowsNoCols = IntMatrix.of(new int[2][0]);
+     * rowsNoCols.println();                                    // prints for example "[]\n[]" (two empty rows)
+     * }</pre>
+     *
+     * @see #appendTo(Appendable)
+     */
+    public void println() {
+        N.println(toMultilineString());
+    }
+
+    /**
+     * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1, 2]\n[3, 4]"}); a
+     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #appendTo(Appendable)}.
+     *
+     * @return the formatted multi-line representation of this matrix
+     */
+    abstract String toMultilineString();
 
     /**
      * Returns the length of the given row array.

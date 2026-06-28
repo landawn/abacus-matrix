@@ -1149,21 +1149,21 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * matrix.getMainDiagonal();              // returns [1, 5, 9]
+     * matrix.mainDiagonalCopy();              // returns [1, 5, 9]
      *
      * IntMatrix small = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * small.getMainDiagonal();               // returns [1, 4]
+     * small.mainDiagonalCopy();               // returns [1, 4]
      *
-     * IntMatrix.empty().getMainDiagonal();   // returns [] (0x0 is square)
+     * IntMatrix.empty().mainDiagonalCopy();   // returns [] (0x0 is square)
      * IntMatrix nonSquare = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * nonSquare.getMainDiagonal();           // throws IllegalStateException (not square)
+     * nonSquare.mainDiagonalCopy();           // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a new int array containing a copy of the main diagonal elements
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
-    public int[] getMainDiagonal() throws IllegalStateException {
+    public int[] mainDiagonalCopy() throws IllegalStateException {
         checkIsSquare();
 
         final int[] res = new int[rowCount];
@@ -1186,7 +1186,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
      * matrix.setMainDiagonal(new int[] {9, 8});
-     * matrix.getMainDiagonal();              // returns [9, 8]
+     * matrix.mainDiagonalCopy();              // returns [9, 8]
      * matrix.get(1, 1);                      // returns 8 (diagonal element updated)
      *
      * matrix.setMainDiagonal(new int[] {1}); // throws IllegalArgumentException (length != rowCount)
@@ -1217,7 +1217,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
      * matrix.updateMainDiagonal(x -> x * x);
-     * matrix.getMainDiagonal();              // returns [1, 16]
+     * matrix.mainDiagonalCopy();              // returns [1, 16]
      * matrix.get(0, 1);                      // returns 2 (off-diagonal unchanged)
      *
      * matrix.updateMainDiagonal(null);       // throws IllegalArgumentException (operator is null)
@@ -1251,21 +1251,21 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * matrix.getAntiDiagonal();              // returns [3, 5, 7]
+     * matrix.antiDiagonalCopy();              // returns [3, 5, 7]
      *
      * IntMatrix small = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * small.getAntiDiagonal();               // returns [2, 3]
+     * small.antiDiagonalCopy();               // returns [2, 3]
      *
-     * IntMatrix.empty().getAntiDiagonal();   // returns [] (0x0 is square)
+     * IntMatrix.empty().antiDiagonalCopy();   // returns [] (0x0 is square)
      * IntMatrix nonSquare = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * nonSquare.getAntiDiagonal();           // throws IllegalStateException (not square)
+     * nonSquare.antiDiagonalCopy();           // throws IllegalStateException (not square)
      * }</pre>
      *
      * @return a new int array containing a copy of the anti-diagonal elements
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
-    public int[] getAntiDiagonal() throws IllegalStateException {
+    public int[] antiDiagonalCopy() throws IllegalStateException {
         checkIsSquare();
 
         final int[] res = new int[rowCount];
@@ -1289,7 +1289,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
      * matrix.setAntiDiagonal(new int[] {9, 8});
-     * matrix.getAntiDiagonal();              // returns [9, 8]
+     * matrix.antiDiagonalCopy();              // returns [9, 8]
      * matrix.get(0, 1);                      // returns 9 (anti-diagonal cell)
      *
      * matrix.setAntiDiagonal(new int[] {1}); // throws IllegalArgumentException (length != rowCount)
@@ -1320,7 +1320,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
      * matrix.updateAntiDiagonal(x -> -x);
-     * matrix.getAntiDiagonal();              // returns [-2, -3]
+     * matrix.antiDiagonalCopy();              // returns [-2, -3]
      * matrix.get(0, 0);                      // returns 1 (off anti-diagonal unchanged)
      *
      * matrix.updateAntiDiagonal(null);       // throws IllegalArgumentException (operator is null)
@@ -3906,7 +3906,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
 
     /**
      * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1, 2]\n[3, 4]"}); a
-     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #println(Appendable)}.
+     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #appendTo(Appendable)}.
      *
      * @return the formatted multi-line representation of this matrix
      */
