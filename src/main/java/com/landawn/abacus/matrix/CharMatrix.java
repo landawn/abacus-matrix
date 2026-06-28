@@ -41,7 +41,7 @@ import com.landawn.abacus.util.stream.Stream;
  *
  * <p>Cells introduced by growth or reshaping default to {@code '\u0000'} (the NUL character) unless an overload accepts an
  * explicit fill value. Arithmetic operations (e.g. {@link #add(CharMatrix)}, {@link #subtract(CharMatrix)},
- * {@link #matmul(CharMatrix)}) compute results on the unsigned 16-bit code unit as {@code int} and cast
+ * {@link #matrixMultiply(CharMatrix)}) compute results on the unsigned 16-bit code unit as {@code int} and cast
  * back to {@code char}, so values wrap modulo {@code 65536} (the range {@code [0, 65535]}); for example
  * {@code 'a' + 1 == 'b'} and adding {@code 1} to a cell holding {@code (char) 65535} wraps the cell to {@code 0}.</p>
  *
@@ -182,12 +182,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * CharMatrix matrix = CharMatrix.random(5);
+     * CharMatrix matrix = CharMatrix.randomRow(5);
      * matrix.rowCount();            // returns 1
      * matrix.columnCount();         // returns 5 (values are random)
      *
-     * CharMatrix.random(0).columnCount(); // returns 0 (empty single row)
-     * CharMatrix.random(-1);              // throws IllegalArgumentException
+     * CharMatrix.randomRow(0).columnCount(); // returns 0 (empty single row)
+     * CharMatrix.randomRow(-1);              // throws IllegalArgumentException
      * }</pre>
      *
      * @param length the number of columns in the new matrix; must be {@code >= 0}
@@ -195,7 +195,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @throws IllegalArgumentException if {@code length} is negative
      * @see #random(int, int)
      */
-    public static CharMatrix random(final int length) {
+    public static CharMatrix randomRow(final int length) {
         N.checkArgument(length >= 0, MSG_NEGATIVE_DIMENSION, "length", length);
 
         return random(1, length);
@@ -2564,6 +2564,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * Performs element-wise addition with another matrix.
      * The matrices must have the same dimensions. The original matrices are not modified.
      *
+     * <p><b>&#9888;&#65039; Numeric semantics:</b> this operates on the underlying UTF-16 code-unit values of each
+     * {@code char}, not on text (e.g. {@code 'a' + 1} yields {@code 'b'}). If you want explicit integer
+     * arithmetic, convert with {@link #toIntMatrix()} first.</p>
+     *
      * <p><b>Overflow:</b> each result element is computed as {@code (char) (a[i][j] + other[i][j])},
      * so values wrap modulo {@code 65536} on overflow. If you need a non-wrapping result, call
      * {@link #toIntMatrix()} first and add there.</p>
@@ -2607,6 +2611,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     /**
      * Performs element-wise subtraction ({@code this - other}).
      * The matrices must have the same dimensions. The original matrices are not modified.
+     *
+     * <p><b>&#9888;&#65039; Numeric semantics:</b> this operates on the underlying UTF-16 code-unit values of each
+     * {@code char}, not on text (e.g. {@code 'd' - 1} yields {@code 'c'}). If you want explicit integer
+     * arithmetic, convert with {@link #toIntMatrix()} first.</p>
      *
      * <p><b>Overflow:</b> each result element is computed as {@code (char) (this[i][j] - other[i][j])},
      * so values wrap modulo {@code 65536} on underflow (a negative {@code int} difference becomes a
@@ -2653,6 +2661,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * The number of columns in this matrix must equal the number of rows in {@code other}.
      * Result has shape {@code this.rowCount x other.columnCount}. The original matrices are not modified.
      *
+     * <p><b>&#9888;&#65039; Numeric semantics:</b> this operates on the underlying UTF-16 code-unit values of each
+     * {@code char}, not on text. If you want explicit integer arithmetic, convert with
+     * {@link #toIntMatrix()} first.</p>
+     *
      * <p><b>Note:</b> This is the linear-algebra matrix product, not element-wise multiplication.
      * For element-wise multiplication use {@link #zipWith(CharMatrix, Throwables.CharBinaryOperator)}.</p>
      *
@@ -2665,21 +2677,21 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix a = CharMatrix.of(new char[][] {{2, 3}, {4, 5}});
      * CharMatrix b = CharMatrix.of(new char[][] {{1, 2}, {3, 4}});
-     * CharMatrix product = a.matmul(b);   // standard matrix multiplication
+     * CharMatrix product = a.matrixMultiply(b);   // standard matrix multiplication
      * (int) product.get(0, 0);            // returns 11  (2*1 + 3*3)
      * (int) product.get(0, 1);            // returns 16  (2*2 + 3*4)
      * (int) product.get(1, 1);            // returns 28  (4*2 + 5*4)
      *
      * CharMatrix wrong = CharMatrix.of(new char[][] {{1, 2, 3}}); // 1x3, this.columnCount is 2
-     * a.matmul(wrong);                                            // throws IllegalArgumentException (this.columnCount != other.rowCount)
-     * a.matmul((CharMatrix) null);                                // throws IllegalArgumentException (null argument)
+     * a.matrixMultiply(wrong);                                            // throws IllegalArgumentException (this.columnCount != other.rowCount)
+     * a.matrixMultiply((CharMatrix) null);                                // throws IllegalArgumentException (null argument)
      * }</pre>
      *
      * @param other the matrix to multiply with; must not be {@code null}
      * @return a new {@code CharMatrix} of shape {@code this.rowCount x other.columnCount} containing the matrix product
      * @throws IllegalArgumentException if {@code other} is {@code null}, if {@code this.columnCount != other.rowCount}, or if this matrix has zero rows while {@code other} has a non-zero column count (the resulting shape is not representable)
      */
-    public CharMatrix matmul(final CharMatrix other) throws IllegalArgumentException {
+    public CharMatrix matrixMultiply(final CharMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(columnCount == other.rowCount,
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
@@ -2885,7 +2897,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * <p>This is a generalized element-wise operation. For the common element-wise operations of addition and
      * subtraction, consider using the dedicated methods {@link #add(CharMatrix)} and {@link #subtract(CharMatrix)};
-     * for the linear-algebra matrix product (which is not an element-wise operation), use {@link #matmul(CharMatrix)}.</p>
+     * for the linear-algebra matrix product (which is not an element-wise operation), use {@link #matrixMultiply(CharMatrix)}.</p>
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance.
      * Creates a new matrix; the original matrices are not modified.</p>
@@ -3749,27 +3761,15 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     }
 
     /**
-     * Prints this matrix to standard output and returns the formatted string that was printed.
-     * Each row is printed on a separate line with elements separated by commas and enclosed in
-     * square brackets. A matrix with zero rows prints {@code []}.
+     * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1, 2]\n[3, 4]"}); a
+     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #println(Appendable)}.
      *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
-     * matrix.println();           // returns (and prints) "[a, b, c]\n[d, e, f]"
-     *
-     * CharMatrix single = CharMatrix.of(new char[][] {{'x'}});
-     * single.println();           // returns (and prints) "[x]"
-     *
-     * CharMatrix.empty().println(); // returns (and prints) "[]"
-     * }</pre>
-     *
-     * @return the formatted string representation of the matrix that was printed
+     * @return the formatted multi-line representation of this matrix
      */
     @Override
-    public String println() {
+    String toMultilineString() {
         if (a.length == 0) {
-            return N.println("[]");
+            return "[]";
         } else {
             final StringBuilder sb = Objectory.createStringBuilder();
             final int len = a.length;
@@ -3800,7 +3800,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
                 Objectory.recycle(sb);
             }
 
-            return N.println(str);
+            return str;
         }
     }
 

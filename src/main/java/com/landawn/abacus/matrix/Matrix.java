@@ -3809,25 +3809,15 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     }
 
     /**
-     * Prints this matrix to standard output and returns the printed string.
-     * Each row is printed on a separate line with elements separated by commas
-     * and enclosed in square brackets. Matrices with zero rows print as {@code "[]"}.
-     * {@code null} elements are rendered as {@code "null"}.
+     * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1, 2]\n[3, 4]"}); a
+     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #println(Appendable)}.
      *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
-     * matrix.println();   // prints "[1, 2, 3]" then "[4, 5, 6]"; returns the printed string
-     *
-     * Matrix.empty().println();   // returns "[]" (empty matrix)
-     * }</pre>
-     *
-     * @return the string representation that was printed to standard output
+     * @return the formatted multi-line representation of this matrix
      */
     @Override
-    public String println() {
+    String toMultilineString() {
         if (a.length == 0) {
-            return N.println("[]");
+            return "[]";
         } else {
             final StringBuilder sb = Objectory.createStringBuilder();
             final int len = a.length;
@@ -3858,7 +3848,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
                 Objectory.recycle(sb);
             }
 
-            return N.println(str);
+            return str;
         }
     }
 

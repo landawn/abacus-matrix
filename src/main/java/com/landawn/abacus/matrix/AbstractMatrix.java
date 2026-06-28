@@ -14,6 +14,7 @@
 
 package com.landawn.abacus.matrix;
 
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
@@ -66,7 +67,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
     /**
      * Shared random source used by primitive matrix factories that produce randomized data
-     * (for example {@code IntMatrix.random(int)}). Backed by {@link SecureRandom} for higher-quality
+     * (for example {@code IntMatrix.randomRow(int)}). Backed by {@link SecureRandom} for higher-quality
      * sequences than the default {@link Random}.
      */
     protected static final Random RAND = new SecureRandom();
@@ -534,7 +535,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     }
 
     /**
-     * Prints this matrix to standard output in a formatted, human-readable manner and returns the output string.
+     * Prints this matrix to standard output in a formatted, human-readable manner.
      * Each concrete implementation provides its own formatting based on the element type.
      * This method is primarily intended for debugging and logging purposes.
      *
@@ -544,25 +545,63 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *   <li>Object matrices display using the {@code toString()} method of elements</li>
      * </ul>
      *
+     * <p>To capture the formatted rendering instead of printing it, use {@link #println(Appendable)}.</p>
+     *
      * <p><b>Usage Examples:</b> (the exact rendering is implementation-defined; the strings below are
      * only an illustration of one possible format)</p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * matrix.println();                                        // prints and returns something such as "[1, 2]\n[3, 4]"
+     * matrix.println();                                        // prints something such as "[1, 2]\n[3, 4]"
      *
      * IntMatrix single = IntMatrix.of(new int[][] {{1, 2, 3}});
-     * single.println();                                        // for example "[1, 2, 3]"
+     * single.println();                                        // prints for example "[1, 2, 3]"
      *
      * IntMatrix empty = IntMatrix.of(new int[0][0]);
-     * empty.println();                                         // for example "[]"
+     * empty.println();                                         // prints for example "[]"
      *
      * IntMatrix rowsNoCols = IntMatrix.of(new int[2][0]);
-     * rowsNoCols.println();                                    // for example "[]\n[]" (two empty rows)
+     * rowsNoCols.println();                                    // prints for example "[]\n[]" (two empty rows)
      * }</pre>
      *
-     * @return the formatted string representation of the matrix that was printed to standard output
+     * @see #println(Appendable)
      */
-    public abstract String println();
+    public void println() {
+        N.println(toMultilineString());
+    }
+
+    /**
+     * Appends this matrix's formatted, multi-line rendering to the given {@code output}.
+     *
+     * <p>This is the non-printing counterpart of {@link #println()}: the same row-per-line rendering
+     * (for example {@code "[1, 2]\n[3, 4]"}) is written to {@code output} instead of standard output,
+     * with no trailing line separator added. To capture the rendering as a {@code String}, pass a
+     * {@link StringBuilder}.</p>
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
+     * StringBuilder sb = new StringBuilder();
+     * matrix.println(sb);                                      // sb now holds something such as "[1, 2]\n[3, 4]"
+     * }</pre>
+     *
+     * @param output the destination to append the rendering to; must not be {@code null}
+     * @throws IllegalArgumentException if {@code output} is {@code null}
+     * @throws IOException if {@code output} throws while appending
+     * @see #println()
+     */
+    public void println(final Appendable output) throws IOException {
+        N.checkArgNotNull(output, "output");
+
+        output.append(toMultilineString());
+    }
+
+    /**
+     * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1, 2]\n[3, 4]"}); a
+     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #println(Appendable)}.
+     *
+     * @return the formatted multi-line representation of this matrix
+     */
+    abstract String toMultilineString();
 
     /**
      * Returns a structural copy of this matrix.
@@ -801,16 +840,16 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * IntMatrix reshaped = matrix.reshape(2);                  // returns {{1, 2}, {3, 4}, {5, 6}}
+     * IntMatrix reshaped = matrix.reshapeByColumnCount(2);                  // returns {{1, 2}, {3, 4}, {5, 6}}
      * reshaped.rowCount();                                     // returns 3 (ceil(6 / 2))
      *
-     * IntMatrix padded = matrix.reshape(4);                    // returns {{1, 2, 3, 4}, {5, 6, 0, 0}}
+     * IntMatrix padded = matrix.reshapeByColumnCount(4);                    // returns {{1, 2, 3, 4}, {5, 6, 0, 0}}
      * padded.get(1, 3);                                        // returns 0 (trailing cell padded)
      *
-     * matrix.reshape(0);                                       // throws IllegalArgumentException (newColumnCount <= 0)
+     * matrix.reshapeByColumnCount(0);                                       // throws IllegalArgumentException (newColumnCount <= 0)
      *
      * IntMatrix empty = IntMatrix.of(new int[0][0]);
-     * empty.reshape(2);                                        // throws IllegalArgumentException (0 rows with positive column count is not representable)
+     * empty.reshapeByColumnCount(2);                                        // throws IllegalArgumentException (0 rows with positive column count is not representable)
      * }</pre>
      *
      * @param newColumnCount the number of columns in the reshaped matrix (must be positive)
@@ -821,7 +860,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *         implied row count is then {@code 0} while {@code newColumnCount} is positive), or if the
      *         total cell count {@code (long) newRowCount * newColumnCount} exceeds {@code Integer.MAX_VALUE}
      */
-    public M reshape(final int newColumnCount) {
+    public M reshapeByColumnCount(final int newColumnCount) {
         N.checkArgument(newColumnCount > 0, "newColumnCount must be positive, but got: {}", newColumnCount);
 
         final long newRowCount = ceilDiv(elementCount, newColumnCount);

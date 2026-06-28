@@ -93,7 +93,7 @@ class ByteMatrixTest extends TestBase {
 
     @Test
     public void testRandom() {
-        ByteMatrix matrix = ByteMatrix.random(5);
+        ByteMatrix matrix = ByteMatrix.randomRow(5);
         Assertions.assertEquals(1, matrix.rowCount());
         Assertions.assertEquals(5, matrix.columnCount());
     }
@@ -1005,7 +1005,7 @@ class ByteMatrixTest extends TestBase {
         ByteMatrix matrixA = ByteMatrix.of(a);
         ByteMatrix matrixB = ByteMatrix.of(b);
 
-        ByteMatrix product = matrixA.matmul(matrixB);
+        ByteMatrix product = matrixA.matrixMultiply(matrixB);
         Assertions.assertEquals(2, product.rowCount());
         Assertions.assertEquals(2, product.columnCount());
         Assertions.assertEquals(19, product.get(0, 0));
@@ -1014,7 +1014,7 @@ class ByteMatrixTest extends TestBase {
         Assertions.assertEquals(50, product.get(1, 1));
 
         ByteMatrix incompatible = ByteMatrix.of(new byte[][] { { 1, 2, 3 } });
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrixA.matmul(incompatible));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrixA.matrixMultiply(incompatible));
     }
 
     @Test
@@ -1327,7 +1327,7 @@ class ByteMatrixTest extends TestBase {
         ByteMatrix matrix = ByteMatrix.of(a);
 
         assertFalse(matrix.isEmpty());
-        org.junit.jupiter.api.Assertions.assertDoesNotThrow(matrix::println);
+        org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> matrix.println());
     }
 
     @SuppressWarnings("unchecked")
@@ -1367,7 +1367,7 @@ class ByteMatrixTest extends TestBase {
 
     @Test
     public void testPrintlnEmptyMatrix_EdgeCase() {
-        Assertions.assertEquals("[]", ByteMatrix.empty().println());
+        Assertions.assertEquals("[]", ByteMatrix.empty().toMultilineString());
     }
 
     @Test
@@ -1483,7 +1483,7 @@ class ByteMatrixTest extends TestBase {
 
         @Test
         public void testRandom() {
-            ByteMatrix m = ByteMatrix.random(5);
+            ByteMatrix m = ByteMatrix.randomRow(5);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
             // Just verify elements exist (values are random)
@@ -2477,7 +2477,7 @@ class ByteMatrixTest extends TestBase {
         public void testMultiply() {
             ByteMatrix m1 = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
             ByteMatrix m2 = ByteMatrix.of(new byte[][] { { 5, 6 }, { 7, 8 } });
-            ByteMatrix product = m1.matmul(m2);
+            ByteMatrix product = m1.matrixMultiply(m2);
 
             assertEquals(19, product.get(0, 0)); // 1*5 + 2*7
             assertEquals(22, product.get(0, 1)); // 1*6 + 2*8
@@ -2489,14 +2489,14 @@ class ByteMatrixTest extends TestBase {
         public void testMultiply_incompatibleDimensions() {
             ByteMatrix m1 = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
             ByteMatrix m2 = ByteMatrix.of(new byte[][] { { 1, 2, 3 } });
-            assertThrows(IllegalArgumentException.class, () -> m1.matmul(m2));
+            assertThrows(IllegalArgumentException.class, () -> m1.matrixMultiply(m2));
         }
 
         @Test
         public void testMultiply_rectangularMatrices() {
             ByteMatrix m1 = ByteMatrix.of(new byte[][] { { 1, 2, 3 } }); // 1x3
             ByteMatrix m2 = ByteMatrix.of(new byte[][] { { 4 }, { 5 }, { 6 } }); // 3x1
-            ByteMatrix product = m1.matmul(m2);
+            ByteMatrix product = m1.matrixMultiply(m2);
 
             assertEquals(1, product.rowCount());
             assertEquals(1, product.columnCount());
@@ -2504,12 +2504,12 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testMatmul_emptyProductReturnsCanonicalEmpty() {
-            // Regression: matmul must build its result via ByteMatrix.of(result) (not the raw
+        public void testmatrixMultiply_emptyProductReturnsCanonicalEmpty() {
+            // Regression: matrixMultiply must build its result via ByteMatrix.of(result) (not the raw
             // constructor) so an empty product yields the shared EMPTY singleton, and must call
             // checkRepresentableShape before allocation for consistency with the other
             // result-allocating methods (resize/reshape/transpose/rotate).
-            ByteMatrix product = ByteMatrix.empty().matmul(ByteMatrix.empty());
+            ByteMatrix product = ByteMatrix.empty().matrixMultiply(ByteMatrix.empty());
             assertSame(ByteMatrix.empty(), product);
             assertTrue(product.isEmpty());
         }
@@ -2995,7 +2995,7 @@ class ByteMatrixTest extends TestBase {
 
         @Test
         public void testRandom_withZeroLength() {
-            ByteMatrix m = ByteMatrix.random(0);
+            ByteMatrix m = ByteMatrix.randomRow(0);
             assertEquals(1, m.rowCount());
             assertEquals(0, m.columnCount());
         }
@@ -3507,7 +3507,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testReshape_oneArg() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2, 3, 4 } });
-            ByteMatrix reshaped = m.reshape(2);
+            ByteMatrix reshaped = m.reshapeByColumnCount(2);
             assertEquals(2, reshaped.rowCount());
             assertEquals(2, reshaped.columnCount());
             assertEquals(1, reshaped.get(0, 0));
@@ -3924,7 +3924,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testPrintln() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-            String result = m.println();
+            String result = m.toMultilineString();
             assertNotNull(result);
             assertTrue(result.contains("1"));
             assertTrue(result.contains("4"));
@@ -4013,7 +4013,7 @@ class ByteMatrixTest extends TestBase {
 
         @Test
         public void testRandom_withLargeLength() {
-            ByteMatrix m = ByteMatrix.random(1000);
+            ByteMatrix m = ByteMatrix.randomRow(1000);
             assertEquals(1, m.rowCount());
             assertEquals(1000, m.columnCount());
         }
@@ -4793,7 +4793,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testPrintln() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-            String result = m.println();
+            String result = m.toMultilineString();
             assertNotNull(result);
             assertTrue(result.contains("1"));
         }
@@ -4854,7 +4854,7 @@ class ByteMatrixTest extends TestBase {
 
         @Test
         public void test_random() {
-            ByteMatrix m = ByteMatrix.random(5);
+            ByteMatrix m = ByteMatrix.randomRow(5);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
         }
@@ -5477,10 +5477,10 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_matmul() {
+        public void test_matrixMultiply() {
             ByteMatrix m1 = ByteMatrix.of(new byte[][] { { 2, 3 }, { 4, 5 } });
             ByteMatrix m2 = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-            ByteMatrix result = m1.matmul(m2);
+            ByteMatrix result = m1.matrixMultiply(m2);
             assertEquals(11, result.get(0, 0)); // 2*1 + 3*3 = 11
             assertEquals(16, result.get(0, 1)); // 2*2 + 3*4 = 16
             assertEquals(19, result.get(1, 0)); // 4*1 + 5*3 = 19
@@ -6046,7 +6046,7 @@ class ByteMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> matrix.stackHorizontally(null));
             assertThrows(IllegalArgumentException.class, () -> matrix.add(null));
             assertThrows(IllegalArgumentException.class, () -> matrix.subtract(null));
-            assertThrows(IllegalArgumentException.class, () -> matrix.matmul(null));
+            assertThrows(IllegalArgumentException.class, () -> matrix.matrixMultiply(null));
         }
     }
 
@@ -6220,7 +6220,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testPrintlnNonEmptyReturnsNonNullFormattedString() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-            String printed = m.println();
+            String printed = m.toMultilineString();
             assertNotNull(printed);
             assertTrue(printed.contains("[1, 2]"));
             assertTrue(printed.contains("[3, 4]"));
@@ -6230,14 +6230,14 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testPrintlnEmptyReturnsBracketsLiteral() {
             ByteMatrix empty = ByteMatrix.empty();
-            String printed = empty.println();
+            String printed = empty.toMultilineString();
             assertEquals("[]", printed);
         }
 
         @Test
         public void testPrintlnWithMinAndMaxByteValues() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { Byte.MIN_VALUE, Byte.MAX_VALUE } });
-            String printed = m.println();
+            String printed = m.toMultilineString();
             assertNotNull(printed);
             assertTrue(printed.contains(String.valueOf(Byte.MIN_VALUE)));
             assertTrue(printed.contains(String.valueOf(Byte.MAX_VALUE)));

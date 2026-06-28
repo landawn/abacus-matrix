@@ -41,7 +41,7 @@ import com.landawn.abacus.util.stream.Stream;
  *
  * <p>Cells introduced by growth or reshaping default to {@code 0L} unless an overload accepts an
  * explicit fill value. Arithmetic operations (e.g. {@link #add(LongMatrix)}, {@link #subtract(LongMatrix)},
- * {@link #matmul(LongMatrix)}) follow standard Java {@code long} semantics: overflow silently wraps
+ * {@link #matrixMultiply(LongMatrix)}) follow standard Java {@code long} semantics: overflow silently wraps
  * around modulo 2<sup>64</sup>.</p>
  *
  * <p><b>Aggregations:</b> this class does not provide dedicated reduction methods such as
@@ -232,12 +232,12 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * LongMatrix matrix = LongMatrix.random(5);
+     * LongMatrix matrix = LongMatrix.randomRow(5);
      * matrix.rowCount();          // returns 1
      * matrix.columnCount();       // returns 5
      *
-     * LongMatrix.random(0).columnCount();   // returns 0 (1x0 matrix)
-     * LongMatrix.random(-1);                // throws IllegalArgumentException (negative length)
+     * LongMatrix.randomRow(0).columnCount();   // returns 0 (1x0 matrix)
+     * LongMatrix.randomRow(-1);                // throws IllegalArgumentException (negative length)
      * }</pre>
      *
      * @param length the number of columns in the new matrix; must be {@code >= 0}
@@ -245,7 +245,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @throws IllegalArgumentException if {@code length} is negative
      * @see #random(int, int)
      */
-    public static LongMatrix random(final int length) {
+    public static LongMatrix randomRow(final int length) {
         N.checkArgument(length >= 0, MSG_NEGATIVE_DIMENSION, "length", length);
 
         return random(1, length);
@@ -2765,23 +2765,23 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <pre>{@code
      * LongMatrix a = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
      * LongMatrix b = LongMatrix.of(new long[][] {{5L, 6L}, {7L, 8L}});
-     * LongMatrix product = a.matmul(b);
+     * LongMatrix product = a.matrixMultiply(b);
      * product.get(0, 0);                      // returns 19L (1*5 + 2*7)
      * product.get(1, 1);                      // returns 50L -> [[19, 22], [43, 50]]
      *
      * LongMatrix m2x3 = LongMatrix.of(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});      // 2x3
      * LongMatrix m3x2 = LongMatrix.of(new long[][] {{7L, 8L}, {9L, 10L}, {11L, 12L}}); // 3x2
-     * m2x3.matmul(m3x2).rowCount();                                                    // returns 2 (result is 2x2)
+     * m2x3.matrixMultiply(m3x2).rowCount();                                                    // returns 2 (result is 2x2)
      *
-     * a.matmul(m3x2);                        // throws IllegalArgumentException (a.columnCount=2 != m3x2.rowCount=3)
-     * a.matmul((LongMatrix) null);           // throws IllegalArgumentException (other is null)
+     * a.matrixMultiply(m3x2);                        // throws IllegalArgumentException (a.columnCount=2 != m3x2.rowCount=3)
+     * a.matrixMultiply((LongMatrix) null);           // throws IllegalArgumentException (other is null)
      * }</pre>
      *
      * @param other the matrix to multiply with; must not be {@code null}
      * @return a new {@code LongMatrix} of shape {@code this.rowCount x other.columnCount} containing the matrix product
      * @throws IllegalArgumentException if {@code other} is {@code null}, if {@code this.columnCount != other.rowCount}, or if this matrix has zero rows while {@code other} has a non-zero column count (the resulting shape is not representable)
      */
-    public LongMatrix matmul(final LongMatrix other) throws IllegalArgumentException {
+    public LongMatrix matrixMultiply(final LongMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(columnCount == other.rowCount,
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
@@ -2968,7 +2968,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * <p>This is a generalized element-wise operation. For the common element-wise operations of addition and
      * subtraction, consider using the dedicated methods {@link #add(LongMatrix)} and {@link #subtract(LongMatrix)};
-     * for the linear-algebra matrix product (which is not an element-wise operation), use {@link #matmul(LongMatrix)}.</p>
+     * for the linear-algebra matrix product (which is not an element-wise operation), use {@link #matrixMultiply(LongMatrix)}.</p>
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance.
      * Creates a new matrix; the original matrices are not modified.</p>
@@ -3840,26 +3840,15 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     }
 
     /**
-     * Prints this matrix to standard output and returns the formatted string that was printed.
-     * Each row is printed on a separate line with elements separated by commas and enclosed in
-     * square brackets. A matrix with zero rows prints {@code []}.
+     * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1, 2]\n[3, 4]"}); a
+     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #println(Appendable)}.
      *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
-     * matrix.println();                       // returns "[1, 2, 3]\n[4, 5, 6]" (and prints it)
-     *
-     * LongMatrix single = LongMatrix.of(new long[][] {{7L}});
-     * single.println();                      // returns "[7]"
-     * LongMatrix.empty().println();          // returns "[]"
-     * }</pre>
-     *
-     * @return the formatted string representation of the matrix that was printed
+     * @return the formatted multi-line representation of this matrix
      */
     @Override
-    public String println() {
+    String toMultilineString() {
         if (a.length == 0) {
-            return N.println("[]");
+            return "[]";
         } else {
             final StringBuilder sb = Objectory.createStringBuilder();
             final int len = a.length;
@@ -3890,7 +3879,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
                 Objectory.recycle(sb);
             }
 
-            return N.println(str);
+            return str;
         }
     }
 

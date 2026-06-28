@@ -45,10 +45,10 @@ import com.landawn.abacus.util.stream.Stream;
  * explicit fill value.</p>
  *
  * <p><b>Short arithmetic:</b> all element-wise arithmetic ({@link #add}, {@link #subtract},
- * {@link #matmul}, and the {@code zipWith}/{@code map} variants) computes intermediate results using
+ * {@link #matrixMultiply}, and the {@code zipWith}/{@code map} variants) computes intermediate results using
  * Java's standard numeric promotion to {@code int} and stores the result back into {@code short} cells, so values
  * outside {@code [Short.MIN_VALUE, Short.MAX_VALUE]} wrap modulo 65536. {@link #add} and {@link #subtract}
- * narrow via an explicit {@code (short)} cast on the library side, and {@link #matmul} narrows via the
+ * narrow via an explicit {@code (short)} cast on the library side, and {@link #matrixMultiply} narrows via the
  * implicit narrowing of a compound assignment into the {@code short} result cell. For the {@code zipWith}
  * and {@code map} variants the supplied operator itself returns a {@code short}, so any narrowing of an
  * out-of-range result is performed by the caller's lambda. To preserve the full magnitude, widen first
@@ -191,12 +191,12 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * ShortMatrix matrix = ShortMatrix.random(5);
+     * ShortMatrix matrix = ShortMatrix.randomRow(5);
      * matrix.rowCount();          // returns 1
      * matrix.columnCount();       // returns 5
      *
-     * ShortMatrix.random(0).columnCount();   // returns 0 (1x0 matrix)
-     * ShortMatrix.random(-1);                // throws IllegalArgumentException (negative length)
+     * ShortMatrix.randomRow(0).columnCount();   // returns 0 (1x0 matrix)
+     * ShortMatrix.randomRow(-1);                // throws IllegalArgumentException (negative length)
      * }</pre>
      *
      * @param length the number of columns in the new matrix; must be {@code >= 0}
@@ -204,7 +204,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @throws IllegalArgumentException if {@code length} is negative
      * @see #random(int, int)
      */
-    public static ShortMatrix random(final int length) {
+    public static ShortMatrix randomRow(final int length) {
         N.checkArgument(length >= 0, MSG_NEGATIVE_DIMENSION, "length", length);
 
         return random(1, length);
@@ -2648,23 +2648,23 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <pre>{@code
      * ShortMatrix a = ShortMatrix.of(new short[][] {{1, 2}, {3, 4}});
      * ShortMatrix b = ShortMatrix.of(new short[][] {{5, 6}, {7, 8}});
-     * ShortMatrix product = a.matmul(b);
+     * ShortMatrix product = a.matrixMultiply(b);
      * product.get(0, 0);                      // returns 19 (1*5 + 2*7)
      * product.get(1, 1);                      // returns 50 -> [[19, 22], [43, 50]]
      *
      * ShortMatrix m2x3 = ShortMatrix.of(new short[][] {{1, 2, 3}, {4, 5, 6}});      // 2x3
      * ShortMatrix m3x2 = ShortMatrix.of(new short[][] {{7, 8}, {9, 10}, {11, 12}}); // 3x2
-     * m2x3.matmul(m3x2).rowCount();                                                 // returns 2 (result is 2x2)
+     * m2x3.matrixMultiply(m3x2).rowCount();                                                 // returns 2 (result is 2x2)
      *
-     * a.matmul(m3x2);                        // throws IllegalArgumentException (a.columnCount=2 != m3x2.rowCount=3)
-     * a.matmul((ShortMatrix) null);          // throws IllegalArgumentException (other is null)
+     * a.matrixMultiply(m3x2);                        // throws IllegalArgumentException (a.columnCount=2 != m3x2.rowCount=3)
+     * a.matrixMultiply((ShortMatrix) null);          // throws IllegalArgumentException (other is null)
      * }</pre>
      *
      * @param other the matrix to multiply with; must not be {@code null}
      * @return a new {@code ShortMatrix} of shape {@code this.rowCount x other.columnCount} containing the matrix product
      * @throws IllegalArgumentException if {@code other} is {@code null}, if {@code this.columnCount != other.rowCount}, or if this matrix has zero rows while {@code other} has a non-zero column count (the resulting shape is not representable)
      */
-    public ShortMatrix matmul(final ShortMatrix other) throws IllegalArgumentException {
+    public ShortMatrix matrixMultiply(final ShortMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(columnCount == other.rowCount,
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
@@ -2875,7 +2875,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * <p>This is a generalized element-wise operation. For the common element-wise operations of addition and
      * subtraction, consider using the dedicated methods {@link #add(ShortMatrix)} and {@link #subtract(ShortMatrix)};
-     * for the linear-algebra matrix product (which is not an element-wise operation), use {@link #matmul(ShortMatrix)}.</p>
+     * for the linear-algebra matrix product (which is not an element-wise operation), use {@link #matrixMultiply(ShortMatrix)}.</p>
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance.
      * Creates a new matrix; the original matrices are not modified.</p>
@@ -3747,26 +3747,15 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     }
 
     /**
-     * Prints this matrix to standard output and returns the formatted string that was printed.
-     * Each row is printed on a separate line with elements separated by commas and enclosed in
-     * square brackets. A matrix with zero rows prints {@code []}.
+     * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1, 2]\n[3, 4]"}); a
+     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #println(Appendable)}.
      *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2, 3}, {4, 5, 6}});
-     * matrix.println();                       // returns "[1, 2, 3]\n[4, 5, 6]" (and prints it)
-     *
-     * ShortMatrix single = ShortMatrix.of(new short[][] {{7}});
-     * single.println();                      // returns "[7]"
-     * ShortMatrix.empty().println();         // returns "[]"
-     * }</pre>
-     *
-     * @return the formatted string representation of the matrix that was printed
+     * @return the formatted multi-line representation of this matrix
      */
     @Override
-    public String println() {
+    String toMultilineString() {
         if (a.length == 0) {
-            return N.println("[]");
+            return "[]";
         } else {
             final StringBuilder sb = Objectory.createStringBuilder();
             final int len = a.length;
@@ -3797,7 +3786,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
                 Objectory.recycle(sb);
             }
 
-            return N.println(str);
+            return str;
         }
     }
 

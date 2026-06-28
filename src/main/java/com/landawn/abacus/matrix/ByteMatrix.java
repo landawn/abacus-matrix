@@ -43,10 +43,10 @@ import com.landawn.abacus.util.stream.Stream;
  * explicit fill value.</p>
  *
  * <p><b>Byte arithmetic:</b> the built-in byte arithmetic operations ({@link #add(ByteMatrix)},
- * {@link #subtract(ByteMatrix)}, and {@link #matmul(ByteMatrix)}) use Java's standard
+ * {@link #subtract(ByteMatrix)}, and {@link #matrixMultiply(ByteMatrix)}) use Java's standard
  * numeric promotion to {@code int} and narrow each stored result back to {@code byte} (via an explicit
  * cast for {@code add}/{@code subtract}, or via the implicit narrowing of the {@code +=} accumulation
- * in {@code matmul}), so values outside {@code [Byte.MIN_VALUE, Byte.MAX_VALUE]} wrap modulo 256.
+ * in {@code matrixMultiply}), so values outside {@code [Byte.MIN_VALUE, Byte.MAX_VALUE]} wrap modulo 256.
  * The {@code zipWith}/{@code map} variants instead store whatever {@code byte} the supplied operator
  * returns, so any narrowing of an {@code int} computation must be performed inside the operator
  * itself. To preserve the full magnitude, widen first via {@link #toIntMatrix()} or
@@ -197,14 +197,14 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * ByteMatrix matrix = ByteMatrix.random(5);
+     * ByteMatrix matrix = ByteMatrix.randomRow(5);
      * matrix.rowCount();             // returns 1
      * matrix.columnCount();          // returns 5 (values are random in [-128, 127])
      *
-     * ByteMatrix none = ByteMatrix.random(0);
+     * ByteMatrix none = ByteMatrix.randomRow(0);
      * none.columnCount();            // returns 0 (1x0 matrix)
      *
-     * ByteMatrix.random(-1);         // throws IllegalArgumentException (negative length)
+     * ByteMatrix.randomRow(-1);         // throws IllegalArgumentException (negative length)
      * }</pre>
      *
      * @param length the number of columns in the new matrix; must be {@code >= 0}
@@ -212,7 +212,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @throws IllegalArgumentException if {@code length} is negative
      * @see #random(int, int)
      */
-    public static ByteMatrix random(final int length) {
+    public static ByteMatrix randomRow(final int length) {
         N.checkArgument(length >= 0, MSG_NEGATIVE_DIMENSION, "length", length);
 
         return random(1, length);
@@ -2691,23 +2691,23 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <pre>{@code
      * ByteMatrix a = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
      * ByteMatrix b = ByteMatrix.of(new byte[][] {{5, 6}, {7, 8}});
-     * ByteMatrix product = a.matmul(b);
+     * ByteMatrix product = a.matrixMultiply(b);
      * product.get(0, 0);                      // returns (byte) 19 (1*5 + 2*7)
      * product.get(1, 1);                      // returns (byte) 50 -> [[19, 22], [43, 50]]
      *
      * ByteMatrix m2x3 = ByteMatrix.of(new byte[][] {{1, 2, 3}, {4, 5, 6}});      // 2x3
      * ByteMatrix m3x2 = ByteMatrix.of(new byte[][] {{7, 8}, {9, 10}, {11, 12}}); // 3x2
-     * m2x3.matmul(m3x2).rowCount();                                              // returns 2 (result is 2x2)
+     * m2x3.matrixMultiply(m3x2).rowCount();                                              // returns 2 (result is 2x2)
      *
-     * a.matmul(m3x2);                        // throws IllegalArgumentException (a.columnCount=2 != m3x2.rowCount=3)
-     * a.matmul((ByteMatrix) null);           // throws IllegalArgumentException (other is null)
+     * a.matrixMultiply(m3x2);                        // throws IllegalArgumentException (a.columnCount=2 != m3x2.rowCount=3)
+     * a.matrixMultiply((ByteMatrix) null);           // throws IllegalArgumentException (other is null)
      * }</pre>
      *
      * @param other the matrix to multiply with; must not be {@code null}
      * @return a new {@code ByteMatrix} of shape {@code this.rowCount x other.columnCount} containing the matrix product
      * @throws IllegalArgumentException if {@code other} is {@code null}, if {@code this.columnCount != other.rowCount}, or if this matrix has zero rows while {@code other} has a non-zero column count (the resulting shape is not representable)
      */
-    public ByteMatrix matmul(final ByteMatrix other) throws IllegalArgumentException {
+    public ByteMatrix matrixMultiply(final ByteMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(columnCount == other.rowCount,
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
@@ -2935,7 +2935,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * <p>This is a generalized element-wise operation. For the common element-wise operations of addition and
      * subtraction, consider using the dedicated methods {@link #add(ByteMatrix)} and {@link #subtract(ByteMatrix)};
-     * for the linear-algebra matrix product (which is not an element-wise operation), use {@link #matmul(ByteMatrix)}.</p>
+     * for the linear-algebra matrix product (which is not an element-wise operation), use {@link #matrixMultiply(ByteMatrix)}.</p>
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance.
      * Creates a new matrix; the original matrices are not modified.</p>
@@ -3807,26 +3807,15 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     }
 
     /**
-     * Prints this matrix to standard output and returns the formatted string that was printed.
-     * Each row is printed on a separate line with elements separated by commas and enclosed in
-     * square brackets. A matrix with zero rows prints {@code []}.
+     * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1, 2]\n[3, 4]"}); a
+     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #println(Appendable)}.
      *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2, 3}, {4, 5, 6}});
-     * matrix.println();                       // returns "[1, 2, 3]\n[4, 5, 6]" (and prints it)
-     *
-     * ByteMatrix single = ByteMatrix.of(new byte[][] {{7}});
-     * single.println();                      // returns "[7]"
-     * ByteMatrix.empty().println();          // returns "[]"
-     * }</pre>
-     *
-     * @return the formatted string representation of the matrix that was printed
+     * @return the formatted multi-line representation of this matrix
      */
     @Override
-    public String println() {
+    String toMultilineString() {
         if (a.length == 0) {
-            return N.println("[]");
+            return "[]";
         } else {
             final StringBuilder sb = Objectory.createStringBuilder();
             final int len = a.length;
@@ -3857,7 +3846,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
                 Objectory.recycle(sb);
             }
 
-            return N.println(str);
+            return str;
         }
     }
 

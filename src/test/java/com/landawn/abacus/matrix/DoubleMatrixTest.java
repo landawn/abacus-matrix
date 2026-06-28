@@ -123,7 +123,7 @@ class DoubleMatrixTest extends TestBase {
 
     @Test
     public void testRandom() {
-        DoubleMatrix matrix = DoubleMatrix.random(5);
+        DoubleMatrix matrix = DoubleMatrix.randomRow(5);
         assertEquals(1, matrix.rowCount());
         assertEquals(5, matrix.columnCount());
     }
@@ -941,14 +941,14 @@ class DoubleMatrixTest extends TestBase {
         DoubleMatrix a = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
         DoubleMatrix b = DoubleMatrix.of(new double[][] { { 5.0, 6.0 }, { 7.0, 8.0 } });
 
-        DoubleMatrix product = a.matmul(b);
+        DoubleMatrix product = a.matrixMultiply(b);
         assertEquals(19.0, product.get(0, 0));
         assertEquals(22.0, product.get(0, 1));
         assertEquals(43.0, product.get(1, 0));
         assertEquals(50.0, product.get(1, 1));
 
         DoubleMatrix c = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 } });
-        assertThrows(IllegalArgumentException.class, () -> a.matmul(c));
+        assertThrows(IllegalArgumentException.class, () -> a.matrixMultiply(c));
     }
 
     @Test
@@ -1173,7 +1173,7 @@ class DoubleMatrixTest extends TestBase {
         DoubleMatrix matrix = DoubleMatrix.of(arr);
 
         assertFalse(matrix.isEmpty());
-        org.junit.jupiter.api.Assertions.assertDoesNotThrow(matrix::println);
+        org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> matrix.println());
     }
 
     @Test
@@ -1376,7 +1376,7 @@ class DoubleMatrixTest extends TestBase {
         assertEquals(m.get(1, 1), subtractZero.get(1, 1), 0.0001);
 
         // Test multiplication with zero matrix
-        DoubleMatrix multiplyZero = m.matmul(zeros);
+        DoubleMatrix multiplyZero = m.matrixMultiply(zeros);
         assertEquals(0.0, multiplyZero.get(0, 0), 0.0001);
         assertEquals(0.0, multiplyZero.get(1, 1), 0.0001);
 
@@ -1612,7 +1612,7 @@ class DoubleMatrixTest extends TestBase {
 
         @Test
         public void testRandom() {
-            DoubleMatrix m = DoubleMatrix.random(5);
+            DoubleMatrix m = DoubleMatrix.randomRow(5);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
             // Just verify elements exist (values are random between 0.0 and 1.0)
@@ -2599,7 +2599,7 @@ class DoubleMatrixTest extends TestBase {
         public void testMultiply() {
             DoubleMatrix m1 = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             DoubleMatrix m2 = DoubleMatrix.of(new double[][] { { 5.0, 6.0 }, { 7.0, 8.0 } });
-            DoubleMatrix product = m1.matmul(m2);
+            DoubleMatrix product = m1.matrixMultiply(m2);
 
             assertEquals(19.0, product.get(0, 0), DELTA); // 1*5 + 2*7
             assertEquals(22.0, product.get(0, 1), DELTA); // 1*6 + 2*8
@@ -2611,14 +2611,14 @@ class DoubleMatrixTest extends TestBase {
         public void testMultiply_incompatibleDimensions() {
             DoubleMatrix m1 = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             DoubleMatrix m2 = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 } });
-            assertThrows(IllegalArgumentException.class, () -> m1.matmul(m2));
+            assertThrows(IllegalArgumentException.class, () -> m1.matrixMultiply(m2));
         }
 
         @Test
         public void testMultiply_rectangularMatrices() {
             DoubleMatrix m1 = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 } }); // 1x3
             DoubleMatrix m2 = DoubleMatrix.of(new double[][] { { 4.0 }, { 5.0 }, { 6.0 } }); // 3x1
-            DoubleMatrix product = m1.matmul(m2);
+            DoubleMatrix product = m1.matrixMultiply(m2);
 
             assertEquals(1, product.rowCount());
             assertEquals(1, product.columnCount());
@@ -2626,12 +2626,12 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testMatmul_emptyProductReturnsCanonicalEmpty() {
-            // Regression: matmul must build its result via DoubleMatrix.of(result) (not the raw
+        public void testmatrixMultiply_emptyProductReturnsCanonicalEmpty() {
+            // Regression: matrixMultiply must build its result via DoubleMatrix.of(result) (not the raw
             // constructor) so an empty product yields the shared EMPTY singleton, and must call
             // checkRepresentableShape before allocation for consistency with the other
             // result-allocating methods (resize/reshape/transpose/rotate).
-            DoubleMatrix product = DoubleMatrix.empty().matmul(DoubleMatrix.empty());
+            DoubleMatrix product = DoubleMatrix.empty().matrixMultiply(DoubleMatrix.empty());
             assertSame(DoubleMatrix.empty(), product);
             assertTrue(product.isEmpty());
         }
@@ -2917,11 +2917,11 @@ class DoubleMatrixTest extends TestBase {
         public void testPrintln() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             assertFalse(m.isEmpty());
-            org.junit.jupiter.api.Assertions.assertDoesNotThrow(m::println);
+            org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> m.println());
 
             DoubleMatrix empty = DoubleMatrix.empty();
             assertTrue(empty.isEmpty());
-            org.junit.jupiter.api.Assertions.assertDoesNotThrow(empty::println);
+            org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> empty.println());
         }
 
         @Test
@@ -3027,7 +3027,7 @@ class DoubleMatrixTest extends TestBase {
             assertEquals(m, subtractZero);
 
             // Test multiplication with zero matrix
-            DoubleMatrix multiplyZero = m.matmul(zeros);
+            DoubleMatrix multiplyZero = m.matrixMultiply(zeros);
             assertEquals(zeros, multiplyZero);
 
             // Test addition commutativity
@@ -3450,7 +3450,7 @@ class DoubleMatrixTest extends TestBase {
 
         @Test
         public void testRandom() {
-            DoubleMatrix m = DoubleMatrix.random(5);
+            DoubleMatrix m = DoubleMatrix.randomRow(5);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
             for (int i = 0; i < 5; i++) {
@@ -3460,7 +3460,7 @@ class DoubleMatrixTest extends TestBase {
 
         @Test
         public void testRandom_withZeroLength() {
-            DoubleMatrix m = DoubleMatrix.random(0);
+            DoubleMatrix m = DoubleMatrix.randomRow(0);
             assertEquals(1, m.rowCount());
             assertEquals(0, m.columnCount());
         }
@@ -4186,7 +4186,7 @@ class DoubleMatrixTest extends TestBase {
         public void testMultiply() {
             DoubleMatrix m1 = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             DoubleMatrix m2 = DoubleMatrix.of(new double[][] { { 2.0, 0.0 }, { 1.0, 2.0 } });
-            DoubleMatrix result = m1.matmul(m2);
+            DoubleMatrix result = m1.matrixMultiply(m2);
             assertEquals(4.0, result.get(0, 0));
             assertEquals(4.0, result.get(0, 1));
             assertEquals(10.0, result.get(1, 0));
@@ -4197,7 +4197,7 @@ class DoubleMatrixTest extends TestBase {
         public void testMultiply_incompatibleSize() {
             DoubleMatrix m1 = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             DoubleMatrix m2 = DoubleMatrix.of(new double[][] { { 1.0 } });
-            assertThrows(IllegalArgumentException.class, () -> m1.matmul(m2));
+            assertThrows(IllegalArgumentException.class, () -> m1.matrixMultiply(m2));
         }
 
         // ============ Conversion Tests ============
@@ -4405,7 +4405,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testReshape_singleParam() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 } });
-            DoubleMatrix reshaped = m.reshape(3);
+            DoubleMatrix reshaped = m.reshapeByColumnCount(3);
             assertEquals(2, reshaped.rowCount());
             assertEquals(3, reshaped.columnCount());
         }
@@ -4544,14 +4544,14 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testPrintln() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            String result = m.println();
+            String result = m.toMultilineString();
             assertNotNull(result);
         }
 
         @Test
         public void testPrintln_empty() {
             DoubleMatrix m = DoubleMatrix.empty();
-            String result = m.println();
+            String result = m.toMultilineString();
             assertNotNull(result);
         }
     }
@@ -4580,7 +4580,7 @@ class DoubleMatrixTest extends TestBase {
 
         @Test
         public void testRandom_withLargeLength() {
-            DoubleMatrix m = DoubleMatrix.random(100);
+            DoubleMatrix m = DoubleMatrix.randomRow(100);
             assertEquals(1, m.rowCount());
             assertEquals(100, m.columnCount());
         }
@@ -4763,7 +4763,7 @@ class DoubleMatrixTest extends TestBase {
 
         @Test
         public void test_random() {
-            DoubleMatrix m = DoubleMatrix.random(5);
+            DoubleMatrix m = DoubleMatrix.randomRow(5);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
         }
@@ -5601,10 +5601,10 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_matmul() {
+        public void test_matrixMultiply() {
             DoubleMatrix m1 = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             DoubleMatrix m2 = DoubleMatrix.of(new double[][] { { 2.0, 0.0 }, { 1.0, 2.0 } });
-            DoubleMatrix result = m1.matmul(m2);
+            DoubleMatrix result = m1.matrixMultiply(m2);
             assertEquals(4.0, result.get(0, 0), 0.0);
             assertEquals(4.0, result.get(0, 1), 0.0);
             assertEquals(10.0, result.get(1, 0), 0.0);
@@ -5612,10 +5612,10 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_matmul_incompatibleDimensions() {
+        public void test_matrixMultiply_incompatibleDimensions() {
             DoubleMatrix m1 = DoubleMatrix.of(new double[][] { { 1.0, 2.0 } });
             DoubleMatrix m2 = DoubleMatrix.of(new double[][] { { 3.0 } });
-            assertThrows(IllegalArgumentException.class, () -> m1.matmul(m2));
+            assertThrows(IllegalArgumentException.class, () -> m1.matrixMultiply(m2));
         }
 
         // ============ Boxed Test ============
@@ -5762,7 +5762,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void test_println() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            String result = m.println();
+            String result = m.toMultilineString();
             assertNotNull(result);
             assertTrue(result.length() > 0);
         }
@@ -6264,7 +6264,7 @@ class DoubleMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> matrix.stackHorizontally(null));
             assertThrows(IllegalArgumentException.class, () -> matrix.add(null));
             assertThrows(IllegalArgumentException.class, () -> matrix.subtract(null));
-            assertThrows(IllegalArgumentException.class, () -> matrix.matmul(null));
+            assertThrows(IllegalArgumentException.class, () -> matrix.matrixMultiply(null));
         }
     }
 
@@ -6307,7 +6307,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testPrintlnNonEmptyReturnsNonNullFormattedString() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            String printed = m.println();
+            String printed = m.toMultilineString();
             assertNotNull(printed);
             assertTrue(printed.contains("1.0"));
             assertTrue(printed.contains("4.0"));
@@ -6317,14 +6317,14 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testPrintlnEmptyReturnsBracketsLiteral() {
             DoubleMatrix empty = DoubleMatrix.empty();
-            String printed = empty.println();
+            String printed = empty.toMultilineString();
             assertEquals("[]", printed);
         }
 
         @Test
         public void testPrintlnWithNaNAndInfinityRendersAsTokens() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY } });
-            String printed = m.println();
+            String printed = m.toMultilineString();
             assertNotNull(printed);
             assertTrue(printed.contains("NaN"));
             assertTrue(printed.contains("Infinity"));

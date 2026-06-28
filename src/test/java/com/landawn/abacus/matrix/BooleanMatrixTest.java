@@ -89,7 +89,7 @@ class BooleanMatrixTest extends TestBase {
 
     @Test
     public void testRandom() {
-        BooleanMatrix matrix = BooleanMatrix.random(5);
+        BooleanMatrix matrix = BooleanMatrix.randomRow(5);
         assertEquals(1, matrix.rowCount());
         assertEquals(5, matrix.columnCount());
     }
@@ -1130,7 +1130,7 @@ class BooleanMatrixTest extends TestBase {
         BooleanMatrix matrix = BooleanMatrix.of(arr);
 
         assertFalse(matrix.isEmpty());
-        org.junit.jupiter.api.Assertions.assertDoesNotThrow(matrix::println);
+        org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> matrix.println());
     }
 
     @Test
@@ -1246,7 +1246,7 @@ class BooleanMatrixTest extends TestBase {
 
         @Test
         public void testRandom() {
-            BooleanMatrix m = BooleanMatrix.random(5);
+            BooleanMatrix m = BooleanMatrix.randomRow(5);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
             // Just verify elements exist (values are random)
@@ -2565,14 +2565,14 @@ class BooleanMatrixTest extends TestBase {
         public void testPrintln() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
             assertFalse(m.isEmpty());
-            org.junit.jupiter.api.Assertions.assertDoesNotThrow(m::println);
+            org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> m.println());
         }
 
         @Test
         public void testPrintln_empty() {
             BooleanMatrix empty = BooleanMatrix.empty();
             assertTrue(empty.isEmpty());
-            org.junit.jupiter.api.Assertions.assertDoesNotThrow(empty::println);
+            org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> empty.println());
         }
 
         // ============ Additional Edge Cases ============
@@ -2915,7 +2915,7 @@ class BooleanMatrixTest extends TestBase {
 
         @Test
         public void testRandom_withZeroLength() {
-            BooleanMatrix m = BooleanMatrix.random(0);
+            BooleanMatrix m = BooleanMatrix.randomRow(0);
             assertEquals(1, m.rowCount());
             assertEquals(0, m.columnCount());
         }
@@ -3395,7 +3395,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testReshape_oneArg() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false, true, false } });
-            BooleanMatrix reshaped = m.reshape(2);
+            BooleanMatrix reshaped = m.reshapeByColumnCount(2);
             assertEquals(2, reshaped.rowCount());
             assertEquals(2, reshaped.columnCount());
             assertTrue(reshaped.get(0, 0));
@@ -3789,7 +3789,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testPrintln() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
-            String result = m.println();
+            String result = m.toMultilineString();
             assertNotNull(result);
             assertTrue(result.contains("true"));
             assertTrue(result.contains("false"));
@@ -3878,7 +3878,7 @@ class BooleanMatrixTest extends TestBase {
 
         @Test
         public void testRandom_withLargeLength() {
-            BooleanMatrix m = BooleanMatrix.random(1000);
+            BooleanMatrix m = BooleanMatrix.randomRow(1000);
             assertEquals(1, m.rowCount());
             assertEquals(1000, m.columnCount());
         }
@@ -4537,7 +4537,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testPrintln() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
-            String result = m.println();
+            String result = m.toMultilineString();
             assertNotNull(result);
             assertTrue(result.contains("true"));
         }
@@ -4590,7 +4590,7 @@ class BooleanMatrixTest extends TestBase {
 
         @Test
         public void test_random() {
-            BooleanMatrix m = BooleanMatrix.random(5);
+            BooleanMatrix m = BooleanMatrix.randomRow(5);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
         }
@@ -6074,14 +6074,14 @@ class BooleanMatrixTest extends TestBase {
         public void testPrintlnEmptyReturnsBracketString() {
             // Empty path returns "[]" directly.
             BooleanMatrix empty = BooleanMatrix.empty();
-            String s = empty.println();
+            String s = empty.toMultilineString();
             assertEquals("[]", s);
         }
 
         @Test
         public void testPrintlnSingleRowProducesNonNullString() {
             BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] { { true, false } });
-            String s = matrix.println();
+            String s = matrix.toMultilineString();
             assertNotNull(s);
             assertTrue(s.contains("[true, false]"));
         }
@@ -6089,7 +6089,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testPrintlnMultipleRowsProducesNonNullString() {
             BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
-            String s = matrix.println();
+            String s = matrix.toMultilineString();
             assertNotNull(s);
             assertTrue(s.contains("[true, false]"));
             assertTrue(s.contains("[false, true]"));

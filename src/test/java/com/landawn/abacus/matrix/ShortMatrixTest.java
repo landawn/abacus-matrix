@@ -949,7 +949,7 @@ class ShortMatrixTest extends TestBase {
     public void testMultiply() {
         ShortMatrix m1 = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
         ShortMatrix m2 = ShortMatrix.of(new short[][] { { 5, 6 }, { 7, 8 } });
-        ShortMatrix product = m1.matmul(m2);
+        ShortMatrix product = m1.matrixMultiply(m2);
 
         assertEquals((short) 19, product.get(0, 0)); // 1*5 + 2*7
         assertEquals((short) 22, product.get(0, 1)); // 1*6 + 2*8
@@ -958,7 +958,7 @@ class ShortMatrixTest extends TestBase {
 
         // Test incompatible dimensions
         ShortMatrix m3 = ShortMatrix.of(new short[][] { { 1, 2, 3 } });
-        assertThrows(IllegalArgumentException.class, () -> m1.matmul(m3));
+        assertThrows(IllegalArgumentException.class, () -> m1.matrixMultiply(m3));
     }
 
     @Test
@@ -1577,10 +1577,10 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testShortMatrix_matmul() {
+        public void testShortMatrix_matrixMultiply() {
             ShortMatrix matrix1 = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
             ShortMatrix matrix2 = ShortMatrix.of(new short[][] { { 5, 6 }, { 7, 8 } });
-            ShortMatrix product = matrix1.matmul(matrix2);
+            ShortMatrix product = matrix1.matrixMultiply(matrix2);
             // Result: [[19, 22], [43, 50]]
             assertEquals((short) 19, product.get(0, 0));
             assertEquals((short) 22, product.get(0, 1));
@@ -1742,7 +1742,7 @@ class ShortMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> matrix.stackHorizontally(null));
             assertThrows(IllegalArgumentException.class, () -> matrix.add(null));
             assertThrows(IllegalArgumentException.class, () -> matrix.subtract(null));
-            assertThrows(IllegalArgumentException.class, () -> matrix.matmul(null));
+            assertThrows(IllegalArgumentException.class, () -> matrix.matrixMultiply(null));
         }
     }
 
@@ -1780,7 +1780,7 @@ class ShortMatrixTest extends TestBase {
 
         @Test
         public void testRandom() {
-            ShortMatrix m = ShortMatrix.random(5);
+            ShortMatrix m = ShortMatrix.randomRow(5);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
             // Just verify elements exist (values are random)
@@ -2745,7 +2745,7 @@ class ShortMatrixTest extends TestBase {
         public void testMultiply() {
             ShortMatrix m1 = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
             ShortMatrix m2 = ShortMatrix.of(new short[][] { { 5, 6 }, { 7, 8 } });
-            ShortMatrix product = m1.matmul(m2);
+            ShortMatrix product = m1.matrixMultiply(m2);
 
             assertEquals(19, product.get(0, 0)); // 1*5 + 2*7
             assertEquals(22, product.get(0, 1)); // 1*6 + 2*8
@@ -2757,14 +2757,14 @@ class ShortMatrixTest extends TestBase {
         public void testMultiply_incompatibleDimensions() {
             ShortMatrix m1 = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
             ShortMatrix m2 = ShortMatrix.of(new short[][] { { 1, 2, 3 } });
-            assertThrows(IllegalArgumentException.class, () -> m1.matmul(m2));
+            assertThrows(IllegalArgumentException.class, () -> m1.matrixMultiply(m2));
         }
 
         @Test
         public void testMultiply_rectangularMatrices() {
             ShortMatrix m1 = ShortMatrix.of(new short[][] { { 1, 2, 3 } }); // 1x3
             ShortMatrix m2 = ShortMatrix.of(new short[][] { { 4 }, { 5 }, { 6 } }); // 3x1
-            ShortMatrix product = m1.matmul(m2);
+            ShortMatrix product = m1.matrixMultiply(m2);
 
             assertEquals(1, product.rowCount());
             assertEquals(1, product.columnCount());
@@ -2772,12 +2772,12 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testMatmul_emptyProductReturnsCanonicalEmpty() {
-            // Regression: matmul must build its result via ShortMatrix.of(result) (not the raw
+        public void testmatrixMultiply_emptyProductReturnsCanonicalEmpty() {
+            // Regression: matrixMultiply must build its result via ShortMatrix.of(result) (not the raw
             // constructor) so an empty product yields the shared EMPTY singleton, and must call
             // checkRepresentableShape before allocation for consistency with the other
             // result-allocating methods (resize/reshape/transpose/rotate).
-            ShortMatrix product = ShortMatrix.empty().matmul(ShortMatrix.empty());
+            ShortMatrix product = ShortMatrix.empty().matrixMultiply(ShortMatrix.empty());
             assertSame(ShortMatrix.empty(), product);
             assertTrue(product.isEmpty());
         }
@@ -3171,7 +3171,7 @@ class ShortMatrixTest extends TestBase {
 
         @Test
         public void testRandom_zeroLength() {
-            ShortMatrix m = ShortMatrix.random(0);
+            ShortMatrix m = ShortMatrix.randomRow(0);
             assertEquals(1, m.rowCount());
             assertEquals(0, m.columnCount());
         }
@@ -3402,7 +3402,7 @@ class ShortMatrixTest extends TestBase {
         public void testMultiply_singleElement() {
             ShortMatrix m1 = ShortMatrix.of(new short[][] { { 5 } });
             ShortMatrix m2 = ShortMatrix.of(new short[][] { { 3 } });
-            ShortMatrix product = m1.matmul(m2);
+            ShortMatrix product = m1.matrixMultiply(m2);
             assertEquals(1, product.rowCount());
             assertEquals(1, product.columnCount());
             assertEquals(15, product.get(0, 0));
@@ -3759,7 +3759,7 @@ class ShortMatrixTest extends TestBase {
         public void testMultiply() {
             ShortMatrix m1 = ShortMatrix.of(new short[][] { { 2, 3 }, { 4, 5 } });
             ShortMatrix m2 = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            ShortMatrix result = m1.matmul(m2);
+            ShortMatrix result = m1.matrixMultiply(m2);
             assertEquals(11, result.get(0, 0));
             assertEquals(16, result.get(0, 1));
             assertEquals(19, result.get(1, 0));
@@ -4083,7 +4083,7 @@ class ShortMatrixTest extends TestBase {
 
         @Test
         public void testRandom() {
-            ShortMatrix m = ShortMatrix.random(5);
+            ShortMatrix m = ShortMatrix.randomRow(5);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
             assertNotNull(m.rowView(0));
@@ -4709,7 +4709,7 @@ class ShortMatrixTest extends TestBase {
         public void testMultiply() {
             ShortMatrix m1 = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
             ShortMatrix m2 = ShortMatrix.of(new short[][] { { 10, 20 }, { 30, 40 } });
-            ShortMatrix result = m1.matmul(m2);
+            ShortMatrix result = m1.matrixMultiply(m2);
             assertEquals((short) 70, result.get(0, 0));
             assertEquals((short) 100, result.get(0, 1));
             assertEquals((short) 150, result.get(1, 0));
@@ -4978,7 +4978,7 @@ class ShortMatrixTest extends TestBase {
 
         @Test
         public void test_random_createsRandomMatrix() {
-            ShortMatrix m = ShortMatrix.random(5);
+            ShortMatrix m = ShortMatrix.randomRow(5);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
         }
@@ -5781,12 +5781,12 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_matmul_multipliesMatrices() {
+        public void test_matrixMultiply_multipliesMatrices() {
             short[][] arr1 = { { 1, 2 }, { 3, 4 } };
             short[][] arr2 = { { 2, 0 }, { 1, 2 } };
             ShortMatrix m1 = new ShortMatrix(arr1);
             ShortMatrix m2 = new ShortMatrix(arr2);
-            ShortMatrix product = m1.matmul(m2);
+            ShortMatrix product = m1.matrixMultiply(m2);
             assertEquals(4, product.get(0, 0));
             assertEquals(4, product.get(0, 1));
             assertEquals(10, product.get(1, 0));
@@ -5794,10 +5794,10 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_matmul_incompatibleSize_throwsException() {
+        public void test_matrixMultiply_incompatibleSize_throwsException() {
             ShortMatrix m1 = ShortMatrix.of(new short[][] { { 1, 2, 3 } });
             ShortMatrix m2 = ShortMatrix.of(new short[][] { { 4, 5 } });
-            assertThrows(IllegalArgumentException.class, () -> m1.matmul(m2));
+            assertThrows(IllegalArgumentException.class, () -> m1.matrixMultiply(m2));
         }
 
         // ============ Conversion Tests ============
@@ -5988,7 +5988,7 @@ class ShortMatrixTest extends TestBase {
         public void test_println_returnsString() {
             short[][] arr = { { 1, 2 }, { 3, 4 } };
             ShortMatrix m = new ShortMatrix(arr);
-            String result = m.println();
+            String result = m.toMultilineString();
             assertNotNull(result);
             assertTrue(result.length() > 0);
         }
@@ -6363,16 +6363,16 @@ class ShortMatrixTest extends TestBase {
     }
 
     @Test
-    public void testMatmul_mathematicalCorrectness() {
+    public void testmatrixMultiply_mathematicalCorrectness() {
         ShortMatrix m = ShortMatrix.of(new short[][] { { 2, 3 }, { 4, 5 } });
         ShortMatrix id = ShortMatrix.of(new short[][] { { 1, 0 }, { 0, 1 } });
-        assertEquals(m, m.matmul(id));
-        assertEquals(m, id.matmul(m));
+        assertEquals(m, m.matrixMultiply(id));
+        assertEquals(m, id.matrixMultiply(m));
 
         // 2x3 * 3x4 -> 2x4
         ShortMatrix a = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
         ShortMatrix b = ShortMatrix.of(new short[][] { { 1, 0, 1, 1 }, { 0, 1, 1, 1 }, { 1, 1, 0, 1 } });
-        ShortMatrix product = a.matmul(b);
+        ShortMatrix product = a.matrixMultiply(b);
         assertEquals(2, product.rowCount());
         assertEquals(4, product.columnCount());
         // row 0 = [4, 5, 3, 6]
@@ -6382,10 +6382,10 @@ class ShortMatrixTest extends TestBase {
     }
 
     @Test
-    public void testMatmul_incompatibleShapesThrows() {
+    public void testmatrixMultiply_incompatibleShapesThrows() {
         ShortMatrix a = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
         ShortMatrix b = ShortMatrix.of(new short[][] { { 1, 2, 3 } });
-        assertThrows(IllegalArgumentException.class, () -> a.matmul(b));
+        assertThrows(IllegalArgumentException.class, () -> a.matrixMultiply(b));
     }
 
     @Test
@@ -6463,11 +6463,11 @@ class ShortMatrixTest extends TestBase {
     }
 
     @Test
-    public void testMatmul_negativeShortAccumulationStaysInRange() {
-        // Verify that the matmul result wraps to short range as documented.
+    public void testmatrixMultiply_negativeShortAccumulationStaysInRange() {
+        // Verify that the matrixMultiply result wraps to short range as documented.
         ShortMatrix a = ShortMatrix.of(new short[][] { { Short.MAX_VALUE, Short.MAX_VALUE } });
         ShortMatrix b = ShortMatrix.of(new short[][] { { 1 }, { 1 } });
-        ShortMatrix product = a.matmul(b);
+        ShortMatrix product = a.matrixMultiply(b);
         // Short.MAX_VALUE + Short.MAX_VALUE = 65534, narrowed via short cast to -2.
         assertEquals(1, product.rowCount());
         assertEquals(1, product.columnCount());
@@ -6481,7 +6481,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testPrintlnNonEmptyReturnsNonNullFormattedString() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            String printed = m.println();
+            String printed = m.toMultilineString();
             assertNotNull(printed);
             assertTrue(printed.contains("[1, 2]"));
             assertTrue(printed.contains("[3, 4]"));
@@ -6491,14 +6491,14 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testPrintlnEmptyReturnsBracketsLiteral() {
             ShortMatrix empty = ShortMatrix.empty();
-            String printed = empty.println();
+            String printed = empty.toMultilineString();
             assertEquals("[]", printed);
         }
 
         @Test
         public void testPrintlnWithMinAndMaxShortValues() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { Short.MIN_VALUE, Short.MAX_VALUE } });
-            String printed = m.println();
+            String printed = m.toMultilineString();
             assertNotNull(printed);
             assertTrue(printed.contains(String.valueOf(Short.MIN_VALUE)));
             assertTrue(printed.contains(String.valueOf(Short.MAX_VALUE)));

@@ -178,13 +178,13 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * BooleanMatrix matrix = BooleanMatrix.random(5);
+     * BooleanMatrix matrix = BooleanMatrix.randomRow(5);
      * matrix.rowCount();          // returns 1
      * matrix.columnCount();       // returns 5 (each cell a random boolean)
      *
-     * BooleanMatrix.random(0).columnCount();   // returns 0 (empty row)
-     * BooleanMatrix.random(0).rowCount();      // returns 1
-     * BooleanMatrix.random(-1);                // throws IllegalArgumentException (negative length)
+     * BooleanMatrix.randomRow(0).columnCount();   // returns 0 (empty row)
+     * BooleanMatrix.randomRow(0).rowCount();      // returns 1
+     * BooleanMatrix.randomRow(-1);                // throws IllegalArgumentException (negative length)
      * }</pre>
      *
      * @param length the number of columns in the new matrix; must be {@code >= 0}
@@ -192,7 +192,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @throws IllegalArgumentException if {@code length} is negative
      * @see #random(int, int)
      */
-    public static BooleanMatrix random(final int length) {
+    public static BooleanMatrix randomRow(final int length) {
         N.checkArgument(length >= 0, MSG_NEGATIVE_DIMENSION, "length", length);
 
         return random(1, length);
@@ -3770,27 +3770,15 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Prints this matrix to standard output and returns the formatted string.
+     * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1, 2]\n[3, 4]"}); a
+     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #println(Appendable)}.
      *
-     * <p>Each row is formatted as {@code [e1, e2, ...]} and rows are separated by
-     * {@link #ARRAY_PRINT_SEPARATOR}. If the matrix has zero rows, {@code []} is printed.
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] {{true, false}, {false, true}});
-     * matrix.println();                             // prints two lines and returns "[true, false]" + separator + "[false, true]"
-     * matrix.println().contains("[true, false]");   // returns true
-     *
-     * BooleanMatrix.empty().println();                        // prints "[]" and returns "[]"
-     * BooleanMatrix.of(new boolean[][] {{true}}).println();   // prints and returns "[true]"
-     * }</pre>
-     *
-     * @return the formatted string representation of the matrix
+     * @return the formatted multi-line representation of this matrix
      */
     @Override
-    public String println() {
+    String toMultilineString() {
         if (a.length == 0) {
-            return N.println("[]");
+            return "[]";
         } else {
             final StringBuilder sb = Objectory.createStringBuilder();
             final int len = a.length;
@@ -3821,7 +3809,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
                 Objectory.recycle(sb);
             }
 
-            return N.println(str);
+            return str;
         }
     }
 

@@ -958,11 +958,11 @@ class MatricesTest extends TestBase {
     }
 
     @Test
-    public void test_matmul() {
+    public void test_matrixMultiply() {
         {
             final ByteMatrix mxa = ByteMatrix.range((byte) 0, (byte) 8).reshape(2, 4);
             final ByteMatrix mxb = ByteMatrix.range((byte) 0, (byte) 8).reshape(4, 2);
-            final ByteMatrix result = mxa.matmul(mxb);
+            final ByteMatrix result = mxa.matrixMultiply(mxb);
 
             assertEquals((byte) 28, result.get(0, 0));
             assertEquals((byte) 34, result.get(0, 1));
@@ -981,7 +981,7 @@ class MatricesTest extends TestBase {
         {
             final IntMatrix mxa = IntMatrix.range(0, 8).reshape(2, 4);
             final IntMatrix mxb = IntMatrix.range(0, 8).reshape(4, 2);
-            final IntMatrix result = mxa.matmul(mxb);
+            final IntMatrix result = mxa.matrixMultiply(mxb);
 
             assertEquals(28, result.get(0, 0));
             assertEquals(34, result.get(0, 1));
@@ -996,7 +996,7 @@ class MatricesTest extends TestBase {
     }
 
     @Test
-    public void test_matmul_perf() {
+    public void test_matrixMultiply_perf() {
         final int rows = 200;
         final int columnCount = 300;
 
@@ -1012,7 +1012,7 @@ class MatricesTest extends TestBase {
 
         final IntMatrix mxa = IntMatrix.of(a);
         final IntMatrix mxb = IntMatrix.of(b);
-        final IntMatrix mxc = mxa.matmul(mxb);
+        final IntMatrix mxc = mxa.matrixMultiply(mxb);
 
         assertEquals(rows, mxc.rowCount());
         assertEquals(rows, mxc.columnCount());
@@ -1021,12 +1021,12 @@ class MatricesTest extends TestBase {
 
         assertDoesNotThrow(() -> Profiler.run(1, 1, 1, "seq-multiply(" + rows + ", " + columnCount + ")", () -> {
             Matrices.setParallelMode(ParallelMode.FORCE_OFF);
-            mxa.matmul(mxb);
+            mxa.matrixMultiply(mxb);
         }).printResult());
 
         assertDoesNotThrow(() -> Profiler.run(1, 1, 1, "parallel-multiply(" + rows + ", " + columnCount + ")", () -> {
             Matrices.setParallelMode(ParallelMode.FORCE_ON);
-            mxa.matmul(mxb);
+            mxa.matrixMultiply(mxb);
         }).printResult());
 
     }
@@ -4410,7 +4410,7 @@ class MatricesTest extends TestBase {
         // ============ Multiply Tests ============
 
         @Test
-        public void test_matmul_performsMatrixMultiplication() {
+        public void test_matrixMultiply_performsMatrixMultiplication() {
             IntMatrix m1 = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             IntMatrix m2 = IntMatrix.of(new int[][] { { 5, 6 }, { 7, 8 } });
             IntMatrix result = IntMatrix.of(new int[2][2]);
@@ -4426,7 +4426,7 @@ class MatricesTest extends TestBase {
         }
 
         @Test
-        public void test_matmul_incompatibleDimensions_throwsException() {
+        public void test_matrixMultiply_incompatibleDimensions_throwsException() {
             IntMatrix m1 = IntMatrix.of(new int[][] { { 1, 2 } }); // 1x2
             IntMatrix m2 = IntMatrix.of(new int[][] { { 3, 4, 5 } }); // 1x3 (incompatible)
 

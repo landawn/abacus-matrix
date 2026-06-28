@@ -113,7 +113,7 @@ class FloatMatrixTest extends TestBase {
 
     @Test
     public void testRandom() {
-        FloatMatrix m = FloatMatrix.random(5);
+        FloatMatrix m = FloatMatrix.randomRow(5);
         assertEquals(1, m.rowCount());
         assertEquals(5, m.columnCount());
         // Values should be random, just check they exist
@@ -912,7 +912,7 @@ class FloatMatrixTest extends TestBase {
     public void testMultiply() {
         FloatMatrix m1 = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
         FloatMatrix m2 = FloatMatrix.of(new float[][] { { 5.0f, 6.0f }, { 7.0f, 8.0f } });
-        FloatMatrix product = m1.matmul(m2);
+        FloatMatrix product = m1.matrixMultiply(m2);
 
         assertEquals(19.0f, product.get(0, 0), DELTA); // 1*5 + 2*7
         assertEquals(22.0f, product.get(0, 1), DELTA); // 1*6 + 2*8
@@ -921,7 +921,7 @@ class FloatMatrixTest extends TestBase {
 
         // Test incompatible dimensions
         FloatMatrix m3 = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f } });
-        assertThrows(IllegalArgumentException.class, () -> m1.matmul(m3));
+        assertThrows(IllegalArgumentException.class, () -> m1.matrixMultiply(m3));
     }
 
     @Test
@@ -2357,14 +2357,14 @@ class FloatMatrixTest extends TestBase {
         public void testMultiply_incompatibleDimensions() {
             FloatMatrix m1 = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             FloatMatrix m2 = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f } });
-            assertThrows(IllegalArgumentException.class, () -> m1.matmul(m2));
+            assertThrows(IllegalArgumentException.class, () -> m1.matrixMultiply(m2));
         }
 
         @Test
         public void testMultiply_rectangularMatrices() {
             FloatMatrix m1 = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f } }); // 1x3
             FloatMatrix m2 = FloatMatrix.of(new float[][] { { 4.0f }, { 5.0f }, { 6.0f } }); // 3x1
-            FloatMatrix product = m1.matmul(m2);
+            FloatMatrix product = m1.matrixMultiply(m2);
 
             assertEquals(1, product.rowCount());
             assertEquals(1, product.columnCount());
@@ -2372,12 +2372,12 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void testMatmul_emptyProductReturnsCanonicalEmpty() {
-            // Regression: matmul must build its result via FloatMatrix.of(result) (not the raw
+        public void testmatrixMultiply_emptyProductReturnsCanonicalEmpty() {
+            // Regression: matrixMultiply must build its result via FloatMatrix.of(result) (not the raw
             // constructor) so an empty product yields the shared EMPTY singleton, and must call
             // checkRepresentableShape before allocation for consistency with the other
             // result-allocating methods (resize/reshape/transpose/rotate).
-            FloatMatrix product = FloatMatrix.empty().matmul(FloatMatrix.empty());
+            FloatMatrix product = FloatMatrix.empty().matrixMultiply(FloatMatrix.empty());
             assertSame(FloatMatrix.empty(), product);
             assertTrue(product.isEmpty());
         }
@@ -2713,11 +2713,11 @@ class FloatMatrixTest extends TestBase {
         public void testPrintln() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             assertFalse(m.isEmpty());
-            org.junit.jupiter.api.Assertions.assertDoesNotThrow(m::println);
+            org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> m.println());
 
             FloatMatrix empty = FloatMatrix.empty();
             assertTrue(empty.isEmpty());
-            org.junit.jupiter.api.Assertions.assertDoesNotThrow(empty::println);
+            org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> empty.println());
         }
 
         @Test
@@ -2826,7 +2826,7 @@ class FloatMatrixTest extends TestBase {
             assertEquals(m, subtractZero);
 
             // Test multiplication with zero matrix
-            FloatMatrix multiplyZero = m.matmul(zeros);
+            FloatMatrix multiplyZero = m.matrixMultiply(zeros);
             assertEquals(zeros, multiplyZero);
 
             // Test addition commutativity
@@ -3007,7 +3007,7 @@ class FloatMatrixTest extends TestBase {
 
         @Test
         public void testRandom_withZeroLength() {
-            FloatMatrix m = FloatMatrix.random(0);
+            FloatMatrix m = FloatMatrix.randomRow(0);
             assertEquals(1, m.rowCount());
             assertEquals(0, m.columnCount());
         }
@@ -3706,7 +3706,7 @@ class FloatMatrixTest extends TestBase {
         public void testMultiply() {
             FloatMatrix m1 = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             FloatMatrix m2 = FloatMatrix.of(new float[][] { { 2.0f, 0.0f }, { 1.0f, 2.0f } });
-            FloatMatrix result = m1.matmul(m2);
+            FloatMatrix result = m1.matrixMultiply(m2);
             assertEquals(4.0f, result.get(0, 0));
             assertEquals(4.0f, result.get(0, 1));
             assertEquals(10.0f, result.get(1, 0));
@@ -3717,7 +3717,7 @@ class FloatMatrixTest extends TestBase {
         public void testMultiply_incompatibleSize() {
             FloatMatrix m1 = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             FloatMatrix m2 = FloatMatrix.of(new float[][] { { 1.0f } });
-            assertThrows(IllegalArgumentException.class, () -> m1.matmul(m2));
+            assertThrows(IllegalArgumentException.class, () -> m1.matrixMultiply(m2));
         }
 
         // ============ Conversion Tests ============
@@ -3935,7 +3935,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testReshape_singleParam() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f } });
-            FloatMatrix reshaped = m.reshape(3);
+            FloatMatrix reshaped = m.reshapeByColumnCount(3);
             assertEquals(2, reshaped.rowCount());
             assertEquals(3, reshaped.columnCount());
         }
@@ -4074,14 +4074,14 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testPrintln() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            String result = m.println();
+            String result = m.toMultilineString();
             assertNotNull(result);
         }
 
         @Test
         public void testPrintln_empty() {
             FloatMatrix m = FloatMatrix.empty();
-            String result = m.println();
+            String result = m.toMultilineString();
             assertNotNull(result);
         }
     }
@@ -4110,7 +4110,7 @@ class FloatMatrixTest extends TestBase {
 
         @Test
         public void testRandom_withLargeLength() {
-            FloatMatrix m = FloatMatrix.random(100);
+            FloatMatrix m = FloatMatrix.randomRow(100);
             assertEquals(1, m.rowCount());
             assertEquals(100, m.columnCount());
         }
@@ -4249,7 +4249,7 @@ class FloatMatrixTest extends TestBase {
 
         @Test
         public void test_random() {
-            FloatMatrix m = FloatMatrix.random(5);
+            FloatMatrix m = FloatMatrix.randomRow(5);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
         }
@@ -5072,10 +5072,10 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_matmul() {
+        public void test_matrixMultiply() {
             FloatMatrix m1 = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             FloatMatrix m2 = FloatMatrix.of(new float[][] { { 2.0f, 0.0f }, { 1.0f, 2.0f } });
-            FloatMatrix result = m1.matmul(m2);
+            FloatMatrix result = m1.matrixMultiply(m2);
             assertEquals(4.0f, result.get(0, 0), 0.0f);
             assertEquals(4.0f, result.get(0, 1), 0.0f);
             assertEquals(10.0f, result.get(1, 0), 0.0f);
@@ -5083,10 +5083,10 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_matmul_incompatibleDimensions() {
+        public void test_matrixMultiply_incompatibleDimensions() {
             FloatMatrix m1 = FloatMatrix.of(new float[][] { { 1.0f, 2.0f } });
             FloatMatrix m2 = FloatMatrix.of(new float[][] { { 3.0f } });
-            assertThrows(IllegalArgumentException.class, () -> m1.matmul(m2));
+            assertThrows(IllegalArgumentException.class, () -> m1.matrixMultiply(m2));
         }
 
         // ============ Boxed Test ============
@@ -5245,7 +5245,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void test_println() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            String result = m.println();
+            String result = m.toMultilineString();
             assertNotNull(result);
             assertTrue(result.length() > 0);
         }
@@ -5425,10 +5425,10 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFloatMatrix_matmul() {
+        public void testFloatMatrix_matrixMultiply() {
             FloatMatrix a = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             FloatMatrix b = FloatMatrix.of(new float[][] { { 5.0f, 6.0f }, { 7.0f, 8.0f } });
-            FloatMatrix product = a.matmul(b);
+            FloatMatrix product = a.matrixMultiply(b);
             assertEquals(19.0f, product.get(0, 0));
             assertEquals(22.0f, product.get(0, 1));
             assertEquals(43.0f, product.get(1, 0));
@@ -5649,7 +5649,7 @@ class FloatMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> matrix.stackHorizontally(null));
             assertThrows(IllegalArgumentException.class, () -> matrix.add(null));
             assertThrows(IllegalArgumentException.class, () -> matrix.subtract(null));
-            assertThrows(IllegalArgumentException.class, () -> matrix.matmul(null));
+            assertThrows(IllegalArgumentException.class, () -> matrix.matrixMultiply(null));
         }
     }
 
@@ -6062,7 +6062,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testPrintlnNonEmptyReturnsNonNullFormattedString() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            String printed = m.println();
+            String printed = m.toMultilineString();
             assertNotNull(printed);
             assertTrue(printed.contains("1.0"));
             assertTrue(printed.contains("4.0"));
@@ -6072,14 +6072,14 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testPrintlnEmptyReturnsBracketsLiteral() {
             FloatMatrix empty = FloatMatrix.empty();
-            String printed = empty.println();
+            String printed = empty.toMultilineString();
             assertEquals("[]", printed);
         }
 
         @Test
         public void testPrintlnWithNaNAndInfinityRendersAsTokens() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY } });
-            String printed = m.println();
+            String printed = m.toMultilineString();
             assertNotNull(printed);
             assertTrue(printed.contains("NaN"));
             assertTrue(printed.contains("Infinity"));

@@ -246,13 +246,13 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * FloatMatrix matrix = FloatMatrix.random(5);
+     * FloatMatrix matrix = FloatMatrix.randomRow(5);
      * matrix.rowCount();                                   // returns 1
      * matrix.columnCount();                                // returns 5
      * matrix.get(0, 0) >= 0.0f && matrix.get(0, 0) < 1.0f; // returns true
      *
-     * FloatMatrix.random(0).columnCount(); // returns 0 (empty row)
-     * FloatMatrix.random(-1);              // throws IllegalArgumentException (negative length)
+     * FloatMatrix.randomRow(0).columnCount(); // returns 0 (empty row)
+     * FloatMatrix.randomRow(-1);              // throws IllegalArgumentException (negative length)
      * }</pre>
      *
      * @param length the number of columns in the new matrix
@@ -260,7 +260,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IllegalArgumentException if {@code length} is negative
      * @see #random(int, int)
      */
-    public static FloatMatrix random(final int length) {
+    public static FloatMatrix randomRow(final int length) {
         N.checkArgument(length >= 0, MSG_NEGATIVE_DIMENSION, "length", length);
 
         return random(1, length);
@@ -2656,16 +2656,16 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <pre>{@code
      * FloatMatrix a = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
      * FloatMatrix b = FloatMatrix.of(new float[][] {{5.0f, 6.0f}, {7.0f, 8.0f}});
-     * FloatMatrix product = a.matmul(b); // [[19.0, 22.0], [43.0, 50.0]]
+     * FloatMatrix product = a.matrixMultiply(b); // [[19.0, 22.0], [43.0, 50.0]]
      * product.get(0, 0);                 // returns 19.0f
      * product.get(1, 1);                 // returns 50.0f
      *
      * // 2x3 times 3x2 yields a 2x2 product
      * FloatMatrix m = FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}, {4.0f, 5.0f, 6.0f}});
      * FloatMatrix n = FloatMatrix.of(new float[][] {{1.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 1.0f}});
-     * m.matmul(n).get(0, 0);                                        // returns 4.0f
-     * a.matmul(FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}})); // throws IllegalArgumentException (columnCount != other.rowCount)
-     * a.matmul((FloatMatrix) null);                                 // throws IllegalArgumentException (null other)
+     * m.matrixMultiply(n).get(0, 0);                                        // returns 4.0f
+     * a.matrixMultiply(FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}})); // throws IllegalArgumentException (columnCount != other.rowCount)
+     * a.matrixMultiply((FloatMatrix) null);                                 // throws IllegalArgumentException (null other)
      * }</pre>
      *
      * @param other the matrix to multiply with this matrix; must not be {@code null}
@@ -2674,7 +2674,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *         (i.e., {@code this.columnCount != other.rowCount}), or if this matrix has zero rows while {@code other} has a
      *         non-zero column count (the resulting shape is not representable)
      */
-    public FloatMatrix matmul(final FloatMatrix other) throws IllegalArgumentException {
+    public FloatMatrix matrixMultiply(final FloatMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(columnCount == other.rowCount,
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
@@ -2877,7 +2877,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * <p>This is a generalized element-wise operation. For the common element-wise operations of addition and
      * subtraction, consider using the dedicated methods {@link #add(FloatMatrix)} and {@link #subtract(FloatMatrix)};
-     * for the linear-algebra matrix product (which is not an element-wise operation), use {@link #matmul(FloatMatrix)}.</p>
+     * for the linear-algebra matrix product (which is not an element-wise operation), use {@link #matrixMultiply(FloatMatrix)}.</p>
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance.
      * Creates a new matrix; the original matrices are not modified.</p>
@@ -3734,29 +3734,15 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Prints this matrix to standard output and returns the formatted string.
-     * Each row is printed on a separate line with elements separated by commas
-     * and enclosed in square brackets. A matrix with zero rows prints as {@code "[]"}.
+     * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1, 2]\n[3, 4]"}); a
+     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #println(Appendable)}.
      *
-     * <p>Each float element is formatted by Java's default {@link Float#toString(float)},
-     * which yields {@code "NaN"}, {@code "Infinity"}, {@code "-Infinity"}, or
-     * {@code "-0.0"} for the corresponding special values.</p>
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}, {4.0f, 5.0f, 6.0f}});
-     * matrix.println();             // returns "[1.0, 2.0, 3.0]\n[4.0, 5.0, 6.0]" (and prints it)
-     *
-     * FloatMatrix.empty().println();                                                  // returns "[]" (and prints it)
-     * FloatMatrix.of(new float[][] {{Float.NaN, Float.POSITIVE_INFINITY}}).println(); // returns "[NaN, Infinity]"
-     * }</pre>
-     *
-     * @return the formatted string representation of the matrix that was printed
+     * @return the formatted multi-line representation of this matrix
      */
     @Override
-    public String println() {
+    String toMultilineString() {
         if (a.length == 0) {
-            return N.println("[]");
+            return "[]";
         } else {
             final StringBuilder sb = Objectory.createStringBuilder();
             final int len = a.length;
@@ -3787,7 +3773,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
                 Objectory.recycle(sb);
             }
 
-            return N.println(str);
+            return str;
         }
     }
 

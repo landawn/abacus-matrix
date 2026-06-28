@@ -1467,7 +1467,7 @@ class MatrixTest extends TestBase {
     public void testPrintln() {
         Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2 }, { 3, 4 } });
         assertFalse(matrix.isEmpty());
-        org.junit.jupiter.api.Assertions.assertDoesNotThrow(matrix::println);
+        org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> matrix.println());
     }
 
     @Test
@@ -5312,7 +5312,7 @@ class MatrixTest extends TestBase {
         @Test
         public void testReshape_singleParam_integers() {
             Matrix<Integer> m = Matrix.of(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            Matrix<Integer> reshaped = m.reshape(2);
+            Matrix<Integer> reshaped = m.reshapeByColumnCount(2);
 
             assertEquals(3, reshaped.rowCount());
             assertEquals(2, reshaped.columnCount());
@@ -5325,7 +5325,7 @@ class MatrixTest extends TestBase {
         @Test
         public void testReshape_singleParam_strings() {
             Matrix<String> m = Matrix.of(new String[][] { { "A", "B", "C" }, { "D", "E", "F" } });
-            Matrix<String> reshaped = m.reshape(3);
+            Matrix<String> reshaped = m.reshapeByColumnCount(3);
 
             assertEquals(2, reshaped.rowCount());
             assertEquals(3, reshaped.columnCount());
@@ -5681,7 +5681,7 @@ class MatrixTest extends TestBase {
         @Test
         public void testPrintln_integers() {
             Matrix<Integer> m = Matrix.of(new Integer[][] { { 1, 2 }, { 3, 4 } });
-            String output = m.println();
+            String output = m.toMultilineString();
             assertNotNull(output);
             assertTrue(output.contains("1"));
             assertTrue(output.contains("4"));
@@ -6888,7 +6888,7 @@ class MatrixTest extends TestBase {
         public void test_println_returnsString() {
             String[][] arr = { { "a", "b" }, { "c", "d" } };
             Matrix<String> m = new Matrix<>(arr);
-            String result = m.println();
+            String result = m.toMultilineString();
             assertNotNull(result);
             assertTrue(result.length() > 0);
         }
@@ -7310,7 +7310,7 @@ class MatrixTest extends TestBase {
         @Test
         public void testPrintln_nonEmpty_returnsNonNullString() {
             Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2 }, { 3, 4 } });
-            String result = matrix.println();
+            String result = matrix.toMultilineString();
             assertNotNull(result);
             assertTrue(result.contains("1") && result.contains("4"));
         }
@@ -7318,7 +7318,7 @@ class MatrixTest extends TestBase {
         @Test
         public void testPrintln_empty_returnsNonNullString() {
             Matrix<String> empty = Matrix.empty();
-            String result = empty.println();
+            String result = empty.toMultilineString();
             assertNotNull(result);
             assertEquals("[]", result);
         }

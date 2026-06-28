@@ -90,7 +90,7 @@ class CharMatrixTest extends TestBase {
 
     @Test
     public void testRandom() {
-        CharMatrix matrix = CharMatrix.random(5);
+        CharMatrix matrix = CharMatrix.randomRow(5);
         Assertions.assertEquals(1, matrix.rowCount());
         Assertions.assertEquals(5, matrix.columnCount());
     }
@@ -1003,13 +1003,13 @@ class CharMatrixTest extends TestBase {
         CharMatrix matrixA = CharMatrix.of(a);
         CharMatrix matrixB = CharMatrix.of(b);
 
-        CharMatrix product = matrixA.matmul(matrixB);
+        CharMatrix product = matrixA.matrixMultiply(matrixB);
         Assertions.assertEquals(2, product.rowCount());
         Assertions.assertEquals(2, product.columnCount());
         // Results will be char values from multiplication
 
         CharMatrix incompatible = CharMatrix.of(new char[][] { { 'x', 'y', 'z' } });
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrixA.matmul(incompatible));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrixA.matrixMultiply(incompatible));
     }
 
     @Test
@@ -1290,7 +1290,7 @@ class CharMatrixTest extends TestBase {
         CharMatrix matrix = CharMatrix.of(a);
 
         assertFalse(matrix.isEmpty());
-        org.junit.jupiter.api.Assertions.assertDoesNotThrow(matrix::println);
+        org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> matrix.println());
     }
 
     @Test
@@ -1406,7 +1406,7 @@ class CharMatrixTest extends TestBase {
 
         @Test
         public void testRandom() {
-            CharMatrix m = CharMatrix.random(5);
+            CharMatrix m = CharMatrix.randomRow(5);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
             // Just verify elements exist (values are random)
@@ -2417,7 +2417,7 @@ class CharMatrixTest extends TestBase {
         public void testMultiply() {
             CharMatrix m1 = CharMatrix.of(new char[][] { { 1, 2 }, { 3, 4 } });
             CharMatrix m2 = CharMatrix.of(new char[][] { { 5, 6 }, { 7, 8 } });
-            CharMatrix product = m1.matmul(m2);
+            CharMatrix product = m1.matrixMultiply(m2);
 
             assertEquals(19, product.get(0, 0)); // 1*5 + 2*7
             assertEquals(22, product.get(0, 1)); // 1*6 + 2*8
@@ -2429,14 +2429,14 @@ class CharMatrixTest extends TestBase {
         public void testMultiply_incompatibleDimensions() {
             CharMatrix m1 = CharMatrix.of(new char[][] { { 1, 2 }, { 3, 4 } });
             CharMatrix m2 = CharMatrix.of(new char[][] { { 1, 2, 3 } });
-            assertThrows(IllegalArgumentException.class, () -> m1.matmul(m2));
+            assertThrows(IllegalArgumentException.class, () -> m1.matrixMultiply(m2));
         }
 
         @Test
         public void testMultiply_rectangularMatrices() {
             CharMatrix m1 = CharMatrix.of(new char[][] { { 1, 2, 3 } }); // 1x3
             CharMatrix m2 = CharMatrix.of(new char[][] { { 4 }, { 5 }, { 6 } }); // 3x1
-            CharMatrix product = m1.matmul(m2);
+            CharMatrix product = m1.matrixMultiply(m2);
 
             assertEquals(1, product.rowCount());
             assertEquals(1, product.columnCount());
@@ -2444,12 +2444,12 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testMatmul_emptyProductReturnsCanonicalEmpty() {
-            // Regression: matmul must build its result via CharMatrix.of(result) (not the raw
+        public void testmatrixMultiply_emptyProductReturnsCanonicalEmpty() {
+            // Regression: matrixMultiply must build its result via CharMatrix.of(result) (not the raw
             // constructor) so an empty product yields the shared EMPTY singleton, and must call
             // checkRepresentableShape before allocation for consistency with the other
             // result-allocating methods (resize/reshape/transpose/rotate).
-            CharMatrix product = CharMatrix.empty().matmul(CharMatrix.empty());
+            CharMatrix product = CharMatrix.empty().matrixMultiply(CharMatrix.empty());
             assertSame(CharMatrix.empty(), product);
             assertTrue(product.isEmpty());
         }
@@ -2944,7 +2944,7 @@ class CharMatrixTest extends TestBase {
 
         @Test
         public void testRandom_withZeroLength() {
-            CharMatrix m = CharMatrix.random(0);
+            CharMatrix m = CharMatrix.randomRow(0);
             assertEquals(1, m.rowCount());
             assertEquals(0, m.columnCount());
         }
@@ -3580,7 +3580,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testReshape_oneArg() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c', 'd' } });
-            CharMatrix reshaped = m.reshape(2);
+            CharMatrix reshaped = m.reshapeByColumnCount(2);
             assertEquals(2, reshaped.rowCount());
             assertEquals(2, reshaped.columnCount());
             assertEquals('a', reshaped.get(0, 0));
@@ -3995,7 +3995,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testPrintln() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            String result = m.println();
+            String result = m.toMultilineString();
             assertNotNull(result);
             assertTrue(result.contains("a"));
             assertTrue(result.contains("d"));
@@ -4084,7 +4084,7 @@ class CharMatrixTest extends TestBase {
 
         @Test
         public void testRandom_withLargeLength() {
-            CharMatrix m = CharMatrix.random(1000);
+            CharMatrix m = CharMatrix.randomRow(1000);
             assertEquals(1, m.rowCount());
             assertEquals(1000, m.columnCount());
         }
@@ -5117,7 +5117,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testPrintln() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            String result = m.println();
+            String result = m.toMultilineString();
             assertNotNull(result);
             assertTrue(result.contains("a"));
         }
@@ -5170,7 +5170,7 @@ class CharMatrixTest extends TestBase {
 
         @Test
         public void test_random() {
-            CharMatrix m = CharMatrix.random(5);
+            CharMatrix m = CharMatrix.randomRow(5);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
         }
@@ -5799,10 +5799,10 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_matmul() {
+        public void test_matrixMultiply() {
             CharMatrix m1 = CharMatrix.of(new char[][] { { '\2', '\3' }, { '\4', '\5' } });
             CharMatrix m2 = CharMatrix.of(new char[][] { { '\2', '\2' }, { '\2', '\2' } });
-            CharMatrix result = m1.matmul(m2);
+            CharMatrix result = m1.matrixMultiply(m2);
             assertEquals('\12', result.get(0, 0)); // 2*2 + 3*2 = 10
             assertEquals('\12', result.get(0, 1)); // 2*2 + 3*2 = 10
             assertEquals('\22', result.get(1, 0)); // 4*2 + 5*2 = 18
@@ -6418,7 +6418,7 @@ class CharMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> matrix.stackHorizontally(null));
             assertThrows(IllegalArgumentException.class, () -> matrix.add(null));
             assertThrows(IllegalArgumentException.class, () -> matrix.subtract(null));
-            assertThrows(IllegalArgumentException.class, () -> matrix.matmul(null));
+            assertThrows(IllegalArgumentException.class, () -> matrix.matrixMultiply(null));
         }
     }
 
@@ -6573,13 +6573,13 @@ class CharMatrixTest extends TestBase {
 
     @Test
     public void testMultiply_noIntermediateCharCast() {
-        // Bug fix: CharMatrix.matmul() had an unnecessary (char) cast on each intermediate
+        // Bug fix: CharMatrix.matrixMultiply() had an unnecessary (char) cast on each intermediate
         // product, inconsistent with ByteMatrix and ShortMatrix. The fix removes it.
         // Verify that matrix multiplication still produces correct results.
         CharMatrix a = CharMatrix.of(new char[][] { { 2, 3 }, { 4, 5 } });
         CharMatrix b = CharMatrix.of(new char[][] { { 1, 2 }, { 3, 4 } });
 
-        CharMatrix product = a.matmul(b);
+        CharMatrix product = a.matrixMultiply(b);
 
         // product[0][0] = 2*1 + 3*3 = 11
         // product[0][1] = 2*2 + 3*4 = 16
@@ -6599,7 +6599,7 @@ class CharMatrixTest extends TestBase {
         CharMatrix a = CharMatrix.of(new char[][] { { 300, 300 } });
         CharMatrix b = CharMatrix.of(new char[][] { { 300 }, { 300 } });
 
-        CharMatrix product = a.matmul(b);
+        CharMatrix product = a.matrixMultiply(b);
 
         // 300*300 + 300*300 = 180000
         // (char) 180000 = 180000 % 65536 = 49928 -- but wait, let's compute step by step
@@ -6615,7 +6615,7 @@ class CharMatrixTest extends TestBase {
         CharMatrix a = CharMatrix.of(new char[][] { { 'a', 'b', 'c' } });
         CharMatrix b = CharMatrix.of(new char[][] { { 'x', 'y' } });
 
-        assertThrows(IllegalArgumentException.class, () -> a.matmul(b));
+        assertThrows(IllegalArgumentException.class, () -> a.matrixMultiply(b));
     }
 
     @Test
@@ -6624,7 +6624,7 @@ class CharMatrixTest extends TestBase {
         CharMatrix extended = matrix.extend(0, 1, 1, 0, 'z');
         CharList flattened = matrix.flatten();
         List<Character> visited = new ArrayList<>();
-        String printed = matrix.println();
+        String printed = matrix.toMultilineString();
 
         matrix.forEach(0, 2, 1, 2, visited::add);
 
@@ -6656,14 +6656,14 @@ class CharMatrixTest extends TestBase {
         public void testPrintlnEmptyReturnsBracketString() {
             // Empty path returns "[]" directly.
             CharMatrix empty = CharMatrix.empty();
-            String s = empty.println();
+            String s = empty.toMultilineString();
             Assertions.assertEquals("[]", s);
         }
 
         @Test
         public void testPrintlnSingleRowProducesNonNullString() {
             CharMatrix matrix = CharMatrix.of(new char[][] { { 'a', 'b' } });
-            String s = matrix.println();
+            String s = matrix.toMultilineString();
             Assertions.assertNotNull(s);
             Assertions.assertTrue(s.contains("[a, b]"));
         }
@@ -6671,7 +6671,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testPrintlnMultipleRowsProducesNonNullString() {
             CharMatrix matrix = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            String s = matrix.println();
+            String s = matrix.toMultilineString();
             Assertions.assertNotNull(s);
             Assertions.assertTrue(s.contains("[a, b]"));
             Assertions.assertTrue(s.contains("[c, d]"));

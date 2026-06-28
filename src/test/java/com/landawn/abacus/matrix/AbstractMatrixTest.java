@@ -235,7 +235,7 @@ class AbstractMatrixTest extends TestBase {
     @Test
     public void testReshapeWithCols() {
         IntMatrix matrix = createTestMatrix2x3();
-        IntMatrix reshaped = matrix.reshape(2);
+        IntMatrix reshaped = matrix.reshapeByColumnCount(2);
 
         Assertions.assertEquals(3, reshaped.rowCount());
         Assertions.assertEquals(2, reshaped.columnCount());
@@ -754,7 +754,7 @@ class AbstractMatrixTest extends TestBase {
     public void testPrintln() {
         IntMatrix matrix = createTestMatrix();
         assertFalse(matrix.isEmpty());
-        org.junit.jupiter.api.Assertions.assertDoesNotThrow(matrix::println);
+        org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> matrix.println());
     }
 
     @Test
@@ -999,7 +999,7 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void testReshape_withCols() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3, 4 }, { 5, 6, 7, 8 } });
-            IntMatrix reshaped = m.reshape(2);
+            IntMatrix reshaped = m.reshapeByColumnCount(2);
 
             assertEquals(4, reshaped.rowCount());
             assertEquals(2, reshaped.columnCount());
@@ -1574,7 +1574,7 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void testReshape_withCols_notEvenlyDivisible() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            IntMatrix reshaped = m.reshape(4);
+            IntMatrix reshaped = m.reshapeByColumnCount(4);
 
             assertEquals(2, reshaped.rowCount());
             assertEquals(4, reshaped.columnCount());
@@ -1583,7 +1583,7 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void testReshape_withCols_evenlyDivisible() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            IntMatrix reshaped = m.reshape(2);
+            IntMatrix reshaped = m.reshapeByColumnCount(2);
 
             assertEquals(3, reshaped.rowCount());
             assertEquals(2, reshaped.columnCount());
@@ -2114,7 +2114,7 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void testReshape_singleParam() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            IntMatrix reshaped = m.reshape(2);
+            IntMatrix reshaped = m.reshapeByColumnCount(2);
 
             assertEquals(3, reshaped.rowCount());
             assertEquals(2, reshaped.columnCount());
@@ -2127,7 +2127,7 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void testReshape_singleParam_needsPadding() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            IntMatrix reshaped = m.reshape(4);
+            IntMatrix reshaped = m.reshapeByColumnCount(4);
 
             assertEquals(2, reshaped.rowCount());
             assertEquals(4, reshaped.columnCount());
@@ -2806,7 +2806,7 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void testPrintln_intMatrix() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            String output = m.println();
+            String output = m.toMultilineString();
             assertNotNull(output);
             assertTrue(output.contains("1"));
             assertTrue(output.contains("4"));
@@ -2815,7 +2815,7 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void testPrintln_doubleMatrix() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.5, 2.5 }, { 3.5, 4.5 } });
-            String output = m.println();
+            String output = m.toMultilineString();
             assertNotNull(output);
             assertTrue(output.contains("1.5") || output.contains("1"));
         }
@@ -2823,7 +2823,7 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void testPrintln_objectMatrix() {
             Matrix<String> m = Matrix.of(new String[][] { { "Bob海😀洋", "B" }, { "C", "Bob海😀洋" } });
-            String output = m.println();
+            String output = m.toMultilineString();
             assertNotNull(output);
             assertTrue(output.contains("😀"));
             assertTrue(output.contains("😀"));
@@ -2832,8 +2832,53 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void testPrintln_emptyMatrix() {
             IntMatrix m = IntMatrix.empty();
-            String output = m.println();
+            String output = m.toMultilineString();
             assertNotNull(output);
+        }
+
+        @Test
+        public void testPrintln_appendable() throws java.io.IOException {
+            IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
+            StringBuilder sb = new StringBuilder();
+            m.println(sb);
+            assertEquals(m.toMultilineString(), sb.toString());
+            assertTrue(sb.toString().contains("1"));
+            assertTrue(sb.toString().contains("4"));
+        }
+
+        @Test
+        public void testPrintln_appendable_emptyMatrix() throws java.io.IOException {
+            StringBuilder sb = new StringBuilder();
+            IntMatrix.empty().println(sb);
+            assertEquals("[]", sb.toString());
+        }
+
+        @Test
+        public void testPrintln_appendable_null() {
+            IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
+            org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> m.println((Appendable) null));
+        }
+
+        @Test
+        public void testPrintln_appendable_propagatesIOException() {
+            IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
+            Appendable throwing = new Appendable() {
+                @Override
+                public Appendable append(CharSequence csq) throws java.io.IOException {
+                    throw new java.io.IOException("boom");
+                }
+
+                @Override
+                public Appendable append(CharSequence csq, int start, int end) throws java.io.IOException {
+                    throw new java.io.IOException("boom");
+                }
+
+                @Override
+                public Appendable append(char c) throws java.io.IOException {
+                    throw new java.io.IOException("boom");
+                }
+            };
+            org.junit.jupiter.api.Assertions.assertThrows(java.io.IOException.class, () -> m.println(throwing));
         }
     }
 
@@ -3157,7 +3202,7 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void test_reshape_singleParameter() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            IntMatrix reshaped = matrix.reshape(2);
+            IntMatrix reshaped = matrix.reshapeByColumnCount(2);
             assertEquals(3, reshaped.rowCount());
             assertEquals(2, reshaped.columnCount());
             assertEquals(1, reshaped.get(0, 0));
@@ -3168,7 +3213,7 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void test_reshape_singleParameter_withPadding() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            IntMatrix reshaped = matrix.reshape(4);
+            IntMatrix reshaped = matrix.reshapeByColumnCount(4);
             assertEquals(2, reshaped.rowCount());
             assertEquals(4, reshaped.columnCount());
             assertEquals(5, reshaped.get(1, 0));
@@ -3214,7 +3259,7 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void test_println_returnsString() {
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            String result = matrix.println();
+            String result = matrix.toMultilineString();
             assertNotNull(result);
             assertTrue(result.contains("1"));
             assertTrue(result.contains("2"));
@@ -3465,7 +3510,7 @@ class AbstractMatrixTest extends TestBase {
         public void testAbstractMatrix_reshape_singleArg() {
             // From reshape(int) Javadoc
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            IntMatrix reshaped = matrix.reshape(2); // Becomes [[1, 2], [3, 4], [5, 6]]
+            IntMatrix reshaped = matrix.reshapeByColumnCount(2); // Becomes [[1, 2], [3, 4], [5, 6]]
             assertEquals(3, reshaped.rowCount());
             assertEquals(2, reshaped.columnCount());
             assertEquals(1, reshaped.get(0, 0));
@@ -3480,7 +3525,7 @@ class AbstractMatrixTest extends TestBase {
         public void testAbstractMatrix_reshape_padding() {
             // From reshape(int) Javadoc: padding
             IntMatrix matrix2 = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            IntMatrix reshaped2 = matrix2.reshape(4); // Becomes [[1, 2, 3, 4], [5, 6, 0, 0]]
+            IntMatrix reshaped2 = matrix2.reshapeByColumnCount(4); // Becomes [[1, 2, 3, 4], [5, 6, 0, 0]]
             assertEquals(2, reshaped2.rowCount());
             assertEquals(4, reshaped2.columnCount());
             assertEquals(1, reshaped2.get(0, 0));
@@ -3956,19 +4001,19 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void testReshape_singleColumnCount_zeroThrows() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IllegalArgumentException.class, () -> m.reshape(0));
+            assertThrows(IllegalArgumentException.class, () -> m.reshapeByColumnCount(0));
         }
 
         @Test
         public void testReshape_singleColumnCount_negativeThrows() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IllegalArgumentException.class, () -> m.reshape(-1));
+            assertThrows(IllegalArgumentException.class, () -> m.reshapeByColumnCount(-1));
         }
 
         @Test
         public void testReshape_sameColumnCountSameMatrix() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            IntMatrix reshaped = m.reshape(3);
+            IntMatrix reshaped = m.reshapeByColumnCount(3);
             assertEquals(2, reshaped.rowCount());
             assertEquals(3, reshaped.columnCount());
             assertEquals(1, reshaped.get(0, 0));

@@ -932,7 +932,7 @@ class IntMatrixTest extends TestBase {
     public void testMultiply() {
         IntMatrix m1 = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
         IntMatrix m2 = IntMatrix.of(new int[][] { { 5, 6 }, { 7, 8 } });
-        IntMatrix product = m1.matmul(m2);
+        IntMatrix product = m1.matrixMultiply(m2);
 
         assertEquals(19, product.get(0, 0)); // 1*5 + 2*7
         assertEquals(22, product.get(0, 1)); // 1*6 + 2*8
@@ -941,7 +941,7 @@ class IntMatrixTest extends TestBase {
 
         // Test incompatible dimensions
         IntMatrix m3 = IntMatrix.of(new int[][] { { 1, 2, 3 } });
-        assertThrows(IllegalArgumentException.class, () -> m1.matmul(m3));
+        assertThrows(IllegalArgumentException.class, () -> m1.matrixMultiply(m3));
     }
 
     @Test
@@ -1451,7 +1451,7 @@ class IntMatrixTest extends TestBase {
 
         @Test
         public void testRandom() {
-            IntMatrix m = IntMatrix.random(5);
+            IntMatrix m = IntMatrix.randomRow(5);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
             // Just verify elements exist (values are random)
@@ -2316,14 +2316,14 @@ class IntMatrixTest extends TestBase {
         public void testMultiply_incompatibleDimensions() {
             IntMatrix m1 = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             IntMatrix m2 = IntMatrix.of(new int[][] { { 1, 2, 3 } });
-            assertThrows(IllegalArgumentException.class, () -> m1.matmul(m2));
+            assertThrows(IllegalArgumentException.class, () -> m1.matrixMultiply(m2));
         }
 
         @Test
         public void testMultiply_rectangularMatrices() {
             IntMatrix m1 = IntMatrix.of(new int[][] { { 1, 2, 3 } }); // 1x3
             IntMatrix m2 = IntMatrix.of(new int[][] { { 4 }, { 5 }, { 6 } }); // 3x1
-            IntMatrix product = m1.matmul(m2);
+            IntMatrix product = m1.matrixMultiply(m2);
 
             assertEquals(1, product.rowCount());
             assertEquals(1, product.columnCount());
@@ -2331,12 +2331,12 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void testMatmul_emptyProductReturnsCanonicalEmpty() {
-            // Regression: matmul must build its result via IntMatrix.of(result) (not the raw
+        public void testmatrixMultiply_emptyProductReturnsCanonicalEmpty() {
+            // Regression: matrixMultiply must build its result via IntMatrix.of(result) (not the raw
             // constructor) so an empty product yields the shared EMPTY singleton, and must call
             // checkRepresentableShape before allocation for consistency with the other
             // result-allocating methods (resize/reshape/transpose/rotate).
-            IntMatrix product = IntMatrix.empty().matmul(IntMatrix.empty());
+            IntMatrix product = IntMatrix.empty().matrixMultiply(IntMatrix.empty());
             assertSame(IntMatrix.empty(), product);
             assertTrue(product.isEmpty());
         }
@@ -2606,11 +2606,11 @@ class IntMatrixTest extends TestBase {
         public void testPrintln() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             assertFalse(m.isEmpty());
-            org.junit.jupiter.api.Assertions.assertDoesNotThrow(m::println);
+            org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> m.println());
 
             IntMatrix empty = IntMatrix.empty();
             assertTrue(empty.isEmpty());
-            org.junit.jupiter.api.Assertions.assertDoesNotThrow(empty::println);
+            org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> empty.println());
         }
 
         @Test
@@ -2716,7 +2716,7 @@ class IntMatrixTest extends TestBase {
             assertEquals(m, subtractZero);
 
             // Test multiplication with zero matrix
-            IntMatrix multiplyZero = m.matmul(zeros);
+            IntMatrix multiplyZero = m.matrixMultiply(zeros);
             assertEquals(zeros, multiplyZero);
 
             // Test addition commutativity
@@ -2812,7 +2812,7 @@ class IntMatrixTest extends TestBase {
             // Test multiplication that causes overflow
             IntMatrix m1 = IntMatrix.of(new int[][] { { Integer.MAX_VALUE / 2 } });
             IntMatrix m2 = IntMatrix.of(new int[][] { { 3 } });
-            IntMatrix product = m1.matmul(m2);
+            IntMatrix product = m1.matrixMultiply(m2);
 
             // Result will overflow - verify it wraps around
             assertTrue(product.get(0, 0) != (Integer.MAX_VALUE / 2) * 3L);
@@ -2947,7 +2947,7 @@ class IntMatrixTest extends TestBase {
         public void testMultiply() {
             IntMatrix m1 = IntMatrix.of(new int[][] { { 2, 3 }, { 4, 5 } });
             IntMatrix m2 = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix result = m1.matmul(m2);
+            IntMatrix result = m1.matrixMultiply(m2);
             assertEquals(11, result.get(0, 0));
             assertEquals(16, result.get(0, 1));
             assertEquals(19, result.get(1, 0));
@@ -3161,7 +3161,7 @@ class IntMatrixTest extends TestBase {
         }
 
         public void testRandom() {
-            IntMatrix m = IntMatrix.random(5);
+            IntMatrix m = IntMatrix.randomRow(5);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
             assertNotNull(m.rowView(0));
@@ -3707,7 +3707,7 @@ class IntMatrixTest extends TestBase {
         public void testMultiply() {
             IntMatrix m1 = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             IntMatrix m2 = IntMatrix.of(new int[][] { { 10, 20 }, { 30, 40 } });
-            IntMatrix result = m1.matmul(m2);
+            IntMatrix result = m1.matrixMultiply(m2);
             assertEquals(70, result.get(0, 0));
             assertEquals(100, result.get(0, 1));
             assertEquals(150, result.get(1, 0));
@@ -4043,14 +4043,14 @@ class IntMatrixTest extends TestBase {
 
         @Test
         public void test_random() {
-            IntMatrix m = IntMatrix.random(5);
+            IntMatrix m = IntMatrix.randomRow(5);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
         }
 
         @Test
         public void test_random_zeroLength() {
-            IntMatrix m = IntMatrix.random(0);
+            IntMatrix m = IntMatrix.randomRow(0);
             assertEquals(1, m.rowCount());
             assertEquals(0, m.columnCount());
         }
@@ -4878,10 +4878,10 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_matmul() {
+        public void test_matrixMultiply() {
             IntMatrix m1 = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             IntMatrix m2 = IntMatrix.of(new int[][] { { 2, 0 }, { 1, 2 } });
-            IntMatrix result = m1.matmul(m2);
+            IntMatrix result = m1.matrixMultiply(m2);
             assertEquals(4, result.get(0, 0));
             assertEquals(4, result.get(0, 1));
             assertEquals(10, result.get(1, 0));
@@ -4889,10 +4889,10 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_matmul_incompatibleDimensions() {
+        public void test_matrixMultiply_incompatibleDimensions() {
             IntMatrix m1 = IntMatrix.of(new int[][] { { 1, 2 } });
             IntMatrix m2 = IntMatrix.of(new int[][] { { 3 } });
-            assertThrows(IllegalArgumentException.class, () -> m1.matmul(m2));
+            assertThrows(IllegalArgumentException.class, () -> m1.matrixMultiply(m2));
         }
 
         // ============ Boxed Test ============
@@ -5058,7 +5058,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void test_println() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            String result = m.println();
+            String result = m.toMultilineString();
             assertNotNull(result);
             assertTrue(result.length() > 0);
         }
@@ -5496,10 +5496,10 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void testIntMatrix_matmul() {
+        public void testIntMatrix_matrixMultiply() {
             IntMatrix a = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             IntMatrix b = IntMatrix.of(new int[][] { { 5, 6 }, { 7, 8 } });
-            IntMatrix product = a.matmul(b);
+            IntMatrix product = a.matrixMultiply(b);
             assertEquals(19, product.get(0, 0));
             assertEquals(22, product.get(0, 1));
             assertEquals(43, product.get(1, 0));
@@ -5758,7 +5758,7 @@ class IntMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> matrix.stackHorizontally(null));
             assertThrows(IllegalArgumentException.class, () -> matrix.add(null));
             assertThrows(IllegalArgumentException.class, () -> matrix.subtract(null));
-            assertThrows(IllegalArgumentException.class, () -> matrix.matmul(null));
+            assertThrows(IllegalArgumentException.class, () -> matrix.matrixMultiply(null));
         }
     }
 
@@ -6114,17 +6114,17 @@ class IntMatrixTest extends TestBase {
     }
 
     @Test
-    public void testMatmul_mathematicalCorrectness() {
+    public void testmatrixMultiply_mathematicalCorrectness() {
         // Identity multiplication.
         IntMatrix m = IntMatrix.of(new int[][] { { 2, 3 }, { 4, 5 } });
         IntMatrix id = IntMatrix.of(new int[][] { { 1, 0 }, { 0, 1 } });
-        assertEquals(m, m.matmul(id));
-        assertEquals(m, id.matmul(m));
+        assertEquals(m, m.matrixMultiply(id));
+        assertEquals(m, id.matrixMultiply(m));
 
         // Non-square shapes: 2x3 * 3x4 -> 2x4
         IntMatrix a = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
         IntMatrix b = IntMatrix.of(new int[][] { { 1, 0, 1, 1 }, { 0, 1, 1, 1 }, { 1, 1, 0, 1 } });
-        IntMatrix product = a.matmul(b);
+        IntMatrix product = a.matrixMultiply(b);
         assertEquals(2, product.rowCount());
         assertEquals(4, product.columnCount());
         // row 0 = [1*1+2*0+3*1, 1*0+2*1+3*1, 1*1+2*1+3*0, 1*1+2*1+3*1] = [4, 5, 3, 6]
@@ -6134,11 +6134,11 @@ class IntMatrixTest extends TestBase {
     }
 
     @Test
-    public void testMatmul_incompatibleShapesThrows() {
+    public void testmatrixMultiply_incompatibleShapesThrows() {
         IntMatrix a = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
         IntMatrix b = IntMatrix.of(new int[][] { { 1, 2, 3 } });
         // a is 2x2 and b is 1x3; columnCount(a)=2 != rowCount(b)=1
-        assertThrows(IllegalArgumentException.class, () -> a.matmul(b));
+        assertThrows(IllegalArgumentException.class, () -> a.matrixMultiply(b));
     }
 
     @Test
@@ -6242,7 +6242,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testPrintlnNonEmptyReturnsNonNullFormattedString() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            String printed = m.println();
+            String printed = m.toMultilineString();
             assertNotNull(printed);
             assertTrue(printed.contains("1"));
             assertTrue(printed.contains("4"));
@@ -6252,14 +6252,14 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testPrintlnEmptyReturnsBracketsLiteral() {
             IntMatrix empty = IntMatrix.empty();
-            String printed = empty.println();
+            String printed = empty.toMultilineString();
             assertEquals("[]", printed);
         }
 
         @Test
         public void testPrintlnWithExtremeIntValues() {
             IntMatrix m = IntMatrix.of(new int[][] { { Integer.MIN_VALUE, 0, Integer.MAX_VALUE } });
-            String printed = m.println();
+            String printed = m.toMultilineString();
             assertNotNull(printed);
             assertTrue(printed.contains(String.valueOf(Integer.MIN_VALUE)));
             assertTrue(printed.contains(String.valueOf(Integer.MAX_VALUE)));
@@ -6379,20 +6379,20 @@ class IntMatrixTest extends TestBase {
             assertArrayEquals(new int[] { 3, 6 }, t.rowCopy(2));
         }
 
-        // --- matmul must reject incompatible shapes ---
+        // --- matrixMultiply must reject incompatible shapes ---
 
         @Test
-        public void testMatmulIncompatibleShapesRejected() {
+        public void testmatrixMultiplyIncompatibleShapesRejected() {
             IntMatrix a = IntMatrix.of(new int[][] { { 1, 2, 3 } }); // 1x3
             IntMatrix b = IntMatrix.of(new int[][] { { 1, 2 } }); // 1x2
-            assertThrows(IllegalArgumentException.class, () -> a.matmul(b));
+            assertThrows(IllegalArgumentException.class, () -> a.matrixMultiply(b));
         }
 
         @Test
-        public void testMatmulProduct() {
+        public void testmatrixMultiplyProduct() {
             IntMatrix a = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             IntMatrix b = IntMatrix.of(new int[][] { { 5, 6 }, { 7, 8 } });
-            IntMatrix p = a.matmul(b);
+            IntMatrix p = a.matrixMultiply(b);
             assertArrayEquals(new int[] { 19, 22 }, p.rowCopy(0));
             assertArrayEquals(new int[] { 43, 50 }, p.rowCopy(1));
         }
