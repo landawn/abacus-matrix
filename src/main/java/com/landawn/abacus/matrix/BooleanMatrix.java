@@ -16,7 +16,6 @@ package com.landawn.abacus.matrix;
 
 import java.util.NoSuchElementException;
 
-import com.landawn.abacus.annotation.Beta;
 import com.landawn.abacus.annotation.SuppressFBWarnings;
 import com.landawn.abacus.util.Array;
 import com.landawn.abacus.util.Arrays;
@@ -3261,7 +3260,6 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @return a {@code Stream<Boolean>} of all elements in column-major order, or an empty stream if the matrix is empty
      */
     @Override
-    @Beta
     public Stream<Boolean> columnMajorStream() {
         return columnMajorStream(0, columnCount);
     }
@@ -3328,7 +3326,6 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *         or {@code fromColumnIndex > toColumnIndex}
      */
     @Override
-    @Beta
     public Stream<Boolean> columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
@@ -3548,7 +3545,6 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *         or an empty stream if the matrix is empty
      */
     @Override
-    @Beta
     public Stream<Stream<Boolean>> columnStreams() {
         return columnStreams(0, columnCount);
     }
@@ -3585,7 +3581,6 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *         or {@code fromColumnIndex > toColumnIndex}
      */
     @Override
-    @Beta
     public Stream<Stream<Boolean>> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 

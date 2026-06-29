@@ -16,7 +16,6 @@ package com.landawn.abacus.matrix;
 
 import java.util.NoSuchElementException;
 
-import com.landawn.abacus.annotation.Beta;
 import com.landawn.abacus.annotation.SuppressFBWarnings;
 import com.landawn.abacus.util.Array;
 import com.landawn.abacus.util.Arrays;
@@ -3284,7 +3283,6 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @return a ShortStream of all elements in column-major order, or an empty stream if the matrix is empty
      */
     @Override
-    @Beta
     public ShortStream columnMajorStream() {
         return columnMajorStream(0, columnCount);
     }
@@ -3343,7 +3341,6 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *         or {@code fromColumnIndex > toColumnIndex}
      */
     @Override
-    @Beta
     public ShortStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
@@ -3534,7 +3531,6 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *         or an empty stream if the matrix is empty
      */
     @Override
-    @Beta
     public Stream<ShortStream> columnStreams() {
         return columnStreams(0, columnCount);
     }
@@ -3566,7 +3562,6 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *         or {@code fromColumnIndex > toColumnIndex}
      */
     @Override
-    @Beta
     public Stream<ShortStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 

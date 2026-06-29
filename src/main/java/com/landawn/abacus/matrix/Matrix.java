@@ -19,7 +19,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import com.landawn.abacus.annotation.Beta;
 import com.landawn.abacus.annotation.MayReturnNull;
 import com.landawn.abacus.annotation.SuppressFBWarnings;
 import com.landawn.abacus.util.Array;
@@ -3274,7 +3273,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @return a {@link Stream} of all elements in column-major order, or an empty stream if the matrix is empty
      */
     @Override
-    @Beta
     public Stream<T> columnMajorStream() {
         return columnMajorStream(0, columnCount);
     }
@@ -3319,7 +3317,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @return a {@link Stream} of elements from the specified column range, or an empty stream if the matrix is empty
      * @throws IndexOutOfBoundsException if {@code fromColumnIndex} or {@code toColumnIndex} is out of range
      */
-    @Beta
     @Override
     public Stream<T> columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
@@ -3500,7 +3497,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @return a {@link Stream} of column streams, or an empty stream if the matrix is empty
      */
     @Override
-    @Beta
     public Stream<Stream<T>> columnStreams() {
         return columnStreams(0, columnCount);
     }
@@ -3524,7 +3520,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws IndexOutOfBoundsException if {@code fromColumnIndex} or {@code toColumnIndex} is out of range
      */
     @Override
-    @Beta
     public Stream<Stream<T>> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
@@ -3737,7 +3732,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @see #toTransposedDataset(Collection)
      */
     @SuppressWarnings("deprecation")
-    @Beta
     public Dataset toDataset(final Collection<String> columnNames) throws IllegalArgumentException {
         N.checkArgNotNull(columnNames, "columnNames");
         N.checkArgument(columnNames.size() == columnCount, "The size({}) of specified columnNames and column count({}) of this Matrix are not equal",
@@ -3792,7 +3786,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @see #toDataset(Collection)
      */
     @SuppressWarnings("deprecation")
-    @Beta
     public Dataset toTransposedDataset(final Collection<String> columnNames) throws IllegalArgumentException {
         N.checkArgNotNull(columnNames, "columnNames");
         N.checkArgument(columnNames.size() == rowCount, "The size({}) of specified columnNames and row count({}) of this Matrix are not equal",

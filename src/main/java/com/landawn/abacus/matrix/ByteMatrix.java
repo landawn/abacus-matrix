@@ -16,7 +16,6 @@ package com.landawn.abacus.matrix;
 
 import java.util.NoSuchElementException;
 
-import com.landawn.abacus.annotation.Beta;
 import com.landawn.abacus.annotation.SuppressFBWarnings;
 import com.landawn.abacus.util.Array;
 import com.landawn.abacus.util.Arrays;
@@ -3342,7 +3341,6 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @return a ByteStream of all elements in column-major order, or an empty stream if the matrix is empty
      */
     @Override
-    @Beta
     public ByteStream columnMajorStream() {
         return columnMajorStream(0, columnCount);
     }
@@ -3401,7 +3399,6 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *         or {@code fromColumnIndex > toColumnIndex}
      */
     @Override
-    @Beta
     public ByteStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
@@ -3592,7 +3589,6 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *         or an empty stream if the matrix is empty
      */
     @Override
-    @Beta
     public Stream<ByteStream> columnStreams() {
         return columnStreams(0, columnCount);
     }
@@ -3624,7 +3620,6 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *         or {@code fromColumnIndex > toColumnIndex}
      */
     @Override
-    @Beta
     public Stream<ByteStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 

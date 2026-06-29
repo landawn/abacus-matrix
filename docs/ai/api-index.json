@@ -1,8 +1,8 @@
 {
   "library": {
     "name": "abacus-matrix",
-    "version": "3.7.7",
-    "generated_at": "2026-06-22",
+    "version": "3.7.9",
+    "generated_at": "2026-06-28",
     "java_target": "17",
     "source": {
       "git_sha": "unknown"
@@ -248,23 +248,6 @@
               "see_also": []
             },
             {
-              "name": "println",
-              "kind": "instance",
-              "modifiers": [
-                "public",
-                "abstract"
-              ],
-              "signature": "public abstract String println()",
-              "return_type": "String",
-              "type_params": [],
-              "params": [],
-              "throws": [],
-              "javadoc_summary": "Prints this matrix to standard output in a formatted, human-readable manner and returns the output string.",
-              "contract": [],
-              "examples": [],
-              "see_also": []
-            },
-            {
               "name": "copy",
               "kind": "instance",
               "modifiers": [
@@ -422,7 +405,7 @@
               "see_also": []
             },
             {
-              "name": "reshape",
+              "name": "reshapeByColumnCount",
               "kind": "instance",
               "modifiers": [
                 "public"
@@ -1206,7 +1189,7 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns a stream of all points in the matrix in row-major order (horizontal traversal).",
+              "javadoc_summary": "Returns a stream of all points in the matrix in row-major order.",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -1229,7 +1212,7 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Returns a stream of points for a specific row in horizontal order (left to right).",
+              "javadoc_summary": "Returns a stream of points for a specific row in row-major order (left to right).",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -1263,7 +1246,7 @@
                   "condition": "if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}"
                 }
               ],
-              "javadoc_summary": "Returns a stream of points for a range of rows in row-major order (horizontal traversal).",
+              "javadoc_summary": "Returns a stream of points for a range of rows in row-major order.",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -1279,7 +1262,7 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns a stream of all points in the matrix in column-major order (vertical traversal).",
+              "javadoc_summary": "Returns a stream of all points in the matrix in column-major order.",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -1302,7 +1285,7 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Returns a stream of points for a specific column in vertical order (top to bottom).",
+              "javadoc_summary": "Returns a stream of points for a specific column in column-major order (top to bottom).",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -1336,7 +1319,7 @@
                   "condition": "if {@code fromColumnIndex < 0} , {@code toColumnIndex > columnCount} , or {@code fromColumnIndex > toColumnIndex}"
                 }
               ],
-              "javadoc_summary": "Returns a stream of points for a range of columns in column-major order (vertical traversal).",
+              "javadoc_summary": "Returns a stream of points for a range of columns in column-major order.",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -1491,7 +1474,7 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns a stream of all elements in row-major order (horizontal traversal).",
+              "javadoc_summary": "Returns a stream of all elements in row-major order.",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -1518,7 +1501,9 @@
               "javadoc_summary": "Returns a stream of elements from a specific row.",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#rowStreams()"
+              ]
             },
             {
               "name": "rowMajorStream",
@@ -1562,7 +1547,7 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns a stream of all elements in column-major order (vertical traversal).",
+              "javadoc_summary": "Returns a stream of all elements in column-major order.",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -1636,7 +1621,9 @@
               "javadoc_summary": "Returns a stream of row streams.",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#rowMajorStream(int)"
+              ]
             },
             {
               "name": "rowStreams",
@@ -1792,6 +1779,49 @@
               "contract": [],
               "examples": [],
               "see_also": []
+            },
+            {
+              "name": "appendTo",
+              "kind": "instance",
+              "modifiers": [
+                "public"
+              ],
+              "signature": "public void appendTo(final Appendable output)",
+              "return_type": "void",
+              "type_params": [],
+              "params": [
+                {
+                  "name": "output",
+                  "type": "Appendable",
+                  "javadoc": "the destination to append the rendering to; must not be {@code null}",
+                  "nullability": "unspecified"
+                }
+              ],
+              "throws": [],
+              "javadoc_summary": "Appends this matrix's formatted, multi-line rendering to the given {@code output} .",
+              "contract": [],
+              "examples": [],
+              "see_also": [
+                "#println()"
+              ]
+            },
+            {
+              "name": "println",
+              "kind": "instance",
+              "modifiers": [
+                "public"
+              ],
+              "signature": "public void println()",
+              "return_type": "void",
+              "type_params": [],
+              "params": [],
+              "throws": [],
+              "javadoc_summary": "Prints this matrix to standard output in a formatted, human-readable manner.",
+              "contract": [],
+              "examples": [],
+              "see_also": [
+                "#appendTo(Appendable)"
+              ]
             }
           ],
           "fields": []
@@ -1823,14 +1853,13 @@
                 {
                   "name": "a",
                   "type": "boolean[][]",
-                  "javadoc": "the two-dimensional boolean array to wrap, or {@code null} for an empty matrix",
+                  "javadoc": "the two-dimensional boolean array to wrap, must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
               "throws": [],
               "javadoc_summary": "Constructs a {@code BooleanMatrix} backed by the supplied two-dimensional array.",
               "contract": [
-                "<p> If {@code a} is {@code null} , this creates an empty {@code 0x0} matrix.",
                 "Call {@link #copy()} if you need an independently owned matrix."
               ],
               "examples": [],
@@ -1867,7 +1896,7 @@
                 {
                   "name": "a",
                   "type": "boolean[][]",
-                  "javadoc": "the two-dimensional boolean array to wrap; may be {@code null} or empty, in which case the empty matrix singleton is returned",
+                  "javadoc": "the two-dimensional boolean array to wrap; must not be {@code null} ; may be empty, in which case the empty matrix singleton is returned",
                   "nullability": "unspecified"
                 }
               ],
@@ -1878,7 +1907,34 @@
               "see_also": []
             },
             {
-              "name": "random",
+              "name": "copyOf",
+              "kind": "static",
+              "modifiers": [
+                "public",
+                "static"
+              ],
+              "signature": "public static BooleanMatrix copyOf(final boolean[]... a)",
+              "return_type": "BooleanMatrix",
+              "type_params": [],
+              "params": [
+                {
+                  "name": "a",
+                  "type": "boolean[][]",
+                  "javadoc": "the two-dimensional boolean array to copy, or empty for an empty matrix; must not be {@code null}",
+                  "nullability": "unspecified"
+                }
+              ],
+              "throws": [],
+              "javadoc_summary": "Creates a {@code BooleanMatrix} that owns a defensive deep copy of the supplied two-dimensional array.",
+              "contract": [],
+              "examples": [],
+              "see_also": [
+                "#of(boolean[][])",
+                "#copy()"
+              ]
+            },
+            {
+              "name": "randomRow",
               "kind": "static",
               "modifiers": [
                 "public",
@@ -2059,7 +2115,10 @@
                 "When both diagonals are provided and they overlap (at the center element of an odd-sized matrix), the main diagonal value takes precedence."
               ],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#mainDiagonal(boolean[])",
+                "#antiDiagonal(boolean[])"
+              ]
             },
             {
               "name": "unbox",
@@ -4104,7 +4163,7 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).",
+              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed in row-major order (left to right, top to bottom).",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -4132,7 +4191,9 @@
                 "<p> This method is particularly useful when you need to process or analyze a specific row of the matrix independently."
               ],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#rowStreams()"
+              ]
             },
             {
               "name": "rowMajorStream",
@@ -4174,12 +4235,12 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public Stream<Boolean> columnMajorStream()",
+              "signature": "@Override public Stream<Boolean> columnMajorStream()",
               "return_type": "Stream<Boolean>",
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns a stream of all elements in column-major order (vertical).",
+              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed in column-major order (top to bottom, left to right).",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -4213,7 +4274,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public Stream<Boolean> columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public Stream<Boolean> columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "Stream<Boolean>",
               "type_params": [],
               "params": [
@@ -4255,7 +4316,9 @@
               "javadoc_summary": "Returns a stream of {@code Stream<Boolean>} objects, where each inner stream represents a complete row.",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#rowMajorStream(int)"
+              ]
             },
             {
               "name": "rowStreams",
@@ -4297,7 +4360,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public Stream<Stream<Boolean>> columnStreams()",
+              "signature": "@Override public Stream<Stream<Boolean>> columnStreams()",
               "return_type": "Stream<Stream<Boolean>>",
               "type_params": [],
               "params": [],
@@ -4313,7 +4376,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public Stream<Stream<Boolean>> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public Stream<Stream<Boolean>> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "Stream<Stream<Boolean>>",
               "type_params": [],
               "params": [
@@ -4451,24 +4514,6 @@
               "see_also": []
             },
             {
-              "name": "println",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
-              "signature": "@Override public String println()",
-              "return_type": "String",
-              "type_params": [],
-              "params": [],
-              "throws": [],
-              "javadoc_summary": "Prints this matrix to standard output and returns the formatted string.",
-              "contract": [
-                "If the matrix has zero rows, {@code []} is printed."
-              ],
-              "examples": [],
-              "see_also": []
-            },
-            {
               "name": "hashCode",
               "kind": "instance",
               "modifiers": [
@@ -4557,14 +4602,13 @@
                 {
                   "name": "a",
                   "type": "byte[][]",
-                  "javadoc": "the two-dimensional byte array to wrap, or {@code null} for an empty matrix",
+                  "javadoc": "the two-dimensional byte array to wrap, must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
               "throws": [],
               "javadoc_summary": "Constructs a {@code ByteMatrix} backed by the supplied two-dimensional array.",
               "contract": [
-                "<p> If {@code a} is {@code null} , this creates an empty {@code 0x0} matrix.",
                 "Call {@link #copy()} if you need an independently owned matrix."
               ],
               "examples": [],
@@ -4601,7 +4645,7 @@
                 {
                   "name": "a",
                   "type": "byte[][]",
-                  "javadoc": "the two-dimensional byte array to wrap; may be {@code null} or empty",
+                  "javadoc": "the two-dimensional byte array to wrap; must not be {@code null} ; may be empty",
                   "nullability": "unspecified"
                 }
               ],
@@ -4615,7 +4659,34 @@
               "see_also": []
             },
             {
-              "name": "random",
+              "name": "copyOf",
+              "kind": "static",
+              "modifiers": [
+                "public",
+                "static"
+              ],
+              "signature": "public static ByteMatrix copyOf(final byte[]... a)",
+              "return_type": "ByteMatrix",
+              "type_params": [],
+              "params": [
+                {
+                  "name": "a",
+                  "type": "byte[][]",
+                  "javadoc": "the two-dimensional byte array to copy, or empty for an empty matrix; must not be {@code null}",
+                  "nullability": "unspecified"
+                }
+              ],
+              "throws": [],
+              "javadoc_summary": "Creates a {@code ByteMatrix} that owns a defensive deep copy of the supplied two-dimensional array.",
+              "contract": [],
+              "examples": [],
+              "see_also": [
+                "#of(byte[][])",
+                "#copy()"
+              ]
+            },
+            {
+              "name": "randomRow",
               "kind": "static",
               "modifiers": [
                 "public",
@@ -4915,13 +4986,13 @@
                 {
                   "name": "mainDiagonal",
                   "type": "byte[]",
-                  "javadoc": "the array of main diagonal elements; may be {@code null} or empty if {@code antiDiagonal} is non- {@code null}",
+                  "javadoc": "the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non- {@code null} ; may be empty",
                   "nullability": "unspecified"
                 },
                 {
                   "name": "antiDiagonal",
                   "type": "byte[]",
-                  "javadoc": "the array of anti-diagonal elements; may be {@code null} or empty if {@code mainDiagonal} is non- {@code null}",
+                  "javadoc": "the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non- {@code null} ; may be empty",
                   "nullability": "unspecified"
                 }
               ],
@@ -4997,9 +5068,7 @@
               "javadoc_summary": "Returns the element at the specified row and column indices.",
               "contract": [],
               "examples": [],
-              "see_also": [
-                "#get(Point)"
-              ]
+              "see_also": []
             },
             {
               "name": "get",
@@ -5059,9 +5128,7 @@
               "javadoc_summary": "Sets the element at the specified row and column indices.",
               "contract": [],
               "examples": [],
-              "see_also": [
-                "#set(Point, byte)"
-              ]
+              "see_also": []
             },
             {
               "name": "set",
@@ -7019,7 +7086,7 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).",
+              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed in row-major order (left to right, top to bottom).",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -7047,7 +7114,9 @@
                 "<p> This method is particularly useful when you need to process or analyze a specific row of the matrix independently."
               ],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#rowStreams()"
+              ]
             },
             {
               "name": "rowMajorStream",
@@ -7089,12 +7158,12 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public ByteStream columnMajorStream()",
+              "signature": "@Override public ByteStream columnMajorStream()",
               "return_type": "ByteStream",
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).",
+              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed in column-major order (top to bottom, left to right).",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -7128,7 +7197,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public ByteStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public ByteStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "ByteStream",
               "type_params": [],
               "params": [
@@ -7170,7 +7239,9 @@
               "javadoc_summary": "Returns a stream of ByteStream objects, where each ByteStream represents a complete row.",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#rowMajorStream(int)"
+              ]
             },
             {
               "name": "rowStreams",
@@ -7212,7 +7283,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public Stream<ByteStream> columnStreams()",
+              "signature": "@Override public Stream<ByteStream> columnStreams()",
               "return_type": "Stream<ByteStream>",
               "type_params": [],
               "params": [],
@@ -7228,7 +7299,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public Stream<ByteStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public Stream<ByteStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "Stream<ByteStream>",
               "type_params": [],
               "params": [
@@ -7364,22 +7435,6 @@
               "see_also": []
             },
             {
-              "name": "println",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
-              "signature": "@Override public String println()",
-              "return_type": "String",
-              "type_params": [],
-              "params": [],
-              "throws": [],
-              "javadoc_summary": "Prints this matrix to standard output and returns the formatted string that was printed.",
-              "contract": [],
-              "examples": [],
-              "see_also": []
-            },
-            {
               "name": "hashCode",
               "kind": "instance",
               "modifiers": [
@@ -7468,14 +7523,13 @@
                 {
                   "name": "a",
                   "type": "char[][]",
-                  "javadoc": "the two-dimensional char array to wrap, or {@code null} for an empty matrix",
+                  "javadoc": "the two-dimensional char array to wrap, must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
               "throws": [],
               "javadoc_summary": "Constructs a {@code CharMatrix} backed by the supplied two-dimensional array.",
               "contract": [
-                "<p> If {@code a} is {@code null} , this creates an empty {@code 0x0} matrix.",
                 "Call {@link #copy()} if you need an independently owned matrix."
               ],
               "examples": [],
@@ -7512,7 +7566,7 @@
                 {
                   "name": "a",
                   "type": "char[][]",
-                  "javadoc": "the two-dimensional char array to wrap, or {@code null} /empty for an empty matrix",
+                  "javadoc": "the two-dimensional char array to wrap, or empty for an empty matrix; must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
@@ -7523,7 +7577,34 @@
               "see_also": []
             },
             {
-              "name": "random",
+              "name": "copyOf",
+              "kind": "static",
+              "modifiers": [
+                "public",
+                "static"
+              ],
+              "signature": "public static CharMatrix copyOf(final char[]... a)",
+              "return_type": "CharMatrix",
+              "type_params": [],
+              "params": [
+                {
+                  "name": "a",
+                  "type": "char[][]",
+                  "javadoc": "the two-dimensional char array to copy, or empty for an empty matrix; must not be {@code null}",
+                  "nullability": "unspecified"
+                }
+              ],
+              "throws": [],
+              "javadoc_summary": "Creates a {@code CharMatrix} that owns a defensive deep copy of the supplied two-dimensional array.",
+              "contract": [],
+              "examples": [],
+              "see_also": [
+                "#of(char[][])",
+                "#copy()"
+              ]
+            },
+            {
+              "name": "randomRow",
               "kind": "static",
               "modifiers": [
                 "public",
@@ -7818,13 +7899,13 @@
                 {
                   "name": "mainDiagonal",
                   "type": "char[]",
-                  "javadoc": "the array of main diagonal elements; may be {@code null} or empty if {@code antiDiagonal} is non- {@code null}",
+                  "javadoc": "the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non- {@code null} ; may be empty",
                   "nullability": "unspecified"
                 },
                 {
                   "name": "antiDiagonal",
                   "type": "char[]",
-                  "javadoc": "the array of anti-diagonal elements; may be {@code null} or empty if {@code mainDiagonal} is non- {@code null}",
+                  "javadoc": "the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non- {@code null} ; may be empty",
                   "nullability": "unspecified"
                 }
               ],
@@ -9597,6 +9678,7 @@
               "javadoc_summary": "Performs element-wise addition with another matrix.",
               "contract": [
                 "The matrices must have the same dimensions.",
+                "If you want explicit integer arithmetic, convert with {@link #toIntMatrix()} first.",
                 "If you need a non-wrapping result, call {@link #toIntMatrix()} first and add there."
               ],
               "examples": [],
@@ -9631,6 +9713,7 @@
               "javadoc_summary": "Performs element-wise subtraction ( {@code this - other} ).",
               "contract": [
                 "The matrices must have the same dimensions.",
+                "If you want explicit integer arithmetic, convert with {@link #toIntMatrix()} first.",
                 "If you need a non-wrapping result, call {@link #toIntMatrix()} first and subtract there."
               ],
               "examples": [],
@@ -9663,7 +9746,8 @@
               ],
               "javadoc_summary": "Performs matrix multiplication (Cayley product) with another matrix.",
               "contract": [
-                "The number of columns in this matrix must equal the number of rows in {@code other} ."
+                "The number of columns in this matrix must equal the number of rows in {@code other} .",
+                "If you want explicit integer arithmetic, convert with {@link #toIntMatrix()} first."
               ],
               "examples": [],
               "see_also": []
@@ -9700,7 +9784,9 @@
               "javadoc_summary": "Converts this CharMatrix to an IntMatrix.",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "IntMatrix#from(char[][])"
+              ]
             },
             {
               "name": "toLongMatrix",
@@ -9901,7 +9987,7 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).",
+              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed in row-major order (left to right, top to bottom).",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -9929,7 +10015,9 @@
                 "<p> This method is particularly useful when you need to process or analyze a specific row of the matrix independently."
               ],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#rowStreams()"
+              ]
             },
             {
               "name": "rowMajorStream",
@@ -9971,12 +10059,12 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public CharStream columnMajorStream()",
+              "signature": "@Override public CharStream columnMajorStream()",
               "return_type": "CharStream",
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).",
+              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed in column-major order (top to bottom, left to right).",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -10010,7 +10098,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public CharStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public CharStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "CharStream",
               "type_params": [],
               "params": [
@@ -10052,7 +10140,9 @@
               "javadoc_summary": "Returns a stream of CharStream objects, where each CharStream represents a complete row.",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#rowMajorStream(int)"
+              ]
             },
             {
               "name": "rowStreams",
@@ -10094,7 +10184,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public Stream<CharStream> columnStreams()",
+              "signature": "@Override public Stream<CharStream> columnStreams()",
               "return_type": "Stream<CharStream>",
               "type_params": [],
               "params": [],
@@ -10110,7 +10200,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public Stream<CharStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public Stream<CharStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "Stream<CharStream>",
               "type_params": [],
               "params": [
@@ -10246,22 +10336,6 @@
               "see_also": []
             },
             {
-              "name": "println",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
-              "signature": "@Override public String println()",
-              "return_type": "String",
-              "type_params": [],
-              "params": [],
-              "throws": [],
-              "javadoc_summary": "Prints this matrix to standard output and returns the formatted string that was printed.",
-              "contract": [],
-              "examples": [],
-              "see_also": []
-            },
-            {
               "name": "hashCode",
               "kind": "instance",
               "modifiers": [
@@ -10350,14 +10424,13 @@
                 {
                   "name": "a",
                   "type": "double[][]",
-                  "javadoc": "the two-dimensional double array to wrap, or {@code null} for an empty matrix",
+                  "javadoc": "the two-dimensional double array to wrap, must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
               "throws": [],
               "javadoc_summary": "Constructs a {@code DoubleMatrix} backed by the supplied two-dimensional array.",
               "contract": [
-                "<p> If {@code a} is {@code null} , this creates an empty {@code 0x0} matrix.",
                 "Call {@link #copy()} if you need an independently owned matrix."
               ],
               "examples": [],
@@ -10394,7 +10467,7 @@
                 {
                   "name": "a",
                   "type": "double[][]",
-                  "javadoc": "the two-dimensional double array to create the matrix from, or {@code null} /empty for an empty matrix",
+                  "javadoc": "the two-dimensional double array to create the matrix from, or empty for an empty matrix; must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
@@ -10403,6 +10476,33 @@
               "contract": [],
               "examples": [],
               "see_also": []
+            },
+            {
+              "name": "copyOf",
+              "kind": "static",
+              "modifiers": [
+                "public",
+                "static"
+              ],
+              "signature": "public static DoubleMatrix copyOf(final double[]... a)",
+              "return_type": "DoubleMatrix",
+              "type_params": [],
+              "params": [
+                {
+                  "name": "a",
+                  "type": "double[][]",
+                  "javadoc": "the two-dimensional double array to copy, or empty for an empty matrix; must not be {@code null}",
+                  "nullability": "unspecified"
+                }
+              ],
+              "throws": [],
+              "javadoc_summary": "Creates a {@code DoubleMatrix} that owns a defensive deep copy of the supplied two-dimensional array.",
+              "contract": [],
+              "examples": [],
+              "see_also": [
+                "#of(double[][])",
+                "#copy()"
+              ]
             },
             {
               "name": "from",
@@ -10418,7 +10518,7 @@
                 {
                   "name": "a",
                   "type": "int[][]",
-                  "javadoc": "the two-dimensional int array to convert to a double matrix, or {@code null} /empty for an empty matrix",
+                  "javadoc": "the two-dimensional int array to convert to a double matrix, or empty for an empty matrix; must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
@@ -10428,7 +10528,9 @@
                 "<p> All rows must have the same length as the first row (rectangular array required)."
               ],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "IntMatrix#toDoubleMatrix()"
+              ]
             },
             {
               "name": "from",
@@ -10444,7 +10546,7 @@
                 {
                   "name": "a",
                   "type": "long[][]",
-                  "javadoc": "the two-dimensional long array to convert to a double matrix, or {@code null} /empty for an empty matrix",
+                  "javadoc": "the two-dimensional long array to convert to a double matrix, or empty for an empty matrix; must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
@@ -10455,7 +10557,9 @@
                 "</p> <p> <b> Note: </b> Long values that require more than 53 bits of precision may lose precision when converted to double, since a double has 53 bits of significand precision (52 stored fraction bits plus an implicit leading bit for normal values)."
               ],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "LongMatrix#toDoubleMatrix()"
+              ]
             },
             {
               "name": "from",
@@ -10471,7 +10575,7 @@
                 {
                   "name": "a",
                   "type": "float[][]",
-                  "javadoc": "the two-dimensional float array to convert to a double matrix, or {@code null} /empty for an empty matrix",
+                  "javadoc": "the two-dimensional float array to convert to a double matrix, or empty for an empty matrix; must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
@@ -10481,10 +10585,12 @@
                 "<p> All rows must have the same length as the first row (rectangular array required)."
               ],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "FloatMatrix#toDoubleMatrix()"
+              ]
             },
             {
-              "name": "random",
+              "name": "randomRow",
               "kind": "static",
               "modifiers": [
                 "public",
@@ -10643,13 +10749,13 @@
                 {
                   "name": "mainDiagonal",
                   "type": "double[]",
-                  "javadoc": "the array of main diagonal elements; may be {@code null} or empty if {@code antiDiagonal} is non- {@code null}",
+                  "javadoc": "the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non- {@code null} ; may be empty",
                   "nullability": "unspecified"
                 },
                 {
                   "name": "antiDiagonal",
                   "type": "double[]",
-                  "javadoc": "the array of anti-diagonal elements; may be {@code null} or empty if {@code mainDiagonal} is non- {@code null}",
+                  "javadoc": "the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non- {@code null} ; may be empty",
                   "nullability": "unspecified"
                 }
               ],
@@ -12790,7 +12896,7 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).",
+              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed in row-major order (left to right, top to bottom).",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -12818,7 +12924,9 @@
                 "<p> This method is particularly useful when you need to process or analyze a specific row of the matrix independently."
               ],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#rowStreams()"
+              ]
             },
             {
               "name": "rowMajorStream",
@@ -12860,12 +12968,12 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public DoubleStream columnMajorStream()",
+              "signature": "@Override public DoubleStream columnMajorStream()",
               "return_type": "DoubleStream",
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).",
+              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed in column-major order (top to bottom, left to right).",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -12899,7 +13007,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public DoubleStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public DoubleStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "DoubleStream",
               "type_params": [],
               "params": [
@@ -12941,7 +13049,9 @@
               "javadoc_summary": "Returns a stream of DoubleStream objects, where each DoubleStream represents a complete row.",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#rowMajorStream(int)"
+              ]
             },
             {
               "name": "rowStreams",
@@ -12983,7 +13093,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public Stream<DoubleStream> columnStreams()",
+              "signature": "@Override public Stream<DoubleStream> columnStreams()",
               "return_type": "Stream<DoubleStream>",
               "type_params": [],
               "params": [],
@@ -12999,7 +13109,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public Stream<DoubleStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public Stream<DoubleStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "Stream<DoubleStream>",
               "type_params": [],
               "params": [
@@ -13135,22 +13245,6 @@
               "see_also": []
             },
             {
-              "name": "println",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
-              "signature": "@Override public String println()",
-              "return_type": "String",
-              "type_params": [],
-              "params": [],
-              "throws": [],
-              "javadoc_summary": "Prints this matrix to standard output and returns the formatted string.",
-              "contract": [],
-              "examples": [],
-              "see_also": []
-            },
-            {
               "name": "hashCode",
               "kind": "instance",
               "modifiers": [
@@ -13239,14 +13333,13 @@
                 {
                   "name": "a",
                   "type": "float[][]",
-                  "javadoc": "the two-dimensional float array to wrap, or {@code null} for an empty matrix",
+                  "javadoc": "the two-dimensional float array to wrap, must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
               "throws": [],
               "javadoc_summary": "Constructs a {@code FloatMatrix} backed by the supplied two-dimensional array.",
               "contract": [
-                "<p> If {@code a} is {@code null} , this creates an empty {@code 0x0} matrix.",
                 "Call {@link #copy()} if you need an independently owned matrix."
               ],
               "examples": [],
@@ -13283,7 +13376,7 @@
                 {
                   "name": "a",
                   "type": "float[][]",
-                  "javadoc": "the two-dimensional float array to create the matrix from, or {@code null} /empty for an empty matrix",
+                  "javadoc": "the two-dimensional float array to create the matrix from, or empty for an empty matrix; must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
@@ -13294,6 +13387,33 @@
               ],
               "examples": [],
               "see_also": []
+            },
+            {
+              "name": "copyOf",
+              "kind": "static",
+              "modifiers": [
+                "public",
+                "static"
+              ],
+              "signature": "public static FloatMatrix copyOf(final float[]... a)",
+              "return_type": "FloatMatrix",
+              "type_params": [],
+              "params": [
+                {
+                  "name": "a",
+                  "type": "float[][]",
+                  "javadoc": "the two-dimensional float array to copy, or empty for an empty matrix; must not be {@code null}",
+                  "nullability": "unspecified"
+                }
+              ],
+              "throws": [],
+              "javadoc_summary": "Creates a {@code FloatMatrix} that owns a defensive deep copy of the supplied two-dimensional array.",
+              "contract": [],
+              "examples": [],
+              "see_also": [
+                "#of(float[][])",
+                "#copy()"
+              ]
             },
             {
               "name": "from",
@@ -13309,7 +13429,7 @@
                 {
                   "name": "a",
                   "type": "int[][]",
-                  "javadoc": "the two-dimensional int array to convert to a float matrix, or {@code null} /empty for an empty matrix",
+                  "javadoc": "the two-dimensional int array to convert to a float matrix, or empty for an empty matrix; must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
@@ -13317,13 +13437,15 @@
               "javadoc_summary": "Creates a FloatMatrix from a two-dimensional int array by converting int values to float.",
               "contract": [
                 "<p> <b> Note: </b> Int values with more than 24 significant bits may lose precision when converted to float, since float has a 23-bit mantissa.",
-                "</p> <p> <b> Requirements: </b> </p> <ul> <li> All rows must be non- {@code null} and have the same length as the first row (rectangular array required) </li> </ul> <p> <b> Usage Examples: </b> </p> <pre> {@code FloatMatrix matrix = FloatMatrix.from(new int[][] {{1, 2}, {3, 4}}); matrix.get(1, 0); // returns 3.0f matrix.rowCount(); // returns 2 // Precision: 16_777_217 has 25 significant bits and rounds when stored as float FloatMatrix.from(new int[][] {{16777217}}).get(0, 0); // returns 1.6777216E7f (rounded) FloatMatrix.from((int[][]) null).isEmpty(); // returns true FloatMatrix.from(new int[0][0]).columnCount(); // returns 0 FloatMatrix.from(new int[][] {{1}, {2, 3}}); // throws IllegalArgumentException (rows differ in length) } </pre>"
+                "</p> <p> <b> Requirements: </b> </p> <ul> <li> All rows must be non- {@code null} and have the same length as the first row (rectangular array required) </li> </ul> <p> <b> Usage Examples: </b> </p> <pre> {@code FloatMatrix matrix = FloatMatrix.from(new int[][] {{1, 2}, {3, 4}}); matrix.get(1, 0); // returns 3.0f matrix.rowCount(); // returns 2 // Precision: 16_777_217 has 25 significant bits and rounds when stored as float FloatMatrix.from(new int[][] {{16777217}}).get(0, 0); // returns 1.6777216E7f (rounded) FloatMatrix.from((int[][]) null); // throws IllegalArgumentException FloatMatrix.from(new int[0][0]).columnCount(); // returns 0 FloatMatrix.from(new int[][] {{1}, {2, 3}}); // throws IllegalArgumentException (rows differ in length) } </pre>"
               ],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "IntMatrix#toFloatMatrix()"
+              ]
             },
             {
-              "name": "random",
+              "name": "randomRow",
               "kind": "static",
               "modifiers": [
                 "public",
@@ -13482,13 +13604,13 @@
                 {
                   "name": "mainDiagonal",
                   "type": "float[]",
-                  "javadoc": "the array of main diagonal elements; may be {@code null} or empty if {@code antiDiagonal} is non- {@code null}",
+                  "javadoc": "the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non- {@code null} ; may be empty",
                   "nullability": "unspecified"
                 },
                 {
                   "name": "antiDiagonal",
                   "type": "float[]",
-                  "javadoc": "the array of anti-diagonal elements; may be {@code null} or empty if {@code mainDiagonal} is non- {@code null}",
+                  "javadoc": "the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non- {@code null} ; may be empty",
                   "nullability": "unspecified"
                 }
               ],
@@ -15372,7 +15494,9 @@
               "javadoc_summary": "Converts this float matrix to a double matrix.",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "DoubleMatrix#from(float[][])"
+              ]
             },
             {
               "name": "toIntMatrix",
@@ -15557,7 +15681,7 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).",
+              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed in row-major order (left to right, top to bottom).",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -15585,7 +15709,9 @@
                 "<p> This method is particularly useful when you need to process or analyze a specific row of the matrix independently."
               ],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#rowStreams()"
+              ]
             },
             {
               "name": "rowMajorStream",
@@ -15627,12 +15753,12 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public FloatStream columnMajorStream()",
+              "signature": "@Override public FloatStream columnMajorStream()",
               "return_type": "FloatStream",
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).",
+              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed in column-major order (top to bottom, left to right).",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -15666,7 +15792,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public FloatStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public FloatStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "FloatStream",
               "type_params": [],
               "params": [
@@ -15708,7 +15834,9 @@
               "javadoc_summary": "Returns a stream of FloatStream objects, where each FloatStream represents a complete row.",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#rowMajorStream(int)"
+              ]
             },
             {
               "name": "rowStreams",
@@ -15750,7 +15878,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public Stream<FloatStream> columnStreams()",
+              "signature": "@Override public Stream<FloatStream> columnStreams()",
               "return_type": "Stream<FloatStream>",
               "type_params": [],
               "params": [],
@@ -15766,7 +15894,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public Stream<FloatStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public Stream<FloatStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "Stream<FloatStream>",
               "type_params": [],
               "params": [
@@ -15902,22 +16030,6 @@
               "see_also": []
             },
             {
-              "name": "println",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
-              "signature": "@Override public String println()",
-              "return_type": "String",
-              "type_params": [],
-              "params": [],
-              "throws": [],
-              "javadoc_summary": "Prints this matrix to standard output and returns the formatted string.",
-              "contract": [],
-              "examples": [],
-              "see_also": []
-            },
-            {
               "name": "hashCode",
               "kind": "instance",
               "modifiers": [
@@ -16006,14 +16118,13 @@
                 {
                   "name": "a",
                   "type": "int[][]",
-                  "javadoc": "the two-dimensional int array to wrap, or {@code null} for an empty matrix",
+                  "javadoc": "the two-dimensional int array to wrap, must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
               "throws": [],
               "javadoc_summary": "Constructs an {@code IntMatrix} backed by the supplied two-dimensional array.",
               "contract": [
-                "<p> If {@code a} is {@code null} , this creates an empty {@code 0x0} matrix.",
                 "Call {@link #copy()} if you need an independently owned matrix."
               ],
               "examples": [],
@@ -16050,7 +16161,7 @@
                 {
                   "name": "a",
                   "type": "int[][]",
-                  "javadoc": "the two-dimensional int array to wrap, or {@code null} /empty for an empty matrix",
+                  "javadoc": "the two-dimensional int array to wrap, or empty for an empty matrix; must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
@@ -16059,6 +16170,33 @@
               "contract": [],
               "examples": [],
               "see_also": []
+            },
+            {
+              "name": "copyOf",
+              "kind": "static",
+              "modifiers": [
+                "public",
+                "static"
+              ],
+              "signature": "public static IntMatrix copyOf(final int[]... a)",
+              "return_type": "IntMatrix",
+              "type_params": [],
+              "params": [
+                {
+                  "name": "a",
+                  "type": "int[][]",
+                  "javadoc": "the two-dimensional int array to copy, or empty for an empty matrix; must not be {@code null}",
+                  "nullability": "unspecified"
+                }
+              ],
+              "throws": [],
+              "javadoc_summary": "Creates an {@code IntMatrix} that owns a defensive deep copy of the supplied two-dimensional array.",
+              "contract": [],
+              "examples": [],
+              "see_also": [
+                "#of(int[][])",
+                "#copy()"
+              ]
             },
             {
               "name": "from",
@@ -16074,7 +16212,7 @@
                 {
                   "name": "a",
                   "type": "char[][]",
-                  "javadoc": "the two-dimensional char array to convert, or {@code null} /empty for an empty matrix",
+                  "javadoc": "the two-dimensional char array to convert, or empty for an empty matrix; must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
@@ -16084,7 +16222,9 @@
                 "<p> All rows must have the same length as the first row (rectangular array required)."
               ],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "CharMatrix#toIntMatrix()"
+              ]
             },
             {
               "name": "from",
@@ -16100,7 +16240,7 @@
                 {
                   "name": "a",
                   "type": "byte[][]",
-                  "javadoc": "the two-dimensional byte array to convert, or {@code null} /empty for an empty matrix",
+                  "javadoc": "the two-dimensional byte array to convert, or empty for an empty matrix; must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
@@ -16110,7 +16250,9 @@
                 "<p> All rows must have the same length as the first row (rectangular array required)."
               ],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "ByteMatrix#toIntMatrix()"
+              ]
             },
             {
               "name": "from",
@@ -16126,7 +16268,7 @@
                 {
                   "name": "a",
                   "type": "short[][]",
-                  "javadoc": "the two-dimensional short array to convert, or {@code null} /empty for an empty matrix",
+                  "javadoc": "the two-dimensional short array to convert, or empty for an empty matrix; must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
@@ -16136,10 +16278,12 @@
                 "<p> All rows must have the same length as the first row (rectangular array required)."
               ],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "ShortMatrix#toIntMatrix()"
+              ]
             },
             {
-              "name": "random",
+              "name": "randomRow",
               "kind": "static",
               "modifiers": [
                 "public",
@@ -18393,7 +18537,8 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#mapToLong(Throwables.IntToLongFunction)"
+                "#mapToLong(Throwables.IntToLongFunction)",
+                "LongMatrix#from(int[][])"
               ]
             },
             {
@@ -18410,7 +18555,9 @@
               "javadoc_summary": "Converts this {@code int} matrix to a {@link FloatMatrix} .",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "FloatMatrix#from(int[][])"
+              ]
             },
             {
               "name": "toDoubleMatrix",
@@ -18427,7 +18574,8 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#mapToDouble(Throwables.IntToDoubleFunction)"
+                "#mapToDouble(Throwables.IntToDoubleFunction)",
+                "DoubleMatrix#from(int[][])"
               ]
             },
             {
@@ -18581,7 +18729,7 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).",
+              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed in row-major order (left to right, top to bottom).",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -18609,7 +18757,9 @@
                 "<p> This method is particularly useful when you need to process or analyze a specific row of the matrix independently."
               ],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#rowStreams()"
+              ]
             },
             {
               "name": "rowMajorStream",
@@ -18651,12 +18801,12 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public IntStream columnMajorStream()",
+              "signature": "@Override public IntStream columnMajorStream()",
               "return_type": "IntStream",
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).",
+              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed in column-major order (top to bottom, left to right).",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -18690,7 +18840,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public IntStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public IntStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "IntStream",
               "type_params": [],
               "params": [
@@ -18732,7 +18882,9 @@
               "javadoc_summary": "Returns a stream of IntStream objects, where each IntStream represents a complete row.",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#rowMajorStream(int)"
+              ]
             },
             {
               "name": "rowStreams",
@@ -18774,7 +18926,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public Stream<IntStream> columnStreams()",
+              "signature": "@Override public Stream<IntStream> columnStreams()",
               "return_type": "Stream<IntStream>",
               "type_params": [],
               "params": [],
@@ -18790,7 +18942,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public Stream<IntStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public Stream<IntStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "Stream<IntStream>",
               "type_params": [],
               "params": [
@@ -18926,22 +19078,6 @@
               "see_also": []
             },
             {
-              "name": "println",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
-              "signature": "@Override public String println()",
-              "return_type": "String",
-              "type_params": [],
-              "params": [],
-              "throws": [],
-              "javadoc_summary": "Prints this matrix to standard output and returns the formatted string that was printed.",
-              "contract": [],
-              "examples": [],
-              "see_also": []
-            },
-            {
               "name": "hashCode",
               "kind": "instance",
               "modifiers": [
@@ -19030,14 +19166,13 @@
                 {
                   "name": "a",
                   "type": "long[][]",
-                  "javadoc": "the two-dimensional long array to wrap, or {@code null} for an empty matrix",
+                  "javadoc": "the two-dimensional long array to wrap, must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
               "throws": [],
               "javadoc_summary": "Constructs a {@code LongMatrix} backed by the supplied two-dimensional array.",
               "contract": [
-                "<p> If {@code a} is {@code null} , this creates an empty {@code 0x0} matrix.",
                 "Call {@link #copy()} if you need an independently owned matrix."
               ],
               "examples": [],
@@ -19074,7 +19209,7 @@
                 {
                   "name": "a",
                   "type": "long[][]",
-                  "javadoc": "the two-dimensional long array to wrap, or {@code null} /empty for an empty matrix",
+                  "javadoc": "the two-dimensional long array to wrap, or empty for an empty matrix; must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
@@ -19083,6 +19218,33 @@
               "contract": [],
               "examples": [],
               "see_also": []
+            },
+            {
+              "name": "copyOf",
+              "kind": "static",
+              "modifiers": [
+                "public",
+                "static"
+              ],
+              "signature": "public static LongMatrix copyOf(final long[]... a)",
+              "return_type": "LongMatrix",
+              "type_params": [],
+              "params": [
+                {
+                  "name": "a",
+                  "type": "long[][]",
+                  "javadoc": "the two-dimensional long array to copy, or empty for an empty matrix; must not be {@code null}",
+                  "nullability": "unspecified"
+                }
+              ],
+              "throws": [],
+              "javadoc_summary": "Creates a {@code LongMatrix} that owns a defensive deep copy of the supplied two-dimensional array.",
+              "contract": [],
+              "examples": [],
+              "see_also": [
+                "#of(long[][])",
+                "#copy()"
+              ]
             },
             {
               "name": "from",
@@ -19098,7 +19260,7 @@
                 {
                   "name": "a",
                   "type": "int[][]",
-                  "javadoc": "the two-dimensional int array to convert, or {@code null} /empty for an empty matrix",
+                  "javadoc": "the two-dimensional int array to convert, or empty for an empty matrix; must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
@@ -19108,10 +19270,12 @@
                 "<p> All rows must have the same length as the first row (rectangular array required)."
               ],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "IntMatrix#toLongMatrix()"
+              ]
             },
             {
-              "name": "random",
+              "name": "randomRow",
               "kind": "static",
               "modifiers": [
                 "public",
@@ -21399,7 +21563,8 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#mapToDouble(Throwables.LongToDoubleFunction)"
+                "#mapToDouble(Throwables.LongToDoubleFunction)",
+                "DoubleMatrix#from(long[][])"
               ]
             },
             {
@@ -21553,7 +21718,7 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).",
+              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed in row-major order (left to right, top to bottom).",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -21581,7 +21746,9 @@
                 "<p> This method is particularly useful when you need to process or analyze a specific row of the matrix independently."
               ],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#rowStreams()"
+              ]
             },
             {
               "name": "rowMajorStream",
@@ -21623,12 +21790,12 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public LongStream columnMajorStream()",
+              "signature": "@Override public LongStream columnMajorStream()",
               "return_type": "LongStream",
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).",
+              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed in column-major order (top to bottom, left to right).",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -21662,7 +21829,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public LongStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public LongStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "LongStream",
               "type_params": [],
               "params": [
@@ -21704,7 +21871,9 @@
               "javadoc_summary": "Returns a stream of LongStream objects, where each LongStream represents a complete row.",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#rowMajorStream(int)"
+              ]
             },
             {
               "name": "rowStreams",
@@ -21746,7 +21915,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public Stream<LongStream> columnStreams()",
+              "signature": "@Override public Stream<LongStream> columnStreams()",
               "return_type": "Stream<LongStream>",
               "type_params": [],
               "params": [],
@@ -21762,7 +21931,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public Stream<LongStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public Stream<LongStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "Stream<LongStream>",
               "type_params": [],
               "params": [
@@ -21894,22 +22063,6 @@
                 "Elements are processed in row-major order within the specified bounds when executed sequentially.",
                 "The operation may be parallelized internally if the sub-matrix is large enough to benefit from parallel processing; if parallelized, the order in which elements are visited is unspecified and the action must be thread-safe, but every element is still visited exactly once."
               ],
-              "examples": [],
-              "see_also": []
-            },
-            {
-              "name": "println",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
-              "signature": "@Override public String println()",
-              "return_type": "String",
-              "type_params": [],
-              "params": [],
-              "throws": [],
-              "javadoc_summary": "Prints this matrix to standard output and returns the formatted string that was printed.",
-              "contract": [],
               "examples": [],
               "see_also": []
             },
@@ -22068,7 +22221,9 @@
               "javadoc_summary": "Determines whether the given matrix should be processed using parallel execution.",
               "contract": [
                 "Determines whether the given matrix should be processed using parallel execution.",
-                "<p> This method evaluates whether parallel processing should be used for operations on the specified matrix based on its total element count."
+                "<p> This method evaluates whether parallel processing should be used for operations on the specified matrix based on its total element count.",
+                "The decision considers: </p> <ul> <li> The current thread's {@link ParallelMode} setting </li> <li> Whether parallel stream support is available in the runtime environment </li> <li> The total number of elements in the matrix (rows × columns) </li> </ul> <p> This is a convenience method that delegates to {@link #shouldRunInParallel(AbstractMatrix, long)} using the matrix's total element count.",
+                "</p> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix small = IntMatrix.of(new int[][] {{1, 2}, {3, 4}}); // 4 elements IntMatrix large = IntMatrix.of(new int[200][200]); // 40000 elements Matrices.setParallelMode(ParallelMode.FORCE_OFF); Matrices.shouldRunInParallel(small); // returns false (forced off) Matrices.shouldRunInParallel(large); // returns false (forced off) Matrices.setParallelMode(ParallelMode.AUTO); // restore default; under AUTO the // small matrix is never parallelized Matrices.shouldRunInParallel(small); // returns false (4 < 8192) Matrices.shouldRunInParallel((IntMatrix) null); // throws IllegalArgumentException } </pre>"
               ],
               "examples": [],
               "see_also": [
@@ -22106,7 +22261,8 @@
                 "Determines whether a matrix operation should be processed using parallel execution based on the element count and current parallel settings.",
                 "<p> This method makes the parallelization decision using a multifactor evaluation: </p> <ol> <li> <b> Runtime Support: </b> Parallel streams must be available in the runtime environment.",
                 "If not supported, always returns {@code false} .",
-                "</li> </ul> </li> <li> <b> Element Count: </b> When using {@code AUTO} setting, returns {@code true} only if {@code count >= 8192} ."
+                "</li> </ul> </li> <li> <b> Element Count: </b> When using {@code AUTO} setting, returns {@code true} only if {@code count >= 8192} .",
+                "</li> </ol> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}}); Matrices.setParallelMode(ParallelMode.FORCE_OFF); Matrices.shouldRunInParallel(matrix, 100000L); // returns false (forced off, count ignored) Matrices.setParallelMode(ParallelMode.AUTO); // restore default Matrices.shouldRunInParallel(matrix, 5000L); // returns false (5000 < 8192) Matrices.shouldRunInParallel((IntMatrix) null, 100L); // throws IllegalArgumentException } </pre>"
               ],
               "examples": [],
               "see_also": [
@@ -22207,20 +22363,13 @@
                 "public",
                 "static"
               ],
-              "signature": "public static <M extends AbstractMatrix<?, ?, ?, ?, ?>> boolean isSameShape(final Collection<? extends M> matrices)",
+              "signature": "public static boolean isSameShape(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> matrices)",
               "return_type": "boolean",
-              "type_params": [
-                {
-                  "name": "M",
-                  "bounds": [
-                    "AbstractMatrix<?, ?, ?, ?, ?>"
-                  ]
-                }
-              ],
+              "type_params": [],
               "params": [
                 {
                   "name": "matrices",
-                  "type": "Collection<? extends M>",
+                  "type": "Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>>",
                   "javadoc": "the collection of matrices to check, may be {@code null} or empty",
                   "nullability": "unspecified"
                 }
@@ -22735,7 +22884,8 @@
               "javadoc_summary": "Performs matrix multiplication iteration using a custom accumulator function.",
               "contract": [
                 "It does NOT perform the actual multiplication arithmetic; that must be implemented in the action.",
-                "</li> </ul> <p> The matrices must satisfy the multiplication constraint: {@code a.columnCount == b.rowCount} ."
+                "</li> </ul> <p> The matrices must satisfy the multiplication constraint: {@code a.columnCount == b.rowCount} .",
+                "</p> <p> Parallelization is automatically determined based on the total number of multiply-add operations ( {@code a.rowCount * a.columnCount * b.columnCount} , saturated against {@link Long#MAX_VALUE} ) and the current thread settings via {@link #shouldRunInParallel(AbstractMatrix, long)} ."
               ],
               "examples": [],
               "see_also": [
@@ -23042,135 +23192,6 @@
               ]
             },
             {
-              "name": "zipToObj",
-              "kind": "static",
-              "modifiers": [
-                "public",
-                "static"
-              ],
-              "signature": "public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E",
-              "return_type": "Matrix<R>",
-              "type_params": [
-                {
-                  "name": "R",
-                  "bounds": [
-                    "java.lang.Object"
-                  ]
-                },
-                {
-                  "name": "E",
-                  "bounds": [
-                    "Exception"
-                  ]
-                }
-              ],
-              "params": [
-                {
-                  "name": "coll",
-                  "type": "Collection<ByteMatrix>",
-                  "javadoc": "the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "zipFunction",
-                  "type": "Throwables.ByteNFunction<? extends R, E>",
-                  "javadoc": "the function that takes an array of bytes (one from each matrix) and returns a result of type R, must not be {@code null}",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "targetElementType",
-                  "type": "Class<R>",
-                  "javadoc": "the class of the result element type, must not be {@code null}",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [
-                {
-                  "type": "E",
-                  "condition": "if the zip function throws an exception during execution"
-                }
-              ],
-              "javadoc_summary": "Combines multiple {@link ByteMatrix} objects element-wise using a function that operates on byte arrays.",
-              "contract": [
-                "</p> <p> All matrices in the collection must have identical dimensions."
-              ],
-              "examples": [],
-              "see_also": [
-                "#zipToObj(Collection, Throwables.ByteNFunction, boolean, Class)",
-                "#zip(Collection, Throwables.ByteBinaryOperator)"
-              ]
-            },
-            {
-              "name": "zipToObj",
-              "kind": "static",
-              "modifiers": [
-                "public",
-                "static"
-              ],
-              "signature": "public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E",
-              "return_type": "Matrix<R>",
-              "type_params": [
-                {
-                  "name": "R",
-                  "bounds": [
-                    "java.lang.Object"
-                  ]
-                },
-                {
-                  "name": "E",
-                  "bounds": [
-                    "Exception"
-                  ]
-                }
-              ],
-              "params": [
-                {
-                  "name": "coll",
-                  "type": "Collection<ByteMatrix>",
-                  "javadoc": "the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "zipFunction",
-                  "type": "Throwables.ByteNFunction<? extends R, E>",
-                  "javadoc": "the function that takes an array of bytes (one from each matrix) and returns a result of type R, must not be {@code null}",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "shareIntermediateArray",
-                  "type": "boolean",
-                  "javadoc": "{@code true} to reuse the intermediate array (sequential execution only); {@code false} to create new arrays for each position",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "targetElementType",
-                  "type": "Class<R>",
-                  "javadoc": "the class of the result element type, must not be {@code null}",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [
-                {
-                  "type": "java.lang.IllegalArgumentException",
-                  "condition": "if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}"
-                },
-                {
-                  "type": "E",
-                  "condition": "if the zip function throws an exception during execution"
-                }
-              ],
-              "javadoc_summary": "Combines multiple {@link ByteMatrix} objects element-wise using a function that operates on byte arrays, with control over intermediate array sharing.",
-              "contract": [
-                "The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.",
-                "Only use this optimization if the function immediately processes and discards the array."
-              ],
-              "examples": [],
-              "see_also": [
-                "#zipToObj(Collection, Throwables.ByteNFunction, Class)",
-                "#zip(Collection, Throwables.ByteBinaryOperator)"
-              ]
-            },
-            {
               "name": "zipToInt",
               "kind": "static",
               "modifiers": [
@@ -23392,6 +23413,135 @@
               ]
             },
             {
+              "name": "zipToObj",
+              "kind": "static",
+              "modifiers": [
+                "public",
+                "static"
+              ],
+              "signature": "public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E",
+              "return_type": "Matrix<R>",
+              "type_params": [
+                {
+                  "name": "R",
+                  "bounds": [
+                    "java.lang.Object"
+                  ]
+                },
+                {
+                  "name": "E",
+                  "bounds": [
+                    "Exception"
+                  ]
+                }
+              ],
+              "params": [
+                {
+                  "name": "coll",
+                  "type": "Collection<ByteMatrix>",
+                  "javadoc": "the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements",
+                  "nullability": "unspecified"
+                },
+                {
+                  "name": "zipFunction",
+                  "type": "Throwables.ByteNFunction<? extends R, E>",
+                  "javadoc": "the function that takes an array of bytes (one from each matrix) and returns a result of type R, must not be {@code null}",
+                  "nullability": "unspecified"
+                },
+                {
+                  "name": "targetElementType",
+                  "type": "Class<R>",
+                  "javadoc": "the class of the result element type, must not be {@code null}",
+                  "nullability": "unspecified"
+                }
+              ],
+              "throws": [
+                {
+                  "type": "E",
+                  "condition": "if the zip function throws an exception during execution"
+                }
+              ],
+              "javadoc_summary": "Combines multiple {@link ByteMatrix} objects element-wise using a function that operates on byte arrays.",
+              "contract": [
+                "</p> <p> All matrices in the collection must have identical dimensions."
+              ],
+              "examples": [],
+              "see_also": [
+                "#zipToObj(Collection, Throwables.ByteNFunction, boolean, Class)",
+                "#zip(Collection, Throwables.ByteBinaryOperator)"
+              ]
+            },
+            {
+              "name": "zipToObj",
+              "kind": "static",
+              "modifiers": [
+                "public",
+                "static"
+              ],
+              "signature": "public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E",
+              "return_type": "Matrix<R>",
+              "type_params": [
+                {
+                  "name": "R",
+                  "bounds": [
+                    "java.lang.Object"
+                  ]
+                },
+                {
+                  "name": "E",
+                  "bounds": [
+                    "Exception"
+                  ]
+                }
+              ],
+              "params": [
+                {
+                  "name": "coll",
+                  "type": "Collection<ByteMatrix>",
+                  "javadoc": "the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements",
+                  "nullability": "unspecified"
+                },
+                {
+                  "name": "zipFunction",
+                  "type": "Throwables.ByteNFunction<? extends R, E>",
+                  "javadoc": "the function that takes an array of bytes (one from each matrix) and returns a result of type R, must not be {@code null}",
+                  "nullability": "unspecified"
+                },
+                {
+                  "name": "shareIntermediateArray",
+                  "type": "boolean",
+                  "javadoc": "{@code true} to reuse the intermediate array (sequential execution only); {@code false} to create new arrays for each position",
+                  "nullability": "unspecified"
+                },
+                {
+                  "name": "targetElementType",
+                  "type": "Class<R>",
+                  "javadoc": "the class of the result element type, must not be {@code null}",
+                  "nullability": "unspecified"
+                }
+              ],
+              "throws": [
+                {
+                  "type": "java.lang.IllegalArgumentException",
+                  "condition": "if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}"
+                },
+                {
+                  "type": "E",
+                  "condition": "if the zip function throws an exception during execution"
+                }
+              ],
+              "javadoc_summary": "Combines multiple {@link ByteMatrix} objects element-wise using a function that operates on byte arrays, with control over intermediate array sharing.",
+              "contract": [
+                "The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.",
+                "Only use this optimization if the function immediately processes and discards the array."
+              ],
+              "examples": [],
+              "see_also": [
+                "#zipToObj(Collection, Throwables.ByteNFunction, Class)",
+                "#zip(Collection, Throwables.ByteBinaryOperator)"
+              ]
+            },
+            {
               "name": "zip",
               "kind": "static",
               "modifiers": [
@@ -23555,136 +23705,6 @@
                 "#zip(IntMatrix, IntMatrix, Throwables.IntBinaryOperator)",
                 "#zip(IntMatrix, IntMatrix, IntMatrix, Throwables.IntTernaryOperator)",
                 "#zipToObj(Collection, Throwables.IntNFunction, Class)"
-              ]
-            },
-            {
-              "name": "zipToObj",
-              "kind": "static",
-              "modifiers": [
-                "public",
-                "static"
-              ],
-              "signature": "public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E",
-              "return_type": "Matrix<R>",
-              "type_params": [
-                {
-                  "name": "R",
-                  "bounds": [
-                    "java.lang.Object"
-                  ]
-                },
-                {
-                  "name": "E",
-                  "bounds": [
-                    "Exception"
-                  ]
-                }
-              ],
-              "params": [
-                {
-                  "name": "coll",
-                  "type": "Collection<IntMatrix>",
-                  "javadoc": "the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "zipFunction",
-                  "type": "Throwables.IntNFunction<? extends R, E>",
-                  "javadoc": "the function that takes an array of integers (one from each matrix) and returns a result of type R, must not be {@code null}",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "targetElementType",
-                  "type": "Class<R>",
-                  "javadoc": "the class of the result element type, must not be {@code null}",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [
-                {
-                  "type": "E",
-                  "condition": "if the zip function throws an exception during execution"
-                }
-              ],
-              "javadoc_summary": "Combines multiple {@link IntMatrix} objects element-wise using a function that operates on integer arrays.",
-              "contract": [
-                "</p> <p> All matrices in the collection must have identical dimensions."
-              ],
-              "examples": [],
-              "see_also": [
-                "#zipToObj(Collection, Throwables.IntNFunction, boolean, Class)",
-                "#zip(Collection, Throwables.IntBinaryOperator)"
-              ]
-            },
-            {
-              "name": "zipToObj",
-              "kind": "static",
-              "modifiers": [
-                "public",
-                "static"
-              ],
-              "signature": "public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E",
-              "return_type": "Matrix<R>",
-              "type_params": [
-                {
-                  "name": "R",
-                  "bounds": [
-                    "java.lang.Object"
-                  ]
-                },
-                {
-                  "name": "E",
-                  "bounds": [
-                    "Exception"
-                  ]
-                }
-              ],
-              "params": [
-                {
-                  "name": "coll",
-                  "type": "Collection<IntMatrix>",
-                  "javadoc": "the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "zipFunction",
-                  "type": "Throwables.IntNFunction<? extends R, E>",
-                  "javadoc": "the function that takes an array of integers (one from each matrix) and returns a result of type R, must not be {@code null}",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "shareIntermediateArray",
-                  "type": "boolean",
-                  "javadoc": "{@code true} to reuse the intermediate array (sequential execution only); {@code false} to create new arrays for each position",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "targetElementType",
-                  "type": "Class<R>",
-                  "javadoc": "the class of the result element type, must not be {@code null}",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [
-                {
-                  "type": "java.lang.IllegalArgumentException",
-                  "condition": "if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}"
-                },
-                {
-                  "type": "E",
-                  "condition": "if the zip function throws an exception during execution"
-                }
-              ],
-              "javadoc_summary": "Combines multiple {@link IntMatrix} objects element-wise using a function that operates on integer arrays, with control over intermediate array sharing.",
-              "contract": [
-                "The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.",
-                "Only use this optimization if the function immediately processes and discards the array.",
-                "</p> <p> All matrices in the collection must have identical dimensions."
-              ],
-              "examples": [],
-              "see_also": [
-                "#zipToObj(Collection, Throwables.IntNFunction, Class)",
-                "#zip(Collection, Throwables.IntBinaryOperator)"
               ]
             },
             {
@@ -24118,6 +24138,136 @@
               "see_also": []
             },
             {
+              "name": "zipToObj",
+              "kind": "static",
+              "modifiers": [
+                "public",
+                "static"
+              ],
+              "signature": "public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E",
+              "return_type": "Matrix<R>",
+              "type_params": [
+                {
+                  "name": "R",
+                  "bounds": [
+                    "java.lang.Object"
+                  ]
+                },
+                {
+                  "name": "E",
+                  "bounds": [
+                    "Exception"
+                  ]
+                }
+              ],
+              "params": [
+                {
+                  "name": "coll",
+                  "type": "Collection<IntMatrix>",
+                  "javadoc": "the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements",
+                  "nullability": "unspecified"
+                },
+                {
+                  "name": "zipFunction",
+                  "type": "Throwables.IntNFunction<? extends R, E>",
+                  "javadoc": "the function that takes an array of integers (one from each matrix) and returns a result of type R, must not be {@code null}",
+                  "nullability": "unspecified"
+                },
+                {
+                  "name": "targetElementType",
+                  "type": "Class<R>",
+                  "javadoc": "the class of the result element type, must not be {@code null}",
+                  "nullability": "unspecified"
+                }
+              ],
+              "throws": [
+                {
+                  "type": "E",
+                  "condition": "if the zip function throws an exception during execution"
+                }
+              ],
+              "javadoc_summary": "Combines multiple {@link IntMatrix} objects element-wise using a function that operates on integer arrays.",
+              "contract": [
+                "</p> <p> All matrices in the collection must have identical dimensions."
+              ],
+              "examples": [],
+              "see_also": [
+                "#zipToObj(Collection, Throwables.IntNFunction, boolean, Class)",
+                "#zip(Collection, Throwables.IntBinaryOperator)"
+              ]
+            },
+            {
+              "name": "zipToObj",
+              "kind": "static",
+              "modifiers": [
+                "public",
+                "static"
+              ],
+              "signature": "public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E",
+              "return_type": "Matrix<R>",
+              "type_params": [
+                {
+                  "name": "R",
+                  "bounds": [
+                    "java.lang.Object"
+                  ]
+                },
+                {
+                  "name": "E",
+                  "bounds": [
+                    "Exception"
+                  ]
+                }
+              ],
+              "params": [
+                {
+                  "name": "coll",
+                  "type": "Collection<IntMatrix>",
+                  "javadoc": "the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements",
+                  "nullability": "unspecified"
+                },
+                {
+                  "name": "zipFunction",
+                  "type": "Throwables.IntNFunction<? extends R, E>",
+                  "javadoc": "the function that takes an array of integers (one from each matrix) and returns a result of type R, must not be {@code null}",
+                  "nullability": "unspecified"
+                },
+                {
+                  "name": "shareIntermediateArray",
+                  "type": "boolean",
+                  "javadoc": "{@code true} to reuse the intermediate array (sequential execution only); {@code false} to create new arrays for each position",
+                  "nullability": "unspecified"
+                },
+                {
+                  "name": "targetElementType",
+                  "type": "Class<R>",
+                  "javadoc": "the class of the result element type, must not be {@code null}",
+                  "nullability": "unspecified"
+                }
+              ],
+              "throws": [
+                {
+                  "type": "java.lang.IllegalArgumentException",
+                  "condition": "if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}"
+                },
+                {
+                  "type": "E",
+                  "condition": "if the zip function throws an exception during execution"
+                }
+              ],
+              "javadoc_summary": "Combines multiple {@link IntMatrix} objects element-wise using a function that operates on integer arrays, with control over intermediate array sharing.",
+              "contract": [
+                "The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.",
+                "Only use this optimization if the function immediately processes and discards the array.",
+                "</p> <p> All matrices in the collection must have identical dimensions."
+              ],
+              "examples": [],
+              "see_also": [
+                "#zipToObj(Collection, Throwables.IntNFunction, Class)",
+                "#zip(Collection, Throwables.IntBinaryOperator)"
+              ]
+            },
+            {
               "name": "zip",
               "kind": "static",
               "modifiers": [
@@ -24281,134 +24431,6 @@
                 "#zip(LongMatrix, LongMatrix, Throwables.LongBinaryOperator)",
                 "#zip(LongMatrix, LongMatrix, LongMatrix, Throwables.LongTernaryOperator)",
                 "#zipToObj(Collection, Throwables.LongNFunction, Class)"
-              ]
-            },
-            {
-              "name": "zipToObj",
-              "kind": "static",
-              "modifiers": [
-                "public",
-                "static"
-              ],
-              "signature": "public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E",
-              "return_type": "Matrix<R>",
-              "type_params": [
-                {
-                  "name": "R",
-                  "bounds": [
-                    "java.lang.Object"
-                  ]
-                },
-                {
-                  "name": "E",
-                  "bounds": [
-                    "Exception"
-                  ]
-                }
-              ],
-              "params": [
-                {
-                  "name": "coll",
-                  "type": "Collection<LongMatrix>",
-                  "javadoc": "the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "zipFunction",
-                  "type": "Throwables.LongNFunction<? extends R, E>",
-                  "javadoc": "the function that takes an array of longs (one from each matrix) and returns a result of type R, must not be {@code null}",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "targetElementType",
-                  "type": "Class<R>",
-                  "javadoc": "the class of the result element type, must not be {@code null}",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [
-                {
-                  "type": "E",
-                  "condition": "if the zip function throws an exception during execution"
-                }
-              ],
-              "javadoc_summary": "Combines multiple {@link LongMatrix} objects element-wise using a function that operates on long arrays.",
-              "contract": [],
-              "examples": [],
-              "see_also": [
-                "#zipToObj(Collection, Throwables.LongNFunction, boolean, Class)",
-                "#zip(Collection, Throwables.LongBinaryOperator)"
-              ]
-            },
-            {
-              "name": "zipToObj",
-              "kind": "static",
-              "modifiers": [
-                "public",
-                "static"
-              ],
-              "signature": "public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E",
-              "return_type": "Matrix<R>",
-              "type_params": [
-                {
-                  "name": "R",
-                  "bounds": [
-                    "java.lang.Object"
-                  ]
-                },
-                {
-                  "name": "E",
-                  "bounds": [
-                    "Exception"
-                  ]
-                }
-              ],
-              "params": [
-                {
-                  "name": "coll",
-                  "type": "Collection<LongMatrix>",
-                  "javadoc": "the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "zipFunction",
-                  "type": "Throwables.LongNFunction<? extends R, E>",
-                  "javadoc": "the function that takes an array of longs (one from each matrix) and returns a result of type R, must not be {@code null}",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "shareIntermediateArray",
-                  "type": "boolean",
-                  "javadoc": "{@code true} to reuse the intermediate array (sequential execution only); {@code false} to create new arrays for each position",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "targetElementType",
-                  "type": "Class<R>",
-                  "javadoc": "the class of the result element type, must not be {@code null}",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [
-                {
-                  "type": "java.lang.IllegalArgumentException",
-                  "condition": "if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}"
-                },
-                {
-                  "type": "E",
-                  "condition": "if the zip function throws an exception during execution"
-                }
-              ],
-              "javadoc_summary": "Combines multiple {@link LongMatrix} objects element-wise using a function that operates on long arrays, with control over intermediate array sharing.",
-              "contract": [
-                "The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.",
-                "Only use this optimization if the function immediately processes and discards the array.",
-                "</p> <p> All matrices in the collection must have identical dimensions."
-              ],
-              "examples": [],
-              "see_also": [
-                "#zipToObj(Collection, Throwables.LongNFunction, Class)",
-                "#zip(Collection, Throwables.LongBinaryOperator)"
               ]
             },
             {
@@ -24624,6 +24646,134 @@
               "see_also": [
                 "#zipToDouble(Collection, Throwables.LongNFunction)",
                 "#zipToDouble(LongMatrix, LongMatrix, Throwables.LongBiFunction)"
+              ]
+            },
+            {
+              "name": "zipToObj",
+              "kind": "static",
+              "modifiers": [
+                "public",
+                "static"
+              ],
+              "signature": "public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E",
+              "return_type": "Matrix<R>",
+              "type_params": [
+                {
+                  "name": "R",
+                  "bounds": [
+                    "java.lang.Object"
+                  ]
+                },
+                {
+                  "name": "E",
+                  "bounds": [
+                    "Exception"
+                  ]
+                }
+              ],
+              "params": [
+                {
+                  "name": "coll",
+                  "type": "Collection<LongMatrix>",
+                  "javadoc": "the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements",
+                  "nullability": "unspecified"
+                },
+                {
+                  "name": "zipFunction",
+                  "type": "Throwables.LongNFunction<? extends R, E>",
+                  "javadoc": "the function that takes an array of longs (one from each matrix) and returns a result of type R, must not be {@code null}",
+                  "nullability": "unspecified"
+                },
+                {
+                  "name": "targetElementType",
+                  "type": "Class<R>",
+                  "javadoc": "the class of the result element type, must not be {@code null}",
+                  "nullability": "unspecified"
+                }
+              ],
+              "throws": [
+                {
+                  "type": "E",
+                  "condition": "if the zip function throws an exception during execution"
+                }
+              ],
+              "javadoc_summary": "Combines multiple {@link LongMatrix} objects element-wise using a function that operates on long arrays.",
+              "contract": [],
+              "examples": [],
+              "see_also": [
+                "#zipToObj(Collection, Throwables.LongNFunction, boolean, Class)",
+                "#zip(Collection, Throwables.LongBinaryOperator)"
+              ]
+            },
+            {
+              "name": "zipToObj",
+              "kind": "static",
+              "modifiers": [
+                "public",
+                "static"
+              ],
+              "signature": "public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E",
+              "return_type": "Matrix<R>",
+              "type_params": [
+                {
+                  "name": "R",
+                  "bounds": [
+                    "java.lang.Object"
+                  ]
+                },
+                {
+                  "name": "E",
+                  "bounds": [
+                    "Exception"
+                  ]
+                }
+              ],
+              "params": [
+                {
+                  "name": "coll",
+                  "type": "Collection<LongMatrix>",
+                  "javadoc": "the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements",
+                  "nullability": "unspecified"
+                },
+                {
+                  "name": "zipFunction",
+                  "type": "Throwables.LongNFunction<? extends R, E>",
+                  "javadoc": "the function that takes an array of longs (one from each matrix) and returns a result of type R, must not be {@code null}",
+                  "nullability": "unspecified"
+                },
+                {
+                  "name": "shareIntermediateArray",
+                  "type": "boolean",
+                  "javadoc": "{@code true} to reuse the intermediate array (sequential execution only); {@code false} to create new arrays for each position",
+                  "nullability": "unspecified"
+                },
+                {
+                  "name": "targetElementType",
+                  "type": "Class<R>",
+                  "javadoc": "the class of the result element type, must not be {@code null}",
+                  "nullability": "unspecified"
+                }
+              ],
+              "throws": [
+                {
+                  "type": "java.lang.IllegalArgumentException",
+                  "condition": "if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}"
+                },
+                {
+                  "type": "E",
+                  "condition": "if the zip function throws an exception during execution"
+                }
+              ],
+              "javadoc_summary": "Combines multiple {@link LongMatrix} objects element-wise using a function that operates on long arrays, with control over intermediate array sharing.",
+              "contract": [
+                "The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.",
+                "Only use this optimization if the function immediately processes and discards the array.",
+                "</p> <p> All matrices in the collection must have identical dimensions."
+              ],
+              "examples": [],
+              "see_also": [
+                "#zipToObj(Collection, Throwables.LongNFunction, Class)",
+                "#zip(Collection, Throwables.LongBinaryOperator)"
               ]
             },
             {
@@ -25538,6 +25688,40 @@
               ],
               "examples": [],
               "see_also": []
+            },
+            {
+              "name": "copyOf",
+              "kind": "static",
+              "modifiers": [
+                "public",
+                "static"
+              ],
+              "signature": "@SafeVarargs public static <T> Matrix<T> copyOf(final T[]... a)",
+              "return_type": "Matrix<T>",
+              "type_params": [
+                {
+                  "name": "T",
+                  "bounds": [
+                    "java.lang.Object"
+                  ]
+                }
+              ],
+              "params": [
+                {
+                  "name": "a",
+                  "type": "T[][]",
+                  "javadoc": "the two-dimensional array to copy (must not be {@code null} )",
+                  "nullability": "unspecified"
+                }
+              ],
+              "throws": [],
+              "javadoc_summary": "Creates a {@code Matrix} that owns a defensive deep copy of the supplied two-dimensional array.",
+              "contract": [],
+              "examples": [],
+              "see_also": [
+                "#of(Object[][])",
+                "#copy()"
+              ]
             },
             {
               "name": "repeat",
@@ -27974,7 +28158,7 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns a stream of all elements in row-major order (horizontal).",
+              "javadoc_summary": "Returns a stream of all elements in row-major order.",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -28000,7 +28184,9 @@
               "javadoc_summary": "Returns a stream of elements from a single row.",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#rowStreams()"
+              ]
             },
             {
               "name": "rowMajorStream",
@@ -28042,12 +28228,12 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public Stream<T> columnMajorStream()",
+              "signature": "@Override public Stream<T> columnMajorStream()",
               "return_type": "Stream<T>",
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns a stream of all elements in column-major order (vertical).",
+              "javadoc_summary": "Returns a stream of all elements in column-major order.",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -28081,7 +28267,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Beta @Override public Stream<T> columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public Stream<T> columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "Stream<T>",
               "type_params": [],
               "params": [
@@ -28123,7 +28309,9 @@
               "javadoc_summary": "Returns a stream of streams, where each inner stream represents a row.",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#rowMajorStream(int)"
+              ]
             },
             {
               "name": "rowStreams",
@@ -28165,7 +28353,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public Stream<Stream<T>> columnStreams()",
+              "signature": "@Override public Stream<Stream<T>> columnStreams()",
               "return_type": "Stream<Stream<T>>",
               "type_params": [],
               "params": [],
@@ -28181,7 +28369,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public Stream<Stream<T>> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public Stream<Stream<T>> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "Stream<Stream<T>>",
               "type_params": [],
               "params": [
@@ -28322,7 +28510,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Beta public Dataset toDataset(final Collection<String> columnNames) throws IllegalArgumentException",
+              "signature": "@SuppressWarnings(\"deprecation\") public Dataset toDataset(final Collection<String> columnNames) throws IllegalArgumentException",
               "return_type": "Dataset",
               "type_params": [],
               "params": [
@@ -28355,7 +28543,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Beta public Dataset toTransposedDataset(final Collection<String> columnNames) throws IllegalArgumentException",
+              "signature": "@SuppressWarnings(\"deprecation\") public Dataset toTransposedDataset(final Collection<String> columnNames) throws IllegalArgumentException",
               "return_type": "Dataset",
               "type_params": [],
               "params": [
@@ -28382,22 +28570,6 @@
                 "RowDataset",
                 "#toDataset(Collection)"
               ]
-            },
-            {
-              "name": "println",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
-              "signature": "@Override public String println()",
-              "return_type": "String",
-              "type_params": [],
-              "params": [],
-              "throws": [],
-              "javadoc_summary": "Prints this matrix to standard output and returns the printed string.",
-              "contract": [],
-              "examples": [],
-              "see_also": []
             },
             {
               "name": "hashCode",
@@ -28537,14 +28709,13 @@
                 {
                   "name": "a",
                   "type": "short[][]",
-                  "javadoc": "the two-dimensional short array to wrap, or {@code null} for an empty matrix",
+                  "javadoc": "the two-dimensional short array to wrap, must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
               "throws": [],
               "javadoc_summary": "Constructs a {@code ShortMatrix} backed by the supplied two-dimensional array.",
               "contract": [
-                "<p> If {@code a} is {@code null} , this creates an empty {@code 0x0} matrix.",
                 "Call {@link #copy()} if you need an independently owned matrix."
               ],
               "examples": [],
@@ -28581,7 +28752,7 @@
                 {
                   "name": "a",
                   "type": "short[][]",
-                  "javadoc": "the two-dimensional short array to create the matrix from, or {@code null} /empty for an empty matrix",
+                  "javadoc": "the two-dimensional short array to create the matrix from, or empty for an empty matrix; must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
@@ -28592,7 +28763,34 @@
               "see_also": []
             },
             {
-              "name": "random",
+              "name": "copyOf",
+              "kind": "static",
+              "modifiers": [
+                "public",
+                "static"
+              ],
+              "signature": "public static ShortMatrix copyOf(final short[]... a)",
+              "return_type": "ShortMatrix",
+              "type_params": [],
+              "params": [
+                {
+                  "name": "a",
+                  "type": "short[][]",
+                  "javadoc": "the two-dimensional short array to copy, or empty for an empty matrix; must not be {@code null}",
+                  "nullability": "unspecified"
+                }
+              ],
+              "throws": [],
+              "javadoc_summary": "Creates a {@code ShortMatrix} that owns a defensive deep copy of the supplied two-dimensional array.",
+              "contract": [],
+              "examples": [],
+              "see_also": [
+                "#of(short[][])",
+                "#copy()"
+              ]
+            },
+            {
+              "name": "randomRow",
               "kind": "static",
               "modifiers": [
                 "public",
@@ -28892,13 +29090,13 @@
                 {
                   "name": "mainDiagonal",
                   "type": "short[]",
-                  "javadoc": "the array of main diagonal elements; may be {@code null} or empty if {@code antiDiagonal} is non- {@code null}",
+                  "javadoc": "the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non- {@code null} ; may be empty",
                   "nullability": "unspecified"
                 },
                 {
                   "name": "antiDiagonal",
                   "type": "short[]",
-                  "javadoc": "the array of anti-diagonal elements; may be {@code null} or empty if {@code mainDiagonal} is non- {@code null}",
+                  "javadoc": "the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non- {@code null} ; may be empty",
                   "nullability": "unspecified"
                 }
               ],
@@ -30772,7 +30970,9 @@
               "javadoc_summary": "Converts this short matrix to an int matrix.",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "IntMatrix#from(short[][])"
+              ]
             },
             {
               "name": "toLongMatrix",
@@ -30973,7 +31173,7 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).",
+              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed in row-major order (left to right, top to bottom).",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -31001,7 +31201,9 @@
                 "<p> This method is particularly useful when you need to process or analyze a specific row of the matrix independently."
               ],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#rowStreams()"
+              ]
             },
             {
               "name": "rowMajorStream",
@@ -31043,12 +31245,12 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public ShortStream columnMajorStream()",
+              "signature": "@Override public ShortStream columnMajorStream()",
               "return_type": "ShortStream",
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).",
+              "javadoc_summary": "Returns a stream of all elements in this matrix, traversed in column-major order (top to bottom, left to right).",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -31082,7 +31284,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public ShortStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public ShortStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "ShortStream",
               "type_params": [],
               "params": [
@@ -31124,7 +31326,9 @@
               "javadoc_summary": "Returns a stream of ShortStream objects, where each ShortStream represents a complete row.",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#rowMajorStream(int)"
+              ]
             },
             {
               "name": "rowStreams",
@@ -31166,7 +31370,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public Stream<ShortStream> columnStreams()",
+              "signature": "@Override public Stream<ShortStream> columnStreams()",
               "return_type": "Stream<ShortStream>",
               "type_params": [],
               "params": [],
@@ -31182,7 +31386,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override @Beta public Stream<ShortStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public Stream<ShortStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "Stream<ShortStream>",
               "type_params": [],
               "params": [
@@ -31314,22 +31518,6 @@
                 "Elements are processed in row-major order within the specified bounds when executed sequentially.",
                 "The operation may be parallelized internally if the sub-matrix is large enough to benefit from parallel processing; if parallelized, the order in which elements are visited is unspecified and the action must be thread-safe, but every element is still visited exactly once."
               ],
-              "examples": [],
-              "see_also": []
-            },
-            {
-              "name": "println",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
-              "signature": "@Override public String println()",
-              "return_type": "String",
-              "type_params": [],
-              "params": [],
-              "throws": [],
-              "javadoc_summary": "Prints this matrix to standard output and returns the formatted string that was printed.",
-              "contract": [],
               "examples": [],
               "see_also": []
             },

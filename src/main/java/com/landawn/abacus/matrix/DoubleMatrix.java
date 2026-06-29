@@ -16,7 +16,6 @@ package com.landawn.abacus.matrix;
 
 import java.util.NoSuchElementException;
 
-import com.landawn.abacus.annotation.Beta;
 import com.landawn.abacus.annotation.SuppressFBWarnings;
 import com.landawn.abacus.util.Array;
 import com.landawn.abacus.util.Arrays;
@@ -3494,7 +3493,6 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @return a DoubleStream of all elements in column-major order, or an empty stream if the matrix is empty
      */
     @Override
-    @Beta
     public DoubleStream columnMajorStream() {
         return columnMajorStream(0, columnCount);
     }
@@ -3553,7 +3551,6 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *         or {@code fromColumnIndex > toColumnIndex}
      */
     @Override
-    @Beta
     public DoubleStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
@@ -3738,7 +3735,6 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *         or an empty stream if the matrix is empty
      */
     @Override
-    @Beta
     public Stream<DoubleStream> columnStreams() {
         return columnStreams(0, columnCount);
     }
@@ -3768,7 +3764,6 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *         or {@code fromColumnIndex > toColumnIndex}
      */
     @Override
-    @Beta
     public Stream<DoubleStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 

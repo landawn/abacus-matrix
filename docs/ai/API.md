@@ -1,7 +1,7 @@
-# abacus-matrix API Index (v3.7.7)
+# abacus-matrix API Index (v3.7.9)
 - Build: unknown
 - Java: 17
-- Generated: 2026-06-22
+- Generated: 2026-06-28
 
 ## Packages
 - com.landawn.abacus.matrix
@@ -87,12 +87,6 @@ Shared implementation base for the matrix types in this package.
 - **Parameters:**
   - (none)
 - **Returns:** {@code true} if the matrix has no elements (count == 0), {@code false} otherwise
-##### println(...) -> String
-- **Signature:** `public abstract String println()`
-- **Summary:** Prints this matrix to standard output in a formatted, human-readable manner and returns the output string.
-- **Parameters:**
-  - (none)
-- **Returns:** the formatted string representation of the matrix that was printed to standard output
 ##### copy(...) -> M
 - **Signature:** `public abstract M copy()`
 - **Summary:** Returns a structural copy of this matrix.
@@ -137,7 +131,7 @@ Shared implementation base for the matrix types in this package.
 - **Parameters:**
   - (none)
 - **Returns:** a new matrix that is the transpose of this matrix, with dimensions {@code columnCount × rowCount} ; a matrix with zero columns (an {@code N x 0} shape) transposes to the empty {@code 0 x 0} matrix, because the swapped shape {@code 0 x N} (zero rows with a non-zero column count) is not representable
-##### reshape(...) -> M
+##### reshapeByColumnCount(...) -> M
 - **Signature:** `public M reshapeByColumnCount(final int newColumnCount)`
 - **Summary:** Returns a new matrix with the elements of this matrix rearranged into the specified number of columns.
 - **Contract:**
@@ -145,6 +139,7 @@ Shared implementation base for the matrix types in this package.
 - **Parameters:**
   - `newColumnCount` (`int`) — the number of columns in the reshaped matrix (must be positive)
 - **Returns:** a new matrix with the specified number of columns
+##### reshape(...) -> M
 - **Signature:** `public abstract M reshape(int newRowCount, int newColumnCount)`
 - **Summary:** Returns a new matrix with the elements of this matrix rearranged into the specified dimensions.
 - **Contract:**
@@ -238,8 +233,8 @@ Shared implementation base for the matrix types in this package.
 - **Parameters:**
   - (none)
 - **Returns:** a new list containing all elements in row-major order with size equal to {@code elementCount}
-##### mutateAsFlat(...) -> void
-- **Signature:** `public abstract <E extends Exception> void mutateAsFlat(Throwables.Consumer<? super A, E> action) throws E`
+##### mutateFlattened(...) -> void
+- **Signature:** `public abstract <E extends Exception> void mutateFlattened(Throwables.Consumer<? super A, E> action) throws E`
 - **Summary:** Applies the specified operation to the flattened (row-major order) view of this matrix.
 - **Parameters:**
   - `action` (`Throwables.Consumer<? super A, E>`) — the operation to apply to the one-dimensional flattened array (for example {@code int\[\]} for {@code IntMatrix} )
@@ -325,8 +320,8 @@ Shared implementation base for the matrix types in this package.
 - **Parameters:**
   - (none)
 - **Returns:** a stream of {@link Point} objects representing the anti-diagonal positions
-##### getMainDiagonal(...) -> A
-- **Signature:** `public abstract A getMainDiagonal()`
+##### mainDiagonalCopy(...) -> A
+- **Signature:** `public abstract A mainDiagonalCopy()`
 - **Summary:** Returns a copy of the main diagonal elements (upper-left to lower-right) as the matrix's underlying array type.
 - **Contract:**
   - The matrix must be square (rowCount == columnCount).
@@ -340,8 +335,8 @@ Shared implementation base for the matrix types in this package.
   - The matrix must be square (rowCount == columnCount), and the supplied array must contain exactly {@code rowCount} elements.
 - **Parameters:**
   - `mainDiagonal` (`A`) — the new values for the main diagonal; must be non- {@code null} and have length equal to {@code rowCount}
-##### getAntiDiagonal(...) -> A
-- **Signature:** `public abstract A getAntiDiagonal()`
+##### antiDiagonalCopy(...) -> A
+- **Signature:** `public abstract A antiDiagonalCopy()`
 - **Summary:** Returns a copy of the anti-diagonal elements (upper-right to lower-left) as the matrix's underlying array type.
 - **Contract:**
   - The matrix must be square (rowCount == columnCount).
@@ -357,17 +352,17 @@ Shared implementation base for the matrix types in this package.
   - `antiDiagonal` (`A`) — the new values for the anti-diagonal; must be non- {@code null} and have length equal to {@code rowCount}
 ##### rowMajorPoints(...) -> Stream<Point>
 - **Signature:** `public Stream<Point> rowMajorPoints()`
-- **Summary:** Returns a stream of all points in the matrix in row-major order (horizontal traversal).
+- **Summary:** Returns a stream of all points in the matrix in row-major order.
 - **Parameters:**
   - (none)
 - **Returns:** a stream of all {@link Point} objects in row-major order
 - **Signature:** `public Stream<Point> rowMajorPoints(final int rowIndex)`
-- **Summary:** Returns a stream of points for a specific row in horizontal order (left to right).
+- **Summary:** Returns a stream of points for a specific row in row-major order (left to right).
 - **Parameters:**
   - `rowIndex` (`int`) — the row index (0-based)
 - **Returns:** a stream of {@link Point} objects for all columns in the specified row
 - **Signature:** `@SuppressWarnings("resource") public Stream<Point> rowMajorPoints(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
-- **Summary:** Returns a stream of points for a range of rows in row-major order (horizontal traversal).
+- **Summary:** Returns a stream of points for a range of rows in row-major order.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
   - `toRowIndex` (`int`) — the ending row index (exclusive)
@@ -376,17 +371,17 @@ Shared implementation base for the matrix types in this package.
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
 ##### columnMajorPoints(...) -> Stream<Point>
 - **Signature:** `public Stream<Point> columnMajorPoints()`
-- **Summary:** Returns a stream of all points in the matrix in column-major order (vertical traversal).
+- **Summary:** Returns a stream of all points in the matrix in column-major order.
 - **Parameters:**
   - (none)
 - **Returns:** a stream of all {@link Point} objects in column-major order
 - **Signature:** `public Stream<Point> columnMajorPoints(final int columnIndex)`
-- **Summary:** Returns a stream of points for a specific column in vertical order (top to bottom).
+- **Summary:** Returns a stream of points for a specific column in column-major order (top to bottom).
 - **Parameters:**
   - `columnIndex` (`int`) — the column index (0-based)
 - **Returns:** a stream of {@link Point} objects for all rows in the specified column
 - **Signature:** `@SuppressWarnings("resource") public Stream<Point> columnMajorPoints(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
-- **Summary:** Returns a stream of points for a range of columns in column-major order (vertical traversal).
+- **Summary:** Returns a stream of points for a range of columns in column-major order.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
   - `toColumnIndex` (`int`) — the ending column index (exclusive)
@@ -439,7 +434,7 @@ Shared implementation base for the matrix types in this package.
 - **Returns:** a stream of anti-diagonal elements
 ##### rowMajorStream(...) -> ES
 - **Signature:** `public abstract ES rowMajorStream()`
-- **Summary:** Returns a stream of all elements in row-major order (horizontal traversal).
+- **Summary:** Returns a stream of all elements in row-major order.
 - **Parameters:**
   - (none)
 - **Returns:** a stream of all elements in row-major order
@@ -448,6 +443,7 @@ Shared implementation base for the matrix types in this package.
 - **Parameters:**
   - `rowIndex` (`int`) — the row index (0-based)
 - **Returns:** a stream of elements in the specified row
+- **See also:** #rowStreams()
 - **Signature:** `public abstract ES rowMajorStream(final int fromRowIndex, final int toRowIndex)`
 - **Summary:** Returns a stream of elements from a range of rows in row-major order.
 - **Parameters:**
@@ -456,7 +452,7 @@ Shared implementation base for the matrix types in this package.
 - **Returns:** a stream of elements in the specified row range
 ##### columnMajorStream(...) -> ES
 - **Signature:** `public abstract ES columnMajorStream()`
-- **Summary:** Returns a stream of all elements in column-major order (vertical traversal).
+- **Summary:** Returns a stream of all elements in column-major order.
 - **Parameters:**
   - (none)
 - **Returns:** a stream of all elements in column-major order
@@ -477,6 +473,7 @@ Shared implementation base for the matrix types in this package.
 - **Parameters:**
   - (none)
 - **Returns:** a stream of row streams
+- **See also:** #rowMajorStream(int)
 - **Signature:** `public abstract RS rowStreams(final int fromRowIndex, final int toRowIndex)`
 - **Summary:** Returns a stream of row streams for a range of rows.
 - **Parameters:**
@@ -512,6 +509,18 @@ Shared implementation base for the matrix types in this package.
 - **Returns:** the result of applying the function to this matrix
 - **Throws:**
   - `E` — if the function throws an exception
+##### appendTo(...) -> void
+- **Signature:** `public void appendTo(final Appendable output)`
+- **Summary:** Appends this matrix's formatted, multi-line rendering to the given {@code output} .
+- **Parameters:**
+  - `output` (`Appendable`) — the destination to append the rendering to; must not be {@code null}
+- **See also:** #println()
+##### println(...) -> void
+- **Signature:** `public void println()`
+- **Summary:** Prints this matrix to standard output in a formatted, human-readable manner.
+- **Parameters:**
+  - (none)
+- **See also:** #appendTo(Appendable)
 
 ### Class BooleanMatrix (com.landawn.abacus.matrix.BooleanMatrix)
 Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
@@ -533,15 +542,23 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Signature:** `public static BooleanMatrix of(final boolean[]... a)`
 - **Summary:** Creates a {@code BooleanMatrix} from a two-dimensional boolean array.
 - **Parameters:**
-  - `a` (`boolean[][]`) — the two-dimensional boolean array to wrap; may be {@code null} or empty, in which case the empty matrix singleton is returned
-- **Returns:** a new {@code BooleanMatrix} backed by {@code a} , or the empty {@code BooleanMatrix} if {@code a} is {@code null} or empty
-##### random(...) -> BooleanMatrix
+  - `a` (`boolean[][]`) — the two-dimensional boolean array to wrap; must not be {@code null} ; may be empty, in which case the empty matrix singleton is returned
+- **Returns:** a new {@code BooleanMatrix} backed by {@code a} , or the empty {@code BooleanMatrix} if {@code a} is empty
+##### copyOf(...) -> BooleanMatrix
+- **Signature:** `public static BooleanMatrix copyOf(final boolean[]... a)`
+- **Summary:** Creates a {@code BooleanMatrix} that owns a defensive deep copy of the supplied two-dimensional array.
+- **Parameters:**
+  - `a` (`boolean[][]`) — the two-dimensional boolean array to copy, or empty for an empty matrix; must not be {@code null}
+- **Returns:** a new {@code BooleanMatrix} backed by a deep copy of {@code a} , or the shared empty matrix if {@code a} is empty
+- **See also:** #of(boolean\[\]\[\]), #copy()
+##### randomRow(...) -> BooleanMatrix
 - **Signature:** `public static BooleanMatrix randomRow(final int length)`
 - **Summary:** Creates a new {@code 1 × length} matrix filled with pseudo-randomly generated boolean values.
 - **Parameters:**
   - `length` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
 - **Returns:** a new {@code BooleanMatrix} of dimensions {@code 1 × length} filled with random values
 - **See also:** #random(int, int)
+##### random(...) -> BooleanMatrix
 - **Signature:** `public static BooleanMatrix random(final int rowCount, final int columnCount)`
 - **Summary:** Creates a new matrix of the specified dimensions filled with pseudo-randomly generated boolean values.
 - **Parameters:**
@@ -579,9 +596,10 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Parameters:**
   - `mainDiagonal` (`boolean[]`) — the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non- {@code null} ; may be empty
   - `antiDiagonal` (`boolean[]`) — the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non- {@code null} ; may be empty
-- **Returns:** a square matrix with the specified diagonals, or an empty matrix when both arrays are empty (at least one being a non- {@code null} zero-length array)
+- **Returns:** a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null} , or if both arrays are non-empty and have different lengths
+- **See also:** #mainDiagonal(boolean\[\]), #antiDiagonal(boolean\[\])
 ##### unbox(...) -> BooleanMatrix
 - **Signature:** `public static BooleanMatrix unbox(final Matrix<Boolean> x)`
 - **Summary:** Converts a boxed {@code Matrix<Boolean>} to a primitive {@code BooleanMatrix} .
@@ -597,10 +615,9 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Signature:** `public BooleanMatrix(final boolean[][] a)`
 - **Summary:** Constructs a {@code BooleanMatrix} backed by the supplied two-dimensional array.
 - **Contract:**
-  - <p> If {@code a} is {@code null} , this creates an empty {@code 0x0} matrix.
   - Call {@link #copy()} if you need an independently owned matrix.
 - **Parameters:**
-  - `a` (`boolean[][]`) — the two-dimensional boolean array to wrap, or {@code null} for an empty matrix
+  - `a` (`boolean[][]`) — the two-dimensional boolean array to wrap, must not be {@code null}
 ##### get(...) -> boolean
 - **Signature:** `public boolean get(final int rowIndex, final int columnIndex)`
 - **Summary:** Returns the element at the specified row and column indices.
@@ -734,8 +751,8 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
   - `java.lang.IndexOutOfBoundsException` — if {@code columnIndex} is out of bounds
   - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
-##### getMainDiagonal(...) -> boolean\[\]
-- **Signature:** `@Override public boolean[] getMainDiagonal() throws IllegalStateException`
+##### mainDiagonalCopy(...) -> boolean\[\]
+- **Signature:** `@Override public boolean[] mainDiagonalCopy() throws IllegalStateException`
 - **Summary:** Returns a copy of the main diagonal elements (upper-left to lower-right).
 - **Contract:**
   - The matrix must be square ( {@code rowCount == columnCount} ) for this operation.
@@ -764,8 +781,8 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square ( {@code rowCount != columnCount} )
   - `E` — if the operator throws an exception
-##### getAntiDiagonal(...) -> boolean\[\]
-- **Signature:** `@Override public boolean[] getAntiDiagonal() throws IllegalStateException`
+##### antiDiagonalCopy(...) -> boolean\[\]
+- **Signature:** `@Override public boolean[] antiDiagonalCopy() throws IllegalStateException`
 - **Summary:** Returns a copy of the elements on the anti-diagonal (upper-right to lower-left).
 - **Contract:**
   - The matrix must be square ( {@code rowCount == columnCount} ) for this operation.
@@ -1026,14 +1043,14 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
   - (none)
 - **Returns:** a new {@code BooleanList} of all elements in row-major order
 - **See also:** #rowMajorStream()
-##### mutateAsFlat(...) -> void
-- **Signature:** `@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super boolean[], E> action) throws E`
+##### mutateFlattened(...) -> void
+- **Signature:** `@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super boolean[], E> action) throws E`
 - **Summary:** Exposes the elements of this matrix to {@code action} as a single one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix.
 - **Parameters:**
   - `action` (`Throwables.Consumer<? super boolean[], E>`) — the operation to apply to the flattened array; must not be {@code null}
 - **Throws:**
   - `E` — if the operation throws an exception
-- **See also:** Arrays#mutateAsFlat(boolean\[\]\[\], Throwables.Consumer)
+- **See also:** Arrays#mutateFlattened(boolean\[\]\[\], Throwables.Consumer)
 ##### and(...) -> BooleanMatrix
 - **Signature:** `public BooleanMatrix and(final BooleanMatrix other) throws IllegalArgumentException`
 - **Summary:** Performs element-wise logical AND of this matrix with another matrix.
@@ -1162,7 +1179,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Returns:** a {@code Stream<Boolean>} containing the anti-diagonal elements from top-right to bottom-left, or an empty stream if the matrix is empty (0 × 0)
 ##### rowMajorStream(...) -> Stream<Boolean>
 - **Signature:** `@Override public Stream<Boolean> rowMajorStream()`
-- **Summary:** Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).
+- **Summary:** Returns a stream of all elements in this matrix, traversed in row-major order (left to right, top to bottom).
 - **Parameters:**
   - (none)
 - **Returns:** a {@code Stream<Boolean>} of all elements in row-major order, or an empty stream if the matrix is empty
@@ -1173,6 +1190,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Parameters:**
   - `rowIndex` (`int`) — the index of the row to stream (0-based)
 - **Returns:** a {@code Stream<Boolean>} of elements from the specified row
+- **See also:** #rowStreams()
 - **Signature:** `@Override public Stream<Boolean> rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of rows in row-major order.
 - **Parameters:**
@@ -1182,8 +1200,8 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
 ##### columnMajorStream(...) -> Stream<Boolean>
-- **Signature:** `@Override @Beta public Stream<Boolean> columnMajorStream()`
-- **Summary:** Returns a stream of all elements in column-major order (vertical).
+- **Signature:** `@Override public Stream<Boolean> columnMajorStream()`
+- **Summary:** Returns a stream of all elements in this matrix, traversed in column-major order (top to bottom, left to right).
 - **Parameters:**
   - (none)
 - **Returns:** a {@code Stream<Boolean>} of all elements in column-major order, or an empty stream if the matrix is empty
@@ -1192,7 +1210,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** a {@code Stream<Boolean>} of elements from the specified column
-- **Signature:** `@Override @Beta public Stream<Boolean> columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public Stream<Boolean> columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -1206,6 +1224,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a {@code Stream<Stream<Boolean>>} , one inner stream per row in the matrix
+- **See also:** #rowMajorStream(int)
 - **Signature:** `@Override public Stream<Stream<Boolean>> rowStreams(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of {@code Stream<Boolean>} objects for a range of rows.
 - **Parameters:**
@@ -1215,12 +1234,12 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
 ##### columnStreams(...) -> Stream<Stream<Boolean>>
-- **Signature:** `@Override @Beta public Stream<Stream<Boolean>> columnStreams()`
+- **Signature:** `@Override public Stream<Stream<Boolean>> columnStreams()`
 - **Summary:** Returns a stream of {@code Stream<Boolean>} objects, where each inner stream represents a complete column.
 - **Parameters:**
   - (none)
 - **Returns:** a {@code Stream<Stream<Boolean>>} , one inner stream per column in the matrix, or an empty stream if the matrix is empty
-- **Signature:** `@Override @Beta public Stream<Stream<Boolean>> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public Stream<Stream<Boolean>> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of {@code Stream<Boolean>} objects for a range of columns.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -1256,14 +1275,6 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if any index is out of bounds
   - `E` — if the action throws an exception
-##### println(...) -> String
-- **Signature:** `@Override public String println()`
-- **Summary:** Prints this matrix to standard output and returns the formatted string.
-- **Contract:**
-  - If the matrix has zero rows, {@code \[\]} is printed.
-- **Parameters:**
-  - (none)
-- **Returns:** the formatted string representation of the matrix
 ##### hashCode(...) -> int
 - **Signature:** `@Override public int hashCode()`
 - **Summary:** Returns a hash code value for this matrix.
@@ -1309,15 +1320,23 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
   - <p> <b> Important: </b> When {@code a} is non-empty, the provided array is used directly without defensive copying.
   - Call {@link #copy()} if you need an independently owned matrix.
 - **Parameters:**
-  - `a` (`byte[][]`) — the two-dimensional byte array to wrap; may be {@code null} or empty
-- **Returns:** a new {@code ByteMatrix} wrapping the provided data, or the shared empty {@code ByteMatrix} if {@code a} is {@code null} or empty
-##### random(...) -> ByteMatrix
+  - `a` (`byte[][]`) — the two-dimensional byte array to wrap; must not be {@code null} ; may be empty
+- **Returns:** a new {@code ByteMatrix} wrapping the provided data, or the shared empty {@code ByteMatrix} if {@code a} is empty
+##### copyOf(...) -> ByteMatrix
+- **Signature:** `public static ByteMatrix copyOf(final byte[]... a)`
+- **Summary:** Creates a {@code ByteMatrix} that owns a defensive deep copy of the supplied two-dimensional array.
+- **Parameters:**
+  - `a` (`byte[][]`) — the two-dimensional byte array to copy, or empty for an empty matrix; must not be {@code null}
+- **Returns:** a new {@code ByteMatrix} backed by a deep copy of {@code a} , or the shared empty matrix if {@code a} is empty
+- **See also:** #of(byte\[\]\[\]), #copy()
+##### randomRow(...) -> ByteMatrix
 - **Signature:** `public static ByteMatrix randomRow(final int length)`
 - **Summary:** Creates a new {@code 1 x length} matrix filled with random byte values uniformly distributed across the full byte range {@code \[Byte.MIN_VALUE, Byte.MAX_VALUE\]} .
 - **Parameters:**
   - `length` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
 - **Returns:** a new {@code ByteMatrix} of dimensions {@code 1 x length} filled with random values
 - **See also:** #random(int, int)
+##### random(...) -> ByteMatrix
 - **Signature:** `public static ByteMatrix random(final int rowCount, final int columnCount)`
 - **Summary:** Creates a new matrix of the specified dimensions filled with random byte values uniformly distributed across the full byte range {@code \[Byte.MIN_VALUE, Byte.MAX_VALUE\]} .
 - **Parameters:**
@@ -1390,9 +1409,9 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
   - If both arrays are non-empty, they must have the same length.
   - When both diagonals are provided and they overlap (at the center element of odd-sized matrices), the main diagonal value takes precedence.
 - **Parameters:**
-  - `mainDiagonal` (`byte[]`) — the array of main diagonal elements; may be {@code null} or empty if {@code antiDiagonal} is non- {@code null}
-  - `antiDiagonal` (`byte[]`) — the array of anti-diagonal elements; may be {@code null} or empty if {@code mainDiagonal} is non- {@code null}
-- **Returns:** a square matrix with the specified diagonals, or an empty matrix when both arrays are empty (at least one being a non- {@code null} zero-length array)
+  - `mainDiagonal` (`byte[]`) — the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non- {@code null} ; may be empty
+  - `antiDiagonal` (`byte[]`) — the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non- {@code null} ; may be empty
+- **Returns:** a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null} , or if both arrays are non-empty and have different lengths
 - **See also:** #mainDiagonal(byte\[\]), #antiDiagonal(byte\[\])
@@ -1411,10 +1430,9 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Signature:** `public ByteMatrix(final byte[][] a)`
 - **Summary:** Constructs a {@code ByteMatrix} backed by the supplied two-dimensional array.
 - **Contract:**
-  - <p> If {@code a} is {@code null} , this creates an empty {@code 0x0} matrix.
   - Call {@link #copy()} if you need an independently owned matrix.
 - **Parameters:**
-  - `a` (`byte[][]`) — the two-dimensional byte array to wrap, or {@code null} for an empty matrix
+  - `a` (`byte[][]`) — the two-dimensional byte array to wrap, must not be {@code null}
 ##### get(...) -> byte
 - **Signature:** `public byte get(final int rowIndex, final int columnIndex)`
 - **Summary:** Returns the element at the specified row and column indices.
@@ -1422,7 +1440,6 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
   - `rowIndex` (`int`) — the row index (0-based)
   - `columnIndex` (`int`) — the column index (0-based)
 - **Returns:** the byte element at position {@code (rowIndex, columnIndex)}
-- **See also:** #get(Point)
 - **Signature:** `public byte get(final Point point)`
 - **Summary:** Returns the element at the specified point.
 - **Parameters:**
@@ -1436,7 +1453,6 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
   - `rowIndex` (`int`) — the row index (0-based)
   - `columnIndex` (`int`) — the column index (0-based)
   - `value` (`byte`) — the new byte value to store at the specified position
-- **See also:** #set(Point, byte)
 - **Signature:** `public void set(final Point point, final byte value)`
 - **Summary:** Sets the element at the specified point to the given value.
 - **Parameters:**
@@ -1550,8 +1566,8 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
   - `java.lang.IndexOutOfBoundsException` — if {@code columnIndex} is out of bounds
   - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
-##### getMainDiagonal(...) -> byte\[\]
-- **Signature:** `@Override public byte[] getMainDiagonal() throws IllegalStateException`
+##### mainDiagonalCopy(...) -> byte\[\]
+- **Signature:** `@Override public byte[] mainDiagonalCopy() throws IllegalStateException`
 - **Summary:** Returns a copy of the main diagonal elements (upper-left to lower-right) as an array.
 - **Contract:**
   - The matrix must be square (rowCount == columnCount) for this operation.
@@ -1580,8 +1596,8 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square
   - `E` — if the operator throws an exception
-##### getAntiDiagonal(...) -> byte\[\]
-- **Signature:** `@Override public byte[] getAntiDiagonal() throws IllegalStateException`
+##### antiDiagonalCopy(...) -> byte\[\]
+- **Signature:** `@Override public byte[] antiDiagonalCopy() throws IllegalStateException`
 - **Summary:** Returns a copy of the anti-diagonal elements (upper-right to lower-left) as an array.
 - **Contract:**
   - The matrix must be square (rowCount == columnCount) for this operation.
@@ -1841,14 +1857,14 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
   - (none)
 - **Returns:** a new {@link ByteList} of all elements in row-major order
 - **See also:** #rowMajorStream()
-##### mutateAsFlat(...) -> void
-- **Signature:** `@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super byte[], E> action) throws E`
+##### mutateFlattened(...) -> void
+- **Signature:** `@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super byte[], E> action) throws E`
 - **Summary:** Exposes the elements of this matrix to {@code action} as a single one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix.
 - **Parameters:**
   - `action` (`Throwables.Consumer<? super byte[], E>`) — the operation to apply to the flattened array
 - **Throws:**
   - `E` — if the operation throws an exception
-- **See also:** Arrays#mutateAsFlat(byte\[\]\[\], Throwables.Consumer)
+- **See also:** Arrays#mutateFlattened(byte\[\]\[\], Throwables.Consumer)
 ##### stackVertically(...) -> ByteMatrix
 - **Signature:** `@Override public ByteMatrix stackVertically(final ByteMatrix other) throws IllegalArgumentException`
 - **Summary:** Stacks this matrix vertically with another matrix (vertical concatenation).
@@ -1984,7 +2000,7 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Returns:** a ByteStream of anti-diagonal elements, or an empty stream if this is the empty 0x0 matrix
 ##### rowMajorStream(...) -> ByteStream
 - **Signature:** `@Override public ByteStream rowMajorStream()`
-- **Summary:** Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).
+- **Summary:** Returns a stream of all elements in this matrix, traversed in row-major order (left to right, top to bottom).
 - **Parameters:**
   - (none)
 - **Returns:** a ByteStream of all elements in row-major order, or an empty stream if the matrix is empty
@@ -1995,6 +2011,7 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Parameters:**
   - `rowIndex` (`int`) — the index of the row to stream (0-based)
 - **Returns:** a {@link ByteStream} of elements from the specified row
+- **See also:** #rowStreams()
 - **Signature:** `@Override public ByteStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of rows in row-major order.
 - **Parameters:**
@@ -2004,8 +2021,8 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
 ##### columnMajorStream(...) -> ByteStream
-- **Signature:** `@Override @Beta public ByteStream columnMajorStream()`
-- **Summary:** Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).
+- **Signature:** `@Override public ByteStream columnMajorStream()`
+- **Summary:** Returns a stream of all elements in this matrix, traversed in column-major order (top to bottom, left to right).
 - **Parameters:**
   - (none)
 - **Returns:** a ByteStream of all elements in column-major order, or an empty stream if the matrix is empty
@@ -2014,7 +2031,7 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** a {@link ByteStream} of elements from the specified column
-- **Signature:** `@Override @Beta public ByteStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public ByteStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -2028,6 +2045,7 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a Stream of ByteStream objects, one for each row in the matrix
+- **See also:** #rowMajorStream(int)
 - **Signature:** `@Override public Stream<ByteStream> rowStreams(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of ByteStream objects for a range of rows.
 - **Parameters:**
@@ -2037,12 +2055,12 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
 ##### columnStreams(...) -> Stream<ByteStream>
-- **Signature:** `@Override @Beta public Stream<ByteStream> columnStreams()`
+- **Signature:** `@Override public Stream<ByteStream> columnStreams()`
 - **Summary:** Returns a stream of ByteStream objects, where each ByteStream represents a complete column.
 - **Parameters:**
   - (none)
 - **Returns:** a Stream of ByteStream objects, one for each column in the matrix, or an empty stream if the matrix is empty
-- **Signature:** `@Override @Beta public Stream<ByteStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public Stream<ByteStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of ByteStream objects for a range of columns.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -2076,12 +2094,6 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if any index is out of bounds
   - `E` — if the action throws an exception
-##### println(...) -> String
-- **Signature:** `@Override public String println()`
-- **Summary:** Prints this matrix to standard output and returns the formatted string that was printed.
-- **Parameters:**
-  - (none)
-- **Returns:** the formatted string representation of the matrix that was printed
 ##### hashCode(...) -> int
 - **Signature:** `@Override public int hashCode()`
 - **Summary:** Returns a hash code value for this matrix.
@@ -2124,15 +2136,23 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Signature:** `public static CharMatrix of(final char[]... a)`
 - **Summary:** Creates a {@code CharMatrix} from a two-dimensional char array.
 - **Parameters:**
-  - `a` (`char[][]`) — the two-dimensional char array to wrap, or {@code null} /empty for an empty matrix
-- **Returns:** a new {@code CharMatrix} backed by {@code a} , or the shared empty matrix if {@code a} is {@code null} or empty
-##### random(...) -> CharMatrix
+  - `a` (`char[][]`) — the two-dimensional char array to wrap, or empty for an empty matrix; must not be {@code null}
+- **Returns:** a new {@code CharMatrix} backed by {@code a} , or the shared empty matrix if {@code a} is empty
+##### copyOf(...) -> CharMatrix
+- **Signature:** `public static CharMatrix copyOf(final char[]... a)`
+- **Summary:** Creates a {@code CharMatrix} that owns a defensive deep copy of the supplied two-dimensional array.
+- **Parameters:**
+  - `a` (`char[][]`) — the two-dimensional char array to copy, or empty for an empty matrix; must not be {@code null}
+- **Returns:** a new {@code CharMatrix} backed by a deep copy of {@code a} , or the shared empty matrix if {@code a} is empty
+- **See also:** #of(char\[\]\[\]), #copy()
+##### randomRow(...) -> CharMatrix
 - **Signature:** `public static CharMatrix randomRow(final int length)`
 - **Summary:** Creates a new {@code 1 x length} matrix filled with random char values drawn uniformly from the full unsigned 16-bit range {@code \[0, 65535\]} .
 - **Parameters:**
   - `length` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
 - **Returns:** a new {@code CharMatrix} of dimensions {@code 1 x length} filled with random values
 - **See also:** #random(int, int)
+##### random(...) -> CharMatrix
 - **Signature:** `public static CharMatrix random(final int rowCount, final int columnCount)`
 - **Summary:** Creates a new matrix of the specified dimensions filled with random char values drawn uniformly from the full unsigned 16-bit range {@code \[0, 65535\]} .
 - **Parameters:**
@@ -2200,9 +2220,9 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
   - If both arrays are non-empty, they must have the same length.
   - When both diagonals are provided and they overlap (at the center element of odd-sized matrices), the main diagonal value takes precedence.
 - **Parameters:**
-  - `mainDiagonal` (`char[]`) — the array of main diagonal elements; may be {@code null} or empty if {@code antiDiagonal} is non- {@code null}
-  - `antiDiagonal` (`char[]`) — the array of anti-diagonal elements; may be {@code null} or empty if {@code mainDiagonal} is non- {@code null}
-- **Returns:** a square matrix with the specified diagonals, or an empty matrix when both arrays are empty (at least one being a non- {@code null} zero-length array)
+  - `mainDiagonal` (`char[]`) — the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non- {@code null} ; may be empty
+  - `antiDiagonal` (`char[]`) — the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non- {@code null} ; may be empty
+- **Returns:** a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null} , or if both arrays are non-empty and have different lengths
 - **See also:** #mainDiagonal(char\[\]), #antiDiagonal(char\[\])
@@ -2219,10 +2239,9 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Signature:** `public CharMatrix(final char[][] a)`
 - **Summary:** Constructs a {@code CharMatrix} backed by the supplied two-dimensional array.
 - **Contract:**
-  - <p> If {@code a} is {@code null} , this creates an empty {@code 0x0} matrix.
   - Call {@link #copy()} if you need an independently owned matrix.
 - **Parameters:**
-  - `a` (`char[][]`) — the two-dimensional char array to wrap, or {@code null} for an empty matrix
+  - `a` (`char[][]`) — the two-dimensional char array to wrap, must not be {@code null}
 ##### get(...) -> char
 - **Signature:** `public char get(final int rowIndex, final int columnIndex)`
 - **Summary:** Returns the element at the specified row and column indices.
@@ -2356,8 +2375,8 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
   - `java.lang.IndexOutOfBoundsException` — if {@code columnIndex} is out of bounds
   - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
-##### getMainDiagonal(...) -> char\[\]
-- **Signature:** `@Override public char[] getMainDiagonal() throws IllegalStateException`
+##### mainDiagonalCopy(...) -> char\[\]
+- **Signature:** `@Override public char[] mainDiagonalCopy() throws IllegalStateException`
 - **Summary:** Returns a copy of the main diagonal elements (upper-left to lower-right) as an array.
 - **Contract:**
   - The matrix must be square (rowCount == columnCount) for this operation.
@@ -2386,8 +2405,8 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square
   - `E` — if the operator throws an exception
-##### getAntiDiagonal(...) -> char\[\]
-- **Signature:** `@Override public char[] getAntiDiagonal() throws IllegalStateException`
+##### antiDiagonalCopy(...) -> char\[\]
+- **Signature:** `@Override public char[] antiDiagonalCopy() throws IllegalStateException`
 - **Summary:** Returns a copy of the anti-diagonal elements (upper-right to lower-left) as an array.
 - **Contract:**
   - The matrix must be square (rowCount == columnCount) for this operation.
@@ -2651,14 +2670,14 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
   - (none)
 - **Returns:** a new {@link CharList} of all elements in row-major order
 - **See also:** #rowMajorStream()
-##### mutateAsFlat(...) -> void
-- **Signature:** `@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super char[], E> action) throws E`
+##### mutateFlattened(...) -> void
+- **Signature:** `@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super char[], E> action) throws E`
 - **Summary:** Exposes the elements of this matrix to {@code action} as a single one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix.
 - **Parameters:**
   - `action` (`Throwables.Consumer<? super char[], E>`) — the operation to apply to the flattened array
 - **Throws:**
   - `E` — if the operation throws an exception
-- **See also:** Arrays#mutateAsFlat(char\[\]\[\], Throwables.Consumer)
+- **See also:** Arrays#mutateFlattened(char\[\]\[\], Throwables.Consumer)
 ##### stackVertically(...) -> CharMatrix
 - **Signature:** `@Override public CharMatrix stackVertically(final CharMatrix other) throws IllegalArgumentException`
 - **Summary:** Stacks this matrix vertically with another matrix (vertical concatenation).
@@ -2686,6 +2705,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Summary:** Performs element-wise addition with another matrix.
 - **Contract:**
   - The matrices must have the same dimensions.
+  - If you want explicit integer arithmetic, convert with {@link #toIntMatrix()} first.
   - If you need a non-wrapping result, call {@link #toIntMatrix()} first and add there.
 - **Parameters:**
   - `other` (`CharMatrix`) — the matrix to add to this matrix; must not be {@code null} and must have the same shape
@@ -2698,6 +2718,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Summary:** Performs element-wise subtraction ( {@code this - other} ).
 - **Contract:**
   - The matrices must have the same dimensions.
+  - If you want explicit integer arithmetic, convert with {@link #toIntMatrix()} first.
   - If you need a non-wrapping result, call {@link #toIntMatrix()} first and subtract there.
 - **Parameters:**
   - `other` (`CharMatrix`) — the matrix to subtract from this matrix; must not be {@code null} and must have the same shape
@@ -2710,6 +2731,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Summary:** Performs matrix multiplication (Cayley product) with another matrix.
 - **Contract:**
   - The number of columns in this matrix must equal the number of rows in {@code other} .
+  - If you want explicit integer arithmetic, convert with {@link #toIntMatrix()} first.
 - **Parameters:**
   - `other` (`CharMatrix`) — the matrix to multiply with; must not be {@code null}
 - **Returns:** a new {@code CharMatrix} of shape {@code this.rowCount x other.columnCount} containing the matrix product
@@ -2728,6 +2750,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new IntMatrix with the same dimensions containing the int values of the characters
+- **See also:** IntMatrix#from(char\[\]\[\])
 ##### toLongMatrix(...) -> LongMatrix
 - **Signature:** `public LongMatrix toLongMatrix()`
 - **Summary:** Converts this CharMatrix to a LongMatrix.
@@ -2790,7 +2813,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Returns:** a CharStream of anti-diagonal elements, or an empty stream if the matrix is empty
 ##### rowMajorStream(...) -> CharStream
 - **Signature:** `@Override public CharStream rowMajorStream()`
-- **Summary:** Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).
+- **Summary:** Returns a stream of all elements in this matrix, traversed in row-major order (left to right, top to bottom).
 - **Parameters:**
   - (none)
 - **Returns:** a CharStream of all elements in row-major order, or an empty stream if the matrix is empty
@@ -2801,6 +2824,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Parameters:**
   - `rowIndex` (`int`) — the index of the row to stream (0-based)
 - **Returns:** a {@link CharStream} of elements from the specified row
+- **See also:** #rowStreams()
 - **Signature:** `@Override public CharStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of rows in row-major order.
 - **Parameters:**
@@ -2810,8 +2834,8 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
 ##### columnMajorStream(...) -> CharStream
-- **Signature:** `@Override @Beta public CharStream columnMajorStream()`
-- **Summary:** Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).
+- **Signature:** `@Override public CharStream columnMajorStream()`
+- **Summary:** Returns a stream of all elements in this matrix, traversed in column-major order (top to bottom, left to right).
 - **Parameters:**
   - (none)
 - **Returns:** a CharStream of all elements in column-major order, or an empty stream if the matrix is empty
@@ -2820,7 +2844,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** a {@link CharStream} of elements from the specified column
-- **Signature:** `@Override @Beta public CharStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public CharStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -2834,6 +2858,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a Stream of CharStream objects, one for each row in the matrix
+- **See also:** #rowMajorStream(int)
 - **Signature:** `@Override public Stream<CharStream> rowStreams(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of CharStream objects for a range of rows.
 - **Parameters:**
@@ -2843,12 +2868,12 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
 ##### columnStreams(...) -> Stream<CharStream>
-- **Signature:** `@Override @Beta public Stream<CharStream> columnStreams()`
+- **Signature:** `@Override public Stream<CharStream> columnStreams()`
 - **Summary:** Returns a stream of CharStream objects, where each CharStream represents a complete column.
 - **Parameters:**
   - (none)
 - **Returns:** a Stream of CharStream objects, one for each column in the matrix, or an empty stream if the matrix is empty
-- **Signature:** `@Override @Beta public Stream<CharStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public Stream<CharStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of CharStream objects for a range of columns.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -2882,12 +2907,6 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if any index is out of bounds
   - `E` — if the action throws an exception
-##### println(...) -> String
-- **Signature:** `@Override public String println()`
-- **Summary:** Prints this matrix to standard output and returns the formatted string that was printed.
-- **Parameters:**
-  - (none)
-- **Returns:** the formatted string representation of the matrix that was printed
 ##### hashCode(...) -> int
 - **Signature:** `@Override public int hashCode()`
 - **Summary:** Returns a hash code value for this matrix.
@@ -2930,38 +2949,49 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Signature:** `public static DoubleMatrix of(final double[]... a)`
 - **Summary:** Creates a DoubleMatrix from a two-dimensional double array.
 - **Parameters:**
-  - `a` (`double[][]`) — the two-dimensional double array to create the matrix from, or {@code null} /empty for an empty matrix
-- **Returns:** a new {@code DoubleMatrix} wrapping the provided data, or the shared empty {@code DoubleMatrix} if the input is {@code null} or empty
+  - `a` (`double[][]`) — the two-dimensional double array to create the matrix from, or empty for an empty matrix; must not be {@code null}
+- **Returns:** a new {@code DoubleMatrix} wrapping the provided data, or the shared empty {@code DoubleMatrix} if the input is empty
+##### copyOf(...) -> DoubleMatrix
+- **Signature:** `public static DoubleMatrix copyOf(final double[]... a)`
+- **Summary:** Creates a {@code DoubleMatrix} that owns a defensive deep copy of the supplied two-dimensional array.
+- **Parameters:**
+  - `a` (`double[][]`) — the two-dimensional double array to copy, or empty for an empty matrix; must not be {@code null}
+- **Returns:** a new {@code DoubleMatrix} backed by a deep copy of {@code a} , or the shared empty matrix if {@code a} is empty
+- **See also:** #of(double\[\]\[\]), #copy()
 ##### from(...) -> DoubleMatrix
 - **Signature:** `public static DoubleMatrix from(final int[]... a)`
 - **Summary:** Creates a DoubleMatrix from a two-dimensional int array by converting int values to double.
 - **Contract:**
   - <p> All rows must have the same length as the first row (rectangular array required).
 - **Parameters:**
-  - `a` (`int[][]`) — the two-dimensional int array to convert to a double matrix, or {@code null} /empty for an empty matrix
-- **Returns:** a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if input is {@code null} or empty
+  - `a` (`int[][]`) — the two-dimensional int array to convert to a double matrix, or empty for an empty matrix; must not be {@code null}
+- **Returns:** a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if input is empty
+- **See also:** IntMatrix#toDoubleMatrix()
 - **Signature:** `public static DoubleMatrix from(final long[]... a)`
 - **Summary:** Creates a DoubleMatrix from a two-dimensional long array by converting long values to double.
 - **Contract:**
   - <p> All rows must have the same length as the first row (rectangular array required).
   - </p> <p> <b> Note: </b> Long values that require more than 53 bits of precision may lose precision when converted to double, since a double has 53 bits of significand precision (52 stored fraction bits plus an implicit leading bit for normal values).
 - **Parameters:**
-  - `a` (`long[][]`) — the two-dimensional long array to convert to a double matrix, or {@code null} /empty for an empty matrix
-- **Returns:** a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if input is {@code null} or empty
+  - `a` (`long[][]`) — the two-dimensional long array to convert to a double matrix, or empty for an empty matrix; must not be {@code null}
+- **Returns:** a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if input is empty
+- **See also:** LongMatrix#toDoubleMatrix()
 - **Signature:** `public static DoubleMatrix from(final float[]... a)`
 - **Summary:** Creates a DoubleMatrix from a two-dimensional float array by widening float values to double.
 - **Contract:**
   - <p> All rows must have the same length as the first row (rectangular array required).
 - **Parameters:**
-  - `a` (`float[][]`) — the two-dimensional float array to convert to a double matrix, or {@code null} /empty for an empty matrix
-- **Returns:** a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if input is {@code null} or empty
-##### random(...) -> DoubleMatrix
+  - `a` (`float[][]`) — the two-dimensional float array to convert to a double matrix, or empty for an empty matrix; must not be {@code null}
+- **Returns:** a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if input is empty
+- **See also:** FloatMatrix#toDoubleMatrix()
+##### randomRow(...) -> DoubleMatrix
 - **Signature:** `public static DoubleMatrix randomRow(final int length)`
 - **Summary:** Creates a new {@code 1 x length} matrix filled with random double values uniformly distributed in {@code \[0.0, 1.0)} .
 - **Parameters:**
   - `length` (`int`) — the number of columns in the new matrix
 - **Returns:** a new {@code DoubleMatrix} of dimensions {@code 1 x length} filled with random values in {@code \[0.0, 1.0)}
 - **See also:** #random(int, int)
+##### random(...) -> DoubleMatrix
 - **Signature:** `public static DoubleMatrix random(final int rowCount, final int columnCount)`
 - **Summary:** Creates a new matrix of the specified dimensions filled with random double values uniformly distributed in {@code \[0.0, 1.0)} .
 - **Parameters:**
@@ -2997,9 +3027,9 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
   - If both arrays are non-empty, they must have the same length.
   - When both diagonals are provided and they overlap (at the center element of odd-sized matrices), the main diagonal value takes precedence.
 - **Parameters:**
-  - `mainDiagonal` (`double[]`) — the array of main diagonal elements; may be {@code null} or empty if {@code antiDiagonal} is non- {@code null}
-  - `antiDiagonal` (`double[]`) — the array of anti-diagonal elements; may be {@code null} or empty if {@code mainDiagonal} is non- {@code null}
-- **Returns:** a square matrix with the specified diagonals, or an empty matrix when both arrays are empty (at least one being a non- {@code null} zero-length array)
+  - `mainDiagonal` (`double[]`) — the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non- {@code null} ; may be empty
+  - `antiDiagonal` (`double[]`) — the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non- {@code null} ; may be empty
+- **Returns:** a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null} , or if both arrays are non-empty and have different lengths
 - **See also:** #mainDiagonal(double\[\]), #antiDiagonal(double\[\])
@@ -3016,10 +3046,9 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Signature:** `public DoubleMatrix(final double[][] a)`
 - **Summary:** Constructs a {@code DoubleMatrix} backed by the supplied two-dimensional array.
 - **Contract:**
-  - <p> If {@code a} is {@code null} , this creates an empty {@code 0x0} matrix.
   - Call {@link #copy()} if you need an independently owned matrix.
 - **Parameters:**
-  - `a` (`double[][]`) — the two-dimensional double array to wrap, or {@code null} for an empty matrix
+  - `a` (`double[][]`) — the two-dimensional double array to wrap, must not be {@code null}
 ##### get(...) -> double
 - **Signature:** `public double get(final int rowIndex, final int columnIndex)`
 - **Summary:** Returns the element at the specified row and column indices.
@@ -3153,8 +3182,8 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
   - `java.lang.IndexOutOfBoundsException` — if {@code columnIndex} is out of bounds
   - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
-##### getMainDiagonal(...) -> double\[\]
-- **Signature:** `@Override public double[] getMainDiagonal() throws IllegalStateException`
+##### mainDiagonalCopy(...) -> double\[\]
+- **Signature:** `@Override public double[] mainDiagonalCopy() throws IllegalStateException`
 - **Summary:** Returns a copy of the main diagonal elements (upper-left to lower-right) as an array.
 - **Contract:**
   - The matrix must be square (rowCount == columnCount) for this operation.
@@ -3183,8 +3212,8 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square
   - `E` — if the operator throws an exception
-##### getAntiDiagonal(...) -> double\[\]
-- **Signature:** `@Override public double[] getAntiDiagonal() throws IllegalStateException`
+##### antiDiagonalCopy(...) -> double\[\]
+- **Signature:** `@Override public double[] antiDiagonalCopy() throws IllegalStateException`
 - **Summary:** Returns a copy of the anti-diagonal elements (upper-right to lower-left) as an array.
 - **Contract:**
   - The matrix must be square (rowCount == columnCount) for this operation.
@@ -3468,8 +3497,8 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
   - (none)
 - **Returns:** a new {@link DoubleList} of all elements in row-major order
 - **See also:** #rowMajorStream()
-##### mutateAsFlat(...) -> void
-- **Signature:** `@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super double[], E> action) throws E`
+##### mutateFlattened(...) -> void
+- **Signature:** `@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super double[], E> action) throws E`
 - **Summary:** Flattens all elements of this matrix into a single one-dimensional array, applies the given operation to that flattened array, and then copies the (possibly modified) elements back into the matrix in row-major order.
 - **Contract:**
   - When sorting with {@link java.util.Arrays#sort(double\[\])} , note that {@code NaN} is ordered greater than all other values (including {@code +Infinity} ) and {@code -0.0} is ordered less than {@code +0.0} .
@@ -3477,7 +3506,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
   - `action` (`Throwables.Consumer<? super double[], E>`) — the operation to apply to the flattened array
 - **Throws:**
   - `E` — if the operation throws an exception
-- **See also:** Arrays#mutateAsFlat(double\[\]\[\], Throwables.Consumer)
+- **See also:** Arrays#mutateFlattened(double\[\]\[\], Throwables.Consumer)
 ##### stackVertically(...) -> DoubleMatrix
 - **Signature:** `@Override public DoubleMatrix stackVertically(final DoubleMatrix other) throws IllegalArgumentException`
 - **Summary:** Stacks this matrix vertically with another matrix (vertical concatenation).
@@ -3603,7 +3632,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Returns:** a DoubleStream of anti-diagonal elements, or an empty stream if the matrix is empty
 ##### rowMajorStream(...) -> DoubleStream
 - **Signature:** `@Override public DoubleStream rowMajorStream()`
-- **Summary:** Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).
+- **Summary:** Returns a stream of all elements in this matrix, traversed in row-major order (left to right, top to bottom).
 - **Parameters:**
   - (none)
 - **Returns:** a DoubleStream of all elements in row-major order, or an empty stream if the matrix is empty
@@ -3614,6 +3643,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Parameters:**
   - `rowIndex` (`int`) — the index of the row to stream (0-based)
 - **Returns:** a {@link DoubleStream} of elements from the specified row
+- **See also:** #rowStreams()
 - **Signature:** `@Override public DoubleStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of rows in row-major order.
 - **Parameters:**
@@ -3623,8 +3653,8 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
 ##### columnMajorStream(...) -> DoubleStream
-- **Signature:** `@Override @Beta public DoubleStream columnMajorStream()`
-- **Summary:** Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).
+- **Signature:** `@Override public DoubleStream columnMajorStream()`
+- **Summary:** Returns a stream of all elements in this matrix, traversed in column-major order (top to bottom, left to right).
 - **Parameters:**
   - (none)
 - **Returns:** a DoubleStream of all elements in column-major order, or an empty stream if the matrix is empty
@@ -3633,7 +3663,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** a {@link DoubleStream} of elements from the specified column
-- **Signature:** `@Override @Beta public DoubleStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public DoubleStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -3647,6 +3677,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a Stream of DoubleStream objects, one for each row in the matrix
+- **See also:** #rowMajorStream(int)
 - **Signature:** `@Override public Stream<DoubleStream> rowStreams(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of DoubleStream objects for a range of rows.
 - **Parameters:**
@@ -3656,12 +3687,12 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
 ##### columnStreams(...) -> Stream<DoubleStream>
-- **Signature:** `@Override @Beta public Stream<DoubleStream> columnStreams()`
+- **Signature:** `@Override public Stream<DoubleStream> columnStreams()`
 - **Summary:** Returns a stream of DoubleStream objects, where each DoubleStream represents a complete column.
 - **Parameters:**
   - (none)
 - **Returns:** a Stream of DoubleStream objects, one for each column in the matrix, or an empty stream if the matrix is empty
-- **Signature:** `@Override @Beta public Stream<DoubleStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public Stream<DoubleStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of DoubleStream objects for a range of columns.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -3695,12 +3726,6 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if any index is out of bounds
   - `E` — if the action throws an exception
-##### println(...) -> String
-- **Signature:** `@Override public String println()`
-- **Summary:** Prints this matrix to standard output and returns the formatted string.
-- **Parameters:**
-  - (none)
-- **Returns:** the formatted string representation of the matrix that was printed
 ##### hashCode(...) -> int
 - **Signature:** `@Override public int hashCode()`
 - **Summary:** Returns a hash code value for this matrix.
@@ -3745,24 +3770,33 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Contract:**
   - <p> <b> Important: </b> When the input is non-empty the provided array is used directly without defensive copying after rectangular-shape validation.
 - **Parameters:**
-  - `a` (`float[][]`) — the two-dimensional float array to create the matrix from, or {@code null} /empty for an empty matrix
-- **Returns:** a new {@code FloatMatrix} wrapping the provided data, or the shared empty {@code FloatMatrix} if input is {@code null} or empty
+  - `a` (`float[][]`) — the two-dimensional float array to create the matrix from, or empty for an empty matrix; must not be {@code null}
+- **Returns:** a new {@code FloatMatrix} wrapping the provided data, or the shared empty {@code FloatMatrix} if input is empty
+##### copyOf(...) -> FloatMatrix
+- **Signature:** `public static FloatMatrix copyOf(final float[]... a)`
+- **Summary:** Creates a {@code FloatMatrix} that owns a defensive deep copy of the supplied two-dimensional array.
+- **Parameters:**
+  - `a` (`float[][]`) — the two-dimensional float array to copy, or empty for an empty matrix; must not be {@code null}
+- **Returns:** a new {@code FloatMatrix} backed by a deep copy of {@code a} , or the shared empty matrix if {@code a} is empty
+- **See also:** #of(float\[\]\[\]), #copy()
 ##### from(...) -> FloatMatrix
 - **Signature:** `public static FloatMatrix from(final int[]... a)`
 - **Summary:** Creates a FloatMatrix from a two-dimensional int array by converting int values to float.
 - **Contract:**
   - <p> <b> Note: </b> Int values with more than 24 significant bits may lose precision when converted to float, since float has a 23-bit mantissa.
-  - </p> <p> <b> Requirements: </b> </p> <ul> <li> All rows must be non- {@code null} and have the same length as the first row (rectangular array required) </li> </ul> <p> <b> Usage Examples: </b> </p> <pre> {@code FloatMatrix matrix = FloatMatrix.from(new int\[\]\[\] {{1, 2}, {3, 4}}); matrix.get(1, 0); // returns 3.0f matrix.rowCount(); // returns 2 // Precision: 16_777_217 has 25 significant bits and rounds when stored as float FloatMatrix.from(new int\[\]\[\] {{16777217}}).get(0, 0); // returns 1.6777216E7f (rounded) FloatMatrix.from((int\[\]\[\]) null).isEmpty(); // returns true FloatMatrix.from(new int\[0\]\[0\]).columnCount(); // returns 0 FloatMatrix.from(new int\[\]\[\] {{1}, {2, 3}}); // throws IllegalArgumentException (rows differ in length) } </pre>
+  - </p> <p> <b> Requirements: </b> </p> <ul> <li> All rows must be non- {@code null} and have the same length as the first row (rectangular array required) </li> </ul> <p> <b> Usage Examples: </b> </p> <pre> {@code FloatMatrix matrix = FloatMatrix.from(new int\[\]\[\] {{1, 2}, {3, 4}}); matrix.get(1, 0); // returns 3.0f matrix.rowCount(); // returns 2 // Precision: 16_777_217 has 25 significant bits and rounds when stored as float FloatMatrix.from(new int\[\]\[\] {{16777217}}).get(0, 0); // returns 1.6777216E7f (rounded) FloatMatrix.from((int\[\]\[\]) null); // throws IllegalArgumentException FloatMatrix.from(new int\[0\]\[0\]).columnCount(); // returns 0 FloatMatrix.from(new int\[\]\[\] {{1}, {2, 3}}); // throws IllegalArgumentException (rows differ in length) } </pre>
 - **Parameters:**
-  - `a` (`int[][]`) — the two-dimensional int array to convert to a float matrix, or {@code null} /empty for an empty matrix
-- **Returns:** a new {@code FloatMatrix} with converted values, or the shared empty {@code FloatMatrix} if input is {@code null} or empty
-##### random(...) -> FloatMatrix
+  - `a` (`int[][]`) — the two-dimensional int array to convert to a float matrix, or empty for an empty matrix; must not be {@code null}
+- **Returns:** a new {@code FloatMatrix} with converted values, or the shared empty {@code FloatMatrix} if input is empty
+- **See also:** IntMatrix#toFloatMatrix()
+##### randomRow(...) -> FloatMatrix
 - **Signature:** `public static FloatMatrix randomRow(final int length)`
 - **Summary:** Creates a new {@code 1 x length} matrix filled with random float values uniformly distributed in {@code \[0.0f, 1.0f)} .
 - **Parameters:**
   - `length` (`int`) — the number of columns in the new matrix
 - **Returns:** a new {@code FloatMatrix} of dimensions {@code 1 x length} filled with random values in {@code \[0.0f, 1.0f)}
 - **See also:** #random(int, int)
+##### random(...) -> FloatMatrix
 - **Signature:** `public static FloatMatrix random(final int rowCount, final int columnCount)`
 - **Summary:** Creates a new matrix of the specified dimensions filled with random float values uniformly distributed in {@code \[0.0f, 1.0f)} .
 - **Parameters:**
@@ -3798,9 +3832,9 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
   - If both arrays are non-empty, they must have the same length.
   - When both diagonals are provided and they overlap (at the center element of odd-sized matrices), the main diagonal value takes precedence.
 - **Parameters:**
-  - `mainDiagonal` (`float[]`) — the array of main diagonal elements; may be {@code null} or empty if {@code antiDiagonal} is non- {@code null}
-  - `antiDiagonal` (`float[]`) — the array of anti-diagonal elements; may be {@code null} or empty if {@code mainDiagonal} is non- {@code null}
-- **Returns:** a square matrix with the specified diagonals, or an empty matrix when both arrays are empty (at least one being a non- {@code null} zero-length array)
+  - `mainDiagonal` (`float[]`) — the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non- {@code null} ; may be empty
+  - `antiDiagonal` (`float[]`) — the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non- {@code null} ; may be empty
+- **Returns:** a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null} , or if both arrays are non-empty and have different lengths
 - **See also:** #mainDiagonal(float\[\]), #antiDiagonal(float\[\])
@@ -3819,10 +3853,9 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Signature:** `public FloatMatrix(final float[][] a)`
 - **Summary:** Constructs a {@code FloatMatrix} backed by the supplied two-dimensional array.
 - **Contract:**
-  - <p> If {@code a} is {@code null} , this creates an empty {@code 0x0} matrix.
   - Call {@link #copy()} if you need an independently owned matrix.
 - **Parameters:**
-  - `a` (`float[][]`) — the two-dimensional float array to wrap, or {@code null} for an empty matrix
+  - `a` (`float[][]`) — the two-dimensional float array to wrap, must not be {@code null}
 ##### get(...) -> float
 - **Signature:** `public float get(final int rowIndex, final int columnIndex)`
 - **Summary:** Returns the element at the specified row and column indices.
@@ -3956,8 +3989,8 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
   - `java.lang.IndexOutOfBoundsException` — if {@code columnIndex} is out of bounds
   - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
-##### getMainDiagonal(...) -> float\[\]
-- **Signature:** `@Override public float[] getMainDiagonal() throws IllegalStateException`
+##### mainDiagonalCopy(...) -> float\[\]
+- **Signature:** `@Override public float[] mainDiagonalCopy() throws IllegalStateException`
 - **Summary:** Returns a copy of the main diagonal elements (upper-left to lower-right) as an array.
 - **Contract:**
   - The matrix must be square (rowCount == columnCount) for this operation.
@@ -3986,8 +4019,8 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square
   - `E` — if the operator throws an exception
-##### getAntiDiagonal(...) -> float\[\]
-- **Signature:** `@Override public float[] getAntiDiagonal() throws IllegalStateException`
+##### antiDiagonalCopy(...) -> float\[\]
+- **Signature:** `@Override public float[] antiDiagonalCopy() throws IllegalStateException`
 - **Summary:** Returns a copy of the anti-diagonal elements (upper-right to lower-left) as an array.
 - **Contract:**
   - The matrix must be square (rowCount == columnCount) for this operation.
@@ -4252,8 +4285,8 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
   - (none)
 - **Returns:** a new {@link FloatList} of all elements in row-major order
 - **See also:** #rowMajorStream()
-##### mutateAsFlat(...) -> void
-- **Signature:** `@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super float[], E> action) throws E`
+##### mutateFlattened(...) -> void
+- **Signature:** `@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super float[], E> action) throws E`
 - **Summary:** Flattens all elements of this matrix into a single one-dimensional array, applies the given operation to that flattened array, and then copies the (possibly modified) elements back into the matrix in row-major order.
 - **Contract:**
   - When sorting with {@link java.util.Arrays#sort(float\[\])} , note that {@code NaN} is ordered greater than all other values (including {@code +Infinity} ) and {@code -0.0f} is ordered less than {@code +0.0f} .
@@ -4261,7 +4294,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
   - `action` (`Throwables.Consumer<? super float[], E>`) — the operation to apply to the flattened array
 - **Throws:**
   - `E` — if the operation throws an exception
-- **See also:** Arrays#mutateAsFlat(float\[\]\[\], Throwables.Consumer)
+- **See also:** Arrays#mutateFlattened(float\[\]\[\], Throwables.Consumer)
 ##### stackVertically(...) -> FloatMatrix
 - **Signature:** `@Override public FloatMatrix stackVertically(final FloatMatrix other) throws IllegalArgumentException`
 - **Summary:** Stacks this matrix vertically with another matrix (vertical concatenation).
@@ -4332,6 +4365,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new {@code DoubleMatrix} with values widened from {@code float} to {@code double} , with the same shape as this matrix
+- **See also:** DoubleMatrix#from(float\[\]\[\])
 ##### toIntMatrix(...) -> IntMatrix
 - **Signature:** `public IntMatrix toIntMatrix()`
 - **Summary:** Converts this float matrix to an int matrix.
@@ -4388,7 +4422,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Returns:** a FloatStream of anti-diagonal elements, or an empty stream if the matrix is empty
 ##### rowMajorStream(...) -> FloatStream
 - **Signature:** `@Override public FloatStream rowMajorStream()`
-- **Summary:** Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).
+- **Summary:** Returns a stream of all elements in this matrix, traversed in row-major order (left to right, top to bottom).
 - **Parameters:**
   - (none)
 - **Returns:** a FloatStream of all elements in row-major order, or an empty stream if the matrix is empty
@@ -4399,6 +4433,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Parameters:**
   - `rowIndex` (`int`) — the index of the row to stream (0-based)
 - **Returns:** a {@link FloatStream} of elements from the specified row
+- **See also:** #rowStreams()
 - **Signature:** `@Override public FloatStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of rows in row-major order.
 - **Parameters:**
@@ -4408,8 +4443,8 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
 ##### columnMajorStream(...) -> FloatStream
-- **Signature:** `@Override @Beta public FloatStream columnMajorStream()`
-- **Summary:** Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).
+- **Signature:** `@Override public FloatStream columnMajorStream()`
+- **Summary:** Returns a stream of all elements in this matrix, traversed in column-major order (top to bottom, left to right).
 - **Parameters:**
   - (none)
 - **Returns:** a FloatStream of all elements in column-major order, or an empty stream if the matrix is empty
@@ -4418,7 +4453,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** a {@link FloatStream} of elements from the specified column
-- **Signature:** `@Override @Beta public FloatStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public FloatStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -4432,6 +4467,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a Stream of FloatStream objects, one for each row in the matrix
+- **See also:** #rowMajorStream(int)
 - **Signature:** `@Override public Stream<FloatStream> rowStreams(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of FloatStream objects for a range of rows.
 - **Parameters:**
@@ -4441,12 +4477,12 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
 ##### columnStreams(...) -> Stream<FloatStream>
-- **Signature:** `@Override @Beta public Stream<FloatStream> columnStreams()`
+- **Signature:** `@Override public Stream<FloatStream> columnStreams()`
 - **Summary:** Returns a stream of FloatStream objects, where each FloatStream represents a complete column.
 - **Parameters:**
   - (none)
 - **Returns:** a Stream of FloatStream objects, one for each column in the matrix, or an empty stream if the matrix is empty
-- **Signature:** `@Override @Beta public Stream<FloatStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public Stream<FloatStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of FloatStream objects for a range of columns.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -4480,12 +4516,6 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if any index is out of bounds
   - `E` — if the action throws an exception
-##### println(...) -> String
-- **Signature:** `@Override public String println()`
-- **Summary:** Prints this matrix to standard output and returns the formatted string.
-- **Parameters:**
-  - (none)
-- **Returns:** the formatted string representation of the matrix that was printed
 ##### hashCode(...) -> int
 - **Signature:** `@Override public int hashCode()`
 - **Summary:** Returns a hash code value for this matrix.
@@ -4528,37 +4558,48 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Signature:** `public static IntMatrix of(final int[]... a)`
 - **Summary:** Creates an {@code IntMatrix} from a two-dimensional int array.
 - **Parameters:**
-  - `a` (`int[][]`) — the two-dimensional int array to wrap, or {@code null} /empty for an empty matrix
-- **Returns:** a new {@code IntMatrix} backed by {@code a} , or the shared empty matrix if {@code a} is {@code null} or empty
+  - `a` (`int[][]`) — the two-dimensional int array to wrap, or empty for an empty matrix; must not be {@code null}
+- **Returns:** a new {@code IntMatrix} backed by {@code a} , or the shared empty matrix if {@code a} is empty
+##### copyOf(...) -> IntMatrix
+- **Signature:** `public static IntMatrix copyOf(final int[]... a)`
+- **Summary:** Creates an {@code IntMatrix} that owns a defensive deep copy of the supplied two-dimensional array.
+- **Parameters:**
+  - `a` (`int[][]`) — the two-dimensional int array to copy, or empty for an empty matrix; must not be {@code null}
+- **Returns:** a new {@code IntMatrix} backed by a deep copy of {@code a} , or the shared empty matrix if {@code a} is empty
+- **See also:** #of(int\[\]\[\]), #copy()
 ##### from(...) -> IntMatrix
 - **Signature:** `public static IntMatrix from(final char[]... a)`
 - **Summary:** Creates an {@code IntMatrix} from a two-dimensional {@code char} array by widening each {@code char} to {@code int} using its unsigned 16-bit numeric value (for example {@code 'A'} becomes {@code 65} ).
 - **Contract:**
   - <p> All rows must have the same length as the first row (rectangular array required).
 - **Parameters:**
-  - `a` (`char[][]`) — the two-dimensional char array to convert, or {@code null} /empty for an empty matrix
-- **Returns:** a new {@code IntMatrix} with the widened values, or the shared empty matrix if {@code a} is {@code null} or empty
+  - `a` (`char[][]`) — the two-dimensional char array to convert, or empty for an empty matrix; must not be {@code null}
+- **Returns:** a new {@code IntMatrix} with the widened values, or the shared empty matrix if {@code a} is empty
+- **See also:** CharMatrix#toIntMatrix()
 - **Signature:** `public static IntMatrix from(final byte[]... a)`
 - **Summary:** Creates an {@code IntMatrix} from a two-dimensional {@code byte} array by sign-extending each {@code byte} to {@code int} (negative bytes therefore yield negative ints).
 - **Contract:**
   - <p> All rows must have the same length as the first row (rectangular array required).
 - **Parameters:**
-  - `a` (`byte[][]`) — the two-dimensional byte array to convert, or {@code null} /empty for an empty matrix
-- **Returns:** a new {@code IntMatrix} with the widened values, or the shared empty matrix if {@code a} is {@code null} or empty
+  - `a` (`byte[][]`) — the two-dimensional byte array to convert, or empty for an empty matrix; must not be {@code null}
+- **Returns:** a new {@code IntMatrix} with the widened values, or the shared empty matrix if {@code a} is empty
+- **See also:** ByteMatrix#toIntMatrix()
 - **Signature:** `public static IntMatrix from(final short[]... a)`
 - **Summary:** Creates an {@code IntMatrix} from a two-dimensional {@code short} array by sign-extending each {@code short} to {@code int} (negative shorts therefore yield negative ints).
 - **Contract:**
   - <p> All rows must have the same length as the first row (rectangular array required).
 - **Parameters:**
-  - `a` (`short[][]`) — the two-dimensional short array to convert, or {@code null} /empty for an empty matrix
-- **Returns:** a new {@code IntMatrix} with the widened values, or the shared empty matrix if {@code a} is {@code null} or empty
-##### random(...) -> IntMatrix
+  - `a` (`short[][]`) — the two-dimensional short array to convert, or empty for an empty matrix; must not be {@code null}
+- **Returns:** a new {@code IntMatrix} with the widened values, or the shared empty matrix if {@code a} is empty
+- **See also:** ShortMatrix#toIntMatrix()
+##### randomRow(...) -> IntMatrix
 - **Signature:** `public static IntMatrix randomRow(final int length)`
 - **Summary:** Creates a new {@code 1 x length} matrix filled with pseudo-random {@code int} values drawn uniformly from the entire {@code int} range.
 - **Parameters:**
   - `length` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
 - **Returns:** a new {@code IntMatrix} of dimensions {@code 1 x length} filled with random values
 - **See also:** #random(int, int)
+##### random(...) -> IntMatrix
 - **Signature:** `public static IntMatrix random(final int rowCount, final int columnCount)`
 - **Summary:** Creates a new matrix of the specified dimensions filled with pseudo-random {@code int} values drawn uniformly from the entire {@code int} range.
 - **Parameters:**
@@ -4633,7 +4674,7 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Parameters:**
   - `mainDiagonal` (`int[]`) — the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non- {@code null} ; may be empty
   - `antiDiagonal` (`int[]`) — the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non- {@code null} ; may be empty
-- **Returns:** a square matrix with the specified diagonals, or an empty matrix when both arrays are empty (at least one being a non- {@code null} zero-length array)
+- **Returns:** a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null} , or if both arrays are non-empty and have different lengths
 - **See also:** #mainDiagonal(int\[\]), #antiDiagonal(int\[\])
@@ -4650,10 +4691,9 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Signature:** `public IntMatrix(final int[][] a)`
 - **Summary:** Constructs an {@code IntMatrix} backed by the supplied two-dimensional array.
 - **Contract:**
-  - <p> If {@code a} is {@code null} , this creates an empty {@code 0x0} matrix.
   - Call {@link #copy()} if you need an independently owned matrix.
 - **Parameters:**
-  - `a` (`int[][]`) — the two-dimensional int array to wrap, or {@code null} for an empty matrix
+  - `a` (`int[][]`) — the two-dimensional int array to wrap, must not be {@code null}
 ##### get(...) -> int
 - **Signature:** `public int get(final int rowIndex, final int columnIndex)`
 - **Summary:** Returns the element at the specified row and column indices.
@@ -4787,8 +4827,8 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
   - `java.lang.IndexOutOfBoundsException` — if {@code columnIndex} is out of bounds
   - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
-##### getMainDiagonal(...) -> int\[\]
-- **Signature:** `@Override public int[] getMainDiagonal() throws IllegalStateException`
+##### mainDiagonalCopy(...) -> int\[\]
+- **Signature:** `@Override public int[] mainDiagonalCopy() throws IllegalStateException`
 - **Summary:** Returns a copy of the main diagonal elements (upper-left to lower-right) as an array.
 - **Contract:**
   - The matrix must be square (rowCount == columnCount) for this operation.
@@ -4817,8 +4857,8 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square
   - `E` — if the operator throws an exception
-##### getAntiDiagonal(...) -> int\[\]
-- **Signature:** `@Override public int[] getAntiDiagonal() throws IllegalStateException`
+##### antiDiagonalCopy(...) -> int\[\]
+- **Signature:** `@Override public int[] antiDiagonalCopy() throws IllegalStateException`
 - **Summary:** Returns a copy of the anti-diagonal elements (upper-right to lower-left) as an array.
 - **Contract:**
   - The matrix must be square (rowCount == columnCount) for this operation.
@@ -5096,14 +5136,14 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
   - (none)
 - **Returns:** a new {@link IntList} of all elements in row-major order
 - **See also:** #rowMajorStream()
-##### mutateAsFlat(...) -> void
-- **Signature:** `@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super int[], E> action) throws E`
+##### mutateFlattened(...) -> void
+- **Signature:** `@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super int[], E> action) throws E`
 - **Summary:** Exposes the elements of this matrix to {@code action} as a single one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix.
 - **Parameters:**
   - `action` (`Throwables.Consumer<? super int[], E>`) — the operation to apply to the flattened array
 - **Throws:**
   - `E` — if the operation throws an exception
-- **See also:** Arrays#mutateAsFlat(int\[\]\[\], Throwables.Consumer)
+- **See also:** Arrays#mutateFlattened(int\[\]\[\], Throwables.Consumer)
 ##### stackVertically(...) -> IntMatrix
 - **Signature:** `@Override public IntMatrix stackVertically(final IntMatrix other) throws IllegalArgumentException`
 - **Summary:** Stacks this matrix vertically with another matrix (vertical concatenation).
@@ -5172,20 +5212,21 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new {@link LongMatrix} with the widened values
-- **See also:** #mapToLong(Throwables.IntToLongFunction)
+- **See also:** #mapToLong(Throwables.IntToLongFunction), LongMatrix#from(int\[\]\[\])
 ##### toFloatMatrix(...) -> FloatMatrix
 - **Signature:** `public FloatMatrix toFloatMatrix()`
 - **Summary:** Converts this {@code int} matrix to a {@link FloatMatrix} .
 - **Parameters:**
   - (none)
 - **Returns:** a new {@link FloatMatrix} with the converted values
+- **See also:** FloatMatrix#from(int\[\]\[\])
 ##### toDoubleMatrix(...) -> DoubleMatrix
 - **Signature:** `public DoubleMatrix toDoubleMatrix()`
 - **Summary:** Converts this {@code int} matrix to a {@link DoubleMatrix} .
 - **Parameters:**
   - (none)
 - **Returns:** a new {@link DoubleMatrix} with the widened values
-- **See also:** #mapToDouble(Throwables.IntToDoubleFunction)
+- **See also:** #mapToDouble(Throwables.IntToDoubleFunction), DoubleMatrix#from(int\[\]\[\])
 ##### zipWith(...) -> IntMatrix
 - **Signature:** `public <E extends Exception> IntMatrix zipWith(final IntMatrix other, final Throwables.IntBinaryOperator<E> zipFunction) throws IllegalArgumentException, E`
 - **Summary:** Performs element-wise operation on two matrices using a binary operator.
@@ -5230,7 +5271,7 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Returns:** an IntStream of anti-diagonal elements, or an empty stream if this is the empty {@code 0x0} matrix
 ##### rowMajorStream(...) -> IntStream
 - **Signature:** `@Override public IntStream rowMajorStream()`
-- **Summary:** Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).
+- **Summary:** Returns a stream of all elements in this matrix, traversed in row-major order (left to right, top to bottom).
 - **Parameters:**
   - (none)
 - **Returns:** an IntStream of all elements in row-major order, or an empty stream if the matrix is empty
@@ -5241,6 +5282,7 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Parameters:**
   - `rowIndex` (`int`) — the index of the row to stream (0-based)
 - **Returns:** an {@link IntStream} of elements from the specified row
+- **See also:** #rowStreams()
 - **Signature:** `@Override public IntStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of rows in row-major order.
 - **Parameters:**
@@ -5250,8 +5292,8 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
 ##### columnMajorStream(...) -> IntStream
-- **Signature:** `@Override @Beta public IntStream columnMajorStream()`
-- **Summary:** Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).
+- **Signature:** `@Override public IntStream columnMajorStream()`
+- **Summary:** Returns a stream of all elements in this matrix, traversed in column-major order (top to bottom, left to right).
 - **Parameters:**
   - (none)
 - **Returns:** an IntStream of all elements in column-major order, or an empty stream if the matrix is empty
@@ -5260,7 +5302,7 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** an {@link IntStream} of elements from the specified column
-- **Signature:** `@Override @Beta public IntStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public IntStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -5274,6 +5316,7 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a Stream of IntStream objects, one for each row in the matrix
+- **See also:** #rowMajorStream(int)
 - **Signature:** `@Override public Stream<IntStream> rowStreams(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of IntStream objects for a range of rows.
 - **Parameters:**
@@ -5283,12 +5326,12 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
 ##### columnStreams(...) -> Stream<IntStream>
-- **Signature:** `@Override @Beta public Stream<IntStream> columnStreams()`
+- **Signature:** `@Override public Stream<IntStream> columnStreams()`
 - **Summary:** Returns a stream of IntStream objects, where each IntStream represents a complete column.
 - **Parameters:**
   - (none)
 - **Returns:** a Stream of IntStream objects, one for each column in the matrix, or an empty stream if the matrix is empty
-- **Signature:** `@Override @Beta public Stream<IntStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public Stream<IntStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of IntStream objects for a range of columns.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -5322,12 +5365,6 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if any index is out of bounds
   - `E` — if the action throws an exception
-##### println(...) -> String
-- **Signature:** `@Override public String println()`
-- **Summary:** Prints this matrix to standard output and returns the formatted string that was printed.
-- **Parameters:**
-  - (none)
-- **Returns:** the formatted string representation of the matrix that was printed
 ##### hashCode(...) -> int
 - **Signature:** `@Override public int hashCode()`
 - **Summary:** Returns a hash code value for this matrix.
@@ -5370,23 +5407,32 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Signature:** `public static LongMatrix of(final long[]... a)`
 - **Summary:** Creates a {@code LongMatrix} from a two-dimensional long array.
 - **Parameters:**
-  - `a` (`long[][]`) — the two-dimensional long array to wrap, or {@code null} /empty for an empty matrix
-- **Returns:** a new {@code LongMatrix} backed by {@code a} , or the shared empty matrix if {@code a} is {@code null} or empty
+  - `a` (`long[][]`) — the two-dimensional long array to wrap, or empty for an empty matrix; must not be {@code null}
+- **Returns:** a new {@code LongMatrix} backed by {@code a} , or the shared empty matrix if {@code a} is empty
+##### copyOf(...) -> LongMatrix
+- **Signature:** `public static LongMatrix copyOf(final long[]... a)`
+- **Summary:** Creates a {@code LongMatrix} that owns a defensive deep copy of the supplied two-dimensional array.
+- **Parameters:**
+  - `a` (`long[][]`) — the two-dimensional long array to copy, or empty for an empty matrix; must not be {@code null}
+- **Returns:** a new {@code LongMatrix} backed by a deep copy of {@code a} , or the shared empty matrix if {@code a} is empty
+- **See also:** #of(long\[\]\[\]), #copy()
 ##### from(...) -> LongMatrix
 - **Signature:** `public static LongMatrix from(final int[]... a)`
 - **Summary:** Creates a {@code LongMatrix} from a two-dimensional {@code int} array by widening each {@code int} to {@code long} (the conversion preserves the exact numeric value, with no data loss).
 - **Contract:**
   - <p> All rows must have the same length as the first row (rectangular array required).
 - **Parameters:**
-  - `a` (`int[][]`) — the two-dimensional int array to convert, or {@code null} /empty for an empty matrix
-- **Returns:** a new {@code LongMatrix} with the widened values, or the shared empty matrix if {@code a} is {@code null} or empty
-##### random(...) -> LongMatrix
+  - `a` (`int[][]`) — the two-dimensional int array to convert, or empty for an empty matrix; must not be {@code null}
+- **Returns:** a new {@code LongMatrix} with the widened values, or the shared empty matrix if {@code a} is empty
+- **See also:** IntMatrix#toLongMatrix()
+##### randomRow(...) -> LongMatrix
 - **Signature:** `public static LongMatrix randomRow(final int length)`
 - **Summary:** Creates a new {@code 1 x length} matrix filled with pseudo-random {@code long} values drawn uniformly from the entire {@code long} range.
 - **Parameters:**
   - `length` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
 - **Returns:** a new {@code LongMatrix} of dimensions {@code 1 x length} filled with random values
 - **See also:** #random(int, int)
+##### random(...) -> LongMatrix
 - **Signature:** `public static LongMatrix random(final int rowCount, final int columnCount)`
 - **Summary:** Creates a new matrix of the specified dimensions filled with pseudo-random {@code long} values drawn uniformly from the entire {@code long} range.
 - **Parameters:**
@@ -5462,7 +5508,7 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Parameters:**
   - `mainDiagonal` (`long[]`) — the array of main-diagonal elements; may be {@code null} if {@code antiDiagonal} is non- {@code null} ; may be empty
   - `antiDiagonal` (`long[]`) — the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non- {@code null} ; may be empty
-- **Returns:** a square matrix with the specified diagonals, or an empty matrix when both arrays are empty (at least one being a non- {@code null} zero-length array)
+- **Returns:** a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null} , or if both arrays are non-empty and have different lengths
 - **See also:** #mainDiagonal(long\[\]), #antiDiagonal(long\[\])
@@ -5479,10 +5525,9 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Signature:** `public LongMatrix(final long[][] a)`
 - **Summary:** Constructs a {@code LongMatrix} backed by the supplied two-dimensional array.
 - **Contract:**
-  - <p> If {@code a} is {@code null} , this creates an empty {@code 0x0} matrix.
   - Call {@link #copy()} if you need an independently owned matrix.
 - **Parameters:**
-  - `a` (`long[][]`) — the two-dimensional long array to wrap, or {@code null} for an empty matrix
+  - `a` (`long[][]`) — the two-dimensional long array to wrap, must not be {@code null}
 ##### get(...) -> long
 - **Signature:** `public long get(final int rowIndex, final int columnIndex)`
 - **Summary:** Returns the element at the specified row and column indices.
@@ -5616,8 +5661,8 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
   - `java.lang.IndexOutOfBoundsException` — if {@code columnIndex} is out of bounds
   - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
-##### getMainDiagonal(...) -> long\[\]
-- **Signature:** `@Override public long[] getMainDiagonal() throws IllegalStateException`
+##### mainDiagonalCopy(...) -> long\[\]
+- **Signature:** `@Override public long[] mainDiagonalCopy() throws IllegalStateException`
 - **Summary:** Returns a copy of the main diagonal elements (upper-left to lower-right) as an array.
 - **Contract:**
   - The matrix must be square (rowCount == columnCount) for this operation.
@@ -5646,8 +5691,8 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square
   - `E` — if the operator throws an exception
-##### getAntiDiagonal(...) -> long\[\]
-- **Signature:** `@Override public long[] getAntiDiagonal() throws IllegalStateException`
+##### antiDiagonalCopy(...) -> long\[\]
+- **Signature:** `@Override public long[] antiDiagonalCopy() throws IllegalStateException`
 - **Summary:** Returns a copy of the anti-diagonal elements (upper-right to lower-left) as an array.
 - **Contract:**
   - The matrix must be square (rowCount == columnCount) for this operation.
@@ -5925,14 +5970,14 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
   - (none)
 - **Returns:** a new {@link LongList} of all elements in row-major order
 - **See also:** #rowMajorStream()
-##### mutateAsFlat(...) -> void
-- **Signature:** `@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super long[], E> action) throws E`
+##### mutateFlattened(...) -> void
+- **Signature:** `@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super long[], E> action) throws E`
 - **Summary:** Exposes the elements of this matrix to {@code action} as a single one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix.
 - **Parameters:**
   - `action` (`Throwables.Consumer<? super long[], E>`) — the operation to apply to the flattened array
 - **Throws:**
   - `E` — if the operation throws an exception
-- **See also:** Arrays#mutateAsFlat(long\[\]\[\], Throwables.Consumer)
+- **See also:** Arrays#mutateFlattened(long\[\]\[\], Throwables.Consumer)
 ##### stackVertically(...) -> LongMatrix
 - **Signature:** `@Override public LongMatrix stackVertically(final LongMatrix other) throws IllegalArgumentException`
 - **Summary:** Stacks this matrix vertically with another matrix (vertical concatenation).
@@ -6013,7 +6058,7 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new {@link DoubleMatrix} with the converted values
-- **See also:** #mapToDouble(Throwables.LongToDoubleFunction)
+- **See also:** #mapToDouble(Throwables.LongToDoubleFunction), DoubleMatrix#from(long\[\]\[\])
 ##### zipWith(...) -> LongMatrix
 - **Signature:** `public <E extends Exception> LongMatrix zipWith(final LongMatrix other, final Throwables.LongBinaryOperator<E> zipFunction) throws IllegalArgumentException, E`
 - **Summary:** Performs element-wise operation on two matrices using a binary operator.
@@ -6058,7 +6103,7 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Returns:** a LongStream of anti-diagonal elements, or an empty stream if this is the empty {@code 0x0} matrix
 ##### rowMajorStream(...) -> LongStream
 - **Signature:** `@Override public LongStream rowMajorStream()`
-- **Summary:** Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).
+- **Summary:** Returns a stream of all elements in this matrix, traversed in row-major order (left to right, top to bottom).
 - **Parameters:**
   - (none)
 - **Returns:** a LongStream of all elements in row-major order, or an empty stream if the matrix is empty
@@ -6069,6 +6114,7 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Parameters:**
   - `rowIndex` (`int`) — the index of the row to stream (0-based)
 - **Returns:** a {@link LongStream} of elements from the specified row
+- **See also:** #rowStreams()
 - **Signature:** `@Override public LongStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of rows in row-major order.
 - **Parameters:**
@@ -6078,8 +6124,8 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
 ##### columnMajorStream(...) -> LongStream
-- **Signature:** `@Override @Beta public LongStream columnMajorStream()`
-- **Summary:** Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).
+- **Signature:** `@Override public LongStream columnMajorStream()`
+- **Summary:** Returns a stream of all elements in this matrix, traversed in column-major order (top to bottom, left to right).
 - **Parameters:**
   - (none)
 - **Returns:** a LongStream of all elements in column-major order, or an empty stream if the matrix is empty
@@ -6088,7 +6134,7 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** a {@link LongStream} of elements from the specified column
-- **Signature:** `@Override @Beta public LongStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public LongStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -6102,6 +6148,7 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a Stream of LongStream objects, one for each row in the matrix
+- **See also:** #rowMajorStream(int)
 - **Signature:** `@Override public Stream<LongStream> rowStreams(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of LongStream objects for a range of rows.
 - **Parameters:**
@@ -6111,12 +6158,12 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
 ##### columnStreams(...) -> Stream<LongStream>
-- **Signature:** `@Override @Beta public Stream<LongStream> columnStreams()`
+- **Signature:** `@Override public Stream<LongStream> columnStreams()`
 - **Summary:** Returns a stream of LongStream objects, where each LongStream represents a complete column.
 - **Parameters:**
   - (none)
 - **Returns:** a Stream of LongStream objects, one for each column in the matrix, or an empty stream if the matrix is empty
-- **Signature:** `@Override @Beta public Stream<LongStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public Stream<LongStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of LongStream objects for a range of columns.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -6150,12 +6197,6 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if any index is out of bounds
   - `E` — if the action throws an exception
-##### println(...) -> String
-- **Signature:** `@Override public String println()`
-- **Summary:** Prints this matrix to standard output and returns the formatted string that was printed.
-- **Parameters:**
-  - (none)
-- **Returns:** the formatted string representation of the matrix that was printed
 ##### hashCode(...) -> int
 - **Signature:** `@Override public int hashCode()`
 - **Summary:** Returns a hash code value for this matrix.
@@ -6208,23 +6249,26 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code parallelMode} is {@code null}
 - **See also:** #getParallelMode(), ParallelMode
-##### isParallelizable(...) -> boolean
-- **Signature:** `public static boolean isParallelizable(final AbstractMatrix<?, ?, ?, ?, ?> m)`
+##### shouldRunInParallel(...) -> boolean
+- **Signature:** `public static boolean shouldRunInParallel(final AbstractMatrix<?, ?, ?, ?, ?> m)`
 - **Summary:** Determines whether the given matrix should be processed using parallel execution.
 - **Contract:**
   - Determines whether the given matrix should be processed using parallel execution.
   - <p> This method evaluates whether parallel processing should be used for operations on the specified matrix based on its total element count.
+  - The decision considers: </p> <ul> <li> The current thread's {@link ParallelMode} setting </li> <li> Whether parallel stream support is available in the runtime environment </li> <li> The total number of elements in the matrix (rows × columns) </li> </ul> <p> This is a convenience method that delegates to {@link #shouldRunInParallel(AbstractMatrix, long)} using the matrix's total element count.
+  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix small = IntMatrix.of(new int\[\]\[\] {{1, 2}, {3, 4}}); // 4 elements IntMatrix large = IntMatrix.of(new int\[200\]\[200\]); // 40000 elements Matrices.setParallelMode(ParallelMode.FORCE_OFF); Matrices.shouldRunInParallel(small); // returns false (forced off) Matrices.shouldRunInParallel(large); // returns false (forced off) Matrices.setParallelMode(ParallelMode.AUTO); // restore default; under AUTO the // small matrix is never parallelized Matrices.shouldRunInParallel(small); // returns false (4 < 8192) Matrices.shouldRunInParallel((IntMatrix) null); // throws IllegalArgumentException } </pre>
 - **Parameters:**
   - `m` (`AbstractMatrix<?, ?, ?, ?, ?>`) — the matrix to evaluate for parallelization, must not be {@code null}
 - **Returns:** {@code true} if parallel processing should be used for this matrix; {@code false} for sequential processing
-- **See also:** #isParallelizable(AbstractMatrix, long), #setParallelMode(ParallelMode)
-- **Signature:** `public static boolean isParallelizable(final AbstractMatrix<?, ?, ?, ?, ?> m, final long count)`
+- **See also:** #shouldRunInParallel(AbstractMatrix, long), #setParallelMode(ParallelMode)
+- **Signature:** `public static boolean shouldRunInParallel(final AbstractMatrix<?, ?, ?, ?, ?> m, final long count)`
 - **Summary:** Determines whether a matrix operation should be processed using parallel execution based on the element count and current parallel settings.
 - **Contract:**
   - Determines whether a matrix operation should be processed using parallel execution based on the element count and current parallel settings.
   - <p> This method makes the parallelization decision using a multifactor evaluation: </p> <ol> <li> <b> Runtime Support: </b> Parallel streams must be available in the runtime environment.
   - If not supported, always returns {@code false} .
   - </li> </ul> </li> <li> <b> Element Count: </b> When using {@code AUTO} setting, returns {@code true} only if {@code count >= 8192} .
+  - </li> </ol> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.of(new int\[\]\[\] {{1, 2}, {3, 4}}); Matrices.setParallelMode(ParallelMode.FORCE_OFF); Matrices.shouldRunInParallel(matrix, 100000L); // returns false (forced off, count ignored) Matrices.setParallelMode(ParallelMode.AUTO); // restore default Matrices.shouldRunInParallel(matrix, 5000L); // returns false (5000 < 8192) Matrices.shouldRunInParallel((IntMatrix) null, 100L); // throws IllegalArgumentException } </pre>
 - **Parameters:**
   - `m` (`AbstractMatrix<?, ?, ?, ?, ?>`) — the matrix being evaluated; only checked for {@code null} , the matrix's own element count is not consulted (the supplied {@code count} drives the decision)
   - `count` (`long`) — the number of elements to process; typically the total element count or a subset being operated on
@@ -6250,14 +6294,14 @@ Utility and policy holder shared by the matrix implementations in this package.
   - `b` (`M`) — the second matrix to compare, must not be {@code null}
   - `c` (`M`) — the third matrix to compare, must not be {@code null}
 - **Returns:** {@code true} if all three matrices have the same number of rows and columns; {@code false} otherwise
-- **Signature:** `public static <M extends AbstractMatrix<?, ?, ?, ?, ?>> boolean isSameShape(final Collection<? extends M> matrices)`
+- **Signature:** `public static boolean isSameShape(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> matrices)`
 - **Summary:** Checks if all matrices in a collection have the same shape (identical dimensions).
 - **Contract:**
   - Checks if all matrices in a collection have the same shape (identical dimensions).
   - </li> <li> Single matrix: returns {@code true} (trivially same shape) when the matrix is non- {@code null} ; returns {@code false} if the single element is {@code null} .
   - </li> <li> Multiple matrices: returns {@code true} only if all are non- {@code null} and have identical dimensions.
 - **Parameters:**
-  - `matrices` (`Collection<? extends M>`) — the collection of matrices to check, may be {@code null} or empty
+  - `matrices` (`Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>>`) — the collection of matrices to check, may be {@code null} or empty
 - **Returns:** {@code true} if all matrices have the same number of rows and columns, or if the collection is {@code null} or empty; {@code false} if any matrix has different dimensions or if any element in the collection is {@code null}
 ##### newMatrixArray(...) -> T\[\]\[\]
 - **Signature:** `public static <T> T[][] newMatrixArray(final int rowCount, final int columnCount, final Class<T> targetElementType)`
@@ -6369,6 +6413,7 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Contract:**
   - It does NOT perform the actual multiplication arithmetic; that must be implemented in the action.
   - </li> </ul> <p> The matrices must satisfy the multiplication constraint: {@code a.columnCount == b.rowCount} .
+  - </p> <p> Parallelization is automatically determined based on the total number of multiply-add operations ( {@code a.rowCount * a.columnCount * b.columnCount} , saturated against {@link Long#MAX_VALUE} ) and the current thread settings via {@link #shouldRunInParallel(AbstractMatrix, long)} .
 - **Parameters:**
   - `a` (`M`) — the first matrix (left operand), must not be {@code null}
   - `b` (`M`) — the second matrix (right operand), must not be {@code null}
@@ -6447,33 +6492,6 @@ Utility and policy holder shared by the matrix implementations in this package.
   - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
   - `E` — if the zip function throws an exception during execution
 - **See also:** #zip(ByteMatrix, ByteMatrix, Throwables.ByteBinaryOperator), #zip(ByteMatrix, ByteMatrix, ByteMatrix, Throwables.ByteTernaryOperator), #zipToObj(Collection, Throwables.ByteNFunction, Class)
-- **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E`
-- **Summary:** Combines multiple {@link ByteMatrix} objects element-wise using a function that operates on byte arrays.
-- **Contract:**
-  - </p> <p> All matrices in the collection must have identical dimensions.
-- **Parameters:**
-  - `coll` (`Collection<ByteMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.ByteNFunction<? extends R, E>`) — the function that takes an array of bytes (one from each matrix) and returns a result of type R, must not be {@code null}
-  - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
-- **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
-- **Throws:**
-  - `E` — if the zip function throws an exception during execution
-- **See also:** #zipToObj(Collection, Throwables.ByteNFunction, boolean, Class), #zip(Collection, Throwables.ByteBinaryOperator)
-- **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E`
-- **Summary:** Combines multiple {@link ByteMatrix} objects element-wise using a function that operates on byte arrays, with control over intermediate array sharing.
-- **Contract:**
-  - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
-  - Only use this optimization if the function immediately processes and discards the array.
-- **Parameters:**
-  - `coll` (`Collection<ByteMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.ByteNFunction<? extends R, E>`) — the function that takes an array of bytes (one from each matrix) and returns a result of type R, must not be {@code null}
-  - `shareIntermediateArray` (`boolean`) — {@code true} to reuse the intermediate array (sequential execution only); {@code false} to create new arrays for each position
-  - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
-- **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
-- **Throws:**
-  - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
-  - `E` — if the zip function throws an exception during execution
-- **See also:** #zipToObj(Collection, Throwables.ByteNFunction, Class), #zip(Collection, Throwables.ByteBinaryOperator)
 - **Signature:** `public static <E extends Exception> IntMatrix zip(final IntMatrix a, final IntMatrix b, final Throwables.IntBinaryOperator<E> zipFunction) throws E`
 - **Summary:** Combines two {@link IntMatrix} objects element-wise using a binary operator.
 - **Contract:**
@@ -6511,34 +6529,6 @@ Utility and policy holder shared by the matrix implementations in this package.
   - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
   - `E` — if the zip function throws an exception during execution
 - **See also:** #zip(IntMatrix, IntMatrix, Throwables.IntBinaryOperator), #zip(IntMatrix, IntMatrix, IntMatrix, Throwables.IntTernaryOperator), #zipToObj(Collection, Throwables.IntNFunction, Class)
-- **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E`
-- **Summary:** Combines multiple {@link IntMatrix} objects element-wise using a function that operates on integer arrays.
-- **Contract:**
-  - </p> <p> All matrices in the collection must have identical dimensions.
-- **Parameters:**
-  - `coll` (`Collection<IntMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.IntNFunction<? extends R, E>`) — the function that takes an array of integers (one from each matrix) and returns a result of type R, must not be {@code null}
-  - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
-- **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
-- **Throws:**
-  - `E` — if the zip function throws an exception during execution
-- **See also:** #zipToObj(Collection, Throwables.IntNFunction, boolean, Class), #zip(Collection, Throwables.IntBinaryOperator)
-- **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E`
-- **Summary:** Combines multiple {@link IntMatrix} objects element-wise using a function that operates on integer arrays, with control over intermediate array sharing.
-- **Contract:**
-  - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
-  - Only use this optimization if the function immediately processes and discards the array.
-  - </p> <p> All matrices in the collection must have identical dimensions.
-- **Parameters:**
-  - `coll` (`Collection<IntMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.IntNFunction<? extends R, E>`) — the function that takes an array of integers (one from each matrix) and returns a result of type R, must not be {@code null}
-  - `shareIntermediateArray` (`boolean`) — {@code true} to reuse the intermediate array (sequential execution only); {@code false} to create new arrays for each position
-  - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
-- **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
-- **Throws:**
-  - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
-  - `E` — if the zip function throws an exception during execution
-- **See also:** #zipToObj(Collection, Throwables.IntNFunction, Class), #zip(Collection, Throwables.IntBinaryOperator)
 - **Signature:** `public static <E extends Exception> LongMatrix zip(final LongMatrix a, final LongMatrix b, final Throwables.LongBinaryOperator<E> zipFunction) throws E`
 - **Summary:** Combines two {@link LongMatrix} objects element-wise using a binary operator.
 - **Contract:**
@@ -6576,32 +6566,6 @@ Utility and policy holder shared by the matrix implementations in this package.
   - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
   - `E` — if the zip function throws an exception during execution
 - **See also:** #zip(LongMatrix, LongMatrix, Throwables.LongBinaryOperator), #zip(LongMatrix, LongMatrix, LongMatrix, Throwables.LongTernaryOperator), #zipToObj(Collection, Throwables.LongNFunction, Class)
-- **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E`
-- **Summary:** Combines multiple {@link LongMatrix} objects element-wise using a function that operates on long arrays.
-- **Parameters:**
-  - `coll` (`Collection<LongMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.LongNFunction<? extends R, E>`) — the function that takes an array of longs (one from each matrix) and returns a result of type R, must not be {@code null}
-  - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
-- **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
-- **Throws:**
-  - `E` — if the zip function throws an exception during execution
-- **See also:** #zipToObj(Collection, Throwables.LongNFunction, boolean, Class), #zip(Collection, Throwables.LongBinaryOperator)
-- **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E`
-- **Summary:** Combines multiple {@link LongMatrix} objects element-wise using a function that operates on long arrays, with control over intermediate array sharing.
-- **Contract:**
-  - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
-  - Only use this optimization if the function immediately processes and discards the array.
-  - </p> <p> All matrices in the collection must have identical dimensions.
-- **Parameters:**
-  - `coll` (`Collection<LongMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.LongNFunction<? extends R, E>`) — the function that takes an array of longs (one from each matrix) and returns a result of type R, must not be {@code null}
-  - `shareIntermediateArray` (`boolean`) — {@code true} to reuse the intermediate array (sequential execution only); {@code false} to create new arrays for each position
-  - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
-- **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
-- **Throws:**
-  - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
-  - `E` — if the zip function throws an exception during execution
-- **See also:** #zipToObj(Collection, Throwables.LongNFunction, Class), #zip(Collection, Throwables.LongBinaryOperator)
 - **Signature:** `public static <E extends Exception> DoubleMatrix zip(final DoubleMatrix a, final DoubleMatrix b, final Throwables.DoubleBinaryOperator<E> zipFunction) throws E`
 - **Summary:** Combines two {@link DoubleMatrix} objects element-wise using a binary operator.
 - **Contract:**
@@ -6639,32 +6603,6 @@ Utility and policy holder shared by the matrix implementations in this package.
   - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
   - `E` — if the zip function throws an exception during execution
 - **See also:** #zip(DoubleMatrix, DoubleMatrix, Throwables.DoubleBinaryOperator), #zip(DoubleMatrix, DoubleMatrix, DoubleMatrix, Throwables.DoubleTernaryOperator), #zipToObj(Collection, Throwables.DoubleNFunction, Class)
-- **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<DoubleMatrix> coll, final Throwables.DoubleNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E`
-- **Summary:** Combines multiple {@link DoubleMatrix} objects element-wise using a function that operates on double arrays.
-- **Parameters:**
-  - `coll` (`Collection<DoubleMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.DoubleNFunction<? extends R, E>`) — the function that takes an array of doubles (one from each matrix) and returns a result of type R, must not be {@code null}
-  - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
-- **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
-- **Throws:**
-  - `E` — if the zip function throws an exception during execution
-- **See also:** #zipToObj(Collection, Throwables.DoubleNFunction, boolean, Class), #zip(Collection, Throwables.DoubleBinaryOperator)
-- **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<DoubleMatrix> coll, final Throwables.DoubleNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E`
-- **Summary:** Combines multiple {@link DoubleMatrix} objects element-wise using a function that operates on double arrays, with control over intermediate array sharing.
-- **Contract:**
-  - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
-  - Only use this optimization if the function immediately processes and discards the array.
-  - </p> <p> All matrices in the collection must have identical dimensions.
-- **Parameters:**
-  - `coll` (`Collection<DoubleMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.DoubleNFunction<? extends R, E>`) — the function that takes an array of doubles (one from each matrix) and returns a result of type R, must not be {@code null}
-  - `shareIntermediateArray` (`boolean`) — {@code true} to reuse the intermediate array (sequential execution only); {@code false} to create new arrays for each position
-  - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
-- **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
-- **Throws:**
-  - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
-  - `E` — if the zip function throws an exception during execution
-- **See also:** #zipToObj(Collection, Throwables.DoubleNFunction, Class), #zip(Collection, Throwables.DoubleBinaryOperator)
 - **Signature:** `public static <A, B, E extends Exception> Matrix<A> zip(final Matrix<A> a, final Matrix<B> b, final Throwables.BiFunction<? super A, ? super B, A, E> zipFunction) throws E`
 - **Summary:** Combines two generic {@link Matrix} objects element-wise using a binary function.
 - **Contract:**
@@ -6810,6 +6748,114 @@ Utility and policy holder shared by the matrix implementations in this package.
   - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
   - `E` — if the zip function throws an exception during execution
 - **See also:** #zipToInt(Collection, Throwables.ByteNFunction)
+##### zipToObj(...) -> Matrix<R>
+- **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E`
+- **Summary:** Combines multiple {@link ByteMatrix} objects element-wise using a function that operates on byte arrays.
+- **Contract:**
+  - </p> <p> All matrices in the collection must have identical dimensions.
+- **Parameters:**
+  - `coll` (`Collection<ByteMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
+  - `zipFunction` (`Throwables.ByteNFunction<? extends R, E>`) — the function that takes an array of bytes (one from each matrix) and returns a result of type R, must not be {@code null}
+  - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
+- **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
+- **Throws:**
+  - `E` — if the zip function throws an exception during execution
+- **See also:** #zipToObj(Collection, Throwables.ByteNFunction, boolean, Class), #zip(Collection, Throwables.ByteBinaryOperator)
+- **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E`
+- **Summary:** Combines multiple {@link ByteMatrix} objects element-wise using a function that operates on byte arrays, with control over intermediate array sharing.
+- **Contract:**
+  - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
+  - Only use this optimization if the function immediately processes and discards the array.
+- **Parameters:**
+  - `coll` (`Collection<ByteMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
+  - `zipFunction` (`Throwables.ByteNFunction<? extends R, E>`) — the function that takes an array of bytes (one from each matrix) and returns a result of type R, must not be {@code null}
+  - `shareIntermediateArray` (`boolean`) — {@code true} to reuse the intermediate array (sequential execution only); {@code false} to create new arrays for each position
+  - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
+- **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
+- **Throws:**
+  - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
+  - `E` — if the zip function throws an exception during execution
+- **See also:** #zipToObj(Collection, Throwables.ByteNFunction, Class), #zip(Collection, Throwables.ByteBinaryOperator)
+- **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E`
+- **Summary:** Combines multiple {@link IntMatrix} objects element-wise using a function that operates on integer arrays.
+- **Contract:**
+  - </p> <p> All matrices in the collection must have identical dimensions.
+- **Parameters:**
+  - `coll` (`Collection<IntMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
+  - `zipFunction` (`Throwables.IntNFunction<? extends R, E>`) — the function that takes an array of integers (one from each matrix) and returns a result of type R, must not be {@code null}
+  - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
+- **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
+- **Throws:**
+  - `E` — if the zip function throws an exception during execution
+- **See also:** #zipToObj(Collection, Throwables.IntNFunction, boolean, Class), #zip(Collection, Throwables.IntBinaryOperator)
+- **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E`
+- **Summary:** Combines multiple {@link IntMatrix} objects element-wise using a function that operates on integer arrays, with control over intermediate array sharing.
+- **Contract:**
+  - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
+  - Only use this optimization if the function immediately processes and discards the array.
+  - </p> <p> All matrices in the collection must have identical dimensions.
+- **Parameters:**
+  - `coll` (`Collection<IntMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
+  - `zipFunction` (`Throwables.IntNFunction<? extends R, E>`) — the function that takes an array of integers (one from each matrix) and returns a result of type R, must not be {@code null}
+  - `shareIntermediateArray` (`boolean`) — {@code true} to reuse the intermediate array (sequential execution only); {@code false} to create new arrays for each position
+  - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
+- **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
+- **Throws:**
+  - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
+  - `E` — if the zip function throws an exception during execution
+- **See also:** #zipToObj(Collection, Throwables.IntNFunction, Class), #zip(Collection, Throwables.IntBinaryOperator)
+- **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E`
+- **Summary:** Combines multiple {@link LongMatrix} objects element-wise using a function that operates on long arrays.
+- **Parameters:**
+  - `coll` (`Collection<LongMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
+  - `zipFunction` (`Throwables.LongNFunction<? extends R, E>`) — the function that takes an array of longs (one from each matrix) and returns a result of type R, must not be {@code null}
+  - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
+- **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
+- **Throws:**
+  - `E` — if the zip function throws an exception during execution
+- **See also:** #zipToObj(Collection, Throwables.LongNFunction, boolean, Class), #zip(Collection, Throwables.LongBinaryOperator)
+- **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E`
+- **Summary:** Combines multiple {@link LongMatrix} objects element-wise using a function that operates on long arrays, with control over intermediate array sharing.
+- **Contract:**
+  - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
+  - Only use this optimization if the function immediately processes and discards the array.
+  - </p> <p> All matrices in the collection must have identical dimensions.
+- **Parameters:**
+  - `coll` (`Collection<LongMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
+  - `zipFunction` (`Throwables.LongNFunction<? extends R, E>`) — the function that takes an array of longs (one from each matrix) and returns a result of type R, must not be {@code null}
+  - `shareIntermediateArray` (`boolean`) — {@code true} to reuse the intermediate array (sequential execution only); {@code false} to create new arrays for each position
+  - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
+- **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
+- **Throws:**
+  - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
+  - `E` — if the zip function throws an exception during execution
+- **See also:** #zipToObj(Collection, Throwables.LongNFunction, Class), #zip(Collection, Throwables.LongBinaryOperator)
+- **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<DoubleMatrix> coll, final Throwables.DoubleNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E`
+- **Summary:** Combines multiple {@link DoubleMatrix} objects element-wise using a function that operates on double arrays.
+- **Parameters:**
+  - `coll` (`Collection<DoubleMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
+  - `zipFunction` (`Throwables.DoubleNFunction<? extends R, E>`) — the function that takes an array of doubles (one from each matrix) and returns a result of type R, must not be {@code null}
+  - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
+- **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
+- **Throws:**
+  - `E` — if the zip function throws an exception during execution
+- **See also:** #zipToObj(Collection, Throwables.DoubleNFunction, boolean, Class), #zip(Collection, Throwables.DoubleBinaryOperator)
+- **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<DoubleMatrix> coll, final Throwables.DoubleNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E`
+- **Summary:** Combines multiple {@link DoubleMatrix} objects element-wise using a function that operates on double arrays, with control over intermediate array sharing.
+- **Contract:**
+  - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
+  - Only use this optimization if the function immediately processes and discards the array.
+  - </p> <p> All matrices in the collection must have identical dimensions.
+- **Parameters:**
+  - `coll` (`Collection<DoubleMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
+  - `zipFunction` (`Throwables.DoubleNFunction<? extends R, E>`) — the function that takes an array of doubles (one from each matrix) and returns a result of type R, must not be {@code null}
+  - `shareIntermediateArray` (`boolean`) — {@code true} to reuse the intermediate array (sequential execution only); {@code false} to create new arrays for each position
+  - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
+- **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
+- **Throws:**
+  - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
+  - `E` — if the zip function throws an exception during execution
+- **See also:** #zipToObj(Collection, Throwables.DoubleNFunction, Class), #zip(Collection, Throwables.DoubleBinaryOperator)
 ##### zipToLong(...) -> LongMatrix
 - **Signature:** `public static <E extends Exception> LongMatrix zipToLong(final IntMatrix a, final IntMatrix b, final Throwables.IntBiFunction<Long, E> zipFunction) throws E`
 - **Summary:** Combines two {@link IntMatrix} objects element-wise using a function that returns {@code Long} values, producing a {@link LongMatrix} .
@@ -6979,6 +7025,13 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Parameters:**
   - `a` (`T[][]`) — the two-dimensional array to create the matrix from (must not be {@code null} )
 - **Returns:** a new Matrix containing the provided data
+##### copyOf(...) -> Matrix<T>
+- **Signature:** `@SafeVarargs public static <T> Matrix<T> copyOf(final T[]... a)`
+- **Summary:** Creates a {@code Matrix} that owns a defensive deep copy of the supplied two-dimensional array.
+- **Parameters:**
+  - `a` (`T[][]`) — the two-dimensional array to copy (must not be {@code null} )
+- **Returns:** a new {@code Matrix} backed by a deep copy of {@code a}
+- **See also:** #of(Object\[\]\[\]), #copy()
 ##### repeat(...) -> Matrix<T>
 - **Signature:** `public static <T> Matrix<T> repeat(final int rowCount, final int columnCount, final T element) throws IllegalArgumentException`
 - **Summary:** Creates a new matrix of the specified dimensions where every element is the provided {@code element} .
@@ -7163,8 +7216,8 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
   - `java.lang.IndexOutOfBoundsException` — if {@code columnIndex} is negative or greater than or equal to {@code columnCount}
   - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
-##### getMainDiagonal(...) -> T\[\]
-- **Signature:** `@Override public T[] getMainDiagonal() throws IllegalStateException`
+##### mainDiagonalCopy(...) -> T\[\]
+- **Signature:** `@Override public T[] mainDiagonalCopy() throws IllegalStateException`
 - **Summary:** Returns the main diagonal elements (upper-left to lower-right).
 - **Contract:**
   - The matrix must be square (same number of rows and columns).
@@ -7193,8 +7246,8 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square (rowCount != columnCount)
   - `E` — if the operator throws an exception
-##### getAntiDiagonal(...) -> T\[\]
-- **Signature:** `@Override public T[] getAntiDiagonal() throws IllegalStateException`
+##### antiDiagonalCopy(...) -> T\[\]
+- **Signature:** `@Override public T[] antiDiagonalCopy() throws IllegalStateException`
 - **Summary:** Returns the anti-diagonal elements (upper-right to lower-left).
 - **Contract:**
   - The matrix must be square (same number of rows and columns).
@@ -7521,14 +7574,14 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a list of all elements in row-major order, with size equal to {@code rowCount * columnCount}
-##### mutateAsFlat(...) -> void
-- **Signature:** `@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super T[], E> action) throws E`
+##### mutateFlattened(...) -> void
+- **Signature:** `@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super T[], E> action) throws E`
 - **Summary:** Applies an operation to the flattened (row-major order) view of this matrix.
 - **Parameters:**
   - `action` (`Throwables.Consumer<? super T[], E>`) — the operation to apply to the flattened array
 - **Throws:**
   - `E` — if the operation throws an exception
-- **See also:** Arrays.ff#mutateAsFlat(Object\[\]\[\], Throwables.Consumer)
+- **See also:** Arrays.ff#mutateFlattened(Object\[\]\[\], Throwables.Consumer)
 ##### stackVertically(...) -> Matrix<T>
 - **Signature:** `@Override public Matrix<T> stackVertically(final Matrix<T> other) throws IllegalArgumentException`
 - **Summary:** Vertically stacks this matrix with another matrix.
@@ -7617,7 +7670,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Returns:** a {@link Stream} of anti-diagonal elements from top-right to bottom-left, or an empty stream if the matrix is empty
 ##### rowMajorStream(...) -> Stream<T>
 - **Signature:** `@Override public Stream<T> rowMajorStream()`
-- **Summary:** Returns a stream of all elements in row-major order (horizontal).
+- **Summary:** Returns a stream of all elements in row-major order.
 - **Parameters:**
   - (none)
 - **Returns:** a {@link Stream} of all elements in row-major order, or an empty stream if the matrix is empty
@@ -7626,6 +7679,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Parameters:**
   - `rowIndex` (`int`) — the index of the row to stream (0-based)
 - **Returns:** a {@link Stream} of elements from the specified row
+- **See also:** #rowStreams()
 - **Signature:** `@Override public Stream<T> rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of rows in row-major order.
 - **Parameters:**
@@ -7635,8 +7689,8 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex} or {@code toRowIndex} is out of range
 ##### columnMajorStream(...) -> Stream<T>
-- **Signature:** `@Override @Beta public Stream<T> columnMajorStream()`
-- **Summary:** Returns a stream of all elements in column-major order (vertical).
+- **Signature:** `@Override public Stream<T> columnMajorStream()`
+- **Summary:** Returns a stream of all elements in column-major order.
 - **Parameters:**
   - (none)
 - **Returns:** a {@link Stream} of all elements in column-major order, or an empty stream if the matrix is empty
@@ -7645,7 +7699,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** a {@link Stream} of elements from the specified column
-- **Signature:** `@Beta @Override public Stream<T> columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public Stream<T> columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -7659,6 +7713,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a {@link Stream} of row streams, with one inner stream per row in the matrix
+- **See also:** #rowMajorStream(int)
 - **Signature:** `@Override public Stream<Stream<T>> rowStreams(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of streams for a range of rows.
 - **Parameters:**
@@ -7668,12 +7723,12 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex} or {@code toRowIndex} is out of range
 ##### columnStreams(...) -> Stream<Stream<T>>
-- **Signature:** `@Override @Beta public Stream<Stream<T>> columnStreams()`
+- **Signature:** `@Override public Stream<Stream<T>> columnStreams()`
 - **Summary:** Returns a stream of streams, where each inner stream represents a column.
 - **Parameters:**
   - (none)
 - **Returns:** a {@link Stream} of column streams, or an empty stream if the matrix is empty
-- **Signature:** `@Override @Beta public Stream<Stream<T>> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public Stream<Stream<T>> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of streams for a range of columns.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -7707,8 +7762,8 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if any of the row or column indices are out of range
   - `E` — if the action throws an exception
-##### toRowDataset(...) -> Dataset
-- **Signature:** `@Beta public Dataset toRowDataset(final Collection<String> columnNames) throws IllegalArgumentException`
+##### toDataset(...) -> Dataset
+- **Signature:** `@SuppressWarnings("deprecation") public Dataset toDataset(final Collection<String> columnNames) throws IllegalArgumentException`
 - **Summary:** Converts this matrix to a Dataset with horizontally organized data.
 - **Contract:**
   - <p> The column names are used in the order they appear in the collection, and must match the number of columns in the matrix exactly.
@@ -7717,9 +7772,9 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Returns:** a Dataset containing the matrix data with the specified column names (one row per matrix row)
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code columnNames} is {@code null} , if its size does not equal {@code columnCount} , or if this matrix has rows but no columns
-- **See also:** Dataset, #toColumnDataset(Collection)
-##### toColumnDataset(...) -> Dataset
-- **Signature:** `@Beta public Dataset toColumnDataset(final Collection<String> columnNames) throws IllegalArgumentException`
+- **See also:** Dataset, #toTransposedDataset(Collection)
+##### toTransposedDataset(...) -> Dataset
+- **Signature:** `@SuppressWarnings("deprecation") public Dataset toTransposedDataset(final Collection<String> columnNames) throws IllegalArgumentException`
 - **Summary:** Converts this matrix to a Dataset with vertically organized data.
 - **Contract:**
   - Each row in this matrix becomes a column in the resulting Dataset, so the supplied names are assigned to the Dataset's columns in the order they appear in the collection and must match this matrix's {@code rowCount} exactly.
@@ -7728,13 +7783,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Returns:** a Dataset containing the matrix data organized vertically (one column per matrix row)
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code columnNames} is {@code null} , or if its size does not equal {@code rowCount}
-- **See also:** Dataset, RowDataset, #toRowDataset(Collection)
-##### println(...) -> String
-- **Signature:** `@Override public String println()`
-- **Summary:** Prints this matrix to standard output and returns the printed string.
-- **Parameters:**
-  - (none)
-- **Returns:** the string representation that was printed to standard output
+- **See also:** Dataset, RowDataset, #toDataset(Collection)
 ##### hashCode(...) -> int
 - **Signature:** `@Override public int hashCode()`
 - **Summary:** Returns a hash code value for this matrix.
@@ -7793,15 +7842,23 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Signature:** `public static ShortMatrix of(final short[]... a)`
 - **Summary:** Creates a ShortMatrix from a two-dimensional short array.
 - **Parameters:**
-  - `a` (`short[][]`) — the two-dimensional short array to create the matrix from, or {@code null} /empty for an empty matrix
-- **Returns:** a new {@code ShortMatrix} wrapping the provided data, or the shared empty {@code ShortMatrix} if input is {@code null} or empty
-##### random(...) -> ShortMatrix
+  - `a` (`short[][]`) — the two-dimensional short array to create the matrix from, or empty for an empty matrix; must not be {@code null}
+- **Returns:** a new {@code ShortMatrix} wrapping the provided data, or the shared empty {@code ShortMatrix} if input is empty
+##### copyOf(...) -> ShortMatrix
+- **Signature:** `public static ShortMatrix copyOf(final short[]... a)`
+- **Summary:** Creates a {@code ShortMatrix} that owns a defensive deep copy of the supplied two-dimensional array.
+- **Parameters:**
+  - `a` (`short[][]`) — the two-dimensional short array to copy, or empty for an empty matrix; must not be {@code null}
+- **Returns:** a new {@code ShortMatrix} backed by a deep copy of {@code a} , or the shared empty matrix if {@code a} is empty
+- **See also:** #of(short\[\]\[\]), #copy()
+##### randomRow(...) -> ShortMatrix
 - **Signature:** `public static ShortMatrix randomRow(final int length)`
 - **Summary:** Creates a new {@code 1 x length} matrix filled with pseudo-random {@code short} values drawn uniformly from the entire {@code short} range.
 - **Parameters:**
   - `length` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
 - **Returns:** a new {@code ShortMatrix} of dimensions {@code 1 x length} filled with random values
 - **See also:** #random(int, int)
+##### random(...) -> ShortMatrix
 - **Signature:** `public static ShortMatrix random(final int rowCount, final int columnCount)`
 - **Summary:** Creates a new matrix of the specified dimensions filled with pseudo-random {@code short} values drawn uniformly from the entire {@code short} range.
 - **Parameters:**
@@ -7874,9 +7931,9 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
   - If both arrays are non-empty, they must have the same length.
   - When both diagonals are provided and they overlap (at the center element of odd-sized matrices), the main diagonal value takes precedence.
 - **Parameters:**
-  - `mainDiagonal` (`short[]`) — the array of main diagonal elements; may be {@code null} or empty if {@code antiDiagonal} is non- {@code null}
-  - `antiDiagonal` (`short[]`) — the array of anti-diagonal elements; may be {@code null} or empty if {@code mainDiagonal} is non- {@code null}
-- **Returns:** a square matrix with the specified diagonals, or an empty matrix when both arrays are empty (at least one being a non- {@code null} zero-length array)
+  - `mainDiagonal` (`short[]`) — the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non- {@code null} ; may be empty
+  - `antiDiagonal` (`short[]`) — the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non- {@code null} ; may be empty
+- **Returns:** a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null} , or if both arrays are non-empty and have different lengths
 - **See also:** #mainDiagonal(short\[\]), #antiDiagonal(short\[\])
@@ -7893,10 +7950,9 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Signature:** `public ShortMatrix(final short[][] a)`
 - **Summary:** Constructs a {@code ShortMatrix} backed by the supplied two-dimensional array.
 - **Contract:**
-  - <p> If {@code a} is {@code null} , this creates an empty {@code 0x0} matrix.
   - Call {@link #copy()} if you need an independently owned matrix.
 - **Parameters:**
-  - `a` (`short[][]`) — the two-dimensional short array to wrap, or {@code null} for an empty matrix
+  - `a` (`short[][]`) — the two-dimensional short array to wrap, must not be {@code null}
 ##### get(...) -> short
 - **Signature:** `public short get(final int rowIndex, final int columnIndex)`
 - **Summary:** Returns the element at the specified row and column indices.
@@ -8030,8 +8086,8 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
   - `java.lang.IndexOutOfBoundsException` — if {@code columnIndex} is out of bounds
   - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
-##### getMainDiagonal(...) -> short\[\]
-- **Signature:** `@Override public short[] getMainDiagonal() throws IllegalStateException`
+##### mainDiagonalCopy(...) -> short\[\]
+- **Signature:** `@Override public short[] mainDiagonalCopy() throws IllegalStateException`
 - **Summary:** Returns a copy of the main diagonal elements (upper-left to lower-right) as an array.
 - **Contract:**
   - The matrix must be square (rowCount == columnCount) for this operation.
@@ -8060,8 +8116,8 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square
   - `E` — if the operator throws an exception
-##### getAntiDiagonal(...) -> short\[\]
-- **Signature:** `@Override public short[] getAntiDiagonal() throws IllegalStateException`
+##### antiDiagonalCopy(...) -> short\[\]
+- **Signature:** `@Override public short[] antiDiagonalCopy() throws IllegalStateException`
 - **Summary:** Returns a copy of the anti-diagonal elements (upper-right to lower-left) as an array.
 - **Contract:**
   - The matrix must be square (rowCount == columnCount) for this operation.
@@ -8321,14 +8377,14 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
   - (none)
 - **Returns:** a new {@link ShortList} of all elements in row-major order
 - **See also:** #rowMajorStream()
-##### mutateAsFlat(...) -> void
-- **Signature:** `@Override public <E extends Exception> void mutateAsFlat(final Throwables.Consumer<? super short[], E> action) throws E`
+##### mutateFlattened(...) -> void
+- **Signature:** `@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super short[], E> action) throws E`
 - **Summary:** Exposes the elements of this matrix to {@code action} as a single one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix.
 - **Parameters:**
   - `action` (`Throwables.Consumer<? super short[], E>`) — the operation to apply to the flattened array
 - **Throws:**
   - `E` — if the operation throws an exception
-- **See also:** Arrays#mutateAsFlat(short\[\]\[\], Throwables.Consumer)
+- **See also:** Arrays#mutateFlattened(short\[\]\[\], Throwables.Consumer)
 ##### stackVertically(...) -> ShortMatrix
 - **Signature:** `@Override public ShortMatrix stackVertically(final ShortMatrix other) throws IllegalArgumentException`
 - **Summary:** Stacks this matrix vertically with another matrix (vertical concatenation).
@@ -8398,6 +8454,7 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new {@code IntMatrix} with values converted from short to int
+- **See also:** IntMatrix#from(short\[\]\[\])
 ##### toLongMatrix(...) -> LongMatrix
 - **Signature:** `public LongMatrix toLongMatrix()`
 - **Summary:** Converts this short matrix to a long matrix.
@@ -8460,7 +8517,7 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Returns:** a ShortStream of anti-diagonal elements, or an empty stream if this is the empty 0x0 matrix
 ##### rowMajorStream(...) -> ShortStream
 - **Signature:** `@Override public ShortStream rowMajorStream()`
-- **Summary:** Returns a stream of all elements in this matrix, traversed horizontally (left to right, top to bottom).
+- **Summary:** Returns a stream of all elements in this matrix, traversed in row-major order (left to right, top to bottom).
 - **Parameters:**
   - (none)
 - **Returns:** a ShortStream of all elements in row-major order, or an empty stream if the matrix is empty
@@ -8471,6 +8528,7 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Parameters:**
   - `rowIndex` (`int`) — the index of the row to stream (0-based)
 - **Returns:** a {@link ShortStream} of elements from the specified row
+- **See also:** #rowStreams()
 - **Signature:** `@Override public ShortStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of rows in row-major order.
 - **Parameters:**
@@ -8480,8 +8538,8 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
 ##### columnMajorStream(...) -> ShortStream
-- **Signature:** `@Override @Beta public ShortStream columnMajorStream()`
-- **Summary:** Returns a stream of all elements in this matrix, traversed vertically (top to bottom, left to right).
+- **Signature:** `@Override public ShortStream columnMajorStream()`
+- **Summary:** Returns a stream of all elements in this matrix, traversed in column-major order (top to bottom, left to right).
 - **Parameters:**
   - (none)
 - **Returns:** a ShortStream of all elements in column-major order, or an empty stream if the matrix is empty
@@ -8490,7 +8548,7 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** a {@link ShortStream} of elements from the specified column
-- **Signature:** `@Override @Beta public ShortStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public ShortStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -8504,6 +8562,7 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a Stream of ShortStream objects, one for each row in the matrix
+- **See also:** #rowMajorStream(int)
 - **Signature:** `@Override public Stream<ShortStream> rowStreams(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of ShortStream objects for a range of rows.
 - **Parameters:**
@@ -8513,12 +8572,12 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
 ##### columnStreams(...) -> Stream<ShortStream>
-- **Signature:** `@Override @Beta public Stream<ShortStream> columnStreams()`
+- **Signature:** `@Override public Stream<ShortStream> columnStreams()`
 - **Summary:** Returns a stream of ShortStream objects, where each ShortStream represents a complete column.
 - **Parameters:**
   - (none)
 - **Returns:** a Stream of ShortStream objects, one for each column in the matrix, or an empty stream if the matrix is empty
-- **Signature:** `@Override @Beta public Stream<ShortStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+- **Signature:** `@Override public Stream<ShortStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of ShortStream objects for a range of columns.
 - **Parameters:**
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
@@ -8552,12 +8611,6 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if any index is out of bounds
   - `E` — if the action throws an exception
-##### println(...) -> String
-- **Signature:** `@Override public String println()`
-- **Summary:** Prints this matrix to standard output and returns the formatted string that was printed.
-- **Parameters:**
-  - (none)
-- **Returns:** the formatted string representation of the matrix that was printed
 ##### hashCode(...) -> int
 - **Signature:** `@Override public int hashCode()`
 - **Summary:** Returns a hash code value for this matrix.
