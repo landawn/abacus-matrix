@@ -50,8 +50,8 @@ import com.landawn.abacus.util.stream.Stream;
  *     {@link LongMatrix}, {@link DoubleMatrix}, and the generic {@link Matrix}).</li>
  * </ul>
  *
- * <p>The class also holds package-private helpers for overflow-safe size calculations and
- * backing-array allocation used by the matrix implementations.</p>
+ * <p>The class also holds helpers for overflow-safe size calculations and backing-array
+ * allocation used by the matrix implementations.</p>
  */
 public final class Matrices {
 

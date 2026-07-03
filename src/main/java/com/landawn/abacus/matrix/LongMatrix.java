@@ -142,10 +142,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * long[][] data = {{1, 2}, {3, 4}};
+     * long[][] data = {{1L, 2L}, {3L, 4L}};
      * LongMatrix matrix = LongMatrix.copyOf(data);
-     * data[0][0] = 10;
-     * matrix.get(0, 0);                       // returns 1 (copy is independent)
+     * data[0][0] = 10L;
+     * matrix.get(0, 0);                       // returns 1L (copy is independent)
      *
      * LongMatrix.copyOf((long[][]) null);  // throws IllegalArgumentException
      * LongMatrix.copyOf(new long[][] {{1, 2}, {3}}); // throws IllegalArgumentException (non-rectangular)

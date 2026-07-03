@@ -60,7 +60,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         permits BooleanMatrix, CharMatrix, ByteMatrix, ShortMatrix, DoubleMatrix, FloatMatrix, IntMatrix, LongMatrix, Matrix {
 
     /**
-     * Row separator used when concrete subclasses render the matrix in {@link #println()}.
+     * Row separator inserted between rows when a matrix is rendered as text, for example by
+     * {@link #println()} and {@link #appendTo(Appendable)}.
      * Fixed to the Unix line separator ({@code "\n"}) so that printed output is consistent
      * across platforms.
      */
@@ -2112,6 +2113,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Returns a stream of elements from a specific column.
      * Elements are streamed from top to bottom within the column.
      *
+     * <p>This streams the elements of the single specified column, flattened into one stream. To
+     * instead obtain every column as its own stream (a stream of streams), use {@link #columnStreams()}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
@@ -2127,6 +2131,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param columnIndex the column index (0-based)
      * @return a stream of elements in the specified column
      * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
+     * @see #columnStreams()
      */
     public abstract ES columnMajorStream(final int columnIndex);
 
@@ -2215,6 +2220,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * <p>This is equivalent to calling {@code columnStreams(0, columnCount)}.</p>
      *
+     * <p>This yields one stream per column. To instead stream the elements of a single column as one
+     * flat stream, use {@link #columnMajorStream(int)}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
@@ -2230,6 +2238,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * }</pre>
      *
      * @return a stream of column streams
+     * @see #columnMajorStream(int)
      */
     public abstract RS columnStreams();
 

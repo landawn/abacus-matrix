@@ -43,15 +43,15 @@ import com.landawn.abacus.util.stream.Stream;
  * <p>Cells introduced by growth or reshaping default to {@code 0} unless an overload accepts an
  * explicit fill value.</p>
  *
- * <p><b>Short arithmetic:</b> all element-wise arithmetic ({@link #add}, {@link #subtract},
- * {@link #matrixMultiply}, and the {@code zipWith}/{@code map} variants) computes intermediate results using
- * Java's standard numeric promotion to {@code int} and stores the result back into {@code short} cells, so values
- * outside {@code [Short.MIN_VALUE, Short.MAX_VALUE]} wrap modulo 65536. {@link #add} and {@link #subtract}
- * narrow via an explicit {@code (short)} cast on the library side, and {@link #matrixMultiply} narrows via the
- * implicit narrowing of a compound assignment into the {@code short} result cell. For the {@code zipWith}
- * and {@code map} variants the supplied operator itself returns a {@code short}, so any narrowing of an
- * out-of-range result is performed by the caller's lambda. To preserve the full magnitude, widen first
- * via {@link #toIntMatrix()} or {@link #toLongMatrix()}.</p>
+ * <p><b>Short arithmetic:</b> the built-in short arithmetic operations ({@link #add(ShortMatrix)},
+ * {@link #subtract(ShortMatrix)}, and {@link #matrixMultiply(ShortMatrix)}) use Java's standard
+ * numeric promotion to {@code int} and narrow each stored result back to {@code short} (via an explicit
+ * {@code (short)} cast for {@code add}/{@code subtract}, or via the implicit narrowing of the {@code +=}
+ * accumulation in {@code matrixMultiply}), so values outside {@code [Short.MIN_VALUE, Short.MAX_VALUE]}
+ * wrap modulo 65536. The {@code zipWith}/{@code map} variants instead store whatever {@code short} the
+ * supplied operator returns, so any narrowing of an {@code int} computation must be performed inside the
+ * operator itself. To preserve the full magnitude, widen first via {@link #toIntMatrix()} or
+ * {@link #toLongMatrix()}.</p>
  *
  * <p><b>Aggregations:</b> this class does not provide dedicated reduction methods such as
  * {@code sum()}, {@code min()}, {@code max()} or {@code average()}. Compute such aggregations

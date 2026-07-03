@@ -1699,7 +1699,6 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
         if (newRowCount <= rowCount && newColumnCount <= columnCount) {
             return copy(0, newRowCount, 0, newColumnCount);
         } else {
-            // NOSONAR
             final boolean[][] b = new boolean[newRowCount][];
 
             for (int i = 0; i < newRowCount; i++) {
@@ -1851,7 +1850,6 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
             final int newRowCount = padTop + rowCount + padBottom;
             final int newColumnCount = padLeft + columnCount + padRight;
             checkRepresentableShape(newRowCount, newColumnCount);
-            // NOSONAR
             final boolean[][] b = new boolean[newRowCount][newColumnCount];
 
             for (int i = 0; i < newRowCount; i++) {
@@ -2804,7 +2802,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
         } else {
             for (int j = 0; j < columnCount; j++) {
                 for (int i = 0; i < rowCount; i++) {
-                    c[i][j] = a[i][j]; // NOSONAR
+                    c[i][j] = a[i][j];
                 }
             }
         }
