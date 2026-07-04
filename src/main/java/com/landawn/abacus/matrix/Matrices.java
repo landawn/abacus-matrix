@@ -1437,7 +1437,7 @@ public final class Matrices {
      * @see #zipToInt(Collection, Throwables.ByteNFunction)
      */
     public static <E extends Exception> IntMatrix zipToInt(final ByteMatrix a, final ByteMatrix b, final Throwables.ByteBiFunction<Integer, E> zipFunction)
-            throws E {
+            throws IllegalArgumentException, E {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
         N.checkArgNotNull(zipFunction, "zipFunction");
@@ -2001,7 +2001,7 @@ public final class Matrices {
      * @see #zipToLong(Collection, Throwables.IntNFunction)
      */
     public static <E extends Exception> LongMatrix zipToLong(final IntMatrix a, final IntMatrix b, final Throwables.IntBiFunction<Long, E> zipFunction)
-            throws E {
+            throws IllegalArgumentException, E {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
         N.checkArgNotNull(zipFunction, "zipFunction");
@@ -2245,7 +2245,7 @@ public final class Matrices {
      * @see #zipToDouble(Collection, Throwables.IntNFunction)
      */
     public static <E extends Exception> DoubleMatrix zipToDouble(final IntMatrix a, final IntMatrix b, final Throwables.IntBiFunction<Double, E> zipFunction)
-            throws E {
+            throws IllegalArgumentException, E {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
         N.checkArgNotNull(zipFunction, "zipFunction");
@@ -2775,7 +2775,7 @@ public final class Matrices {
      * @see #zipToDouble(Collection, Throwables.LongNFunction)
      */
     public static <E extends Exception> DoubleMatrix zipToDouble(final LongMatrix a, final LongMatrix b, final Throwables.LongBiFunction<Double, E> zipFunction)
-            throws E {
+            throws IllegalArgumentException, E {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
         N.checkArgNotNull(zipFunction, "zipFunction");

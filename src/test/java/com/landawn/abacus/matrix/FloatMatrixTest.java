@@ -4656,6 +4656,51 @@ class FloatMatrixTest extends TestBase {
             assertEquals("4.0", result.get(1, 1));
         }
 
+        @Test
+        public void test_mapToInt() {
+            FloatMatrix m = FloatMatrix.of(new float[][] { { 1.6f, 2.4f }, { 3.7f, 4.2f } });
+            IntMatrix result = m.mapToInt(x -> (int) x);
+            assertEquals(1, result.get(0, 0));
+            assertEquals(2, result.get(0, 1));
+            assertEquals(3, result.get(1, 0));
+            assertEquals(4, result.get(1, 1));
+            // Original should be unchanged
+            assertEquals(1.6f, m.get(0, 0), 0.0f);
+
+            assertTrue(FloatMatrix.empty().mapToInt(x -> (int) x).isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> m.mapToInt((Throwables.FloatToIntFunction<RuntimeException>) null));
+        }
+
+        @Test
+        public void test_mapToLong() {
+            FloatMatrix m = FloatMatrix.of(new float[][] { { 1.6f, 2.4f }, { 3.7f, 4.2f } });
+            LongMatrix result = m.mapToLong(x -> (long) x);
+            assertEquals(1L, result.get(0, 0));
+            assertEquals(2L, result.get(0, 1));
+            assertEquals(3L, result.get(1, 0));
+            assertEquals(4L, result.get(1, 1));
+            // Original should be unchanged
+            assertEquals(1.6f, m.get(0, 0), 0.0f);
+
+            assertTrue(FloatMatrix.empty().mapToLong(x -> (long) x).isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> m.mapToLong((Throwables.FloatToLongFunction<RuntimeException>) null));
+        }
+
+        @Test
+        public void test_mapToDouble() {
+            FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
+            DoubleMatrix result = m.mapToDouble(x -> x * 2.0);
+            assertEquals(2.0, result.get(0, 0), 0.0);
+            assertEquals(4.0, result.get(0, 1), 0.0);
+            assertEquals(6.0, result.get(1, 0), 0.0);
+            assertEquals(8.0, result.get(1, 1), 0.0);
+            // Original should be unchanged
+            assertEquals(1.0f, m.get(0, 0), 0.0f);
+
+            assertTrue(FloatMatrix.empty().mapToDouble(x -> (double) x).isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> m.mapToDouble((Throwables.FloatToDoubleFunction<RuntimeException>) null));
+        }
+
         // ============ Fill Tests ============
 
         @Test

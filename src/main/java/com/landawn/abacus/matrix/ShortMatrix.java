@@ -3673,9 +3673,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * matrix.forEach(value -> count.incrementAndGet());
      * count.get();                            // 4 (number of elements)
      *
-     * int[] emptySum = {0};
-     * ShortMatrix.empty().forEach(value -> emptySum[0] += value);
-     * emptySum[0];                                                       // 0 (no elements visited)
+     * java.util.concurrent.atomic.AtomicInteger emptySum = new java.util.concurrent.atomic.AtomicInteger();
+     * ShortMatrix.empty().forEach(emptySum::addAndGet);
+     * emptySum.get();                                                    // 0 (no elements visited)
      * matrix.forEach((Throwables.ShortConsumer<RuntimeException>) null); // throws IllegalArgumentException
      * }</pre>
      *

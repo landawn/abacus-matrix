@@ -1859,10 +1859,10 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * anchored at the top-left corner of this matrix. New cells are filled with {@code 0}.
      *
      * <ul>
-     *   <li><b>If a dimension shrinks</b> - elements beyond the new boundary are discarded
+     *   <li><b>If a dimension shrinks</b> — elements beyond the new boundary are discarded
      *       (excess rows removed from the bottom, excess columns removed from the right).</li>
-     *   <li><b>If a dimension grows</b> - new cells are filled with {@code 0}.</li>
-     *   <li><b>Mixed case</b> - each dimension is treated independently, so it is valid
+     *   <li><b>If a dimension grows</b> — new cells are filled with {@code 0}.</li>
+     *   <li><b>Mixed case</b> — each dimension is treated independently, so it is valid
      *       to grow rows while truncating columns, or vice versa.</li>
      * </ul>
      *
@@ -1911,10 +1911,10 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * anchored at the top-left corner of this matrix.
      *
      * <ul>
-     *   <li><b>If a dimension shrinks</b> - elements beyond the new boundary are discarded.
+     *   <li><b>If a dimension shrinks</b> — elements beyond the new boundary are discarded.
      *       {@code defaultValue} is <em>not</em> used in this case.</li>
-     *   <li><b>If a dimension grows</b> - new cells are filled with {@code defaultValue}.</li>
-     *   <li><b>Mixed case</b> - each dimension is treated independently, so it is valid
+     *   <li><b>If a dimension grows</b> — new cells are filled with {@code defaultValue}.</li>
+     *   <li><b>Mixed case</b> — each dimension is treated independently, so it is valid
      *       to grow rows while truncating columns, or vice versa.</li>
      * </ul>
      *
@@ -2021,7 +2021,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param padBottom number of padding rows to add below the original matrix; must be {@code >= 0}
      * @param padLeft number of padding columns to add to the left of the original matrix; must be {@code >= 0}
      * @param padRight number of padding columns to add to the right of the original matrix; must be {@code >= 0}
-     * @return a new IntMatrix with dimensions {@code (padTop + rowCount + padBottom) x (padLeft + columnCount + padRight)}
+     * @return a new IntMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
      * @throws IllegalArgumentException if any padding parameter is negative,
      *         if the resulting dimensions would overflow {@code Integer.MAX_VALUE},
      *         or if the resulting shape is not representable (zero rows with a non-zero column count)
@@ -2074,7 +2074,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param padLeft number of padding columns to add to the left of the original matrix; must be {@code >= 0}
      * @param padRight number of padding columns to add to the right of the original matrix; must be {@code >= 0}
      * @param defaultValue the value to fill all new padding cells with
-     * @return a new IntMatrix with dimensions {@code (padTop + rowCount + padBottom) x (padLeft + columnCount + padRight)}
+     * @return a new IntMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
      * @throws IllegalArgumentException if any padding parameter is negative,
      *         if the resulting dimensions would overflow {@code Integer.MAX_VALUE},
      *         or if the resulting shape is not representable (zero rows with a non-zero column count)

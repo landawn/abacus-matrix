@@ -3782,7 +3782,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws IllegalArgumentException if {@code columnNames} is {@code null}, or if its size
      *         does not equal {@code rowCount}
      * @see Dataset
-     * @see RowDataset
      * @see #toDataset(Collection)
      */
     @SuppressWarnings("deprecation")

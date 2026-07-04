@@ -149,13 +149,13 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * float[][] data = {{1, 2}, {3, 4}};
+     * float[][] data = {{1.0f, 2.0f}, {3.0f, 4.0f}};
      * FloatMatrix matrix = FloatMatrix.copyOf(data);
-     * data[0][0] = 10;
-     * matrix.get(0, 0);                       // returns 1.0 (copy is independent)
+     * data[0][0] = 10.0f;
+     * matrix.get(0, 0);                       // returns 1.0f (copy is independent)
      *
      * FloatMatrix.copyOf((float[][]) null);  // throws IllegalArgumentException
-     * FloatMatrix.copyOf(new float[][] {{1, 2}, {3}}); // throws IllegalArgumentException (non-rectangular)
+     * FloatMatrix.copyOf(new float[][] {{1.0f, 2.0f}, {3.0f}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
      *
      * @param a the two-dimensional float array to copy, or empty for an empty matrix; must not be {@code null}
@@ -1342,6 +1342,102 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
         return FloatMatrix.of(result);
+    }
+
+    /**
+     * Creates a new IntMatrix by applying a function that converts float values to int.
+     * This operation may be executed in parallel for better performance on large matrices.
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.6f, 2.4f}, {3.7f, 4.2f}});
+     * IntMatrix truncated = matrix.mapToInt(f -> (int) f);
+     * truncated.get(0, 0);                 // returns 1 (1.6 truncated toward zero)
+     * truncated.get(1, 1);                 // returns 4 (4.2 truncated toward zero)
+     *
+     * FloatMatrix.empty().mapToInt(f -> (int) f).isEmpty();                    // returns true
+     * matrix.mapToInt((Throwables.FloatToIntFunction<RuntimeException>) null); // throws IllegalArgumentException
+     * }</pre>
+     *
+     * @param <E> the type of exception that the function may throw
+     * @param mapper the function to convert float values to int
+     * @return a new {@link IntMatrix} with the converted values
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
+     * @throws E if the function throws an exception
+     * @see #toIntMatrix()
+     */
+    public <E extends Exception> IntMatrix mapToInt(final Throwables.FloatToIntFunction<E> mapper) throws E {
+        N.checkArgNotNull(mapper, "mapper");
+        final int[][] result = new int[rowCount][columnCount];
+        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsInt(a[i][j]);
+
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+
+        return IntMatrix.of(result);
+    }
+
+    /**
+     * Creates a new LongMatrix by applying a function that converts float values to long.
+     * This operation may be executed in parallel for better performance on large matrices.
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.6f, 2.4f}, {3.7f, 4.2f}});
+     * LongMatrix truncated = matrix.mapToLong(f -> (long) f);
+     * truncated.get(0, 0);                 // returns 1L (1.6 truncated toward zero)
+     * truncated.get(1, 1);                 // returns 4L (4.2 truncated toward zero)
+     *
+     * FloatMatrix.empty().mapToLong(f -> (long) f).isEmpty();                    // returns true
+     * matrix.mapToLong((Throwables.FloatToLongFunction<RuntimeException>) null); // throws IllegalArgumentException
+     * }</pre>
+     *
+     * @param <E> the type of exception that the function may throw
+     * @param mapper the function to convert float values to long
+     * @return a new {@link LongMatrix} with the converted values
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
+     * @throws E if the function throws an exception
+     * @see #toLongMatrix()
+     */
+    public <E extends Exception> LongMatrix mapToLong(final Throwables.FloatToLongFunction<E> mapper) throws E {
+        N.checkArgNotNull(mapper, "mapper");
+        final long[][] result = new long[rowCount][columnCount];
+        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsLong(a[i][j]);
+
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+
+        return LongMatrix.of(result);
+    }
+
+    /**
+     * Creates a new DoubleMatrix by applying a function that converts float values to double.
+     * This operation may be executed in parallel for better performance on large matrices.
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
+     * DoubleMatrix scaled = matrix.mapToDouble(f -> f * 2.0);
+     * scaled.get(0, 0);                    // returns 2.0
+     * scaled.get(1, 1);                    // returns 8.0
+     *
+     * FloatMatrix.empty().mapToDouble(f -> (double) f).isEmpty();                    // returns true
+     * matrix.mapToDouble((Throwables.FloatToDoubleFunction<RuntimeException>) null); // throws IllegalArgumentException
+     * }</pre>
+     *
+     * @param <E> the type of exception that the function may throw
+     * @param mapper the function to convert float values to double
+     * @return a new {@link DoubleMatrix} with the converted values
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
+     * @throws E if the function throws an exception
+     * @see #toDoubleMatrix()
+     */
+    public <E extends Exception> DoubleMatrix mapToDouble(final Throwables.FloatToDoubleFunction<E> mapper) throws E {
+        N.checkArgNotNull(mapper, "mapper");
+        final double[][] result = new double[rowCount][columnCount];
+        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsDouble(a[i][j]);
+
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+
+        return DoubleMatrix.of(result);
     }
 
     /**
