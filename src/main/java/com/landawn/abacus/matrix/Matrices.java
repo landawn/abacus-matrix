@@ -3839,7 +3839,7 @@ public final class Matrices {
      * @param right the second type, may be {@code null}
      * @return the most specific common assignable type, never {@code null}
      */
-    protected static Class<?> resolveCommonAssignableType(final Class<?> left, final Class<?> right) {
+    static Class<?> resolveCommonAssignableType(final Class<?> left, final Class<?> right) {
         if (left == null) {
             return right == null ? Object.class : right;
         }
@@ -3898,7 +3898,7 @@ public final class Matrices {
      * @see #resolveCommonAssignableType(Class, Class)
      */
     @SuppressWarnings("unchecked")
-    protected static <T> Class<T> resolveCommonElementType(final Matrix<T>[] matrices) {
+    static <T> Class<T> resolveCommonElementType(final Matrix<T>[] matrices) {
         Class<?> commonType = matrices[0].elementType;
 
         for (int i = 1, len = matrices.length; i < len; i++) {

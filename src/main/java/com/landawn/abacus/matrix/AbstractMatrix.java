@@ -865,13 +865,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * m1.isSameShape((IntMatrix) null);                       // throws IllegalArgumentException (null argument)
      * }</pre>
      *
-     * @param m the matrix to compare with
+     * @param other the matrix to compare with
      * @return {@code true} if both matrices have the same dimensions, {@code false} otherwise
-     * @throws IllegalArgumentException if {@code m} is {@code null}
+     * @throws IllegalArgumentException if {@code other} is {@code null}
      */
-    public boolean isSameShape(final M m) {
-        N.checkArgNotNull(m, "m");
-        return rowCount == m.rowCount && columnCount == m.columnCount;
+    public boolean isSameShape(final M other) {
+        N.checkArgNotNull(other, "other");
+        return rowCount == other.rowCount && columnCount == other.columnCount;
     }
 
     /**
@@ -1225,9 +1225,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         N.checkArgNotNull(action, "action");
 
         if (Matrices.shouldRunInParallel(this)) {
-            //noinspection FunctionalExpressionCanBeFolded
-            final Throwables.IntBiConsumer<E> elementAction = action::accept;
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachIndices(rowCount, columnCount, action, true);
         } else {
             for (int i = 0; i < rowCount; i++) {
                 for (int j = 0; j < columnCount; j++) {
@@ -1279,14 +1277,12 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      */
     public <E extends Exception> void forEachIndices(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
             final Throwables.IntBiConsumer<E> action) throws IndexOutOfBoundsException, E {
+        N.checkArgNotNull(action, "action");
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
-        N.checkArgNotNull(action, "action");
 
         if (Matrices.shouldRunInParallel(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
-            //noinspection FunctionalExpressionCanBeFolded
-            final Throwables.IntBiConsumer<E> elementAction = action::accept;
-            Matrices.forEachIndices(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, elementAction, true);
+            Matrices.forEachIndices(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, action, true);
         } else {
             for (int i = fromRowIndex; i < toRowIndex; i++) {
                 for (int j = fromColumnIndex; j < toColumnIndex; j++) {
@@ -1386,9 +1382,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      */
     public <E extends Exception> void forEachIndices(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
             final Throwables.BiIntObjConsumer<M, E> action) throws IndexOutOfBoundsException, E {
+        N.checkArgNotNull(action, "action");
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
-        N.checkArgNotNull(action, "action");
 
         final M matrix = (M) this;
 
@@ -2416,23 +2412,23 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * This abstract method must be implemented by concrete subclasses to return the length
      * of their specific array type (e.g., {@code int[]}, {@code double[]}, or {@code Object[]}).
      *
-     * @param a the row array whose length is to be determined
+     * @param row the row array whose length is to be determined
      * @return the length of the array
      */
-    protected abstract int length(@SuppressWarnings("hiding") A a);
+    protected abstract int length(A row);
 
     /**
      * Validates that this matrix has the same shape (dimensions) as the specified matrix.
      * This is a helper method used internally to enforce shape compatibility before
      * operations that require matrices of the same dimensions (e.g., element-wise addition).
      *
-     * @param x the matrix to compare shape with; must not be {@code null}
-     * @throws IllegalArgumentException if {@code x} is {@code null}, or if the matrices have
+     * @param other the matrix to compare shape with; must not be {@code null}
+     * @throws IllegalArgumentException if {@code other} is {@code null}, or if the matrices have
      *         different row counts or column counts
      */
-    protected void checkSameShape(final M x) {
-        N.checkArgNotNull(x, "x");
-        N.checkArgument(isSameShape(x), MSG_SHAPE_MISMATCH, rowCount, columnCount, x.rowCount, x.columnCount);
+    protected void checkSameShape(final M other) {
+        N.checkArgNotNull(other, "other");
+        N.checkArgument(isSameShape(other), MSG_SHAPE_MISMATCH, rowCount, columnCount, other.rowCount, other.columnCount);
     }
 
     /**

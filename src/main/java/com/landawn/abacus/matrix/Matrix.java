@@ -978,7 +978,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws ArrayStoreException if the operator returns a value that is not assignable to the
      *         corresponding row's runtime storage component type
      */
-    public <E extends Exception> void updateMainDiagonal(final Throwables.UnaryOperator<T, E> operator) throws IllegalStateException, E {
+    public <E extends Exception> void updateMainDiagonal(final Throwables.UnaryOperator<T, E> operator)
+            throws IllegalStateException, IllegalArgumentException, E {
         checkIsSquare();
         N.checkArgNotNull(operator, "operator");
 
@@ -1089,7 +1090,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws ArrayStoreException if the operator returns a value that is not assignable to the
      *         corresponding row's runtime storage component type
      */
-    public <E extends Exception> void updateAntiDiagonal(final Throwables.UnaryOperator<T, E> operator) throws IllegalStateException, E {
+    public <E extends Exception> void updateAntiDiagonal(final Throwables.UnaryOperator<T, E> operator)
+            throws IllegalStateException, IllegalArgumentException, E {
         checkIsSquare();
         N.checkArgNotNull(operator, "operator");
 
@@ -1129,7 +1131,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws ArrayStoreException if the operator returns a value that is not assignable to the
      *         corresponding row's runtime storage component type
      */
-    public <E extends Exception> void updateAll(final Throwables.UnaryOperator<T, E> operator) throws E {
+    public <E extends Exception> void updateAll(final Throwables.UnaryOperator<T, E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, "operator");
 
         for (int i = 0; i < rowCount; i++) {
@@ -1172,7 +1174,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws ArrayStoreException if the mapper returns a value that is not assignable to the
      *         corresponding row's runtime storage component type
      */
-    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends T, E> mapper) throws E {
+    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends T, E> mapper) throws IllegalArgumentException, E {
         N.checkArgNotNull(mapper, "mapper");
 
         for (int i = 0; i < rowCount; i++) {
@@ -1277,7 +1279,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Creates a new matrix by applying a transformation function to each element.
      * The result matrix has the same element type as the original.
      * This is a convenience method that uses the same element type for input and output.
-     * The operation may be performed in parallel for large matrices.
+     * The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Note:</b> because the result reuses this matrix's runtime element type, an {@link ArrayStoreException}
      * is thrown if {@code mapper} returns a value that is not assignable to that type. Use
@@ -1314,7 +1316,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Creates a new matrix by applying a transformation function to each element.
      * The result matrix can have a different element type than the original.
      * The target element type must be explicitly specified.
-     * The operation may be performed in parallel for large matrices.
+     * The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1356,7 +1358,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Creates a {@link BooleanMatrix} by applying a boolean-valued function to each element.
      * This is useful for creating masks or performing element-wise comparisons.
-     * The operation may be performed in parallel for large matrices.
+     * The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1392,7 +1394,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Creates a byte matrix by applying a byte-valued function to each element.
      * Any narrowing conversion behavior depends on the mapper implementation.
-     * The operation may be performed in parallel for large matrices.
+     * The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1426,7 +1428,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Creates a char matrix by applying a char-valued function to each element.
      * This is useful for character-based transformations.
-     * The operation may be performed in parallel for large matrices.
+     * The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1462,7 +1464,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Creates a short matrix by applying a short-valued function to each element.
      * Any narrowing conversion behavior depends on the mapper implementation.
-     * The operation may be performed in parallel for large matrices.
+     * The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1496,7 +1498,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Creates an int matrix by applying an int-valued function to each element.
      * This is one of the most commonly used primitive type conversions.
-     * The operation may be performed in parallel for large matrices.
+     * The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1531,7 +1533,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Creates a long matrix by applying a long-valued function to each element.
      * Useful for operations that require 64-bit integer precision.
-     * The operation may be performed in parallel for large matrices.
+     * The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1565,7 +1567,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Creates a float matrix by applying a float-valued function to each element.
      * Useful for single-precision floating-point operations.
-     * The operation may be performed in parallel for large matrices.
+     * The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1599,7 +1601,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Creates a double matrix by applying a double-valued function to each element.
      * Useful for double-precision floating-point operations.
-     * The operation may be performed in parallel for large matrices.
+     * The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1940,8 +1942,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
      *         if the resulting shape is not representable (zero rows with a non-zero column count),
      *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
-     * @throws ArrayStoreException if {@code defaultValue} is non-{@code null} and not assignable to
-     *         this matrix's runtime element type
+     * @throws ArrayStoreException if the matrix grows in at least one dimension and {@code defaultValue}
+     *         is non-{@code null} and not assignable to this matrix's runtime element type
      * @see #resize(int, int)
      * @see #extend(int, int, int, int, Object)
      */
@@ -2081,8 +2083,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws IllegalArgumentException if any padding parameter is negative,
      *         if the resulting dimensions would overflow {@code Integer.MAX_VALUE},
      *         or if the resulting shape is not representable (zero rows with a non-zero column count)
-     * @throws ArrayStoreException if {@code defaultValue} is non-{@code null} and not assignable to
-     *         this matrix's runtime element type
+     * @throws ArrayStoreException if the matrix grows in at least one dimension and {@code defaultValue}
+     *         is non-{@code null} and not assignable to this matrix's runtime element type
      * @see #extend(int, int, int, int)
      * @see #resize(int, int, Object)
      */
@@ -2817,7 +2819,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Combines this matrix with another matrix element-wise using the specified function.
      * The function is applied to corresponding elements at the same positions (i, j) in both matrices.
      * Both matrices must have the same dimensions. The result matrix has the same element type as this matrix.
-     * The operation may be performed in parallel for large matrices.
+     * The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Note:</b> because the result reuses this matrix's runtime element type, an {@link ArrayStoreException}
      * is thrown if {@code zipFunction} returns a value that is not assignable to that type. Use
@@ -3908,7 +3910,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         }
 
         if (obj instanceof Matrix) {
-            final Matrix<T> another = (Matrix<T>) obj;
+            final Matrix<?> another = (Matrix<?>) obj;
 
             return columnCount == another.columnCount && rowCount == another.rowCount && N.deepEquals(a, another.a);
         }

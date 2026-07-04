@@ -991,7 +991,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
-    public <E extends Exception> void updateMainDiagonal(final Throwables.BooleanUnaryOperator<E> operator) throws IllegalStateException, E {
+    public <E extends Exception> void updateMainDiagonal(final Throwables.BooleanUnaryOperator<E> operator)
+            throws IllegalStateException, IllegalArgumentException, E {
         checkIsSquare();
         N.checkArgNotNull(operator, "operator");
 
@@ -1105,7 +1106,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
-    public <E extends Exception> void updateAntiDiagonal(final Throwables.BooleanUnaryOperator<E> operator) throws IllegalStateException, E {
+    public <E extends Exception> void updateAntiDiagonal(final Throwables.BooleanUnaryOperator<E> operator)
+            throws IllegalStateException, IllegalArgumentException, E {
         checkIsSquare();
         N.checkArgNotNull(operator, "operator");
 
@@ -1118,7 +1120,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * Updates all elements in the matrix in-place by applying the specified operator.
      * This modifies the matrix directly.
      *
-     * <p>The operation may be performed in parallel for large matrices to improve performance.
+     * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
      * Elements are processed in row-major order when executed sequentially.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -1141,7 +1143,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
-    public <E extends Exception> void updateAll(final Throwables.BooleanUnaryOperator<E> operator) throws E {
+    public <E extends Exception> void updateAll(final Throwables.BooleanUnaryOperator<E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, "operator");
 
         if (Matrices.shouldRunInParallel(this)) {
@@ -1164,7 +1166,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * <p>The mapper receives the row and column indices for each element and returns the new value
      * for that position. This is useful for initializing matrices based on position patterns or
-     * mathematical formulas. The operation may be performed in parallel for large matrices.</p>
+     * mathematical formulas. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1189,7 +1191,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @throws NullPointerException if {@code mapper} returns {@code null} for any position
      * @throws E if the mapper throws an exception
      */
-    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Boolean, E> mapper) throws E {
+    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Boolean, E> mapper) throws IllegalArgumentException, E {
         N.checkArgNotNull(mapper, "mapper");
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
@@ -1200,7 +1202,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * All elements that satisfy the predicate are replaced with the specified new value.
      * This modifies the matrix directly.
      *
-     * <p>The operation may be performed in parallel for large matrices to improve performance.</p>
+     * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1235,7 +1237,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * This modifies the matrix directly.
      *
      * <p>This is useful for position-based replacements such as setting diagonals, borders,
-     * or specific regions. The operation may be performed in parallel for large matrices.</p>
+     * or specific regions. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1268,7 +1270,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * Creates a new {@code BooleanMatrix} by applying a transformation function to each element.
      * The original matrix is not modified; a new matrix with transformed values is returned.
      *
-     * <p>The operation may be performed in parallel for large matrices to improve performance.
+     * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
      * This is the immutable counterpart to {@link #updateAll(Throwables.BooleanUnaryOperator)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -1305,7 +1307,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
 
     /**
      * Creates a new {@code Matrix} by applying a function that converts boolean values to objects of type {@code R}.
-     * This operation may be executed in parallel for better performance on large matrices.
+     * This operation may be executed in parallel for better performance on large matrices. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2476,7 +2478,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     public BooleanMatrix and(final BooleanMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
-        N.checkArgument(Matrices.isSameShape(this, other), "Cannot AND matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
+        N.checkArgument(isSameShape(other), "Cannot AND matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
         final boolean[][] otherData = other.a;
@@ -2511,8 +2513,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     public BooleanMatrix or(final BooleanMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
-        N.checkArgument(Matrices.isSameShape(this, other), "Cannot OR matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
-                other.rowCount, other.columnCount);
+        N.checkArgument(isSameShape(other), "Cannot OR matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount, other.rowCount,
+                other.columnCount);
 
         final boolean[][] otherData = other.a;
         final boolean[][] result = new boolean[rowCount][columnCount];
@@ -2546,7 +2548,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     public BooleanMatrix xor(final BooleanMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
-        N.checkArgument(Matrices.isSameShape(this, other), "Cannot XOR matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
+        N.checkArgument(isSameShape(other), "Cannot XOR matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
         final boolean[][] otherData = other.a;
@@ -2815,7 +2817,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * The matrices must have the same dimensions. Corresponding elements from both matrices
      * are combined using the provided function to produce the result matrix.
      *
-     * <p>The operation may be performed in parallel for large matrices to improve performance.
+     * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
      * Creates a new matrix; the original matrices are not modified.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -2870,7 +2872,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * <p>This is useful for operations that combine three matrices, such as majority vote,
      * conditional selection, or other three-operand logical expressions.</p>
      *
-     * <p>The operation may be performed in parallel for large matrices to improve performance.
+     * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
      * Creates a new matrix; the original matrices are not modified.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -3765,7 +3767,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1, 2]\n[3, 4]"}); a
+     * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[true, false]\n[false, true]"}); a
      * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #appendTo(Appendable)}.
      *
      * @return the formatted multi-line representation of this matrix

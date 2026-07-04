@@ -1044,7 +1044,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
-    public <E extends Exception> void updateMainDiagonal(final Throwables.FloatUnaryOperator<E> operator) throws IllegalStateException, E {
+    public <E extends Exception> void updateMainDiagonal(final Throwables.FloatUnaryOperator<E> operator)
+            throws IllegalStateException, IllegalArgumentException, E {
         checkIsSquare();
         N.checkArgNotNull(operator, "operator");
 
@@ -1146,7 +1147,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
-    public <E extends Exception> void updateAntiDiagonal(final Throwables.FloatUnaryOperator<E> operator) throws IllegalStateException, E {
+    public <E extends Exception> void updateAntiDiagonal(final Throwables.FloatUnaryOperator<E> operator)
+            throws IllegalStateException, IllegalArgumentException, E {
         checkIsSquare();
         N.checkArgNotNull(operator, "operator");
 
@@ -1159,7 +1161,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * Updates all elements in the matrix in-place by applying the specified operator.
      * This modifies the matrix directly.
      *
-     * <p>The operation may be performed in parallel for large matrices to improve performance.
+     * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
      * Elements are processed in row-major order when executed sequentially.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -1180,7 +1182,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
-    public <E extends Exception> void updateAll(final Throwables.FloatUnaryOperator<E> operator) throws E {
+    public <E extends Exception> void updateAll(final Throwables.FloatUnaryOperator<E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, "operator");
 
         if (Matrices.shouldRunInParallel(this)) {
@@ -1203,7 +1205,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * <p>The mapper receives the row and column indices for each element and returns the new value
      * for that position. This is useful for initializing matrices based on position patterns or
-     * mathematical formulas. The operation may be performed in parallel for large matrices.</p>
+     * mathematical formulas. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1225,7 +1227,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws NullPointerException if {@code mapper} returns {@code null} for any position
      * @throws E if the mapper throws an exception
      */
-    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Float, E> mapper) throws E {
+    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Float, E> mapper) throws IllegalArgumentException, E {
         N.checkArgNotNull(mapper, "mapper");
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
@@ -1236,7 +1238,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * All elements that satisfy the predicate are replaced with the specified new value.
      * This modifies the matrix directly.
      *
-     * <p>The operation may be performed in parallel for large matrices to improve performance.</p>
+     * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.</p>
      *
      * <p><b>Floating-point note:</b> {@code NaN} fails ordering comparisons such as {@code <},
      * {@code >}, {@code <=}, {@code >=} and is not equal to itself under {@code ==}. To match
@@ -1280,7 +1282,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * This modifies the matrix directly.
      *
      * <p>This is useful for position-based replacements such as setting diagonals, borders,
-     * or specific regions. The operation may be performed in parallel for large matrices.</p>
+     * or specific regions. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1346,7 +1348,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
     /**
      * Creates a new IntMatrix by applying a function that converts float values to int.
-     * This operation may be executed in parallel for better performance on large matrices.
+     * This operation may be executed in parallel for better performance on large matrices. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1360,7 +1362,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @param <E> the type of exception that the function may throw
-     * @param mapper the function to convert float values to int
+     * @param mapper the function to convert float values to int; must not be {@code null}
      * @return a new {@link IntMatrix} with the converted values
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
@@ -1378,7 +1380,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
     /**
      * Creates a new LongMatrix by applying a function that converts float values to long.
-     * This operation may be executed in parallel for better performance on large matrices.
+     * This operation may be executed in parallel for better performance on large matrices. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1392,7 +1394,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @param <E> the type of exception that the function may throw
-     * @param mapper the function to convert float values to long
+     * @param mapper the function to convert float values to long; must not be {@code null}
      * @return a new {@link LongMatrix} with the converted values
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
@@ -1410,7 +1412,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
     /**
      * Creates a new DoubleMatrix by applying a function that converts float values to double.
-     * This operation may be executed in parallel for better performance on large matrices.
+     * This operation may be executed in parallel for better performance on large matrices. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1424,7 +1426,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @param <E> the type of exception that the function may throw
-     * @param mapper the function to convert float values to double
+     * @param mapper the function to convert float values to double; must not be {@code null}
      * @return a new {@link DoubleMatrix} with the converted values
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if the function throws an exception
@@ -1444,7 +1446,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * Creates a new object {@code Matrix} by applying the specified function to each element of this matrix.
      * The original matrix is not modified. Each {@code float} element is independently converted to an object
      * of type {@code R} by the function, and the results are collected into a new {@code Matrix} with the same dimensions.
-     * The operation may be performed in parallel for large matrices to improve performance.
+     * The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2676,7 +2678,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     public FloatMatrix add(final FloatMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
-        N.checkArgument(Matrices.isSameShape(this, other), "Cannot add matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
+        N.checkArgument(isSameShape(other), "Cannot add matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
         final float[][] otherMatrix = other.a;
@@ -2717,11 +2719,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @return a new {@code FloatMatrix} containing the element-wise difference (same dimensions as the inputs)
      * @throws IllegalArgumentException if {@code other} is {@code null} or the matrices have different dimensions
      * @see #add(FloatMatrix)
+     * @see #zipWith(FloatMatrix, Throwables.FloatBinaryOperator)
      */
     public FloatMatrix subtract(final FloatMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
-        N.checkArgument(Matrices.isSameShape(this, other), "Cannot subtract matrices with different shapes: this is {}x{} but other is {}x{}", rowCount,
-                columnCount, other.rowCount, other.columnCount);
+        N.checkArgument(isSameShape(other), "Cannot subtract matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
+                other.rowCount, other.columnCount);
 
         final float[][] otherMatrix = other.a;
         final float[][] result = new float[rowCount][columnCount];
@@ -2980,7 +2983,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * subtraction, consider using the dedicated methods {@link #add(FloatMatrix)} and {@link #subtract(FloatMatrix)};
      * for the linear-algebra matrix product (which is not an element-wise operation), use {@link #matrixMultiply(FloatMatrix)}.</p>
      *
-     * <p>The operation may be performed in parallel for large matrices to improve performance.
+     * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
      * Creates a new matrix; the original matrices are not modified.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -3034,7 +3037,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p>This is useful for operations that combine three matrices, such as weighted averages,
      * conditional selection, or mathematical formulas involving three variables.</p>
      *
-     * <p>The operation may be performed in parallel for large matrices to improve performance.
+     * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
      * Creates a new matrix; the original matrices are not modified.</p>
      *
      * <p><b>Usage Examples:</b></p>

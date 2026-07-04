@@ -1107,7 +1107,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
-    public <E extends Exception> void updateMainDiagonal(final Throwables.ByteUnaryOperator<E> operator) throws IllegalStateException, E {
+    public <E extends Exception> void updateMainDiagonal(final Throwables.ByteUnaryOperator<E> operator)
+            throws IllegalStateException, IllegalArgumentException, E {
         checkIsSquare();
         N.checkArgNotNull(operator, "operator");
 
@@ -1210,7 +1211,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
-    public <E extends Exception> void updateAntiDiagonal(final Throwables.ByteUnaryOperator<E> operator) throws IllegalStateException, E {
+    public <E extends Exception> void updateAntiDiagonal(final Throwables.ByteUnaryOperator<E> operator)
+            throws IllegalStateException, IllegalArgumentException, E {
         checkIsSquare();
         N.checkArgNotNull(operator, "operator");
 
@@ -1223,7 +1225,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * Updates all elements in the matrix in-place by applying the specified operator.
      * This modifies the matrix directly.
      *
-     * <p>The operation may be performed in parallel for large matrices to improve performance.
+     * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
      * Elements are processed in row-major order when executed sequentially.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -1248,7 +1250,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
-    public <E extends Exception> void updateAll(final Throwables.ByteUnaryOperator<E> operator) throws E {
+    public <E extends Exception> void updateAll(final Throwables.ByteUnaryOperator<E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, "operator");
 
         if (Matrices.shouldRunInParallel(this)) {
@@ -1271,7 +1273,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * <p>The mapper receives the row and column indices for each element and returns the new value
      * for that position. This is useful for initializing matrices based on position patterns or
-     * mathematical formulas. The operation may be performed in parallel for large matrices.</p>
+     * mathematical formulas. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1296,7 +1298,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @throws NullPointerException if {@code mapper} returns {@code null} for any position
      * @throws E if the mapper throws an exception
      */
-    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Byte, E> mapper) throws E {
+    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Byte, E> mapper) throws IllegalArgumentException, E {
         N.checkArgNotNull(mapper, "mapper");
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
@@ -1307,7 +1309,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * All elements that satisfy the predicate are replaced with the specified new value.
      * This modifies the matrix directly.
      *
-     * <p>The operation may be performed in parallel for large matrices to improve performance.</p>
+     * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1342,7 +1344,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * This modifies the matrix directly.
      *
      * <p>This is useful for position-based replacements such as setting diagonals, borders,
-     * or specific regions. The operation may be performed in parallel for large matrices.</p>
+     * or specific regions. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1376,7 +1378,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * Creates a new ByteMatrix by applying a transformation function to each element.
      * The original matrix is not modified; a new matrix with transformed values is returned.
      *
-     * <p>The operation may be performed in parallel for large matrices to improve performance.
+     * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
      * This is the immutable counterpart to {@link #updateAll(Throwables.ByteUnaryOperator)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -1414,7 +1416,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
 
     /**
      * Creates a new Matrix by applying a function that converts byte values to objects of type R.
-     * This operation may be executed in parallel for better performance on large matrices.
+     * This operation may be executed in parallel for better performance on large matrices. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2618,7 +2620,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      */
     public ByteMatrix add(final ByteMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
-        N.checkArgument(Matrices.isSameShape(this, other), "Cannot add matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
+        N.checkArgument(isSameShape(other), "Cannot add matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
         final byte[][] otherArray = other.a;
@@ -2659,11 +2661,12 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @return a new {@code ByteMatrix} containing the element-wise difference {@code this - other}
      * @throws IllegalArgumentException if {@code other} is {@code null}, or if the matrices have different shapes
      * @see #add(ByteMatrix)
+     * @see #zipWith(ByteMatrix, Throwables.ByteBinaryOperator)
      */
     public ByteMatrix subtract(final ByteMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
-        N.checkArgument(Matrices.isSameShape(this, other), "Cannot subtract matrices with different shapes: this is {}x{} but other is {}x{}", rowCount,
-                columnCount, other.rowCount, other.columnCount);
+        N.checkArgument(isSameShape(other), "Cannot subtract matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
+                other.rowCount, other.columnCount);
 
         final byte[][] otherArray = other.a;
         final byte[][] result = new byte[rowCount][columnCount];
@@ -2938,7 +2941,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * subtraction, consider using the dedicated methods {@link #add(ByteMatrix)} and {@link #subtract(ByteMatrix)};
      * for the linear-algebra matrix product (which is not an element-wise operation), use {@link #matrixMultiply(ByteMatrix)}.</p>
      *
-     * <p>The operation may be performed in parallel for large matrices to improve performance.
+     * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
      * Creates a new matrix; the original matrices are not modified.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -2993,7 +2996,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p>This is useful for operations that combine three matrices, such as weighted averages,
      * conditional selection, or mathematical formulas involving three variables.</p>
      *
-     * <p>The operation may be performed in parallel for large matrices to improve performance.
+     * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
      * Creates a new matrix; the original matrices are not modified.</p>
      *
      * <p><b>Usage Examples:</b></p>
