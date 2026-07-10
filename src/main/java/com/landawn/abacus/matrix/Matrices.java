@@ -70,7 +70,7 @@ public final class Matrices {
                     && ClassUtil.forName("com.landawn.abacus.util.stream.ParallelIteratorIntStream") != null) {
                 tmp = true;
             }
-        } catch (final Exception e) {
+        } catch (final Exception | LinkageError e) {
             if (logger.isDebugEnabled()) {
                 logger.debug("Parallel stream support detection failed; matrix operations will fall back to sequential execution", e);
             }
@@ -1139,6 +1139,9 @@ public final class Matrices {
      * Equivalent to chaining {@link AbstractMatrix#stackVertically(AbstractMatrix)} calls,
      * but avoids the boilerplate when stacking three or more matrices.</p>
      *
+     * <p>Inputs with compatible runtime storage are combined in balanced rounds. This preserves
+     * iteration order while reducing repeated copying compared with a left-to-right chain.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix a = IntMatrix.of(new int[][] {{1, 2}});
@@ -1165,19 +1168,7 @@ public final class Matrices {
      */
     public static <M extends AbstractMatrix<?, ?, ?, ?, M>> M stackVertically(final Collection<? extends M> matrices) {
         checkMatricesNotEmptyAndNoNullElements(matrices);
-
-        final Iterator<? extends M> it = matrices.iterator();
-        M result = it.next();
-
-        if (!it.hasNext()) {
-            return result.copy();
-        }
-
-        while (it.hasNext()) {
-            result = result.stackVertically(it.next());
-        }
-
-        return result;
+        return stack(matrices, true);
     }
 
     /**
@@ -1187,6 +1178,9 @@ public final class Matrices {
      * matrix on the left, followed by the columns of each subsequent matrix in iteration order.
      * Equivalent to chaining {@link AbstractMatrix#stackHorizontally(AbstractMatrix)} calls,
      * but avoids the boilerplate when stacking three or more matrices.</p>
+     *
+     * <p>Inputs with compatible runtime storage are combined in balanced rounds. This preserves
+     * iteration order while reducing repeated copying compared with a left-to-right chain.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1214,19 +1208,65 @@ public final class Matrices {
      */
     public static <M extends AbstractMatrix<?, ?, ?, ?, M>> M stackHorizontally(final Collection<? extends M> matrices) {
         checkMatricesNotEmptyAndNoNullElements(matrices);
+        return stack(matrices, false);
+    }
 
-        final Iterator<? extends M> it = matrices.iterator();
-        M result = it.next();
-
-        if (!it.hasNext()) {
-            return result.copy();
+    private static <M extends AbstractMatrix<?, ?, ?, ?, M>> M stack(final Collection<? extends M> matrices, final boolean vertically) {
+        if (matrices.size() == 1) {
+            return matrices.iterator().next().copy();
         }
 
-        while (it.hasNext()) {
-            result = result.stackHorizontally(it.next());
+        // Matrix<T> can wrap covariant arrays. Regrouping heterogeneous storage types can change
+        // which intermediate allocation fails, so preserve the original left-to-right behavior.
+        if (!hasCompatibleStackStorage(matrices)) {
+            final Iterator<? extends M> iterator = matrices.iterator();
+            M result = iterator.next();
+
+            while (iterator.hasNext()) {
+                result = vertically ? result.stackVertically(iterator.next()) : result.stackHorizontally(iterator.next());
+            }
+
+            return result;
         }
 
-        return result;
+        List<M> currentLevel = new ArrayList<>(matrices);
+
+        while (currentLevel.size() > 1) {
+            final int size = currentLevel.size();
+            final List<M> nextLevel = new ArrayList<>(size / 2 + size % 2);
+
+            for (int i = 0; i < size; i += 2) {
+                final M left = currentLevel.get(i);
+
+                if (i + 1 == size) {
+                    nextLevel.add(left);
+                } else {
+                    final M right = currentLevel.get(i + 1);
+                    nextLevel.add(vertically ? left.stackVertically(right) : left.stackHorizontally(right));
+                }
+            }
+
+            currentLevel = nextLevel;
+        }
+
+        return currentLevel.get(0);
+    }
+
+    private static boolean hasCompatibleStackStorage(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> matrices) {
+        final Iterator<? extends AbstractMatrix<?, ?, ?, ?, ?>> iterator = matrices.iterator();
+        final AbstractMatrix<?, ?, ?, ?, ?> first = iterator.next();
+        final Class<?> matrixClass = first.getClass();
+        final Class<?> elementType = first instanceof Matrix<?> ? ((Matrix<?>) first).elementType : null;
+
+        while (iterator.hasNext()) {
+            final AbstractMatrix<?, ?, ?, ?, ?> current = iterator.next();
+
+            if (current.getClass() != matrixClass || (elementType != null && ((Matrix<?>) current).elementType != elementType)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

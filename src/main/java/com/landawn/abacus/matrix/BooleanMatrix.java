@@ -229,7 +229,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
 
         for (boolean[] ea : a) {
             for (int i = 0; i < columnCount; i++) {
-                ea[i] = RAND.nextInt() % 2 == 0;
+                ea[i] = RAND.nextBoolean();
             }
         }
 

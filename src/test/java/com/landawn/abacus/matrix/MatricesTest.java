@@ -4714,4 +4714,38 @@ class MatricesTest extends TestBase {
         assertThrows(ArrayStoreException.class, () -> Matrices.zip(List.of(a, b, c), (x, y) -> Double.valueOf(x.doubleValue() + y.doubleValue())));
     }
 
+    @Test
+    public void testStackVertically_manyMatricesPreservesOrder() {
+        List<IntMatrix> matrices = List.of(IntMatrix.of(new int[][] { { 1, 2 } }), IntMatrix.of(new int[][] { { 3, 4 } }),
+                IntMatrix.of(new int[][] { { 5, 6 } }), IntMatrix.of(new int[][] { { 7, 8 } }), IntMatrix.of(new int[][] { { 9, 10 } }));
+
+        IntMatrix result = Matrices.stackVertically(matrices);
+
+        assertArrayEquals(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 }, { 7, 8 }, { 9, 10 } }, result.internalArray());
+    }
+
+    @Test
+    public void testStackHorizontally_manyMatricesPreservesOrder() {
+        List<IntMatrix> matrices = List.of(IntMatrix.of(new int[][] { { 1 }, { 2 } }), IntMatrix.of(new int[][] { { 3 }, { 4 } }),
+                IntMatrix.of(new int[][] { { 5 }, { 6 } }), IntMatrix.of(new int[][] { { 7 }, { 8 } }), IntMatrix.of(new int[][] { { 9 }, { 10 } }));
+
+        IntMatrix result = Matrices.stackHorizontally(matrices);
+
+        assertArrayEquals(new int[][] { { 1, 3, 5, 7, 9 }, { 2, 4, 6, 8, 10 } }, result.internalArray());
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @Test
+    public void testStackHorizontally_heterogeneousObjectStorageRetainsCompatibility() {
+        Matrix<Number> broad1 = Matrix.of(new Number[][] { { 1 } });
+        Matrix<Number> broad2 = Matrix.of(new Number[][] { { 2L } });
+        Matrix<Number> narrowInteger = (Matrix) Matrix.of(new Integer[][] { { 3 } });
+        Matrix<Number> narrowDouble = (Matrix) Matrix.of(new Double[][] { { 4.5 } });
+
+        Matrix<Number> result = Matrices.stackHorizontally(List.of(broad1, broad2, narrowInteger, narrowDouble));
+
+        assertArrayEquals(new Number[] { 1, 2L, 3, 4.5 }, result.rowCopy(0));
+        assertEquals(Number.class, result.elementType());
+    }
+
 }

@@ -331,7 +331,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * <p><strong>Unsafe API boundary:</strong> This method returns the actual internal array, not a copy.
      * Any changes made to the returned array (including reassigning row references or mutating row contents)
-     * will be reflected in this matrix. If you need an independent matrix instance, use {@link #copy()}.
+     * will be reflected in this matrix. Reassigned rows must remain non-{@code null} and keep the original
+     * {@link #columnCount()}; violating those shape invariants leaves the matrix in an invalid state because
+     * its dimensions are cached at construction. If you need an independent matrix instance, use {@link #copy()}.
      * If you only need the data flattened into a single one-dimensional array, use {@link #flatten()}.</p>
      *
      * <p><b>Usage Examples:</b></p>

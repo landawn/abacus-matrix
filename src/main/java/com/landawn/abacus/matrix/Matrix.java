@@ -3733,7 +3733,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @see Dataset
      * @see #toTransposedDataset(Collection)
      */
-    @SuppressWarnings("deprecation")
     public Dataset toDataset(final Collection<String> columnNames) throws IllegalArgumentException {
         N.checkArgNotNull(columnNames, "columnNames");
         N.checkArgument(columnNames.size() == columnCount, "The size({}) of specified columnNames and column count({}) of this Matrix are not equal",
@@ -3786,7 +3785,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @see Dataset
      * @see #toDataset(Collection)
      */
-    @SuppressWarnings("deprecation")
     public Dataset toTransposedDataset(final Collection<String> columnNames) throws IllegalArgumentException {
         N.checkArgNotNull(columnNames, "columnNames");
         N.checkArgument(columnNames.size() == rowCount, "The size({}) of specified columnNames and row count({}) of this Matrix are not equal",
