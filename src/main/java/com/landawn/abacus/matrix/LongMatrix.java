@@ -148,7 +148,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * matrix.get(0, 0);                       // returns 1L (copy is independent)
      *
      * LongMatrix.copyOf((long[][]) null);  // throws IllegalArgumentException
-     * LongMatrix.copyOf(new long[][] {{1, 2}, {3}}); // throws IllegalArgumentException (non-rectangular)
+     * LongMatrix.copyOf(new long[][] {{1L, 2L}, {3L}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
      *
      * @param a the two-dimensional long array to copy, or empty for an empty matrix; must not be {@code null}
@@ -344,6 +344,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param startInclusive the starting value (inclusive)
      * @param endExclusive the ending value (exclusive)
      * @return a new {@code 1xn} {@code LongMatrix} where {@code n = max(0, endExclusive - startInclusive)}
+     * @throws IllegalArgumentException if the resulting range would contain more than {@code Integer.MAX_VALUE} elements
      */
     public static LongMatrix range(final long startInclusive, final long endExclusive) {
         return new LongMatrix(new long[][] { Array.range(startInclusive, endExclusive) });
@@ -369,7 +370,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param endExclusive the ending value (exclusive)
      * @param step the step size (must not be zero; positive for ascending, negative for descending)
      * @return a new {@code 1xn} {@code LongMatrix} of values from {@code startInclusive} stepped by {@code step}
-     * @throws IllegalArgumentException if {@code step} is zero
+     * @throws IllegalArgumentException if {@code step} is zero, or if the resulting range would contain more than {@code Integer.MAX_VALUE} elements
      */
     public static LongMatrix range(final long startInclusive, final long endExclusive, final long step) {
         return new LongMatrix(new long[][] { Array.range(startInclusive, endExclusive, step) });
@@ -393,6 +394,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param startInclusive the starting value (inclusive)
      * @param endInclusive the ending value (inclusive)
      * @return a new {@code 1xn} {@code LongMatrix} where {@code n = max(0, endInclusive - startInclusive + 1)}
+     * @throws IllegalArgumentException if the resulting range would contain more than {@code Integer.MAX_VALUE} elements
      */
     public static LongMatrix rangeClosed(final long startInclusive, final long endInclusive) {
         return new LongMatrix(new long[][] { Array.rangeClosed(startInclusive, endInclusive) });
@@ -419,7 +421,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param endInclusive the ending value (inclusive, if reachable by stepping)
      * @param step the step size (must not be zero; positive for ascending, negative for descending)
      * @return a new {@code 1xn} {@code LongMatrix} of values from {@code startInclusive} stepped by {@code step}
-     * @throws IllegalArgumentException if {@code step} is zero
+     * @throws IllegalArgumentException if {@code step} is zero, or if the resulting range would contain more than {@code Integer.MAX_VALUE} elements
      */
     public static LongMatrix rangeClosed(final long startInclusive, final long endInclusive, final long step) {
         return new LongMatrix(new long[][] { Array.rangeClosed(startInclusive, endInclusive, step) });
@@ -990,8 +992,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
         checkRowIndex(rowIndex);
 
+        final long[] row = a[rowIndex];
+
         for (int i = 0; i < columnCount; i++) {
-            a[rowIndex][i] = operator.applyAsLong(a[rowIndex][i]);
+            row[i] = operator.applyAsLong(row[i]);
         }
     }
 
@@ -2386,11 +2390,25 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
                 N.copy(a[0], i * newColumnCount, c[i], 0, (int) N.min(newColumnCount, elementCount - (long) i * newColumnCount));
             }
         } else {
-            long cnt = 0;
+            // Both sides advance in row-major order, so the relayout is a sequence of
+            // contiguous-run copies tracked by a (srcRow, srcColumn) cursor.
+            int srcRow = 0;
+            int srcColumn = 0;
 
             for (int i = 0; i < rowLen; i++) {
-                for (int j = 0, col = (int) N.min(newColumnCount, elementCount - (long) i * newColumnCount); j < col; j++, cnt++) {
-                    c[i][j] = a[(int) (cnt / columnCount)][(int) (cnt % columnCount)];
+                final int rowLength = (int) N.min(newColumnCount, elementCount - (long) i * newColumnCount);
+                int copied = 0;
+
+                while (copied < rowLength) {
+                    final int chunk = N.min(columnCount - srcColumn, rowLength - copied);
+                    N.copy(a[srcRow], srcColumn, c[i], copied, chunk);
+                    copied += chunk;
+                    srcColumn += chunk;
+
+                    if (srcColumn == columnCount) {
+                        srcColumn = 0;
+                        srcRow++;
+                    }
                 }
             }
         }
@@ -2716,9 +2734,21 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
         final long[][] otherArray = other.a;
         final long[][] result = new long[rowCount][columnCount];
-        final Throwables.IntBiConsumer<RuntimeException> elementAction = (i, j) -> result[i][j] = a[i][j] + otherArray[i][j];
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<RuntimeException> elementAction = (i, j) -> result[i][j] = a[i][j] + otherArray[i][j];
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final long[] row = a[i];
+                final long[] otherRow = otherArray[i];
+                final long[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = row[j] + otherRow[j];
+                }
+            }
+        }
 
         return LongMatrix.of(result);
     }
@@ -2759,9 +2789,21 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
         final long[][] otherArray = other.a;
         final long[][] result = new long[rowCount][columnCount];
-        final Throwables.IntBiConsumer<RuntimeException> elementAction = (i, j) -> result[i][j] = a[i][j] - otherArray[i][j];
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<RuntimeException> elementAction = (i, j) -> result[i][j] = a[i][j] - otherArray[i][j];
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final long[] row = a[i];
+                final long[] otherRow = otherArray[i];
+                final long[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = row[j] - otherRow[j];
+                }
+            }
+        }
 
         return LongMatrix.of(result);
     }
@@ -2807,10 +2849,29 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         checkRepresentableShape(rowCount, other.columnCount);
 
         final long[][] otherArray = other.a;
-        final long[][] result = new long[rowCount][other.columnCount];
-        final Throwables.IntTriConsumer<RuntimeException> multiplyAction = (i, j, k) -> result[i][j] += a[i][k] * otherArray[k][j];
+        final int newColumnCount = other.columnCount;
+        final long[][] result = new long[rowCount][newColumnCount];
 
-        Matrices.forEachCartesianIndices(this, other, multiplyAction);
+        if (Matrices.shouldRunInParallel(this, elementCount * newColumnCount)) {
+            final Throwables.IntTriConsumer<RuntimeException> multiplyAction = (i, j, k) -> result[i][j] += a[i][k] * otherArray[k][j];
+            Matrices.forEachCartesianIndices(this, other, multiplyAction, true);
+        } else {
+            // i-k-j loop order with hoisted rows: accumulates each result cell in ascending k order,
+            // matching the accumulation order of Matrices.forEachCartesianIndices exactly.
+            for (int i = 0; i < rowCount; i++) {
+                final long[] row = a[i];
+                final long[] resultRow = result[i];
+
+                for (int k = 0; k < columnCount; k++) {
+                    final long aik = row[k];
+                    final long[] otherRow = otherArray[k];
+
+                    for (int j = 0; j < newColumnCount; j++) {
+                        resultRow[j] += aik * otherRow[j];
+                    }
+                }
+            }
+        }
 
         return LongMatrix.of(result);
     }
@@ -2835,20 +2896,12 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     public Matrix<Long> boxed() {
         final Long[][] c = new Long[rowCount][columnCount];
 
-        if (rowCount <= columnCount) {
-            for (int i = 0; i < rowCount; i++) {
-                final long[] aa = a[i];
-                final Long[] cc = c[i];
+        for (int i = 0; i < rowCount; i++) {
+            final long[] aa = a[i];
+            final Long[] cc = c[i];
 
-                for (int j = 0; j < columnCount; j++) {
-                    cc[j] = aa[j]; // NOSONAR
-                }
-            }
-        } else {
             for (int j = 0; j < columnCount; j++) {
-                for (int i = 0; i < rowCount; i++) {
-                    c[i][j] = a[i][j];
-                }
+                cc[j] = aa[j]; // NOSONAR
             }
         }
 
@@ -2883,20 +2936,12 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     public IntMatrix toIntMatrix() {
         final int[][] c = new int[rowCount][columnCount];
 
-        if (rowCount <= columnCount) {
-            for (int i = 0; i < rowCount; i++) {
-                final long[] aa = a[i];
-                final int[] cc = c[i];
+        for (int i = 0; i < rowCount; i++) {
+            final long[] aa = a[i];
+            final int[] cc = c[i];
 
-                for (int j = 0; j < columnCount; j++) {
-                    cc[j] = (int) aa[j];
-                }
-            }
-        } else {
             for (int j = 0; j < columnCount; j++) {
-                for (int i = 0; i < rowCount; i++) {
-                    c[i][j] = (int) a[i][j];
-                }
+                cc[j] = (int) aa[j];
             }
         }
 
@@ -2929,20 +2974,12 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     public FloatMatrix toFloatMatrix() {
         final float[][] c = new float[rowCount][columnCount];
 
-        if (rowCount <= columnCount) {
-            for (int i = 0; i < rowCount; i++) {
-                final long[] aa = a[i];
-                final float[] cc = c[i];
+        for (int i = 0; i < rowCount; i++) {
+            final long[] aa = a[i];
+            final float[] cc = c[i];
 
-                for (int j = 0; j < columnCount; j++) {
-                    cc[j] = aa[j]; // NOSONAR
-                }
-            }
-        } else {
             for (int j = 0; j < columnCount; j++) {
-                for (int i = 0; i < rowCount; i++) {
-                    c[i][j] = a[i][j];
-                }
+                cc[j] = aa[j]; // NOSONAR
             }
         }
 
@@ -3355,9 +3392,13 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
             public long[] toArray() {
                 final int len = toArrayLength(count());
                 final long[] c = new long[len];
+                int k = 0;
 
-                for (int k = 0; k < len; k++) {
-                    c[k] = a[i][j++];
+                while (k < len) {
+                    final int chunk = N.min(columnCount - j, len - k);
+                    N.copy(a[i], j, c, k, chunk);
+                    k += chunk;
+                    j += chunk;
 
                     if (j >= columnCount) {
                         i++;
@@ -3401,6 +3442,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p>This method is useful for column-wise operations such as calculating
      * column sums, finding column maximums, or filtering column values.</p>
      *
+     * <p>This streams the elements of the single specified column, flattened into one stream. To
+     * instead obtain every column as its own stream (a stream of streams), use {@link #columnStreams()}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
@@ -3414,6 +3458,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param columnIndex the index of the column to stream (0-based)
      * @return a {@link LongStream} of elements from the specified column
      * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
+     * @see #columnStreams()
      */
     @Override
     public LongStream columnMajorStream(final int columnIndex) {

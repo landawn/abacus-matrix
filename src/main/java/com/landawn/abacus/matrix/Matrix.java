@@ -65,6 +65,8 @@ import com.landawn.abacus.util.stream.Stream;
  */
 public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Stream<Stream<T>>, Matrix<T>> {
 
+    private static final Matrix<Object> EMPTY_MATRIX = new Matrix<>(new Object[0][0]);
+
     final Class<T[]> arrayType;
 
     final Class<T> elementType;
@@ -115,6 +117,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * as {@link Object}; subsequent operations that allocate fresh storage may therefore widen
      * to {@code Object[]} rather than the static type {@code T}.</p>
      *
+     * <p>Returns a shared instance; since an empty matrix has no cells, sharing is safe.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<String> matrix = Matrix.empty();
@@ -129,7 +133,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     @SuppressWarnings("unchecked")
     public static <T> Matrix<T> empty() {
-        return new Matrix<>((T[][]) new Object[0][0]);
+        return (Matrix<T>) EMPTY_MATRIX;
     }
 
     /**
@@ -836,9 +840,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
         checkRowIndex(rowIndex);
 
+        final T[] row = a[rowIndex];
+
         for (int i = 0; i < columnCount; i++) {
-            final T updated = operator.apply(a[rowIndex][i]);
-            a[rowIndex][i] = updated;
+            row[i] = operator.apply(row[i]);
         }
     }
 
@@ -2280,7 +2285,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * empty.rotate90().isEmpty();   // returns true
      * }</pre>
      *
-     * @return a new matrix that is this matrix rotated 90 degrees clockwise
+     * @return a new matrix that is this matrix rotated 90 degrees clockwise,
+     *         or an empty matrix if this matrix has zero columns
      */
     @Override
     public Matrix<T> rotate90() {
@@ -2371,7 +2377,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * empty.rotate270().isEmpty();   // returns true
      * }</pre>
      *
-     * @return a new matrix that is this matrix rotated 270 degrees clockwise
+     * @return a new matrix that is this matrix rotated 270 degrees clockwise,
+     *         or an empty matrix if this matrix has zero columns
      */
     @Override
     public Matrix<T> rotate270() {
@@ -2518,11 +2525,25 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
                 N.copy(a[0], i * newColumnCount, c[i], 0, (int) N.min(newColumnCount, elementCount - (long) i * newColumnCount));
             }
         } else {
-            long cnt = 0;
+            // Both sides advance in row-major order, so the relayout is a sequence of
+            // contiguous-run copies tracked by a (srcRow, srcColumn) cursor.
+            int srcRow = 0;
+            int srcColumn = 0;
 
             for (int i = 0; i < rowLen; i++) {
-                for (int j = 0, col = (int) N.min(newColumnCount, elementCount - (long) i * newColumnCount); j < col; j++, cnt++) {
-                    c[i][j] = a[(int) (cnt / columnCount)][(int) (cnt % columnCount)];
+                final int rowLength = (int) N.min(newColumnCount, elementCount - (long) i * newColumnCount);
+                int copied = 0;
+
+                while (copied < rowLength) {
+                    final int chunk = N.min(columnCount - srcColumn, rowLength - copied);
+                    N.copy(a[srcRow], srcColumn, c[i], copied, chunk);
+                    copied += chunk;
+                    srcColumn += chunk;
+
+                    if (srcColumn == columnCount) {
+                        srcColumn = 0;
+                        srcRow++;
+                    }
                 }
             }
         }
@@ -2720,6 +2741,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * The result has rows from this matrix followed by rows from the other matrix.
      * Creates a new matrix; neither input matrix is modified.
      *
+     * <p>The result's runtime element type is the most specific type assignable from both
+     * inputs' runtime element types (observable via {@link #elementType()}).</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Integer> m1 = Matrix.of(new Integer[][] {{1, 2}, {3, 4}});
@@ -2774,6 +2798,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * The matrices must have the same number of rows.
      * The result has columns from this matrix followed by columns from the other matrix.
      * Creates a new matrix; neither input matrix is modified.
+     *
+     * <p>The result's runtime element type is the most specific type assignable from both
+     * inputs' runtime element types (observable via {@link #elementType()}).</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3287,6 +3314,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Returns a stream of elements from a single column.
      * The elements are streamed from top to bottom within the specified column.
      *
+     * <p>This streams the elements of the single specified column, flattened into one stream. To
+     * instead obtain every column as its own stream (a stream of streams), use {@link #columnStreams()}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Integer> matrix = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
@@ -3298,6 +3328,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param columnIndex the index of the column to stream (0-based)
      * @return a {@link Stream} of elements from the specified column
      * @throws IndexOutOfBoundsException if {@code columnIndex} is negative or greater than or equal to {@code columnCount}
+     * @see #columnStreams()
      */
     @Override
     public Stream<T> columnMajorStream(final int columnIndex) {
@@ -3748,13 +3779,16 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         final List<List<Object>> newColumnList = new ArrayList<>(newColumnNameList.size());
 
         for (int j = 0; j < columnCount; j++) {
-            final List<Object> column = new ArrayList<>(rowCount);
+            newColumnList.add(new ArrayList<>(rowCount));
+        }
 
-            for (int i = 0; i < rowCount; i++) {
-                column.add(a[i][j]);
+        // Fill row-by-row so the row-major backing array is read sequentially.
+        for (int i = 0; i < rowCount; i++) {
+            final T[] row = a[i];
+
+            for (int j = 0; j < columnCount; j++) {
+                newColumnList.get(j).add(row[j]);
             }
-
-            newColumnList.add(column);
         }
 
         return new RowDataset(newColumnNameList, newColumnList);

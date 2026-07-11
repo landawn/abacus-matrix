@@ -459,6 +459,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param startInclusive the starting value (inclusive)
      * @param endExclusive the ending value (exclusive)
      * @return a new {@code 1xn} {@code IntMatrix} where {@code n = max(0, endExclusive - startInclusive)}
+     * @throws IllegalArgumentException if the resulting range would contain more than {@code Integer.MAX_VALUE} elements
      */
     public static IntMatrix range(final int startInclusive, final int endExclusive) {
         return new IntMatrix(new int[][] { Array.range(startInclusive, endExclusive) });
@@ -484,7 +485,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param endExclusive the ending value (exclusive)
      * @param step the step size (must not be zero; positive for ascending, negative for descending)
      * @return a new {@code 1xn} {@code IntMatrix} of values from {@code startInclusive} stepped by {@code step}
-     * @throws IllegalArgumentException if {@code step} is zero
+     * @throws IllegalArgumentException if {@code step} is zero, or if the resulting range would contain more than {@code Integer.MAX_VALUE} elements
      */
     public static IntMatrix range(final int startInclusive, final int endExclusive, final int step) {
         return new IntMatrix(new int[][] { Array.range(startInclusive, endExclusive, step) });
@@ -508,6 +509,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param startInclusive the starting value (inclusive)
      * @param endInclusive the ending value (inclusive)
      * @return a new {@code 1xn} {@code IntMatrix} where {@code n = max(0, endInclusive - startInclusive + 1)}
+     * @throws IllegalArgumentException if the resulting range would contain more than {@code Integer.MAX_VALUE} elements
      */
     public static IntMatrix rangeClosed(final int startInclusive, final int endInclusive) {
         return new IntMatrix(new int[][] { Array.rangeClosed(startInclusive, endInclusive) });
@@ -534,7 +536,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param endInclusive the ending value (inclusive, if reachable by stepping)
      * @param step the step size (must not be zero; positive for ascending, negative for descending)
      * @return a new {@code 1xn} {@code IntMatrix} of values from {@code startInclusive} stepped by {@code step}
-     * @throws IllegalArgumentException if {@code step} is zero
+     * @throws IllegalArgumentException if {@code step} is zero, or if the resulting range would contain more than {@code Integer.MAX_VALUE} elements
      */
     public static IntMatrix rangeClosed(final int startInclusive, final int endInclusive, final int step) {
         return new IntMatrix(new int[][] { Array.rangeClosed(startInclusive, endInclusive, step) });
@@ -1103,8 +1105,10 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
 
         checkRowIndex(rowIndex);
 
+        final int[] row = a[rowIndex];
+
         for (int i = 0; i < columnCount; i++) {
-            a[rowIndex][i] = operator.applyAsInt(a[rowIndex][i]);
+            row[i] = operator.applyAsInt(row[i]);
         }
     }
 
@@ -2499,11 +2503,25 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
                 N.copy(a[0], i * newColumnCount, c[i], 0, (int) N.min(newColumnCount, elementCount - (long) i * newColumnCount));
             }
         } else {
-            long cnt = 0;
+            // Both sides advance in row-major order, so the relayout is a sequence of
+            // contiguous-run copies tracked by a (srcRow, srcColumn) cursor.
+            int srcRow = 0;
+            int srcColumn = 0;
 
             for (int i = 0; i < rowLen; i++) {
-                for (int j = 0, col = (int) N.min(newColumnCount, elementCount - (long) i * newColumnCount); j < col; j++, cnt++) {
-                    c[i][j] = a[(int) (cnt / columnCount)][(int) (cnt % columnCount)];
+                final int rowLength = (int) N.min(newColumnCount, elementCount - (long) i * newColumnCount);
+                int copied = 0;
+
+                while (copied < rowLength) {
+                    final int chunk = N.min(columnCount - srcColumn, rowLength - copied);
+                    N.copy(a[srcRow], srcColumn, c[i], copied, chunk);
+                    copied += chunk;
+                    srcColumn += chunk;
+
+                    if (srcColumn == columnCount) {
+                        srcColumn = 0;
+                        srcRow++;
+                    }
                 }
             }
         }
@@ -2830,9 +2848,21 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
 
         final int[][] otherData = other.a;
         final int[][] result = new int[rowCount][columnCount];
-        final Throwables.IntBiConsumer<RuntimeException> elementAction = (i, j) -> result[i][j] = a[i][j] + otherData[i][j];
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<RuntimeException> elementAction = (i, j) -> result[i][j] = a[i][j] + otherData[i][j];
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final int[] row = a[i];
+                final int[] otherRow = otherData[i];
+                final int[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = row[j] + otherRow[j];
+                }
+            }
+        }
 
         return IntMatrix.of(result);
     }
@@ -2873,9 +2903,21 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
 
         final int[][] otherData = other.a;
         final int[][] result = new int[rowCount][columnCount];
-        final Throwables.IntBiConsumer<RuntimeException> elementAction = (i, j) -> result[i][j] = a[i][j] - otherData[i][j];
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<RuntimeException> elementAction = (i, j) -> result[i][j] = a[i][j] - otherData[i][j];
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final int[] row = a[i];
+                final int[] otherRow = otherData[i];
+                final int[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = row[j] - otherRow[j];
+                }
+            }
+        }
 
         return IntMatrix.of(result);
     }
@@ -2922,10 +2964,29 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
         checkRepresentableShape(rowCount, other.columnCount);
 
         final int[][] otherData = other.a;
-        final int[][] result = new int[rowCount][other.columnCount];
-        final Throwables.IntTriConsumer<RuntimeException> multiplyAction = (i, j, k) -> result[i][j] += a[i][k] * otherData[k][j];
+        final int newColumnCount = other.columnCount;
+        final int[][] result = new int[rowCount][newColumnCount];
 
-        Matrices.forEachCartesianIndices(this, other, multiplyAction);
+        if (Matrices.shouldRunInParallel(this, elementCount * newColumnCount)) {
+            final Throwables.IntTriConsumer<RuntimeException> multiplyAction = (i, j, k) -> result[i][j] += a[i][k] * otherData[k][j];
+            Matrices.forEachCartesianIndices(this, other, multiplyAction, true);
+        } else {
+            // i-k-j loop order with hoisted rows: accumulates each result cell in ascending k order,
+            // matching the accumulation order of Matrices.forEachCartesianIndices exactly.
+            for (int i = 0; i < rowCount; i++) {
+                final int[] row = a[i];
+                final int[] resultRow = result[i];
+
+                for (int k = 0; k < columnCount; k++) {
+                    final int aik = row[k];
+                    final int[] otherRow = otherData[k];
+
+                    for (int j = 0; j < newColumnCount; j++) {
+                        resultRow[j] += aik * otherRow[j];
+                    }
+                }
+            }
+        }
 
         return IntMatrix.of(result);
     }
@@ -2950,20 +3011,12 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     public Matrix<Integer> boxed() {
         final Integer[][] c = new Integer[rowCount][columnCount];
 
-        if (rowCount <= columnCount) {
-            for (int i = 0; i < rowCount; i++) {
-                final int[] sourceRow = a[i];
-                final Integer[] resultRow = c[i];
+        for (int i = 0; i < rowCount; i++) {
+            final int[] sourceRow = a[i];
+            final Integer[] resultRow = c[i];
 
-                for (int j = 0; j < columnCount; j++) {
-                    resultRow[j] = sourceRow[j]; // NOSONAR
-                }
-            }
-        } else {
             for (int j = 0; j < columnCount; j++) {
-                for (int i = 0; i < rowCount; i++) {
-                    c[i][j] = a[i][j];
-                }
+                resultRow[j] = sourceRow[j]; // NOSONAR
             }
         }
 
@@ -3424,9 +3477,13 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             public int[] toArray() {
                 final int len = toArrayLength(count());
                 final int[] c = new int[len];
+                int k = 0;
 
-                for (int k = 0; k < len; k++) {
-                    c[k] = a[i][j++];
+                while (k < len) {
+                    final int chunk = N.min(columnCount - j, len - k);
+                    N.copy(a[i], j, c, k, chunk);
+                    k += chunk;
+                    j += chunk;
 
                     if (j >= columnCount) {
                         i++;
@@ -3470,6 +3527,9 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p>This method is useful for column-wise operations such as calculating
      * column sums, finding column maximums, or filtering column values.</p>
      *
+     * <p>This streams the elements of the single specified column, flattened into one stream. To
+     * instead obtain every column as its own stream (a stream of streams), use {@link #columnStreams()}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
@@ -3483,6 +3543,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param columnIndex the index of the column to stream (0-based)
      * @return an {@link IntStream} of elements from the specified column
      * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
+     * @see #columnStreams()
      */
     @Override
     public IntStream columnMajorStream(final int columnIndex) {

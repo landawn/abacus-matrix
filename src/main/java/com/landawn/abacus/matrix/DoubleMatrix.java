@@ -1026,8 +1026,10 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
 
         checkRowIndex(rowIndex);
 
+        final double[] row = a[rowIndex];
+
         for (int i = 0; i < columnCount; i++) {
-            a[rowIndex][i] = operator.applyAsDouble(a[rowIndex][i]);
+            row[i] = operator.applyAsDouble(row[i]);
         }
     }
 
@@ -2445,11 +2447,25 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
                 N.copy(a[0], i * newColumnCount, c[i], 0, (int) N.min(newColumnCount, elementCount - (long) i * newColumnCount));
             }
         } else {
-            long cnt = 0;
+            // Both sides advance in row-major order, so the relayout is a sequence of
+            // contiguous-run copies tracked by a (srcRow, srcColumn) cursor.
+            int srcRow = 0;
+            int srcColumn = 0;
 
             for (int i = 0; i < rowLen; i++) {
-                for (int j = 0, col = (int) N.min(newColumnCount, elementCount - (long) i * newColumnCount); j < col; j++, cnt++) {
-                    c[i][j] = a[(int) (cnt / columnCount)][(int) (cnt % columnCount)];
+                final int rowLength = (int) N.min(newColumnCount, elementCount - (long) i * newColumnCount);
+                int copied = 0;
+
+                while (copied < rowLength) {
+                    final int chunk = N.min(columnCount - srcColumn, rowLength - copied);
+                    N.copy(a[srcRow], srcColumn, c[i], copied, chunk);
+                    copied += chunk;
+                    srcColumn += chunk;
+
+                    if (srcColumn == columnCount) {
+                        srcColumn = 0;
+                        srcRow++;
+                    }
                 }
             }
         }
@@ -2783,9 +2799,21 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
 
         final double[][] otherData = other.a;
         final double[][] result = new double[rowCount][columnCount];
-        final Throwables.IntBiConsumer<RuntimeException> elementAction = (i, j) -> result[i][j] = a[i][j] + otherData[i][j];
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<RuntimeException> elementAction = (i, j) -> result[i][j] = a[i][j] + otherData[i][j];
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final double[] row = a[i];
+                final double[] otherRow = otherData[i];
+                final double[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = row[j] + otherRow[j];
+                }
+            }
+        }
 
         return DoubleMatrix.of(result);
     }
@@ -2828,9 +2856,21 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
 
         final double[][] otherData = other.a;
         final double[][] result = new double[rowCount][columnCount];
-        final Throwables.IntBiConsumer<RuntimeException> elementAction = (i, j) -> result[i][j] = a[i][j] - otherData[i][j];
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<RuntimeException> elementAction = (i, j) -> result[i][j] = a[i][j] - otherData[i][j];
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final double[] row = a[i];
+                final double[] otherRow = otherData[i];
+                final double[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = row[j] - otherRow[j];
+                }
+            }
+        }
 
         return DoubleMatrix.of(result);
     }
@@ -2887,10 +2927,29 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
         checkRepresentableShape(rowCount, other.columnCount);
 
         final double[][] otherData = other.a;
-        final double[][] result = new double[rowCount][other.columnCount];
-        final Throwables.IntTriConsumer<RuntimeException> multiplyAction = (i, j, k) -> result[i][j] += a[i][k] * otherData[k][j];
+        final int newColumnCount = other.columnCount;
+        final double[][] result = new double[rowCount][newColumnCount];
 
-        Matrices.forEachCartesianIndices(this, other, multiplyAction);
+        if (Matrices.shouldRunInParallel(this, elementCount * newColumnCount)) {
+            final Throwables.IntTriConsumer<RuntimeException> multiplyAction = (i, j, k) -> result[i][j] += a[i][k] * otherData[k][j];
+            Matrices.forEachCartesianIndices(this, other, multiplyAction, true);
+        } else {
+            // i-k-j loop order with hoisted rows: accumulates each result cell in ascending k order,
+            // matching the accumulation order of Matrices.forEachCartesianIndices exactly.
+            for (int i = 0; i < rowCount; i++) {
+                final double[] row = a[i];
+                final double[] resultRow = result[i];
+
+                for (int k = 0; k < columnCount; k++) {
+                    final double aik = row[k];
+                    final double[] otherRow = otherData[k];
+
+                    for (int j = 0; j < newColumnCount; j++) {
+                        resultRow[j] += aik * otherRow[j];
+                    }
+                }
+            }
+        }
 
         return DoubleMatrix.of(result);
     }
@@ -2918,20 +2977,12 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     public Matrix<Double> boxed() {
         final Double[][] c = new Double[rowCount][columnCount];
 
-        if (rowCount <= columnCount) {
-            for (int i = 0; i < rowCount; i++) {
-                final double[] aa = a[i];
-                final Double[] cc = c[i];
+        for (int i = 0; i < rowCount; i++) {
+            final double[] aa = a[i];
+            final Double[] cc = c[i];
 
-                for (int j = 0; j < columnCount; j++) {
-                    cc[j] = aa[j]; // NOSONAR
-                }
-            }
-        } else {
             for (int j = 0; j < columnCount; j++) {
-                for (int i = 0; i < rowCount; i++) {
-                    c[i][j] = a[i][j];
-                }
+                cc[j] = aa[j]; // NOSONAR
             }
         }
 
@@ -2973,20 +3024,12 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     public IntMatrix toIntMatrix() {
         final int[][] c = new int[rowCount][columnCount];
 
-        if (rowCount <= columnCount) {
-            for (int i = 0; i < rowCount; i++) {
-                final double[] aa = a[i];
-                final int[] cc = c[i];
+        for (int i = 0; i < rowCount; i++) {
+            final double[] aa = a[i];
+            final int[] cc = c[i];
 
-                for (int j = 0; j < columnCount; j++) {
-                    cc[j] = (int) aa[j];
-                }
-            }
-        } else {
             for (int j = 0; j < columnCount; j++) {
-                for (int i = 0; i < rowCount; i++) {
-                    c[i][j] = (int) a[i][j];
-                }
+                cc[j] = (int) aa[j];
             }
         }
 
@@ -3028,20 +3071,12 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     public LongMatrix toLongMatrix() {
         final long[][] c = new long[rowCount][columnCount];
 
-        if (rowCount <= columnCount) {
-            for (int i = 0; i < rowCount; i++) {
-                final double[] aa = a[i];
-                final long[] cc = c[i];
+        for (int i = 0; i < rowCount; i++) {
+            final double[] aa = a[i];
+            final long[] cc = c[i];
 
-                for (int j = 0; j < columnCount; j++) {
-                    cc[j] = (long) aa[j];
-                }
-            }
-        } else {
             for (int j = 0; j < columnCount; j++) {
-                for (int i = 0; i < rowCount; i++) {
-                    c[i][j] = (long) a[i][j];
-                }
+                cc[j] = (long) aa[j];
             }
         }
 
@@ -3077,20 +3112,12 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     public FloatMatrix toFloatMatrix() {
         final float[][] c = new float[rowCount][columnCount];
 
-        if (rowCount <= columnCount) {
-            for (int i = 0; i < rowCount; i++) {
-                final double[] aa = a[i];
-                final float[] cc = c[i];
+        for (int i = 0; i < rowCount; i++) {
+            final double[] aa = a[i];
+            final float[] cc = c[i];
 
-                for (int j = 0; j < columnCount; j++) {
-                    cc[j] = (float) aa[j];
-                }
-            }
-        } else {
             for (int j = 0; j < columnCount; j++) {
-                for (int i = 0; i < rowCount; i++) {
-                    c[i][j] = (float) a[i][j];
-                }
+                cc[j] = (float) aa[j];
             }
         }
 
@@ -3472,9 +3499,13 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
             public double[] toArray() {
                 final int len = toArrayLength(count());
                 final double[] c = new double[len];
+                int k = 0;
 
-                for (int k = 0; k < len; k++) {
-                    c[k] = a[i][j++];
+                while (k < len) {
+                    final int chunk = N.min(columnCount - j, len - k);
+                    N.copy(a[i], j, c, k, chunk);
+                    k += chunk;
+                    j += chunk;
 
                     if (j >= columnCount) {
                         i++;
@@ -3518,6 +3549,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p>This method is useful for column-wise operations such as calculating
      * column sums, finding column maximums, or filtering column values.</p>
      *
+     * <p>This streams the elements of the single specified column, flattened into one stream. To
+     * instead obtain every column as its own stream (a stream of streams), use {@link #columnStreams()}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}});
@@ -3531,6 +3565,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param columnIndex the index of the column to stream (0-based)
      * @return a {@link DoubleStream} of elements from the specified column
      * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
+     * @see #columnStreams()
      */
     @Override
     public DoubleStream columnMajorStream(final int columnIndex) {
@@ -3957,7 +3992,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     }
 
     /**
-     * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1, 2]\n[3, 4]"}); a
+     * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1.0, 2.0]\n[3.0, 4.0]"}); a
      * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #appendTo(Appendable)}.
      *
      * @return the formatted multi-line representation of this matrix

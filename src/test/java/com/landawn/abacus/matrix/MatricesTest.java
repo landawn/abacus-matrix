@@ -4765,4 +4765,81 @@ class MatricesTest extends TestBase {
         assertEquals(Number.class, result.elementType());
     }
 
+    @Test
+    public void testForEachIndices_parallelCoversSkinnyShapes() {
+        // Regression: the parallel branch splits the larger dimension, so 1xN and Nx1 regions
+        // must still visit every index exactly once.
+        final int size = 10_000;
+        final AtomicInteger rowVectorCount = new AtomicInteger();
+        final AtomicInteger columnVectorCount = new AtomicInteger();
+        final boolean[][] rowVectorSeen = new boolean[1][size];
+        final boolean[][] columnVectorSeen = new boolean[size][1];
+
+        Matrices.forEachIndices(1, size, (i, j) -> {
+            rowVectorSeen[i][j] = true;
+            rowVectorCount.incrementAndGet();
+        }, true);
+        Matrices.forEachIndices(size, 1, (i, j) -> {
+            columnVectorSeen[i][j] = true;
+            columnVectorCount.incrementAndGet();
+        }, true);
+
+        assertEquals(size, rowVectorCount.get());
+        assertEquals(size, columnVectorCount.get());
+
+        for (int k = 0; k < size; k++) {
+            assertTrue(rowVectorSeen[0][k]);
+            assertTrue(columnVectorSeen[k][0]);
+        }
+    }
+
+    @Test
+    public void testMatrixMultiply_parallelMatchesSequentialOnSkinnyShapes() {
+        // Regression: forEachCartesianIndices parallelizes the larger of rowCountA/columnCountB,
+        // and the matrix classes use a sequential i-k-j fast path; both must agree for skinny shapes.
+        final IntMatrix tall = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 }, { 7, 8 }, { 9, 10 } }); // 5x2
+        final IntMatrix wide = IntMatrix.of(new int[][] { { 1, 2, 3, 4, 5 }, { 6, 7, 8, 9, 10 } }); // 2x5
+        final IntMatrix[] results = new IntMatrix[4];
+
+        Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> results[0] = tall.matrixMultiply(wide));
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> results[1] = tall.matrixMultiply(wide));
+        Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> results[2] = wide.matrixMultiply(tall));
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> results[3] = wide.matrixMultiply(tall));
+
+        assertArrayEquals(
+                new int[][] { { 13, 16, 19, 22, 25 }, { 27, 34, 41, 48, 55 }, { 41, 52, 63, 74, 85 }, { 55, 70, 85, 100, 115 }, { 69, 88, 107, 126, 145 } },
+                results[0].internalArray());
+        assertEquals(results[0], results[1]);
+        assertEquals(results[2], results[3]);
+    }
+
+    @Test
+    public void testMatrixMultiply_parallelMatchesSequentialBitwiseForDouble() {
+        // Regression: the sequential i-k-j kernel accumulates each cell in ascending k order,
+        // exactly like the parallel dispatch, so double results must be bitwise identical.
+        final double[][] left = new double[3][7];
+        final double[][] right = new double[7][4];
+
+        for (int i = 0; i < 3; i++) {
+            for (int k = 0; k < 7; k++) {
+                left[i][k] = Math.sqrt(i + 1) / (k + 1);
+            }
+        }
+
+        for (int k = 0; k < 7; k++) {
+            for (int j = 0; j < 4; j++) {
+                right[k][j] = Math.cbrt(k + 1) * (j + 0.25);
+            }
+        }
+
+        final DoubleMatrix a = DoubleMatrix.of(left);
+        final DoubleMatrix b = DoubleMatrix.of(right);
+        final DoubleMatrix[] results = new DoubleMatrix[2];
+
+        Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> results[0] = a.matrixMultiply(b));
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> results[1] = a.matrixMultiply(b));
+
+        assertEquals(results[0], results[1]);
+    }
+
 }
