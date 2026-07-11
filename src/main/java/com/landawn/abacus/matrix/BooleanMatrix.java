@@ -58,7 +58,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     /**
      * Constructs a {@code BooleanMatrix} backed by the supplied two-dimensional array.
      *
-     * <p>The supplied array is used directly after rectangular-shape validation, so later modifications to either the input
+     * <p><b>&#9888;&#65039; Shared backing:</b> The supplied array is used directly after rectangular-shape validation, so later modifications to either the input
      * array or the matrix remain visible through the other view. Call {@link #copy()} if you need an
      * independently owned matrix.</p>
      *
@@ -77,7 +77,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * }</pre>
      *
      * @param a the two-dimensional boolean array to wrap, must not be {@code null}
-     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
     public BooleanMatrix(final boolean[][] a) {
@@ -108,7 +108,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     /**
      * Creates a {@code BooleanMatrix} from a two-dimensional boolean array.
      *
-     * <p><b>Important:</b> The provided array is used directly without defensive copying.
+     * <p><b>&#9888;&#65039; Shared backing:</b> The provided array is used directly without defensive copying.
      * Changes to the input array are reflected in the returned matrix, and vice versa.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -125,7 +125,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * @param a the two-dimensional boolean array to wrap; must not be {@code null}; may be empty, in which case the empty matrix singleton is returned
      * @return a new {@code BooleanMatrix} backed by {@code a}, or the empty {@code BooleanMatrix} if {@code a} is empty
-     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
     public static BooleanMatrix of(final boolean[]... a) {
@@ -153,7 +153,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * @param a the two-dimensional boolean array to copy, or empty for an empty matrix; must not be {@code null}
      * @return a new {@code BooleanMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is empty
-     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      * @see #of(boolean[][])
      * @see #copy()
@@ -649,7 +649,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     /**
      * Returns the specified row as a live reference to the underlying {@code boolean[]} storage.
      *
-     * <p><b>Note:</b> This method returns a reference to the internal array, not a copy.
+     * <p><b>&#9888;&#65039; Live view:</b> This method returns a reference to the internal array, not a copy.
      * Modifications to the returned array will affect the matrix. If you need an independent
      * copy, use {@link #rowCopy(int)} instead.
      *
@@ -802,9 +802,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
         N.checkArgNotNull(column, "column");
         checkColumnIndex(columnIndex);
         N.checkArgument(column.length == rowCount, MSG_COLUMN_LENGTH_MISMATCH, rowCount, column.length);
+        final boolean[] values = snapshotIfBackingRow(column);
 
         for (int i = 0; i < rowCount; i++) {
-            a[i][columnIndex] = column[i];
+            a[i][columnIndex] = values[i];
         }
     }
 
@@ -1074,9 +1075,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
         checkIsSquare();
         N.checkArgNotNull(antiDiagonal, "antiDiagonal");
         N.checkArgument(N.len(antiDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(antiDiagonal));
+        final boolean[] values = snapshotIfBackingRow(antiDiagonal);
 
         for (int i = 0; i < rowCount; i++) {
-            a[i][columnCount - i - 1] = antiDiagonal[i];
+            a[i][columnCount - i - 1] = values[i];
         }
     }
 
@@ -1435,10 +1437,11 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
         if (destColumnIndex < 0 || destColumnIndex > columnCount) {
             throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be in [0, columnCount({})]", destColumnIndex, columnCount));
         }
+        final boolean[][] sourceSnapshot = snapshotRowsIfBackingRows(source);
 
-        for (int i = 0, minLen = N.min(rowCount - destRowIndex, source.length); i < minLen; i++) {
-            if (source[i] != null) {
-                N.copy(source[i], 0, a[i + destRowIndex], destColumnIndex, N.min(source[i].length, columnCount - destColumnIndex));
+        for (int i = 0, minLen = N.min(rowCount - destRowIndex, sourceSnapshot.length); i < minLen; i++) {
+            if (sourceSnapshot[i] != null) {
+                N.copy(sourceSnapshot[i], 0, a[i + destRowIndex], destColumnIndex, N.min(sourceSnapshot[i].length, columnCount - destColumnIndex));
             }
         }
     }
@@ -2299,6 +2302,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     public BooleanMatrix repeatElements(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
 
+        if (rowRepeats == 1 && columnRepeats == 1) {
+            return copy();
+        }
+
         // Check for overflow before allocation
         if ((long) rowCount * rowRepeats > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("Result row count overflow: " + rowCount + " * " + rowRepeats + " exceeds Integer.MAX_VALUE");
@@ -2314,7 +2321,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
             final boolean[] fr = c[i * rowRepeats];
 
             for (int j = 0; j < columnCount; j++) {
-                N.copy(Array.repeat(aa[j], columnRepeats), 0, fr, j * columnRepeats, columnRepeats);
+                N.fill(fr, j * columnRepeats, (j + 1) * columnRepeats, aa[j]);
             }
 
             for (int k = 1; k < rowRepeats; k++) {
@@ -2356,6 +2363,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     @Override
     public BooleanMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
+
+        if (rowRepeats == 1 && columnRepeats == 1) {
+            return copy();
+        }
 
         // Check for overflow before allocation
         if ((long) rowCount * rowRepeats > Integer.MAX_VALUE) {
@@ -3659,12 +3670,12 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * This is a hook called by {@link AbstractMatrix} during construction to determine the column
      * count of each row when validating the rectangular shape of the backing array.
      *
-     * @param a the row array to measure; may be {@code null}
-     * @return the length of {@code a}, or {@code 0} if {@code a} is {@code null}
+     * @param row the row array to measure; may be {@code null}
+     * @return the length of {@code row}, or {@code 0} if {@code row} is {@code null}
      */
     @Override
-    protected int length(@SuppressWarnings("hiding") final boolean[] a) {
-        return a == null ? 0 : a.length;
+    protected int length(final boolean[] row) {
+        return row == null ? 0 : row.length;
     }
 
     /**

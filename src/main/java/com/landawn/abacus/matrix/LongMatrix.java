@@ -64,7 +64,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     /**
      * Constructs a {@code LongMatrix} backed by the supplied two-dimensional array.
      *
-     * <p>The supplied array is used directly after rectangular-shape validation, so later modifications to either the input
+     * <p><b>&#9888;&#65039; Shared backing:</b> The supplied array is used directly after rectangular-shape validation, so later modifications to either the input
      * array or the matrix remain visible through the other view. Call {@link #copy()} if you need an
      * independently owned matrix.</p>
      *
@@ -81,7 +81,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * }</pre>
      *
      * @param a the two-dimensional long array to wrap, must not be {@code null}
-     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
     public LongMatrix(final long[][] a) {
@@ -109,7 +109,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     /**
      * Creates a {@code LongMatrix} from a two-dimensional long array.
      *
-     * <p><b>Important:</b> The provided array is used directly without defensive copying.
+     * <p><b>&#9888;&#65039; Shared backing:</b> The provided array is used directly without defensive copying.
      * Changes to the input array are reflected in the returned matrix, and vice versa.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -125,7 +125,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * @param a the two-dimensional long array to wrap, or empty for an empty matrix; must not be {@code null}
      * @return a new {@code LongMatrix} backed by {@code a}, or the shared empty matrix if {@code a} is empty
-     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
     public static LongMatrix of(final long[]... a) {
@@ -153,7 +153,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * @param a the two-dimensional long array to copy, or empty for an empty matrix; must not be {@code null}
      * @return a new {@code LongMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is empty
-     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      * @see #of(long[][])
      * @see #copy()
@@ -194,7 +194,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * @param a the two-dimensional int array to convert, or empty for an empty matrix; must not be {@code null}
      * @return a new {@code LongMatrix} with the widened values, or the shared empty matrix if {@code a} is empty
-     * @throws IllegalArgumentException if the first row is {@code null}, or if any other row is {@code null}
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if the first row is {@code null}, or if any other row is {@code null}
      *         or has a length different from the first row
      * @see IntMatrix#toLongMatrix()
      */
@@ -786,7 +786,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     /**
      * Returns the specified row as a live reference to the underlying {@code long[]} storage.
      *
-     * <p><b>Note:</b> This method returns the internal array, not a copy. Modifications to the
+     * <p><b>&#9888;&#65039; Live view:</b> This method returns the internal array, not a copy. Modifications to the
      * returned array will affect the matrix and vice versa. Use {@link #rowCopy(int)} if you need
      * an independent copy.</p>
      *
@@ -949,9 +949,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         N.checkArgNotNull(column, "column");
         checkColumnIndex(columnIndex);
         N.checkArgument(column.length == rowCount, MSG_COLUMN_LENGTH_MISMATCH, rowCount, column.length);
+        final long[] values = snapshotIfBackingRow(column);
 
         for (int i = 0; i < rowCount; i++) {
-            a[i][columnIndex] = column[i];
+            a[i][columnIndex] = values[i];
         }
     }
 
@@ -1201,9 +1202,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         checkIsSquare();
         N.checkArgNotNull(antiDiagonal, "antiDiagonal");
         N.checkArgument(N.len(antiDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(antiDiagonal));
+        final long[] values = snapshotIfBackingRow(antiDiagonal);
 
         for (int i = 0; i < rowCount; i++) {
-            a[i][columnCount - i - 1] = antiDiagonal[i];
+            a[i][columnCount - i - 1] = values[i];
         }
     }
 
@@ -1629,10 +1631,11 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         if (destColumnIndex < 0 || destColumnIndex > columnCount) {
             throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be in [0, columnCount({})]", destColumnIndex, columnCount));
         }
+        final long[][] sourceSnapshot = snapshotRowsIfBackingRows(source);
 
-        for (int i = 0, minLen = N.min(rowCount - destRowIndex, source.length); i < minLen; i++) {
-            if (source[i] != null) {
-                N.copy(source[i], 0, a[i + destRowIndex], destColumnIndex, N.min(source[i].length, columnCount - destColumnIndex));
+        for (int i = 0, minLen = N.min(rowCount - destRowIndex, sourceSnapshot.length); i < minLen; i++) {
+            if (sourceSnapshot[i] != null) {
+                N.copy(sourceSnapshot[i], 0, a[i + destRowIndex], destColumnIndex, N.min(sourceSnapshot[i].length, columnCount - destColumnIndex));
             }
         }
     }
@@ -2423,6 +2426,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     public LongMatrix repeatElements(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
 
+        if (rowRepeats == 1 && columnRepeats == 1) {
+            return copy();
+        }
+
         // Check for overflow before allocation
         if ((long) rowCount * rowRepeats > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("Result row count overflow: " + rowCount + " * " + rowRepeats + " exceeds Integer.MAX_VALUE");
@@ -2438,7 +2445,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
             final long[] fr = c[i * rowRepeats];
 
             for (int j = 0; j < columnCount; j++) {
-                N.copy(Array.repeat(aa[j], columnRepeats), 0, fr, j * columnRepeats, columnRepeats);
+                N.fill(fr, j * columnRepeats, (j + 1) * columnRepeats, aa[j]);
             }
 
             for (int k = 1; k < rowRepeats; k++) {
@@ -2476,6 +2483,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     @Override
     public LongMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
+
+        if (rowRepeats == 1 && columnRepeats == 1) {
+            return copy();
+        }
 
         // Check for overflow before allocation
         if ((long) rowCount * rowRepeats > Integer.MAX_VALUE) {
@@ -2849,7 +2860,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * Each long value is narrowed to int by a Java primitive narrowing cast, which discards
      * all but the low-order 32 bits (per JLS §5.1.3).
      *
-     * <p><b>Warning:</b> This is a narrowing conversion that may lose information.
+     * <p><b>&#9888;&#65039; Warning:</b> This is a narrowing conversion that may lose information.
      * Values outside the int range ({@code Integer.MIN_VALUE} to {@code Integer.MAX_VALUE})
      * wrap around modulo 2<sup>32</sup> rather than being clamped; the resulting int may have a
      * different sign than the original long (e.g. {@code (int) Long.MAX_VALUE} is {@code -1}).</p>
@@ -2897,7 +2908,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * Each long value is converted to float by Java's standard {@code long}-to-{@code float} widening
      * primitive conversion (which may lose precision despite being a widening conversion).
      *
-     * <p><b>Warning:</b> Precision loss may occur for large long values. The {@code float} type has
+     * <p><b>&#9888;&#65039; Warning:</b> Precision loss may occur for large long values. The {@code float} type has
      * only 24 bits of mantissa precision, so long values with absolute values greater than 2<sup>24</sup>
      * ({@code 16_777_216}) may be rounded.</p>
      *
@@ -2943,7 +2954,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * Each long value is converted to double by Java's standard {@code long}-to-{@code double} widening
      * primitive conversion (which may lose precision despite being a widening conversion).
      *
-     * <p><b>Warning:</b> Precision loss may occur for large long values. The {@code double} type has
+     * <p><b>&#9888;&#65039; Warning:</b> Precision loss may occur for large long values. The {@code double} type has
      * only 53 bits of mantissa precision, so long values with absolute values greater than 2<sup>53</sup>
      * ({@code 9_007_199_254_740_992}) may be rounded.</p>
      *
@@ -3736,12 +3747,12 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * This is a hook called by {@link AbstractMatrix} during construction to determine the column
      * count of each row when validating the rectangular shape of the backing array.
      *
-     * @param a the row array to measure; may be {@code null}
-     * @return the length of {@code a}, or {@code 0} if {@code a} is {@code null}
+     * @param row the row array to measure; may be {@code null}
+     * @return the length of {@code row}, or {@code 0} if {@code row} is {@code null}
      */
     @Override
-    protected int length(@SuppressWarnings("hiding") final long[] a) {
-        return a == null ? 0 : a.length;
+    protected int length(final long[] row) {
+        return row == null ? 0 : row.length;
     }
 
     /**

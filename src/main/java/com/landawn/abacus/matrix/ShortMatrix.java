@@ -75,7 +75,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     /**
      * Constructs a {@code ShortMatrix} backed by the supplied two-dimensional array.
      *
-     * <p>The supplied array is used directly after rectangular-shape validation, so later modifications to either the input
+     * <p><b>&#9888;&#65039; Shared backing:</b> The supplied array is used directly after rectangular-shape validation, so later modifications to either the input
      * array or the matrix remain visible through the other view. Call {@link #copy()} if you need an
      * independently owned matrix.</p>
      *
@@ -92,7 +92,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @param a the two-dimensional short array to wrap, must not be {@code null}
-     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
     public ShortMatrix(final short[][] a) {
@@ -121,7 +121,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     /**
      * Creates a ShortMatrix from a two-dimensional short array.
      *
-     * <p><b>Important:</b> The provided array is used directly without defensive copying.
+     * <p><b>&#9888;&#65039; Shared backing:</b> The provided array is used directly without defensive copying.
      * Changes to the input array are reflected in the returned matrix, and vice versa.
      *
      * <p><b>Usage Examples:</b></p>
@@ -137,7 +137,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param a the two-dimensional short array to create the matrix from, or empty for an empty matrix; must not be {@code null}
      * @return a new {@code ShortMatrix} wrapping the provided data, or the shared empty {@code ShortMatrix} if input is empty
-     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
     public static ShortMatrix of(final short[]... a) {
@@ -165,7 +165,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param a the two-dimensional short array to copy, or empty for an empty matrix; must not be {@code null}
      * @return a new {@code ShortMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is empty
-     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      * @see #of(short[][])
      * @see #copy()
@@ -732,7 +732,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     /**
      * Returns the specified row as a live reference to the underlying {@code short[]} storage.
      *
-     * <p><b>Note:</b> This method returns the internal array, not a copy. Modifications to the
+     * <p><b>&#9888;&#65039; Live view:</b> This method returns the internal array, not a copy. Modifications to the
      * returned array will affect the matrix and vice versa. Use {@link #rowCopy(int)} if you need
      * an independent copy.</p>
      *
@@ -895,9 +895,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
         N.checkArgNotNull(column, "column");
         checkColumnIndex(columnIndex);
         N.checkArgument(column.length == rowCount, MSG_COLUMN_LENGTH_MISMATCH, rowCount, column.length);
+        final short[] values = snapshotIfBackingRow(column);
 
         for (int i = 0; i < rowCount; i++) {
-            a[i][columnIndex] = column[i];
+            a[i][columnIndex] = values[i];
         }
     }
 
@@ -1147,9 +1148,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
         checkIsSquare();
         N.checkArgNotNull(antiDiagonal, "antiDiagonal");
         N.checkArgument(N.len(antiDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(antiDiagonal));
+        final short[] values = snapshotIfBackingRow(antiDiagonal);
 
         for (int i = 0; i < rowCount; i++) {
-            a[i][columnCount - i - 1] = antiDiagonal[i];
+            a[i][columnCount - i - 1] = values[i];
         }
     }
 
@@ -1506,10 +1508,11 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
         if (destColumnIndex < 0 || destColumnIndex > columnCount) {
             throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be in [0, columnCount({})]", destColumnIndex, columnCount));
         }
+        final short[][] sourceSnapshot = snapshotRowsIfBackingRows(source);
 
-        for (int i = 0, minLen = N.min(rowCount - destRowIndex, source.length); i < minLen; i++) {
-            if (source[i] != null) {
-                N.copy(source[i], 0, a[i + destRowIndex], destColumnIndex, N.min(source[i].length, columnCount - destColumnIndex));
+        for (int i = 0, minLen = N.min(rowCount - destRowIndex, sourceSnapshot.length); i < minLen; i++) {
+            if (sourceSnapshot[i] != null) {
+                N.copy(sourceSnapshot[i], 0, a[i + destRowIndex], destColumnIndex, N.min(sourceSnapshot[i].length, columnCount - destColumnIndex));
             }
         }
     }
@@ -2300,6 +2303,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     public ShortMatrix repeatElements(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
 
+        if (rowRepeats == 1 && columnRepeats == 1) {
+            return copy();
+        }
+
         // Check for overflow before allocation
         if ((long) rowCount * rowRepeats > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("Result row count overflow: " + rowCount + " * " + rowRepeats + " exceeds Integer.MAX_VALUE");
@@ -2315,7 +2322,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             final short[] firstRepeatedRow = c[i * rowRepeats];
 
             for (int j = 0; j < columnCount; j++) {
-                N.copy(Array.repeat(sourceRow[j], columnRepeats), 0, firstRepeatedRow, j * columnRepeats, columnRepeats);
+                N.fill(firstRepeatedRow, j * columnRepeats, (j + 1) * columnRepeats, sourceRow[j]);
             }
 
             for (int k = 1; k < rowRepeats; k++) {
@@ -2353,6 +2360,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     @Override
     public ShortMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
+
+        if (rowRepeats == 1 && columnRepeats == 1) {
+            return copy();
+        }
 
         // Check for overflow before allocation
         if ((long) rowCount * rowRepeats > Integer.MAX_VALUE) {
@@ -3643,12 +3654,12 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * This is a hook called by {@link AbstractMatrix} during construction to determine the column
      * count of each row when validating the rectangular shape of the backing array.
      *
-     * @param a the row array to measure; may be {@code null}
-     * @return the length of {@code a}, or {@code 0} if {@code a} is {@code null}
+     * @param row the row array to measure; may be {@code null}
+     * @return the length of {@code row}, or {@code 0} if {@code row} is {@code null}
      */
     @Override
-    protected int length(@SuppressWarnings("hiding") final short[] a) {
-        return a == null ? 0 : a.length;
+    protected int length(final short[] row) {
+        return row == null ? 0 : row.length;
     }
 
     /**

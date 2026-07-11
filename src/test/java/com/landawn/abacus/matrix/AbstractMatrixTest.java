@@ -4052,4 +4052,13 @@ class AbstractMatrixTest extends TestBase {
         assertThrows(IndexOutOfBoundsException.class, () -> matrix.valueRight(1, -1));
     }
 
+    @Test
+    public void testToArrayLength_reportsNegativeAndOversizedCountsPrecisely() {
+        IllegalStateException negative = assertThrows(IllegalStateException.class, () -> AbstractMatrix.toArrayLength(-1));
+        IllegalStateException oversized = assertThrows(IllegalStateException.class, () -> AbstractMatrix.toArrayLength((long) Integer.MAX_VALUE + 1));
+
+        assertEquals("Matrix stream element count cannot be negative: -1", negative.getMessage());
+        assertEquals("Matrix stream too large to convert to array: 2147483648 elements", oversized.getMessage());
+    }
+
 }

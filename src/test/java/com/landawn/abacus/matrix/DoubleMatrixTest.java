@@ -6372,6 +6372,22 @@ class DoubleMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> m.setMainDiagonal(null));
             assertThrows(IllegalArgumentException.class, () -> m.setAntiDiagonal(null));
         }
+
+        @Test
+        public void testAliasedArraySourcesAreSnapshotted() {
+            DoubleMatrix columnMatrix = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
+            columnMatrix.setColumn(1, columnMatrix.rowView(0));
+            assertArrayEquals(new double[] { 3.0, 2.0 }, columnMatrix.rowCopy(1));
+
+            DoubleMatrix diagonalMatrix = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
+            diagonalMatrix.setAntiDiagonal(diagonalMatrix.rowView(0));
+            assertArrayEquals(new double[] { 1.0, 2.0, 3.0 }, diagonalMatrix.antiDiagonalCopy());
+
+            double[][] backing = { { 1.0, 2.0 }, { 3.0, 4.0 }, { 5.0, 6.0 } };
+            DoubleMatrix fillMatrix = DoubleMatrix.of(backing);
+            fillMatrix.fill(1, 0, backing);
+            assertArrayEquals(new double[] { 3.0, 4.0 }, fillMatrix.rowCopy(2));
+        }
     }
 
 }

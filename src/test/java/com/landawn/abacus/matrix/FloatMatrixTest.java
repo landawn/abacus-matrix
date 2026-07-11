@@ -6173,6 +6173,22 @@ class FloatMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> m.setMainDiagonal(null));
             assertThrows(IllegalArgumentException.class, () -> m.setAntiDiagonal(null));
         }
+
+        @Test
+        public void testAliasedArraySourcesAreSnapshotted() {
+            FloatMatrix columnMatrix = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
+            columnMatrix.setColumn(1, columnMatrix.rowView(0));
+            assertArrayEquals(new float[] { 3.0f, 2.0f }, columnMatrix.rowCopy(1));
+
+            FloatMatrix diagonalMatrix = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
+            diagonalMatrix.setAntiDiagonal(diagonalMatrix.rowView(0));
+            assertArrayEquals(new float[] { 1.0f, 2.0f, 3.0f }, diagonalMatrix.antiDiagonalCopy());
+
+            float[][] backing = { { 1.0f, 2.0f }, { 3.0f, 4.0f }, { 5.0f, 6.0f } };
+            FloatMatrix fillMatrix = FloatMatrix.of(backing);
+            fillMatrix.fill(1, 0, backing);
+            assertArrayEquals(new float[] { 3.0f, 4.0f }, fillMatrix.rowCopy(2));
+        }
     }
 
 }

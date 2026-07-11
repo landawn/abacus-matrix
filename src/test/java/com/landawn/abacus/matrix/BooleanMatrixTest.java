@@ -6189,6 +6189,22 @@ class BooleanMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> m.setMainDiagonal(null));
             assertThrows(IllegalArgumentException.class, () -> m.setAntiDiagonal(null));
         }
+
+        @Test
+        public void testAliasedArraySourcesAreSnapshotted() {
+            BooleanMatrix columnMatrix = BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
+            columnMatrix.setColumn(1, columnMatrix.rowView(0));
+            assertArrayEquals(new boolean[] { false, false }, columnMatrix.rowCopy(1));
+
+            BooleanMatrix diagonalMatrix = BooleanMatrix.of(new boolean[][] { { true, false, false }, { false, false, false }, { false, false, false } });
+            diagonalMatrix.setAntiDiagonal(diagonalMatrix.rowView(0));
+            assertArrayEquals(new boolean[] { true, false, false }, diagonalMatrix.antiDiagonalCopy());
+
+            boolean[][] backing = { { true, false }, { false, true }, { false, false } };
+            BooleanMatrix fillMatrix = BooleanMatrix.of(backing);
+            fillMatrix.fill(1, 0, backing);
+            assertArrayEquals(new boolean[] { false, true }, fillMatrix.rowCopy(2));
+        }
     }
 
 }

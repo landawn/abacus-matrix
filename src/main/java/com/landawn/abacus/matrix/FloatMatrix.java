@@ -69,7 +69,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     /**
      * Constructs a {@code FloatMatrix} backed by the supplied two-dimensional array.
      *
-     * <p>The supplied array is used directly after rectangular-shape validation, so later modifications to either the input
+     * <p><b>&#9888;&#65039; Shared backing:</b> The supplied array is used directly after rectangular-shape validation, so later modifications to either the input
      * array or the matrix remain visible through the other view. Call {@link #copy()} if you need an
      * independently owned matrix.</p>
      *
@@ -87,7 +87,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @param a the two-dimensional float array to wrap, must not be {@code null}
-     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
     public FloatMatrix(final float[][] a) {
@@ -115,7 +115,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     /**
      * Creates a {@code FloatMatrix} from a two-dimensional float array.
      *
-     * <p><b>Important:</b> When the input is non-empty the provided array is used directly without
+     * <p><b>&#9888;&#65039; Shared backing:</b> When the input is non-empty the provided array is used directly without
      * defensive copying after rectangular-shape validation. Changes to the input array are reflected
      * in the returned matrix, and vice versa.</p>
      *
@@ -132,7 +132,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @param a the two-dimensional float array to create the matrix from, or empty for an empty matrix; must not be {@code null}
      * @return a new {@code FloatMatrix} wrapping the provided data, or the shared empty {@code FloatMatrix} if input is empty
-     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
     public static FloatMatrix of(final float[]... a) {
@@ -160,7 +160,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @param a the two-dimensional float array to copy, or empty for an empty matrix; must not be {@code null}
      * @return a new {@code FloatMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is empty
-     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      * @see #of(float[][])
      * @see #copy()
@@ -185,8 +185,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * Creates a FloatMatrix from a two-dimensional int array by converting int values to float.
      * Each int value is converted to the nearest representable float value.
      *
-     * <p><b>Note:</b> Int values with more than 24 significant bits may lose precision when
-     * converted to float, since float has a 23-bit mantissa. For example,
+     * <p><b>&#9888;&#65039; Precision:</b> Int values requiring more than 24 significant bits may lose precision when
+     * converted to float, whose significand precision is 24 bits including the implicit leading bit. For example,
      * {@code Integer.MAX_VALUE} (2147483647) cannot be represented exactly as a float.</p>
      *
      * <p><b>Requirements:</b></p>
@@ -209,7 +209,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @param a the two-dimensional int array to convert to a float matrix, or empty for an empty matrix; must not be {@code null}
      * @return a new {@code FloatMatrix} with converted values, or the shared empty {@code FloatMatrix} if input is empty
-     * @throws IllegalArgumentException if any row is {@code null} or if rows have different lengths (non-rectangular array)
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if any row is {@code null}, or if rows have different lengths (non-rectangular array)
      * @see IntMatrix#toFloatMatrix()
      */
     public static FloatMatrix from(final int[]... a) {
@@ -709,7 +709,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     /**
      * Returns the specified row as a live reference to the underlying {@code float[]} storage.
      *
-     * <p><b>Note:</b> This method returns the internal array, not a copy. Modifications to the
+     * <p><b>&#9888;&#65039; Live view:</b> This method returns the internal array, not a copy. Modifications to the
      * returned array will affect the matrix and vice versa. Use {@link #rowCopy(int)} if you need
      * an independent copy.</p>
      *
@@ -870,9 +870,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
         N.checkArgNotNull(column, "column");
         checkColumnIndex(columnIndex);
         N.checkArgument(column.length == rowCount, MSG_COLUMN_LENGTH_MISMATCH, rowCount, column.length);
+        final float[] values = snapshotIfBackingRow(column);
 
         for (int i = 0; i < rowCount; i++) {
-            a[i][columnIndex] = column[i];
+            a[i][columnIndex] = values[i];
         }
     }
 
@@ -1117,9 +1118,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
         checkIsSquare();
         N.checkArgNotNull(antiDiagonal, "antiDiagonal");
         N.checkArgument(N.len(antiDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(antiDiagonal));
+        final float[] values = snapshotIfBackingRow(antiDiagonal);
 
         for (int i = 0; i < rowCount; i++) {
-            a[i][columnCount - i - 1] = antiDiagonal[i];
+            a[i][columnCount - i - 1] = values[i];
         }
     }
 
@@ -1313,7 +1315,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * Creates a new {@code FloatMatrix} by applying the specified function to each element of this matrix.
      * The original matrix is not modified. Each element is transformed independently by the function,
      * and the results are collected into a new matrix with the same dimensions. The operation may be
-     * performed in parallel for large matrices to improve performance.
+     * performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1572,10 +1574,11 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
         if (destColumnIndex < 0 || destColumnIndex > columnCount) {
             throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be in [0, columnCount({})]", destColumnIndex, columnCount));
         }
+        final float[][] sourceSnapshot = snapshotRowsIfBackingRows(source);
 
-        for (int i = 0, minLen = N.min(rowCount - destRowIndex, source.length); i < minLen; i++) {
-            if (source[i] != null) {
-                N.copy(source[i], 0, a[i + destRowIndex], destColumnIndex, N.min(source[i].length, columnCount - destColumnIndex));
+        for (int i = 0, minLen = N.min(rowCount - destRowIndex, sourceSnapshot.length); i < minLen; i++) {
+            if (sourceSnapshot[i] != null) {
+                N.copy(sourceSnapshot[i], 0, a[i + destRowIndex], destColumnIndex, N.min(sourceSnapshot[i].length, columnCount - destColumnIndex));
             }
         }
     }
@@ -2394,6 +2397,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     public FloatMatrix repeatElements(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
 
+        if (rowRepeats == 1 && columnRepeats == 1) {
+            return copy();
+        }
+
         // Check for overflow before allocation
         if ((long) rowCount * rowRepeats > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("Result row count overflow: " + rowCount + " * " + rowRepeats + " exceeds Integer.MAX_VALUE");
@@ -2409,7 +2416,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
             final float[] firstRepeatedRow = c[i * rowRepeats];
 
             for (int j = 0; j < columnCount; j++) {
-                N.copy(Array.repeat(sourceRow[j], columnRepeats), 0, firstRepeatedRow, j * columnRepeats, columnRepeats);
+                N.fill(firstRepeatedRow, j * columnRepeats, (j + 1) * columnRepeats, sourceRow[j]);
             }
 
             for (int k = 1; k < rowRepeats; k++) {
@@ -2450,6 +2457,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     @Override
     public FloatMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
+
+        if (rowRepeats == 1 && columnRepeats == 1) {
+            return copy();
+        }
 
         // Check for overflow before allocation
         if ((long) rowCount * rowRepeats > Integer.MAX_VALUE) {
@@ -2876,7 +2887,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *       saturate to {@code Integer.MIN_VALUE}.</li>
      * </ul>
      *
-     * <p><b>Warning:</b> This is a narrowing conversion that may lose information.</p>
+     * <p><b>&#9888;&#65039; Warning:</b> This is a narrowing conversion that may lose information.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2932,7 +2943,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *       saturate to {@code Long.MIN_VALUE}.</li>
      * </ul>
      *
-     * <p><b>Warning:</b> This is a narrowing conversion that may lose information.</p>
+     * <p><b>&#9888;&#65039; Warning:</b> This is a narrowing conversion that may lose information.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3733,12 +3744,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * This is a hook called by {@link AbstractMatrix} during construction to determine the column
      * count of each row when validating the rectangular shape of the backing array.
      *
-     * @param a the row array to measure; may be {@code null}
-     * @return the length of {@code a}, or {@code 0} if {@code a} is {@code null}
+     * @param row the row array to measure; may be {@code null}
+     * @return the length of {@code row}, or {@code 0} if {@code row} is {@code null}
      */
     @Override
-    protected int length(@SuppressWarnings("hiding") final float[] a) {
-        return a == null ? 0 : a.length;
+    protected int length(final float[] row) {
+        return row == null ? 0 : row.length;
     }
 
     /**

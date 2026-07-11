@@ -547,6 +547,7 @@ public final class Matrices {
      * @param rowCount the number of rows to iterate over, must be non-negative
      * @param columnCount the number of columns to iterate over, must be non-negative
      * @param action the action to execute for each position (i, j), receives row index and column index, must not be {@code null}
+     *        and must be thread-safe if parallel execution is requested
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
      *        (if parallel streams are unavailable in the runtime, execution falls back to sequential)
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative, or if {@code action} is {@code null}
@@ -600,6 +601,7 @@ public final class Matrices {
      * @param fromColumnIndex the starting column index (inclusive), must be non-negative
      * @param toColumnIndex the ending column index (exclusive), must be greater than or equal to {@code fromColumnIndex}
      * @param action the action to execute for each position (i, j), receives row index and column index, must not be {@code null}
+     *        and must be thread-safe if parallel execution is requested
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
      *        (if parallel streams are unavailable in the runtime, execution falls back to sequential)
      * @throws IndexOutOfBoundsException if any index is negative, if {@code toRowIndex} is less than {@code fromRowIndex}, or if {@code toColumnIndex} is less than {@code fromColumnIndex}
@@ -659,6 +661,9 @@ public final class Matrices {
      * {@link #mapIndices(int, int, int, int, Throwables.IntBiFunction, boolean)} with the full
      * range of rows and columns (starting from 0).</p>
      *
+     * <p>If {@code mapper} throws an exception, it is surfaced as a {@code RuntimeException}
+     * when the returned stream is consumed.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrices.mapIndices(2, 3, (i, j) -> i + "," + j, false).toList();
@@ -677,10 +682,12 @@ public final class Matrices {
      * @param rowCount the number of rows to iterate over, must be non-negative
      * @param columnCount the number of columns to iterate over, must be non-negative
      * @param mapper the function to apply at each position (i, j), receives row index and column index, must not be {@code null}
+     *        and must be thread-safe if parallel execution is requested
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
      *        (if parallel streams are unavailable in the runtime, execution falls back to sequential)
      * @return a {@link Stream} of results from applying the function at each position, never {@code null}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}, or if {@code rowCount} or {@code columnCount} is negative
+     * @throws RuntimeException if {@code mapper} throws an exception while the returned stream is consumed
      * @see #mapIndices(int, int, int, int, Throwables.IntBiFunction, boolean)
      */
     public static <T> Stream<T> mapIndices(final int rowCount, final int columnCount, final Throwables.IntBiFunction<? extends T, ? extends Exception> mapper,
@@ -729,11 +736,13 @@ public final class Matrices {
      * @param fromColumnIndex the starting column index (inclusive), must be non-negative
      * @param toColumnIndex the ending column index (exclusive), must be greater than or equal to fromColumnIndex
      * @param mapper the function to apply at each position (i, j), receives row index and column index, must not be {@code null}
+     *        and must be thread-safe if parallel execution is requested
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
      *        (if parallel streams are unavailable in the runtime, execution falls back to sequential)
      * @return a {@link Stream} of results from applying the function at each position, never {@code null}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws IndexOutOfBoundsException if any index is negative, if {@code toRowIndex} is less than {@code fromRowIndex}, or if {@code toColumnIndex} is less than {@code fromColumnIndex}
+     * @throws RuntimeException if {@code mapper} throws an exception while the returned stream is consumed
      */
     @SuppressWarnings("resource")
     public static <T> Stream<T> mapIndices(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
@@ -790,6 +799,9 @@ public final class Matrices {
      * {@link #mapIndicesToInt(int, int, int, int, Throwables.IntBinaryOperator, boolean)} with the
      * full range of rows and columns (starting from 0).</p>
      *
+     * <p>If {@code mapper} throws an exception, it is surfaced as a {@code RuntimeException}
+     * when the returned stream is consumed.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrices.mapIndicesToInt(2, 3, (i, j) -> i + j, false).toArray();
@@ -807,10 +819,12 @@ public final class Matrices {
      * @param rowCount the number of rows to iterate over, must be non-negative
      * @param columnCount the number of columns to iterate over, must be non-negative
      * @param mapper the function to apply at each position (i, j), receives row index and column index, must not be {@code null}
+     *        and must be thread-safe if parallel execution is requested
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
      *        (if parallel streams are unavailable in the runtime, execution falls back to sequential)
      * @return an {@link IntStream} of results from applying the function at each position, never {@code null}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}, or if {@code rowCount} or {@code columnCount} is negative
+     * @throws RuntimeException if {@code mapper} throws an exception while the returned stream is consumed
      * @see #mapIndicesToInt(int, int, int, int, Throwables.IntBinaryOperator, boolean)
      */
     public static IntStream mapIndicesToInt(final int rowCount, final int columnCount, final Throwables.IntBinaryOperator<? extends Exception> mapper,
@@ -856,11 +870,13 @@ public final class Matrices {
      * @param fromColumnIndex the starting column index (inclusive), must be non-negative
      * @param toColumnIndex the ending column index (exclusive), must be greater than or equal to fromColumnIndex
      * @param mapper the function to apply at each position (i, j), receives row index and column index, must not be {@code null}
+     *        and must be thread-safe if parallel execution is requested
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
      *        (if parallel streams are unavailable in the runtime, execution falls back to sequential)
      * @return an {@link IntStream} of results from applying the function at each position, never {@code null}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws IndexOutOfBoundsException if any index is negative, if {@code toRowIndex} is less than {@code fromRowIndex}, or if {@code toColumnIndex} is less than {@code fromColumnIndex}
+     * @throws RuntimeException if {@code mapper} throws an exception while the returned stream is consumed
      */
     @SuppressWarnings("resource")
     public static IntStream mapIndicesToInt(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
@@ -953,7 +969,7 @@ public final class Matrices {
      * @param <M> the type of matrix, must extend {@link AbstractMatrix}
      * @param a the first matrix (left operand), must not be {@code null}
      * @param b the second matrix (right operand), must not be {@code null}
-     * @param action the accumulator function called for each (i, j, k) triple in the multiplication, must not be {@code null}
+     * @param action the accumulator function called for each (i, j, k) triple in the multiplication, must not be {@code null} and must be thread-safe if execution is parallelized
      * @throws IllegalArgumentException if {@code a} or {@code b} is {@code null}, if matrix dimensions are incompatible ({@code a.columnCount != b.rowCount}), or if {@code action} is {@code null}
      * @see #forEachCartesianIndices(AbstractMatrix, AbstractMatrix, Throwables.IntTriConsumer, boolean)
      */
@@ -1007,7 +1023,7 @@ public final class Matrices {
      * @param <M> the type of matrix, must extend {@link AbstractMatrix}
      * @param a the first matrix (left operand), must not be {@code null}
      * @param b the second matrix (right operand), must not be {@code null}
-     * @param action the accumulator function called for each (i, j, k) triple in the multiplication, must not be {@code null}
+     * @param action the accumulator function called for each (i, j, k) triple in the multiplication, must not be {@code null} and must be thread-safe if execution is parallelized
      * @param inParallel {@code true} to request parallel execution when parallel stream support is available; {@code false} for sequential execution
      * @throws IllegalArgumentException if {@code a} or {@code b} is {@code null}, if matrix dimensions are incompatible ({@code a.columnCount != b.rowCount}), or if {@code action} is {@code null}
      * @see #forEachCartesianIndices(AbstractMatrix, AbstractMatrix, Throwables.IntTriConsumer)
@@ -1298,7 +1314,7 @@ public final class Matrices {
      * @param <E> the type of exception that the zip function might throw
      * @param a the first matrix, must not be {@code null}
      * @param b the second matrix, must not be {@code null} and must have the same shape as {@code a}
-     * @param zipFunction the binary operator to combine corresponding elements from both matrices, must not be {@code null}
+     * @param zipFunction the binary operator to combine corresponding elements from both matrices, must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link ByteMatrix} containing the results of applying the function to each pair of elements, never {@code null}
      * @throws IllegalArgumentException if the matrices have different shapes or if any argument is {@code null}
      * @throws E if the zip function throws an exception during execution
@@ -1344,7 +1360,7 @@ public final class Matrices {
      * @param a the first matrix, must not be {@code null}
      * @param b the second matrix, must not be {@code null} and must have the same shape as {@code a}
      * @param c the third matrix, must not be {@code null} and must have the same shape as {@code a} and {@code b}
-     * @param zipFunction the ternary operator to combine corresponding elements from all three matrices, must not be {@code null}
+     * @param zipFunction the ternary operator to combine corresponding elements from all three matrices, must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link ByteMatrix} containing the results of applying the function to each triple of elements, never {@code null}
      * @throws IllegalArgumentException if the matrices have different shapes or if any argument is {@code null}
      * @throws E if the zip function throws an exception during execution
@@ -1398,7 +1414,7 @@ public final class Matrices {
      *
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the binary operator to combine elements sequentially, must not be {@code null}
+     * @param zipFunction the binary operator to combine elements sequentially, must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link ByteMatrix} containing the combined results, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception during execution
@@ -1468,7 +1484,7 @@ public final class Matrices {
      * @param <E> the type of exception that the zip function might throw
      * @param a the first matrix, must not be {@code null}
      * @param b the second matrix, must not be {@code null} and must have the same shape as {@code a}
-     * @param zipFunction the function to combine corresponding elements, takes two bytes and returns a non-{@code null} {@code Integer}; must not be {@code null}
+     * @param zipFunction the function to combine corresponding elements, takes two bytes and returns a non-{@code null} {@code Integer}; must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link IntMatrix} with the combined values, never {@code null}
      * @throws IllegalArgumentException if the matrices have different shapes or if any argument is {@code null}
      * @throws NullPointerException if {@code zipFunction} returns {@code null}
@@ -1532,7 +1548,7 @@ public final class Matrices {
      * @param a the first matrix, must not be {@code null}
      * @param b the second matrix, must not be {@code null} and must have the same shape as {@code a}
      * @param c the third matrix, must not be {@code null} and must have the same shape as {@code a} and {@code b}
-     * @param zipFunction the function to combine corresponding elements, takes three bytes and returns a non-{@code null} {@code Integer}; must not be {@code null}
+     * @param zipFunction the function to combine corresponding elements, takes three bytes and returns a non-{@code null} {@code Integer}; must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link IntMatrix} with the combined values, never {@code null}
      * @throws IllegalArgumentException if the matrices have different shapes or if any argument is {@code null}
      * @throws NullPointerException if {@code zipFunction} returns {@code null}
@@ -1600,7 +1616,7 @@ public final class Matrices {
      *
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the function that takes an array of bytes and returns a non-{@code null} {@code Integer}; must not be {@code null}
+     * @param zipFunction the function that takes an array of bytes and returns a non-{@code null} {@code Integer}; must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link IntMatrix} with the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
      * @throws NullPointerException if {@code zipFunction} returns {@code null}
@@ -1625,7 +1641,7 @@ public final class Matrices {
      * <li>{@code false} or parallel execution: Creates a new array for each position, safer but uses more memory</li>
      * </ul>
      *
-     * <p><b>Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
+     * <p><b>&#9888;&#65039; Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
      * store references to the array, as it will be mutated for subsequent positions. Only use this
      * optimization if the function immediately processes and discards the array.</p>
      *
@@ -1658,7 +1674,7 @@ public final class Matrices {
      *
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the function that takes an array of bytes and returns a non-{@code null} {@code Integer}; must not be {@code null}
+     * @param zipFunction the function that takes an array of bytes and returns a non-{@code null} {@code Integer}; must not be {@code null} and must be thread-safe if execution is parallelized
      * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
      *                               {@code false} to create new arrays for each position
      * @return a new {@link IntMatrix} with the combined values, never {@code null}
@@ -1735,7 +1751,7 @@ public final class Matrices {
      * @param <R> the type of elements in the result matrix
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the function that takes an array of bytes (one from each matrix) and returns a result of type R, must not be {@code null}
+     * @param zipFunction the function that takes an array of bytes (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
      * @param targetElementType the class of the result element type, must not be {@code null}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
@@ -1761,7 +1777,7 @@ public final class Matrices {
      * <li>{@code false} or parallel execution: Creates a new array for each position, safer but uses more memory</li>
      * </ul>
      *
-     * <p><b>Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
+     * <p><b>&#9888;&#65039; Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
      * store references to the array, as it will be mutated for subsequent positions. Only use this
      * optimization if the function immediately processes and discards the array.</p>
      *
@@ -1790,7 +1806,7 @@ public final class Matrices {
      * @param <R> the type of elements in the result matrix
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the function that takes an array of bytes (one from each matrix) and returns a result of type R, must not be {@code null}
+     * @param zipFunction the function that takes an array of bytes (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
      * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
      *                               {@code false} to create new arrays for each position
      * @param targetElementType the class of the result element type, must not be {@code null}
@@ -1860,7 +1876,7 @@ public final class Matrices {
      * @param <E> the type of exception that the zip function might throw
      * @param a the first matrix, must not be {@code null}
      * @param b the second matrix, must not be {@code null} and must have the same shape as {@code a}
-     * @param zipFunction the binary operator to combine corresponding elements from both matrices, must not be {@code null}
+     * @param zipFunction the binary operator to combine corresponding elements from both matrices, must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link IntMatrix} containing the results of applying the function to each pair of elements, never {@code null}
      * @throws IllegalArgumentException if the matrices have different shapes or if any argument is {@code null}
      * @throws E if the zip function throws an exception during execution
@@ -1906,7 +1922,7 @@ public final class Matrices {
      * @param a the first matrix, must not be {@code null}
      * @param b the second matrix, must not be {@code null} and must have the same shape as {@code a}
      * @param c the third matrix, must not be {@code null} and must have the same shape as {@code a} and {@code b}
-     * @param zipFunction the ternary operator to combine corresponding elements from all three matrices, must not be {@code null}
+     * @param zipFunction the ternary operator to combine corresponding elements from all three matrices, must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link IntMatrix} containing the results of applying the function to each triple of elements, never {@code null}
      * @throws IllegalArgumentException if the matrices have different shapes or if any argument is {@code null}
      * @throws E if the zip function throws an exception during execution
@@ -1963,7 +1979,7 @@ public final class Matrices {
      *
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the binary operator to combine elements sequentially, must not be {@code null}
+     * @param zipFunction the binary operator to combine elements sequentially, must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link IntMatrix} containing the combined results, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception during execution
@@ -2032,7 +2048,7 @@ public final class Matrices {
      * @param <E> the type of exception that the zip function might throw
      * @param a the first matrix, must not be {@code null}
      * @param b the second matrix, must not be {@code null} and must have the same shape as {@code a}
-     * @param zipFunction the function to combine corresponding elements, takes two ints and returns a non-{@code null} {@code Long}; must not be {@code null}
+     * @param zipFunction the function to combine corresponding elements, takes two ints and returns a non-{@code null} {@code Long}; must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link LongMatrix} with the combined values, never {@code null}
      * @throws IllegalArgumentException if the matrices have different shapes or if any argument is {@code null}
      * @throws NullPointerException if {@code zipFunction} returns {@code null}
@@ -2092,7 +2108,7 @@ public final class Matrices {
      * @param a the first matrix, must not be {@code null}
      * @param b the second matrix, must not be {@code null} and must have the same shape as {@code a}
      * @param c the third matrix, must not be {@code null} and must have the same shape as {@code a} and {@code b}
-     * @param zipFunction the function to combine corresponding elements, takes three ints and returns a non-{@code null} {@code Long}; must not be {@code null}
+     * @param zipFunction the function to combine corresponding elements, takes three ints and returns a non-{@code null} {@code Long}; must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link LongMatrix} with the combined values, never {@code null}
      * @throws IllegalArgumentException if the matrices have different shapes or if any argument is {@code null}
      * @throws NullPointerException if {@code zipFunction} returns {@code null}
@@ -2156,7 +2172,7 @@ public final class Matrices {
      *
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the function that takes an array of integers and returns a non-{@code null} {@code Long}; must not be {@code null}
+     * @param zipFunction the function that takes an array of integers and returns a non-{@code null} {@code Long}; must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link LongMatrix} with the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
      * @throws NullPointerException if {@code zipFunction} returns {@code null}
@@ -2180,7 +2196,7 @@ public final class Matrices {
      * <li>{@code false} or parallel execution: Creates a new array for each position, safer but uses more memory</li>
      * </ul>
      *
-     * <p><b>Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
+     * <p><b>&#9888;&#65039; Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
      * store references to the array, as it will be mutated for subsequent positions. Only use this
      * optimization if the function immediately processes and discards the array.</p>
      *
@@ -2211,7 +2227,7 @@ public final class Matrices {
      *
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the function that takes an array of integers and returns a non-{@code null} {@code Long}; must not be {@code null}
+     * @param zipFunction the function that takes an array of integers and returns a non-{@code null} {@code Long}; must not be {@code null} and must be thread-safe if execution is parallelized
      * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
      *                               {@code false} to create new arrays for each position
      * @return a new {@link LongMatrix} with the combined values, never {@code null}
@@ -2276,7 +2292,7 @@ public final class Matrices {
      * @param <E> the type of exception that the zip function might throw
      * @param a the first matrix, must not be {@code null}
      * @param b the second matrix, must not be {@code null} and must have the same shape as {@code a}
-     * @param zipFunction the function to combine corresponding elements, takes two ints and returns a non-{@code null} {@code Double}; must not be {@code null}
+     * @param zipFunction the function to combine corresponding elements, takes two ints and returns a non-{@code null} {@code Double}; must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link DoubleMatrix} with the combined values, never {@code null}
      * @throws IllegalArgumentException if the matrices have different shapes or if any argument is {@code null}
      * @throws NullPointerException if {@code zipFunction} returns {@code null}
@@ -2334,7 +2350,7 @@ public final class Matrices {
      * @param a the first matrix, must not be {@code null}
      * @param b the second matrix, must not be {@code null} and must have the same shape as {@code a}
      * @param c the third matrix, must not be {@code null} and must have the same shape as {@code a} and {@code b}
-     * @param zipFunction the function to combine corresponding elements, takes three ints and returns a non-{@code null} {@code Double}; must not be {@code null}
+     * @param zipFunction the function to combine corresponding elements, takes three ints and returns a non-{@code null} {@code Double}; must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link DoubleMatrix} with the combined values, never {@code null}
      * @throws IllegalArgumentException if the matrices have different shapes or if any argument is {@code null}
      * @throws NullPointerException if {@code zipFunction} returns {@code null}
@@ -2393,7 +2409,7 @@ public final class Matrices {
      *
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the function that takes an array of integers and returns a non-{@code null} {@code Double}; must not be {@code null}
+     * @param zipFunction the function that takes an array of integers and returns a non-{@code null} {@code Double}; must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link DoubleMatrix} with the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
      * @throws NullPointerException if {@code zipFunction} returns {@code null}
@@ -2418,7 +2434,7 @@ public final class Matrices {
      * <li>{@code false} or parallel execution: Creates a new array for each position, safer but uses more memory</li>
      * </ul>
      *
-     * <p><b>Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
+     * <p><b>&#9888;&#65039; Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
      * store references to the array, as it will be mutated for subsequent positions. Only use this
      * optimization if the function immediately processes and discards the array.</p>
      *
@@ -2446,7 +2462,7 @@ public final class Matrices {
      *
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the function that takes an array of integers and returns a non-{@code null} {@code Double}; must not be {@code null}
+     * @param zipFunction the function that takes an array of integers and returns a non-{@code null} {@code Double}; must not be {@code null} and must be thread-safe if execution is parallelized
      * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
      *                               {@code false} to create new arrays for each position
      * @return a new {@link DoubleMatrix} with the combined values, never {@code null}
@@ -2520,7 +2536,7 @@ public final class Matrices {
      * @param <R> the type of elements in the result matrix
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the function that takes an array of integers (one from each matrix) and returns a result of type R, must not be {@code null}
+     * @param zipFunction the function that takes an array of integers (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
      * @param targetElementType the class of the result element type, must not be {@code null}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
@@ -2546,7 +2562,7 @@ public final class Matrices {
      * <li>{@code false} or parallel execution: Creates a new array for each position, safer but uses more memory</li>
      * </ul>
      *
-     * <p><b>Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
+     * <p><b>&#9888;&#65039; Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
      * store references to the array, as it will be mutated for subsequent positions. Only use this
      * optimization if the function immediately processes and discards the array.</p>
      *
@@ -2577,7 +2593,7 @@ public final class Matrices {
      * @param <R> the type of elements in the result matrix
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the function that takes an array of integers (one from each matrix) and returns a result of type R, must not be {@code null}
+     * @param zipFunction the function that takes an array of integers (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
      * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
      *                               {@code false} to create new arrays for each position
      * @param targetElementType the class of the result element type, must not be {@code null}
@@ -2647,7 +2663,7 @@ public final class Matrices {
      * @param <E> the type of exception that the zip function might throw
      * @param a the first matrix, must not be {@code null}
      * @param b the second matrix, must not be {@code null} and must have the same shape as {@code a}
-     * @param zipFunction the binary operator to combine corresponding elements from both matrices, must not be {@code null}
+     * @param zipFunction the binary operator to combine corresponding elements from both matrices, must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link LongMatrix} containing the results of applying the function to each pair of elements, never {@code null}
      * @throws IllegalArgumentException if the matrices have different shapes or if any argument is {@code null}
      * @throws E if the zip function throws an exception during execution
@@ -2693,7 +2709,7 @@ public final class Matrices {
      * @param a the first matrix, must not be {@code null}
      * @param b the second matrix, must not be {@code null} and must have the same shape as {@code a}
      * @param c the third matrix, must not be {@code null} and must have the same shape as {@code a} and {@code b}
-     * @param zipFunction the ternary operator to combine corresponding elements from all three matrices, must not be {@code null}
+     * @param zipFunction the ternary operator to combine corresponding elements from all three matrices, must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link LongMatrix} containing the results of applying the function to each triple of elements, never {@code null}
      * @throws IllegalArgumentException if the matrices have different shapes or if any argument is {@code null}
      * @throws E if the zip function throws an exception during execution
@@ -2739,7 +2755,7 @@ public final class Matrices {
      *
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the binary operator to combine elements sequentially, must not be {@code null}
+     * @param zipFunction the binary operator to combine elements sequentially, must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link LongMatrix} containing the combined results, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception during execution
@@ -2806,7 +2822,7 @@ public final class Matrices {
      * @param <E> the type of exception that the zip function might throw
      * @param a the first matrix, must not be {@code null}
      * @param b the second matrix, must not be {@code null} and must have the same shape as {@code a}
-     * @param zipFunction the function to combine corresponding elements, takes two longs and returns a non-{@code null} {@code Double}; must not be {@code null}
+     * @param zipFunction the function to combine corresponding elements, takes two longs and returns a non-{@code null} {@code Double}; must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link DoubleMatrix} with the combined values, never {@code null}
      * @throws IllegalArgumentException if the matrices have different shapes or if any argument is {@code null}
      * @throws NullPointerException if {@code zipFunction} returns {@code null}
@@ -2864,7 +2880,7 @@ public final class Matrices {
      * @param a the first matrix, must not be {@code null}
      * @param b the second matrix, must not be {@code null} and must have the same shape as {@code a}
      * @param c the third matrix, must not be {@code null} and must have the same shape as {@code a} and {@code b}
-     * @param zipFunction the function to combine corresponding elements, takes three longs and returns a non-{@code null} {@code Double}; must not be {@code null}
+     * @param zipFunction the function to combine corresponding elements, takes three longs and returns a non-{@code null} {@code Double}; must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link DoubleMatrix} with the combined values, never {@code null}
      * @throws IllegalArgumentException if the matrices have different shapes or if any argument is {@code null}
      * @throws NullPointerException if {@code zipFunction} returns {@code null}
@@ -2923,7 +2939,7 @@ public final class Matrices {
      *
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the function that takes an array of longs and returns a non-{@code null} {@code Double}; must not be {@code null}
+     * @param zipFunction the function that takes an array of longs and returns a non-{@code null} {@code Double}; must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link DoubleMatrix} with the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
      * @throws NullPointerException if {@code zipFunction} returns {@code null}
@@ -2949,7 +2965,7 @@ public final class Matrices {
      * <li>{@code false} or parallel execution: Creates a new array for each position, safer but uses more memory</li>
      * </ul>
      *
-     * <p><b>Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
+     * <p><b>&#9888;&#65039; Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
      * store references to the array, as it will be mutated for subsequent positions. Only use this
      * optimization if the function immediately processes and discards the array.</p>
      *
@@ -2976,7 +2992,7 @@ public final class Matrices {
      *
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the function that takes an array of longs and returns a non-{@code null} {@code Double}; must not be {@code null}
+     * @param zipFunction the function that takes an array of longs and returns a non-{@code null} {@code Double}; must not be {@code null} and must be thread-safe if execution is parallelized
      * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
      *                               {@code false} to create new arrays for each position
      * @return a new {@link DoubleMatrix} with the combined values, never {@code null}
@@ -3049,7 +3065,7 @@ public final class Matrices {
      * @param <R> the type of elements in the result matrix
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the function that takes an array of longs (one from each matrix) and returns a result of type R, must not be {@code null}
+     * @param zipFunction the function that takes an array of longs (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
      * @param targetElementType the class of the result element type, must not be {@code null}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
@@ -3075,7 +3091,7 @@ public final class Matrices {
      * <li>{@code false} or parallel execution: Creates a new array for each position, safer but uses more memory</li>
      * </ul>
      *
-     * <p><b>Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
+     * <p><b>&#9888;&#65039; Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
      * store references to the array, as it will be mutated for subsequent positions. Only use this
      * optimization if the function immediately processes and discards the array.</p>
      *
@@ -3106,7 +3122,7 @@ public final class Matrices {
      * @param <R> the type of elements in the result matrix
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the function that takes an array of longs (one from each matrix) and returns a result of type R, must not be {@code null}
+     * @param zipFunction the function that takes an array of longs (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
      * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
      *                               {@code false} to create new arrays for each position
      * @param targetElementType the class of the result element type, must not be {@code null}
@@ -3176,7 +3192,7 @@ public final class Matrices {
      * @param <E> the type of exception that the zip function might throw
      * @param a the first matrix, must not be {@code null}
      * @param b the second matrix, must not be {@code null} and must have the same shape as {@code a}
-     * @param zipFunction the binary operator to combine corresponding elements from both matrices, must not be {@code null}
+     * @param zipFunction the binary operator to combine corresponding elements from both matrices, must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link DoubleMatrix} containing the results of applying the function to each pair of elements, never {@code null}
      * @throws IllegalArgumentException if the matrices have different shapes or if any argument is {@code null}
      * @throws E if the zip function throws an exception during execution
@@ -3224,7 +3240,7 @@ public final class Matrices {
      * @param a the first matrix, must not be {@code null}
      * @param b the second matrix, must not be {@code null} and must have the same shape as {@code a}
      * @param c the third matrix, must not be {@code null} and must have the same shape as {@code a} and {@code b}
-     * @param zipFunction the ternary operator to combine corresponding elements from all three matrices, must not be {@code null}
+     * @param zipFunction the ternary operator to combine corresponding elements from all three matrices, must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link DoubleMatrix} containing the results of applying the function to each triple of elements, never {@code null}
      * @throws IllegalArgumentException if the matrices have different shapes or if any argument is {@code null}
      * @throws E if the zip function throws an exception during execution
@@ -3270,7 +3286,7 @@ public final class Matrices {
      *
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the binary operator to combine elements sequentially, must not be {@code null}
+     * @param zipFunction the binary operator to combine elements sequentially, must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link DoubleMatrix} containing the combined results, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception during execution
@@ -3340,7 +3356,7 @@ public final class Matrices {
      * @param <R> the type of elements in the result matrix
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the function that takes an array of doubles (one from each matrix) and returns a result of type R, must not be {@code null}
+     * @param zipFunction the function that takes an array of doubles (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
      * @param targetElementType the class of the result element type, must not be {@code null}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
@@ -3366,7 +3382,7 @@ public final class Matrices {
      * <li>{@code false} or parallel execution: Creates a new array for each position, safer but uses more memory</li>
      * </ul>
      *
-     * <p><b>Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
+     * <p><b>&#9888;&#65039; Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
      * store references to the array, as it will be mutated for subsequent positions. Only use this
      * optimization if the function immediately processes and discards the array.</p>
      *
@@ -3394,7 +3410,7 @@ public final class Matrices {
      * @param <R> the type of elements in the result matrix
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the function that takes an array of doubles (one from each matrix) and returns a result of type R, must not be {@code null}
+     * @param zipFunction the function that takes an array of doubles (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
      * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
      *                               {@code false} to create new arrays for each position
      * @param targetElementType the class of the result element type, must not be {@code null}
@@ -3467,7 +3483,7 @@ public final class Matrices {
      * @param <E> the type of exception that the zip function might throw
      * @param a the first matrix, must not be {@code null}
      * @param b the second matrix, must not be {@code null} and must have the same shape as {@code a}
-     * @param zipFunction the function to combine corresponding elements from both matrices, must not be {@code null}
+     * @param zipFunction the function to combine corresponding elements from both matrices, must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link Matrix} of type A containing the combined values, never {@code null}
      * @throws IllegalArgumentException if the matrices have different shapes or if any argument is {@code null}
      * @throws ArrayStoreException if {@code zipFunction} returns a value that is not assignable to the first matrix's runtime element type
@@ -3518,7 +3534,7 @@ public final class Matrices {
      * @param <E> the type of exception that the zip function might throw
      * @param a the first matrix, must not be {@code null}
      * @param b the second matrix, must not be {@code null} and must have the same shape as {@code a}
-     * @param zipFunction the function to combine corresponding elements from both matrices, must not be {@code null}
+     * @param zipFunction the function to combine corresponding elements from both matrices, must not be {@code null} and must be thread-safe if execution is parallelized
      * @param targetElementType the class of the result element type, must not be {@code null}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
      * @throws IllegalArgumentException if the matrices have different shapes or if any argument is {@code null}
@@ -3571,7 +3587,7 @@ public final class Matrices {
      * @param a the first matrix, must not be {@code null}
      * @param b the second matrix, must not be {@code null} and must have the same shape as {@code a}
      * @param c the third matrix, must not be {@code null} and must have the same shape as {@code a} and {@code b}
-     * @param zipFunction the function to combine corresponding elements from all three matrices, must not be {@code null}
+     * @param zipFunction the function to combine corresponding elements from all three matrices, must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link Matrix} of type A containing the combined values, never {@code null}
      * @throws IllegalArgumentException if the matrices have different shapes or if any argument is {@code null}
      * @throws ArrayStoreException if {@code zipFunction} returns a value that is not assignable to the first matrix's runtime element type
@@ -3628,7 +3644,7 @@ public final class Matrices {
      * @param a the first matrix, must not be {@code null}
      * @param b the second matrix, must not be {@code null} and must have the same shape as {@code a}
      * @param c the third matrix, must not be {@code null} and must have the same shape as {@code a} and {@code b}
-     * @param zipFunction the function to combine corresponding elements from all three matrices, must not be {@code null}
+     * @param zipFunction the function to combine corresponding elements from all three matrices, must not be {@code null} and must be thread-safe if execution is parallelized
      * @param targetElementType the class of the result element type, must not be {@code null}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
      * @throws IllegalArgumentException if the matrices have different shapes or if any argument is {@code null}
@@ -3659,7 +3675,7 @@ public final class Matrices {
      *
      * <p>All matrices in the collection must have identical dimensions. Their element types need not
      * be identical; the result matrix uses the most specific element type assignable from every input
-     * matrix's element type (see {@link #resolveCommonElementType(Matrix[])}). The operation
+     * matrix's element type. The operation
      * is optimized for single-element collections:</p>
      * <ul>
      * <li>One matrix: Returns a copy of that matrix</li>
@@ -3689,7 +3705,7 @@ public final class Matrices {
      * @param <T> the element type of the matrices
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the binary operator to combine elements sequentially, must not be {@code null}
+     * @param zipFunction the binary operator to combine elements sequentially, must not be {@code null} and must be thread-safe if execution is parallelized
      * @return a new {@link Matrix} of type T containing the combined results, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
      * @throws ArrayStoreException if {@code zipFunction} returns a value that is not assignable to the resolved common element type of the inputs
@@ -3767,7 +3783,7 @@ public final class Matrices {
      * @param <R> the element type of the result matrix
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the function that takes an array of values (one from each matrix) and returns a result of type R, must not be {@code null}
+     * @param zipFunction the function that takes an array of values (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
      * @param targetElementType the class of the result element type, must not be {@code null}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if any other argument is {@code null}
@@ -3796,7 +3812,7 @@ public final class Matrices {
      * <li>{@code false} or parallel execution: Creates a new array for each position, safer but uses more memory</li>
      * </ul>
      *
-     * <p><b>Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
+     * <p><b>&#9888;&#65039; Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
      * store references to the array, as it will be mutated for subsequent positions. Only use this
      * optimization if the function immediately processes and discards the array. The runtime component
      * type of the array passed to {@code zipFunction} is the resolved common element type of the input
@@ -3827,7 +3843,7 @@ public final class Matrices {
      * @param <R> the element type of the result matrix
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
-     * @param zipFunction the function that takes an array of values (one from each matrix) and returns a result of type R, must not be {@code null}
+     * @param zipFunction the function that takes an array of values (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
      * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
      *                               {@code false} to create new arrays for each position
      * @param targetElementType the class of the result element type, must not be {@code null}
@@ -3910,10 +3926,12 @@ public final class Matrices {
             final int totalDistance = entry.getValue() + rightDistance;
             final int typePenalty = commonTypePenalty(candidate);
             final int methodCount = candidate.getMethods().length;
+            final boolean betterTieBreak = best.isAssignableFrom(candidate)
+                    || (!candidate.isAssignableFrom(best) && candidate.getName().compareTo(best.getName()) < 0);
 
             if (totalDistance < bestDistance || (totalDistance == bestDistance && typePenalty < bestPenalty)
                     || (totalDistance == bestDistance && typePenalty == bestPenalty && methodCount > bestMethodCount)
-                    || (totalDistance == bestDistance && typePenalty == bestPenalty && methodCount == bestMethodCount && best.isAssignableFrom(candidate))) {
+                    || (totalDistance == bestDistance && typePenalty == bestPenalty && methodCount == bestMethodCount && betterTieBreak)) {
                 best = candidate;
                 bestDistance = totalDistance;
                 bestPenalty = typePenalty;
@@ -3927,25 +3945,62 @@ public final class Matrices {
     /**
      * Resolves the most specific common element type shared by all the given matrices.
      *
-     * <p>Starting from the element type of the first matrix, this method folds
-     * {@link #resolveCommonAssignableType(Class, Class)} across the element types of the
-     * remaining matrices. If no more specific common type can be identified,
-     * {@link Object} is effectively returned.</p>
+     * <p>This method ranks the types that are assignable from every original matrix element
+     * type. Considering all inputs together keeps the result independent of matrix order. If no
+     * more specific common type can be identified, {@link Object} is returned.</p>
      *
-     * @param <T> the resolved common element type
+     * @param <T> the static element type of the matrices
      * @param matrices the matrices whose element types are reconciled; must be non-empty
      * @return the most specific element type assignable from every matrix's element type, never {@code null}
      * @see #resolveCommonAssignableType(Class, Class)
      */
     @SuppressWarnings("unchecked")
     static <T> Class<T> resolveCommonElementType(final Matrix<T>[] matrices) {
-        Class<?> commonType = matrices[0].elementType;
+        final Map<Class<?>, Map<Class<?>, Integer>> distancesByType = new LinkedHashMap<>();
 
-        for (int i = 1, len = matrices.length; i < len; i++) {
-            commonType = resolveCommonAssignableType(commonType, matrices[i].elementType);
+        for (final Matrix<T> matrix : matrices) {
+            distancesByType.computeIfAbsent(matrix.elementType, Matrices::collectTypeDistances);
         }
 
-        return (Class<T>) commonType;
+        final Map<Class<?>, Integer> candidates = distancesByType.get(matrices[0].elementType);
+        Class<?> best = Object.class;
+        long bestDistance = Long.MAX_VALUE;
+        int bestPenalty = Integer.MAX_VALUE;
+        int bestMethodCount = Integer.MIN_VALUE;
+
+        for (final Class<?> candidate : candidates.keySet()) {
+            long totalDistance = 0;
+            boolean commonToAll = true;
+
+            for (final Matrix<T> matrix : matrices) {
+                final Integer distance = distancesByType.get(matrix.elementType).get(candidate);
+
+                if (distance == null) {
+                    commonToAll = false;
+                    break;
+                }
+
+                totalDistance += distance;
+            }
+
+            if (!commonToAll) {
+                continue;
+            }
+
+            final int typePenalty = commonTypePenalty(candidate);
+            final int methodCount = candidate.getMethods().length;
+
+            if (totalDistance < bestDistance || (totalDistance == bestDistance && typePenalty < bestPenalty)
+                    || (totalDistance == bestDistance && typePenalty == bestPenalty && methodCount > bestMethodCount)
+                    || (totalDistance == bestDistance && typePenalty == bestPenalty && methodCount == bestMethodCount && best.isAssignableFrom(candidate))) {
+                best = candidate;
+                bestDistance = totalDistance;
+                bestPenalty = typePenalty;
+                bestMethodCount = methodCount;
+            }
+        }
+
+        return (Class<T>) best;
     }
 
     private static Map<Class<?>, Integer> collectTypeDistances(final Class<?> startType) {

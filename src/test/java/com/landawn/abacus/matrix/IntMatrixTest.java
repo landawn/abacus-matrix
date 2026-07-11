@@ -6505,6 +6505,22 @@ class IntMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> m.setMainDiagonal(null));
             assertThrows(IllegalArgumentException.class, () -> m.setAntiDiagonal(null));
         }
+
+        @Test
+        public void testAliasedArraySourcesAreSnapshotted() {
+            IntMatrix columnMatrix = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
+            columnMatrix.setColumn(1, columnMatrix.rowView(0));
+            assertArrayEquals(new int[] { 3, 2 }, columnMatrix.rowCopy(1));
+
+            IntMatrix diagonalMatrix = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+            diagonalMatrix.setAntiDiagonal(diagonalMatrix.rowView(0));
+            assertArrayEquals(new int[] { 1, 2, 3 }, diagonalMatrix.antiDiagonalCopy());
+
+            int[][] backing = { { 1, 2 }, { 3, 4 }, { 5, 6 } };
+            IntMatrix fillMatrix = IntMatrix.of(backing);
+            fillMatrix.fill(1, 0, backing);
+            assertArrayEquals(new int[] { 3, 4 }, fillMatrix.rowCopy(2));
+        }
     }
 
 }

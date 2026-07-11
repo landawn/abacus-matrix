@@ -69,7 +69,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     /**
      * Constructs a {@code DoubleMatrix} backed by the supplied two-dimensional array.
      *
-     * <p>The supplied array is used directly after rectangular-shape validation, so later modifications to either the input
+     * <p><b>&#9888;&#65039; Shared backing:</b> The supplied array is used directly after rectangular-shape validation, so later modifications to either the input
      * array or the matrix remain visible through the other view. Call {@link #copy()} if you need an
      * independently owned matrix.</p>
      *
@@ -88,7 +88,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @param a the two-dimensional double array to wrap, must not be {@code null}
-     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
     public DoubleMatrix(final double[][] a) {
@@ -117,7 +117,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     /**
      * Creates a DoubleMatrix from a two-dimensional double array.
      *
-     * <p><b>Important:</b> The provided array is used directly without defensive copying.
+     * <p><b>&#9888;&#65039; Shared backing:</b> The provided array is used directly without defensive copying.
      * Changes to the input array are reflected in the returned matrix, and vice versa.
      *
      * <p><b>Usage Examples:</b></p>
@@ -136,7 +136,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * @param a the two-dimensional double array to create the matrix from, or empty for an empty matrix; must not be {@code null}
      * @return a new {@code DoubleMatrix} wrapping the provided data, or the shared empty {@code DoubleMatrix} if the input is empty
-     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
     public static DoubleMatrix of(final double[]... a) {
@@ -164,7 +164,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * @param a the two-dimensional double array to copy, or empty for an empty matrix; must not be {@code null}
      * @return a new {@code DoubleMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is empty
-     * @throws IllegalArgumentException if any row of {@code a} is {@code null} or if the rows have
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      * @see #of(double[][])
      * @see #copy()
@@ -203,7 +203,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * @param a the two-dimensional int array to convert to a double matrix, or empty for an empty matrix; must not be {@code null}
      * @return a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if input is empty
-     * @throws IllegalArgumentException if any row is {@code null} or if rows have different lengths (non-rectangular array)
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if any row is {@code null}, or if rows have different lengths (non-rectangular array)
      * @see IntMatrix#toDoubleMatrix()
      */
     public static DoubleMatrix from(final int[]... a) {
@@ -242,7 +242,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * <p>All rows must have the same length as the first row (rectangular array required).</p>
      *
-     * <p><b>Note:</b> Long values that require more than 53 bits of precision may lose precision when
+     * <p><b>&#9888;&#65039; Precision:</b> Long values that require more than 53 bits of precision may lose precision when
      * converted to double, since a double has 53 bits of significand precision (52 stored fraction bits
      * plus an implicit leading bit for normal values). For example,
      * {@code Long.MAX_VALUE} (9223372036854775807) cannot be represented exactly as a double.</p>
@@ -264,7 +264,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * @param a the two-dimensional long array to convert to a double matrix, or empty for an empty matrix; must not be {@code null}
      * @return a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if input is empty
-     * @throws IllegalArgumentException if any row is {@code null} or if rows have different lengths (non-rectangular array)
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if any row is {@code null}, or if rows have different lengths (non-rectangular array)
      * @see LongMatrix#toDoubleMatrix()
      */
     public static DoubleMatrix from(final long[]... a) {
@@ -323,7 +323,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * @param a the two-dimensional float array to convert to a double matrix, or empty for an empty matrix; must not be {@code null}
      * @return a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if input is empty
-     * @throws IllegalArgumentException if any row is {@code null} or if rows have different lengths (non-rectangular array)
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if any row is {@code null}, or if rows have different lengths (non-rectangular array)
      * @see FloatMatrix#toDoubleMatrix()
      */
     public static DoubleMatrix from(final float[]... a) {
@@ -824,7 +824,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     /**
      * Returns the specified row as a live reference to the underlying {@code double[]} storage.
      *
-     * <p><b>Note:</b> This method returns the internal array, not a copy. Modifications to the
+     * <p><b>&#9888;&#65039; Live view:</b> This method returns the internal array, not a copy. Modifications to the
      * returned array will affect the matrix and vice versa. Use {@link #rowCopy(int)} if you need
      * an independent copy.</p>
      *
@@ -985,9 +985,10 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
         N.checkArgNotNull(column, "column");
         checkColumnIndex(columnIndex);
         N.checkArgument(column.length == rowCount, MSG_COLUMN_LENGTH_MISMATCH, rowCount, column.length);
+        final double[] values = snapshotIfBackingRow(column);
 
         for (int i = 0; i < rowCount; i++) {
-            a[i][columnIndex] = column[i];
+            a[i][columnIndex] = values[i];
         }
     }
 
@@ -1232,9 +1233,10 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
         checkIsSquare();
         N.checkArgNotNull(antiDiagonal, "antiDiagonal");
         N.checkArgument(N.len(antiDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(antiDiagonal));
+        final double[] values = snapshotIfBackingRow(antiDiagonal);
 
         for (int i = 0; i < rowCount; i++) {
-            a[i][columnCount - i - 1] = antiDiagonal[i];
+            a[i][columnCount - i - 1] = values[i];
         }
     }
 
@@ -1428,7 +1430,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * Creates a new {@code DoubleMatrix} by applying the specified function to each element of this matrix.
      * The original matrix is not modified. Each element is transformed independently by the function,
      * and the results are collected into a new matrix with the same dimensions. The operation may be
-     * performed in parallel for large matrices to improve performance.
+     * performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1659,10 +1661,11 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
         if (destColumnIndex < 0 || destColumnIndex > columnCount) {
             throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be in [0, columnCount({})]", destColumnIndex, columnCount));
         }
+        final double[][] sourceSnapshot = snapshotRowsIfBackingRows(source);
 
-        for (int i = 0, minLen = N.min(rowCount - destRowIndex, source.length); i < minLen; i++) {
-            if (source[i] != null) {
-                N.copy(source[i], 0, a[i + destRowIndex], destColumnIndex, N.min(source[i].length, columnCount - destColumnIndex));
+        for (int i = 0, minLen = N.min(rowCount - destRowIndex, sourceSnapshot.length); i < minLen; i++) {
+            if (sourceSnapshot[i] != null) {
+                N.copy(sourceSnapshot[i], 0, a[i + destRowIndex], destColumnIndex, N.min(sourceSnapshot[i].length, columnCount - destColumnIndex));
             }
         }
     }
@@ -2483,6 +2486,10 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     public DoubleMatrix repeatElements(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
 
+        if (rowRepeats == 1 && columnRepeats == 1) {
+            return copy();
+        }
+
         // Check for overflow before allocation
         if ((long) rowCount * rowRepeats > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("Result row count overflow: " + rowCount + " * " + rowRepeats + " exceeds Integer.MAX_VALUE");
@@ -2498,7 +2505,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
             final double[] fr = c[i * rowRepeats];
 
             for (int j = 0; j < columnCount; j++) {
-                N.copy(Array.repeat(aa[j], columnRepeats), 0, fr, j * columnRepeats, columnRepeats);
+                N.fill(fr, j * columnRepeats, (j + 1) * columnRepeats, aa[j]);
             }
 
             for (int k = 1; k < rowRepeats; k++) {
@@ -2539,6 +2546,10 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     @Override
     public DoubleMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
+
+        if (rowRepeats == 1 && columnRepeats == 1) {
+            return copy();
+        }
 
         // Check for overflow before allocation
         if ((long) rowCount * rowRepeats > Integer.MAX_VALUE) {
@@ -2941,7 +2952,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *       saturate to {@code Integer.MIN_VALUE}.</li>
      * </ul>
      *
-     * <p><b>Warning:</b> This is a narrowing conversion that may lose information.</p>
+     * <p><b>&#9888;&#65039; Warning:</b> This is a narrowing conversion that may lose information.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2996,7 +3007,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *       saturate to {@code Long.MIN_VALUE}.</li>
      * </ul>
      *
-     * <p><b>Warning:</b> This is a narrowing conversion that may lose information.</p>
+     * <p><b>&#9888;&#65039; Warning:</b> This is a narrowing conversion that may lose information.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3041,7 +3052,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * Converts this double matrix to a float matrix.
      * Each double value is narrowed to float by casting.
      *
-     * <p><b>Warning:</b> This is a narrowing conversion that may lose precision.
+     * <p><b>&#9888;&#65039; Warning:</b> This is a narrowing conversion that may lose precision.
      * Double values that cannot be exactly represented as float will be rounded
      * to the nearest float value. Values whose magnitude is too large to round to a
      * finite float (beyond the float rounding range, e.g. {@code Double.MAX_VALUE})
@@ -3845,12 +3856,12 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * This is a hook called by {@link AbstractMatrix} during construction to determine the column
      * count of each row when validating the rectangular shape of the backing array.
      *
-     * @param a the row array to measure; may be {@code null}
-     * @return the length of {@code a}, or {@code 0} if {@code a} is {@code null}
+     * @param row the row array to measure; may be {@code null}
+     * @return the length of {@code row}, or {@code 0} if {@code row} is {@code null}
      */
     @Override
-    protected int length(@SuppressWarnings("hiding") final double[] a) {
-        return a == null ? 0 : a.length;
+    protected int length(final double[] row) {
+        return row == null ? 0 : row.length;
     }
 
     /**

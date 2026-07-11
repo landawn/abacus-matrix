@@ -1895,6 +1895,18 @@ class MatrixTest extends TestBase {
         }
 
         @Test
+        public void testMatrix_zipWith3_localeIndependentFormattingExample() {
+            Matrix<Integer> m1 = Matrix.of(new Integer[][] { { 1, 2 }, { 3, 4 } });
+            Matrix<String> m2 = Matrix.of(new String[][] { { "a", "b" }, { "c", "d" } });
+            Matrix<Double> m3 = Matrix.of(new Double[][] { { 0.1, 0.2 }, { 0.3, 0.4 } });
+
+            Matrix<String> result = m1.zipWith(m2, m3, (i, s, d) -> i + s + String.format(java.util.Locale.ROOT, "%.1f", d), String.class);
+
+            assertEquals("1a0.1", result.get(0, 0));
+            assertEquals("4d0.4", result.get(1, 1));
+        }
+
+        @Test
         public void testMatrix_flipHorizontally() {
             Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             Matrix<Integer> flipped = matrix.flipHorizontally();
@@ -7272,6 +7284,17 @@ class MatrixTest extends TestBase {
         assertEquals(Arrays.asList("a", null), matrix.flatten());
     }
 
+    @Test
+    public void testRepeatByOne_UsesUniformElementTypeStorageForHeterogeneousRows() {
+        Matrix<Object> matrix = Matrix.of(new Object[][] { new Integer[] { 1 }, new String[] { "a" } });
+
+        Matrix<Object> repeatedElements = matrix.repeatElements(1, 1);
+        Matrix<Object> repeatedMatrix = matrix.repeatMatrix(1, 1);
+
+        Assertions.assertDoesNotThrow(() -> repeatedElements.set(0, 0, "x"));
+        Assertions.assertDoesNotThrow(() -> repeatedMatrix.set(0, 0, "x"));
+    }
+
     // Regression test for bug: flipVerticallyInPlace previously swapped individual elements
     // between rows, which threw ArrayStoreException when rows had different runtime
     // component types (a state allowed by the constructor — only rectangularity is enforced).
@@ -7449,6 +7472,22 @@ class MatrixTest extends TestBase {
             m.replaceIf((i, j) -> ++counter[0] <= 3, 9);
 
             assertEquals(List.of(9, 9, 9, 4, 5, 6), m.flatten());
+        }
+
+        @Test
+        public void testAliasedArraySourcesAreSnapshotted() {
+            Matrix<Integer> columnMatrix = Matrix.of(new Integer[][] { { 1, 2 }, { 3, 4 } });
+            columnMatrix.setColumn(1, columnMatrix.rowView(0));
+            assertArrayEquals(new Integer[] { 3, 2 }, columnMatrix.rowCopy(1));
+
+            Matrix<Integer> diagonalMatrix = Matrix.of(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+            diagonalMatrix.setAntiDiagonal(diagonalMatrix.rowView(0));
+            assertArrayEquals(new Integer[] { 1, 2, 3 }, diagonalMatrix.antiDiagonalCopy());
+
+            Integer[][] backing = { { 1, 2 }, { 3, 4 }, { 5, 6 } };
+            Matrix<Integer> fillMatrix = Matrix.of(backing);
+            fillMatrix.fill(1, 0, new Integer[][] { backing[0], backing[1] });
+            assertArrayEquals(new Integer[] { 3, 4 }, fillMatrix.rowCopy(2));
         }
     }
 }

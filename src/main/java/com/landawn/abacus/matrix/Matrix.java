@@ -72,7 +72,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Constructs a {@code Matrix} backed by the supplied two-dimensional array.
      *
-     * <p>The provided array is used directly after rectangular-shape validation, so later
+     * <p><b>&#9888;&#65039; Shared backing:</b> The provided array is used directly after rectangular-shape validation, so later
      * modifications to either the input array or the matrix remain visible through the other view.</p>
      *
      * <p>The array must be rectangular (all rows must have the same length). Empty arrays are allowed
@@ -135,7 +135,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Creates a Matrix from a two-dimensional array.
      *
-     * <p><b>Important:</b> The matrix maintains a reference to the provided array,
+     * <p><b>&#9888;&#65039; Shared backing:</b> The matrix maintains a reference to the provided array,
      * not a copy. Modifications to the original array will affect the matrix,
      * and vice versa.</p>
      *
@@ -628,11 +628,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Returns the specified row as an array.
      *
-     * <p><b>Note:</b> The returned array is the live internal row, so subsequent modifications
+     * <p><b>&#9888;&#65039; Live view:</b> The returned array is the live internal row, so subsequent modifications
      * are mirrored in the matrix. If you need an independent copy, use {@link #rowCopy(int)}
      * or call {@code .clone()} on the returned array.</p>
      *
-     * <p><b>Note on runtime component type:</b> the returned array is the row exactly as it is
+     * <p><b>&#9888;&#65039; Runtime component type:</b> the returned array is the row exactly as it is
      * stored internally. For matrices created by factories such as {@link #repeat(int, int, Object)}
      * or {@link #diagonals} the backing row may have a more specific runtime component type than
      * {@code Object[]} (it is allocated from the resolved element type), but no conversion is
@@ -795,9 +795,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         N.checkArgNotNull(column, "column");
         checkColumnIndex(columnIndex);
         N.checkArgument(column.length == rowCount, MSG_COLUMN_LENGTH_MISMATCH, rowCount, column.length);
+        final T[] values = snapshotIfBackingRow(column);
 
         for (int i = 0; i < rowCount; i++) {
-            a[i][columnIndex] = column[i];
+            a[i][columnIndex] = values[i];
         }
     }
 
@@ -1055,9 +1056,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         checkIsSquare();
         N.checkArgNotNull(antiDiagonal, "antiDiagonal");
         N.checkArgument(N.len(antiDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(antiDiagonal));
+        final T[] values = snapshotIfBackingRow(antiDiagonal);
 
         for (int i = 0; i < rowCount; i++) {
-            a[i][columnCount - i - 1] = antiDiagonal[i];
+            a[i][columnCount - i - 1] = values[i];
         }
     }
 
@@ -1281,7 +1283,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * This is a convenience method that uses the same element type for input and output.
      * The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.
      *
-     * <p><b>Note:</b> because the result reuses this matrix's runtime element type, an {@link ArrayStoreException}
+     * <p><b>&#9888;&#65039; Runtime element type:</b> because the result reuses this matrix's runtime element type, an {@link ArrayStoreException}
      * is thrown if {@code mapper} returns a value that is not assignable to that type. Use
      * {@link #map(Throwables.Function, Class)} with an explicit target type to map to a wider or different type.</p>
      *
@@ -1697,6 +1699,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Copies values into the matrix from another two-dimensional array starting at the specified position.
      * Copies as much data as will fit from the starting position.
      * If the source data extends beyond the matrix bounds, it is truncated.
+     * Source rows that are {@code null} are skipped, leaving the corresponding destination row unchanged.
      *
      * <p>This method modifies the matrix in-place.</p>
      *
@@ -1729,11 +1732,12 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         if (destColumnIndex < 0 || destColumnIndex > columnCount) {
             throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be in [0, columnCount({})]", destColumnIndex, columnCount));
         }
+        final T[][] sourceSnapshot = snapshotRowsIfBackingRows(source);
 
-        for (int i = 0, minLen = N.min(rowCount - destRowIndex, source.length); i < minLen; i++) {
-            if (source[i] != null) {
-                final int copyLen = N.min(source[i].length, columnCount - destColumnIndex);
-                N.copy(source[i], 0, a[i + destRowIndex], destColumnIndex, copyLen);
+        for (int i = 0, minLen = N.min(rowCount - destRowIndex, sourceSnapshot.length); i < minLen; i++) {
+            if (sourceSnapshot[i] != null) {
+                final int copyLen = N.min(sourceSnapshot[i].length, columnCount - destColumnIndex);
+                N.copy(sourceSnapshot[i], 0, a[i + destRowIndex], destColumnIndex, copyLen);
             }
         }
     }
@@ -1942,7 +1946,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
      *         if the resulting shape is not representable (zero rows with a non-zero column count),
      *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
-     * @throws ArrayStoreException if the matrix grows in at least one dimension and {@code defaultValue}
+     * @throws ArrayStoreException if the operation adds one or more cells and {@code defaultValue}
      *         is non-{@code null} and not assignable to this matrix's runtime element type
      * @see #resize(int, int)
      * @see #extend(int, int, int, int, Object)
@@ -2083,7 +2087,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws IllegalArgumentException if any padding parameter is negative,
      *         if the resulting dimensions would overflow {@code Integer.MAX_VALUE},
      *         or if the resulting shape is not representable (zero rows with a non-zero column count)
-     * @throws ArrayStoreException if the matrix grows in at least one dimension and {@code defaultValue}
+     * @throws ArrayStoreException if the operation adds one or more cells and {@code defaultValue}
      *         is non-{@code null} and not assignable to this matrix's runtime element type
      * @see #extend(int, int, int, int)
      * @see #resize(int, int, Object)
@@ -2682,7 +2686,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * The operation receives a single one-dimensional array containing all elements in row-major order,
      * and any modifications to that array are reflected back in this matrix.
      *
-     * <p><strong>Unsafe API boundary:</strong> the supplied action can mutate matrix state through the flattened view.
+     * <p><b>&#9888;&#65039; Unsafe API boundary:</b> the supplied action can mutate matrix state through the flattened view.
      * Prefer {@link #copy()} or other defensive APIs unless in-place mutation is intentional.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -2821,7 +2825,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Both matrices must have the same dimensions. The result matrix has the same element type as this matrix.
      * The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.
      *
-     * <p><b>Note:</b> because the result reuses this matrix's runtime element type, an {@link ArrayStoreException}
+     * <p><b>&#9888;&#65039; Runtime element type:</b> because the result reuses this matrix's runtime element type, an {@link ArrayStoreException}
      * is thrown if {@code zipFunction} returns a value that is not assignable to that type. Use
      * {@link #zipWith(Matrix, Throwables.BiFunction, Class)} with an explicit target type to produce a wider or different type.</p>
      *
@@ -2855,7 +2859,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Combines this matrix with another matrix element-wise using the specified function.
      * The function can return elements of a different type than the input matrices.
      * The matrices must have the same dimensions. The operation may be performed
-     * in parallel for large matrices.
+     * in parallel for large matrices. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2902,7 +2906,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Combines three matrices element-wise using the specified ternary function.
      * The function is applied to corresponding elements from all three matrices.
      * All matrices must have the same dimensions. The operation may be performed
-     * in parallel for large matrices.
+     * in parallel for large matrices. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2939,14 +2943,14 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Combines three matrices element-wise using the specified ternary function.
      * The function can return elements of a different type than the input matrices.
      * All matrices must have the same dimensions. The operation may be performed
-     * in parallel for large matrices.
+     * in parallel for large matrices. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Integer> m1 = Matrix.of(new Integer[][] {{1, 2}, {3, 4}});
      * Matrix<String> m2 = Matrix.of(new String[][] {{"a", "b"}, {"c", "d"}});
      * Matrix<Double> m3 = Matrix.of(new Double[][] {{0.1, 0.2}, {0.3, 0.4}});
-     * Matrix<String> result = m1.zipWith(m2, m3, (i, s, d) -> i + s + String.format("%.1f", d), String.class);
+     * Matrix<String> result = m1.zipWith(m2, m3, (i, s, d) -> i + s + String.format(java.util.Locale.ROOT, "%.1f", d), String.class);
      * result.get(0, 0);   // returns "1a0.1"
      * result.get(1, 1);   // returns "4d0.4"
      *
@@ -3601,12 +3605,12 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p>This is an internal helper method used by the abstract base class for iteration
      * and size calculations. It handles {@code null} arrays by returning {@code 0}.</p>
      *
-     * @param a the array to check (may be {@code null})
-     * @return the length of the array, or {@code 0} if the array is {@code null}
+     * @param row the array to check (may be {@code null})
+     * @return the length of {@code row}, or {@code 0} if {@code row} is {@code null}
      */
     @Override
-    protected int length(@SuppressWarnings("hiding") final T[] a) {
-        return a == null ? 0 : a.length;
+    protected int length(final T[] row) {
+        return row == null ? 0 : row.length;
     }
 
     /**
@@ -3725,11 +3729,12 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * matrix.toDataset(N.asList("A", "B"));    // throws IllegalArgumentException (size != columnCount)
      * }</pre>
      *
-     * @param columnNames the names to assign to each column in the resulting Dataset; size must equal {@code columnCount}
+     * @param columnNames the non-{@code null}, non-empty, unique names to assign to each column in the resulting Dataset;
+     *        size must equal {@code columnCount}
      * @return a Dataset containing the matrix data with the specified column names
      *         (one row per matrix row)
-     * @throws IllegalArgumentException if {@code columnNames} is {@code null}, if its size
-     *         does not equal {@code columnCount}, or if this matrix has rows but no columns
+     * @throws IllegalArgumentException if {@code columnNames} is {@code null}, contains a {@code null}, empty, or duplicate name,
+     *         if its size does not equal {@code columnCount}, or if this matrix has rows but no columns
      * @see Dataset
      * @see #toTransposedDataset(Collection)
      */
@@ -3778,10 +3783,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * matrix.toTransposedDataset(N.asList("Row1"));    // throws IllegalArgumentException (size != rowCount)
      * }</pre>
      *
-     * @param columnNames the column names of the resulting Dataset; size must equal {@code rowCount}
+     * @param columnNames the non-{@code null}, non-empty, unique column names of the resulting Dataset;
+     *        size must equal {@code rowCount}
      * @return a Dataset containing the matrix data organized vertically (one column per matrix row)
-     * @throws IllegalArgumentException if {@code columnNames} is {@code null}, or if its size
-     *         does not equal {@code rowCount}
+     * @throws IllegalArgumentException if {@code columnNames} is {@code null}, contains a {@code null}, empty, or duplicate name,
+     *         or if its size does not equal {@code rowCount}
      * @see Dataset
      * @see #toDataset(Collection)
      */

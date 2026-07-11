@@ -6721,6 +6721,22 @@ class CharMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> m.setMainDiagonal(null));
             assertThrows(IllegalArgumentException.class, () -> m.setAntiDiagonal(null));
         }
+
+        @Test
+        public void testAliasedArraySourcesAreSnapshotted() {
+            CharMatrix columnMatrix = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
+            columnMatrix.setColumn(1, columnMatrix.rowView(0));
+            assertArrayEquals(new char[] { 'c', 'b' }, columnMatrix.rowCopy(1));
+
+            CharMatrix diagonalMatrix = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } });
+            diagonalMatrix.setAntiDiagonal(diagonalMatrix.rowView(0));
+            assertArrayEquals(new char[] { 'a', 'b', 'c' }, diagonalMatrix.antiDiagonalCopy());
+
+            char[][] backing = { { 'a', 'b' }, { 'c', 'd' }, { 'e', 'f' } };
+            CharMatrix fillMatrix = CharMatrix.of(backing);
+            fillMatrix.fill(1, 0, backing);
+            assertArrayEquals(new char[] { 'c', 'd' }, fillMatrix.rowCopy(2));
+        }
     }
 
 }

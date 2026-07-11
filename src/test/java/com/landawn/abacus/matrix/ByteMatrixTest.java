@@ -6287,6 +6287,22 @@ class ByteMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> m.setMainDiagonal(null));
             assertThrows(IllegalArgumentException.class, () -> m.setAntiDiagonal(null));
         }
+
+        @Test
+        public void testAliasedArraySourcesAreSnapshotted() {
+            ByteMatrix columnMatrix = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
+            columnMatrix.setColumn(1, columnMatrix.rowView(0));
+            assertArrayEquals(new byte[] { 3, 2 }, columnMatrix.rowCopy(1));
+
+            ByteMatrix diagonalMatrix = ByteMatrix.of(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+            diagonalMatrix.setAntiDiagonal(diagonalMatrix.rowView(0));
+            assertArrayEquals(new byte[] { 1, 2, 3 }, diagonalMatrix.antiDiagonalCopy());
+
+            byte[][] backing = { { 1, 2 }, { 3, 4 }, { 5, 6 } };
+            ByteMatrix fillMatrix = ByteMatrix.of(backing);
+            fillMatrix.fill(1, 0, backing);
+            assertArrayEquals(new byte[] { 3, 4 }, fillMatrix.rowCopy(2));
+        }
     }
 
 }

@@ -6285,6 +6285,22 @@ class LongMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> m.setMainDiagonal(null));
             assertThrows(IllegalArgumentException.class, () -> m.setAntiDiagonal(null));
         }
+
+        @Test
+        public void testAliasedArraySourcesAreSnapshotted() {
+            LongMatrix columnMatrix = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            columnMatrix.setColumn(1, columnMatrix.rowView(0));
+            assertArrayEquals(new long[] { 3L, 2L }, columnMatrix.rowCopy(1));
+
+            LongMatrix diagonalMatrix = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            diagonalMatrix.setAntiDiagonal(diagonalMatrix.rowView(0));
+            assertArrayEquals(new long[] { 1L, 2L, 3L }, diagonalMatrix.antiDiagonalCopy());
+
+            long[][] backing = { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } };
+            LongMatrix fillMatrix = LongMatrix.of(backing);
+            fillMatrix.fill(1, 0, backing);
+            assertArrayEquals(new long[] { 3L, 4L }, fillMatrix.rowCopy(2));
+        }
     }
 
 }

@@ -18,7 +18,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import com.landawn.abacus.annotation.SuppressFBWarnings;
@@ -201,6 +203,64 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         elementCount = (long) columnCount * rowCount;
     }
 
+    /** Returns {@code source}, or a snapshot when it is one of this matrix's live backing rows. */
+    final A snapshotIfBackingRow(final A source) {
+        for (final A row : a) {
+            if (row == source) {
+                return cloneArray(source);
+            }
+        }
+
+        return source;
+    }
+
+    /** Snapshots only source rows that alias this matrix's live backing rows. */
+    final A[] snapshotRowsIfBackingRows(final A[] source) {
+        if (a.length == 0) {
+            return source;
+        }
+
+        if (source == a) {
+            final A[] snapshot = source.clone();
+
+            for (int i = 0; i < snapshot.length; i++) {
+                if (snapshot[i] != null) {
+                    snapshot[i] = cloneArray(snapshot[i]);
+                }
+            }
+
+            return snapshot;
+        }
+
+        final Map<A, Boolean> backingRows = new IdentityHashMap<>(a.length);
+
+        for (final A row : a) {
+            backingRows.put(row, Boolean.TRUE);
+        }
+
+        A[] snapshot = source;
+
+        for (int i = 0; i < source.length; i++) {
+            if (backingRows.containsKey(source[i])) {
+                if (snapshot == source) {
+                    snapshot = source.clone();
+                }
+
+                snapshot[i] = cloneArray(source[i]);
+            }
+        }
+
+        return snapshot;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <R> R cloneArray(final R source) {
+        final int length = java.lang.reflect.Array.getLength(source);
+        final Object copy = java.lang.reflect.Array.newInstance(source.getClass().getComponentType(), length);
+        System.arraycopy(source, 0, copy, 0, length);
+        return (R) copy;
+    }
+
     /**
      * Converts a non-negative element count to an {@code int} array length with overflow protection.
      * This utility method ensures that the element count fits within an {@code int} range before
@@ -211,7 +271,11 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @throws IllegalStateException if {@code count} is negative or exceeds {@code Integer.MAX_VALUE}
      */
     protected static int toArrayLength(final long count) {
-        if (count < 0 || count > Integer.MAX_VALUE) {
+        if (count < 0) {
+            throw new IllegalStateException("Matrix stream element count cannot be negative: " + count);
+        }
+
+        if (count > Integer.MAX_VALUE) {
             throw new IllegalStateException("Matrix stream too large to convert to array: " + count + " elements");
         }
 
@@ -329,7 +393,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * This method exposes the internal array representation for performance reasons and should be used with caution
      * as modifications to the returned array will directly affect the matrix.
      *
-     * <p><strong>Unsafe API boundary:</strong> This method returns the actual internal array, not a copy.
+     * <p><b>&#9888;&#65039; Unsafe API boundary:</b> This method returns the actual internal array, not a copy.
      * Any changes made to the returned array (including reassigning row references or mutating row contents)
      * will be reflected in this matrix. Reassigned rows must remain non-{@code null} and keep the original
      * {@link #columnCount()}; violating those shape invariants leaves the matrix in an invalid state because
@@ -364,7 +428,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Returns the specified row as a direct view backed by internal storage.
      * Changes to the returned array will modify this matrix.
      *
-     * <p><strong>Unsafe API boundary:</strong> the returned row is a mutable alias to internal storage. Prefer
+     * <p><b>&#9888;&#65039; Unsafe API boundary:</b> the returned row is a mutable alias to internal storage. Prefer
      * {@link #rowCopy(int)} unless you intentionally need to mutate the matrix through the row view.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -1160,7 +1224,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p>This is useful for operations that are easier to perform on a flat array representation,
      * such as sorting all elements, applying statistical transformations, or batch updates.</p>
      *
-     * <p><strong>Unsafe API boundary:</strong> the supplied action receives a mutable flattened view of the matrix data.
+     * <p><b>&#9888;&#65039; Unsafe API boundary:</b> the supplied action receives a mutable flattened view of the matrix data.
      * Any mutation performed by the action is reflected back into this matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>

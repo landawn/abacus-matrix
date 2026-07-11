@@ -4715,6 +4715,23 @@ class MatricesTest extends TestBase {
     }
 
     @Test
+    public void testZip_collectionBinaryOperator_commonElementTypeIsOrderIndependent() {
+        Matrix<Object> arrayListMatrix = Matrix.<Object> of((Object[][]) new ArrayList[][] { { new ArrayList<>() } });
+        Matrix<Object> vectorMatrix = Matrix.<Object> of((Object[][]) new java.util.Vector[][] { { new java.util.Vector<>() } });
+        Matrix<Object> interfaceMatrix = Matrix.<Object> of((Object[][]) new java.util.RandomAccess[][] { { new ArrayList<>() } });
+
+        Matrix<Object> firstOrder = Matrices.zip(List.of(arrayListMatrix, vectorMatrix, interfaceMatrix), (left, right) -> left);
+        Matrix<Object> secondOrder = Matrices.zip(List.of(arrayListMatrix, interfaceMatrix, vectorMatrix), (left, right) -> left);
+        Matrix<Object> thirdOrder = Matrices.zip(List.of(vectorMatrix, interfaceMatrix, arrayListMatrix), (left, right) -> left);
+
+        assertEquals(java.util.RandomAccess.class, firstOrder.elementType());
+        assertEquals(java.util.RandomAccess.class, secondOrder.elementType());
+        assertEquals(java.util.RandomAccess.class, thirdOrder.elementType());
+        assertThrows(ArrayStoreException.class,
+                () -> Matrices.zip(List.of(arrayListMatrix, vectorMatrix, interfaceMatrix), (left, right) -> "not RandomAccess"));
+    }
+
+    @Test
     public void testStackVertically_manyMatricesPreservesOrder() {
         List<IntMatrix> matrices = List.of(IntMatrix.of(new int[][] { { 1, 2 } }), IntMatrix.of(new int[][] { { 3, 4 } }),
                 IntMatrix.of(new int[][] { { 5, 6 } }), IntMatrix.of(new int[][] { { 7, 8 } }), IntMatrix.of(new int[][] { { 9, 10 } }));
