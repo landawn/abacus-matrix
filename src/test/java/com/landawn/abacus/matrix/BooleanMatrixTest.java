@@ -3749,7 +3749,7 @@ class BooleanMatrixTest extends TestBase {
         public void testArray() {
             boolean[][] arr = { { true, false }, { false, true } };
             BooleanMatrix m = BooleanMatrix.of(arr);
-            boolean[][] result = m.internalArray();
+            boolean[][] result = m.unsafeBackingArray();
             assertSame(arr, result);
         }
 
@@ -4505,7 +4505,7 @@ class BooleanMatrixTest extends TestBase {
         public void testArray() {
             boolean[][] arr = { { true, false }, { false, true } };
             BooleanMatrix m = BooleanMatrix.of(arr);
-            boolean[][] result = m.internalArray();
+            boolean[][] result = m.unsafeBackingArray();
             assertArrayEquals(arr, result);
         }
 

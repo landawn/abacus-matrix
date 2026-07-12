@@ -4738,7 +4738,7 @@ class MatricesTest extends TestBase {
 
         IntMatrix result = Matrices.stackVertically(matrices);
 
-        assertArrayEquals(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 }, { 7, 8 }, { 9, 10 } }, result.internalArray());
+        assertArrayEquals(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 }, { 7, 8 }, { 9, 10 } }, result.unsafeBackingArray());
     }
 
     @Test
@@ -4748,7 +4748,7 @@ class MatricesTest extends TestBase {
 
         IntMatrix result = Matrices.stackHorizontally(matrices);
 
-        assertArrayEquals(new int[][] { { 1, 3, 5, 7, 9 }, { 2, 4, 6, 8, 10 } }, result.internalArray());
+        assertArrayEquals(new int[][] { { 1, 3, 5, 7, 9 }, { 2, 4, 6, 8, 10 } }, result.unsafeBackingArray());
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -4808,7 +4808,7 @@ class MatricesTest extends TestBase {
 
         assertArrayEquals(
                 new int[][] { { 13, 16, 19, 22, 25 }, { 27, 34, 41, 48, 55 }, { 41, 52, 63, 74, 85 }, { 55, 70, 85, 100, 115 }, { 69, 88, 107, 126, 145 } },
-                results[0].internalArray());
+                results[0].unsafeBackingArray());
         assertEquals(results[0], results[1]);
         assertEquals(results[2], results[3]);
     }

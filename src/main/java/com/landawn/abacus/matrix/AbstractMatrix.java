@@ -39,7 +39,7 @@ import com.landawn.abacus.util.stream.Stream;
  * coordinate navigation, row and column access, reshaping, and stream-oriented traversal.</p>
  *
  * <p>Several APIs intentionally cross the usual defensive-copy boundary for performance-sensitive code:
- * {@link #internalArray()} and {@link #rowView(int)} expose live storage, while
+ * {@link #unsafeBackingArray()} and {@link #rowView(int)} expose live storage, while
  * {@link #mutateFlattened(Throwables.Consumer)} lets callers mutate the matrix through a flattened array.
  * Callers that need isolation should prefer
  * copy-producing operations such as {@link #copy()}, {@link #flatten()}, and {@link #rowCopy(int)}.</p>
@@ -176,7 +176,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     /**
      * The underlying two-dimensional array storing the matrix data.
      * Direct access to this array should be avoided; use the provided methods instead.
-     * Exposed via {@link #internalArray()}.
+     * Exposed via {@link #unsafeBackingArray()}.
      */
     final A[] a;
 
@@ -427,16 +427,16 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * int[][] array = matrix.internalArray();
+     * int[][] array = matrix.unsafeBackingArray();
      * array.length;                                             // returns 2 (one entry per row)
      * array[0][0] = 10;                                         // WILL modify the matrix
      * matrix.get(0, 0);                                         // returns 10 (mutation visible through the matrix)
      *
      * IntMatrix empty = IntMatrix.of(new int[0][0]);
-     * empty.internalArray().length;                            // returns 0 (zero-row matrix yields zero-length array)
+     * empty.unsafeBackingArray().length;                            // returns 0 (zero-row matrix yields zero-length array)
      *
      * IntMatrix rowsNoCols = IntMatrix.of(new int[3][0]);
-     * rowsNoCols.internalArray().length;                      // returns 3 (3 x 0 matrix keeps 3 empty rows)
+     * rowsNoCols.unsafeBackingArray().length;                      // returns 3 (3 x 0 matrix keeps 3 empty rows)
      * }</pre>
      *
      * @return the underlying two-dimensional array (not a copy); its length equals {@code rowCount}
@@ -444,7 +444,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *         yields a {@code rowCount}-length array of zero-length rows)
      */
     @SuppressFBWarnings("EI_EXPOSE_REP")
-    public A[] internalArray() {
+    public A[] unsafeBackingArray() {
         return a;
     }
 

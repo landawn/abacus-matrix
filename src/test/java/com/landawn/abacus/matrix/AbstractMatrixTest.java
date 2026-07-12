@@ -65,7 +65,7 @@ class AbstractMatrixTest extends TestBase {
     @Test
     public void testArray() {
         IntMatrix matrix = createTestMatrix();
-        int[][] array = matrix.internalArray();
+        int[][] array = matrix.unsafeBackingArray();
         Assertions.assertEquals(3, array.length);
         Assertions.assertEquals(3, array[0].length);
         Assertions.assertEquals(1, array[0][0]);
@@ -1846,7 +1846,7 @@ class AbstractMatrixTest extends TestBase {
         public void testArray_intMatrix() {
             int[][] arr = { { 1, 2 }, { 3, 4 } };
             IntMatrix m = IntMatrix.of(arr);
-            int[][] returnedArray = m.internalArray();
+            int[][] returnedArray = m.unsafeBackingArray();
 
             assertNotNull(returnedArray);
             assertEquals(2, returnedArray.length);
@@ -1858,7 +1858,7 @@ class AbstractMatrixTest extends TestBase {
         public void testArray_doubleMatrix() {
             double[][] arr = { { 1.5, 2.5 }, { 3.5, 4.5 } };
             DoubleMatrix m = DoubleMatrix.of(arr);
-            double[][] returnedArray = m.internalArray();
+            double[][] returnedArray = m.unsafeBackingArray();
 
             assertNotNull(returnedArray);
             assertEquals(2, returnedArray.length);
@@ -1870,7 +1870,7 @@ class AbstractMatrixTest extends TestBase {
         public void testArray_objectMatrix() {
             String[][] arr = { { "A", "B" }, { "C", "D" } };
             Matrix<String> m = Matrix.of(arr);
-            String[][] returnedArray = m.internalArray();
+            String[][] returnedArray = m.unsafeBackingArray();
 
             assertNotNull(returnedArray);
             assertEquals(2, returnedArray.length);
@@ -3245,7 +3245,7 @@ class AbstractMatrixTest extends TestBase {
         public void test_array_returnsInternalArray() {
             int[][] arr = { { 1, 2 }, { 3, 4 } };
             IntMatrix matrix = IntMatrix.of(arr);
-            int[][] returned = matrix.internalArray();
+            int[][] returned = matrix.unsafeBackingArray();
             assertEquals(arr, returned); // Same reference
             returned[0][0] = 999;
             assertEquals(999, matrix.get(0, 0)); // Modification affects matrix
@@ -3371,10 +3371,10 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testAbstractMatrix_internalArray() {
-            // From internalArray Javadoc
+        public void testAbstractMatrix_unsafeBackingArray() {
+            // From unsafeBackingArray Javadoc
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            int[][] array = matrix.internalArray();
+            int[][] array = matrix.unsafeBackingArray();
             array[0][0] = 10; // This WILL modify the matrix!
             assertEquals(10, matrix.get(0, 0));
         }
@@ -3951,7 +3951,7 @@ class AbstractMatrixTest extends TestBase {
         }
     }
 
-    // === Missing coverage: elementCount, internalArray identity, reshape edge cases ===
+    // === Missing coverage: elementCount, unsafeBackingArray identity, reshape edge cases ===
 
     @Nested
     class ElementCountAndBackingArrayTests extends TestBase {
@@ -3984,7 +3984,7 @@ class AbstractMatrixTest extends TestBase {
         public void testBackingArray_isSameReference() {
             int[][] data = { { 1, 2 }, { 3, 4 } };
             IntMatrix m = IntMatrix.of(data);
-            assertTrue(data == m.internalArray());
+            assertTrue(data == m.unsafeBackingArray());
         }
 
         @Test

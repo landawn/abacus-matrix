@@ -4391,7 +4391,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testArray() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            double[][] array = m.internalArray();
+            double[][] array = m.unsafeBackingArray();
             assertArrayEquals(new double[] { 1.0, 2.0 }, array[0]);
             assertArrayEquals(new double[] { 3.0, 4.0 }, array[1]);
         }

@@ -3922,7 +3922,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testArray() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            float[][] array = m.internalArray();
+            float[][] array = m.unsafeBackingArray();
             assertArrayEquals(new float[] { 1.0f, 2.0f }, array[0]);
             assertArrayEquals(new float[] { 3.0f, 4.0f }, array[1]);
         }

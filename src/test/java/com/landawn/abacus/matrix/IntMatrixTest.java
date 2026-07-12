@@ -3835,7 +3835,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testToArray() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            int[][] arr = m.internalArray();
+            int[][] arr = m.unsafeBackingArray();
             assertEquals(2, arr.length);
             assertEquals(2, arr[0].length);
             assertArrayEquals(new int[] { 1, 2 }, arr[0]);

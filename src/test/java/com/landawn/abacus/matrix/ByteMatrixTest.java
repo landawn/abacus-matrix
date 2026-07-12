@@ -3884,7 +3884,7 @@ class ByteMatrixTest extends TestBase {
         public void testArray() {
             byte[][] arr = { { 1, 2 }, { 3, 4 } };
             ByteMatrix m = ByteMatrix.of(arr);
-            byte[][] result = m.internalArray();
+            byte[][] result = m.unsafeBackingArray();
             assertSame(arr, result);
         }
 
@@ -4761,7 +4761,7 @@ class ByteMatrixTest extends TestBase {
         public void testArray() {
             byte[][] arr = { { 1, 2 }, { 3, 4 } };
             ByteMatrix m = ByteMatrix.of(arr);
-            byte[][] result = m.internalArray();
+            byte[][] result = m.unsafeBackingArray();
             assertArrayEquals(arr, result);
         }
 

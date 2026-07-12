@@ -1,7 +1,7 @@
-# abacus-matrix API Index (v3.7.9)
+# abacus-matrix API Index (v3.8.1)
 - Build: unknown
 - Java: 17
-- Generated: 2026-06-28
+- Generated: 2026-07-12
 
 ## Packages
 - com.landawn.abacus.matrix
@@ -26,11 +26,12 @@ Shared implementation base for the matrix types in this package.
 - **Parameters:**
   - (none)
 - **Returns:** the {@link Class} object representing the element type of this matrix
-##### internalArray(...) -> A\[\]
-- **Signature:** `@SuppressFBWarnings("EI_EXPOSE_REP") public A[] internalArray()`
+##### unsafeBackingArray(...) -> A\[\]
+- **Signature:** `@SuppressFBWarnings("EI_EXPOSE_REP") public A[] unsafeBackingArray()`
 - **Summary:** Returns the underlying two-dimensional array of this matrix.
 - **Contract:**
   - This method exposes the internal array representation for performance reasons and should be used with caution as modifications to the returned array will directly affect the matrix.
+  - Reassigned rows must remain non- {@code null} and keep the original {@link #columnCount()} ; violating those shape invariants leaves the matrix in an invalid state because its dimensions are cached at construction.
   - If you need an independent matrix instance, use {@link #copy()} .
   - If you only need the data flattened into a single one-dimensional array, use {@link #flatten()} .
 - **Parameters:**
@@ -150,13 +151,13 @@ Shared implementation base for the matrix types in this package.
   - `newColumnCount` (`int`) — the number of columns in the reshaped matrix; must be non-negative
 - **Returns:** a new matrix with the specified dimensions ( {@code newRowCount × newColumnCount} )
 ##### isSameShape(...) -> boolean
-- **Signature:** `public boolean isSameShape(final M m)`
+- **Signature:** `public boolean isSameShape(final M other)`
 - **Summary:** Returns {@code true} if this matrix has the same shape (dimensions) as the specified matrix.
 - **Contract:**
   - Returns {@code true} if this matrix has the same shape (dimensions) as the specified matrix.
   - Two matrices have the same shape if they have the same number of rows and columns.
 - **Parameters:**
-  - `m` (`M`) — the matrix to compare with
+  - `other` (`M`) — the matrix to compare with
 - **Returns:** {@code true} if both matrices have the same dimensions, {@code false} otherwise
 ##### repeatElements(...) -> M
 - **Signature:** `public abstract M repeatElements(int rowRepeats, int columnRepeats)`
@@ -461,6 +462,7 @@ Shared implementation base for the matrix types in this package.
 - **Parameters:**
   - `columnIndex` (`int`) — the column index (0-based)
 - **Returns:** a stream of elements in the specified column
+- **See also:** #columnStreams()
 - **Signature:** `public abstract ES columnMajorStream(final int fromColumnIndex, final int toColumnIndex)`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
@@ -486,6 +488,7 @@ Shared implementation base for the matrix types in this package.
 - **Parameters:**
   - (none)
 - **Returns:** a stream of column streams
+- **See also:** #columnMajorStream(int)
 - **Signature:** `public abstract RS columnStreams(final int fromColumnIndex, final int toColumnIndex)`
 - **Summary:** Returns a stream of column streams for a range of columns.
 - **Parameters:**
@@ -772,7 +775,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
   - `java.lang.IllegalStateException` — if the matrix is not square ( {@code rowCount != columnCount} )
   - `java.lang.IllegalArgumentException` — if {@code mainDiagonal} is {@code null} or its array length does not equal {@code rowCount}
 ##### updateMainDiagonal(...) -> void
-- **Signature:** `public <E extends Exception> void updateMainDiagonal(final Throwables.BooleanUnaryOperator<E> operator) throws IllegalStateException, E`
+- **Signature:** `public <E extends Exception> void updateMainDiagonal(final Throwables.BooleanUnaryOperator<E> operator) throws IllegalStateException, IllegalArgumentException, E`
 - **Summary:** Updates the values on the main diagonal (upper-left to lower-right) by applying the specified operator.
 - **Contract:**
   - The matrix must be square ( {@code rowCount == columnCount} ).
@@ -780,6 +783,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
   - `operator` (`Throwables.BooleanUnaryOperator<E>`) — the operator to apply to each diagonal element; receives the current element value and returns the new value
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square ( {@code rowCount != columnCount} )
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
 ##### antiDiagonalCopy(...) -> boolean\[\]
 - **Signature:** `@Override public boolean[] antiDiagonalCopy() throws IllegalStateException`
@@ -802,7 +806,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
   - `java.lang.IllegalStateException` — if the matrix is not square ( {@code rowCount != columnCount} )
   - `java.lang.IllegalArgumentException` — if {@code antiDiagonal} is {@code null} or its array length does not equal {@code rowCount}
 ##### updateAntiDiagonal(...) -> void
-- **Signature:** `public <E extends Exception> void updateAntiDiagonal(final Throwables.BooleanUnaryOperator<E> operator) throws IllegalStateException, E`
+- **Signature:** `public <E extends Exception> void updateAntiDiagonal(final Throwables.BooleanUnaryOperator<E> operator) throws IllegalStateException, IllegalArgumentException, E`
 - **Summary:** Updates the values on the anti-diagonal (upper-right to lower-left) by applying the specified operator.
 - **Contract:**
   - The matrix must be square ( {@code rowCount == columnCount} ).
@@ -810,25 +814,33 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
   - `operator` (`Throwables.BooleanUnaryOperator<E>`) — the operator to apply to each anti-diagonal element; receives the current element value and returns the new value
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square ( {@code rowCount != columnCount} )
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
 ##### updateAll(...) -> void
-- **Signature:** `public <E extends Exception> void updateAll(final Throwables.BooleanUnaryOperator<E> operator) throws E`
+- **Signature:** `public <E extends Exception> void updateAll(final Throwables.BooleanUnaryOperator<E> operator) throws IllegalArgumentException, E`
 - **Summary:** Updates all elements in the matrix in-place by applying the specified operator.
 - **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
   - Elements are processed in row-major order when executed sequentially.
 - **Parameters:**
   - `operator` (`Throwables.BooleanUnaryOperator<E>`) — the operator to apply to each element; receives the current element value and returns the new value
 - **Throws:**
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
-- **Signature:** `public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Boolean, E> mapper) throws E`
+- **Signature:** `public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Boolean, E> mapper) throws IllegalArgumentException, E`
 - **Summary:** Updates all elements in the matrix in-place based on their position (row and column indices).
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.IntBiFunction<? extends Boolean, E>`) — the function that receives row index and column index (0-based) and returns the new value for that position; the returned {@code Boolean} is unboxed, so it must not be {@code null}
 - **Throws:**
+  - `java.lang.IllegalArgumentException` — if {@code mapper} is {@code null}
   - `E` — if the mapper throws an exception
 ##### replaceIf(...) -> void
 - **Signature:** `public <E extends Exception> void replaceIf(final Throwables.BooleanPredicate<E> predicate, final boolean newValue) throws E`
 - **Summary:** Conditionally replaces elements in-place based on a predicate.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `predicate` (`Throwables.BooleanPredicate<E>`) — the condition to test each element; elements for which this returns {@code true} will be replaced
   - `newValue` (`boolean`) — the value to use for replacing matching elements
@@ -836,6 +848,8 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
   - `E` — if the predicate throws an exception
 - **Signature:** `public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final boolean newValue) throws E`
 - **Summary:** Conditionally replaces elements in-place based on their position (row and column indices).
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `predicate` (`Throwables.IntBiPredicate<E>`) — the condition that tests row index and column index (0-based); elements at positions for which this returns {@code true} will be replaced
   - `newValue` (`boolean`) — the value to use for replacing matching elements
@@ -844,6 +858,8 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 ##### map(...) -> BooleanMatrix
 - **Signature:** `public <E extends Exception> BooleanMatrix map(final Throwables.BooleanUnaryOperator<E> mapper) throws E`
 - **Summary:** Creates a new {@code BooleanMatrix} by applying a transformation function to each element.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.BooleanUnaryOperator<E>`) — the function to apply to each element; receives the current element value and returns the transformed value
 - **Returns:** a new {@code BooleanMatrix} with transformed values
@@ -853,6 +869,8 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 ##### mapToObj(...) -> Matrix<R>
 - **Signature:** `public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.BooleanFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E`
 - **Summary:** Creates a new {@code Matrix} by applying a function that converts boolean values to objects of type {@code R} .
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.BooleanFunction<? extends R, E>`) — the function to convert boolean values to type {@code R}
   - `targetElementType` (`Class<R>`) — the {@code Class} object for type {@code R} ; used to create the result's backing array
@@ -1139,6 +1157,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Summary:** Performs element-wise operation on two matrices using a binary operator.
 - **Contract:**
   - The matrices must have the same dimensions.
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `other` (`BooleanMatrix`) — the second matrix (must have the same dimensions as this matrix)
   - `zipFunction` (`Throwables.BooleanBinaryOperator<E>`) — the binary operator to apply to corresponding elements; receives element from this matrix as first argument and element from {@code other} as second argument
@@ -1151,6 +1170,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Summary:** Performs element-wise operation on three matrices using a ternary operator.
 - **Contract:**
   - All matrices must have the same dimensions.
+  - If parallelized, the supplied function must be thread-safe.
   - y : z); // if a then b else c conditional.get(0, 0); // returns true (a is true -> b) conditional.get(1, 0); // returns false (a is true -> b) a.zipWith(b, BooleanMatrix.of(new boolean\[\]\[\] {{true}}), (x, y, z) -> x); // throws IllegalArgumentException (shape mismatch) } </pre>
 - **Parameters:**
   - `other` (`BooleanMatrix`) — the second matrix (must have the same dimensions as this matrix)
@@ -1210,6 +1230,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** a {@code Stream<Boolean>} of elements from the specified column
+- **See also:** #columnStreams()
 - **Signature:** `@Override public Stream<Boolean> columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
@@ -1317,7 +1338,7 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Signature:** `public static ByteMatrix of(final byte[]... a)`
 - **Summary:** Creates a {@code ByteMatrix} from a two-dimensional byte array.
 - **Contract:**
-  - <p> <b> Important: </b> When {@code a} is non-empty, the provided array is used directly without defensive copying.
+  - <p> <b> &#9888; &#65039; Shared backing: </b> When {@code a} is non-empty, the provided array is used directly without defensive copying.
   - Call {@link #copy()} if you need an independently owned matrix.
 - **Parameters:**
   - `a` (`byte[][]`) — the two-dimensional byte array to wrap; must not be {@code null} ; may be empty
@@ -1587,7 +1608,7 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
   - `java.lang.IllegalStateException` — if the matrix is not square (rowCount != columnCount)
   - `java.lang.IllegalArgumentException` — if {@code mainDiagonal} is {@code null} or its length is not equal to {@code rowCount}
 ##### updateMainDiagonal(...) -> void
-- **Signature:** `public <E extends Exception> void updateMainDiagonal(final Throwables.ByteUnaryOperator<E> operator) throws IllegalStateException, E`
+- **Signature:** `public <E extends Exception> void updateMainDiagonal(final Throwables.ByteUnaryOperator<E> operator) throws IllegalStateException, IllegalArgumentException, E`
 - **Summary:** Updates the values on the main diagonal (upper-left to lower-right) by applying the specified operator.
 - **Contract:**
   - The matrix must be square.
@@ -1595,6 +1616,7 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
   - `operator` (`Throwables.ByteUnaryOperator<E>`) — the operator to apply to each diagonal element; receives current element value and returns new value
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
 ##### antiDiagonalCopy(...) -> byte\[\]
 - **Signature:** `@Override public byte[] antiDiagonalCopy() throws IllegalStateException`
@@ -1617,7 +1639,7 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
   - `java.lang.IllegalStateException` — if the matrix is not square (rowCount != columnCount)
   - `java.lang.IllegalArgumentException` — if {@code antiDiagonal} is {@code null} or its length is not equal to {@code rowCount}
 ##### updateAntiDiagonal(...) -> void
-- **Signature:** `public <E extends Exception> void updateAntiDiagonal(final Throwables.ByteUnaryOperator<E> operator) throws IllegalStateException, E`
+- **Signature:** `public <E extends Exception> void updateAntiDiagonal(final Throwables.ByteUnaryOperator<E> operator) throws IllegalStateException, IllegalArgumentException, E`
 - **Summary:** Updates the values on the anti-diagonal (upper-right to lower-left) by applying the specified operator.
 - **Contract:**
   - The matrix must be square.
@@ -1625,25 +1647,33 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
   - `operator` (`Throwables.ByteUnaryOperator<E>`) — the operator to apply to each anti-diagonal element; receives current element value and returns new value
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
 ##### updateAll(...) -> void
-- **Signature:** `public <E extends Exception> void updateAll(final Throwables.ByteUnaryOperator<E> operator) throws E`
+- **Signature:** `public <E extends Exception> void updateAll(final Throwables.ByteUnaryOperator<E> operator) throws IllegalArgumentException, E`
 - **Summary:** Updates all elements in the matrix in-place by applying the specified operator.
 - **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
   - Elements are processed in row-major order when executed sequentially.
 - **Parameters:**
   - `operator` (`Throwables.ByteUnaryOperator<E>`) — the operator to apply to each element; receives the current element value and returns the new value
 - **Throws:**
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
-- **Signature:** `public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Byte, E> mapper) throws E`
+- **Signature:** `public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Byte, E> mapper) throws IllegalArgumentException, E`
 - **Summary:** Updates all elements in the matrix in-place based on their position (row and column indices).
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.IntBiFunction<? extends Byte, E>`) — the function that receives row index and column index (0-based) and returns the new value for that position; the returned {@code Byte} is unboxed, so it must not be {@code null}
 - **Throws:**
+  - `java.lang.IllegalArgumentException` — if {@code mapper} is {@code null}
   - `E` — if the mapper throws an exception
 ##### replaceIf(...) -> void
 - **Signature:** `public <E extends Exception> void replaceIf(final Throwables.BytePredicate<E> predicate, final byte newValue) throws E`
 - **Summary:** Conditionally replaces elements in-place based on a predicate.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `predicate` (`Throwables.BytePredicate<E>`) — the condition to test each element; elements for which this returns {@code true} will be replaced
   - `newValue` (`byte`) — the value to use for replacing matching elements
@@ -1651,6 +1681,8 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
   - `E` — if the predicate throws an exception
 - **Signature:** `public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final byte newValue) throws E`
 - **Summary:** Conditionally replaces elements in-place based on their position (row and column indices).
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `predicate` (`Throwables.IntBiPredicate<E>`) — the condition that tests row index and column index (0-based); elements at positions for which this returns {@code true} will be replaced
   - `newValue` (`byte`) — the value to use for replacing matching elements
@@ -1659,6 +1691,8 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 ##### map(...) -> ByteMatrix
 - **Signature:** `public <E extends Exception> ByteMatrix map(final Throwables.ByteUnaryOperator<E> mapper) throws E`
 - **Summary:** Creates a new ByteMatrix by applying a transformation function to each element.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.ByteUnaryOperator<E>`) — the function to apply to each element; receives the current element value and returns the transformed value
 - **Returns:** a new ByteMatrix with transformed values
@@ -1668,6 +1702,8 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 ##### mapToObj(...) -> Matrix<R>
 - **Signature:** `public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.ByteFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E`
 - **Summary:** Creates a new Matrix by applying a function that converts byte values to objects of type R.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.ByteFunction<? extends R, E>`) — the function to convert byte values to type {@code R}
   - `targetElementType` (`Class<R>`) — the {@code Class} object for type {@code R} (used to allocate the {@code R\[\]\[\]} backing array); must not be {@code null}
@@ -1908,7 +1944,7 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Returns:** a new {@code ByteMatrix} containing the element-wise difference {@code this - other}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code other} is {@code null} , or if the matrices have different shapes
-- **See also:** #add(ByteMatrix)
+- **See also:** #add(ByteMatrix), #zipWith(ByteMatrix, Throwables.ByteBinaryOperator)
 ##### matrixMultiply(...) -> ByteMatrix
 - **Signature:** `public ByteMatrix matrixMultiply(final ByteMatrix other) throws IllegalArgumentException`
 - **Summary:** Performs matrix multiplication (Cayley product) with another matrix.
@@ -1961,6 +1997,7 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Summary:** Performs element-wise operation on two matrices using a binary operator.
 - **Contract:**
   - The matrices must have the same dimensions.
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `other` (`ByteMatrix`) — the second matrix (must have the same dimensions as this matrix)
   - `zipFunction` (`Throwables.ByteBinaryOperator<E>`) — the binary operator to apply to corresponding elements; receives the element from this matrix as first argument and the element from {@code other} as second argument
@@ -1973,6 +2010,7 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Summary:** Performs element-wise operation on three matrices using a ternary operator.
 - **Contract:**
   - All matrices must have the same dimensions.
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `other` (`ByteMatrix`) — the second matrix (must have the same dimensions as this matrix)
   - `third` (`ByteMatrix`) — the third matrix (must have the same dimensions as this matrix)
@@ -2031,6 +2069,7 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** a {@link ByteStream} of elements from the specified column
+- **See also:** #columnStreams()
 - **Signature:** `@Override public ByteStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
@@ -2396,7 +2435,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
   - `java.lang.IllegalStateException` — if the matrix is not square (rowCount != columnCount)
   - `java.lang.IllegalArgumentException` — if {@code mainDiagonal} is {@code null} or its length is not equal to {@code rowCount}
 ##### updateMainDiagonal(...) -> void
-- **Signature:** `public <E extends Exception> void updateMainDiagonal(final Throwables.CharUnaryOperator<E> operator) throws IllegalStateException, E`
+- **Signature:** `public <E extends Exception> void updateMainDiagonal(final Throwables.CharUnaryOperator<E> operator) throws IllegalStateException, IllegalArgumentException, E`
 - **Summary:** Updates the values on the main diagonal (upper-left to lower-right) by applying the specified operator.
 - **Contract:**
   - The matrix must be square.
@@ -2404,6 +2443,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
   - `operator` (`Throwables.CharUnaryOperator<E>`) — the operator to apply to each diagonal element; receives current element value and returns new value
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
 ##### antiDiagonalCopy(...) -> char\[\]
 - **Signature:** `@Override public char[] antiDiagonalCopy() throws IllegalStateException`
@@ -2426,7 +2466,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
   - `java.lang.IllegalStateException` — if the matrix is not square (rowCount != columnCount)
   - `java.lang.IllegalArgumentException` — if {@code antiDiagonal} is {@code null} or its length is not equal to {@code rowCount}
 ##### updateAntiDiagonal(...) -> void
-- **Signature:** `public <E extends Exception> void updateAntiDiagonal(final Throwables.CharUnaryOperator<E> operator) throws IllegalStateException, E`
+- **Signature:** `public <E extends Exception> void updateAntiDiagonal(final Throwables.CharUnaryOperator<E> operator) throws IllegalStateException, IllegalArgumentException, E`
 - **Summary:** Updates the values on the anti-diagonal (upper-right to lower-left) by applying the specified operator.
 - **Contract:**
   - The matrix must be square.
@@ -2434,25 +2474,33 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
   - `operator` (`Throwables.CharUnaryOperator<E>`) — the operator to apply to each anti-diagonal element; receives current element value and returns new value
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
 ##### updateAll(...) -> void
-- **Signature:** `public <E extends Exception> void updateAll(final Throwables.CharUnaryOperator<E> operator) throws E`
+- **Signature:** `public <E extends Exception> void updateAll(final Throwables.CharUnaryOperator<E> operator) throws IllegalArgumentException, E`
 - **Summary:** Updates all elements in the matrix in-place by applying the specified operator.
 - **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
   - Elements are processed in row-major order when executed sequentially.
 - **Parameters:**
   - `operator` (`Throwables.CharUnaryOperator<E>`) — the operator to apply to each element; receives the current element value and returns the new value
 - **Throws:**
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
-- **Signature:** `public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Character, E> mapper) throws E`
+- **Signature:** `public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Character, E> mapper) throws IllegalArgumentException, E`
 - **Summary:** Updates all elements in the matrix in-place based on their position (row and column indices).
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.IntBiFunction<? extends Character, E>`) — the function that receives row index and column index (0-based) and returns the new value for that position; the returned {@code Character} is unboxed, so it must not be {@code null}
 - **Throws:**
+  - `java.lang.IllegalArgumentException` — if {@code mapper} is {@code null}
   - `E` — if the mapper throws an exception
 ##### replaceIf(...) -> void
 - **Signature:** `public <E extends Exception> void replaceIf(final Throwables.CharPredicate<E> predicate, final char newValue) throws E`
 - **Summary:** Conditionally replaces elements in-place based on a predicate.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `predicate` (`Throwables.CharPredicate<E>`) — the condition to test each element; elements for which this returns {@code true} will be replaced
   - `newValue` (`char`) — the value to use for replacing matching elements
@@ -2460,6 +2508,8 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
   - `E` — if the predicate throws an exception
 - **Signature:** `public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final char newValue) throws E`
 - **Summary:** Conditionally replaces elements in-place based on their position (row and column indices).
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `predicate` (`Throwables.IntBiPredicate<E>`) — the condition that tests row index and column index (0-based); elements at positions for which this returns {@code true} will be replaced
   - `newValue` (`char`) — the value to use for replacing matching elements
@@ -2468,6 +2518,8 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 ##### map(...) -> CharMatrix
 - **Signature:** `public <E extends Exception> CharMatrix map(final Throwables.CharUnaryOperator<E> mapper) throws E`
 - **Summary:** Creates a new CharMatrix by applying a transformation function to each element.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.CharUnaryOperator<E>`) — the function to apply to each element; receives the current element value and returns the transformed value
 - **Returns:** a new CharMatrix with transformed values
@@ -2477,6 +2529,8 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 ##### mapToObj(...) -> Matrix<R>
 - **Signature:** `public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.CharFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E`
 - **Summary:** Creates a new Matrix by applying a function that converts char values to objects of type R.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.CharFunction<? extends R, E>`) — the function to convert char values to type {@code R}
   - `targetElementType` (`Class<R>`) — the {@code Class} object for type {@code R} (used to allocate the {@code R\[\]\[\]} backing array); must not be {@code null}
@@ -2725,7 +2779,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Returns:** a new {@code CharMatrix} containing the element-wise difference {@code this - other}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code other} is {@code null} , or if the matrices have different shapes
-- **See also:** #add(CharMatrix)
+- **See also:** #add(CharMatrix), #zipWith(CharMatrix, Throwables.CharBinaryOperator)
 ##### matrixMultiply(...) -> CharMatrix
 - **Signature:** `public CharMatrix matrixMultiply(final CharMatrix other) throws IllegalArgumentException`
 - **Summary:** Performs matrix multiplication (Cayley product) with another matrix.
@@ -2774,6 +2828,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Summary:** Performs element-wise operation on two matrices using a binary operator.
 - **Contract:**
   - The matrices must have the same dimensions.
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `other` (`CharMatrix`) — the second matrix (must have the same dimensions as this matrix)
   - `zipFunction` (`Throwables.CharBinaryOperator<E>`) — the binary operator to apply to corresponding elements; receives the element from this matrix as first argument and the element from {@code other} as second argument
@@ -2786,6 +2841,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Summary:** Performs element-wise operation on three matrices using a ternary operator.
 - **Contract:**
   - All matrices must have the same dimensions.
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `other` (`CharMatrix`) — the second matrix (must have the same dimensions as this matrix)
   - `third` (`CharMatrix`) — the third matrix (must have the same dimensions as this matrix)
@@ -2844,6 +2900,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** a {@link CharStream} of elements from the specified column
+- **See also:** #columnStreams()
 - **Signature:** `@Override public CharStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
@@ -2971,7 +3028,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Summary:** Creates a DoubleMatrix from a two-dimensional long array by converting long values to double.
 - **Contract:**
   - <p> All rows must have the same length as the first row (rectangular array required).
-  - </p> <p> <b> Note: </b> Long values that require more than 53 bits of precision may lose precision when converted to double, since a double has 53 bits of significand precision (52 stored fraction bits plus an implicit leading bit for normal values).
+  - </p> <p> <b> &#9888; &#65039; Precision: </b> Long values that require more than 53 bits of precision may lose precision when converted to double, since a double has 53 bits of significand precision (52 stored fraction bits plus an implicit leading bit for normal values).
 - **Parameters:**
   - `a` (`long[][]`) — the two-dimensional long array to convert to a double matrix, or empty for an empty matrix; must not be {@code null}
 - **Returns:** a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if input is empty
@@ -3203,7 +3260,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
   - `java.lang.IllegalStateException` — if the matrix is not square (rowCount != columnCount)
   - `java.lang.IllegalArgumentException` — if {@code mainDiagonal} is {@code null} or its length is not equal to {@code rowCount}
 ##### updateMainDiagonal(...) -> void
-- **Signature:** `public <E extends Exception> void updateMainDiagonal(final Throwables.DoubleUnaryOperator<E> operator) throws IllegalStateException, E`
+- **Signature:** `public <E extends Exception> void updateMainDiagonal(final Throwables.DoubleUnaryOperator<E> operator) throws IllegalStateException, IllegalArgumentException, E`
 - **Summary:** Updates the values on the main diagonal (upper-left to lower-right) by applying the specified operator.
 - **Contract:**
   - The matrix must be square.
@@ -3211,6 +3268,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
   - `operator` (`Throwables.DoubleUnaryOperator<E>`) — the operator to apply to each diagonal element; receives current element value and returns new value
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
 ##### antiDiagonalCopy(...) -> double\[\]
 - **Signature:** `@Override public double[] antiDiagonalCopy() throws IllegalStateException`
@@ -3233,7 +3291,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
   - `java.lang.IllegalStateException` — if the matrix is not square (rowCount != columnCount)
   - `java.lang.IllegalArgumentException` — if {@code antiDiagonal} is {@code null} or its length is not equal to {@code rowCount}
 ##### updateAntiDiagonal(...) -> void
-- **Signature:** `public <E extends Exception> void updateAntiDiagonal(final Throwables.DoubleUnaryOperator<E> operator) throws IllegalStateException, E`
+- **Signature:** `public <E extends Exception> void updateAntiDiagonal(final Throwables.DoubleUnaryOperator<E> operator) throws IllegalStateException, IllegalArgumentException, E`
 - **Summary:** Updates the values on the anti-diagonal (upper-right to lower-left) by applying the specified operator.
 - **Contract:**
   - The matrix must be square.
@@ -3241,25 +3299,33 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
   - `operator` (`Throwables.DoubleUnaryOperator<E>`) — the operator to apply to each anti-diagonal element; receives current element value and returns new value
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
 ##### updateAll(...) -> void
-- **Signature:** `public <E extends Exception> void updateAll(final Throwables.DoubleUnaryOperator<E> operator) throws E`
+- **Signature:** `public <E extends Exception> void updateAll(final Throwables.DoubleUnaryOperator<E> operator) throws IllegalArgumentException, E`
 - **Summary:** Updates all elements in the matrix in-place by applying the specified operator.
 - **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
   - Elements are processed in row-major order when executed sequentially.
 - **Parameters:**
   - `operator` (`Throwables.DoubleUnaryOperator<E>`) — the operator to apply to each element; receives the current element value and returns the new value
 - **Throws:**
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
-- **Signature:** `public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Double, E> mapper) throws E`
+- **Signature:** `public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Double, E> mapper) throws IllegalArgumentException, E`
 - **Summary:** Updates all elements in the matrix in-place based on their position (row and column indices).
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.IntBiFunction<? extends Double, E>`) — the function that receives row index and column index (0-based) and returns the new value for that position; the returned {@code Double} is unboxed, so it must not be {@code null}
 - **Throws:**
+  - `java.lang.IllegalArgumentException` — if {@code mapper} is {@code null}
   - `E` — if the mapper throws an exception
 ##### replaceIf(...) -> void
 - **Signature:** `public <E extends Exception> void replaceIf(final Throwables.DoublePredicate<E> predicate, final double newValue) throws E`
 - **Summary:** Conditionally replaces elements in-place based on a predicate.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `predicate` (`Throwables.DoublePredicate<E>`) — the condition to test each element; elements for which this returns {@code true} will be replaced
   - `newValue` (`double`) — the value to use for replacing matching elements (may be {@code NaN} , {@code +/-Infinity} , or {@code -0.0} )
@@ -3267,6 +3333,8 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
   - `E` — if the predicate throws an exception
 - **Signature:** `public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final double newValue) throws E`
 - **Summary:** Conditionally replaces elements in-place based on their position (row and column indices).
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `predicate` (`Throwables.IntBiPredicate<E>`) — the condition to test each position; receives row index and column index (0-based) and returns {@code true} if the element at that position should be replaced
   - `newValue` (`double`) — the value to use for replacing at matching positions
@@ -3275,6 +3343,8 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 ##### map(...) -> DoubleMatrix
 - **Signature:** `public <E extends Exception> DoubleMatrix map(final Throwables.DoubleUnaryOperator<E> mapper) throws E`
 - **Summary:** Creates a new {@code DoubleMatrix} by applying the specified function to each element of this matrix.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.DoubleUnaryOperator<E>`) — the mapping function to apply to each element; must not be {@code null}
 - **Returns:** a new {@code DoubleMatrix} with the mapped values (same dimensions as the original)
@@ -3284,8 +3354,10 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 ##### mapToInt(...) -> IntMatrix
 - **Signature:** `public <E extends Exception> IntMatrix mapToInt(final Throwables.DoubleToIntFunction<E> mapper) throws E`
 - **Summary:** Creates a new IntMatrix by applying a function that converts double values to int.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
-  - `mapper` (`Throwables.DoubleToIntFunction<E>`) — the function to convert double values to int
+  - `mapper` (`Throwables.DoubleToIntFunction<E>`) — the function to convert double values to int; must not be {@code null}
 - **Returns:** a new {@link IntMatrix} with the converted values
 - **Throws:**
   - `E` — if the function throws an exception
@@ -3293,8 +3365,10 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 ##### mapToLong(...) -> LongMatrix
 - **Signature:** `public <E extends Exception> LongMatrix mapToLong(final Throwables.DoubleToLongFunction<E> mapper) throws E`
 - **Summary:** Creates a new LongMatrix by applying a function that converts double values to long.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
-  - `mapper` (`Throwables.DoubleToLongFunction<E>`) — the function to convert double values to long
+  - `mapper` (`Throwables.DoubleToLongFunction<E>`) — the function to convert double values to long; must not be {@code null}
 - **Returns:** a new {@link LongMatrix} with the converted values
 - **Throws:**
   - `E` — if the function throws an exception
@@ -3302,6 +3376,8 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 ##### mapToObj(...) -> Matrix<R>
 - **Signature:** `public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.DoubleFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E`
 - **Summary:** Creates a new object {@code Matrix} by applying the specified function to each element of this matrix.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.DoubleFunction<? extends R, E>`) — the mapping function that converts each {@code double} element to type {@code R} ; must not be {@code null}
   - `targetElementType` (`Class<R>`) — the class object representing the target element type (used for array creation); must not be {@code null}
@@ -3552,7 +3628,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Returns:** a new {@code DoubleMatrix} containing the element-wise difference (same dimensions as the inputs)
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code other} is {@code null} or the matrices have different dimensions
-- **See also:** #add(DoubleMatrix)
+- **See also:** #add(DoubleMatrix), #zipWith(DoubleMatrix, Throwables.DoubleBinaryOperator)
 ##### matrixMultiply(...) -> DoubleMatrix
 - **Signature:** `public DoubleMatrix matrixMultiply(final DoubleMatrix other) throws IllegalArgumentException`
 - **Summary:** Performs matrix multiplication of this matrix with another matrix.
@@ -3593,6 +3669,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Summary:** Performs element-wise operation on two matrices using a binary operator.
 - **Contract:**
   - The matrices must have the same dimensions.
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `other` (`DoubleMatrix`) — the second matrix (must have the same dimensions as this matrix)
   - `zipFunction` (`Throwables.DoubleBinaryOperator<E>`) — the binary operator to apply to corresponding elements; receives the element from this matrix as first argument and the element from {@code other} as second argument
@@ -3605,6 +3682,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Summary:** Performs element-wise operation on three matrices using a ternary operator.
 - **Contract:**
   - All matrices must have the same dimensions.
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `other` (`DoubleMatrix`) — the second matrix (must have the same dimensions as this matrix)
   - `third` (`DoubleMatrix`) — the third matrix (must have the same dimensions as this matrix)
@@ -3663,6 +3741,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** a {@link DoubleStream} of elements from the specified column
+- **See also:** #columnStreams()
 - **Signature:** `@Override public DoubleStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
@@ -3768,7 +3847,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Signature:** `public static FloatMatrix of(final float[]... a)`
 - **Summary:** Creates a {@code FloatMatrix} from a two-dimensional float array.
 - **Contract:**
-  - <p> <b> Important: </b> When the input is non-empty the provided array is used directly without defensive copying after rectangular-shape validation.
+  - <p> <b> &#9888; &#65039; Shared backing: </b> When the input is non-empty the provided array is used directly without defensive copying after rectangular-shape validation.
 - **Parameters:**
   - `a` (`float[][]`) — the two-dimensional float array to create the matrix from, or empty for an empty matrix; must not be {@code null}
 - **Returns:** a new {@code FloatMatrix} wrapping the provided data, or the shared empty {@code FloatMatrix} if input is empty
@@ -3783,7 +3862,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Signature:** `public static FloatMatrix from(final int[]... a)`
 - **Summary:** Creates a FloatMatrix from a two-dimensional int array by converting int values to float.
 - **Contract:**
-  - <p> <b> Note: </b> Int values with more than 24 significant bits may lose precision when converted to float, since float has a 23-bit mantissa.
+  - <p> <b> &#9888; &#65039; Precision: </b> Int values requiring more than 24 significant bits may lose precision when converted to float, whose significand precision is 24 bits including the implicit leading bit.
   - </p> <p> <b> Requirements: </b> </p> <ul> <li> All rows must be non- {@code null} and have the same length as the first row (rectangular array required) </li> </ul> <p> <b> Usage Examples: </b> </p> <pre> {@code FloatMatrix matrix = FloatMatrix.from(new int\[\]\[\] {{1, 2}, {3, 4}}); matrix.get(1, 0); // returns 3.0f matrix.rowCount(); // returns 2 // Precision: 16_777_217 has 25 significant bits and rounds when stored as float FloatMatrix.from(new int\[\]\[\] {{16777217}}).get(0, 0); // returns 1.6777216E7f (rounded) FloatMatrix.from((int\[\]\[\]) null); // throws IllegalArgumentException FloatMatrix.from(new int\[0\]\[0\]).columnCount(); // returns 0 FloatMatrix.from(new int\[\]\[\] {{1}, {2, 3}}); // throws IllegalArgumentException (rows differ in length) } </pre>
 - **Parameters:**
   - `a` (`int[][]`) — the two-dimensional int array to convert to a float matrix, or empty for an empty matrix; must not be {@code null}
@@ -4010,7 +4089,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
   - `java.lang.IllegalStateException` — if the matrix is not square (rowCount != columnCount)
   - `java.lang.IllegalArgumentException` — if {@code mainDiagonal} is {@code null} or its length is not equal to {@code rowCount}
 ##### updateMainDiagonal(...) -> void
-- **Signature:** `public <E extends Exception> void updateMainDiagonal(final Throwables.FloatUnaryOperator<E> operator) throws IllegalStateException, E`
+- **Signature:** `public <E extends Exception> void updateMainDiagonal(final Throwables.FloatUnaryOperator<E> operator) throws IllegalStateException, IllegalArgumentException, E`
 - **Summary:** Updates the values on the main diagonal (upper-left to lower-right) by applying the specified operator.
 - **Contract:**
   - The matrix must be square.
@@ -4018,6 +4097,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
   - `operator` (`Throwables.FloatUnaryOperator<E>`) — the operator to apply to each diagonal element; receives current element value and returns new value
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
 ##### antiDiagonalCopy(...) -> float\[\]
 - **Signature:** `@Override public float[] antiDiagonalCopy() throws IllegalStateException`
@@ -4040,7 +4120,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
   - `java.lang.IllegalStateException` — if the matrix is not square (rowCount != columnCount)
   - `java.lang.IllegalArgumentException` — if {@code antiDiagonal} is {@code null} or its length is not equal to {@code rowCount}
 ##### updateAntiDiagonal(...) -> void
-- **Signature:** `public <E extends Exception> void updateAntiDiagonal(final Throwables.FloatUnaryOperator<E> operator) throws IllegalStateException, E`
+- **Signature:** `public <E extends Exception> void updateAntiDiagonal(final Throwables.FloatUnaryOperator<E> operator) throws IllegalStateException, IllegalArgumentException, E`
 - **Summary:** Updates the values on the anti-diagonal (upper-right to lower-left) by applying the specified operator.
 - **Contract:**
   - The matrix must be square.
@@ -4048,25 +4128,33 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
   - `operator` (`Throwables.FloatUnaryOperator<E>`) — the operator to apply to each anti-diagonal element; receives current element value and returns new value
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
 ##### updateAll(...) -> void
-- **Signature:** `public <E extends Exception> void updateAll(final Throwables.FloatUnaryOperator<E> operator) throws E`
+- **Signature:** `public <E extends Exception> void updateAll(final Throwables.FloatUnaryOperator<E> operator) throws IllegalArgumentException, E`
 - **Summary:** Updates all elements in the matrix in-place by applying the specified operator.
 - **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
   - Elements are processed in row-major order when executed sequentially.
 - **Parameters:**
   - `operator` (`Throwables.FloatUnaryOperator<E>`) — the operator to apply to each element; receives the current element value and returns the new value
 - **Throws:**
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
-- **Signature:** `public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Float, E> mapper) throws E`
+- **Signature:** `public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Float, E> mapper) throws IllegalArgumentException, E`
 - **Summary:** Updates all elements in the matrix in-place based on their position (row and column indices).
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.IntBiFunction<? extends Float, E>`) — the function that receives row index and column index (0-based) and returns the new value for that position; the returned {@code Float} is unboxed, so it must not be {@code null}
 - **Throws:**
+  - `java.lang.IllegalArgumentException` — if {@code mapper} is {@code null}
   - `E` — if the mapper throws an exception
 ##### replaceIf(...) -> void
 - **Signature:** `public <E extends Exception> void replaceIf(final Throwables.FloatPredicate<E> predicate, final float newValue) throws E`
 - **Summary:** Conditionally replaces elements in-place based on a predicate.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `predicate` (`Throwables.FloatPredicate<E>`) — the condition to test each element; elements for which this returns {@code true} will be replaced
   - `newValue` (`float`) — the value to use for replacing matching elements (may be {@code NaN} , {@code +/-Infinity} , or {@code -0.0f} )
@@ -4074,6 +4162,8 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
   - `E` — if the predicate throws an exception
 - **Signature:** `public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final float newValue) throws E`
 - **Summary:** Conditionally replaces elements in-place based on their position (row and column indices).
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `predicate` (`Throwables.IntBiPredicate<E>`) — the condition to test each position; receives row index and column index (0-based) and returns {@code true} if the element at that position should be replaced
   - `newValue` (`float`) — the value to use for replacing at matching positions
@@ -4082,15 +4172,52 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 ##### map(...) -> FloatMatrix
 - **Signature:** `public <E extends Exception> FloatMatrix map(final Throwables.FloatUnaryOperator<E> mapper) throws E`
 - **Summary:** Creates a new {@code FloatMatrix} by applying the specified function to each element of this matrix.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.FloatUnaryOperator<E>`) — the mapping function to apply to each element; must not be {@code null}
 - **Returns:** a new {@code FloatMatrix} with the mapped values (same dimensions as the original)
 - **Throws:**
   - `E` — if the function throws an exception
 - **See also:** #updateAll(Throwables.FloatUnaryOperator)
+##### mapToInt(...) -> IntMatrix
+- **Signature:** `public <E extends Exception> IntMatrix mapToInt(final Throwables.FloatToIntFunction<E> mapper) throws E`
+- **Summary:** Creates a new IntMatrix by applying a function that converts float values to int.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
+- **Parameters:**
+  - `mapper` (`Throwables.FloatToIntFunction<E>`) — the function to convert float values to int; must not be {@code null}
+- **Returns:** a new {@link IntMatrix} with the converted values
+- **Throws:**
+  - `E` — if the function throws an exception
+- **See also:** #toIntMatrix()
+##### mapToLong(...) -> LongMatrix
+- **Signature:** `public <E extends Exception> LongMatrix mapToLong(final Throwables.FloatToLongFunction<E> mapper) throws E`
+- **Summary:** Creates a new LongMatrix by applying a function that converts float values to long.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
+- **Parameters:**
+  - `mapper` (`Throwables.FloatToLongFunction<E>`) — the function to convert float values to long; must not be {@code null}
+- **Returns:** a new {@link LongMatrix} with the converted values
+- **Throws:**
+  - `E` — if the function throws an exception
+- **See also:** #toLongMatrix()
+##### mapToDouble(...) -> DoubleMatrix
+- **Signature:** `public <E extends Exception> DoubleMatrix mapToDouble(final Throwables.FloatToDoubleFunction<E> mapper) throws E`
+- **Summary:** Creates a new DoubleMatrix by applying a function that converts float values to double.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
+- **Parameters:**
+  - `mapper` (`Throwables.FloatToDoubleFunction<E>`) — the function to convert float values to double; must not be {@code null}
+- **Returns:** a new {@link DoubleMatrix} with the converted values
+- **Throws:**
+  - `E` — if the function throws an exception
+- **See also:** #toDoubleMatrix()
 ##### mapToObj(...) -> Matrix<R>
 - **Signature:** `public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.FloatFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E`
 - **Summary:** Creates a new object {@code Matrix} by applying the specified function to each element of this matrix.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.FloatFunction<? extends R, E>`) — the mapping function that converts each {@code float} element to type {@code R} ; must not be {@code null}
   - `targetElementType` (`Class<R>`) — the class object representing the target element type (used for array creation); must not be {@code null}
@@ -4340,7 +4467,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Returns:** a new {@code FloatMatrix} containing the element-wise difference (same dimensions as the inputs)
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code other} is {@code null} or the matrices have different dimensions
-- **See also:** #add(FloatMatrix)
+- **See also:** #add(FloatMatrix), #zipWith(FloatMatrix, Throwables.FloatBinaryOperator)
 ##### matrixMultiply(...) -> FloatMatrix
 - **Signature:** `public FloatMatrix matrixMultiply(final FloatMatrix other) throws IllegalArgumentException`
 - **Summary:** Performs matrix multiplication of this matrix with another matrix.
@@ -4383,6 +4510,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Summary:** Performs element-wise operation on two matrices using a binary operator.
 - **Contract:**
   - The matrices must have the same dimensions.
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `other` (`FloatMatrix`) — the second matrix (must have the same dimensions as this matrix)
   - `zipFunction` (`Throwables.FloatBinaryOperator<E>`) — the binary operator to apply to corresponding elements; receives the element from this matrix as first argument and the element from {@code other} as second argument
@@ -4395,6 +4523,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Summary:** Performs element-wise operation on three matrices using a ternary operator.
 - **Contract:**
   - All matrices must have the same dimensions.
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `other` (`FloatMatrix`) — the second matrix (must have the same dimensions as this matrix)
   - `third` (`FloatMatrix`) — the third matrix (must have the same dimensions as this matrix)
@@ -4453,6 +4582,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** a {@link FloatStream} of elements from the specified column
+- **See also:** #columnStreams()
 - **Signature:** `@Override public FloatStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
@@ -4848,7 +4978,7 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
   - `java.lang.IllegalStateException` — if the matrix is not square (rowCount != columnCount)
   - `java.lang.IllegalArgumentException` — if {@code mainDiagonal} is {@code null} or its length is not equal to {@code rowCount}
 ##### updateMainDiagonal(...) -> void
-- **Signature:** `public <E extends Exception> void updateMainDiagonal(final Throwables.IntUnaryOperator<E> operator) throws IllegalStateException, E`
+- **Signature:** `public <E extends Exception> void updateMainDiagonal(final Throwables.IntUnaryOperator<E> operator) throws IllegalStateException, IllegalArgumentException, E`
 - **Summary:** Updates the values on the main diagonal (upper-left to lower-right) by applying the specified operator.
 - **Contract:**
   - The matrix must be square.
@@ -4856,6 +4986,7 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
   - `operator` (`Throwables.IntUnaryOperator<E>`) — the operator to apply to each diagonal element; receives current element value and returns new value
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
 ##### antiDiagonalCopy(...) -> int\[\]
 - **Signature:** `@Override public int[] antiDiagonalCopy() throws IllegalStateException`
@@ -4878,7 +5009,7 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
   - `java.lang.IllegalStateException` — if the matrix is not square (rowCount != columnCount)
   - `java.lang.IllegalArgumentException` — if {@code antiDiagonal} is {@code null} or its length is not equal to {@code rowCount}
 ##### updateAntiDiagonal(...) -> void
-- **Signature:** `public <E extends Exception> void updateAntiDiagonal(final Throwables.IntUnaryOperator<E> operator) throws IllegalStateException, E`
+- **Signature:** `public <E extends Exception> void updateAntiDiagonal(final Throwables.IntUnaryOperator<E> operator) throws IllegalStateException, IllegalArgumentException, E`
 - **Summary:** Updates the values on the anti-diagonal (upper-right to lower-left) by applying the specified operator.
 - **Contract:**
   - The matrix must be square.
@@ -4886,25 +5017,33 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
   - `operator` (`Throwables.IntUnaryOperator<E>`) — the operator to apply to each anti-diagonal element; receives current element value and returns new value
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
 ##### updateAll(...) -> void
-- **Signature:** `public <E extends Exception> void updateAll(final Throwables.IntUnaryOperator<E> operator) throws E`
+- **Signature:** `public <E extends Exception> void updateAll(final Throwables.IntUnaryOperator<E> operator) throws IllegalArgumentException, E`
 - **Summary:** Updates all elements in the matrix in-place by applying the specified operator.
 - **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
   - Elements are processed in row-major order when executed sequentially.
 - **Parameters:**
   - `operator` (`Throwables.IntUnaryOperator<E>`) — the operator to apply to each element; receives the current element value and returns the new value
 - **Throws:**
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
-- **Signature:** `public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Integer, E> mapper) throws E`
+- **Signature:** `public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Integer, E> mapper) throws IllegalArgumentException, E`
 - **Summary:** Updates all elements in the matrix in-place based on their position (row and column indices).
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.IntBiFunction<? extends Integer, E>`) — the function that receives row index and column index (0-based) and returns the new value for that position; the returned {@code Integer} is unboxed, so it must not be {@code null}
 - **Throws:**
+  - `java.lang.IllegalArgumentException` — if {@code mapper} is {@code null}
   - `E` — if the mapper throws an exception
 ##### replaceIf(...) -> void
 - **Signature:** `public <E extends Exception> void replaceIf(final Throwables.IntPredicate<E> predicate, final int newValue) throws E`
 - **Summary:** Conditionally replaces elements in-place based on a predicate.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `predicate` (`Throwables.IntPredicate<E>`) — the condition to test each element; elements for which this returns {@code true} will be replaced
   - `newValue` (`int`) — the value to use for replacing matching elements
@@ -4912,6 +5051,8 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
   - `E` — if the predicate throws an exception
 - **Signature:** `public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final int newValue) throws E`
 - **Summary:** Conditionally replaces elements in-place based on their position (row and column indices).
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `predicate` (`Throwables.IntBiPredicate<E>`) — the condition that tests row index and column index (0-based); elements at positions for which this returns {@code true} will be replaced
   - `newValue` (`int`) — the value to use for replacing matching elements
@@ -4920,6 +5061,8 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 ##### map(...) -> IntMatrix
 - **Signature:** `public <E extends Exception> IntMatrix map(final Throwables.IntUnaryOperator<E> mapper) throws E`
 - **Summary:** Creates a new IntMatrix by applying a transformation function to each element.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.IntUnaryOperator<E>`) — the function to apply to each element; receives the current element value and returns the transformed value
 - **Returns:** a new IntMatrix with transformed values
@@ -4929,6 +5072,8 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 ##### mapToLong(...) -> LongMatrix
 - **Signature:** `public <E extends Exception> LongMatrix mapToLong(final Throwables.IntToLongFunction<E> mapper) throws E`
 - **Summary:** Creates a new LongMatrix by applying a function that converts int values to long.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.IntToLongFunction<E>`) — the function to convert int values to long
 - **Returns:** a new {@link LongMatrix} with the converted values
@@ -4938,6 +5083,8 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 ##### mapToDouble(...) -> DoubleMatrix
 - **Signature:** `public <E extends Exception> DoubleMatrix mapToDouble(final Throwables.IntToDoubleFunction<E> mapper) throws E`
 - **Summary:** Creates a new DoubleMatrix by applying a function that converts int values to double.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.IntToDoubleFunction<E>`) — the function to convert int values to double
 - **Returns:** a new {@link DoubleMatrix} with the converted values
@@ -4947,6 +5094,8 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 ##### mapToObj(...) -> Matrix<R>
 - **Signature:** `public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.IntFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E`
 - **Summary:** Creates a new Matrix by applying a function that converts int values to objects of type R.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.IntFunction<? extends R, E>`) — the function to convert int values to type {@code R}
   - `targetElementType` (`Class<R>`) — the {@code Class} object for type {@code R} (used to allocate the {@code R\[\]\[\]} backing array); must not be {@code null}
@@ -5002,8 +5151,8 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Signature:** `public IntMatrix resize(final int newRowCount, final int newColumnCount)`
 - **Summary:** Returns a new matrix whose dimensions are exactly {@code newRowCount x newColumnCount} , anchored at the top-left corner of this matrix.
 - **Contract:**
-  - <ul> <li> <b> If a dimension shrinks </b> - elements beyond the new boundary are discarded (excess rows removed from the bottom, excess columns removed from the right).
-  - </li> <li> <b> If a dimension grows </b> - new cells are filled with {@code 0} .
+  - <ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded (excess rows removed from the bottom, excess columns removed from the right).
+  - </li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code 0} .
   - Use {@code extend} when the entire original content must be preserved.
 - **Parameters:**
   - `newRowCount` (`int`) — the row count of the returned matrix; must be {@code >= 0}
@@ -5013,8 +5162,8 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Signature:** `public IntMatrix resize(final int newRowCount, final int newColumnCount, final int defaultValue) throws IllegalArgumentException`
 - **Summary:** Returns a new matrix whose dimensions are exactly {@code newRowCount x newColumnCount} , anchored at the top-left corner of this matrix.
 - **Contract:**
-  - <ul> <li> <b> If a dimension shrinks </b> - elements beyond the new boundary are discarded.
-  - </li> <li> <b> If a dimension grows </b> - new cells are filled with {@code defaultValue} .
+  - <ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded.
+  - </li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code defaultValue} .
   - Use {@code extend} when the entire original content must be preserved.
   - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.of(new int\[\]\[\] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}); // Grow: fill new cells with 9 IntMatrix grown = matrix.resize(4, 4, 9); grown.get(3, 3); // returns 9 (new cell uses defaultValue) grown.get(0, 0); // returns 1 (preserved) // Truncate: defaultValue is ignored when shrinking IntMatrix truncated = matrix.resize(2, 2, 9); truncated.get(1, 1); // returns 5 (no new cells, default unused) matrix.resize(0, 0, 9).isEmpty(); // returns true matrix.resize(2, -1, 9); // throws IllegalArgumentException (negative dimension) } </pre>
 - **Parameters:**
@@ -5033,7 +5182,7 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
   - `padBottom` (`int`) — number of padding rows to add below the original matrix; must be {@code >= 0}
   - `padLeft` (`int`) — number of padding columns to add to the left of the original matrix; must be {@code >= 0}
   - `padRight` (`int`) — number of padding columns to add to the right of the original matrix; must be {@code >= 0}
-- **Returns:** a new IntMatrix with dimensions {@code (padTop + rowCount + padBottom) x (padLeft + columnCount + padRight)}
+- **Returns:** a new IntMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
 - **See also:** #extend(int, int, int, int, int), #resize(int, int)
 - **Signature:** `public IntMatrix extend(final int padTop, final int padBottom, final int padLeft, final int padRight, final int defaultValue) throws IllegalArgumentException`
 - **Summary:** Returns a new matrix formed by surrounding this matrix with padding on all four edges.
@@ -5043,7 +5192,7 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
   - `padLeft` (`int`) — number of padding columns to add to the left of the original matrix; must be {@code >= 0}
   - `padRight` (`int`) — number of padding columns to add to the right of the original matrix; must be {@code >= 0}
   - `defaultValue` (`int`) — the value to fill all new padding cells with
-- **Returns:** a new IntMatrix with dimensions {@code (padTop + rowCount + padBottom) x (padLeft + columnCount + padRight)}
+- **Returns:** a new IntMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if any padding parameter is negative, if the resulting dimensions would overflow {@code Integer.MAX_VALUE} , or if the resulting shape is not representable (zero rows with a non-zero column count)
 - **See also:** #extend(int, int, int, int), #resize(int, int, int)
@@ -5188,7 +5337,7 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Returns:** a new {@code IntMatrix} containing the element-wise difference {@code this - other}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code other} is {@code null} , or if the matrices have different shapes
-- **See also:** #add(IntMatrix)
+- **See also:** #add(IntMatrix), #zipWith(IntMatrix, Throwables.IntBinaryOperator)
 ##### matrixMultiply(...) -> IntMatrix
 - **Signature:** `public IntMatrix matrixMultiply(final IntMatrix other) throws IllegalArgumentException`
 - **Summary:** Performs matrix multiplication (Cayley product) with another matrix.
@@ -5232,6 +5381,7 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Summary:** Performs element-wise operation on two matrices using a binary operator.
 - **Contract:**
   - The matrices must have the same dimensions.
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `other` (`IntMatrix`) — the second matrix (must have the same dimensions as this matrix)
   - `zipFunction` (`Throwables.IntBinaryOperator<E>`) — the binary operator to apply to corresponding elements; receives the element from this matrix as first argument and the element from {@code other} as second argument
@@ -5244,6 +5394,7 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Summary:** Performs element-wise operation on three matrices using a ternary operator.
 - **Contract:**
   - All matrices must have the same dimensions.
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `other` (`IntMatrix`) — the second matrix (must have the same dimensions as this matrix)
   - `third` (`IntMatrix`) — the third matrix (must have the same dimensions as this matrix)
@@ -5302,6 +5453,7 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** an {@link IntStream} of elements from the specified column
+- **See also:** #columnStreams()
 - **Signature:** `@Override public IntStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
@@ -5682,7 +5834,7 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
   - `java.lang.IllegalStateException` — if the matrix is not square (rowCount != columnCount)
   - `java.lang.IllegalArgumentException` — if {@code mainDiagonal} is {@code null} or its length is not equal to {@code rowCount}
 ##### updateMainDiagonal(...) -> void
-- **Signature:** `public <E extends Exception> void updateMainDiagonal(final Throwables.LongUnaryOperator<E> operator) throws IllegalStateException, E`
+- **Signature:** `public <E extends Exception> void updateMainDiagonal(final Throwables.LongUnaryOperator<E> operator) throws IllegalStateException, IllegalArgumentException, E`
 - **Summary:** Updates the values on the main diagonal (upper-left to lower-right) by applying the specified operator.
 - **Contract:**
   - The matrix must be square.
@@ -5690,6 +5842,7 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
   - `operator` (`Throwables.LongUnaryOperator<E>`) — the operator to apply to each diagonal element; receives current element value and returns new value
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
 ##### antiDiagonalCopy(...) -> long\[\]
 - **Signature:** `@Override public long[] antiDiagonalCopy() throws IllegalStateException`
@@ -5712,7 +5865,7 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
   - `java.lang.IllegalStateException` — if the matrix is not square (rowCount != columnCount)
   - `java.lang.IllegalArgumentException` — if {@code antiDiagonal} is {@code null} or its length is not equal to {@code rowCount}
 ##### updateAntiDiagonal(...) -> void
-- **Signature:** `public <E extends Exception> void updateAntiDiagonal(final Throwables.LongUnaryOperator<E> operator) throws IllegalStateException, E`
+- **Signature:** `public <E extends Exception> void updateAntiDiagonal(final Throwables.LongUnaryOperator<E> operator) throws IllegalStateException, IllegalArgumentException, E`
 - **Summary:** Updates the values on the anti-diagonal (upper-right to lower-left) by applying the specified operator.
 - **Contract:**
   - The matrix must be square.
@@ -5720,25 +5873,33 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
   - `operator` (`Throwables.LongUnaryOperator<E>`) — the operator to apply to each anti-diagonal element; receives current element value and returns new value
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
 ##### updateAll(...) -> void
-- **Signature:** `public <E extends Exception> void updateAll(final Throwables.LongUnaryOperator<E> operator) throws E`
+- **Signature:** `public <E extends Exception> void updateAll(final Throwables.LongUnaryOperator<E> operator) throws IllegalArgumentException, E`
 - **Summary:** Updates all elements in the matrix in-place by applying the specified operator.
 - **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
   - Elements are processed in row-major order when executed sequentially.
 - **Parameters:**
   - `operator` (`Throwables.LongUnaryOperator<E>`) — the operator to apply to each element; receives the current element value and returns the new value
 - **Throws:**
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
-- **Signature:** `public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Long, E> mapper) throws E`
+- **Signature:** `public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Long, E> mapper) throws IllegalArgumentException, E`
 - **Summary:** Updates all elements in the matrix in-place based on their position (row and column indices).
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.IntBiFunction<? extends Long, E>`) — the function that receives row index and column index (0-based) and returns the new value for that position; the returned {@code Long} is unboxed, so it must not be {@code null}
 - **Throws:**
+  - `java.lang.IllegalArgumentException` — if {@code mapper} is {@code null}
   - `E` — if the mapper throws an exception
 ##### replaceIf(...) -> void
 - **Signature:** `public <E extends Exception> void replaceIf(final Throwables.LongPredicate<E> predicate, final long newValue) throws E`
 - **Summary:** Conditionally replaces elements in-place based on a predicate.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `predicate` (`Throwables.LongPredicate<E>`) — the condition to test each element; elements for which this returns {@code true} will be replaced
   - `newValue` (`long`) — the value to use for replacing matching elements
@@ -5746,6 +5907,8 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
   - `E` — if the predicate throws an exception
 - **Signature:** `public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final long newValue) throws E`
 - **Summary:** Conditionally replaces elements in-place based on their position (row and column indices).
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `predicate` (`Throwables.IntBiPredicate<E>`) — the condition that tests row index and column index (0-based); elements at positions for which this returns {@code true} will be replaced
   - `newValue` (`long`) — the value to use for replacing matching elements
@@ -5754,6 +5917,8 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 ##### map(...) -> LongMatrix
 - **Signature:** `public <E extends Exception> LongMatrix map(final Throwables.LongUnaryOperator<E> mapper) throws E`
 - **Summary:** Creates a new LongMatrix by applying a transformation function to each element.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.LongUnaryOperator<E>`) — the function to apply to each element; receives the current element value and returns the transformed value
 - **Returns:** a new {@code LongMatrix} with transformed values
@@ -5763,6 +5928,8 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 ##### mapToInt(...) -> IntMatrix
 - **Signature:** `public <E extends Exception> IntMatrix mapToInt(final Throwables.LongToIntFunction<E> mapper) throws E`
 - **Summary:** Creates a new IntMatrix by applying a function that converts long values to int.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.LongToIntFunction<E>`) — the function to convert long values to int
 - **Returns:** a new {@link IntMatrix} with the converted values
@@ -5772,6 +5939,8 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 ##### mapToDouble(...) -> DoubleMatrix
 - **Signature:** `public <E extends Exception> DoubleMatrix mapToDouble(final Throwables.LongToDoubleFunction<E> mapper) throws E`
 - **Summary:** Creates a new DoubleMatrix by applying a function that converts long values to double.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.LongToDoubleFunction<E>`) — the function to convert long values to double
 - **Returns:** a new {@link DoubleMatrix} with the converted values
@@ -5781,6 +5950,8 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 ##### mapToObj(...) -> Matrix<R>
 - **Signature:** `public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.LongFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E`
 - **Summary:** Creates a new Matrix by applying a function that converts long values to objects of type R.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.LongFunction<? extends R, E>`) — the function to convert long values to type {@code R}
   - `targetElementType` (`Class<R>`) — the {@code Class} object for type {@code R} (used to allocate the {@code R\[\]\[\]} backing array); must not be {@code null}
@@ -6021,7 +6192,7 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Returns:** a new {@code LongMatrix} containing the element-wise difference {@code this - other}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code other} is {@code null} , or if the matrices have different shapes
-- **See also:** #add(LongMatrix)
+- **See also:** #add(LongMatrix), #zipWith(LongMatrix, Throwables.LongBinaryOperator)
 ##### matrixMultiply(...) -> LongMatrix
 - **Signature:** `public LongMatrix matrixMultiply(final LongMatrix other) throws IllegalArgumentException`
 - **Summary:** Performs matrix multiplication (Cayley product) with another matrix.
@@ -6064,6 +6235,7 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Summary:** Performs element-wise operation on two matrices using a binary operator.
 - **Contract:**
   - The matrices must have the same dimensions.
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `other` (`LongMatrix`) — the second matrix (must have the same dimensions as this matrix)
   - `zipFunction` (`Throwables.LongBinaryOperator<E>`) — the binary operator to apply to corresponding elements; receives the element from this matrix as first argument and the element from {@code other} as second argument
@@ -6076,6 +6248,7 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Summary:** Performs element-wise operation on three matrices using a ternary operator.
 - **Contract:**
   - All matrices must have the same dimensions.
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `other` (`LongMatrix`) — the second matrix (must have the same dimensions as this matrix)
   - `third` (`LongMatrix`) — the third matrix (must have the same dimensions as this matrix)
@@ -6134,6 +6307,7 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** a {@link LongStream} of elements from the specified column
+- **See also:** #columnStreams()
 - **Signature:** `@Override public LongStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
@@ -6333,7 +6507,7 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Parameters:**
   - `rowCount` (`int`) — the number of rows to iterate over, must be non-negative
   - `columnCount` (`int`) — the number of columns to iterate over, must be non-negative
-  - `action` (`Throwables.IntBiConsumer<E>`) — the action to execute for each position (i, j), receives row index and column index, must not be {@code null}
+  - `action` (`Throwables.IntBiConsumer<E>`) — the action to execute for each position (i, j), receives row index and column index, must not be {@code null} and must be thread-safe if parallel execution is requested
   - `inParallel` (`boolean`) — {@code true} to execute in parallel; {@code false} for sequential execution (if parallel streams are unavailable in the runtime, execution falls back to sequential)
 - **Throws:**
   - `E` — if the action throws an exception during execution
@@ -6341,15 +6515,15 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Signature:** `public static <E extends Exception> void forEachIndices(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex, final Throwables.IntBiConsumer<E> action, final boolean inParallel) throws IndexOutOfBoundsException, E`
 - **Summary:** Executes an action for each position in a specified subregion of a matrix grid.
 - **Contract:**
-  - </p> <p> Iteration strategy: </p> <ul> <li> If there are fewer or equal rows than columns, iterates by rows first (row-major order).
-  - </li> <li> If there are more rows than columns, iterates by columns first (column-major order).
-  - </li> <li> When parallel execution is enabled, the outer loop is parallelized while the inner loop remains sequential.
+  - </p> <p> Iteration strategy: </p> <ul> <li> In sequential mode, if there are fewer or equal rows than columns, iterates by rows first (row-major order).
+  - </li> <li> In sequential mode, if there are more rows than columns, iterates by columns first (column-major order).
+  - </li> <li> When parallel execution is enabled, the outer loop runs over the larger of the two dimensions (so the work splits into as many independent units as possible) and is parallelized while the inner loop remains sequential.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive), must be non-negative
   - `toRowIndex` (`int`) — the ending row index (exclusive), must be greater than or equal to {@code fromRowIndex}
   - `fromColumnIndex` (`int`) — the starting column index (inclusive), must be non-negative
   - `toColumnIndex` (`int`) — the ending column index (exclusive), must be greater than or equal to {@code fromColumnIndex}
-  - `action` (`Throwables.IntBiConsumer<E>`) — the action to execute for each position (i, j), receives row index and column index, must not be {@code null}
+  - `action` (`Throwables.IntBiConsumer<E>`) — the action to execute for each position (i, j), receives row index and column index, must not be {@code null} and must be thread-safe if parallel execution is requested
   - `inParallel` (`boolean`) — {@code true} to execute in parallel; {@code false} for sequential execution (if parallel streams are unavailable in the runtime, execution falls back to sequential)
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if any index is negative, if {@code toRowIndex} is less than {@code fromRowIndex} , or if {@code toColumnIndex} is less than {@code fromColumnIndex}
@@ -6357,10 +6531,12 @@ Utility and policy holder shared by the matrix implementations in this package.
 ##### mapIndices(...) -> Stream<T>
 - **Signature:** `public static <T> Stream<T> mapIndices(final int rowCount, final int columnCount, final Throwables.IntBiFunction<? extends T, ? extends Exception> mapper, final boolean inParallel)`
 - **Summary:** Executes a function for each position in a matrix grid and returns the results as a stream.
+- **Contract:**
+  - </p> <p> If {@code mapper} throws an exception, it is surfaced as a {@code RuntimeException} when the returned stream is consumed.
 - **Parameters:**
   - `rowCount` (`int`) — the number of rows to iterate over, must be non-negative
   - `columnCount` (`int`) — the number of columns to iterate over, must be non-negative
-  - `mapper` (`Throwables.IntBiFunction<? extends T, ? extends Exception>`) — the function to apply at each position (i, j), receives row index and column index, must not be {@code null}
+  - `mapper` (`Throwables.IntBiFunction<? extends T, ? extends Exception>`) — the function to apply at each position (i, j), receives row index and column index, must not be {@code null} and must be thread-safe if parallel execution is requested
   - `inParallel` (`boolean`) — {@code true} to execute in parallel; {@code false} for sequential execution (if parallel streams are unavailable in the runtime, execution falls back to sequential)
 - **Returns:** a {@link Stream} of results from applying the function at each position, never {@code null}
 - **See also:** #mapIndices(int, int, int, int, Throwables.IntBiFunction, boolean)
@@ -6376,7 +6552,7 @@ Utility and policy holder shared by the matrix implementations in this package.
   - `toRowIndex` (`int`) — the ending row index (exclusive), must be greater than or equal to fromRowIndex
   - `fromColumnIndex` (`int`) — the starting column index (inclusive), must be non-negative
   - `toColumnIndex` (`int`) — the ending column index (exclusive), must be greater than or equal to fromColumnIndex
-  - `mapper` (`Throwables.IntBiFunction<? extends T, ? extends Exception>`) — the function to apply at each position (i, j), receives row index and column index, must not be {@code null}
+  - `mapper` (`Throwables.IntBiFunction<? extends T, ? extends Exception>`) — the function to apply at each position (i, j), receives row index and column index, must not be {@code null} and must be thread-safe if parallel execution is requested
   - `inParallel` (`boolean`) — {@code true} to execute in parallel; {@code false} for sequential execution (if parallel streams are unavailable in the runtime, execution falls back to sequential)
 - **Returns:** a {@link Stream} of results from applying the function at each position, never {@code null}
 - **Throws:**
@@ -6384,10 +6560,12 @@ Utility and policy holder shared by the matrix implementations in this package.
 ##### mapIndicesToInt(...) -> IntStream
 - **Signature:** `public static IntStream mapIndicesToInt(final int rowCount, final int columnCount, final Throwables.IntBinaryOperator<? extends Exception> mapper, final boolean inParallel)`
 - **Summary:** Executes a function that returns {@code int} values for each position in a matrix grid and returns the results as an {@link IntStream} .
+- **Contract:**
+  - </p> <p> If {@code mapper} throws an exception, it is surfaced as a {@code RuntimeException} when the returned stream is consumed.
 - **Parameters:**
   - `rowCount` (`int`) — the number of rows to iterate over, must be non-negative
   - `columnCount` (`int`) — the number of columns to iterate over, must be non-negative
-  - `mapper` (`Throwables.IntBinaryOperator<? extends Exception>`) — the function to apply at each position (i, j), receives row index and column index, must not be {@code null}
+  - `mapper` (`Throwables.IntBinaryOperator<? extends Exception>`) — the function to apply at each position (i, j), receives row index and column index, must not be {@code null} and must be thread-safe if parallel execution is requested
   - `inParallel` (`boolean`) — {@code true} to execute in parallel; {@code false} for sequential execution (if parallel streams are unavailable in the runtime, execution falls back to sequential)
 - **Returns:** an {@link IntStream} of results from applying the function at each position, never {@code null}
 - **See also:** #mapIndicesToInt(int, int, int, int, Throwables.IntBinaryOperator, boolean)
@@ -6402,7 +6580,7 @@ Utility and policy holder shared by the matrix implementations in this package.
   - `toRowIndex` (`int`) — the ending row index (exclusive), must be greater than or equal to fromRowIndex
   - `fromColumnIndex` (`int`) — the starting column index (inclusive), must be non-negative
   - `toColumnIndex` (`int`) — the ending column index (exclusive), must be greater than or equal to fromColumnIndex
-  - `mapper` (`Throwables.IntBinaryOperator<? extends Exception>`) — the function to apply at each position (i, j), receives row index and column index, must not be {@code null}
+  - `mapper` (`Throwables.IntBinaryOperator<? extends Exception>`) — the function to apply at each position (i, j), receives row index and column index, must not be {@code null} and must be thread-safe if parallel execution is requested
   - `inParallel` (`boolean`) — {@code true} to execute in parallel; {@code false} for sequential execution (if parallel streams are unavailable in the runtime, execution falls back to sequential)
 - **Returns:** an {@link IntStream} of results from applying the function at each position, never {@code null}
 - **Throws:**
@@ -6417,7 +6595,7 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Parameters:**
   - `a` (`M`) — the first matrix (left operand), must not be {@code null}
   - `b` (`M`) — the second matrix (right operand), must not be {@code null}
-  - `action` (`Throwables.IntTriConsumer<RuntimeException>`) — the accumulator function called for each (i, j, k) triple in the multiplication, must not be {@code null}
+  - `action` (`Throwables.IntTriConsumer<RuntimeException>`) — the accumulator function called for each (i, j, k) triple in the multiplication, must not be {@code null} and must be thread-safe if execution is parallelized
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code a} or {@code b} is {@code null} , if matrix dimensions are incompatible ( {@code a.columnCount != b.rowCount} ), or if {@code action} is {@code null}
 - **See also:** #forEachCartesianIndices(AbstractMatrix, AbstractMatrix, Throwables.IntTriConsumer, boolean)
@@ -6425,11 +6603,10 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Summary:** Performs matrix multiplication iteration using a custom accumulator function with explicit control over parallel execution.
 - **Contract:**
   - </p> <p> When parallel execution is requested and supported, the outermost loop is parallelized while inner loops remain sequential.
-  - To avoid concurrent writes to the same accumulator cell, the {@code k} loop (over {@code a.columnCount} = {@code b.rowCount} ) is never parallelized: when {@code a.rowCount} is the smallest dimension the parallel loop is over {@code i} , and otherwise the parallel loop is over {@code j} ( {@code b.columnCount} ).
 - **Parameters:**
   - `a` (`M`) — the first matrix (left operand), must not be {@code null}
   - `b` (`M`) — the second matrix (right operand), must not be {@code null}
-  - `action` (`Throwables.IntTriConsumer<RuntimeException>`) — the accumulator function called for each (i, j, k) triple in the multiplication, must not be {@code null}
+  - `action` (`Throwables.IntTriConsumer<RuntimeException>`) — the accumulator function called for each (i, j, k) triple in the multiplication, must not be {@code null} and must be thread-safe if execution is parallelized
   - `inParallel` (`boolean`) — {@code true} to request parallel execution when parallel stream support is available; {@code false} for sequential execution
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code a} or {@code b} is {@code null} , if matrix dimensions are incompatible ( {@code a.columnCount != b.rowCount} ), or if {@code action} is {@code null}
@@ -6462,7 +6639,7 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Parameters:**
   - `a` (`ByteMatrix`) — the first matrix, must not be {@code null}
   - `b` (`ByteMatrix`) — the second matrix, must not be {@code null} and must have the same shape as {@code a}
-  - `zipFunction` (`Throwables.ByteBinaryOperator<E>`) — the binary operator to combine corresponding elements from both matrices, must not be {@code null}
+  - `zipFunction` (`Throwables.ByteBinaryOperator<E>`) — the binary operator to combine corresponding elements from both matrices, must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link ByteMatrix} containing the results of applying the function to each pair of elements, never {@code null}
 - **Throws:**
   - `E` — if the zip function throws an exception during execution
@@ -6475,7 +6652,7 @@ Utility and policy holder shared by the matrix implementations in this package.
   - `a` (`ByteMatrix`) — the first matrix, must not be {@code null}
   - `b` (`ByteMatrix`) — the second matrix, must not be {@code null} and must have the same shape as {@code a}
   - `c` (`ByteMatrix`) — the third matrix, must not be {@code null} and must have the same shape as {@code a} and {@code b}
-  - `zipFunction` (`Throwables.ByteTernaryOperator<E>`) — the ternary operator to combine corresponding elements from all three matrices, must not be {@code null}
+  - `zipFunction` (`Throwables.ByteTernaryOperator<E>`) — the ternary operator to combine corresponding elements from all three matrices, must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link ByteMatrix} containing the results of applying the function to each triple of elements, never {@code null}
 - **Throws:**
   - `E` — if the zip function throws an exception during execution
@@ -6486,7 +6663,7 @@ Utility and policy holder shared by the matrix implementations in this package.
   - } </pre> <p> All matrices in the collection must have identical dimensions.
 - **Parameters:**
   - `coll` (`Collection<ByteMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.ByteBinaryOperator<E>`) — the binary operator to combine elements sequentially, must not be {@code null}
+  - `zipFunction` (`Throwables.ByteBinaryOperator<E>`) — the binary operator to combine elements sequentially, must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link ByteMatrix} containing the combined results, never {@code null}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
@@ -6499,7 +6676,7 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Parameters:**
   - `a` (`IntMatrix`) — the first matrix, must not be {@code null}
   - `b` (`IntMatrix`) — the second matrix, must not be {@code null} and must have the same shape as {@code a}
-  - `zipFunction` (`Throwables.IntBinaryOperator<E>`) — the binary operator to combine corresponding elements from both matrices, must not be {@code null}
+  - `zipFunction` (`Throwables.IntBinaryOperator<E>`) — the binary operator to combine corresponding elements from both matrices, must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link IntMatrix} containing the results of applying the function to each pair of elements, never {@code null}
 - **Throws:**
   - `E` — if the zip function throws an exception during execution
@@ -6512,7 +6689,7 @@ Utility and policy holder shared by the matrix implementations in this package.
   - `a` (`IntMatrix`) — the first matrix, must not be {@code null}
   - `b` (`IntMatrix`) — the second matrix, must not be {@code null} and must have the same shape as {@code a}
   - `c` (`IntMatrix`) — the third matrix, must not be {@code null} and must have the same shape as {@code a} and {@code b}
-  - `zipFunction` (`Throwables.IntTernaryOperator<E>`) — the ternary operator to combine corresponding elements from all three matrices, must not be {@code null}
+  - `zipFunction` (`Throwables.IntTernaryOperator<E>`) — the ternary operator to combine corresponding elements from all three matrices, must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link IntMatrix} containing the results of applying the function to each triple of elements, never {@code null}
 - **Throws:**
   - `E` — if the zip function throws an exception during execution
@@ -6523,7 +6700,7 @@ Utility and policy holder shared by the matrix implementations in this package.
   - } </pre> <p> All matrices in the collection must have identical dimensions.
 - **Parameters:**
   - `coll` (`Collection<IntMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.IntBinaryOperator<E>`) — the binary operator to combine elements sequentially, must not be {@code null}
+  - `zipFunction` (`Throwables.IntBinaryOperator<E>`) — the binary operator to combine elements sequentially, must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link IntMatrix} containing the combined results, never {@code null}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
@@ -6536,7 +6713,7 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Parameters:**
   - `a` (`LongMatrix`) — the first matrix, must not be {@code null}
   - `b` (`LongMatrix`) — the second matrix, must not be {@code null} and must have the same shape as {@code a}
-  - `zipFunction` (`Throwables.LongBinaryOperator<E>`) — the binary operator to combine corresponding elements from both matrices, must not be {@code null}
+  - `zipFunction` (`Throwables.LongBinaryOperator<E>`) — the binary operator to combine corresponding elements from both matrices, must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link LongMatrix} containing the results of applying the function to each pair of elements, never {@code null}
 - **Throws:**
   - `E` — if the zip function throws an exception during execution
@@ -6549,7 +6726,7 @@ Utility and policy holder shared by the matrix implementations in this package.
   - `a` (`LongMatrix`) — the first matrix, must not be {@code null}
   - `b` (`LongMatrix`) — the second matrix, must not be {@code null} and must have the same shape as {@code a}
   - `c` (`LongMatrix`) — the third matrix, must not be {@code null} and must have the same shape as {@code a} and {@code b}
-  - `zipFunction` (`Throwables.LongTernaryOperator<E>`) — the ternary operator to combine corresponding elements from all three matrices, must not be {@code null}
+  - `zipFunction` (`Throwables.LongTernaryOperator<E>`) — the ternary operator to combine corresponding elements from all three matrices, must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link LongMatrix} containing the results of applying the function to each triple of elements, never {@code null}
 - **Throws:**
   - `E` — if the zip function throws an exception during execution
@@ -6560,7 +6737,7 @@ Utility and policy holder shared by the matrix implementations in this package.
   - All matrices in the collection must have identical dimensions.
 - **Parameters:**
   - `coll` (`Collection<LongMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.LongBinaryOperator<E>`) — the binary operator to combine elements sequentially, must not be {@code null}
+  - `zipFunction` (`Throwables.LongBinaryOperator<E>`) — the binary operator to combine elements sequentially, must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link LongMatrix} containing the combined results, never {@code null}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
@@ -6573,7 +6750,7 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Parameters:**
   - `a` (`DoubleMatrix`) — the first matrix, must not be {@code null}
   - `b` (`DoubleMatrix`) — the second matrix, must not be {@code null} and must have the same shape as {@code a}
-  - `zipFunction` (`Throwables.DoubleBinaryOperator<E>`) — the binary operator to combine corresponding elements from both matrices, must not be {@code null}
+  - `zipFunction` (`Throwables.DoubleBinaryOperator<E>`) — the binary operator to combine corresponding elements from both matrices, must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link DoubleMatrix} containing the results of applying the function to each pair of elements, never {@code null}
 - **Throws:**
   - `E` — if the zip function throws an exception during execution
@@ -6586,7 +6763,7 @@ Utility and policy holder shared by the matrix implementations in this package.
   - `a` (`DoubleMatrix`) — the first matrix, must not be {@code null}
   - `b` (`DoubleMatrix`) — the second matrix, must not be {@code null} and must have the same shape as {@code a}
   - `c` (`DoubleMatrix`) — the third matrix, must not be {@code null} and must have the same shape as {@code a} and {@code b}
-  - `zipFunction` (`Throwables.DoubleTernaryOperator<E>`) — the ternary operator to combine corresponding elements from all three matrices, must not be {@code null}
+  - `zipFunction` (`Throwables.DoubleTernaryOperator<E>`) — the ternary operator to combine corresponding elements from all three matrices, must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link DoubleMatrix} containing the results of applying the function to each triple of elements, never {@code null}
 - **Throws:**
   - `E` — if the zip function throws an exception during execution
@@ -6597,7 +6774,7 @@ Utility and policy holder shared by the matrix implementations in this package.
   - All matrices in the collection must have identical dimensions.
 - **Parameters:**
   - `coll` (`Collection<DoubleMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.DoubleBinaryOperator<E>`) — the binary operator to combine elements sequentially, must not be {@code null}
+  - `zipFunction` (`Throwables.DoubleBinaryOperator<E>`) — the binary operator to combine elements sequentially, must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link DoubleMatrix} containing the combined results, never {@code null}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
@@ -6610,7 +6787,7 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Parameters:**
   - `a` (`Matrix<A>`) — the first matrix, must not be {@code null}
   - `b` (`Matrix<B>`) — the second matrix, must not be {@code null} and must have the same shape as {@code a}
-  - `zipFunction` (`Throwables.BiFunction<? super A, ? super B, A, E>`) — the function to combine corresponding elements from both matrices, must not be {@code null}
+  - `zipFunction` (`Throwables.BiFunction<? super A, ? super B, A, E>`) — the function to combine corresponding elements from both matrices, must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link Matrix} of type A containing the combined values, never {@code null}
 - **Throws:**
   - `E` — if the zip function throws an exception during execution
@@ -6622,7 +6799,7 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Parameters:**
   - `a` (`Matrix<A>`) — the first matrix, must not be {@code null}
   - `b` (`Matrix<B>`) — the second matrix, must not be {@code null} and must have the same shape as {@code a}
-  - `zipFunction` (`Throwables.BiFunction<? super A, ? super B, R, E>`) — the function to combine corresponding elements from both matrices, must not be {@code null}
+  - `zipFunction` (`Throwables.BiFunction<? super A, ? super B, R, E>`) — the function to combine corresponding elements from both matrices, must not be {@code null} and must be thread-safe if execution is parallelized
   - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
 - **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
 - **Throws:**
@@ -6636,7 +6813,7 @@ Utility and policy holder shared by the matrix implementations in this package.
   - `a` (`Matrix<A>`) — the first matrix, must not be {@code null}
   - `b` (`Matrix<B>`) — the second matrix, must not be {@code null} and must have the same shape as {@code a}
   - `c` (`Matrix<C>`) — the third matrix, must not be {@code null} and must have the same shape as {@code a} and {@code b}
-  - `zipFunction` (`Throwables.TriFunction<? super A, ? super B, ? super C, A, E>`) — the function to combine corresponding elements from all three matrices, must not be {@code null}
+  - `zipFunction` (`Throwables.TriFunction<? super A, ? super B, ? super C, A, E>`) — the function to combine corresponding elements from all three matrices, must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link Matrix} of type A containing the combined values, never {@code null}
 - **Throws:**
   - `E` — if the zip function throws an exception during execution
@@ -6649,7 +6826,7 @@ Utility and policy holder shared by the matrix implementations in this package.
   - `a` (`Matrix<A>`) — the first matrix, must not be {@code null}
   - `b` (`Matrix<B>`) — the second matrix, must not be {@code null} and must have the same shape as {@code a}
   - `c` (`Matrix<C>`) — the third matrix, must not be {@code null} and must have the same shape as {@code a} and {@code b}
-  - `zipFunction` (`Throwables.TriFunction<? super A, ? super B, ? super C, R, E>`) — the function to combine corresponding elements from all three matrices, must not be {@code null}
+  - `zipFunction` (`Throwables.TriFunction<? super A, ? super B, ? super C, R, E>`) — the function to combine corresponding elements from all three matrices, must not be {@code null} and must be thread-safe if execution is parallelized
   - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
 - **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
 - **Throws:**
@@ -6661,7 +6838,7 @@ Utility and policy holder shared by the matrix implementations in this package.
   - } </pre> <p> All matrices in the collection must have identical dimensions.
 - **Parameters:**
   - `coll` (`Collection<Matrix<T>>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.BinaryOperator<T, E>`) — the binary operator to combine elements sequentially, must not be {@code null}
+  - `zipFunction` (`Throwables.BinaryOperator<T, E>`) — the binary operator to combine elements sequentially, must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link Matrix} of type T containing the combined results, never {@code null}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
@@ -6673,7 +6850,7 @@ Utility and policy holder shared by the matrix implementations in this package.
   - </p> <p> All matrices in the collection must have identical dimensions.
 - **Parameters:**
   - `coll` (`Collection<Matrix<T>>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.Function<? super T[], R, E>`) — the function that takes an array of values (one from each matrix) and returns a result of type R, must not be {@code null}
+  - `zipFunction` (`Throwables.Function<? super T[], R, E>`) — the function that takes an array of values (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
   - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
 - **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
 - **Throws:**
@@ -6682,12 +6859,12 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Signature:** `public static <T, R, E extends Exception> Matrix<R> zip(final Collection<Matrix<T>> coll, final Throwables.Function<? super T[], R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E`
 - **Summary:** Combines multiple generic {@link Matrix} objects element-wise using a function that operates on arrays, with control over intermediate array sharing.
 - **Contract:**
-  - </p> <p> The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
+  - </p> <p> The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> &#9888; &#65039; Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
   - Only use this optimization if the function immediately processes and discards the array.
   - The runtime component type of the array passed to {@code zipFunction} is the resolved common element type of the input matrices (which may be more specific than the static {@code T} ), so the function should treat the array as read-only: writing an element of an incompatible type into it would throw an {@code ArrayStoreException} .
 - **Parameters:**
   - `coll` (`Collection<Matrix<T>>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.Function<? super T[], R, E>`) — the function that takes an array of values (one from each matrix) and returns a result of type R, must not be {@code null}
+  - `zipFunction` (`Throwables.Function<? super T[], R, E>`) — the function that takes an array of values (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
   - `shareIntermediateArray` (`boolean`) — {@code true} to reuse the intermediate array (sequential execution only); {@code false} to create new arrays for each position
   - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
 - **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
@@ -6696,16 +6873,17 @@ Utility and policy holder shared by the matrix implementations in this package.
   - `E` — if the zip function throws an exception during execution
 - **See also:** #zip(Collection, Throwables.Function, Class), #zip(Collection, Throwables.BinaryOperator)
 ##### zipToInt(...) -> IntMatrix
-- **Signature:** `public static <E extends Exception> IntMatrix zipToInt(final ByteMatrix a, final ByteMatrix b, final Throwables.ByteBiFunction<Integer, E> zipFunction) throws E`
+- **Signature:** `public static <E extends Exception> IntMatrix zipToInt(final ByteMatrix a, final ByteMatrix b, final Throwables.ByteBiFunction<Integer, E> zipFunction) throws IllegalArgumentException, E`
 - **Summary:** Combines two {@link ByteMatrix} objects element-wise using a function that returns {@code Integer} values, producing an {@link IntMatrix} .
 - **Contract:**
   - </p> <p> Both matrices must have identical dimensions.
 - **Parameters:**
   - `a` (`ByteMatrix`) — the first matrix, must not be {@code null}
   - `b` (`ByteMatrix`) — the second matrix, must not be {@code null} and must have the same shape as {@code a}
-  - `zipFunction` (`Throwables.ByteBiFunction<Integer, E>`) — the function to combine corresponding elements, takes two bytes and returns a non- {@code null} {@code Integer} ; must not be {@code null}
+  - `zipFunction` (`Throwables.ByteBiFunction<Integer, E>`) — the function to combine corresponding elements, takes two bytes and returns a non- {@code null} {@code Integer} ; must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link IntMatrix} with the combined values, never {@code null}
 - **Throws:**
+  - `java.lang.IllegalArgumentException` — if the matrices have different shapes or if any argument is {@code null}
   - `E` — if the zip function throws an exception during execution
 - **See also:** #zipToInt(ByteMatrix, ByteMatrix, ByteMatrix, Throwables.ByteTriFunction), #zipToInt(Collection, Throwables.ByteNFunction)
 - **Signature:** `public static <E extends Exception> IntMatrix zipToInt(final ByteMatrix a, final ByteMatrix b, final ByteMatrix c, final Throwables.ByteTriFunction<Integer, E> zipFunction) throws IllegalArgumentException, E`
@@ -6716,7 +6894,7 @@ Utility and policy holder shared by the matrix implementations in this package.
   - `a` (`ByteMatrix`) — the first matrix, must not be {@code null}
   - `b` (`ByteMatrix`) — the second matrix, must not be {@code null} and must have the same shape as {@code a}
   - `c` (`ByteMatrix`) — the third matrix, must not be {@code null} and must have the same shape as {@code a} and {@code b}
-  - `zipFunction` (`Throwables.ByteTriFunction<Integer, E>`) — the function to combine corresponding elements, takes three bytes and returns a non- {@code null} {@code Integer} ; must not be {@code null}
+  - `zipFunction` (`Throwables.ByteTriFunction<Integer, E>`) — the function to combine corresponding elements, takes three bytes and returns a non- {@code null} {@code Integer} ; must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link IntMatrix} with the combined values, never {@code null}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if the matrices have different shapes or if any argument is {@code null}
@@ -6728,7 +6906,7 @@ Utility and policy holder shared by the matrix implementations in this package.
   - </p> <p> All matrices in the collection must have identical dimensions.
 - **Parameters:**
   - `coll` (`Collection<ByteMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.ByteNFunction<Integer, E>`) — the function that takes an array of bytes and returns a non- {@code null} {@code Integer} ; must not be {@code null}
+  - `zipFunction` (`Throwables.ByteNFunction<Integer, E>`) — the function that takes an array of bytes and returns a non- {@code null} {@code Integer} ; must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link IntMatrix} with the combined values, never {@code null}
 - **Throws:**
   - `E` — if the zip function throws an exception during execution
@@ -6736,12 +6914,12 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Signature:** `public static <E extends Exception> IntMatrix zipToInt(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<Integer, E> zipFunction, final boolean shareIntermediateArray) throws IllegalArgumentException, E`
 - **Summary:** Combines multiple {@link ByteMatrix} objects element-wise using a function that returns {@code Integer} values, with control over intermediate array sharing.
 - **Contract:**
-  - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
+  - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> &#9888; &#65039; Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
   - Only use this optimization if the function immediately processes and discards the array.
   - </p> <p> All matrices in the collection must have identical dimensions.
 - **Parameters:**
   - `coll` (`Collection<ByteMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.ByteNFunction<Integer, E>`) — the function that takes an array of bytes and returns a non- {@code null} {@code Integer} ; must not be {@code null}
+  - `zipFunction` (`Throwables.ByteNFunction<Integer, E>`) — the function that takes an array of bytes and returns a non- {@code null} {@code Integer} ; must not be {@code null} and must be thread-safe if execution is parallelized
   - `shareIntermediateArray` (`boolean`) — {@code true} to reuse the intermediate array (sequential execution only); {@code false} to create new arrays for each position
 - **Returns:** a new {@link IntMatrix} with the combined values, never {@code null}
 - **Throws:**
@@ -6755,7 +6933,7 @@ Utility and policy holder shared by the matrix implementations in this package.
   - </p> <p> All matrices in the collection must have identical dimensions.
 - **Parameters:**
   - `coll` (`Collection<ByteMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.ByteNFunction<? extends R, E>`) — the function that takes an array of bytes (one from each matrix) and returns a result of type R, must not be {@code null}
+  - `zipFunction` (`Throwables.ByteNFunction<? extends R, E>`) — the function that takes an array of bytes (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
   - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
 - **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
 - **Throws:**
@@ -6764,11 +6942,11 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E`
 - **Summary:** Combines multiple {@link ByteMatrix} objects element-wise using a function that operates on byte arrays, with control over intermediate array sharing.
 - **Contract:**
-  - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
+  - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> &#9888; &#65039; Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
   - Only use this optimization if the function immediately processes and discards the array.
 - **Parameters:**
   - `coll` (`Collection<ByteMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.ByteNFunction<? extends R, E>`) — the function that takes an array of bytes (one from each matrix) and returns a result of type R, must not be {@code null}
+  - `zipFunction` (`Throwables.ByteNFunction<? extends R, E>`) — the function that takes an array of bytes (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
   - `shareIntermediateArray` (`boolean`) — {@code true} to reuse the intermediate array (sequential execution only); {@code false} to create new arrays for each position
   - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
 - **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
@@ -6782,7 +6960,7 @@ Utility and policy holder shared by the matrix implementations in this package.
   - </p> <p> All matrices in the collection must have identical dimensions.
 - **Parameters:**
   - `coll` (`Collection<IntMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.IntNFunction<? extends R, E>`) — the function that takes an array of integers (one from each matrix) and returns a result of type R, must not be {@code null}
+  - `zipFunction` (`Throwables.IntNFunction<? extends R, E>`) — the function that takes an array of integers (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
   - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
 - **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
 - **Throws:**
@@ -6791,12 +6969,12 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E`
 - **Summary:** Combines multiple {@link IntMatrix} objects element-wise using a function that operates on integer arrays, with control over intermediate array sharing.
 - **Contract:**
-  - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
+  - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> &#9888; &#65039; Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
   - Only use this optimization if the function immediately processes and discards the array.
   - </p> <p> All matrices in the collection must have identical dimensions.
 - **Parameters:**
   - `coll` (`Collection<IntMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.IntNFunction<? extends R, E>`) — the function that takes an array of integers (one from each matrix) and returns a result of type R, must not be {@code null}
+  - `zipFunction` (`Throwables.IntNFunction<? extends R, E>`) — the function that takes an array of integers (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
   - `shareIntermediateArray` (`boolean`) — {@code true} to reuse the intermediate array (sequential execution only); {@code false} to create new arrays for each position
   - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
 - **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
@@ -6808,7 +6986,7 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Summary:** Combines multiple {@link LongMatrix} objects element-wise using a function that operates on long arrays.
 - **Parameters:**
   - `coll` (`Collection<LongMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.LongNFunction<? extends R, E>`) — the function that takes an array of longs (one from each matrix) and returns a result of type R, must not be {@code null}
+  - `zipFunction` (`Throwables.LongNFunction<? extends R, E>`) — the function that takes an array of longs (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
   - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
 - **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
 - **Throws:**
@@ -6817,12 +6995,12 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E`
 - **Summary:** Combines multiple {@link LongMatrix} objects element-wise using a function that operates on long arrays, with control over intermediate array sharing.
 - **Contract:**
-  - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
+  - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> &#9888; &#65039; Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
   - Only use this optimization if the function immediately processes and discards the array.
   - </p> <p> All matrices in the collection must have identical dimensions.
 - **Parameters:**
   - `coll` (`Collection<LongMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.LongNFunction<? extends R, E>`) — the function that takes an array of longs (one from each matrix) and returns a result of type R, must not be {@code null}
+  - `zipFunction` (`Throwables.LongNFunction<? extends R, E>`) — the function that takes an array of longs (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
   - `shareIntermediateArray` (`boolean`) — {@code true} to reuse the intermediate array (sequential execution only); {@code false} to create new arrays for each position
   - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
 - **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
@@ -6834,7 +7012,7 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Summary:** Combines multiple {@link DoubleMatrix} objects element-wise using a function that operates on double arrays.
 - **Parameters:**
   - `coll` (`Collection<DoubleMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.DoubleNFunction<? extends R, E>`) — the function that takes an array of doubles (one from each matrix) and returns a result of type R, must not be {@code null}
+  - `zipFunction` (`Throwables.DoubleNFunction<? extends R, E>`) — the function that takes an array of doubles (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
   - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
 - **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
 - **Throws:**
@@ -6843,12 +7021,12 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<DoubleMatrix> coll, final Throwables.DoubleNFunction<? extends R, E> zipFunction, final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E`
 - **Summary:** Combines multiple {@link DoubleMatrix} objects element-wise using a function that operates on double arrays, with control over intermediate array sharing.
 - **Contract:**
-  - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
+  - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> &#9888; &#65039; Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
   - Only use this optimization if the function immediately processes and discards the array.
   - </p> <p> All matrices in the collection must have identical dimensions.
 - **Parameters:**
   - `coll` (`Collection<DoubleMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.DoubleNFunction<? extends R, E>`) — the function that takes an array of doubles (one from each matrix) and returns a result of type R, must not be {@code null}
+  - `zipFunction` (`Throwables.DoubleNFunction<? extends R, E>`) — the function that takes an array of doubles (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
   - `shareIntermediateArray` (`boolean`) — {@code true} to reuse the intermediate array (sequential execution only); {@code false} to create new arrays for each position
   - `targetElementType` (`Class<R>`) — the class of the result element type, must not be {@code null}
 - **Returns:** a new {@link Matrix} of type R containing the combined values, never {@code null}
@@ -6857,16 +7035,17 @@ Utility and policy holder shared by the matrix implementations in this package.
   - `E` — if the zip function throws an exception during execution
 - **See also:** #zipToObj(Collection, Throwables.DoubleNFunction, Class), #zip(Collection, Throwables.DoubleBinaryOperator)
 ##### zipToLong(...) -> LongMatrix
-- **Signature:** `public static <E extends Exception> LongMatrix zipToLong(final IntMatrix a, final IntMatrix b, final Throwables.IntBiFunction<Long, E> zipFunction) throws E`
+- **Signature:** `public static <E extends Exception> LongMatrix zipToLong(final IntMatrix a, final IntMatrix b, final Throwables.IntBiFunction<Long, E> zipFunction) throws IllegalArgumentException, E`
 - **Summary:** Combines two {@link IntMatrix} objects element-wise using a function that returns {@code Long} values, producing a {@link LongMatrix} .
 - **Contract:**
   - </p> <p> Both matrices must have identical dimensions.
 - **Parameters:**
   - `a` (`IntMatrix`) — the first matrix, must not be {@code null}
   - `b` (`IntMatrix`) — the second matrix, must not be {@code null} and must have the same shape as {@code a}
-  - `zipFunction` (`Throwables.IntBiFunction<Long, E>`) — the function to combine corresponding elements, takes two ints and returns a non- {@code null} {@code Long} ; must not be {@code null}
+  - `zipFunction` (`Throwables.IntBiFunction<Long, E>`) — the function to combine corresponding elements, takes two ints and returns a non- {@code null} {@code Long} ; must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link LongMatrix} with the combined values, never {@code null}
 - **Throws:**
+  - `java.lang.IllegalArgumentException` — if the matrices have different shapes or if any argument is {@code null}
   - `E` — if the zip function throws an exception during execution
 - **See also:** #zipToLong(IntMatrix, IntMatrix, IntMatrix, Throwables.IntTriFunction), #zipToLong(Collection, Throwables.IntNFunction)
 - **Signature:** `public static <E extends Exception> LongMatrix zipToLong(final IntMatrix a, final IntMatrix b, final IntMatrix c, final Throwables.IntTriFunction<Long, E> zipFunction) throws IllegalArgumentException, E`
@@ -6877,7 +7056,7 @@ Utility and policy holder shared by the matrix implementations in this package.
   - `a` (`IntMatrix`) — the first matrix, must not be {@code null}
   - `b` (`IntMatrix`) — the second matrix, must not be {@code null} and must have the same shape as {@code a}
   - `c` (`IntMatrix`) — the third matrix, must not be {@code null} and must have the same shape as {@code a} and {@code b}
-  - `zipFunction` (`Throwables.IntTriFunction<Long, E>`) — the function to combine corresponding elements, takes three ints and returns a non- {@code null} {@code Long} ; must not be {@code null}
+  - `zipFunction` (`Throwables.IntTriFunction<Long, E>`) — the function to combine corresponding elements, takes three ints and returns a non- {@code null} {@code Long} ; must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link LongMatrix} with the combined values, never {@code null}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if the matrices have different shapes or if any argument is {@code null}
@@ -6887,7 +7066,7 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Summary:** Combines multiple {@link IntMatrix} objects element-wise using a function that returns {@code Long} values.
 - **Parameters:**
   - `coll` (`Collection<IntMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.IntNFunction<Long, E>`) — the function that takes an array of integers and returns a non- {@code null} {@code Long} ; must not be {@code null}
+  - `zipFunction` (`Throwables.IntNFunction<Long, E>`) — the function that takes an array of integers and returns a non- {@code null} {@code Long} ; must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link LongMatrix} with the combined values, never {@code null}
 - **Throws:**
   - `E` — if the zip function throws an exception during execution
@@ -6895,25 +7074,26 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Signature:** `public static <E extends Exception> LongMatrix zipToLong(final Collection<IntMatrix> coll, final Throwables.IntNFunction<Long, E> zipFunction, final boolean shareIntermediateArray) throws IllegalArgumentException, E`
 - **Summary:** Combines multiple {@link IntMatrix} objects element-wise using a function that returns {@code Long} values, with control over intermediate array sharing.
 - **Contract:**
-  - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
+  - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> &#9888; &#65039; Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
   - Only use this optimization if the function immediately processes and discards the array.
 - **Parameters:**
   - `coll` (`Collection<IntMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.IntNFunction<Long, E>`) — the function that takes an array of integers and returns a non- {@code null} {@code Long} ; must not be {@code null}
+  - `zipFunction` (`Throwables.IntNFunction<Long, E>`) — the function that takes an array of integers and returns a non- {@code null} {@code Long} ; must not be {@code null} and must be thread-safe if execution is parallelized
   - `shareIntermediateArray` (`boolean`) — {@code true} to reuse the intermediate array (sequential execution only); {@code false} to create new arrays for each position
 - **Returns:** a new {@link LongMatrix} with the combined values, never {@code null}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
   - `E` — if the zip function throws an exception during execution
 ##### zipToDouble(...) -> DoubleMatrix
-- **Signature:** `public static <E extends Exception> DoubleMatrix zipToDouble(final IntMatrix a, final IntMatrix b, final Throwables.IntBiFunction<Double, E> zipFunction) throws E`
+- **Signature:** `public static <E extends Exception> DoubleMatrix zipToDouble(final IntMatrix a, final IntMatrix b, final Throwables.IntBiFunction<Double, E> zipFunction) throws IllegalArgumentException, E`
 - **Summary:** Combines two {@link IntMatrix} objects element-wise using a function that returns {@code Double} values, producing a {@link DoubleMatrix} .
 - **Parameters:**
   - `a` (`IntMatrix`) — the first matrix, must not be {@code null}
   - `b` (`IntMatrix`) — the second matrix, must not be {@code null} and must have the same shape as {@code a}
-  - `zipFunction` (`Throwables.IntBiFunction<Double, E>`) — the function to combine corresponding elements, takes two ints and returns a non- {@code null} {@code Double} ; must not be {@code null}
+  - `zipFunction` (`Throwables.IntBiFunction<Double, E>`) — the function to combine corresponding elements, takes two ints and returns a non- {@code null} {@code Double} ; must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link DoubleMatrix} with the combined values, never {@code null}
 - **Throws:**
+  - `java.lang.IllegalArgumentException` — if the matrices have different shapes or if any argument is {@code null}
   - `E` — if the zip function throws an exception during execution
 - **See also:** #zipToDouble(IntMatrix, IntMatrix, IntMatrix, Throwables.IntTriFunction), #zipToDouble(Collection, Throwables.IntNFunction)
 - **Signature:** `public static <E extends Exception> DoubleMatrix zipToDouble(final IntMatrix a, final IntMatrix b, final IntMatrix c, final Throwables.IntTriFunction<Double, E> zipFunction) throws IllegalArgumentException, E`
@@ -6922,7 +7102,7 @@ Utility and policy holder shared by the matrix implementations in this package.
   - `a` (`IntMatrix`) — the first matrix, must not be {@code null}
   - `b` (`IntMatrix`) — the second matrix, must not be {@code null} and must have the same shape as {@code a}
   - `c` (`IntMatrix`) — the third matrix, must not be {@code null} and must have the same shape as {@code a} and {@code b}
-  - `zipFunction` (`Throwables.IntTriFunction<Double, E>`) — the function to combine corresponding elements, takes three ints and returns a non- {@code null} {@code Double} ; must not be {@code null}
+  - `zipFunction` (`Throwables.IntTriFunction<Double, E>`) — the function to combine corresponding elements, takes three ints and returns a non- {@code null} {@code Double} ; must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link DoubleMatrix} with the combined values, never {@code null}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if the matrices have different shapes or if any argument is {@code null}
@@ -6932,7 +7112,7 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Summary:** Combines multiple {@link IntMatrix} objects element-wise using a function that returns {@code Double} values.
 - **Parameters:**
   - `coll` (`Collection<IntMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.IntNFunction<Double, E>`) — the function that takes an array of integers and returns a non- {@code null} {@code Double} ; must not be {@code null}
+  - `zipFunction` (`Throwables.IntNFunction<Double, E>`) — the function that takes an array of integers and returns a non- {@code null} {@code Double} ; must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link DoubleMatrix} with the combined values, never {@code null}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
@@ -6941,24 +7121,25 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Signature:** `public static <E extends Exception> DoubleMatrix zipToDouble(final Collection<IntMatrix> coll, final Throwables.IntNFunction<Double, E> zipFunction, final boolean shareIntermediateArray) throws IllegalArgumentException, E`
 - **Summary:** Combines multiple {@link IntMatrix} objects element-wise using a function that returns {@code Double} values, with control over intermediate array sharing.
 - **Contract:**
-  - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
+  - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> &#9888; &#65039; Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
   - Only use this optimization if the function immediately processes and discards the array.
 - **Parameters:**
   - `coll` (`Collection<IntMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.IntNFunction<Double, E>`) — the function that takes an array of integers and returns a non- {@code null} {@code Double} ; must not be {@code null}
+  - `zipFunction` (`Throwables.IntNFunction<Double, E>`) — the function that takes an array of integers and returns a non- {@code null} {@code Double} ; must not be {@code null} and must be thread-safe if execution is parallelized
   - `shareIntermediateArray` (`boolean`) — {@code true} to reuse the intermediate array (sequential execution only); {@code false} to create new arrays for each position
 - **Returns:** a new {@link DoubleMatrix} with the combined values, never {@code null}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
   - `E` — if the zip function throws an exception during execution
-- **Signature:** `public static <E extends Exception> DoubleMatrix zipToDouble(final LongMatrix a, final LongMatrix b, final Throwables.LongBiFunction<Double, E> zipFunction) throws E`
+- **Signature:** `public static <E extends Exception> DoubleMatrix zipToDouble(final LongMatrix a, final LongMatrix b, final Throwables.LongBiFunction<Double, E> zipFunction) throws IllegalArgumentException, E`
 - **Summary:** Combines two {@link LongMatrix} objects element-wise using a function that returns {@code Double} values, producing a {@link DoubleMatrix} .
 - **Parameters:**
   - `a` (`LongMatrix`) — the first matrix, must not be {@code null}
   - `b` (`LongMatrix`) — the second matrix, must not be {@code null} and must have the same shape as {@code a}
-  - `zipFunction` (`Throwables.LongBiFunction<Double, E>`) — the function to combine corresponding elements, takes two longs and returns a non- {@code null} {@code Double} ; must not be {@code null}
+  - `zipFunction` (`Throwables.LongBiFunction<Double, E>`) — the function to combine corresponding elements, takes two longs and returns a non- {@code null} {@code Double} ; must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link DoubleMatrix} with the combined values, never {@code null}
 - **Throws:**
+  - `java.lang.IllegalArgumentException` — if the matrices have different shapes or if any argument is {@code null}
   - `E` — if the zip function throws an exception during execution
 - **See also:** #zipToDouble(LongMatrix, LongMatrix, LongMatrix, Throwables.LongTriFunction), #zipToDouble(Collection, Throwables.LongNFunction)
 - **Signature:** `public static <E extends Exception> DoubleMatrix zipToDouble(final LongMatrix a, final LongMatrix b, final LongMatrix c, final Throwables.LongTriFunction<Double, E> zipFunction) throws IllegalArgumentException, E`
@@ -6967,7 +7148,7 @@ Utility and policy holder shared by the matrix implementations in this package.
   - `a` (`LongMatrix`) — the first matrix, must not be {@code null}
   - `b` (`LongMatrix`) — the second matrix, must not be {@code null} and must have the same shape as {@code a}
   - `c` (`LongMatrix`) — the third matrix, must not be {@code null} and must have the same shape as {@code a} and {@code b}
-  - `zipFunction` (`Throwables.LongTriFunction<Double, E>`) — the function to combine corresponding elements, takes three longs and returns a non- {@code null} {@code Double} ; must not be {@code null}
+  - `zipFunction` (`Throwables.LongTriFunction<Double, E>`) — the function to combine corresponding elements, takes three longs and returns a non- {@code null} {@code Double} ; must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link DoubleMatrix} with the combined values, never {@code null}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if the matrices have different shapes or if any argument is {@code null}
@@ -6977,7 +7158,7 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Summary:** Combines multiple {@link LongMatrix} objects element-wise using a function that returns {@code Double} values.
 - **Parameters:**
   - `coll` (`Collection<LongMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.LongNFunction<Double, E>`) — the function that takes an array of longs and returns a non- {@code null} {@code Double} ; must not be {@code null}
+  - `zipFunction` (`Throwables.LongNFunction<Double, E>`) — the function that takes an array of longs and returns a non- {@code null} {@code Double} ; must not be {@code null} and must be thread-safe if execution is parallelized
 - **Returns:** a new {@link DoubleMatrix} with the combined values, never {@code null}
 - **Throws:**
   - `E` — if the zip function throws an exception during execution
@@ -6985,11 +7166,11 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Signature:** `public static <E extends Exception> DoubleMatrix zipToDouble(final Collection<LongMatrix> coll, final Throwables.LongNFunction<Double, E> zipFunction, final boolean shareIntermediateArray) throws IllegalArgumentException, E`
 - **Summary:** Combines multiple {@link LongMatrix} objects element-wise using a function that returns {@code Double} values, with control over intermediate array sharing.
 - **Contract:**
-  - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
+  - The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> &#9888; &#65039; Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.
   - Only use this optimization if the function immediately processes and discards the array.
 - **Parameters:**
   - `coll` (`Collection<LongMatrix>`) — the collection of matrices to combine, must not be {@code null} , empty, or contain {@code null} elements
-  - `zipFunction` (`Throwables.LongNFunction<Double, E>`) — the function that takes an array of longs and returns a non- {@code null} {@code Double} ; must not be {@code null}
+  - `zipFunction` (`Throwables.LongNFunction<Double, E>`) — the function that takes an array of longs and returns a non- {@code null} {@code Double} ; must not be {@code null} and must be thread-safe if execution is parallelized
   - `shareIntermediateArray` (`boolean`) — {@code true} to reuse the intermediate array (sequential execution only); {@code false} to create new arrays for each position
 - **Returns:** a new {@link DoubleMatrix} with the combined values, never {@code null}
 - **Throws:**
@@ -7237,7 +7418,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
   - `java.lang.IllegalStateException` — if the matrix is not square (rowCount != columnCount)
   - `java.lang.IllegalArgumentException` — if {@code mainDiagonal} is {@code null} or its length does not equal {@code rowCount}
 ##### updateMainDiagonal(...) -> void
-- **Signature:** `public <E extends Exception> void updateMainDiagonal(final Throwables.UnaryOperator<T, E> operator) throws IllegalStateException, E`
+- **Signature:** `public <E extends Exception> void updateMainDiagonal(final Throwables.UnaryOperator<T, E> operator) throws IllegalStateException, IllegalArgumentException, E`
 - **Summary:** Updates the main diagonal elements (upper-left to lower-right) by applying the given operator.
 - **Contract:**
   - The matrix must be square (same number of rows and columns).
@@ -7245,6 +7426,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
   - `operator` (`Throwables.UnaryOperator<T, E>`) — the operator to apply to each diagonal element (must not be {@code null} )
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square (rowCount != columnCount)
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
 ##### antiDiagonalCopy(...) -> T\[\]
 - **Signature:** `@Override public T[] antiDiagonalCopy() throws IllegalStateException`
@@ -7267,7 +7449,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
   - `java.lang.IllegalStateException` — if the matrix is not square (rowCount != columnCount)
   - `java.lang.IllegalArgumentException` — if {@code antiDiagonal} is {@code null} or its length does not equal {@code rowCount}
 ##### updateAntiDiagonal(...) -> void
-- **Signature:** `public <E extends Exception> void updateAntiDiagonal(final Throwables.UnaryOperator<T, E> operator) throws IllegalStateException, E`
+- **Signature:** `public <E extends Exception> void updateAntiDiagonal(final Throwables.UnaryOperator<T, E> operator) throws IllegalStateException, IllegalArgumentException, E`
 - **Summary:** Updates the anti-diagonal elements (upper-right to lower-left) by applying the given operator.
 - **Contract:**
   - The matrix must be square (same number of rows and columns).
@@ -7275,19 +7457,22 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
   - `operator` (`Throwables.UnaryOperator<T, E>`) — the operator to apply to each anti-diagonal element (must not be {@code null} )
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square (rowCount != columnCount)
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
 ##### updateAll(...) -> void
-- **Signature:** `public <E extends Exception> void updateAll(final Throwables.UnaryOperator<T, E> operator) throws E`
+- **Signature:** `public <E extends Exception> void updateAll(final Throwables.UnaryOperator<T, E> operator) throws IllegalArgumentException, E`
 - **Summary:** Updates all elements in the matrix by applying the given operator.
 - **Parameters:**
   - `operator` (`Throwables.UnaryOperator<T, E>`) — the operator to apply to each element (must not be {@code null} )
 - **Throws:**
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
-- **Signature:** `public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends T, E> mapper) throws E`
+- **Signature:** `public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends T, E> mapper) throws IllegalArgumentException, E`
 - **Summary:** Updates all elements in the matrix based on their position.
 - **Parameters:**
   - `mapper` (`Throwables.IntBiFunction<? extends T, E>`) — the function that takes row and column indices and returns the new value (must not be {@code null} )
 - **Throws:**
+  - `java.lang.IllegalArgumentException` — if {@code mapper} is {@code null}
   - `E` — if the mapper throws an exception
 ##### replaceIf(...) -> void
 - **Signature:** `public <E extends Exception> void replaceIf(final Throwables.Predicate<? super T, E> predicate, final T newValue) throws E`
@@ -7308,7 +7493,8 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Signature:** `public <E extends Exception> Matrix<T> map(final Throwables.UnaryOperator<T, E> mapper) throws E`
 - **Summary:** Creates a new matrix by applying a transformation function to each element.
 - **Contract:**
-  - <p> <b> Note: </b> because the result reuses this matrix's runtime element type, an {@link ArrayStoreException} is thrown if {@code mapper} returns a value that is not assignable to that type.
+  - If parallelized, the supplied function must be thread-safe.
+  - <p> <b> &#9888; &#65039; Runtime element type: </b> because the result reuses this matrix's runtime element type, an {@link ArrayStoreException} is thrown if {@code mapper} returns a value that is not assignable to that type.
 - **Parameters:**
   - `mapper` (`Throwables.UnaryOperator<T, E>`) — the transformation function (must not be {@code null} )
 - **Returns:** a new matrix with transformed elements
@@ -7318,6 +7504,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Summary:** Creates a new matrix by applying a transformation function to each element.
 - **Contract:**
   - The target element type must be explicitly specified.
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.Function<? super T, R, E>`) — the transformation function (must not be {@code null} )
   - `targetElementType` (`Class<R>`) — the class of the result element type (must not be {@code null} )
@@ -7327,6 +7514,8 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 ##### mapToBoolean(...) -> BooleanMatrix
 - **Signature:** `public <E extends Exception> BooleanMatrix mapToBoolean(final Throwables.ToBooleanFunction<? super T, E> mapper) throws E`
 - **Summary:** Creates a {@link BooleanMatrix} by applying a boolean-valued function to each element.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.ToBooleanFunction<? super T, E>`) — the function that returns a boolean for each element (must not be {@code null} )
 - **Returns:** a new {@link BooleanMatrix} with the same dimensions as this matrix
@@ -7335,6 +7524,8 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 ##### mapToByte(...) -> ByteMatrix
 - **Signature:** `public <E extends Exception> ByteMatrix mapToByte(final Throwables.ToByteFunction<? super T, E> mapper) throws E`
 - **Summary:** Creates a byte matrix by applying a byte-valued function to each element.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.ToByteFunction<? super T, E>`) — the function that returns a byte for each element (must not be {@code null} )
 - **Returns:** a new {@link ByteMatrix}
@@ -7343,6 +7534,8 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 ##### mapToChar(...) -> CharMatrix
 - **Signature:** `public <E extends Exception> CharMatrix mapToChar(final Throwables.ToCharFunction<? super T, E> mapper) throws E`
 - **Summary:** Creates a char matrix by applying a char-valued function to each element.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.ToCharFunction<? super T, E>`) — the function that returns a char for each element (must not be {@code null} )
 - **Returns:** a new {@link CharMatrix}
@@ -7351,6 +7544,8 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 ##### mapToShort(...) -> ShortMatrix
 - **Signature:** `public <E extends Exception> ShortMatrix mapToShort(final Throwables.ToShortFunction<? super T, E> mapper) throws E`
 - **Summary:** Creates a short matrix by applying a short-valued function to each element.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.ToShortFunction<? super T, E>`) — the function that returns a short for each element (must not be {@code null} )
 - **Returns:** a new {@link ShortMatrix}
@@ -7359,6 +7554,8 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 ##### mapToInt(...) -> IntMatrix
 - **Signature:** `public <E extends Exception> IntMatrix mapToInt(final Throwables.ToIntFunction<? super T, E> mapper) throws E`
 - **Summary:** Creates an int matrix by applying an int-valued function to each element.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.ToIntFunction<? super T, E>`) — the function that returns an int for each element (must not be {@code null} )
 - **Returns:** a new {@link IntMatrix}
@@ -7367,6 +7564,8 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 ##### mapToLong(...) -> LongMatrix
 - **Signature:** `public <E extends Exception> LongMatrix mapToLong(final Throwables.ToLongFunction<? super T, E> mapper) throws E`
 - **Summary:** Creates a long matrix by applying a long-valued function to each element.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.ToLongFunction<? super T, E>`) — the function that returns a long for each element (must not be {@code null} )
 - **Returns:** a new {@link LongMatrix}
@@ -7375,6 +7574,8 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 ##### mapToFloat(...) -> FloatMatrix
 - **Signature:** `public <E extends Exception> FloatMatrix mapToFloat(final Throwables.ToFloatFunction<? super T, E> mapper) throws E`
 - **Summary:** Creates a float matrix by applying a float-valued function to each element.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.ToFloatFunction<? super T, E>`) — the function that returns a float for each element (must not be {@code null} )
 - **Returns:** a new {@link FloatMatrix}
@@ -7383,6 +7584,8 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 ##### mapToDouble(...) -> DoubleMatrix
 - **Signature:** `public <E extends Exception> DoubleMatrix mapToDouble(final Throwables.ToDoubleFunction<? super T, E> mapper) throws E`
 - **Summary:** Creates a double matrix by applying a double-valued function to each element.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.ToDoubleFunction<? super T, E>`) — the function that returns a double for each element (must not be {@code null} )
 - **Returns:** a new {@link DoubleMatrix}
@@ -7518,7 +7721,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Summary:** Returns a new matrix that is this matrix rotated 90 degrees clockwise.
 - **Parameters:**
   - (none)
-- **Returns:** a new matrix that is this matrix rotated 90 degrees clockwise
+- **Returns:** a new matrix that is this matrix rotated 90 degrees clockwise, or an empty matrix if this matrix has zero columns
 ##### rotate180(...) -> Matrix<T>
 - **Signature:** `@Override public Matrix<T> rotate180()`
 - **Summary:** Returns a new matrix that is this matrix rotated 180 degrees.
@@ -7531,7 +7734,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Summary:** Returns a new matrix that is this matrix rotated 270 degrees clockwise.
 - **Parameters:**
   - (none)
-- **Returns:** a new matrix that is this matrix rotated 270 degrees clockwise
+- **Returns:** a new matrix that is this matrix rotated 270 degrees clockwise, or an empty matrix if this matrix has zero columns
 ##### transpose(...) -> Matrix<T>
 - **Signature:** `@Override public Matrix<T> transpose()`
 - **Summary:** Returns a new matrix that is the transpose of this matrix.
@@ -7609,7 +7812,8 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Summary:** Combines this matrix with another matrix element-wise using the specified function.
 - **Contract:**
   - Both matrices must have the same dimensions.
-  - <p> <b> Note: </b> because the result reuses this matrix's runtime element type, an {@link ArrayStoreException} is thrown if {@code zipFunction} returns a value that is not assignable to that type.
+  - If parallelized, the supplied function must be thread-safe.
+  - <p> <b> &#9888; &#65039; Runtime element type: </b> because the result reuses this matrix's runtime element type, an {@link ArrayStoreException} is thrown if {@code zipFunction} returns a value that is not assignable to that type.
 - **Parameters:**
   - `other` (`Matrix<B>`) — the other matrix to zip with (must have the same dimensions, must not be {@code null} )
   - `zipFunction` (`Throwables.BiFunction<? super T, ? super B, T, E>`) — the binary function to apply to corresponding elements (must not be {@code null} )
@@ -7620,6 +7824,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Summary:** Combines this matrix with another matrix element-wise using the specified function.
 - **Contract:**
   - The matrices must have the same dimensions.
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `other` (`Matrix<B>`) — the other matrix to zip with (must have the same dimensions, must not be {@code null} )
   - `zipFunction` (`Throwables.BiFunction<? super T, ? super B, R, E>`) — the function to apply to corresponding elements (must not be {@code null} )
@@ -7632,6 +7837,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Summary:** Combines three matrices element-wise using the specified ternary function.
 - **Contract:**
   - All matrices must have the same dimensions.
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `other` (`Matrix<B>`) — the second matrix to zip with (must have the same dimensions, must not be {@code null} )
   - `third` (`Matrix<C>`) — the third matrix to zip with (must have the same dimensions, must not be {@code null} )
@@ -7643,6 +7849,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Summary:** Combines three matrices element-wise using the specified ternary function.
 - **Contract:**
   - All matrices must have the same dimensions.
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `other` (`Matrix<B>`) — the second matrix to zip with (must have the same dimensions, must not be {@code null} )
   - `third` (`Matrix<C>`) — the third matrix to zip with (must have the same dimensions, must not be {@code null} )
@@ -7699,6 +7906,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** a {@link Stream} of elements from the specified column
+- **See also:** #columnStreams()
 - **Signature:** `@Override public Stream<T> columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**
@@ -7763,27 +7971,27 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
   - `java.lang.IndexOutOfBoundsException` — if any of the row or column indices are out of range
   - `E` — if the action throws an exception
 ##### toDataset(...) -> Dataset
-- **Signature:** `@SuppressWarnings("deprecation") public Dataset toDataset(final Collection<String> columnNames) throws IllegalArgumentException`
+- **Signature:** `public Dataset toDataset(final Collection<String> columnNames) throws IllegalArgumentException`
 - **Summary:** Converts this matrix to a Dataset with horizontally organized data.
 - **Contract:**
   - <p> The column names are used in the order they appear in the collection, and must match the number of columns in the matrix exactly.
 - **Parameters:**
-  - `columnNames` (`Collection<String>`) — the names to assign to each column in the resulting Dataset; size must equal {@code columnCount}
+  - `columnNames` (`Collection<String>`) — the non- {@code null} , non-empty, unique names to assign to each column in the resulting Dataset; size must equal {@code columnCount}
 - **Returns:** a Dataset containing the matrix data with the specified column names (one row per matrix row)
 - **Throws:**
-  - `java.lang.IllegalArgumentException` — if {@code columnNames} is {@code null} , if its size does not equal {@code columnCount} , or if this matrix has rows but no columns
+  - `java.lang.IllegalArgumentException` — if {@code columnNames} is {@code null} , contains a {@code null} , empty, or duplicate name, if its size does not equal {@code columnCount} , or if this matrix has rows but no columns
 - **See also:** Dataset, #toTransposedDataset(Collection)
 ##### toTransposedDataset(...) -> Dataset
-- **Signature:** `@SuppressWarnings("deprecation") public Dataset toTransposedDataset(final Collection<String> columnNames) throws IllegalArgumentException`
+- **Signature:** `public Dataset toTransposedDataset(final Collection<String> columnNames) throws IllegalArgumentException`
 - **Summary:** Converts this matrix to a Dataset with vertically organized data.
 - **Contract:**
   - Each row in this matrix becomes a column in the resulting Dataset, so the supplied names are assigned to the Dataset's columns in the order they appear in the collection and must match this matrix's {@code rowCount} exactly.
 - **Parameters:**
-  - `columnNames` (`Collection<String>`) — the column names of the resulting Dataset; size must equal {@code rowCount}
+  - `columnNames` (`Collection<String>`) — the non- {@code null} , non-empty, unique column names of the resulting Dataset; size must equal {@code rowCount}
 - **Returns:** a Dataset containing the matrix data organized vertically (one column per matrix row)
 - **Throws:**
-  - `java.lang.IllegalArgumentException` — if {@code columnNames} is {@code null} , or if its size does not equal {@code rowCount}
-- **See also:** Dataset, RowDataset, #toDataset(Collection)
+  - `java.lang.IllegalArgumentException` — if {@code columnNames} is {@code null} , contains a {@code null} , empty, or duplicate name, or if its size does not equal {@code rowCount}
+- **See also:** Dataset, #toDataset(Collection)
 ##### hashCode(...) -> int
 - **Signature:** `@Override public int hashCode()`
 - **Summary:** Returns a hash code value for this matrix.
@@ -8107,7 +8315,7 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
   - `java.lang.IllegalStateException` — if the matrix is not square (rowCount != columnCount)
   - `java.lang.IllegalArgumentException` — if {@code mainDiagonal} is {@code null} or its length is not equal to {@code rowCount}
 ##### updateMainDiagonal(...) -> void
-- **Signature:** `public <E extends Exception> void updateMainDiagonal(final Throwables.ShortUnaryOperator<E> operator) throws IllegalStateException, E`
+- **Signature:** `public <E extends Exception> void updateMainDiagonal(final Throwables.ShortUnaryOperator<E> operator) throws IllegalStateException, IllegalArgumentException, E`
 - **Summary:** Updates the values on the main diagonal (upper-left to lower-right) by applying the specified operator.
 - **Contract:**
   - The matrix must be square.
@@ -8115,6 +8323,7 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
   - `operator` (`Throwables.ShortUnaryOperator<E>`) — the operator to apply to each diagonal element; receives current element value and returns new value
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
 ##### antiDiagonalCopy(...) -> short\[\]
 - **Signature:** `@Override public short[] antiDiagonalCopy() throws IllegalStateException`
@@ -8137,7 +8346,7 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
   - `java.lang.IllegalStateException` — if the matrix is not square (rowCount != columnCount)
   - `java.lang.IllegalArgumentException` — if {@code antiDiagonal} is {@code null} or its length is not equal to {@code rowCount}
 ##### updateAntiDiagonal(...) -> void
-- **Signature:** `public <E extends Exception> void updateAntiDiagonal(final Throwables.ShortUnaryOperator<E> operator) throws IllegalStateException, E`
+- **Signature:** `public <E extends Exception> void updateAntiDiagonal(final Throwables.ShortUnaryOperator<E> operator) throws IllegalStateException, IllegalArgumentException, E`
 - **Summary:** Updates the values on the anti-diagonal (upper-right to lower-left) by applying the specified operator.
 - **Contract:**
   - The matrix must be square.
@@ -8145,25 +8354,33 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
   - `operator` (`Throwables.ShortUnaryOperator<E>`) — the operator to apply to each anti-diagonal element; receives current element value and returns new value
 - **Throws:**
   - `java.lang.IllegalStateException` — if the matrix is not square
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
 ##### updateAll(...) -> void
-- **Signature:** `public <E extends Exception> void updateAll(final Throwables.ShortUnaryOperator<E> operator) throws E`
+- **Signature:** `public <E extends Exception> void updateAll(final Throwables.ShortUnaryOperator<E> operator) throws IllegalArgumentException, E`
 - **Summary:** Updates all elements in the matrix in-place by applying the specified operator.
 - **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
   - Elements are processed in row-major order when executed sequentially.
 - **Parameters:**
   - `operator` (`Throwables.ShortUnaryOperator<E>`) — the operator to apply to each element; receives the current element value and returns the new value
 - **Throws:**
+  - `java.lang.IllegalArgumentException` — if {@code operator} is {@code null}
   - `E` — if the operator throws an exception
-- **Signature:** `public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Short, E> mapper) throws E`
+- **Signature:** `public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Short, E> mapper) throws IllegalArgumentException, E`
 - **Summary:** Updates all elements in the matrix in-place based on their position (row and column indices).
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.IntBiFunction<? extends Short, E>`) — the function that receives row index and column index (0-based) and returns the new value for that position; the returned {@code Short} is unboxed, so it must not be {@code null}
 - **Throws:**
+  - `java.lang.IllegalArgumentException` — if {@code mapper} is {@code null}
   - `E` — if the mapper throws an exception
 ##### replaceIf(...) -> void
 - **Signature:** `public <E extends Exception> void replaceIf(final Throwables.ShortPredicate<E> predicate, final short newValue) throws E`
 - **Summary:** Conditionally replaces elements in-place based on a predicate.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `predicate` (`Throwables.ShortPredicate<E>`) — the condition to test each element; elements for which this returns {@code true} will be replaced
   - `newValue` (`short`) — the value to use for replacing matching elements
@@ -8171,6 +8388,8 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
   - `E` — if the predicate throws an exception
 - **Signature:** `public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final short newValue) throws E`
 - **Summary:** Conditionally replaces elements in-place based on their position (row and column indices).
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `predicate` (`Throwables.IntBiPredicate<E>`) — the condition that tests row index and column index (0-based); elements at positions for which this returns {@code true} will be replaced
   - `newValue` (`short`) — the value to use for replacing matching elements
@@ -8179,6 +8398,8 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 ##### map(...) -> ShortMatrix
 - **Signature:** `public <E extends Exception> ShortMatrix map(final Throwables.ShortUnaryOperator<E> mapper) throws E`
 - **Summary:** Creates a new ShortMatrix by applying a transformation function to each element.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.ShortUnaryOperator<E>`) — the function to apply to each element; receives the current element value and returns the transformed value
 - **Returns:** a new ShortMatrix with transformed values
@@ -8188,6 +8409,8 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 ##### mapToObj(...) -> Matrix<R>
 - **Signature:** `public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.ShortFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E`
 - **Summary:** Creates a new Matrix by applying a function that converts short values to objects of type R.
+- **Contract:**
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `mapper` (`Throwables.ShortFunction<? extends R, E>`) — the function to convert short values to type {@code R}
   - `targetElementType` (`Class<R>`) — the {@code Class} object for type {@code R} (used to allocate the {@code R\[\]\[\]} backing array); must not be {@code null}
@@ -8430,7 +8653,7 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Returns:** a new {@code ShortMatrix} containing the element-wise difference {@code this - other}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code other} is {@code null} , or if the matrices have different shapes
-- **See also:** #add(ShortMatrix)
+- **See also:** #add(ShortMatrix), #zipWith(ShortMatrix, Throwables.ShortBinaryOperator)
 ##### matrixMultiply(...) -> ShortMatrix
 - **Signature:** `public ShortMatrix matrixMultiply(final ShortMatrix other) throws IllegalArgumentException`
 - **Summary:** Performs matrix multiplication (Cayley product) with another matrix.
@@ -8478,6 +8701,7 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Summary:** Performs element-wise operation on two matrices using a binary operator.
 - **Contract:**
   - The matrices must have the same dimensions.
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `other` (`ShortMatrix`) — the second matrix (must have the same dimensions as this matrix)
   - `zipFunction` (`Throwables.ShortBinaryOperator<E>`) — the binary operator to apply to corresponding elements; receives the element from this matrix as first argument and the element from {@code other} as second argument
@@ -8490,6 +8714,7 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Summary:** Performs element-wise operation on three matrices using a ternary operator.
 - **Contract:**
   - All matrices must have the same dimensions.
+  - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
   - `other` (`ShortMatrix`) — the second matrix (must have the same dimensions as this matrix)
   - `third` (`ShortMatrix`) — the third matrix (must have the same dimensions as this matrix)
@@ -8548,6 +8773,7 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to stream (0-based)
 - **Returns:** a {@link ShortStream} of elements from the specified column
+- **See also:** #columnStreams()
 - **Signature:** `@Override public ShortStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Returns a stream of elements from a range of columns in column-major order.
 - **Parameters:**

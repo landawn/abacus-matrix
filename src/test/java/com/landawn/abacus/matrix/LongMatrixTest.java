@@ -4555,7 +4555,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testToArray() {
             LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            long[][] arr = m.internalArray();
+            long[][] arr = m.unsafeBackingArray();
             assertEquals(2, arr.length);
             assertEquals(2, arr[0].length);
             assertArrayEquals(new long[] { 1L, 2L }, arr[0]);

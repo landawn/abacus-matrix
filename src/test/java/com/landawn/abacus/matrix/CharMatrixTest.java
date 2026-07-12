@@ -3955,7 +3955,7 @@ class CharMatrixTest extends TestBase {
         public void testArray() {
             char[][] arr = { { 'a', 'b' }, { 'c', 'd' } };
             CharMatrix m = CharMatrix.of(arr);
-            char[][] result = m.internalArray();
+            char[][] result = m.unsafeBackingArray();
             assertSame(arr, result);
         }
 
@@ -5085,7 +5085,7 @@ class CharMatrixTest extends TestBase {
         public void testArray() {
             char[][] arr = { { 'a', 'b' }, { 'c', 'd' } };
             CharMatrix m = CharMatrix.of(arr);
-            char[][] result = m.internalArray();
+            char[][] result = m.unsafeBackingArray();
             assertArrayEquals(arr, result);
         }
 
