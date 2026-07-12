@@ -53,6 +53,12 @@ import com.landawn.abacus.util.stream.Stream;
  * through the streaming API instead &mdash; for example {@code rowMajorStream().sum()} over all
  * elements, or {@code rowStreams()} / {@code columnStreams()} for per-row or per-column reductions.</p>
  *
+ * <p><b>No numeric ranges:</b> unlike the integral matrix types, this class intentionally omits the
+ * {@code range}/{@code rangeClosed} factories. Generating a floating-point sequence by repeated addition
+ * of a step accumulates rounding error and rarely lands exactly on the intended endpoint, so the
+ * operation is left out rather than offering a subtly lossy result. Build such a matrix from an explicit
+ * {@code float[][]}, or widen an integral range with {@code IntMatrix.range(...).toFloatMatrix()}.</p>
+ *
  * @see IntMatrix
  * @see LongMatrix
  * @see DoubleMatrix

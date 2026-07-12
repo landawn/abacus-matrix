@@ -42,6 +42,11 @@ import com.landawn.abacus.util.stream.Stream;
  * <p>This is the {@code boolean} sibling of {@link ByteMatrix}, {@link IntMatrix}, {@link LongMatrix},
  * and the other primitive-element matrix classes in this package.</p>
  *
+ * <p><b>Conversions:</b> because {@code boolean} has no meaningful numeric widening, this class
+ * intentionally provides none of the {@code toXxxMatrix} conversions offered by the numeric matrix types.
+ * Use {@link #boxed()} to obtain a {@code Matrix<Boolean>}, or map to a numeric matrix explicitly &mdash;
+ * for example {@code boxed().mapToInt(b -> b ? 1 : 0)}.</p>
+ *
  * @see IntMatrix
  * @see LongMatrix
  * @see DoubleMatrix

@@ -52,6 +52,30 @@ import com.landawn.abacus.util.stream.Stream;
  * {@link Matrix#forEach(Throwables.Consumer)}). When iterating by element use the subclass
  * {@code forEach}; when iterating by position use {@code forEachIndices}.</p>
  *
+ * <p><b>Reader/writer naming:</b> methods that read a row, column, or diagonal are named
+ * {@code <artifact>View} when they expose live backing storage (for example {@link #rowView(int)}) and
+ * {@code <artifact>Copy} when they return an independent copy (for example {@link #rowCopy(int)},
+ * {@link #columnCopy(int)}, {@link #mainDiagonalCopy()}); there is deliberately no {@code get*} form, so
+ * that the copy-versus-view distinction is always explicit at the call site. The corresponding writers
+ * are named {@code set<Artifact>} for wholesale replacement (for example {@code setRow}, {@code setColumn},
+ * {@code setMainDiagonal}) and {@code update<Artifact>} for operator-based, in-place transformation
+ * (for example {@code updateRow}, {@code updateColumn}, {@code updateAll}).</p>
+ *
+ * <p><b>Element-wise zipping:</b> the instance {@code zipWith} methods combine this matrix with one or two
+ * others of compatible shape and, for {@link Matrix}, an optional target element type. Their static
+ * counterparts live in {@link Matrices}: {@code Matrices.zip} combines two, three, or a collection of
+ * same-typed matrices, while {@code Matrices.zipToInt}, {@code zipToLong}, {@code zipToDouble}, and
+ * {@code zipToObj} produce a differently typed result. Use the instance {@code zipWith} for same-type
+ * results, and the {@link Matrices} helpers when combining a collection of matrices or changing the
+ * element type.</p>
+ *
+ * <p><b>Primitive conversions:</b> each numeric matrix converts to the {@code int}, {@code long},
+ * {@code float}, and {@code double} matrix types (every such type except its own) through
+ * {@code toIntMatrix}, {@code toLongMatrix}, {@code toFloatMatrix}, and {@code toDoubleMatrix}.
+ * Conversions targeting the narrower {@code byte}, {@code char}, and {@code short} types, or
+ * {@code boolean}, are intentionally omitted (they would be lossy or ill-defined); obtain those with an
+ * explicit {@code map}/{@code mapToObj} step or by constructing the target matrix directly.</p>
+ *
  * @param <A> the array type used for internal row storage (for example {@code int[]}, {@code double[]}, or {@code Object[]})
  * @param <PL> the flattened list type returned by {@link #flatten()} (for example {@code IntList} or {@code List<T>})
  * @param <ES> the element stream type returned by element-streaming methods such as {@link #rowMajorStream()}

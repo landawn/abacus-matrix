@@ -50,6 +50,12 @@ import com.landawn.abacus.util.stream.Stream;
  *     {@link LongMatrix}, {@link DoubleMatrix}, and the generic {@link Matrix}).</li>
  * </ul>
  *
+ * <p>The {@code zip}, {@code zipToInt}, {@code zipToLong}, {@code zipToDouble}, and {@code zipToObj}
+ * methods here are the static, multi-matrix counterparts to the instance {@code zipWith} methods on the
+ * individual matrix classes: use {@code zipWith} to combine a matrix with one or two others of the same
+ * element type, and these helpers to combine a whole collection of matrices or to produce a differently
+ * typed result.</p>
+ *
  * <p>The class also holds helpers for overflow-safe size calculations and backing-array
  * allocation used by the matrix implementations.</p>
  */
