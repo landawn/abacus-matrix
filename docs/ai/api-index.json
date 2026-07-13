@@ -1,8 +1,8 @@
 {
   "library": {
     "name": "abacus-matrix",
-    "version": "3.8.1",
-    "generated_at": "2026-07-12",
+    "version": "3.8.2",
+    "generated_at": "2026-07-13",
     "java_target": "17",
     "source": {
       "git_sha": "unknown"
@@ -11,6 +11,7 @@
   "packages": [
     {
       "name": "com.landawn.abacus.matrix",
+      "summary": "Mutable, rectangular, array-backed matrices for Java primitive and reference values.",
       "types": [
         {
           "fqn": "com.landawn.abacus.matrix.AbstractMatrix",

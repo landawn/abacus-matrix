@@ -1,10 +1,10 @@
-# abacus-matrix API Index (v3.8.1)
+# abacus-matrix API Index (v3.8.2)
 - Build: unknown
 - Java: 17
-- Generated: 2026-07-12
+- Generated: 2026-07-13
 
 ## Packages
-- com.landawn.abacus.matrix
+- com.landawn.abacus.matrix — Mutable, rectangular, array-backed matrices for Java primitive and reference values.
 
 ## com.landawn.abacus.matrix
 ### Class AbstractMatrix (com.landawn.abacus.matrix.AbstractMatrix)

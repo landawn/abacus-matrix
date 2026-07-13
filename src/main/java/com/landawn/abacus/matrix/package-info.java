@@ -13,41 +13,96 @@
  */
 
 /**
- * Array-backed, mutable matrices for Java primitive and reference values.
+ * Mutable, rectangular, array-backed matrices for Java primitive and reference values.
  *
- * <p>The package provides a common matrix API through {@link com.landawn.abacus.matrix.AbstractMatrix}
- * and specialized implementations for every primitive type, plus
- * {@link com.landawn.abacus.matrix.Matrix} for reference values. The matrix types support element and
- * row/column access, shape transformations, mapping, streaming, zipping, and copying. Numeric matrix
- * types also provide element-wise arithmetic and matrix multiplication. Cross-matrix operations and
- * shape utilities are available from {@link com.landawn.abacus.matrix.Matrices}.</p>
+ * <h2>Matrix types</h2>
  *
- * <p>All matrix instances have a rectangular two-dimensional backing array. Constructors and
- * {@code of(...)} factories wrap a supplied array after validating its shape, so mutations made through
- * either the matrix or the original array are visible through the other. Use {@code copyOf(...)} or
- * {@code copy()} when the matrix must own independent storage. Methods whose names end in {@code View}
- * expose live storage, whereas methods whose names end in {@code Copy} return independent data.</p>
+ * <p>{@link com.landawn.abacus.matrix.Matrix} stores reference values. The primitive-specialized
+ * implementations are {@link com.landawn.abacus.matrix.BooleanMatrix},
+ * {@link com.landawn.abacus.matrix.ByteMatrix}, {@link com.landawn.abacus.matrix.CharMatrix},
+ * {@link com.landawn.abacus.matrix.ShortMatrix}, {@link com.landawn.abacus.matrix.IntMatrix},
+ * {@link com.landawn.abacus.matrix.LongMatrix}, {@link com.landawn.abacus.matrix.FloatMatrix}, and
+ * {@link com.landawn.abacus.matrix.DoubleMatrix}. They share shape, traversal, transformation, and
+ * rendering behavior through {@link com.landawn.abacus.matrix.AbstractMatrix}. Static operations that
+ * combine matrices or control execution policy are provided by {@link com.landawn.abacus.matrix.Matrices}.</p>
  *
- * <p>Matrix instances are mutable and are not thread-safe. Operations may execute sequentially or in
- * parallel according to the current thread's {@link com.landawn.abacus.matrix.ParallelMode}; callbacks
- * supplied to an operation that can run in parallel must therefore be thread-safe.</p>
+ * <p>All concrete types support element access, row and column access, copying, resizing, reshaping,
+ * transposition, rotation, repetition, stacking, mapping, zipping, and row-major and column-major
+ * traversal. Every primitive specialization supports boxing. The non-boolean primitive types also
+ * support element-wise addition and subtraction, matrix multiplication, and numeric conversion.
+ * {@link com.landawn.abacus.matrix.BooleanMatrix} provides boolean operations and reductions.</p>
  *
- * <p>For example:</p>
+ * <h2>Shape and indexing</h2>
+ *
+ * <p>A matrix is backed by a rectangular two-dimensional array: every row is non-{@code null} and has
+ * the same length. Rows and columns use zero-based indexes. Parameters named {@code fromRowIndex},
+ * {@code toRowIndex}, {@code fromColumnIndex}, and {@code toColumnIndex} describe half-open ranges; the
+ * {@code from} index is included and the {@code to} index is excluded.</p>
+ *
+ * <p>Java arrays can represent {@code N x 0} matrices but cannot retain a non-zero column count when
+ * there are no rows. Consequently, {@code 0 x 0} and {@code N x 0} shapes are supported, while a
+ * conceptual {@code 0 x N} shape for {@code N > 0} is rejected or, where documented for a
+ * transformation, collapses to {@code 0 x 0}.</p>
+ *
+ * <h2>Storage ownership and mutation</h2>
+ *
+ * <p>Public constructors and {@code of(...)} factories validate and then wrap the supplied array; they
+ * do not make a defensive copy. The caller and matrix therefore share the array and its rows. Use
+ * {@code copyOf(...)} to copy an input array or {@link com.landawn.abacus.matrix.AbstractMatrix#copy()}
+ * to copy a matrix. For reference matrices, these operations copy the array structure but not the
+ * referenced element objects.</p>
+ *
+ * <p>{@link com.landawn.abacus.matrix.AbstractMatrix#unsafeBackingArray()} and methods whose names end
+ * in {@code View}, such as {@link com.landawn.abacus.matrix.AbstractMatrix#rowView(int)}, expose live
+ * storage. Methods whose names end in {@code Copy}, together with
+ * {@link com.landawn.abacus.matrix.AbstractMatrix#flatten()}, return independent containers.</p>
+ *
+ * <p>Methods named {@code set*}, {@code update*}, {@code fill}, {@code replaceIf}, or ending in
+ * {@code InPlace} modify the receiving matrix. The specialized {@code mutateFlattened} operation lets
+ * its action modify the matrix through a flattened array. Shape transformations, arithmetic operations,
+ * {@code map}, {@code zipWith}, {@code copy}, and methods without the {@code InPlace} suffix return new
+ * matrices instead. Matrix instances are mutable and are not thread-safe.</p>
+ *
+ * <h2>Traversal and parallel execution</h2>
+ *
+ * <p>Element streams are available in row-major and column-major order. Streams of individual rows or
+ * columns and streams of coordinate points are also available. Sequential callback-based operations
+ * visit elements in the order documented by the method. An operation may instead execute in parallel
+ * according to the current thread's {@link com.landawn.abacus.matrix.ParallelMode}, runtime support,
+ * and the amount of work involved. In that case, callback invocation order is unspecified and the
+ * callback must be thread-safe.</p>
+ *
+ * <p>Use {@link com.landawn.abacus.matrix.Matrices#setParallelMode(ParallelMode)} to configure the
+ * current thread, or
+ * {@link com.landawn.abacus.matrix.Matrices#runWithParallelMode(ParallelMode, com.landawn.abacus.util.Throwables.Runnable)}
+ * to apply a mode for the duration of an action and restore the previous mode afterward.</p>
+ *
+ * <h2>Example</h2>
+ *
  * <pre>{@code
- * IntMatrix left = IntMatrix.of(new int[][] {
+ * int[][] source = {
  *     { 1, 2, 3 },
  *     { 4, 5, 6 }
- * });
+ * };
+ *
+ * IntMatrix wrapped = IntMatrix.of(source);      // shares source
+ * IntMatrix owned = IntMatrix.copyOf(source);    // owns its row arrays
+ * source[0][0] = 10;
+ *
+ * wrapped.get(0, 0); // 10
+ * owned.get(0, 0);   // 1
+ *
  * IntMatrix right = IntMatrix.of(new int[][] {
  *     { 7, 8 },
  *     { 9, 10 },
  *     { 11, 12 }
  * });
- * IntMatrix product = left.matrixMultiply(right);
+ * IntMatrix product = owned.matrixMultiply(right);
  * }</pre>
  *
+ * @see com.landawn.abacus.matrix.AbstractMatrix
  * @see com.landawn.abacus.matrix.Matrix
- * @see com.landawn.abacus.matrix.IntMatrix
  * @see com.landawn.abacus.matrix.Matrices
+ * @see com.landawn.abacus.matrix.ParallelMode
  */
 package com.landawn.abacus.matrix;
