@@ -124,8 +124,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     /**
      * Creates a DoubleMatrix from a two-dimensional double array.
      *
-     * <p><b>&#9888;&#65039; Shared backing:</b> The provided array is used directly without defensive copying.
-     * Changes to the input array are reflected in the returned matrix, and vice versa.
+     * <p><b>&#9888;&#65039; Shared backing:</b> When the input has at least one row, the provided array is used directly without defensive copying.
+     * Changes to the input array are reflected in the returned matrix, and vice versa. A zero-row input is instead canonicalized to the shared empty matrix,
+     * so its outer-array identity is not retained.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -154,9 +155,10 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     /**
      * Creates a {@code DoubleMatrix} that owns a defensive deep copy of the supplied two-dimensional array.
      *
-     * <p>Unlike {@link #of(double[][])}, which wraps the caller's array without copying, this factory clones
-     * every row into a freshly-allocated backing array. Subsequent modifications to {@code a} (or its rows)
-     * are therefore <b>not</b> visible through the returned matrix, and vice versa.</p>
+     * <p>Unlike {@link #of(double[][])} for non-empty inputs, which wraps the caller's array without copying, this factory clones
+     * every row of a non-empty input into a freshly allocated backing array. Subsequent modifications to {@code a} (or its rows)
+     * are therefore <b>not</b> visible through the returned matrix, and vice versa. A zero-row input is canonicalized to the shared
+     * empty matrix, so its outer-array identity is not retained.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1046,6 +1048,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * <p>The operator is applied to each element in the specified column sequentially
      * from top to bottom (row 0 to row rowCount-1).</p>
+     * If multiple logical rows share one backing array, that backing value is transformed only once.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1073,9 +1076,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
 
         checkColumnIndex(columnIndex);
 
-        for (int i = 0; i < rowCount; i++) {
-            a[i][columnIndex] = operator.applyAsDouble(a[i][columnIndex]);
-        }
+        forEachDistinctRow(row -> row[columnIndex] = operator.applyAsDouble(row[columnIndex]));
     }
 
     /**
@@ -1289,6 +1290,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
      * Elements are processed in row-major order when executed sequentially.</p>
+     * <p>If multiple logical rows share one backing array, each value in that array is transformed only once.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1312,16 +1314,24 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
         N.checkArgNotNull(operator, "operator");
 
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.applyAsDouble(a[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
-        } else {
-            for (int i = 0; i < rowCount; i++) {
-                final double[] row = a[i];
+            if (hasAliasedRows()) {
+                final double[][] distinctRows = new double[rowCount][];
+                final int[] distinctRowCount = { 0 };
+                forEachDistinctRow(row -> distinctRows[distinctRowCount[0]++] = row);
 
+                final Throwables.IntBiConsumer<E> elementAction = (i, j) -> distinctRows[i][j] = operator.applyAsDouble(distinctRows[i][j]);
+                final long distinctElementCount = (long) distinctRowCount[0] * columnCount;
+                Matrices.forEachIndices(distinctRowCount[0], columnCount, elementAction, Matrices.shouldRunInParallel(this, distinctElementCount));
+            } else {
+                final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.applyAsDouble(a[i][j]);
+                Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            }
+        } else {
+            forEachDistinctRow(row -> {
                 for (int j = 0; j < columnCount; j++) {
                     row[j] = operator.applyAsDouble(row[j]);
                 }
-            }
+            });
         }
     }
 
@@ -1332,6 +1342,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p>The mapper receives the row and column indices for each element and returns the new value
      * for that position. This is useful for initializing matrices based on position patterns or
      * mathematical formulas. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
+     *
+     * <p>If logical rows share a backing array, every logical coordinate is still visited, but
+     * traversal is kept sequential so later aliases overwrite earlier ones deterministically.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1356,7 +1369,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Double, E> mapper) throws IllegalArgumentException, E {
         N.checkArgNotNull(mapper, "mapper");
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this) && !hasAliasedRows());
     }
 
     /**
@@ -1365,6 +1378,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * This modifies the matrix directly.
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.</p>
+     *
+     * <p>If multiple logical rows share the same backing array, the predicate is evaluated once
+     * per physical cell and that backing row is updated once.</p>
      *
      * <p><b>Floating-point note:</b> {@code NaN} fails ordering comparisons such as {@code <},
      * {@code >}, {@code <=}, {@code >=} and is not equal to itself under {@code ==}. To match
@@ -1398,8 +1414,37 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     public <E extends Exception> void replaceIf(final Throwables.DoublePredicate<E> predicate, final double newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = predicate.test(a[i][j]) ? newValue : a[i][j];
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+
+        if (Matrices.shouldRunInParallel(this)) {
+            if (hasAliasedRows()) {
+                final double[][] distinctRows = new double[rowCount][];
+                final int[] distinctRowCount = { 0 };
+                forEachDistinctRow(row -> distinctRows[distinctRowCount[0]++] = row);
+
+                final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
+                    if (predicate.test(distinctRows[i][j])) {
+                        distinctRows[i][j] = newValue;
+                    }
+                };
+                final long distinctElementCount = (long) distinctRowCount[0] * columnCount;
+                Matrices.forEachIndices(distinctRowCount[0], columnCount, elementAction, Matrices.shouldRunInParallel(this, distinctElementCount));
+            } else {
+                final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
+                    if (predicate.test(a[i][j])) {
+                        a[i][j] = newValue;
+                    }
+                };
+                Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            }
+        } else {
+            forEachDistinctRow(row -> {
+                for (int j = 0; j < columnCount; j++) {
+                    if (predicate.test(row[j])) {
+                        row[j] = newValue;
+                    }
+                }
+            });
+        }
     }
 
     /**
@@ -1409,6 +1454,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * <p>This is useful for position-based replacements such as setting diagonals, borders,
      * or specific regions. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
+     *
+     * <p>Nonmatching positions perform no write. If logical rows share a backing array, a
+     * replacement made through any matching coordinate is therefore visible through every alias.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1431,7 +1479,11 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final double newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = predicate.test(i, j) ? newValue : a[i][j];
+        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
+            if (predicate.test(i, j)) {
+                a[i][j] = newValue;
+            }
+        };
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
     }
 
@@ -2096,6 +2148,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * <p>This is an in-place operation that modifies the current matrix.
      * For a non-destructive version that returns a new matrix, use {@link #flipHorizontally()}.</p>
+     * If multiple logical rows share one backing array, that array is reversed only once, preserving the alias relationship.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2115,9 +2168,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     @Override
     public void flipHorizontallyInPlace() {
-        for (int i = 0; i < rowCount; i++) {
-            N.reverse(a[i]);
-        }
+        forEachDistinctRow(N::reverse);
     }
 
     /**
@@ -2937,7 +2988,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
         final int newColumnCount = other.columnCount;
         final double[][] result = new double[rowCount][newColumnCount];
 
-        if (Matrices.shouldRunInParallel(this, elementCount * newColumnCount)) {
+        if (Matrices.shouldRunMatrixMultiplyInParallel(this, newColumnCount)) {
             final Throwables.IntTriConsumer<RuntimeException> multiplyAction = (i, j, k) -> result[i][j] += a[i][k] * otherData[k][j];
             Matrices.forEachCartesianIndices(this, other, multiplyAction, true);
         } else {

@@ -6563,6 +6563,63 @@ class ShortMatrixTest extends TestBase {
             fillMatrix.fill(1, 0, backing);
             assertArrayEquals(new short[] { 3, 4 }, fillMatrix.rowCopy(2));
         }
+
+        @Test
+        public void testFlipHorizontallyInPlace_reversesSharedBackingRowOnce() {
+            short[] sharedRow = { 1, 2, 3, 4 };
+            ShortMatrix matrix = ShortMatrix.of(sharedRow, sharedRow);
+
+            matrix.flipHorizontallyInPlace();
+
+            assertArrayEquals(new short[] { 4, 3, 2, 1 }, sharedRow);
+            assertSame(matrix.rowView(0), matrix.rowView(1));
+        }
+
+        @Test
+        public void testUnaryUpdates_transformSharedBackingCellsOnce() {
+            short[] sharedColumnRow = { 1, 2 };
+            ShortMatrix columnMatrix = ShortMatrix.of(sharedColumnRow, sharedColumnRow);
+
+            columnMatrix.updateColumn(0, value -> (short) (value + 1));
+
+            assertArrayEquals(new short[] { 2, 2 }, sharedColumnRow);
+
+            short[] sharedSequentialRow = { 1, 2 };
+            ShortMatrix sequentialMatrix = ShortMatrix.of(sharedSequentialRow, sharedSequentialRow);
+            AtomicInteger sequentialCalls = new AtomicInteger();
+
+            Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> sequentialMatrix.updateAll(value -> {
+                sequentialCalls.incrementAndGet();
+                return (short) (value + 1);
+            }));
+
+            assertEquals(2, sequentialCalls.get());
+            assertArrayEquals(new short[] { 2, 3 }, sharedSequentialRow);
+
+            short[] sharedParallelRow = { 1, 2 };
+            ShortMatrix parallelMatrix = ShortMatrix.of(sharedParallelRow, sharedParallelRow);
+            AtomicInteger parallelCalls = new AtomicInteger();
+
+            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> parallelMatrix.updateAll(value -> {
+                parallelCalls.incrementAndGet();
+                return (short) (value + 1);
+            }));
+
+            assertEquals(2, parallelCalls.get());
+            assertArrayEquals(new short[] { 2, 3 }, sharedParallelRow);
+
+            short[] sharedReplaceRow = { 1, 2 };
+            ShortMatrix replaceMatrix = ShortMatrix.of(sharedReplaceRow, sharedReplaceRow);
+            AtomicInteger replaceCalls = new AtomicInteger();
+
+            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> replaceMatrix.replaceIf(value -> {
+                replaceCalls.incrementAndGet();
+                return value > 0;
+            }, (short) 9));
+
+            assertEquals(2, replaceCalls.get());
+            assertArrayEquals(new short[] { 9, 9 }, sharedReplaceRow);
+        }
     }
 
 }

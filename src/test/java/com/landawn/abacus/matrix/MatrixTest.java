@@ -7475,6 +7475,115 @@ class MatrixTest extends TestBase {
         }
 
         @Test
+        public void testUpdateColumnTransformsAliasedBackingCellOnce() {
+            Integer[] sharedRow = { 1, 2 };
+            Matrix<Integer> m = Matrix.of(new Integer[][] { sharedRow, sharedRow });
+            final int[] calls = { 0 };
+
+            m.updateColumn(0, value -> {
+                calls[0]++;
+                return value + 1;
+            });
+
+            assertEquals(1, calls[0]);
+            assertArrayEquals(new Integer[] { 2, 2 }, m.rowCopy(0));
+            assertArrayEquals(new Integer[] { 2, 2 }, m.rowCopy(1));
+        }
+
+        @Test
+        public void testUpdateAllTransformsAliasedBackingRowOnce() {
+            Integer[] sharedRow = { 1, 2 };
+            Integer[] distinctRow = { 3, 4 };
+            Matrix<Integer> m = Matrix.of(new Integer[][] { sharedRow, sharedRow, distinctRow });
+            final int[] calls = { 0 };
+
+            m.updateAll(value -> {
+                calls[0]++;
+                return value + 10;
+            });
+
+            assertEquals(4, calls[0]);
+            assertEquals(List.of(11, 12, 11, 12, 13, 14), m.flatten());
+        }
+
+        @Test
+        public void testReplaceIfTestsAliasedBackingCellsOnce() {
+            Integer[] sharedRow = { 1, 2 };
+            Matrix<Integer> m = Matrix.of(new Integer[][] { sharedRow, sharedRow });
+            final int[] calls = { 0 };
+
+            m.replaceIf(value -> {
+                calls[0]++;
+                return value > 0;
+            }, 9);
+
+            assertEquals(2, calls[0]);
+            assertArrayEquals(new Integer[] { 9, 9 }, sharedRow);
+        }
+
+        @Test
+        public void testHorizontalInPlaceFlipReversesAliasedBackingRowOnce() {
+            Integer[] sharedRow = { 1, 2, 3 };
+            Matrix<Integer> m = Matrix.of(new Integer[][] { sharedRow, sharedRow });
+
+            m.flipHorizontallyInPlace();
+
+            assertArrayEquals(new Integer[] { 3, 2, 1 }, m.rowCopy(0));
+            assertArrayEquals(new Integer[] { 3, 2, 1 }, m.rowCopy(1));
+
+            m.flipHorizontallyInPlace();
+            assertArrayEquals(new Integer[] { 1, 2, 3 }, m.rowCopy(0));
+        }
+
+        @Test
+        public void testVerticalStackTreatsZeroRowOperandAsRuntimeTypeNeutral() {
+            Matrix<String> empty = Matrix.empty();
+            Matrix<String> zeroWidthRows = Matrix.of(new String[][] { {}, {} });
+            Matrix<String> typedEmpty = Matrix.of(new String[0][0]);
+
+            Matrix<String> emptyFirst = empty.stackVertically(zeroWidthRows);
+            Matrix<String> emptyLast = zeroWidthRows.stackVertically(empty);
+            Matrix<String> zeroRowsEmptyFirst = empty.stackVertically(typedEmpty).resize(1, 0);
+            Matrix<String> zeroRowsEmptyLast = typedEmpty.stackVertically(empty).resize(1, 0);
+
+            String[] firstRow = emptyFirst.rowView(0);
+            String[] lastRow = emptyLast.rowView(0);
+            String[] zeroRowsFirstRow = zeroRowsEmptyFirst.rowView(0);
+            String[] zeroRowsLastRow = zeroRowsEmptyLast.rowView(0);
+            assertEquals(String.class, firstRow.getClass().getComponentType());
+            assertEquals(String.class, lastRow.getClass().getComponentType());
+            assertEquals(String.class, zeroRowsFirstRow.getClass().getComponentType());
+            assertEquals(String.class, zeroRowsLastRow.getClass().getComponentType());
+        }
+
+        @Test
+        public void testHorizontalStackTreatsSharedEmptyAsRuntimeTypeNeutral() {
+            Matrix<String> empty = Matrix.empty();
+            Matrix<String> typedEmpty = Matrix.of(new String[0][0]);
+
+            Matrix<String> emptyFirst = empty.stackHorizontally(typedEmpty).resize(1, 0);
+            Matrix<String> emptyLast = typedEmpty.stackHorizontally(empty).resize(1, 0);
+
+            String[] firstRow = emptyFirst.rowView(0);
+            String[] lastRow = emptyLast.rowView(0);
+            assertEquals(String.class, firstRow.getClass().getComponentType());
+            assertEquals(String.class, lastRow.getClass().getComponentType());
+        }
+
+        @Test
+        public void testRepeatedSharedEmptyStacksRemainRuntimeTypeNeutral() {
+            Matrix<String> typedEmpty = Matrix.of(new String[0][0]);
+
+            Matrix<String> vertical = Matrix.<String> empty().stackVertically(Matrix.<String> empty()).stackVertically(typedEmpty).resize(1, 1);
+            Matrix<String> horizontal = Matrix.<String> empty().stackHorizontally(Matrix.<String> empty()).stackHorizontally(typedEmpty).resize(1, 1);
+
+            String[] verticalRow = vertical.rowView(0);
+            String[] horizontalRow = horizontal.rowView(0);
+            assertEquals(String.class, verticalRow.getClass().getComponentType());
+            assertEquals(String.class, horizontalRow.getClass().getComponentType());
+        }
+
+        @Test
         public void testAliasedArraySourcesAreSnapshotted() {
             Matrix<Integer> columnMatrix = Matrix.of(new Integer[][] { { 1, 2 }, { 3, 4 } });
             columnMatrix.setColumn(1, columnMatrix.rowView(0));
@@ -7488,6 +7597,41 @@ class MatrixTest extends TestBase {
             Matrix<Integer> fillMatrix = Matrix.of(backing);
             fillMatrix.fill(1, 0, new Integer[][] { backing[0], backing[1] });
             assertArrayEquals(new Integer[] { 3, 4 }, fillMatrix.rowCopy(2));
+        }
+
+        @Test
+        public void testStackPreservesRuntimeDimensionForArrayValuedElements() {
+            final Object[][][] stringData = new String[][][] { { { "left" } } };
+            final Object[][][] integerData = new Integer[][][] { { { 1 } } };
+            final Matrix<Object[]> strings = Matrix.of(stringData);
+            final Matrix<Object[]> integers = Matrix.of(integerData);
+
+            final Matrix<Object[]> stacked = strings.stackVertically(integers);
+
+            // The declared row type is Object[][]. Before the fix the common element type was
+            // bare Comparable/Serializable, so rowCopy returned Comparable[]/Serializable[] and
+            // this compiler-inserted cast threw ClassCastException.
+            final Object[][] firstRow = stacked.rowCopy(0);
+            final Object[][] secondRow = stacked.rowCopy(1);
+            assertArrayEquals(new Object[] { "left" }, firstRow[0]);
+            assertArrayEquals(new Object[] { 1 }, secondRow[0]);
+            assertTrue(stacked.elementType().isArray());
+        }
+
+        @Test
+        public void testDiagonalsPreservesRuntimeDimensionForArrayValuedElements() {
+            final Object[][] mainDiagonal = new String[][] { { "main-0" }, { "main-1" } };
+            final Object[][] antiDiagonal = new Integer[][] { { 10 }, { 20 } };
+
+            final Matrix<Object[]> matrix = Matrix.diagonals(mainDiagonal, antiDiagonal);
+
+            final Object[][] firstRow = matrix.rowCopy(0);
+            final Object[][] secondRow = matrix.rowCopy(1);
+            assertArrayEquals(new Object[] { "main-0" }, firstRow[0]);
+            assertArrayEquals(new Object[] { 10 }, firstRow[1]);
+            assertArrayEquals(new Object[] { 20 }, secondRow[0]);
+            assertArrayEquals(new Object[] { "main-1" }, secondRow[1]);
+            assertTrue(matrix.elementType().isArray());
         }
     }
 }

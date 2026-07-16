@@ -122,7 +122,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * <p><b>&#9888;&#65039; Shared backing:</b> When {@code a} is non-empty, the provided array is used directly
      * without defensive copying. Changes to the input array are reflected in the returned matrix,
-     * and vice versa. Call {@link #copy()} if you need an independently owned matrix.</p>
+     * and vice versa. A zero-row input is instead canonicalized to the shared empty matrix, so its
+     * outer-array identity is not retained. Call {@link #copy()} if you need an independently owned matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -152,9 +153,10 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     /**
      * Creates a {@code ByteMatrix} that owns a defensive deep copy of the supplied two-dimensional array.
      *
-     * <p>Unlike {@link #of(byte[][])}, which wraps the caller's array without copying, this factory clones
-     * every row into a freshly-allocated backing array. Subsequent modifications to {@code a} (or its rows)
-     * are therefore <b>not</b> visible through the returned matrix, and vice versa.</p>
+     * <p>For a non-empty input, unlike {@link #of(byte[][])}, which wraps the caller's array without copying,
+     * this factory allocates a new outer array and clones every row. Subsequent modifications to {@code a}
+     * (or its rows) are therefore <b>not</b> visible through the returned matrix, and vice versa. A zero-row
+     * input is canonicalized to the shared empty matrix, so its outer-array identity is not retained.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -986,6 +988,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p>The operator is applied to each element in the specified column sequentially
      * from top to bottom (row 0 to row rowCount-1).</p>
      *
+     * <p>If multiple logical rows share the same backing array, the operator is applied to that
+     * backing row only once, at its first occurrence.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2, 3}, {4, 5, 6}});
@@ -1013,9 +1018,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
 
         checkColumnIndex(columnIndex);
 
-        for (int i = 0; i < rowCount; i++) {
-            a[i][columnIndex] = operator.applyAsByte(a[i][columnIndex]);
-        }
+        forEachDistinctRow(row -> row[columnIndex] = operator.applyAsByte(row[columnIndex]));
     }
 
     /**
@@ -1232,6 +1235,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
      * Elements are processed in row-major order when executed sequentially.</p>
      *
+     * <p>If multiple logical rows share the same backing array, each backing row is updated only
+     * once, at its first occurrence.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
@@ -1257,17 +1263,29 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     public <E extends Exception> void updateAll(final Throwables.ByteUnaryOperator<E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, "operator");
 
-        if (Matrices.shouldRunInParallel(this)) {
+        if (columnCount == 0) {
+            return;
+        }
+
+        final boolean runInParallel = Matrices.shouldRunInParallel(this);
+
+        if (runInParallel && !hasAliasedRows()) {
             final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.applyAsByte(a[i][j]);
             Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
-        } else {
-            for (int i = 0; i < rowCount; i++) {
-                final byte[] row = a[i];
+        } else if (runInParallel) {
+            final byte[][] distinctRows = new byte[rowCount][];
+            final int[] distinctRowCount = { 0 };
+            forEachDistinctRow(row -> distinctRows[distinctRowCount[0]++] = row);
 
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> distinctRows[i][j] = operator.applyAsByte(distinctRows[i][j]);
+            final long distinctElementCount = (long) distinctRowCount[0] * columnCount;
+            Matrices.forEachIndices(distinctRowCount[0], columnCount, elementAction, Matrices.shouldRunInParallel(this, distinctElementCount));
+        } else {
+            forEachDistinctRow(row -> {
                 for (int j = 0; j < columnCount; j++) {
                     row[j] = operator.applyAsByte(row[j]);
                 }
-            }
+            });
         }
     }
 
@@ -1278,6 +1296,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p>The mapper receives the row and column indices for each element and returns the new value
      * for that position. This is useful for initializing matrices based on position patterns or
      * mathematical formulas. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
+     *
+     * <p>If logical rows share a backing array, every logical coordinate is still visited, but
+     * traversal is kept sequential so later aliases overwrite earlier ones deterministically.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1305,7 +1326,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Byte, E> mapper) throws IllegalArgumentException, E {
         N.checkArgNotNull(mapper, "mapper");
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this) && !hasAliasedRows());
     }
 
     /**
@@ -1314,6 +1335,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * This modifies the matrix directly.
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.</p>
+     *
+     * <p>If multiple logical rows share the same backing array, the predicate is evaluated once
+     * per physical cell and that backing row is updated once.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1338,8 +1362,37 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      */
     public <E extends Exception> void replaceIf(final Throwables.BytePredicate<E> predicate, final byte newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = predicate.test(a[i][j]) ? newValue : a[i][j];
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+
+        if (Matrices.shouldRunInParallel(this)) {
+            if (hasAliasedRows()) {
+                final byte[][] distinctRows = new byte[rowCount][];
+                final int[] distinctRowCount = { 0 };
+                forEachDistinctRow(row -> distinctRows[distinctRowCount[0]++] = row);
+
+                final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
+                    if (predicate.test(distinctRows[i][j])) {
+                        distinctRows[i][j] = newValue;
+                    }
+                };
+                final long distinctElementCount = (long) distinctRowCount[0] * columnCount;
+                Matrices.forEachIndices(distinctRowCount[0], columnCount, elementAction, Matrices.shouldRunInParallel(this, distinctElementCount));
+            } else {
+                final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
+                    if (predicate.test(a[i][j])) {
+                        a[i][j] = newValue;
+                    }
+                };
+                Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            }
+        } else {
+            forEachDistinctRow(row -> {
+                for (int j = 0; j < columnCount; j++) {
+                    if (predicate.test(row[j])) {
+                        row[j] = newValue;
+                    }
+                }
+            });
+        }
     }
 
     /**
@@ -1349,6 +1402,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * <p>This is useful for position-based replacements such as setting diagonals, borders,
      * or specific regions. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
+     *
+     * <p>Nonmatching positions perform no write. If logical rows share a backing array, a
+     * replacement made through any matching coordinate is therefore visible through every alias.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1374,7 +1430,11 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      */
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final byte newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = predicate.test(i, j) ? newValue : a[i][j];
+        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
+            if (predicate.test(i, j)) {
+                a[i][j] = newValue;
+            }
+        };
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
     }
 
@@ -1723,7 +1783,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * <ul>
      *   <li><b>If a dimension shrinks</b> — elements beyond the new boundary are discarded.
-     *       {@code defaultValue} is <em>not</em> used in this case.</li>
+     *       If neither dimension grows, {@code defaultValue} is not used.</li>
      *   <li><b>If a dimension grows</b> — new cells are filled with {@code defaultValue}.</li>
      *   <li><b>Mixed case</b> — each dimension is treated independently, so it is valid
      *       to grow rows while truncating columns, or vice versa.</li>
@@ -1756,7 +1816,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param newRowCount the row count of the returned matrix; must be {@code >= 0}
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
      * @param defaultValue the value used to fill cells that are added when a dimension grows;
-     *        ignored when a dimension shrinks
+     *        ignored when neither dimension grows
      * @return a new ByteMatrix with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
      *         if the resulting shape is not representable (zero rows with a non-zero column count),
@@ -1949,6 +2009,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p>This is an in-place operation that modifies the current matrix.
      * For a non-destructive version that returns a new matrix, use {@link #flipHorizontally()}.</p>
      *
+     * <p>If multiple logical rows share the same backing array, that backing row is reversed only
+     * once, preserving the alias relationship.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2, 3}, {4, 5, 6}});
@@ -1967,9 +2030,11 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      */
     @Override
     public void flipHorizontallyInPlace() {
-        for (int i = 0; i < rowCount; i++) {
-            N.reverse(a[i]);
+        if (columnCount < 2) {
+            return;
         }
+
+        forEachDistinctRow(N::reverse);
     }
 
     /**
@@ -2619,7 +2684,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * <p><b>Overflow:</b> the sum {@code a[i][j] + other[i][j]} is computed as an {@code int} and
      * narrowed back to {@code byte} via an explicit cast, so values outside the byte range
-     * {@code [-128, 127]} wrap modulo 256. For example, {@code (byte)127 + (byte)1 == (byte)-128}.
+     * {@code [-128, 127]} wrap modulo 256. For example,
+     * {@code (byte) ((byte) 127 + (byte) 1) == (byte) -128}.
      * To preserve the full magnitude, widen first via {@link #toIntMatrix()} or {@link #toLongMatrix()}.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -2677,7 +2743,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * <p><b>Overflow:</b> the difference {@code a[i][j] - other[i][j]} is computed as an {@code int}
      * and narrowed back to {@code byte} via an explicit cast, so values outside the byte range
-     * {@code [-128, 127]} wrap modulo 256. For example, {@code (byte)-128 - (byte)1 == (byte)127}.</p>
+     * {@code [-128, 127]} wrap modulo 256. For example,
+     * {@code (byte) ((byte) -128 - (byte) 1) == (byte) 127}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2774,7 +2841,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         final int newColumnCount = other.columnCount;
         final byte[][] result = new byte[rowCount][newColumnCount];
 
-        if (Matrices.shouldRunInParallel(this, elementCount * newColumnCount)) {
+        if (Matrices.shouldRunMatrixMultiplyInParallel(this, newColumnCount)) {
             final Throwables.IntTriConsumer<RuntimeException> multiplyAction = (i, j, k) -> result[i][j] += a[i][k] * otherArray[k][j];
             Matrices.forEachCartesianIndices(this, other, multiplyAction, true);
         } else {

@@ -6189,6 +6189,42 @@ class FloatMatrixTest extends TestBase {
             fillMatrix.fill(1, 0, backing);
             assertArrayEquals(new float[] { 3.0f, 4.0f }, fillMatrix.rowCopy(2));
         }
+
+        @Test
+        public void testAliasedBackingRowsAreTransformedOnce() {
+            final float[] sharedRow = { 1.0f, 2.0f, 3.0f };
+            final FloatMatrix matrix = FloatMatrix.of(new float[][] { sharedRow, sharedRow });
+
+            matrix.updateColumn(0, value -> value + 1.0f);
+            assertArrayEquals(new float[] { 2.0f, 2.0f, 3.0f }, sharedRow);
+
+            matrix.updateAll(value -> value * 2.0f);
+            assertArrayEquals(new float[] { 4.0f, 4.0f, 6.0f }, sharedRow);
+
+            final float[] forcedParallelRow = { 1.0f, 2.0f };
+            final FloatMatrix forcedParallelMatrix = FloatMatrix.of(new float[][] { forcedParallelRow, forcedParallelRow });
+            final AtomicInteger calls = new AtomicInteger();
+            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> forcedParallelMatrix.updateAll(value -> {
+                calls.incrementAndGet();
+                return value + 1.0f;
+            }));
+            assertEquals(2, calls.get());
+            assertArrayEquals(new float[] { 2.0f, 3.0f }, forcedParallelRow);
+
+            final float[] forcedParallelReplaceRow = { 1.0f, 2.0f };
+            final FloatMatrix forcedParallelReplaceMatrix = FloatMatrix.of(new float[][] { forcedParallelReplaceRow, forcedParallelReplaceRow });
+            final AtomicInteger replaceCalls = new AtomicInteger();
+            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> forcedParallelReplaceMatrix.replaceIf(value -> {
+                replaceCalls.incrementAndGet();
+                return value > 0.0f;
+            }, 9.0f));
+            assertEquals(2, replaceCalls.get());
+            assertArrayEquals(new float[] { 9.0f, 9.0f }, forcedParallelReplaceRow);
+
+            matrix.flipHorizontallyInPlace();
+            assertArrayEquals(new float[] { 6.0f, 4.0f, 4.0f }, sharedRow);
+            assertSame(matrix.rowView(0), matrix.rowView(1));
+        }
     }
 
 }

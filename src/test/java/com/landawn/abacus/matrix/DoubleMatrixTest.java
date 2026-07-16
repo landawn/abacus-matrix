@@ -6388,6 +6388,42 @@ class DoubleMatrixTest extends TestBase {
             fillMatrix.fill(1, 0, backing);
             assertArrayEquals(new double[] { 3.0, 4.0 }, fillMatrix.rowCopy(2));
         }
+
+        @Test
+        public void testAliasedBackingRowsAreTransformedOnce() {
+            final double[] sharedRow = { 1.0, 2.0, 3.0 };
+            final DoubleMatrix matrix = DoubleMatrix.of(new double[][] { sharedRow, sharedRow });
+
+            matrix.updateColumn(0, value -> value + 1.0);
+            assertArrayEquals(new double[] { 2.0, 2.0, 3.0 }, sharedRow);
+
+            matrix.updateAll(value -> value * 2.0);
+            assertArrayEquals(new double[] { 4.0, 4.0, 6.0 }, sharedRow);
+
+            final double[] forcedParallelRow = { 1.0, 2.0 };
+            final DoubleMatrix forcedParallelMatrix = DoubleMatrix.of(new double[][] { forcedParallelRow, forcedParallelRow });
+            final AtomicInteger calls = new AtomicInteger();
+            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> forcedParallelMatrix.updateAll(value -> {
+                calls.incrementAndGet();
+                return value + 1.0;
+            }));
+            assertEquals(2, calls.get());
+            assertArrayEquals(new double[] { 2.0, 3.0 }, forcedParallelRow);
+
+            final double[] forcedParallelReplaceRow = { 1.0, 2.0 };
+            final DoubleMatrix forcedParallelReplaceMatrix = DoubleMatrix.of(new double[][] { forcedParallelReplaceRow, forcedParallelReplaceRow });
+            final AtomicInteger replaceCalls = new AtomicInteger();
+            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> forcedParallelReplaceMatrix.replaceIf(value -> {
+                replaceCalls.incrementAndGet();
+                return value > 0.0;
+            }, 9.0));
+            assertEquals(2, replaceCalls.get());
+            assertArrayEquals(new double[] { 9.0, 9.0 }, forcedParallelReplaceRow);
+
+            matrix.flipHorizontallyInPlace();
+            assertArrayEquals(new double[] { 6.0, 4.0, 4.0 }, sharedRow);
+            assertSame(matrix.rowView(0), matrix.rowView(1));
+        }
     }
 
 }

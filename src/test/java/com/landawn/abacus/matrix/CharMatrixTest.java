@@ -6737,6 +6737,45 @@ class CharMatrixTest extends TestBase {
             fillMatrix.fill(1, 0, backing);
             assertArrayEquals(new char[] { 'c', 'd' }, fillMatrix.rowCopy(2));
         }
+
+        @Test
+        public void testAliasedRowsAreMutatedOnceByValueOnlyOperations() {
+            char[] sharedColumnRow = { 'a', 'b' };
+            CharMatrix columnMatrix = CharMatrix.of(new char[][] { sharedColumnRow, sharedColumnRow });
+            columnMatrix.updateColumn(0, value -> (char) (value + 1));
+            assertArrayEquals(new char[] { 'b', 'b' }, sharedColumnRow);
+
+            char[] sharedUpdateRow = { 'a', 'b' };
+            CharMatrix updateMatrix = CharMatrix.of(new char[][] { sharedUpdateRow, sharedUpdateRow });
+            updateMatrix.updateAll(value -> (char) (value + 1));
+            assertArrayEquals(new char[] { 'b', 'c' }, sharedUpdateRow);
+
+            char[] sharedParallelRow = { 'a', 'b' };
+            CharMatrix parallelMatrix = CharMatrix.of(new char[][] { sharedParallelRow, sharedParallelRow });
+            AtomicInteger invocationCount = new AtomicInteger();
+            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> parallelMatrix.updateAll(value -> {
+                invocationCount.incrementAndGet();
+                return (char) (value + 1);
+            }));
+            assertEquals(sharedParallelRow.length, invocationCount.get());
+            assertArrayEquals(new char[] { 'b', 'c' }, sharedParallelRow);
+
+            char[] sharedReplaceRow = { 'a', 'b' };
+            CharMatrix replaceMatrix = CharMatrix.of(new char[][] { sharedReplaceRow, sharedReplaceRow });
+            AtomicInteger replaceInvocationCount = new AtomicInteger();
+            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> replaceMatrix.replaceIf(value -> {
+                replaceInvocationCount.incrementAndGet();
+                return value < 'z';
+            }, 'x'));
+            assertEquals(sharedReplaceRow.length, replaceInvocationCount.get());
+            assertArrayEquals(new char[] { 'x', 'x' }, sharedReplaceRow);
+
+            char[] sharedFlipRow = { 'a', 'b', 'c' };
+            CharMatrix flipMatrix = CharMatrix.of(new char[][] { sharedFlipRow, sharedFlipRow });
+            flipMatrix.flipHorizontallyInPlace();
+            assertArrayEquals(new char[] { 'c', 'b', 'a' }, sharedFlipRow);
+            assertSame(flipMatrix.rowView(0), flipMatrix.rowView(1));
+        }
     }
 
 }

@@ -46,11 +46,21 @@
  *
  * <h2>Storage ownership and mutation</h2>
  *
- * <p>Public constructors and {@code of(...)} factories validate and then wrap the supplied array; they
- * do not make a defensive copy. The caller and matrix therefore share the array and its rows. Use
- * {@code copyOf(...)} to copy an input array or {@link com.landawn.abacus.matrix.AbstractMatrix#copy()}
- * to copy a matrix. For reference matrices, these operations copy the array structure but not the
- * referenced element objects.</p>
+ * <p>Public constructors validate and then wrap the supplied array; they do not make a defensive copy.
+ * {@link com.landawn.abacus.matrix.Matrix#of(Object[][])} does the same, as do the primitive
+ * {@code of(...)} factories when the input has at least one row. A primitive {@code of(...)} factory
+ * canonicalizes a zero-row input to its shared {@code 0 x 0} singleton, so the caller's empty outer-array
+ * identity is not retained. Primitive {@code copyOf(...)} factories do the same for zero-row inputs; for
+ * non-empty inputs they defensively copy every row. Use {@code copyOf(...)} to copy a non-empty input array or
+ * {@link com.landawn.abacus.matrix.AbstractMatrix#copy()} to copy a matrix. For reference matrices, these
+ * operations copy the array structure but not the referenced element objects.</p>
+ *
+ * <p>Rows are required to be rectangular but need not be identity-distinct. If the same row array
+ * appears multiple times in wrapped storage, all of those logical rows remain aliases. Value-only
+ * in-place transformations process each distinct backing row once so an operation does not compound
+ * merely because a reference is repeated. Position-based updates retain logical-coordinate semantics;
+ * primitive implementations use sequential traversal when aliased coordinates could otherwise write
+ * conflicting values concurrently.</p>
  *
  * <p>{@link com.landawn.abacus.matrix.AbstractMatrix#unsafeBackingArray()} and methods whose names end
  * in {@code View}, such as {@link com.landawn.abacus.matrix.AbstractMatrix#rowView(int)}, expose live

@@ -6301,6 +6301,63 @@ class LongMatrixTest extends TestBase {
             fillMatrix.fill(1, 0, backing);
             assertArrayEquals(new long[] { 3L, 4L }, fillMatrix.rowCopy(2));
         }
+
+        @Test
+        public void testFlipHorizontallyInPlace_reversesSharedBackingRowOnce() {
+            long[] sharedRow = { 1L, 2L, 3L, 4L };
+            LongMatrix matrix = LongMatrix.of(sharedRow, sharedRow);
+
+            matrix.flipHorizontallyInPlace();
+
+            assertArrayEquals(new long[] { 4L, 3L, 2L, 1L }, sharedRow);
+            assertSame(matrix.rowView(0), matrix.rowView(1));
+        }
+
+        @Test
+        public void testUnaryUpdates_transformSharedBackingCellsOnce() {
+            long[] sharedColumnRow = { 1L, 2L };
+            LongMatrix columnMatrix = LongMatrix.of(sharedColumnRow, sharedColumnRow);
+
+            columnMatrix.updateColumn(0, value -> value + 1L);
+
+            assertArrayEquals(new long[] { 2L, 2L }, sharedColumnRow);
+
+            long[] sharedSequentialRow = { 1L, 2L };
+            LongMatrix sequentialMatrix = LongMatrix.of(sharedSequentialRow, sharedSequentialRow);
+            AtomicInteger sequentialCalls = new AtomicInteger();
+
+            Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> sequentialMatrix.updateAll(value -> {
+                sequentialCalls.incrementAndGet();
+                return value + 1L;
+            }));
+
+            assertEquals(2, sequentialCalls.get());
+            assertArrayEquals(new long[] { 2L, 3L }, sharedSequentialRow);
+
+            long[] sharedParallelRow = { 1L, 2L };
+            LongMatrix parallelMatrix = LongMatrix.of(sharedParallelRow, sharedParallelRow);
+            AtomicInteger parallelCalls = new AtomicInteger();
+
+            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> parallelMatrix.updateAll(value -> {
+                parallelCalls.incrementAndGet();
+                return value + 1L;
+            }));
+
+            assertEquals(2, parallelCalls.get());
+            assertArrayEquals(new long[] { 2L, 3L }, sharedParallelRow);
+
+            long[] sharedReplaceRow = { 1L, 2L };
+            LongMatrix replaceMatrix = LongMatrix.of(sharedReplaceRow, sharedReplaceRow);
+            AtomicInteger replaceCalls = new AtomicInteger();
+
+            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> replaceMatrix.replaceIf(value -> {
+                replaceCalls.incrementAndGet();
+                return value > 0L;
+            }, 9L));
+
+            assertEquals(2, replaceCalls.get());
+            assertArrayEquals(new long[] { 9L, 9L }, sharedReplaceRow);
+        }
     }
 
 }

@@ -44,6 +44,12 @@ import com.landawn.abacus.util.stream.Stream;
  * backing array directly, while builders, conversions, and mapping methods allocate fresh
  * storage.</p>
  *
+ * <p>Rectangular-shape validation does not require row references to be distinct. If the same
+ * row array appears more than once in a wrapped backing array, those logical rows share storage;
+ * a mutation through either row is therefore visible through every alias. In-place operations
+ * that apply the same unary transformation across rows process each distinct physical row once,
+ * so the transformation does not compound solely because a row reference is repeated.</p>
+ *
  * <p>{@code null} elements are permitted. {@link #equals(Object)} and {@link #hashCode()} use
  * value equality on elements via {@code N.deepEquals}/{@code N.deepHashCode} semantics
  * ({@code null} equal only to {@code null}; array-typed elements are compared and hashed deeply
@@ -110,12 +116,18 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         this.elementType = (Class<T>) arrayType.getComponentType();
     }
 
+    private boolean isSharedEmptyMatrix() {
+        return (Object) this == EMPTY_MATRIX;
+    }
+
     /**
      * Creates an empty matrix with zero rows and zero columns.
      *
      * <p>The underlying backing array is an {@code Object[][]}, so the element type is tracked
      * as {@link Object}; subsequent operations that allocate fresh storage may therefore widen
-     * to {@code Object[]} rather than the static type {@code T}.</p>
+     * to {@code Object[]} rather than the static type {@code T}. If a reified component type is
+     * needed by later shape-expanding operations, construct a typed empty matrix such as
+     * {@code new Matrix<>(new String[0][0])} instead.</p>
      *
      * <p>Returns a shared instance; since an empty matrix has no cells, sharing is safe.</p>
      *
@@ -851,6 +863,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Updates all elements in the specified column by applying the given operator.
      * The operator is applied to each element in the column, and the result
      * replaces the original value. The matrix is modified in-place.
+     * If multiple logical rows share the same backing row array, the shared physical cell is
+     * transformed once rather than once per alias.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -881,10 +895,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
         checkColumnIndex(columnIndex);
 
-        for (int i = 0; i < rowCount; i++) {
-            final T updated = operator.apply(a[i][columnIndex]);
-            a[i][columnIndex] = updated;
-        }
+        forEachDistinctRow(row -> row[columnIndex] = operator.apply(row[columnIndex]));
     }
 
     /**
@@ -1114,7 +1125,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * The matrix is modified in-place.
      *
      * <p>Iteration is always performed sequentially in row-major order; this operation is
-     * never parallelized.</p>
+     * never parallelized. If multiple logical rows share the same backing row array, each
+     * physical row is transformed once, in the order of its first logical occurrence.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1141,13 +1153,15 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     public <E extends Exception> void updateAll(final Throwables.UnaryOperator<T, E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, "operator");
 
-        for (int i = 0; i < rowCount; i++) {
-            final T[] currentRow = a[i];
+        if (columnCount == 0) {
+            return;
+        }
 
+        forEachDistinctRow(currentRow -> {
             for (int j = 0; j < columnCount; j++) {
                 currentRow[j] = operator.apply(currentRow[j]);
             }
-        }
+        });
     }
 
     /**
@@ -1156,7 +1170,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * This is useful for position-dependent transformations. The matrix is modified in-place.
      *
      * <p>Iteration is always performed sequentially in row-major order; this operation is
-     * never parallelized.</p>
+     * never parallelized. Every logical coordinate is visited, so if multiple logical rows
+     * share the same backing row array, a later alias may overwrite a value assigned through
+     * an earlier alias.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1199,7 +1215,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * The matrix is modified in-place.
      *
      * <p>Iteration is always performed sequentially in row-major order; this operation is
-     * never parallelized.</p>
+     * never parallelized. If multiple logical rows share the same backing row array, the
+     * predicate is evaluated once per physical cell and that backing row is updated once.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1228,15 +1245,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     public <E extends Exception> void replaceIf(final Throwables.Predicate<? super T, E> predicate, final T newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
 
-        for (int i = 0; i < rowCount; i++) {
-            final T[] currentRow = a[i];
-
+        forEachDistinctRow(currentRow -> {
             for (int j = 0; j < columnCount; j++) {
                 if (predicate.test(currentRow[j])) {
                     currentRow[j] = newValue;
                 }
             }
-        }
+        });
     }
 
     /**
@@ -1245,7 +1260,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * This is useful for position-based replacements. The matrix is modified in-place.
      *
      * <p>Iteration is always performed sequentially in row-major order; this operation is
-     * never parallelized.</p>
+     * never parallelized. Every logical coordinate is tested; a replacement made through a
+     * matching coordinate is visible through every row that aliases the same backing array.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2152,7 +2168,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Reverses the order of elements in each row (horizontal flip).
      *
-     * <p>This method modifies the matrix in-place.</p>
+     * <p>This method modifies the matrix in-place. If multiple logical rows share the same
+     * backing row array, that physical row is reversed only once.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2170,9 +2187,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     @Override
     public void flipHorizontallyInPlace() {
-        for (int i = 0; i < rowCount; i++) {
-            N.reverse(a[i]);
+        if (columnCount < 2) {
+            return;
         }
+
+        forEachDistinctRow(N::reverse);
     }
 
     /**
@@ -2739,10 +2758,15 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Vertically stacks this matrix with another matrix.
      * The matrices must have the same number of columns.
      * The result has rows from this matrix followed by rows from the other matrix.
-     * Creates a new matrix; neither input matrix is modified.
+     * Stacking two shared {@link #empty()} singletons returns that shared singleton so its
+     * type-neutral behavior is preserved for a later stack with typed empty storage. Every
+     * other case creates a new matrix. Neither input matrix is modified.
      *
      * <p>The result's runtime element type is the most specific type assignable from both
-     * inputs' runtime element types (observable via {@link #elementType()}).</p>
+     * inputs' runtime element types (observable via {@link #elementType()}). An operand with no
+     * rows contributes no row storage and therefore does not widen the type of the operand that
+     * supplies the result rows. When neither operand supplies rows, the shared {@link #empty()}
+     * instance is type-neutral if the other operand has a reified component type.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2768,11 +2792,30 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     public Matrix<T> stackVertically(final Matrix<T> other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(columnCount == other.columnCount, MSG_VSTACK_COLUMN_MISMATCH, columnCount, other.columnCount);
+
+        if (isSharedEmptyMatrix() && other.isSharedEmptyMatrix()) {
+            return Matrix.empty();
+        }
+
         final long mergedRowCount = (long) rowCount + other.rowCount;
         N.checkArgument(mergedRowCount <= Integer.MAX_VALUE, "Merged row count overflow: {} + {} = {}", rowCount, other.rowCount, mergedRowCount);
 
-        @SuppressWarnings("unchecked")
-        final Class<T> mergedElementType = (Class<T>) Matrices.resolveCommonAssignableType(elementType, other.elementType);
+        final Class<T> mergedElementType;
+
+        if (isSharedEmptyMatrix() && !other.isSharedEmptyMatrix()) {
+            mergedElementType = other.elementType;
+        } else if (other.isSharedEmptyMatrix() && !isSharedEmptyMatrix()) {
+            mergedElementType = elementType;
+        } else if (rowCount == 0 && other.rowCount > 0) {
+            mergedElementType = other.elementType;
+        } else if (other.rowCount == 0 && rowCount > 0) {
+            mergedElementType = elementType;
+        } else {
+            @SuppressWarnings("unchecked")
+            final Class<T> commonElementType = (Class<T>) Matrices.resolveCommonAssignableType(elementType, other.elementType);
+            mergedElementType = commonElementType;
+        }
+
         @SuppressWarnings("unchecked")
         final Class<T[]> mergedArrayType = (Class<T[]>) N.newArray(mergedElementType, 0).getClass();
         final T[][] c = N.newArray(mergedArrayType, (int) mergedRowCount);
@@ -2797,10 +2840,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Horizontally stacks this matrix with another matrix.
      * The matrices must have the same number of rows.
      * The result has columns from this matrix followed by columns from the other matrix.
-     * Creates a new matrix; neither input matrix is modified.
+     * Stacking two shared {@link #empty()} singletons returns that shared singleton so its
+     * type-neutral behavior is preserved for a later stack with typed empty storage. Every
+     * other case creates a new matrix. Neither input matrix is modified.
      *
      * <p>The result's runtime element type is the most specific type assignable from both
-     * inputs' runtime element types (observable via {@link #elementType()}).</p>
+     * inputs' runtime element types (observable via {@link #elementType()}). The shared
+     * {@link #empty()} instance is type-neutral when paired with a typed zero-row matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2827,12 +2873,27 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     public Matrix<T> stackHorizontally(final Matrix<T> other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
         N.checkArgument(rowCount == other.rowCount, MSG_HSTACK_ROW_MISMATCH, rowCount, other.rowCount);
+
+        if (isSharedEmptyMatrix() && other.isSharedEmptyMatrix()) {
+            return Matrix.empty();
+        }
+
         final long mergedColumnCount = (long) columnCount + other.columnCount;
         N.checkArgument(mergedColumnCount <= Integer.MAX_VALUE, "Merged column count overflow: {} + {} = {}", columnCount, other.columnCount,
                 mergedColumnCount);
 
-        @SuppressWarnings("unchecked")
-        final Class<T> mergedElementType = (Class<T>) Matrices.resolveCommonAssignableType(elementType, other.elementType);
+        final Class<T> mergedElementType;
+
+        if (isSharedEmptyMatrix() && !other.isSharedEmptyMatrix()) {
+            mergedElementType = other.elementType;
+        } else if (other.isSharedEmptyMatrix() && !isSharedEmptyMatrix()) {
+            mergedElementType = elementType;
+        } else {
+            @SuppressWarnings("unchecked")
+            final Class<T> commonElementType = (Class<T>) Matrices.resolveCommonAssignableType(elementType, other.elementType);
+            mergedElementType = commonElementType;
+        }
+
         @SuppressWarnings("unchecked")
         final Class<T[]> mergedArrayType = (Class<T[]>) N.newArray(mergedElementType, 0).getClass();
         final T[][] c = N.newArray(mergedArrayType, rowCount);

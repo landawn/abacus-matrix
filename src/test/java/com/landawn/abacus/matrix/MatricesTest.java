@@ -29,6 +29,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.AfterEach;
@@ -4840,6 +4842,225 @@ class MatricesTest extends TestBase {
         Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> results[1] = a.matrixMultiply(b));
 
         assertEquals(results[0], results[1]);
+    }
+
+    @Test
+    public void testMatrixMultiply_parallelDecisionSaturatesOverflowingWorkEstimate() {
+        // Reusing one row gives this matrix a large logical shape without a large allocation.
+        // Its multiplication work estimate overflows long with ordinary arithmetic.
+        final int dimension = 100_000;
+        final int[] sharedRow = new int[dimension];
+        final int[][] rows = new int[dimension][];
+        Arrays.fill(rows, sharedRow);
+
+        final IntMatrix matrix = IntMatrix.of(rows);
+        final int resultColumnCount = 1_000_000_000;
+
+        assertEquals(10_000_000_000L, matrix.elementCount());
+        assertTrue(matrix.elementCount() * resultColumnCount < 0, "The unsaturated estimate must demonstrate the overflow regression");
+
+        Matrices.setParallelMode(ParallelMode.AUTO);
+        assertTrue(Matrices.shouldRunMatrixMultiplyInParallel(matrix, resultColumnCount));
+    }
+
+    @Test
+    public void testShouldRunInParallel_rejectsNegativeWorkCount() {
+        final IntMatrix matrix = IntMatrix.of(new int[][] { { 1 } });
+
+        for (ParallelMode mode : ParallelMode.values()) {
+            Matrices.setParallelMode(mode);
+            assertThrows(IllegalArgumentException.class, () -> Matrices.shouldRunInParallel(matrix, -1));
+        }
+    }
+
+    @Test
+    public void testAliasedPositionMutatorsAreDeterministic() {
+        final int aliasCount = Matrices.MIN_COUNT_FOR_PARALLEL;
+        final Set<Thread> mapperThreads = ConcurrentHashMap.newKeySet();
+
+        final boolean[] booleanRow = { false };
+        final boolean[][] booleanRows = new boolean[aliasCount][];
+        Arrays.fill(booleanRows, booleanRow);
+        final BooleanMatrix booleanMatrix = BooleanMatrix.of(booleanRows);
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> booleanMatrix.updateAll((i, j) -> {
+            mapperThreads.add(Thread.currentThread());
+            return i == aliasCount - 1;
+        }));
+        assertEquals(1, mapperThreads.size());
+        assertTrue(booleanRow[0]);
+        booleanRow[0] = false;
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> booleanMatrix.replaceIf((i, j) -> i == 0, true));
+        assertTrue(booleanRow[0]);
+
+        mapperThreads.clear();
+        final byte[] byteRow = { 0 };
+        final byte[][] byteRows = new byte[aliasCount][];
+        Arrays.fill(byteRows, byteRow);
+        final ByteMatrix byteMatrix = ByteMatrix.of(byteRows);
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> byteMatrix.updateAll((i, j) -> {
+            mapperThreads.add(Thread.currentThread());
+            return (byte) i;
+        }));
+        assertEquals(1, mapperThreads.size());
+        assertEquals((byte) (aliasCount - 1), byteRow[0]);
+        byteRow[0] = 0;
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> byteMatrix.replaceIf((i, j) -> i == 0, (byte) 42));
+        assertEquals((byte) 42, byteRow[0]);
+
+        mapperThreads.clear();
+        final char[] charRow = { 0 };
+        final char[][] charRows = new char[aliasCount][];
+        Arrays.fill(charRows, charRow);
+        final CharMatrix charMatrix = CharMatrix.of(charRows);
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> charMatrix.updateAll((i, j) -> {
+            mapperThreads.add(Thread.currentThread());
+            return (char) i;
+        }));
+        assertEquals(1, mapperThreads.size());
+        assertEquals((char) (aliasCount - 1), charRow[0]);
+        charRow[0] = 0;
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> charMatrix.replaceIf((i, j) -> i == 0, 'x'));
+        assertEquals('x', charRow[0]);
+
+        mapperThreads.clear();
+        final short[] shortRow = { 0 };
+        final short[][] shortRows = new short[aliasCount][];
+        Arrays.fill(shortRows, shortRow);
+        final ShortMatrix shortMatrix = ShortMatrix.of(shortRows);
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> shortMatrix.updateAll((i, j) -> {
+            mapperThreads.add(Thread.currentThread());
+            return (short) i;
+        }));
+        assertEquals(1, mapperThreads.size());
+        assertEquals((short) (aliasCount - 1), shortRow[0]);
+        shortRow[0] = 0;
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> shortMatrix.replaceIf((i, j) -> i == 0, (short) 42));
+        assertEquals((short) 42, shortRow[0]);
+
+        mapperThreads.clear();
+        final int[] intRow = { 0 };
+        final int[][] intRows = new int[aliasCount][];
+        Arrays.fill(intRows, intRow);
+        final IntMatrix intMatrix = IntMatrix.of(intRows);
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> intMatrix.updateAll((i, j) -> {
+            mapperThreads.add(Thread.currentThread());
+            return i;
+        }));
+        assertEquals(1, mapperThreads.size());
+        assertEquals(aliasCount - 1, intRow[0]);
+        intRow[0] = 0;
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> intMatrix.replaceIf((i, j) -> i == 0, 42));
+        assertEquals(42, intRow[0]);
+
+        mapperThreads.clear();
+        final long[] longRow = { 0 };
+        final long[][] longRows = new long[aliasCount][];
+        Arrays.fill(longRows, longRow);
+        final LongMatrix longMatrix = LongMatrix.of(longRows);
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> longMatrix.updateAll((i, j) -> {
+            mapperThreads.add(Thread.currentThread());
+            return (long) i;
+        }));
+        assertEquals(1, mapperThreads.size());
+        assertEquals(aliasCount - 1L, longRow[0]);
+        longRow[0] = 0;
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> longMatrix.replaceIf((i, j) -> i == 0, 42L));
+        assertEquals(42L, longRow[0]);
+
+        mapperThreads.clear();
+        final float[] floatRow = { 0 };
+        final float[][] floatRows = new float[aliasCount][];
+        Arrays.fill(floatRows, floatRow);
+        final FloatMatrix floatMatrix = FloatMatrix.of(floatRows);
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> floatMatrix.updateAll((i, j) -> {
+            mapperThreads.add(Thread.currentThread());
+            return (float) i;
+        }));
+        assertEquals(1, mapperThreads.size());
+        assertEquals(aliasCount - 1.0f, floatRow[0]);
+        floatRow[0] = 0;
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> floatMatrix.replaceIf((i, j) -> i == 0, 42.0f));
+        assertEquals(42.0f, floatRow[0]);
+
+        mapperThreads.clear();
+        final double[] doubleRow = { 0 };
+        final double[][] doubleRows = new double[aliasCount][];
+        Arrays.fill(doubleRows, doubleRow);
+        final DoubleMatrix doubleMatrix = DoubleMatrix.of(doubleRows);
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> doubleMatrix.updateAll((i, j) -> {
+            mapperThreads.add(Thread.currentThread());
+            return (double) i;
+        }));
+        assertEquals(1, mapperThreads.size());
+        assertEquals(aliasCount - 1.0, doubleRow[0]);
+        doubleRow[0] = 0;
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> doubleMatrix.replaceIf((i, j) -> i == 0, 42.0));
+        assertEquals(42.0, doubleRow[0]);
+    }
+
+    @Test
+    public void testCollectionStackPreservesRuntimeDimensionForArrayValuedElements() {
+        final Matrix<Object[]> strings = Matrix.of((Object[][][]) new String[][][] { { { "a" } } });
+        final Matrix<Object[]> integers = Matrix.of((Object[][][]) new Integer[][][] { { { 1 } } });
+        final Matrix<Object[]> longs = Matrix.of((Object[][][]) new Long[][][] { { { 2L } } });
+
+        final Matrix<Object[]> stacked = Matrices.stackVertically(List.of(strings, integers, longs));
+
+        final Object[][] firstRow = stacked.rowCopy(0);
+        final Object[][] secondRow = stacked.rowCopy(1);
+        final Object[][] thirdRow = stacked.rowCopy(2);
+        assertArrayEquals(new Object[] { "a" }, firstRow[0]);
+        assertArrayEquals(new Object[] { 1 }, secondRow[0]);
+        assertArrayEquals(new Object[] { 2L }, thirdRow[0]);
+        assertTrue(stacked.elementType().isArray());
+    }
+
+    @Test
+    public void testCollectionStacksKeepRepeatedSharedEmptiesRuntimeTypeNeutral() {
+        final Matrix<String> empty = Matrix.empty();
+        final Matrix<String> typedEmpty = Matrix.of(new String[0][0]);
+
+        final Matrix<String> vertical = Matrices.stackVertically(List.of(empty, empty, typedEmpty)).resize(1, 1);
+        final Matrix<String> horizontal = Matrices.stackHorizontally(List.of(empty, empty, typedEmpty)).resize(1, 1);
+
+        final String[] verticalRow = vertical.rowView(0);
+        final String[] horizontalRow = horizontal.rowView(0);
+        assertEquals(String.class, verticalRow.getClass().getComponentType());
+        assertEquals(String.class, horizontalRow.getClass().getComponentType());
+    }
+
+    @Test
+    public void testBinaryCollectionZipPreservesRuntimeDimensionForArrayValuedElements() {
+        final Matrix<Object[]> strings = Matrix.of((Object[][][]) new String[][][] { { { "a" } } });
+        final Matrix<Object[]> integers = Matrix.of((Object[][][]) new Integer[][][] { { { 1 } } });
+        final Matrix<Object[]> longs = Matrix.of((Object[][][]) new Long[][][] { { { 2L } } });
+
+        final Matrix<Object[]> zipped = Matrices.zip(List.of(strings, integers, longs), (left, right) -> left);
+
+        final Object[][] row = zipped.rowCopy(0);
+        assertArrayEquals(new Object[] { "a" }, row[0]);
+        assertTrue(zipped.elementType().isArray());
+    }
+
+    @Test
+    public void testFunctionCollectionZipPreservesArrayValuedIntermediateTypeWithAndWithoutSharing() {
+        final Matrix<Object[]> strings = Matrix.of((Object[][][]) new String[][][] { { { "a" }, { "b" } } });
+        final Matrix<Object[]> integers = Matrix.of((Object[][][]) new Integer[][][] { { { 1 }, { 2 } } });
+        Matrices.setParallelMode(ParallelMode.FORCE_OFF);
+
+        for (final boolean shareIntermediateArray : new boolean[] { false, true }) {
+            final List<Object[][]> observedArguments = new ArrayList<>();
+            final Matrix<String> result = Matrices.zip(List.of(strings, integers), (final Object[][] values) -> {
+                // The explicit Object[][] lambda parameter exercises the bridge cast that
+                // previously failed when the intermediate array lost one array dimension.
+                observedArguments.add(values);
+                return values[0][0] + ":" + values[1][0];
+            }, shareIntermediateArray, String.class);
+
+            assertArrayEquals(new String[] { "a:1", "b:2" }, result.rowCopy(0));
+            assertEquals(2, observedArguments.size());
+            assertEquals(shareIntermediateArray, observedArguments.get(0) == observedArguments.get(1));
+        }
     }
 
 }

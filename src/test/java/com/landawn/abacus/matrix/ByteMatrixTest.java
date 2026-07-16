@@ -6303,6 +6303,45 @@ class ByteMatrixTest extends TestBase {
             fillMatrix.fill(1, 0, backing);
             assertArrayEquals(new byte[] { 3, 4 }, fillMatrix.rowCopy(2));
         }
+
+        @Test
+        public void testAliasedRowsAreMutatedOnceByValueOnlyOperations() {
+            byte[] sharedColumnRow = { 1, 2 };
+            ByteMatrix columnMatrix = ByteMatrix.of(new byte[][] { sharedColumnRow, sharedColumnRow });
+            columnMatrix.updateColumn(0, value -> (byte) (value + 1));
+            assertArrayEquals(new byte[] { 2, 2 }, sharedColumnRow);
+
+            byte[] sharedUpdateRow = { 1, 2 };
+            ByteMatrix updateMatrix = ByteMatrix.of(new byte[][] { sharedUpdateRow, sharedUpdateRow });
+            updateMatrix.updateAll(value -> (byte) (value + 1));
+            assertArrayEquals(new byte[] { 2, 3 }, sharedUpdateRow);
+
+            byte[] sharedParallelRow = { 1, 2 };
+            ByteMatrix parallelMatrix = ByteMatrix.of(new byte[][] { sharedParallelRow, sharedParallelRow });
+            AtomicInteger invocationCount = new AtomicInteger();
+            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> parallelMatrix.updateAll(value -> {
+                invocationCount.incrementAndGet();
+                return (byte) (value + 1);
+            }));
+            assertEquals(sharedParallelRow.length, invocationCount.get());
+            assertArrayEquals(new byte[] { 2, 3 }, sharedParallelRow);
+
+            byte[] sharedReplaceRow = { 1, 2 };
+            ByteMatrix replaceMatrix = ByteMatrix.of(new byte[][] { sharedReplaceRow, sharedReplaceRow });
+            AtomicInteger replaceInvocationCount = new AtomicInteger();
+            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> replaceMatrix.replaceIf(value -> {
+                replaceInvocationCount.incrementAndGet();
+                return value > 0;
+            }, (byte) 9));
+            assertEquals(sharedReplaceRow.length, replaceInvocationCount.get());
+            assertArrayEquals(new byte[] { 9, 9 }, sharedReplaceRow);
+
+            byte[] sharedFlipRow = { 1, 2, 3 };
+            ByteMatrix flipMatrix = ByteMatrix.of(new byte[][] { sharedFlipRow, sharedFlipRow });
+            flipMatrix.flipHorizontallyInPlace();
+            assertArrayEquals(new byte[] { 3, 2, 1 }, sharedFlipRow);
+            assertSame(flipMatrix.rowView(0), flipMatrix.rowView(1));
+        }
     }
 
 }

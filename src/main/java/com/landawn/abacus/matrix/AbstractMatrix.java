@@ -65,9 +65,9 @@ import com.landawn.abacus.util.stream.Stream;
  * others of compatible shape and, for {@link Matrix}, an optional target element type. Their static
  * counterparts live in {@link Matrices}: {@code Matrices.zip} combines two, three, or a collection of
  * same-typed matrices, while {@code Matrices.zipToInt}, {@code zipToLong}, {@code zipToDouble}, and
- * {@code zipToObj} produce a differently typed result. Use the instance {@code zipWith} for same-type
- * results, and the {@link Matrices} helpers when combining a collection of matrices or changing the
- * element type.</p>
+ * {@code zipToObj} produce a differently typed result. Use the instance {@code zipWith} for fluent
+ * two- or three-matrix combinations (including {@link Matrix}'s target-type overloads), and the
+ * {@link Matrices} helpers when combining a collection or using a primitive cross-type specialization.</p>
  *
  * <p><b>Primitive conversions:</b> each numeric matrix converts to the {@code int}, {@code long},
  * {@code float}, and {@code double} matrix types (every such type except its own) through
@@ -277,6 +277,50 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         return snapshot;
     }
 
+    /** Returns whether two or more logical rows share the same backing array. */
+    final boolean hasAliasedRows() {
+        if (a.length < 2) {
+            return false;
+        }
+
+        final Map<A, Boolean> seenRows = new IdentityHashMap<>(a.length);
+
+        for (final A row : a) {
+            if (seenRows.put(row, Boolean.TRUE) != null) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Performs {@code action} once for each distinct backing row, in first-occurrence order.
+     * This prevents a row-wise in-place transformation from being applied repeatedly when the
+     * outer backing array contains the same row reference more than once.
+     *
+     * @param <E> the type of exception that the action may throw
+     * @param action the row transformation to perform
+     * @throws E if the action throws an exception
+     */
+    final <E extends Exception> void forEachDistinctRow(final Throwables.Consumer<? super A, E> action) throws E {
+        if (a.length < 2) {
+            for (final A row : a) {
+                action.accept(row);
+            }
+
+            return;
+        }
+
+        final Map<A, Boolean> seenRows = new IdentityHashMap<>(a.length);
+
+        for (final A row : a) {
+            if (seenRows.put(row, Boolean.TRUE) == null) {
+                action.accept(row);
+            }
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private static <R> R cloneArray(final R source) {
         final int length = java.lang.reflect.Array.getLength(source);
@@ -322,8 +366,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     }
 
     /**
-     * Validates that a matrix of the specified shape can be materialized, i.e. that its total cell count
-     * fits within an {@code int}, which is required by operations that materialize a flat traversal buffer.
+     * Validates that a newly materialized shape stays within the package's flat-cardinality limit.
+     * Although matrix storage is row-based, shape-changing operations cap the total cell count at
+     * {@link Integer#MAX_VALUE} so their results remain compatible with APIs that expose a flat array
+     * or list.
      *
      * @param rowCount the row count
      * @param columnCount the column count
@@ -343,8 +389,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * column count.</p>
      *
      * @param dividend the non-negative dividend (for example the matrix element count)
-     * @param divisor the positive divisor (for example the target column count); must not be {@code 0}
+     * @param divisor the positive divisor (for example the target column count)
      * @return {@code ceil(dividend / divisor)}
+     * @throws ArithmeticException if {@code divisor} is zero
      */
     protected static long ceilDiv(final long dividend, final long divisor) {
         return dividend % divisor == 0 ? dividend / divisor : dividend / divisor + 1;

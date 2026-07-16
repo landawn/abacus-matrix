@@ -113,8 +113,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     /**
      * Creates a {@code BooleanMatrix} from a two-dimensional boolean array.
      *
-     * <p><b>&#9888;&#65039; Shared backing:</b> The provided array is used directly without defensive copying.
-     * Changes to the input array are reflected in the returned matrix, and vice versa.</p>
+     * <p><b>&#9888;&#65039; Shared backing:</b> When the input has at least one row, the provided array is used directly without defensive copying.
+     * Changes to the input array are reflected in the returned matrix, and vice versa. A zero-row input is instead canonicalized to the shared empty matrix,
+     * so its outer-array identity is not retained.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -141,9 +142,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     /**
      * Creates a {@code BooleanMatrix} that owns a defensive deep copy of the supplied two-dimensional array.
      *
-     * <p>Unlike {@link #of(boolean[][])}, which wraps the caller's array without copying, this factory clones
-     * every row into a freshly-allocated backing array. Subsequent modifications to {@code a} (or its rows)
-     * are therefore <b>not</b> visible through the returned matrix, and vice versa.</p>
+     * <p>For a non-empty input, unlike {@link #of(boolean[][])}, which wraps the caller's array without copying,
+     * this factory allocates a new outer array and clones every row. Subsequent modifications to {@code a}
+     * (or its rows) are therefore <b>not</b> visible through the returned matrix, and vice versa. A zero-row
+     * input is canonicalized to the shared empty matrix, so its outer-array identity is not retained.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -863,6 +865,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * <p>The operator is applied to each element in the specified column sequentially
      * from top to bottom (row {@code 0} to row {@code rowCount - 1}).</p>
      *
+     * <p>If multiple logical rows share the same backing array, the operator is applied to that
+     * backing row only once, at its first occurrence.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] {{true, false, true}, {false, true, false}});
@@ -891,9 +896,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
 
         checkColumnIndex(columnIndex);
 
-        for (int i = 0; i < rowCount; i++) {
-            a[i][columnIndex] = operator.applyAsBoolean(a[i][columnIndex]);
-        }
+        forEachDistinctRow(row -> row[columnIndex] = operator.applyAsBoolean(row[columnIndex]));
     }
 
     /**
@@ -1132,6 +1135,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
      * Elements are processed in row-major order when executed sequentially.</p>
      *
+     * <p>If multiple logical rows share the same backing array, each backing row is updated only
+     * once, at its first occurrence.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] {{true, false}, {false, true}});
@@ -1155,17 +1161,29 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     public <E extends Exception> void updateAll(final Throwables.BooleanUnaryOperator<E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, "operator");
 
-        if (Matrices.shouldRunInParallel(this)) {
+        if (columnCount == 0) {
+            return;
+        }
+
+        final boolean runInParallel = Matrices.shouldRunInParallel(this);
+
+        if (runInParallel && !hasAliasedRows()) {
             final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.applyAsBoolean(a[i][j]);
             Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
-        } else {
-            for (int i = 0; i < rowCount; i++) {
-                final boolean[] row = a[i];
+        } else if (runInParallel) {
+            final boolean[][] distinctRows = new boolean[rowCount][];
+            final int[] distinctRowCount = { 0 };
+            forEachDistinctRow(row -> distinctRows[distinctRowCount[0]++] = row);
 
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> distinctRows[i][j] = operator.applyAsBoolean(distinctRows[i][j]);
+            final long distinctElementCount = (long) distinctRowCount[0] * columnCount;
+            Matrices.forEachIndices(distinctRowCount[0], columnCount, elementAction, Matrices.shouldRunInParallel(this, distinctElementCount));
+        } else {
+            forEachDistinctRow(row -> {
                 for (int j = 0; j < columnCount; j++) {
                     row[j] = operator.applyAsBoolean(row[j]);
                 }
-            }
+            });
         }
     }
 
@@ -1176,6 +1194,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * <p>The mapper receives the row and column indices for each element and returns the new value
      * for that position. This is useful for initializing matrices based on position patterns or
      * mathematical formulas. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
+     *
+     * <p>If logical rows share a backing array, every logical coordinate is still visited, but
+     * traversal is kept sequential so later aliases overwrite earlier ones deterministically.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1203,7 +1224,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Boolean, E> mapper) throws IllegalArgumentException, E {
         N.checkArgNotNull(mapper, "mapper");
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this) && !hasAliasedRows());
     }
 
     /**
@@ -1212,6 +1233,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * This modifies the matrix directly.
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.</p>
+     *
+     * <p>If multiple logical rows share the same backing array, the predicate is evaluated once
+     * per physical cell and that backing row is updated once.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1236,8 +1260,37 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     public <E extends Exception> void replaceIf(final Throwables.BooleanPredicate<E> predicate, final boolean newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = predicate.test(a[i][j]) ? newValue : a[i][j];
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+
+        if (Matrices.shouldRunInParallel(this)) {
+            if (hasAliasedRows()) {
+                final boolean[][] distinctRows = new boolean[rowCount][];
+                final int[] distinctRowCount = { 0 };
+                forEachDistinctRow(row -> distinctRows[distinctRowCount[0]++] = row);
+
+                final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
+                    if (predicate.test(distinctRows[i][j])) {
+                        distinctRows[i][j] = newValue;
+                    }
+                };
+                final long distinctElementCount = (long) distinctRowCount[0] * columnCount;
+                Matrices.forEachIndices(distinctRowCount[0], columnCount, elementAction, Matrices.shouldRunInParallel(this, distinctElementCount));
+            } else {
+                final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
+                    if (predicate.test(a[i][j])) {
+                        a[i][j] = newValue;
+                    }
+                };
+                Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            }
+        } else {
+            forEachDistinctRow(row -> {
+                for (int j = 0; j < columnCount; j++) {
+                    if (predicate.test(row[j])) {
+                        row[j] = newValue;
+                    }
+                }
+            });
+        }
     }
 
     /**
@@ -1247,6 +1300,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * <p>This is useful for position-based replacements such as setting diagonals, borders,
      * or specific regions. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
+     *
+     * <p>Nonmatching positions perform no write. If logical rows share a backing array, a
+     * replacement made through any matching coordinate is therefore visible through every alias.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1271,7 +1327,11 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final boolean newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = predicate.test(i, j) ? newValue : a[i][j];
+        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
+            if (predicate.test(i, j)) {
+                a[i][j] = newValue;
+            }
+        };
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
     }
 
@@ -1647,7 +1707,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * <ul>
      *   <li><b>If a dimension shrinks</b> — elements beyond the new boundary are discarded.
-     *       {@code defaultValue} is <em>not</em> used in this case.</li>
+     *       If neither dimension grows, {@code defaultValue} is not used.</li>
      *   <li><b>If a dimension grows</b> — new cells are filled with {@code defaultValue}.</li>
      *   <li><b>Mixed case</b> — each dimension is treated independently, so it is valid
      *       to grow rows while truncating columns, or vice versa.</li>
@@ -1691,7 +1751,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param newRowCount the row count of the returned matrix; must be {@code >= 0}
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
      * @param defaultValue the value used to fill cells that are added when a dimension grows;
-     *        ignored when a dimension shrinks
+     *        ignored when neither dimension grows
      * @return a new {@code BooleanMatrix} with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
      *         if the resulting shape is not representable (zero rows with a non-zero column count),
@@ -1895,6 +1955,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * <p>This is an in-place operation that modifies the current matrix.
      * For a non-destructive version that returns a new matrix, use {@link #flipHorizontally()}.</p>
      *
+     * <p>If multiple logical rows share the same backing array, that backing row is reversed only
+     * once, preserving the alias relationship.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] {{true, true, false}, {false, true, true}});
@@ -1913,9 +1976,11 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     @Override
     public void flipHorizontallyInPlace() {
-        for (int i = 0; i < rowCount; i++) {
-            N.reverse(a[i]);
+        if (columnCount < 2) {
+            return;
         }
+
+        forEachDistinctRow(N::reverse);
     }
 
     /**

@@ -121,8 +121,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     /**
      * Creates a ShortMatrix from a two-dimensional short array.
      *
-     * <p><b>&#9888;&#65039; Shared backing:</b> The provided array is used directly without defensive copying.
-     * Changes to the input array are reflected in the returned matrix, and vice versa.
+     * <p><b>&#9888;&#65039; Shared backing:</b> When the input has at least one row, the provided array is used directly without defensive copying.
+     * Changes to the input array are reflected in the returned matrix, and vice versa. A zero-row input is instead canonicalized to the shared empty matrix,
+     * so its outer-array identity is not retained.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -146,11 +147,12 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     }
 
     /**
-     * Creates a {@code ShortMatrix} that owns a defensive deep copy of the supplied two-dimensional array.
+     * Creates a {@code ShortMatrix} from the supplied two-dimensional array.
      *
-     * <p>Unlike {@link #of(short[][])}, which wraps the caller's array without copying, this factory clones
-     * every row into a freshly-allocated backing array. Subsequent modifications to {@code a} (or its rows)
-     * are therefore <b>not</b> visible through the returned matrix, and vice versa.</p>
+     * <p>For a non-empty input, unlike {@link #of(short[][])}, which wraps the caller's array without copying, this factory clones
+     * every row and stores those clones in a newly allocated outer array. Subsequent modifications to {@code a} (or its rows)
+     * are therefore <b>not</b> visible through the returned matrix, and vice versa. A zero-row input is canonicalized to the
+     * shared empty matrix, so the identity of the supplied outer array is not retained.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -164,7 +166,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @param a the two-dimensional short array to copy, or empty for an empty matrix; must not be {@code null}
-     * @return a new {@code ShortMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is empty
+     * @return a new {@code ShortMatrix} backed by a deep copy of {@code a} when it is non-empty, or the shared empty matrix if {@code a} has no rows
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      * @see #of(short[][])
@@ -948,7 +950,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * This modifies the matrix directly.
      *
      * <p>The operator is applied to each element in the specified column sequentially
-     * from top to bottom (row 0 to row rowCount-1).</p>
+     * from top to bottom (row {@code 0} to row {@code rowCount - 1}). If multiple logical rows reference the same backing array,
+     * its shared column cell is transformed exactly once, when that backing row is first encountered.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -977,9 +980,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
 
         checkColumnIndex(columnIndex);
 
-        for (int i = 0; i < rowCount; i++) {
-            a[i][columnIndex] = operator.applyAsShort(a[i][columnIndex]);
-        }
+        forEachDistinctRow(row -> row[columnIndex] = operator.applyAsShort(row[columnIndex]));
     }
 
     /**
@@ -1194,7 +1195,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * This modifies the matrix directly.
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
-     * Elements are processed in row-major order when executed sequentially.</p>
+     * Distinct backing rows and their elements are processed in first-occurrence row-major order when executed sequentially.</p>
+     *
+     * <p>If multiple logical rows reference the same backing array, every element in that shared row is transformed exactly once.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1220,16 +1223,24 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
         N.checkArgNotNull(operator, "operator");
 
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.applyAsShort(a[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
-        } else {
-            for (int i = 0; i < rowCount; i++) {
-                final short[] row = a[i];
+            if (hasAliasedRows()) {
+                final short[][] distinctRows = new short[rowCount][];
+                final int[] distinctRowCount = { 0 };
+                forEachDistinctRow(row -> distinctRows[distinctRowCount[0]++] = row);
 
+                final Throwables.IntBiConsumer<E> elementAction = (i, j) -> distinctRows[i][j] = operator.applyAsShort(distinctRows[i][j]);
+                final long distinctElementCount = (long) distinctRowCount[0] * columnCount;
+                Matrices.forEachIndices(distinctRowCount[0], columnCount, elementAction, Matrices.shouldRunInParallel(this, distinctElementCount));
+            } else {
+                final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.applyAsShort(a[i][j]);
+                Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            }
+        } else {
+            forEachDistinctRow(row -> {
                 for (int j = 0; j < columnCount; j++) {
                     row[j] = operator.applyAsShort(row[j]);
                 }
-            }
+            });
         }
     }
 
@@ -1240,6 +1251,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p>The mapper receives the row and column indices for each element and returns the new value
      * for that position. This is useful for initializing matrices based on position patterns or
      * mathematical formulas. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
+     *
+     * <p>If logical rows share a backing array, every logical coordinate is still visited, but
+     * traversal is kept sequential so later aliases overwrite earlier ones deterministically.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1266,7 +1280,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Short, E> mapper) throws IllegalArgumentException, E {
         N.checkArgNotNull(mapper, "mapper");
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this) && !hasAliasedRows());
     }
 
     /**
@@ -1275,6 +1289,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * This modifies the matrix directly.
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.</p>
+     *
+     * <p>If multiple logical rows share the same backing array, the predicate is evaluated once
+     * per physical cell and that backing row is updated once.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1299,8 +1316,37 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      */
     public <E extends Exception> void replaceIf(final Throwables.ShortPredicate<E> predicate, final short newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = predicate.test(a[i][j]) ? newValue : a[i][j];
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+
+        if (Matrices.shouldRunInParallel(this)) {
+            if (hasAliasedRows()) {
+                final short[][] distinctRows = new short[rowCount][];
+                final int[] distinctRowCount = { 0 };
+                forEachDistinctRow(row -> distinctRows[distinctRowCount[0]++] = row);
+
+                final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
+                    if (predicate.test(distinctRows[i][j])) {
+                        distinctRows[i][j] = newValue;
+                    }
+                };
+                final long distinctElementCount = (long) distinctRowCount[0] * columnCount;
+                Matrices.forEachIndices(distinctRowCount[0], columnCount, elementAction, Matrices.shouldRunInParallel(this, distinctElementCount));
+            } else {
+                final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
+                    if (predicate.test(a[i][j])) {
+                        a[i][j] = newValue;
+                    }
+                };
+                Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            }
+        } else {
+            forEachDistinctRow(row -> {
+                for (int j = 0; j < columnCount; j++) {
+                    if (predicate.test(row[j])) {
+                        row[j] = newValue;
+                    }
+                }
+            });
+        }
     }
 
     /**
@@ -1310,6 +1356,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * <p>This is useful for position-based replacements such as setting diagonals, borders,
      * or specific regions. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
+     *
+     * <p>Nonmatching positions perform no write. If logical rows share a backing array, a
+     * replacement made through any matching coordinate is therefore visible through every alias.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1335,7 +1384,11 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      */
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final short newValue) throws E {
         N.checkArgNotNull(predicate, "predicate");
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = predicate.test(i, j) ? newValue : a[i][j];
+        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
+            if (predicate.test(i, j)) {
+                a[i][j] = newValue;
+            }
+        };
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
     }
 
@@ -1683,7 +1736,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * <ul>
      *   <li><b>If a dimension shrinks</b> — elements beyond the new boundary are discarded.
-     *       {@code defaultValue} is <em>not</em> used in this case.</li>
+     *       If neither dimension grows, {@code defaultValue} is not used.</li>
      *   <li><b>If a dimension grows</b> — new cells are filled with {@code defaultValue}.</li>
      *   <li><b>Mixed case</b> — each dimension is treated independently, so it is valid
      *       to grow rows while truncating columns, or vice versa.</li>
@@ -1716,7 +1769,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param newRowCount the row count of the returned matrix; must be {@code >= 0}
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
      * @param defaultValue the value used to fill cells that are added when a dimension grows;
-     *        ignored when a dimension shrinks
+     *        ignored when neither dimension grows
      * @return a new ShortMatrix with the specified dimensions
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
      *         if the resulting shape is not representable (zero rows with a non-zero column count),
@@ -1909,6 +1962,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p>This is an in-place operation that modifies the current matrix.
      * For a non-destructive version that returns a new matrix, use {@link #flipHorizontally()}.</p>
      *
+     * <p>If multiple logical rows reference the same backing array, that shared row is reversed
+     * exactly once; all of its aliases therefore observe the same horizontally flipped values.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2, 3}, {4, 5, 6}});
@@ -1927,9 +1983,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      */
     @Override
     public void flipHorizontallyInPlace() {
-        for (int i = 0; i < rowCount; i++) {
-            N.reverse(a[i]);
-        }
+        forEachDistinctRow(row -> N.reverse(row));
     }
 
     /**
@@ -2733,7 +2787,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
         final int newColumnCount = other.columnCount;
         final short[][] result = new short[rowCount][newColumnCount];
 
-        if (Matrices.shouldRunInParallel(this, elementCount * newColumnCount)) {
+        if (Matrices.shouldRunMatrixMultiplyInParallel(this, newColumnCount)) {
             final Throwables.IntTriConsumer<RuntimeException> multiplyAction = (i, j, k) -> result[i][j] += a[i][k] * otherArray[k][j];
             Matrices.forEachCartesianIndices(this, other, multiplyAction, true);
         } else {

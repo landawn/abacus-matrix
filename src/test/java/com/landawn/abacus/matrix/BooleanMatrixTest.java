@@ -6205,6 +6205,45 @@ class BooleanMatrixTest extends TestBase {
             fillMatrix.fill(1, 0, backing);
             assertArrayEquals(new boolean[] { false, true }, fillMatrix.rowCopy(2));
         }
+
+        @Test
+        public void testAliasedRowsAreMutatedOnceByValueOnlyOperations() {
+            boolean[] sharedColumnRow = { true, false };
+            BooleanMatrix columnMatrix = BooleanMatrix.of(new boolean[][] { sharedColumnRow, sharedColumnRow });
+            columnMatrix.updateColumn(0, value -> !value);
+            assertArrayEquals(new boolean[] { false, false }, sharedColumnRow);
+
+            boolean[] sharedUpdateRow = { true, false };
+            BooleanMatrix updateMatrix = BooleanMatrix.of(new boolean[][] { sharedUpdateRow, sharedUpdateRow });
+            updateMatrix.updateAll(value -> !value);
+            assertArrayEquals(new boolean[] { false, true }, sharedUpdateRow);
+
+            boolean[] sharedParallelRow = { true, false };
+            BooleanMatrix parallelMatrix = BooleanMatrix.of(new boolean[][] { sharedParallelRow, sharedParallelRow });
+            AtomicInteger invocationCount = new AtomicInteger();
+            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> parallelMatrix.updateAll(value -> {
+                invocationCount.incrementAndGet();
+                return !value;
+            }));
+            assertEquals(sharedParallelRow.length, invocationCount.get());
+            assertArrayEquals(new boolean[] { false, true }, sharedParallelRow);
+
+            boolean[] sharedReplaceRow = { true, false };
+            BooleanMatrix replaceMatrix = BooleanMatrix.of(new boolean[][] { sharedReplaceRow, sharedReplaceRow });
+            AtomicInteger replaceInvocationCount = new AtomicInteger();
+            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> replaceMatrix.replaceIf(value -> {
+                replaceInvocationCount.incrementAndGet();
+                return value;
+            }, false));
+            assertEquals(sharedReplaceRow.length, replaceInvocationCount.get());
+            assertArrayEquals(new boolean[] { false, false }, sharedReplaceRow);
+
+            boolean[] sharedFlipRow = { true, false, false };
+            BooleanMatrix flipMatrix = BooleanMatrix.of(new boolean[][] { sharedFlipRow, sharedFlipRow });
+            flipMatrix.flipHorizontallyInPlace();
+            assertArrayEquals(new boolean[] { false, false, true }, sharedFlipRow);
+            assertSame(flipMatrix.rowView(0), flipMatrix.rowView(1));
+        }
     }
 
 }

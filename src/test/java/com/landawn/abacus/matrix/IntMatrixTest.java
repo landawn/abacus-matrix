@@ -6521,6 +6521,63 @@ class IntMatrixTest extends TestBase {
             fillMatrix.fill(1, 0, backing);
             assertArrayEquals(new int[] { 3, 4 }, fillMatrix.rowCopy(2));
         }
+
+        @Test
+        public void testFlipHorizontallyInPlace_reversesSharedBackingRowOnce() {
+            int[] sharedRow = { 1, 2, 3, 4 };
+            IntMatrix matrix = IntMatrix.of(sharedRow, sharedRow);
+
+            matrix.flipHorizontallyInPlace();
+
+            assertArrayEquals(new int[] { 4, 3, 2, 1 }, sharedRow);
+            assertSame(matrix.rowView(0), matrix.rowView(1));
+        }
+
+        @Test
+        public void testUnaryUpdates_transformSharedBackingCellsOnce() {
+            int[] sharedColumnRow = { 1, 2 };
+            IntMatrix columnMatrix = IntMatrix.of(sharedColumnRow, sharedColumnRow);
+
+            columnMatrix.updateColumn(0, value -> value + 1);
+
+            assertArrayEquals(new int[] { 2, 2 }, sharedColumnRow);
+
+            int[] sharedSequentialRow = { 1, 2 };
+            IntMatrix sequentialMatrix = IntMatrix.of(sharedSequentialRow, sharedSequentialRow);
+            AtomicInteger sequentialCalls = new AtomicInteger();
+
+            Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> sequentialMatrix.updateAll(value -> {
+                sequentialCalls.incrementAndGet();
+                return value + 1;
+            }));
+
+            assertEquals(2, sequentialCalls.get());
+            assertArrayEquals(new int[] { 2, 3 }, sharedSequentialRow);
+
+            int[] sharedParallelRow = { 1, 2 };
+            IntMatrix parallelMatrix = IntMatrix.of(sharedParallelRow, sharedParallelRow);
+            AtomicInteger parallelCalls = new AtomicInteger();
+
+            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> parallelMatrix.updateAll(value -> {
+                parallelCalls.incrementAndGet();
+                return value + 1;
+            }));
+
+            assertEquals(2, parallelCalls.get());
+            assertArrayEquals(new int[] { 2, 3 }, sharedParallelRow);
+
+            int[] sharedReplaceRow = { 1, 2 };
+            IntMatrix replaceMatrix = IntMatrix.of(sharedReplaceRow, sharedReplaceRow);
+            AtomicInteger replaceCalls = new AtomicInteger();
+
+            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> replaceMatrix.replaceIf(value -> {
+                replaceCalls.incrementAndGet();
+                return value > 0;
+            }, 9));
+
+            assertEquals(2, replaceCalls.get());
+            assertArrayEquals(new int[] { 9, 9 }, sharedReplaceRow);
+        }
     }
 
 }

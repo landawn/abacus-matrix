@@ -237,18 +237,20 @@ public final class Matrices {
      * Matrices.shouldRunInParallel(matrix, 5000L);            // returns false (5000 < 8192)
      *
      * Matrices.shouldRunInParallel((IntMatrix) null, 100L);   // throws IllegalArgumentException
+     * Matrices.shouldRunInParallel(matrix, -1L);               // throws IllegalArgumentException
      * }</pre>
      *
      * @param m the matrix being evaluated; only checked for {@code null}, the matrix's own
      *          element count is not consulted (the supplied {@code count} drives the decision)
-     * @param count the number of elements to process; typically the total element count or a subset being operated on
+     * @param count the non-negative number of work items to process; typically the total element count or a subset being operated on
      * @return {@code true} if parallel processing should be used; {@code false} for sequential processing
-     * @throws IllegalArgumentException if {@code m} is {@code null}
+     * @throws IllegalArgumentException if {@code m} is {@code null} or {@code count} is negative
      * @see #setParallelMode(ParallelMode)
      * @see ParallelMode
      */
     public static boolean shouldRunInParallel(final AbstractMatrix<?, ?, ?, ?, ?> m, final long count) {
         N.checkArgNotNull(m, "m");
+        N.checkArgument(count >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, "count", count);
 
         if (!IS_PARALLEL_STREAM_SUPPORTED) {
             return false;
@@ -281,6 +283,23 @@ public final class Matrices {
         }
 
         return result;
+    }
+
+    /**
+     * Chooses the execution mode for a matrix product from its multiply-add work estimate.
+     * The estimate is saturated so a product larger than {@link Long#MAX_VALUE} cannot wrap to
+     * a negative value and incorrectly fall below the automatic parallelization threshold.
+     *
+     * @param m the left matrix, whose element count is {@code rowCount * commonDimension}
+     * @param resultColumnCount the number of columns in the product; must be non-negative
+     * @return {@code true} if the product should use the parallel multiplication path
+     * @throws IllegalArgumentException if {@code m} is {@code null} or {@code resultColumnCount} is negative
+     */
+    static boolean shouldRunMatrixMultiplyInParallel(final AbstractMatrix<?, ?, ?, ?, ?> m, final int resultColumnCount) {
+        N.checkArgNotNull(m, "m");
+        N.checkArgument(resultColumnCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, "resultColumnCount", resultColumnCount);
+
+        return shouldRunInParallel(m, saturatedMultiply(m.elementCount, resultColumnCount));
     }
 
     /**
@@ -992,7 +1011,7 @@ public final class Matrices {
                 "Matrix dimensions incompatible for multiplication: a is {}x{}, b is {}x{} (a.columnCount must equal b.rowCount)", a.rowCount, a.columnCount,
                 b.rowCount, b.columnCount);
 
-        forEachCartesianIndices(a, b, action, Matrices.shouldRunInParallel(a, saturatedMultiply(a.elementCount, b.columnCount)));
+        forEachCartesianIndices(a, b, action, shouldRunMatrixMultiplyInParallel(a, b.columnCount));
     }
 
     /**
@@ -3907,6 +3926,11 @@ public final class Matrices {
      * <p>This search considers both super classes and interfaces. If no better common type
      * can be identified, {@link Object} is returned.</p>
      *
+     * <p>When both inputs are reference-array types, their component types are resolved
+     * recursively and the common component is wrapped back into an array type. Preserving
+     * that array dimension keeps the resolved runtime type compatible with array-valued
+     * matrix elements.</p>
+     *
      * @param left the first type, may be {@code null}
      * @param right the second type, may be {@code null}
      * @return the most specific common assignable type, never {@code null}
@@ -3922,6 +3946,11 @@ public final class Matrices {
 
         if (right.isAssignableFrom(left)) {
             return right;
+        }
+
+        if (left.isArray() && right.isArray() && !left.getComponentType().isPrimitive() && !right.getComponentType().isPrimitive()) {
+            final Class<?> commonComponentType = resolveCommonAssignableType(left.getComponentType(), right.getComponentType());
+            return java.lang.reflect.Array.newInstance(commonComponentType, 0).getClass();
         }
 
         final Map<Class<?>, Integer> leftDistances = collectTypeDistances(left);
@@ -3963,7 +3992,10 @@ public final class Matrices {
      *
      * <p>This method ranks the types that are assignable from every original matrix element
      * type. Considering all inputs together keeps the result independent of matrix order. If no
-     * more specific common type can be identified, {@link Object} is returned.</p>
+     * more specific common type can be identified, {@link Object} is returned. When every input
+     * element type is a reference-array type, component types are resolved recursively and the
+     * common component is wrapped back into an array type, preserving the element-array
+     * dimensionality.</p>
      *
      * @param <T> the static element type of the matrices
      * @param matrices the matrices whose element types are reconciled; must be non-empty
@@ -3972,13 +4004,42 @@ public final class Matrices {
      */
     @SuppressWarnings("unchecked")
     static <T> Class<T> resolveCommonElementType(final Matrix<T>[] matrices) {
-        final Map<Class<?>, Map<Class<?>, Integer>> distancesByType = new LinkedHashMap<>();
+        final Class<?>[] elementTypes = new Class<?>[matrices.length];
 
-        for (final Matrix<T> matrix : matrices) {
-            distancesByType.computeIfAbsent(matrix.elementType, Matrices::collectTypeDistances);
+        for (int i = 0; i < matrices.length; i++) {
+            elementTypes[i] = matrices[i].elementType;
         }
 
-        final Map<Class<?>, Integer> candidates = distancesByType.get(matrices[0].elementType);
+        return (Class<T>) resolveCommonType(elementTypes);
+    }
+
+    private static Class<?> resolveCommonType(final Class<?>[] types) {
+        boolean allReferenceArrays = types.length > 0;
+
+        for (final Class<?> type : types) {
+            if (!type.isArray() || type.getComponentType().isPrimitive()) {
+                allReferenceArrays = false;
+                break;
+            }
+        }
+
+        if (allReferenceArrays) {
+            final Class<?>[] componentTypes = new Class<?>[types.length];
+
+            for (int i = 0; i < types.length; i++) {
+                componentTypes[i] = types[i].getComponentType();
+            }
+
+            return java.lang.reflect.Array.newInstance(resolveCommonType(componentTypes), 0).getClass();
+        }
+
+        final Map<Class<?>, Map<Class<?>, Integer>> distancesByType = new LinkedHashMap<>();
+
+        for (final Class<?> type : types) {
+            distancesByType.computeIfAbsent(type, Matrices::collectTypeDistances);
+        }
+
+        final Map<Class<?>, Integer> candidates = distancesByType.get(types[0]);
         Class<?> best = Object.class;
         long bestDistance = Long.MAX_VALUE;
         int bestPenalty = Integer.MAX_VALUE;
@@ -3988,8 +4049,8 @@ public final class Matrices {
             long totalDistance = 0;
             boolean commonToAll = true;
 
-            for (final Matrix<T> matrix : matrices) {
-                final Integer distance = distancesByType.get(matrix.elementType).get(candidate);
+            for (final Class<?> type : types) {
+                final Integer distance = distancesByType.get(type).get(candidate);
 
                 if (distance == null) {
                     commonToAll = false;
@@ -4018,7 +4079,7 @@ public final class Matrices {
             }
         }
 
-        return (Class<T>) best;
+        return best;
     }
 
     private static Map<Class<?>, Integer> collectTypeDistances(final Class<?> startType) {
