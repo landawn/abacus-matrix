@@ -116,7 +116,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         this.elementType = (Class<T>) arrayType.getComponentType();
     }
 
-    private boolean isSharedEmptyMatrix() {
+    /** Returns whether this is the type-neutral shared empty instance. */
+    boolean isSharedEmptyMatrix() {
         return (Object) this == EMPTY_MATRIX;
     }
 

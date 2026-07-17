@@ -6039,7 +6039,7 @@ class IntMatrixTest extends TestBase {
     @Test
     public void testFromCharArray_zeroExtensionForHighChars() {
         // Verify that char -> int widening uses zero extension (chars are unsigned)
-        char[][] src = { { '￿', ' ' }, { '耀', 'A' } };
+        char[][] src = { { '\uFFFF', '\0' }, { '\u8000', 'A' } };
         IntMatrix m = IntMatrix.from(src);
         assertEquals(0xFFFF, m.get(0, 0));
         assertEquals(0, m.get(0, 1));
@@ -6274,7 +6274,7 @@ class IntMatrixTest extends TestBase {
 
         @Test
         public void testFromCharUnsignedWidening() {
-            IntMatrix m = IntMatrix.from(new char[][] { { 'A', '￿', ' ' } });
+            IntMatrix m = IntMatrix.from(new char[][] { { 'A', '\uFFFF', '\0' } });
             assertArrayEquals(new int[] { 65, 65535, 0 }, m.rowCopy(0));
         }
 

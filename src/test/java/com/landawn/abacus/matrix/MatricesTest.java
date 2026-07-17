@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -5027,6 +5028,27 @@ class MatricesTest extends TestBase {
         final String[] horizontalRow = horizontal.rowView(0);
         assertEquals(String.class, verticalRow.getClass().getComponentType());
         assertEquals(String.class, horizontalRow.getClass().getComponentType());
+    }
+
+    @Test
+    public void testSingletonCollectionStacksKeepSharedEmptyRuntimeTypeNeutral() {
+        final Matrix<String> typedEmpty = Matrix.of(new String[0][0]);
+        final Matrix<String> verticalOnly = Matrices.stackVertically(List.of(Matrix.<String> empty()));
+        final Matrix<String> horizontalOnly = Matrices.stackHorizontally(List.of(Matrix.<String> empty()));
+
+        final Matrix<String> vertical = verticalOnly.stackVertically(typedEmpty).resize(1, 1);
+        final Matrix<String> horizontal = horizontalOnly.stackHorizontally(typedEmpty).resize(1, 1);
+
+        final String[] verticalRow = vertical.rowView(0);
+        final String[] horizontalRow = horizontal.rowView(0);
+        assertEquals(String.class, verticalRow.getClass().getComponentType());
+        assertEquals(String.class, horizontalRow.getClass().getComponentType());
+    }
+
+    @Test
+    public void testCollectionStacksOfOnlySharedEmptiesReturnSharedInstance() {
+        assertSame(Matrix.empty(), Matrices.stackVertically(List.of(Matrix.empty(), Matrix.empty())));
+        assertSame(Matrix.empty(), Matrices.stackHorizontally(List.of(Matrix.empty(), Matrix.empty())));
     }
 
     @Test

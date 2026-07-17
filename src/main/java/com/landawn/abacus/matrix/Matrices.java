@@ -1188,6 +1188,11 @@ public final class Matrices {
      * <p>Inputs with compatible runtime storage are combined in balanced rounds. This preserves
      * iteration order while reducing repeated copying compared with a left-to-right chain.</p>
      *
+     * <p>A single input is normally copied. The shared type-neutral {@link Matrix#empty()} instance
+     * is returned as-is because it has no mutable cells and copying it would prematurely fix its
+     * runtime element type as {@link Object}; retaining the singleton lets a later stack with a
+     * reified empty matrix select the correct component type.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix a = IntMatrix.of(new int[][] {{1, 2}});
@@ -1206,7 +1211,9 @@ public final class Matrices {
      *
      * @param <M> the matrix type
      * @param matrices the matrices to stack vertically, must not be {@code null}, empty, or contain {@code null} elements
-     * @return a new matrix containing the rows of all input matrices, never {@code null}
+     * @return a matrix containing the rows of all input matrices, never {@code null}; normally a new
+     *         instance, except that inputs consisting only of the shared {@link Matrix#empty()}
+     *         instance yield that shared instance
      * @throws IllegalArgumentException if {@code matrices} is {@code null}, empty, contains
      *         {@code null} elements, or contains matrices with mismatched column counts
      * @see AbstractMatrix#stackVertically(AbstractMatrix)
@@ -1228,6 +1235,11 @@ public final class Matrices {
      * <p>Inputs with compatible runtime storage are combined in balanced rounds. This preserves
      * iteration order while reducing repeated copying compared with a left-to-right chain.</p>
      *
+     * <p>A single input is normally copied. The shared type-neutral {@link Matrix#empty()} instance
+     * is returned as-is because it has no mutable cells and copying it would prematurely fix its
+     * runtime element type as {@link Object}; retaining the singleton lets a later stack with a
+     * reified empty matrix select the correct component type.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix a = IntMatrix.of(new int[][] {{1}, {2}});
@@ -1246,7 +1258,9 @@ public final class Matrices {
      *
      * @param <M> the matrix type
      * @param matrices the matrices to stack horizontally, must not be {@code null}, empty, or contain {@code null} elements
-     * @return a new matrix containing the columns of all input matrices, never {@code null}
+     * @return a matrix containing the columns of all input matrices, never {@code null}; normally a new
+     *         instance, except that inputs consisting only of the shared {@link Matrix#empty()}
+     *         instance yield that shared instance
      * @throws IllegalArgumentException if {@code matrices} is {@code null}, empty, contains
      *         {@code null} elements, or contains matrices with mismatched row counts
      * @see AbstractMatrix#stackHorizontally(AbstractMatrix)
@@ -1259,7 +1273,11 @@ public final class Matrices {
 
     private static <M extends AbstractMatrix<?, ?, ?, ?, M>> M stack(final Collection<? extends M> matrices, final boolean vertically) {
         if (matrices.size() == 1) {
-            return matrices.iterator().next().copy();
+            final M only = matrices.iterator().next();
+
+            // Matrix.empty() has no cells that a caller can mutate, and its identity carries the
+            // information that Object is only a placeholder until a typed operand is encountered.
+            return only instanceof Matrix<?> matrix && matrix.isSharedEmptyMatrix() ? only : only.copy();
         }
 
         // Matrix<T> can wrap covariant arrays. Regrouping heterogeneous storage types can change

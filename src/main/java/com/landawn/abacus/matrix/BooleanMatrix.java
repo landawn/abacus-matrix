@@ -2535,7 +2535,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * matrix.mutateFlattened(arr -> seen[0] = arr.length);   // flattened length equals total element count
      * // seen[0] is now 4
      *
-     * BooleanMatrix.empty().mutateFlattened(arr -> seen[0] = -1);   // no-op: action is not invoked on an empty matrix
+     * BooleanMatrix.empty().mutateFlattened(arr -> seen[0] = -1);   // no-op: action is not invoked when the matrix has zero rows
      * // seen[0] is still 4
      * }</pre>
      *
@@ -2572,6 +2572,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param other the matrix to AND with this matrix
      * @return a new {@code BooleanMatrix} containing the element-wise logical AND
      * @throws IllegalArgumentException if {@code other} is {@code null} or the matrices have different dimensions
+     * @see #or(BooleanMatrix)
+     * @see #xor(BooleanMatrix)
+     * @see #zipWith(BooleanMatrix, Throwables.BooleanBinaryOperator)
      */
     public BooleanMatrix and(final BooleanMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
@@ -2619,6 +2622,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param other the matrix to OR with this matrix
      * @return a new {@code BooleanMatrix} containing the element-wise logical OR
      * @throws IllegalArgumentException if {@code other} is {@code null} or the matrices have different dimensions
+     * @see #and(BooleanMatrix)
+     * @see #xor(BooleanMatrix)
+     * @see #zipWith(BooleanMatrix, Throwables.BooleanBinaryOperator)
      */
     public BooleanMatrix or(final BooleanMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
@@ -2666,6 +2672,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param other the matrix to XOR with this matrix
      * @return a new {@code BooleanMatrix} containing the element-wise logical XOR
      * @throws IllegalArgumentException if {@code other} is {@code null} or the matrices have different dimensions
+     * @see #and(BooleanMatrix)
+     * @see #or(BooleanMatrix)
+     * @see #zipWith(BooleanMatrix, Throwables.BooleanBinaryOperator)
      */
     public BooleanMatrix xor(final BooleanMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
