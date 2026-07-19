@@ -6622,4 +6622,50 @@ class ShortMatrixTest extends TestBase {
         }
     }
 
+    @Test
+    public void testStreamIterators_midStrideAdvanceThenToArray_EdgeCase() {
+        ShortMatrix matrix = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+
+        var rowMajorIterator = matrix.rowMajorStream(0, 2).iterator();
+        assertTrue(rowMajorIterator instanceof com.landawn.abacus.util.stream.ShortIteratorEx);
+        com.landawn.abacus.util.stream.ShortIteratorEx rowMajor = (com.landawn.abacus.util.stream.ShortIteratorEx) rowMajorIterator;
+        rowMajor.advance(1); // mid-row cursor: the chunked toArray must start at column 1
+        assertEquals(5L, rowMajor.count());
+        assertArrayEquals(new short[] { 2, 3, 4, 5, 6 }, rowMajor.toArray());
+
+        var columnMajorIterator = matrix.columnMajorStream(0, 3).iterator();
+        com.landawn.abacus.util.stream.ShortIteratorEx columnMajor = (com.landawn.abacus.util.stream.ShortIteratorEx) columnMajorIterator;
+        columnMajor.advance(1); // mid-column cursor: row 1 of column 0
+        assertEquals(5L, columnMajor.count());
+        assertArrayEquals(new short[] { 4, 2, 5, 3, 6 }, columnMajor.toArray());
+
+        var crossingIterator = matrix.columnMajorStream(0, 3).iterator();
+        com.landawn.abacus.util.stream.ShortIteratorEx crossing = (com.landawn.abacus.util.stream.ShortIteratorEx) crossingIterator;
+        crossing.advance(3); // crosses a column boundary: lands on row 1 of column 1
+        assertEquals(3L, crossing.count());
+        assertEquals((short) 5, crossing.nextShort());
+        crossing.advance(10);
+        assertEquals(0L, crossing.count());
+        assertThrows(java.util.NoSuchElementException.class, crossing::nextShort);
+    }
+
+    @Test
+    public void testFactories_negativeDimensions_throwIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class, () -> ShortMatrix.randomRow(-1));
+        assertThrows(IllegalArgumentException.class, () -> ShortMatrix.random(-1, 2));
+        assertThrows(IllegalArgumentException.class, () -> ShortMatrix.random(2, -1));
+        assertThrows(IllegalArgumentException.class, () -> ShortMatrix.repeat(-1, 2, (short) 7));
+        assertThrows(IllegalArgumentException.class, () -> ShortMatrix.repeat(2, -1, (short) 7));
+    }
+
+    @Test
+    public void testUpdateAllPositional_aliasedRowsUnderForcedParallel_runSequentiallyAndDeterministic() {
+        short[] sharedRow = { 1, 2 };
+        ShortMatrix matrix = ShortMatrix.of(new short[][] { sharedRow, sharedRow });
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> matrix.updateAll((i, j) -> (short) (i * 10 + j)));
+        // Aliased rows force the positional update onto the sequential row-major path, so the
+        // shared row deterministically ends with the values written for the last row index.
+        assertArrayEquals(new short[] { 10, 11 }, sharedRow);
+    }
+
 }

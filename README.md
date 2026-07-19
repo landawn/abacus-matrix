@@ -1,7 +1,7 @@
 # abacus-matrix
 
-[![Maven Central](https://img.shields.io/maven-central/v/com.landawn.abacus/abacus-matrix.svg)](https://central.sonatype.com/artifact/com.landawn.abacus/abacus-matrix/3.8.2)
-[![Javadocs](https://img.shields.io/badge/javadoc-3.8.2-brightgreen.svg)](https://www.javadoc.io/doc/com.landawn.abacus/abacus-matrix/3.8.2/index.html)
+[![Maven Central](https://img.shields.io/maven-central/v/com.landawn.abacus/abacus-matrix.svg)](https://central.sonatype.com/artifact/com.landawn.abacus/abacus-matrix/3.8.3)
+[![Javadocs](https://img.shields.io/badge/javadoc-3.8.3-brightgreen.svg)](https://www.javadoc.io/doc/com.landawn.abacus/abacus-matrix/3.8.3/index.html)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](./LICENSE)
 
 `abacus-matrix` is a lightweight Java library for treating rectangular 2D arrays as matrices. It
@@ -52,14 +52,14 @@ iteration), and `ParallelMode` controls optional parallel execution.
 <dependency>
     <groupId>com.landawn.abacus</groupId>
     <artifactId>abacus-matrix</artifactId>
-    <version>3.8.2</version>
+    <version>3.8.3</version>
 </dependency>
 ```
 
 **Gradle**
 
 ```groovy
-implementation 'com.landawn.abacus:abacus-matrix:3.8.2'
+implementation 'com.landawn.abacus:abacus-matrix:3.8.3'
 ```
 
 `abacus-matrix` builds on top of [`abacus-common`](https://github.com/landawn/abacus-common). It is

@@ -6061,6 +6061,41 @@ class BooleanMatrixTest extends TestBase {
         assertEquals(List.of(false, true), visited);
     }
 
+    @Test
+    public void testAndOrXor_forcedParallel_matchSequential() {
+        // The parallel branch of and/or/xor is otherwise never exercised: these operations exist
+        // only on BooleanMatrix, so no sibling test covers the analogous code.
+        boolean[][] left = new boolean[7][5];
+        boolean[][] right = new boolean[7][5];
+        for (int i = 0; i < 7; i++) {
+            for (int j = 0; j < 5; j++) {
+                left[i][j] = (i + j) % 2 == 0;
+                right[i][j] = (i * j) % 3 == 0;
+            }
+        }
+        BooleanMatrix a = BooleanMatrix.of(left);
+        BooleanMatrix b = BooleanMatrix.of(right);
+
+        BooleanMatrix sequentialAnd = a.and(b);
+        BooleanMatrix sequentialOr = a.or(b);
+        BooleanMatrix sequentialXor = a.xor(b);
+
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> {
+            assertEquals(sequentialAnd, a.and(b));
+            assertEquals(sequentialOr, a.or(b));
+            assertEquals(sequentialXor, a.xor(b));
+        });
+    }
+
+    @Test
+    public void testFactories_negativeDimensions_throwIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class, () -> BooleanMatrix.randomRow(-1));
+        assertThrows(IllegalArgumentException.class, () -> BooleanMatrix.random(-1, 2));
+        assertThrows(IllegalArgumentException.class, () -> BooleanMatrix.random(2, -1));
+        assertThrows(IllegalArgumentException.class, () -> BooleanMatrix.repeat(-1, 2, true));
+        assertThrows(IllegalArgumentException.class, () -> BooleanMatrix.repeat(2, -1, true));
+    }
+
     @Nested
     class BooleanMatrixPrintlnStrInit {
         @Test

@@ -6344,4 +6344,40 @@ class ByteMatrixTest extends TestBase {
         }
     }
 
+    @Test
+    public void testStreamIterators_midStrideAdvanceThenToArray_EdgeCase() {
+        ByteMatrix matrix = ByteMatrix.of(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+
+        var rowMajorIterator = matrix.rowMajorStream(0, 2).iterator();
+        assertTrue(rowMajorIterator instanceof com.landawn.abacus.util.stream.ByteIteratorEx);
+        com.landawn.abacus.util.stream.ByteIteratorEx rowMajor = (com.landawn.abacus.util.stream.ByteIteratorEx) rowMajorIterator;
+        rowMajor.advance(1); // mid-row cursor: the chunked toArray must start at column 1
+        assertEquals(5L, rowMajor.count());
+        assertArrayEquals(new byte[] { 2, 3, 4, 5, 6 }, rowMajor.toArray());
+
+        var columnMajorIterator = matrix.columnMajorStream(0, 3).iterator();
+        com.landawn.abacus.util.stream.ByteIteratorEx columnMajor = (com.landawn.abacus.util.stream.ByteIteratorEx) columnMajorIterator;
+        columnMajor.advance(1); // mid-column cursor: row 1 of column 0
+        assertEquals(5L, columnMajor.count());
+        assertArrayEquals(new byte[] { 4, 2, 5, 3, 6 }, columnMajor.toArray());
+
+        var crossingIterator = matrix.columnMajorStream(0, 3).iterator();
+        com.landawn.abacus.util.stream.ByteIteratorEx crossing = (com.landawn.abacus.util.stream.ByteIteratorEx) crossingIterator;
+        crossing.advance(3); // crosses a column boundary: lands on row 1 of column 1
+        assertEquals(3L, crossing.count());
+        assertEquals((byte) 5, crossing.nextByte());
+        crossing.advance(10);
+        assertEquals(0L, crossing.count());
+        assertThrows(java.util.NoSuchElementException.class, crossing::nextByte);
+    }
+
+    @Test
+    public void testFactories_negativeDimensions_throwIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class, () -> ByteMatrix.randomRow(-1));
+        assertThrows(IllegalArgumentException.class, () -> ByteMatrix.random(-1, 2));
+        assertThrows(IllegalArgumentException.class, () -> ByteMatrix.random(2, -1));
+        assertThrows(IllegalArgumentException.class, () -> ByteMatrix.repeat(-1, 2, (byte) 7));
+        assertThrows(IllegalArgumentException.class, () -> ByteMatrix.repeat(2, -1, (byte) 7));
+    }
+
 }

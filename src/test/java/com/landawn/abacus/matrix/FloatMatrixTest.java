@@ -6227,4 +6227,40 @@ class FloatMatrixTest extends TestBase {
         }
     }
 
+    @Test
+    public void testStreamIterators_midStrideAdvanceThenToArray_EdgeCase() {
+        FloatMatrix matrix = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f } });
+
+        var rowMajorIterator = matrix.rowMajorStream(0, 2).iterator();
+        assertTrue(rowMajorIterator instanceof com.landawn.abacus.util.stream.FloatIteratorEx);
+        com.landawn.abacus.util.stream.FloatIteratorEx rowMajor = (com.landawn.abacus.util.stream.FloatIteratorEx) rowMajorIterator;
+        rowMajor.advance(1); // mid-row cursor: the chunked toArray must start at column 1
+        assertEquals(5L, rowMajor.count());
+        assertArrayEquals(new float[] { 2.0f, 3.0f, 4.0f, 5.0f, 6.0f }, rowMajor.toArray());
+
+        var columnMajorIterator = matrix.columnMajorStream(0, 3).iterator();
+        com.landawn.abacus.util.stream.FloatIteratorEx columnMajor = (com.landawn.abacus.util.stream.FloatIteratorEx) columnMajorIterator;
+        columnMajor.advance(1); // mid-column cursor: row 1 of column 0
+        assertEquals(5L, columnMajor.count());
+        assertArrayEquals(new float[] { 4.0f, 2.0f, 5.0f, 3.0f, 6.0f }, columnMajor.toArray());
+
+        var crossingIterator = matrix.columnMajorStream(0, 3).iterator();
+        com.landawn.abacus.util.stream.FloatIteratorEx crossing = (com.landawn.abacus.util.stream.FloatIteratorEx) crossingIterator;
+        crossing.advance(3); // crosses a column boundary: lands on row 1 of column 1
+        assertEquals(3L, crossing.count());
+        assertEquals(5.0f, crossing.nextFloat());
+        crossing.advance(10);
+        assertEquals(0L, crossing.count());
+        assertThrows(java.util.NoSuchElementException.class, crossing::nextFloat);
+    }
+
+    @Test
+    public void testFactories_negativeDimensions_throwIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class, () -> FloatMatrix.randomRow(-1));
+        assertThrows(IllegalArgumentException.class, () -> FloatMatrix.random(-1, 2));
+        assertThrows(IllegalArgumentException.class, () -> FloatMatrix.random(2, -1));
+        assertThrows(IllegalArgumentException.class, () -> FloatMatrix.repeat(-1, 2, 7.0f));
+        assertThrows(IllegalArgumentException.class, () -> FloatMatrix.repeat(2, -1, 7.0f));
+    }
+
 }

@@ -104,8 +104,6 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
     static final byte BYTE_0 = (byte) 0;
 
-    static final byte BYTE_1 = (byte) 1;
-
     static final short SHORT_0 = (short) 0;
 
     // ==================== Standardized Exception Message Constants ====================

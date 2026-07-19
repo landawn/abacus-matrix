@@ -6778,4 +6778,40 @@ class CharMatrixTest extends TestBase {
         }
     }
 
+    @Test
+    public void testStreamIterators_midStrideAdvanceThenToArray_EdgeCase() {
+        CharMatrix matrix = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } });
+
+        var rowMajorIterator = matrix.rowMajorStream(0, 2).iterator();
+        assertTrue(rowMajorIterator instanceof com.landawn.abacus.util.stream.CharIteratorEx);
+        com.landawn.abacus.util.stream.CharIteratorEx rowMajor = (com.landawn.abacus.util.stream.CharIteratorEx) rowMajorIterator;
+        rowMajor.advance(1); // mid-row cursor: the chunked toArray must start at column 1
+        assertEquals(5L, rowMajor.count());
+        assertArrayEquals(new char[] { 'b', 'c', 'd', 'e', 'f' }, rowMajor.toArray());
+
+        var columnMajorIterator = matrix.columnMajorStream(0, 3).iterator();
+        com.landawn.abacus.util.stream.CharIteratorEx columnMajor = (com.landawn.abacus.util.stream.CharIteratorEx) columnMajorIterator;
+        columnMajor.advance(1); // mid-column cursor: row 1 of column 0
+        assertEquals(5L, columnMajor.count());
+        assertArrayEquals(new char[] { 'd', 'b', 'e', 'c', 'f' }, columnMajor.toArray());
+
+        var crossingIterator = matrix.columnMajorStream(0, 3).iterator();
+        com.landawn.abacus.util.stream.CharIteratorEx crossing = (com.landawn.abacus.util.stream.CharIteratorEx) crossingIterator;
+        crossing.advance(3); // crosses a column boundary: lands on row 1 of column 1
+        assertEquals(3L, crossing.count());
+        assertEquals('e', crossing.nextChar());
+        crossing.advance(10);
+        assertEquals(0L, crossing.count());
+        assertThrows(java.util.NoSuchElementException.class, crossing::nextChar);
+    }
+
+    @Test
+    public void testFactories_negativeDimensions_throwIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class, () -> CharMatrix.randomRow(-1));
+        assertThrows(IllegalArgumentException.class, () -> CharMatrix.random(-1, 2));
+        assertThrows(IllegalArgumentException.class, () -> CharMatrix.random(2, -1));
+        assertThrows(IllegalArgumentException.class, () -> CharMatrix.repeat(-1, 2, 'x'));
+        assertThrows(IllegalArgumentException.class, () -> CharMatrix.repeat(2, -1, 'x'));
+    }
+
 }

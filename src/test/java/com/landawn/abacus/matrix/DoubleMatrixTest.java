@@ -6426,4 +6426,106 @@ class DoubleMatrixTest extends TestBase {
         }
     }
 
+    // =====================================================================
+    // FP-semantics regression tests (ports of the FloatMatrixTest equivalents)
+    // =====================================================================
+
+    @Test
+    public void testEqualsAndHashCode_NaN_areConsidered_Equal() {
+        // DoubleMatrix.equals/hashCode use Double.doubleToLongBits semantics (per Javadoc),
+        // so NaN == NaN, and the hash code must be consistent with equals.
+        DoubleMatrix m1 = DoubleMatrix.of(new double[][] { { Double.NaN, 1.0 }, { 2.0, Double.NaN } });
+        DoubleMatrix m2 = DoubleMatrix.of(new double[][] { { Double.NaN, 1.0 }, { 2.0, Double.NaN } });
+
+        assertEquals(m1, m2, "Two matrices with NaN values at the same positions must be equal");
+        assertEquals(m1.hashCode(), m2.hashCode(), "Equal matrices must produce equal hash codes (NaN content)");
+    }
+
+    @Test
+    public void testEqualsAndHashCode_negativeZero_distinctFromPositiveZero() {
+        // DoubleMatrix.equals/hashCode use Double.doubleToLongBits semantics (per Javadoc),
+        // so +0.0 and -0.0 are NOT equal, and the hash codes must differ accordingly.
+        DoubleMatrix posZero = DoubleMatrix.of(new double[][] { { 0.0 } });
+        DoubleMatrix negZero = DoubleMatrix.of(new double[][] { { -0.0 } });
+
+        assertNotEquals(posZero, negZero, "+0.0 and -0.0 must not be equal under Double.doubleToLongBits semantics");
+        assertNotEquals(posZero.hashCode(), negZero.hashCode(), "+0.0 and -0.0 must produce different hash codes under Double.doubleToLongBits semantics");
+    }
+
+    @Test
+    public void testResize_growsWithNegativeZeroFill_preservesNegativeZero() {
+        // -0.0 has a non-zero bit pattern, so the doubleToRawLongBits != 0 short-circuit in
+        // resize(...) must fill new cells even though -0.0 == 0.0 under == comparison.
+        DoubleMatrix matrix = DoubleMatrix.of(new double[][] { { 1.0, 2.0 } });
+        DoubleMatrix grown = matrix.resize(2, 4, -0.0);
+
+        assertEquals(2, grown.rowCount());
+        assertEquals(4, grown.columnCount());
+        assertEquals(1.0, grown.get(0, 0));
+        assertEquals(2.0, grown.get(0, 1));
+        for (int j = 2; j < 4; j++) {
+            assertEquals(Double.doubleToRawLongBits(-0.0), Double.doubleToRawLongBits(grown.get(0, j)),
+                    "Resize new cell at (0," + j + ") must keep the -0.0 bit pattern");
+        }
+        for (int j = 0; j < 4; j++) {
+            assertEquals(Double.doubleToRawLongBits(-0.0), Double.doubleToRawLongBits(grown.get(1, j)),
+                    "Resize new cell at (1," + j + ") must keep the -0.0 bit pattern");
+        }
+    }
+
+    @Test
+    public void testExtend_withNaNFill_propagatesNaN() {
+        // Extending with NaN must fill all newly added cells with NaN. This exercises the
+        // doubleToRawLongBits != 0 short-circuit in extend(...).
+        DoubleMatrix matrix = DoubleMatrix.of(new double[][] { { 1.0, 2.0 } });
+        DoubleMatrix extended = matrix.extend(1, 1, 1, 1, Double.NaN);
+
+        assertEquals(3, extended.rowCount());
+        assertEquals(4, extended.columnCount());
+        assertEquals(1.0, extended.get(1, 1));
+        assertEquals(2.0, extended.get(1, 2));
+        assertTrue(Double.isNaN(extended.get(0, 0)));
+        assertTrue(Double.isNaN(extended.get(0, 3)));
+        assertTrue(Double.isNaN(extended.get(2, 0)));
+        assertTrue(Double.isNaN(extended.get(2, 3)));
+        assertTrue(Double.isNaN(extended.get(1, 0)));
+        assertTrue(Double.isNaN(extended.get(1, 3)));
+    }
+
+    @Test
+    public void testStreamIterators_midStrideAdvanceThenToArray_EdgeCase() {
+        DoubleMatrix matrix = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 } });
+
+        var rowMajorIterator = matrix.rowMajorStream(0, 2).iterator();
+        assertTrue(rowMajorIterator instanceof com.landawn.abacus.util.stream.DoubleIteratorEx);
+        com.landawn.abacus.util.stream.DoubleIteratorEx rowMajor = (com.landawn.abacus.util.stream.DoubleIteratorEx) rowMajorIterator;
+        rowMajor.advance(1); // mid-row cursor: the chunked toArray must start at column 1
+        assertEquals(5L, rowMajor.count());
+        assertArrayEquals(new double[] { 2.0, 3.0, 4.0, 5.0, 6.0 }, rowMajor.toArray());
+
+        var columnMajorIterator = matrix.columnMajorStream(0, 3).iterator();
+        com.landawn.abacus.util.stream.DoubleIteratorEx columnMajor = (com.landawn.abacus.util.stream.DoubleIteratorEx) columnMajorIterator;
+        columnMajor.advance(1); // mid-column cursor: row 1 of column 0
+        assertEquals(5L, columnMajor.count());
+        assertArrayEquals(new double[] { 4.0, 2.0, 5.0, 3.0, 6.0 }, columnMajor.toArray());
+
+        var crossingIterator = matrix.columnMajorStream(0, 3).iterator();
+        com.landawn.abacus.util.stream.DoubleIteratorEx crossing = (com.landawn.abacus.util.stream.DoubleIteratorEx) crossingIterator;
+        crossing.advance(3); // crosses a column boundary: lands on row 1 of column 1
+        assertEquals(3L, crossing.count());
+        assertEquals(5.0, crossing.nextDouble());
+        crossing.advance(10);
+        assertEquals(0L, crossing.count());
+        assertThrows(java.util.NoSuchElementException.class, crossing::nextDouble);
+    }
+
+    @Test
+    public void testFactories_negativeDimensions_throwIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.randomRow(-1));
+        assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.random(-1, 2));
+        assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.random(2, -1));
+        assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.repeat(-1, 2, 7.0));
+        assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.repeat(2, -1, 7.0));
+    }
+
 }

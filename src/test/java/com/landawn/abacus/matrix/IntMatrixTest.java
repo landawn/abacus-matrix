@@ -6580,4 +6580,42 @@ class IntMatrixTest extends TestBase {
         }
     }
 
+    @Test
+    public void testStreamIterators_midStrideAdvanceThenToArray_EdgeCase() {
+        IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+
+        var rowMajorIterator = matrix.rowMajorStream(0, 2).iterator();
+        assertTrue(rowMajorIterator instanceof com.landawn.abacus.util.stream.IntIteratorEx);
+        com.landawn.abacus.util.stream.IntIteratorEx rowMajor = (com.landawn.abacus.util.stream.IntIteratorEx) rowMajorIterator;
+        rowMajor.advance(1); // mid-row cursor: the chunked toArray must start at column 1
+        assertEquals(5L, rowMajor.count());
+        assertArrayEquals(new int[] { 2, 3, 4, 5, 6 }, rowMajor.toArray());
+
+        var columnMajorIterator = matrix.columnMajorStream(0, 3).iterator();
+        com.landawn.abacus.util.stream.IntIteratorEx columnMajor = (com.landawn.abacus.util.stream.IntIteratorEx) columnMajorIterator;
+        columnMajor.advance(1); // mid-column cursor: row 1 of column 0
+        assertEquals(5L, columnMajor.count());
+        assertArrayEquals(new int[] { 4, 2, 5, 3, 6 }, columnMajor.toArray());
+
+        var crossingIterator = matrix.columnMajorStream(0, 3).iterator();
+        com.landawn.abacus.util.stream.IntIteratorEx crossing = (com.landawn.abacus.util.stream.IntIteratorEx) crossingIterator;
+        crossing.advance(3); // crosses a column boundary: lands on row 1 of column 1
+        assertEquals(3L, crossing.count());
+        assertEquals(5, crossing.nextInt());
+        crossing.advance(10);
+        assertEquals(0L, crossing.count());
+        assertThrows(java.util.NoSuchElementException.class, crossing::nextInt);
+    }
+
+    @Test
+    public void testFactories_negativeDimensions_throwIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class, () -> IntMatrix.randomRow(-1));
+        assertThrows(IllegalArgumentException.class, () -> IntMatrix.random(-1, 2));
+        assertThrows(IllegalArgumentException.class, () -> IntMatrix.random(2, -1));
+        assertThrows(IllegalArgumentException.class, () -> IntMatrix.repeat(-1, 2, 7));
+        assertThrows(IllegalArgumentException.class, () -> IntMatrix.repeat(2, -1, 7));
+        // 0x0 is a representable shape, so repeat(0, 0, ...) is the documented empty result.
+        assertTrue(IntMatrix.repeat(0, 0, 7).isEmpty());
+    }
+
 }

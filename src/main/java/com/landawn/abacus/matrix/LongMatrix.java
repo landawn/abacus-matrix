@@ -2108,7 +2108,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     @Override
     public void flipHorizontallyInPlace() {
-        forEachDistinctRow(row -> N.reverse(row));
+        forEachDistinctRow(N::reverse);
     }
 
     /**

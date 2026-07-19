@@ -391,6 +391,62 @@ class MatricesTest extends TestBase {
     }
 
     @Test
+    public void testMapIndicesParallel_thinRegions_produceSameContentAsSequential() {
+        // Parallel execution splits the larger dimension (the sequential outer-loop choice would
+        // give a thin region almost no parallelism); encounter order is unspecified for parallel
+        // streams, so compare sorted content.
+        List<String> wideSequential = Matrices.mapIndices(0, 2, 0, 40, (i, j) -> i + "," + j, false).sorted().toList();
+        List<String> wideParallel = Matrices.mapIndices(0, 2, 0, 40, (i, j) -> i + "," + j, true).sorted().toList();
+        assertEquals(wideSequential, wideParallel);
+
+        List<String> tallSequential = Matrices.mapIndices(0, 40, 0, 2, (i, j) -> i + "," + j, false).sorted().toList();
+        List<String> tallParallel = Matrices.mapIndices(0, 40, 0, 2, (i, j) -> i + "," + j, true).sorted().toList();
+        assertEquals(tallSequential, tallParallel);
+
+        int[] rowSequential = Matrices.mapIndicesToInt(0, 1, 0, 50, (i, j) -> i * 100 + j, false).sorted().toArray();
+        int[] rowParallel = Matrices.mapIndicesToInt(0, 1, 0, 50, (i, j) -> i * 100 + j, true).sorted().toArray();
+        assertArrayEquals(rowSequential, rowParallel);
+
+        int[] columnSequential = Matrices.mapIndicesToInt(0, 50, 0, 1, (i, j) -> i * 100 + j, false).sorted().toArray();
+        int[] columnParallel = Matrices.mapIndicesToInt(0, 50, 0, 1, (i, j) -> i * 100 + j, true).sorted().toArray();
+        assertArrayEquals(columnSequential, columnParallel);
+    }
+
+    @Test
+    public void testCollectionStack_shapeMismatchAtNonAdjacentPosition_throwsIAE() {
+        // The mismatch surfaces inside the balanced-round pairing, a different path than the
+        // binary overloads, so put the bad matrix at a non-adjacent position (3rd of 4).
+        IntMatrix row1 = IntMatrix.of(new int[][] { { 1, 2 } });
+        IntMatrix row2 = IntMatrix.of(new int[][] { { 3, 4 } });
+        IntMatrix badColumns = IntMatrix.of(new int[][] { { 5, 6, 7 } });
+        IntMatrix row3 = IntMatrix.of(new int[][] { { 8, 9 } });
+        assertThrows(IllegalArgumentException.class, () -> Matrices.stackVertically(List.of(row1, row2, badColumns, row3)));
+
+        IntMatrix column1 = IntMatrix.of(new int[][] { { 1 }, { 2 } });
+        IntMatrix column2 = IntMatrix.of(new int[][] { { 3 }, { 4 } });
+        IntMatrix badRows = IntMatrix.of(new int[][] { { 5 } });
+        IntMatrix column3 = IntMatrix.of(new int[][] { { 6 }, { 7 } });
+        assertThrows(IllegalArgumentException.class, () -> Matrices.stackHorizontally(List.of(column1, column2, badRows, column3)));
+    }
+
+    @Test
+    public void testZipToPrimitive_nullZipFunctionResult_throwsNPE() {
+        // The documented NullPointerException comes from auto-unboxing the boxed function result.
+        ByteMatrix byteA = ByteMatrix.of(new byte[][] { { 1 } });
+        ByteMatrix byteB = ByteMatrix.of(new byte[][] { { 2 } });
+        assertThrows(NullPointerException.class, () -> Matrices.zipToInt(byteA, byteB, (x, y) -> (Integer) null));
+
+        IntMatrix intA = IntMatrix.of(new int[][] { { 1 } });
+        IntMatrix intB = IntMatrix.of(new int[][] { { 2 } });
+        assertThrows(NullPointerException.class, () -> Matrices.zipToLong(intA, intB, (x, y) -> (Long) null));
+        assertThrows(NullPointerException.class, () -> Matrices.zipToDouble(intA, intB, (x, y) -> (Double) null));
+
+        LongMatrix longA = LongMatrix.of(new long[][] { { 1L } });
+        LongMatrix longB = LongMatrix.of(new long[][] { { 2L } });
+        assertThrows(NullPointerException.class, () -> Matrices.zipToDouble(longA, longB, (x, y) -> (Double) null));
+    }
+
+    @Test
     public void testMultiply() {
         // Create test matrices for multiplication
         IntMatrix a = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
@@ -1741,7 +1797,7 @@ class MatricesTest extends TestBase {
         public void testRun_withRange_moreRowsThanCols_parallel() {
             List<String> positions = new ArrayList<>();
             Matrices.setParallelMode(ParallelMode.FORCE_OFF);
-            // 5 rows x 2 columnCount - parallel should iterate by columns
+            // 5 rows x 2 columnCount - parallel splits the larger dimension (rows)
             Matrices.forEachIndices(0, 5, 0, 2, (i, j) -> {
                 synchronized (positions) {
                     positions.add(i + "," + j);
@@ -1760,7 +1816,7 @@ class MatricesTest extends TestBase {
 
         @Test
         public void testCall_withRange_moreRowsThanCols_parallel() {
-            // 4 rows x 2 columnCount - parallel should iterate by columns
+            // 4 rows x 2 columnCount - parallel splits the larger dimension (rows)
             com.landawn.abacus.util.stream.Stream<Integer> result = Matrices.mapIndices(0, 4, 0, 2, (i, j) -> i * 10 + j, true);
             List<Integer> list = result.toList();
             assertEquals(8, list.size());
@@ -1776,7 +1832,7 @@ class MatricesTest extends TestBase {
 
         @Test
         public void testCallToInt_withRange_moreRowsThanCols_parallel() {
-            // 5 rows x 2 columnCount - parallel should iterate by columns
+            // 5 rows x 2 columnCount - parallel splits the larger dimension (rows)
             IntStream result = Matrices.mapIndicesToInt(0, 5, 0, 2, (i, j) -> i * j, true);
             int[] array = result.toArray();
             assertEquals(10, array.length);

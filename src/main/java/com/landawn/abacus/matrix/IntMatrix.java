@@ -2221,7 +2221,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      */
     @Override
     public void flipHorizontallyInPlace() {
-        forEachDistinctRow(row -> N.reverse(row));
+        forEachDistinctRow(N::reverse);
     }
 
     /**

@@ -6360,4 +6360,40 @@ class LongMatrixTest extends TestBase {
         }
     }
 
+    @Test
+    public void testStreamIterators_midStrideAdvanceThenToArray_EdgeCase() {
+        LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+
+        var rowMajorIterator = matrix.rowMajorStream(0, 2).iterator();
+        assertTrue(rowMajorIterator instanceof com.landawn.abacus.util.stream.LongIteratorEx);
+        com.landawn.abacus.util.stream.LongIteratorEx rowMajor = (com.landawn.abacus.util.stream.LongIteratorEx) rowMajorIterator;
+        rowMajor.advance(1); // mid-row cursor: the chunked toArray must start at column 1
+        assertEquals(5L, rowMajor.count());
+        assertArrayEquals(new long[] { 2L, 3L, 4L, 5L, 6L }, rowMajor.toArray());
+
+        var columnMajorIterator = matrix.columnMajorStream(0, 3).iterator();
+        com.landawn.abacus.util.stream.LongIteratorEx columnMajor = (com.landawn.abacus.util.stream.LongIteratorEx) columnMajorIterator;
+        columnMajor.advance(1); // mid-column cursor: row 1 of column 0
+        assertEquals(5L, columnMajor.count());
+        assertArrayEquals(new long[] { 4L, 2L, 5L, 3L, 6L }, columnMajor.toArray());
+
+        var crossingIterator = matrix.columnMajorStream(0, 3).iterator();
+        com.landawn.abacus.util.stream.LongIteratorEx crossing = (com.landawn.abacus.util.stream.LongIteratorEx) crossingIterator;
+        crossing.advance(3); // crosses a column boundary: lands on row 1 of column 1
+        assertEquals(3L, crossing.count());
+        assertEquals(5L, crossing.nextLong());
+        crossing.advance(10);
+        assertEquals(0L, crossing.count());
+        assertThrows(java.util.NoSuchElementException.class, crossing::nextLong);
+    }
+
+    @Test
+    public void testFactories_negativeDimensions_throwIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class, () -> LongMatrix.randomRow(-1));
+        assertThrows(IllegalArgumentException.class, () -> LongMatrix.random(-1, 2));
+        assertThrows(IllegalArgumentException.class, () -> LongMatrix.random(2, -1));
+        assertThrows(IllegalArgumentException.class, () -> LongMatrix.repeat(-1, 2, 7L));
+        assertThrows(IllegalArgumentException.class, () -> LongMatrix.repeat(2, -1, 7L));
+    }
+
 }

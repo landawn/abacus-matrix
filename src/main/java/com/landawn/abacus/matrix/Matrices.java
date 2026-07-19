@@ -781,9 +781,13 @@ public final class Matrices {
 
         final int rowCount = toRowIndex - fromRowIndex;
         final int columnCount = toColumnIndex - fromColumnIndex;
+        final boolean parallel = inParallel && IS_PARALLEL_STREAM_SUPPORTED;
 
-        if (rowCount <= columnCount) {
-            return IntStream.range(fromRowIndex, toRowIndex).transform(s -> inParallel && IS_PARALLEL_STREAM_SUPPORTED ? s.parallel() : s).flatmapToObj(i -> {
+        // Sequential execution keeps the smaller dimension on the outside (the documented encounter
+        // order); parallel execution splits the larger dimension so the work divides into as many
+        // independent units as possible (a 1xN or Nx1 region would otherwise get no parallelism).
+        if (parallel ? rowCount >= columnCount : rowCount <= columnCount) {
+            return IntStream.range(fromRowIndex, toRowIndex).transform(s -> parallel ? s.parallel() : s).flatmapToObj(i -> {
                 final List<T> ret = new ArrayList<>(columnCount);
 
                 try {
@@ -797,9 +801,7 @@ public final class Matrices {
                 return ret;
             });
         } else {
-            return IntStream.range(fromColumnIndex, toColumnIndex)
-                    .transform(s -> inParallel && IS_PARALLEL_STREAM_SUPPORTED ? s.parallel() : s)
-                    .flatmapToObj(j -> {
+            return IntStream.range(fromColumnIndex, toColumnIndex).transform(s -> parallel ? s.parallel() : s).flatmapToObj(j -> {
                         final List<T> ret = new ArrayList<>(rowCount);
 
                         try {
@@ -915,9 +917,13 @@ public final class Matrices {
 
         final int rowCount = toRowIndex - fromRowIndex;
         final int columnCount = toColumnIndex - fromColumnIndex;
+        final boolean parallel = inParallel && IS_PARALLEL_STREAM_SUPPORTED;
 
-        if (rowCount <= columnCount) {
-            return IntStream.range(fromRowIndex, toRowIndex).transform(s -> inParallel && IS_PARALLEL_STREAM_SUPPORTED ? s.parallel() : s).flatMapArray(i -> {
+        // Sequential execution keeps the smaller dimension on the outside (the documented encounter
+        // order); parallel execution splits the larger dimension so the work divides into as many
+        // independent units as possible (a 1xN or Nx1 region would otherwise get no parallelism).
+        if (parallel ? rowCount >= columnCount : rowCount <= columnCount) {
+            return IntStream.range(fromRowIndex, toRowIndex).transform(s -> parallel ? s.parallel() : s).flatMapArray(i -> {
                 final int[] ret = new int[columnCount];
 
                 try {
@@ -931,9 +937,7 @@ public final class Matrices {
                 return ret;
             });
         } else {
-            return IntStream.range(fromColumnIndex, toColumnIndex)
-                    .transform(s -> inParallel && IS_PARALLEL_STREAM_SUPPORTED ? s.parallel() : s)
-                    .flatMapArray(j -> {
+            return IntStream.range(fromColumnIndex, toColumnIndex).transform(s -> parallel ? s.parallel() : s).flatMapArray(j -> {
                         final int[] ret = new int[rowCount];
 
                         try {
@@ -1731,6 +1735,7 @@ public final class Matrices {
      * @throws NullPointerException if {@code zipFunction} returns {@code null}
      * @throws E if the zip function throws an exception during execution
      * @see #zipToInt(Collection, Throwables.ByteNFunction)
+     * @see #zipToInt(ByteMatrix, ByteMatrix, Throwables.ByteBiFunction)
      */
     public static <E extends Exception> IntMatrix zipToInt(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<Integer, E> zipFunction,
             final boolean shareIntermediateArray) throws IllegalArgumentException, E {
@@ -2228,6 +2233,7 @@ public final class Matrices {
      * @throws NullPointerException if {@code zipFunction} returns {@code null}
      * @throws E if the zip function throws an exception during execution
      * @see #zipToLong(Collection, Throwables.IntNFunction, boolean)
+     * @see #zipToLong(IntMatrix, IntMatrix, Throwables.IntBiFunction)
      */
     public static <E extends Exception> LongMatrix zipToLong(final Collection<IntMatrix> coll, final Throwables.IntNFunction<Long, E> zipFunction) throws E {
         return zipToLong(coll, zipFunction, false);
@@ -2284,6 +2290,8 @@ public final class Matrices {
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
      * @throws NullPointerException if {@code zipFunction} returns {@code null}
      * @throws E if the zip function throws an exception during execution
+     * @see #zipToLong(Collection, Throwables.IntNFunction)
+     * @see #zipToLong(IntMatrix, IntMatrix, Throwables.IntBiFunction)
      */
     public static <E extends Exception> LongMatrix zipToLong(final Collection<IntMatrix> coll, final Throwables.IntNFunction<Long, E> zipFunction,
             final boolean shareIntermediateArray) throws IllegalArgumentException, E {
@@ -2465,6 +2473,7 @@ public final class Matrices {
      * @throws NullPointerException if {@code zipFunction} returns {@code null}
      * @throws E if the zip function throws an exception during execution
      * @see #zipToDouble(Collection, Throwables.IntNFunction, boolean)
+     * @see #zipToDouble(IntMatrix, IntMatrix, Throwables.IntBiFunction)
      */
     public static <E extends Exception> DoubleMatrix zipToDouble(final Collection<IntMatrix> coll, final Throwables.IntNFunction<Double, E> zipFunction)
             throws IllegalArgumentException, E {
@@ -2519,6 +2528,8 @@ public final class Matrices {
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
      * @throws NullPointerException if {@code zipFunction} returns {@code null}
      * @throws E if the zip function throws an exception during execution
+     * @see #zipToDouble(Collection, Throwables.IntNFunction)
+     * @see #zipToDouble(IntMatrix, IntMatrix, Throwables.IntBiFunction)
      */
     public static <E extends Exception> DoubleMatrix zipToDouble(final Collection<IntMatrix> coll, final Throwables.IntNFunction<Double, E> zipFunction,
             final boolean shareIntermediateArray) throws IllegalArgumentException, E {

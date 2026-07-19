@@ -1983,7 +1983,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      */
     @Override
     public void flipHorizontallyInPlace() {
-        forEachDistinctRow(row -> N.reverse(row));
+        forEachDistinctRow(N::reverse);
     }
 
     /**

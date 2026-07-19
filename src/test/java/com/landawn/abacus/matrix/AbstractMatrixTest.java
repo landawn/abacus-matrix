@@ -2416,6 +2416,26 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
+        public void testAdjacent4Points_visitOrder() {
+            // The Javadoc promises the visit order up, right, down, left, with out-of-bounds
+            // neighbors skipped without disturbing the relative order.
+            BooleanMatrix m = BooleanMatrix.of(new boolean[3][3]);
+            assertEquals(List.of(Point.of(0, 1), Point.of(1, 2), Point.of(2, 1), Point.of(1, 0)), m.adjacent4Points(1, 1).toList());
+            assertEquals(List.of(Point.of(0, 1), Point.of(1, 0)), m.adjacent4Points(0, 0).toList());
+        }
+
+        @Test
+        public void testAdjacent8Points_visitOrder() {
+            // The Javadoc promises clockwise order starting from the top-left: leftUp, up,
+            // rightUp, right, rightDown, down, leftDown, left.
+            BooleanMatrix m = BooleanMatrix.of(new boolean[3][3]);
+            assertEquals(
+                    List.of(Point.of(0, 0), Point.of(0, 1), Point.of(0, 2), Point.of(1, 2), Point.of(2, 2), Point.of(2, 1), Point.of(2, 0), Point.of(1, 0)),
+                    m.adjacent8Points(1, 1).toList());
+            assertEquals(List.of(Point.of(0, 1), Point.of(1, 1), Point.of(1, 0)), m.adjacent8Points(0, 0).toList());
+        }
+
+        @Test
         public void testAdjacent4Points_centerElement() {
             BooleanMatrix m = BooleanMatrix.of(new boolean[][] { { true, false, true }, { false, true, false }, { true, false, true } });
             List<Point> points = m.adjacent4Points(1, 1).toList();
