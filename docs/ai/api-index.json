@@ -1,8 +1,8 @@
 {
   "library": {
     "name": "abacus-matrix",
-    "version": "3.8.2",
-    "generated_at": "2026-07-13",
+    "version": "3.8.4",
+    "generated_at": "2026-07-18",
     "java_target": "17",
     "source": {
       "git_sha": "unknown"
@@ -1908,7 +1908,9 @@
               ],
               "throws": [],
               "javadoc_summary": "Creates a {@code BooleanMatrix} from a two-dimensional boolean array.",
-              "contract": [],
+              "contract": [
+                "<p> <b> &#9888; &#65039; Shared backing: </b> When the input has at least one row, the provided array is used directly without defensive copying."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -2666,7 +2668,9 @@
                 }
               ],
               "javadoc_summary": "Updates all elements in a column in-place by applying the specified operator to each element.",
-              "contract": [],
+              "contract": [
+                "</p> <p> If multiple logical rows share the same backing array, the operator is applied to that backing row only once, at its first occurrence."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -2911,7 +2915,8 @@
               "javadoc_summary": "Updates all elements in the matrix in-place by applying the specified operator.",
               "contract": [
                 "If parallelized, the supplied function must be thread-safe.",
-                "Elements are processed in row-major order when executed sequentially."
+                "Elements are processed in row-major order when executed sequentially.",
+                "</p> <p> If multiple logical rows share the same backing array, each backing row is updated only once, at its first occurrence."
               ],
               "examples": [],
               "see_also": []
@@ -2952,7 +2957,8 @@
               ],
               "javadoc_summary": "Updates all elements in the matrix in-place based on their position (row and column indices).",
               "contract": [
-                "If parallelized, the supplied function must be thread-safe."
+                "If parallelized, the supplied function must be thread-safe.",
+                "</p> <p> If logical rows share a backing array, every logical coordinate is still visited, but traversal is kept sequential so later aliases overwrite earlier ones deterministically."
               ],
               "examples": [],
               "see_also": []
@@ -2995,7 +3001,8 @@
               ],
               "javadoc_summary": "Conditionally replaces elements in-place based on a predicate.",
               "contract": [
-                "If parallelized, the supplied function must be thread-safe."
+                "If parallelized, the supplied function must be thread-safe.",
+                "</p> <p> If multiple logical rows share the same backing array, the predicate is evaluated once per physical cell and that backing row is updated once."
               ],
               "examples": [],
               "see_also": []
@@ -3038,7 +3045,8 @@
               ],
               "javadoc_summary": "Conditionally replaces elements in-place based on their position (row and column indices).",
               "contract": [
-                "If parallelized, the supplied function must be thread-safe."
+                "If parallelized, the supplied function must be thread-safe.",
+                "If logical rows share a backing array, a replacement made through any matching coordinate is therefore visible through every alias."
               ],
               "examples": [],
               "see_also": []
@@ -3382,7 +3390,7 @@
                 {
                   "name": "defaultValue",
                   "type": "boolean",
-                  "javadoc": "the value used to fill cells that are added when a dimension grows; ignored when a dimension shrinks",
+                  "javadoc": "the value used to fill cells that are added when a dimension grows; ignored when neither dimension grows",
                   "nullability": "unspecified"
                 }
               ],
@@ -3395,6 +3403,7 @@
               "javadoc_summary": "Returns a new matrix whose dimensions are exactly {@code newRowCount × newColumnCount} , anchored at the top-left corner of this matrix.",
               "contract": [
                 "<ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded.",
+                "If neither dimension grows, {@code defaultValue} is not used.",
                 "</li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code defaultValue} .",
                 "Use {@code extend} when the entire original content must be preserved.",
                 "</p> <p> <b> Usage Examples: </b> </p> <pre> {@code BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] { {true, false, true}, {false, true, false}, {true, false, true} }); // Grow: fill new cells with true BooleanMatrix grown = matrix.resize(4, 4, true); // Result: [[true, false, true, true], // [false, true, false, true], // [true, false, true, true], // [true, true, true, true]] grown.get(0, 3); // returns true (new cell filled with defaultValue) grown.get(3, 3); // returns true (new cell) grown.get(0, 0); // returns true (preserved cell) // Truncate: defaultValue is ignored when shrinking BooleanMatrix truncated = matrix.resize(2, 2, true); truncated.rowCount(); // returns 2 truncated.get(0, 1); // returns false (preserved, defaultValue not applied) matrix.resize(0, 0, true).isEmpty(); // returns true matrix.resize(2, -1, true); // throws IllegalArgumentException (negative dimension) } </pre>"
@@ -3516,7 +3525,9 @@
               "params": [],
               "throws": [],
               "javadoc_summary": "Reverses the order of elements in each row in-place (horizontal flip).",
-              "contract": [],
+              "contract": [
+                "</p> <p> If multiple logical rows share the same backing array, that backing row is reversed only once, preserving the alias relationship."
+              ],
               "examples": [],
               "see_also": [
                 "#flipHorizontally()",
@@ -3812,7 +3823,9 @@
                 }
               ],
               "javadoc_summary": "Exposes the elements of this matrix to {@code action} as a single one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix.",
-              "contract": [],
+              "contract": [
+                "</p> <p> <b> Usage Examples: </b> </p> <pre> {@code BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] {{true, false}, {false, true}}); matrix.mutateFlattened(arr -> java.util.Arrays.fill(arr, true)); // global view, written back row by row matrix.countTrue(); // returns 4 (all elements now true) matrix.get(0, 1); // returns true (was false) int[] seen = {0}; matrix.mutateFlattened(arr -> seen[0] = arr.length); // flattened length equals total element count // seen[0] is now 4 BooleanMatrix.empty().mutateFlattened(arr -> seen[0] = -1); // no-op: action is not invoked when the matrix has zero rows // seen[0] is still 4 } </pre>"
+              ],
               "examples": [],
               "see_also": [
                 "Arrays#mutateFlattened(boolean[][], Throwables.Consumer)"
@@ -3846,7 +3859,11 @@
                 "The matrices must have the same dimensions."
               ],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#or(BooleanMatrix)",
+                "#xor(BooleanMatrix)",
+                "#zipWith(BooleanMatrix, Throwables.BooleanBinaryOperator)"
+              ]
             },
             {
               "name": "or",
@@ -3876,7 +3893,11 @@
                 "The matrices must have the same dimensions."
               ],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#and(BooleanMatrix)",
+                "#xor(BooleanMatrix)",
+                "#zipWith(BooleanMatrix, Throwables.BooleanBinaryOperator)"
+              ]
             },
             {
               "name": "xor",
@@ -3906,7 +3927,11 @@
                 "The matrices must have the same dimensions."
               ],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#and(BooleanMatrix)",
+                "#or(BooleanMatrix)",
+                "#zipWith(BooleanMatrix, Throwables.BooleanBinaryOperator)"
+              ]
             },
             {
               "name": "countTrue",
@@ -5590,7 +5615,9 @@
                 }
               ],
               "javadoc_summary": "Updates all elements in a column in-place by applying the specified operator to each element.",
-              "contract": [],
+              "contract": [
+                "</p> <p> If multiple logical rows share the same backing array, the operator is applied to that backing row only once, at its first occurrence."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -5835,7 +5862,8 @@
               "javadoc_summary": "Updates all elements in the matrix in-place by applying the specified operator.",
               "contract": [
                 "If parallelized, the supplied function must be thread-safe.",
-                "Elements are processed in row-major order when executed sequentially."
+                "Elements are processed in row-major order when executed sequentially.",
+                "</p> <p> If multiple logical rows share the same backing array, each backing row is updated only once, at its first occurrence."
               ],
               "examples": [],
               "see_also": []
@@ -5876,7 +5904,8 @@
               ],
               "javadoc_summary": "Updates all elements in the matrix in-place based on their position (row and column indices).",
               "contract": [
-                "If parallelized, the supplied function must be thread-safe."
+                "If parallelized, the supplied function must be thread-safe.",
+                "</p> <p> If logical rows share a backing array, every logical coordinate is still visited, but traversal is kept sequential so later aliases overwrite earlier ones deterministically."
               ],
               "examples": [],
               "see_also": []
@@ -5919,7 +5948,8 @@
               ],
               "javadoc_summary": "Conditionally replaces elements in-place based on a predicate.",
               "contract": [
-                "If parallelized, the supplied function must be thread-safe."
+                "If parallelized, the supplied function must be thread-safe.",
+                "</p> <p> If multiple logical rows share the same backing array, the predicate is evaluated once per physical cell and that backing row is updated once."
               ],
               "examples": [],
               "see_also": []
@@ -5962,7 +5992,8 @@
               ],
               "javadoc_summary": "Conditionally replaces elements in-place based on their position (row and column indices).",
               "contract": [
-                "If parallelized, the supplied function must be thread-safe."
+                "If parallelized, the supplied function must be thread-safe.",
+                "If logical rows share a backing array, a replacement made through any matching coordinate is therefore visible through every alias."
               ],
               "examples": [],
               "see_also": []
@@ -6306,7 +6337,7 @@
                 {
                   "name": "defaultValue",
                   "type": "byte",
-                  "javadoc": "the value used to fill cells that are added when a dimension grows; ignored when a dimension shrinks",
+                  "javadoc": "the value used to fill cells that are added when a dimension grows; ignored when neither dimension grows",
                   "nullability": "unspecified"
                 }
               ],
@@ -6319,6 +6350,7 @@
               "javadoc_summary": "Returns a new matrix whose dimensions are exactly {@code newRowCount × newColumnCount} , anchored at the top-left corner of this matrix.",
               "contract": [
                 "<ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded.",
+                "If neither dimension grows, {@code defaultValue} is not used.",
                 "</li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code defaultValue} .",
                 "Use {@code extend} when the entire original content must be preserved.",
                 "</p> <p> <b> Usage Examples: </b> </p> <pre> {@code ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}); // Grow: fill new cells with 9 ByteMatrix grown = matrix.resize(4, 4, (byte) 9); grown.get(3, 3); // returns (byte) 9 (new cell uses defaultValue) grown.get(0, 0); // returns (byte) 1 (preserved) // Truncate: defaultValue is ignored when shrinking ByteMatrix truncated = matrix.resize(2, 2, (byte) 9); truncated.get(1, 1); // returns (byte) 5 (no new cells, default unused) matrix.resize(0, 0, (byte) 9).isEmpty(); // returns true matrix.resize(2, -1, (byte) 9); // throws IllegalArgumentException (negative dimension) } </pre>"
@@ -6440,7 +6472,9 @@
               "params": [],
               "throws": [],
               "javadoc_summary": "Reverses the order of elements in each row in-place (horizontal flip).",
-              "contract": [],
+              "contract": [
+                "</p> <p> If multiple logical rows share the same backing array, that backing row is reversed only once, preserving the alias relationship."
+              ],
               "examples": [],
               "see_also": [
                 "#flipHorizontally()",
@@ -7641,7 +7675,9 @@
               ],
               "throws": [],
               "javadoc_summary": "Creates a {@code CharMatrix} from a two-dimensional char array.",
-              "contract": [],
+              "contract": [
+                "<p> <b> &#9888; &#65039; Shared backing: </b> When the input has at least one row, the provided array is used directly without defensive copying."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -8533,7 +8569,9 @@
                 }
               ],
               "javadoc_summary": "Updates all elements in a column in-place by applying the specified operator to each element.",
-              "contract": [],
+              "contract": [
+                "</p> <p> If multiple logical rows share the same backing array, the operator is applied to that backing row only once, at its first occurrence."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -8778,7 +8816,8 @@
               "javadoc_summary": "Updates all elements in the matrix in-place by applying the specified operator.",
               "contract": [
                 "If parallelized, the supplied function must be thread-safe.",
-                "Elements are processed in row-major order when executed sequentially."
+                "Elements are processed in row-major order when executed sequentially.",
+                "</p> <p> If multiple logical rows share the same backing array, each backing row is updated only once, at its first occurrence."
               ],
               "examples": [],
               "see_also": []
@@ -8819,7 +8858,8 @@
               ],
               "javadoc_summary": "Updates all elements in the matrix in-place based on their position (row and column indices).",
               "contract": [
-                "If parallelized, the supplied function must be thread-safe."
+                "If parallelized, the supplied function must be thread-safe.",
+                "</p> <p> If logical rows share a backing array, every logical coordinate is still visited, but traversal is kept sequential so later aliases overwrite earlier ones deterministically."
               ],
               "examples": [],
               "see_also": []
@@ -8862,7 +8902,8 @@
               ],
               "javadoc_summary": "Conditionally replaces elements in-place based on a predicate.",
               "contract": [
-                "If parallelized, the supplied function must be thread-safe."
+                "If parallelized, the supplied function must be thread-safe.",
+                "</p> <p> If multiple logical rows share the same backing array, the predicate is evaluated once per physical cell and that backing row is updated once."
               ],
               "examples": [],
               "see_also": []
@@ -8905,7 +8946,8 @@
               ],
               "javadoc_summary": "Conditionally replaces elements in-place based on their position (row and column indices).",
               "contract": [
-                "If parallelized, the supplied function must be thread-safe."
+                "If parallelized, the supplied function must be thread-safe.",
+                "If logical rows share a backing array, a replacement made through any matching coordinate is therefore visible through every alias."
               ],
               "examples": [],
               "see_also": []
@@ -9249,7 +9291,7 @@
                 {
                   "name": "defaultValue",
                   "type": "char",
-                  "javadoc": "the value used to fill cells that are added when a dimension grows; ignored when a dimension shrinks",
+                  "javadoc": "the value used to fill cells that are added when a dimension grows; ignored when neither dimension grows",
                   "nullability": "unspecified"
                 }
               ],
@@ -9262,6 +9304,7 @@
               "javadoc_summary": "Returns a new matrix whose dimensions are exactly {@code newRowCount × newColumnCount} , anchored at the top-left corner of this matrix.",
               "contract": [
                 "<ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded.",
+                "If neither dimension grows, {@code defaultValue} is not used.",
                 "</li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code defaultValue} .",
                 "Use {@code extend} when the entire original content must be preserved.",
                 "</p> <p> <b> Usage Examples: </b> </p> <pre> {@code CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}, {'g', 'h', 'i'}}); // Grow: fill new cells with 'x' CharMatrix grown = matrix.resize(4, 4, 'x'); // Result: [['a', 'b', 'c', 'x'], // ['d', 'e', 'f', 'x'], // ['g', 'h', 'i', 'x'], // ['x', 'x', 'x', 'x']] // Truncate: defaultValue is ignored when shrinking CharMatrix truncated = matrix.resize(2, 2, 'x'); // Result: [['a', 'b'], // ['d', 'e']] matrix.resize(0, 0, 'x').isEmpty(); // returns true matrix.resize(3, -1, 'x'); // throws IllegalArgumentException (negative dimension) } </pre>"
@@ -9383,7 +9426,9 @@
               "params": [],
               "throws": [],
               "javadoc_summary": "Reverses the order of elements in each row horizontally (in-place).",
-              "contract": [],
+              "contract": [
+                "If multiple logical rows share the same backing array, that backing row is reversed only once, preserving the alias relationship."
+              ],
               "examples": [],
               "see_also": [
                 "#flipHorizontally()"
@@ -10574,7 +10619,9 @@
               ],
               "throws": [],
               "javadoc_summary": "Creates a DoubleMatrix from a two-dimensional double array.",
-              "contract": [],
+              "contract": [
+                "<p> <b> &#9888; &#65039; Shared backing: </b> When the input has at least one row, the provided array is used directly without defensive copying."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -11415,7 +11462,9 @@
                 }
               ],
               "javadoc_summary": "Updates all elements in a column in-place by applying the specified operator to each element.",
-              "contract": [],
+              "contract": [
+                "</p> If multiple logical rows share one backing array, that backing value is transformed only once."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -11660,7 +11709,8 @@
               "javadoc_summary": "Updates all elements in the matrix in-place by applying the specified operator.",
               "contract": [
                 "If parallelized, the supplied function must be thread-safe.",
-                "Elements are processed in row-major order when executed sequentially."
+                "Elements are processed in row-major order when executed sequentially.",
+                "</p> <p> If multiple logical rows share one backing array, each value in that array is transformed only once."
               ],
               "examples": [],
               "see_also": []
@@ -11701,7 +11751,8 @@
               ],
               "javadoc_summary": "Updates all elements in the matrix in-place based on their position (row and column indices).",
               "contract": [
-                "If parallelized, the supplied function must be thread-safe."
+                "If parallelized, the supplied function must be thread-safe.",
+                "</p> <p> If logical rows share a backing array, every logical coordinate is still visited, but traversal is kept sequential so later aliases overwrite earlier ones deterministically."
               ],
               "examples": [],
               "see_also": []
@@ -11744,7 +11795,8 @@
               ],
               "javadoc_summary": "Conditionally replaces elements in-place based on a predicate.",
               "contract": [
-                "If parallelized, the supplied function must be thread-safe."
+                "If parallelized, the supplied function must be thread-safe.",
+                "</p> <p> If multiple logical rows share the same backing array, the predicate is evaluated once per physical cell and that backing row is updated once."
               ],
               "examples": [],
               "see_also": []
@@ -11787,7 +11839,8 @@
               ],
               "javadoc_summary": "Conditionally replaces elements in-place based on their position (row and column indices).",
               "contract": [
-                "If parallelized, the supplied function must be thread-safe."
+                "If parallelized, the supplied function must be thread-safe.",
+                "If logical rows share a backing array, a replacement made through any matching coordinate is therefore visible through every alias."
               ],
               "examples": [],
               "see_also": []
@@ -12344,7 +12397,9 @@
               "params": [],
               "throws": [],
               "javadoc_summary": "Reverses the order of elements in each row in-place (horizontal flip).",
-              "contract": [],
+              "contract": [
+                "</p> If multiple logical rows share one backing array, that array is reversed only once, preserving the alias relationship."
+              ],
               "examples": [],
               "see_also": [
                 "#flipHorizontally()",
@@ -14308,7 +14363,9 @@
                 }
               ],
               "javadoc_summary": "Updates all elements in a column in-place by applying the specified operator to each element.",
-              "contract": [],
+              "contract": [
+                "</p> If multiple logical rows share one backing array, that backing value is transformed only once."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -14553,7 +14610,8 @@
               "javadoc_summary": "Updates all elements in the matrix in-place by applying the specified operator.",
               "contract": [
                 "If parallelized, the supplied function must be thread-safe.",
-                "Elements are processed in row-major order when executed sequentially."
+                "Elements are processed in row-major order when executed sequentially.",
+                "</p> <p> If multiple logical rows share one backing array, each value in that array is transformed only once."
               ],
               "examples": [],
               "see_also": []
@@ -14594,7 +14652,8 @@
               ],
               "javadoc_summary": "Updates all elements in the matrix in-place based on their position (row and column indices).",
               "contract": [
-                "If parallelized, the supplied function must be thread-safe."
+                "If parallelized, the supplied function must be thread-safe.",
+                "</p> <p> If logical rows share a backing array, every logical coordinate is still visited, but traversal is kept sequential so later aliases overwrite earlier ones deterministically."
               ],
               "examples": [],
               "see_also": []
@@ -14637,7 +14696,8 @@
               ],
               "javadoc_summary": "Conditionally replaces elements in-place based on a predicate.",
               "contract": [
-                "If parallelized, the supplied function must be thread-safe."
+                "If parallelized, the supplied function must be thread-safe.",
+                "</p> <p> If multiple logical rows share the same backing array, the predicate is evaluated once per physical cell and that backing row is updated once."
               ],
               "examples": [],
               "see_also": []
@@ -14680,7 +14740,8 @@
               ],
               "javadoc_summary": "Conditionally replaces elements in-place based on their position (row and column indices).",
               "contract": [
-                "If parallelized, the supplied function must be thread-safe."
+                "If parallelized, the supplied function must be thread-safe.",
+                "If logical rows share a backing array, a replacement made through any matching coordinate is therefore visible through every alias."
               ],
               "examples": [],
               "see_also": []
@@ -15276,7 +15337,9 @@
               "params": [],
               "throws": [],
               "javadoc_summary": "Reverses the order of elements in each row in-place (horizontal flip).",
-              "contract": [],
+              "contract": [
+                "</p> If multiple logical rows share one backing array, that array is reversed only once, preserving the alias relationship."
+              ],
               "examples": [],
               "see_also": [
                 "#flipHorizontally()",
@@ -16453,7 +16516,9 @@
               ],
               "throws": [],
               "javadoc_summary": "Creates an {@code IntMatrix} from a two-dimensional int array.",
-              "contract": [],
+              "contract": [
+                "<p> <b> &#9888; &#65039; Shared backing: </b> When the input has at least one row, the provided array is used directly without defensive copying."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -16476,7 +16541,7 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates an {@code IntMatrix} that owns a defensive deep copy of the supplied two-dimensional array.",
+              "javadoc_summary": "Creates an {@code IntMatrix} from the supplied two-dimensional array.",
               "contract": [],
               "examples": [],
               "see_also": [
@@ -17434,7 +17499,9 @@
                 }
               ],
               "javadoc_summary": "Updates all elements in a column in-place by applying the specified operator to each element.",
-              "contract": [],
+              "contract": [
+                "If multiple logical rows reference the same backing array, its shared column cell is transformed exactly once, when that backing row is first encountered."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -17679,7 +17746,8 @@
               "javadoc_summary": "Updates all elements in the matrix in-place by applying the specified operator.",
               "contract": [
                 "If parallelized, the supplied function must be thread-safe.",
-                "Elements are processed in row-major order when executed sequentially."
+                "Distinct backing rows and their elements are processed in first-occurrence row-major order when executed sequentially.",
+                "</p> <p> If multiple logical rows reference the same backing array, every element in that shared row is transformed exactly once."
               ],
               "examples": [],
               "see_also": []
@@ -17720,7 +17788,8 @@
               ],
               "javadoc_summary": "Updates all elements in the matrix in-place based on their position (row and column indices).",
               "contract": [
-                "If parallelized, the supplied function must be thread-safe."
+                "If parallelized, the supplied function must be thread-safe.",
+                "</p> <p> If logical rows share a backing array, every logical coordinate is still visited, but traversal is kept sequential so later aliases overwrite earlier ones deterministically."
               ],
               "examples": [],
               "see_also": []
@@ -17763,7 +17832,8 @@
               ],
               "javadoc_summary": "Conditionally replaces elements in-place based on a predicate.",
               "contract": [
-                "If parallelized, the supplied function must be thread-safe."
+                "If parallelized, the supplied function must be thread-safe.",
+                "</p> <p> If multiple logical rows share the same backing array, the predicate is evaluated once per physical cell and that backing row is updated once."
               ],
               "examples": [],
               "see_also": []
@@ -17806,7 +17876,8 @@
               ],
               "javadoc_summary": "Conditionally replaces elements in-place based on their position (row and column indices).",
               "contract": [
-                "If parallelized, the supplied function must be thread-safe."
+                "If parallelized, the supplied function must be thread-safe.",
+                "If logical rows share a backing array, a replacement made through any matching coordinate is therefore visible through every alias."
               ],
               "examples": [],
               "see_also": []
@@ -18228,7 +18299,7 @@
                 {
                   "name": "defaultValue",
                   "type": "int",
-                  "javadoc": "the value used to fill cells that are added when a dimension grows; ignored when a dimension shrinks",
+                  "javadoc": "the value used to fill cells that are added when a dimension grows; ignored when neither dimension grows",
                   "nullability": "unspecified"
                 }
               ],
@@ -18241,6 +18312,7 @@
               "javadoc_summary": "Returns a new matrix whose dimensions are exactly {@code newRowCount x newColumnCount} , anchored at the top-left corner of this matrix.",
               "contract": [
                 "<ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded.",
+                "If neither dimension grows, {@code defaultValue} is not used.",
                 "</li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code defaultValue} .",
                 "Use {@code extend} when the entire original content must be preserved.",
                 "</p> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}); // Grow: fill new cells with 9 IntMatrix grown = matrix.resize(4, 4, 9); grown.get(3, 3); // returns 9 (new cell uses defaultValue) grown.get(0, 0); // returns 1 (preserved) // Truncate: defaultValue is ignored when shrinking IntMatrix truncated = matrix.resize(2, 2, 9); truncated.get(1, 1); // returns 5 (no new cells, default unused) matrix.resize(0, 0, 9).isEmpty(); // returns true matrix.resize(2, -1, 9); // throws IllegalArgumentException (negative dimension) } </pre>"
@@ -18362,7 +18434,9 @@
               "params": [],
               "throws": [],
               "javadoc_summary": "Reverses the order of elements in each row in-place (horizontal flip).",
-              "contract": [],
+              "contract": [
+                "</p> <p> If multiple logical rows reference the same backing array, that shared row is reversed exactly once; all of its aliases therefore observe the same horizontally flipped values."
+              ],
               "examples": [],
               "see_also": [
                 "#flipHorizontally()",
@@ -19537,7 +19611,9 @@
               ],
               "throws": [],
               "javadoc_summary": "Creates a {@code LongMatrix} from a two-dimensional long array.",
-              "contract": [],
+              "contract": [
+                "<p> <b> &#9888; &#65039; Shared backing: </b> When the input has at least one row, the provided array is used directly without defensive copying."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -19560,7 +19636,7 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a {@code LongMatrix} that owns a defensive deep copy of the supplied two-dimensional array.",
+              "javadoc_summary": "Creates a {@code LongMatrix} from the supplied two-dimensional array.",
               "contract": [],
               "examples": [],
               "see_also": [
@@ -20463,7 +20539,9 @@
                 }
               ],
               "javadoc_summary": "Updates all elements in a column in-place by applying the specified operator to each element.",
-              "contract": [],
+              "contract": [
+                "If multiple logical rows reference the same backing array, its shared column cell is transformed exactly once, when that backing row is first encountered."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -20708,7 +20786,8 @@
               "javadoc_summary": "Updates all elements in the matrix in-place by applying the specified operator.",
               "contract": [
                 "If parallelized, the supplied function must be thread-safe.",
-                "Elements are processed in row-major order when executed sequentially."
+                "Distinct backing rows and their elements are processed in first-occurrence row-major order when executed sequentially.",
+                "</p> <p> If multiple logical rows reference the same backing array, every element in that shared row is transformed exactly once."
               ],
               "examples": [],
               "see_also": []
@@ -20749,7 +20828,8 @@
               ],
               "javadoc_summary": "Updates all elements in the matrix in-place based on their position (row and column indices).",
               "contract": [
-                "If parallelized, the supplied function must be thread-safe."
+                "If parallelized, the supplied function must be thread-safe.",
+                "</p> <p> If logical rows share a backing array, every logical coordinate is still visited, but traversal is kept sequential so later aliases overwrite earlier ones deterministically."
               ],
               "examples": [],
               "see_also": []
@@ -20792,7 +20872,8 @@
               ],
               "javadoc_summary": "Conditionally replaces elements in-place based on a predicate.",
               "contract": [
-                "If parallelized, the supplied function must be thread-safe."
+                "If parallelized, the supplied function must be thread-safe.",
+                "</p> <p> If multiple logical rows share the same backing array, the predicate is evaluated once per physical cell and that backing row is updated once."
               ],
               "examples": [],
               "see_also": []
@@ -20835,7 +20916,8 @@
               ],
               "javadoc_summary": "Conditionally replaces elements in-place based on their position (row and column indices).",
               "contract": [
-                "If parallelized, the supplied function must be thread-safe."
+                "If parallelized, the supplied function must be thread-safe.",
+                "If logical rows share a backing array, a replacement made through any matching coordinate is therefore visible through every alias."
               ],
               "examples": [],
               "see_also": []
@@ -21257,7 +21339,7 @@
                 {
                   "name": "defaultValue",
                   "type": "long",
-                  "javadoc": "the value used to fill cells that are added when a dimension grows; ignored when a dimension shrinks",
+                  "javadoc": "the value used to fill cells that are added when a dimension grows; ignored when neither dimension grows",
                   "nullability": "unspecified"
                 }
               ],
@@ -21270,6 +21352,7 @@
               "javadoc_summary": "Returns a new matrix whose dimensions are exactly {@code newRowCount × newColumnCount} , anchored at the top-left corner of this matrix.",
               "contract": [
                 "<ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded.",
+                "If neither dimension grows, {@code defaultValue} is not used.",
                 "</li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code defaultValue} .",
                 "Use {@code extend} when the entire original content must be preserved.",
                 "</p> <p> <b> Usage Examples: </b> </p> <pre> {@code LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}, {7L, 8L, 9L}}); // Grow: fill new cells with 9L LongMatrix grown = matrix.resize(4, 4, 9L); grown.get(3, 3); // returns 9L (new cell uses defaultValue) grown.get(0, 0); // returns 1L (preserved) // Truncate: defaultValue is ignored when shrinking LongMatrix truncated = matrix.resize(2, 2, 9L); truncated.get(1, 1); // returns 5L (no new cells, default unused) matrix.resize(0, 0, 9L).isEmpty(); // returns true matrix.resize(2, -1, 9L); // throws IllegalArgumentException (negative dimension) } </pre>"
@@ -21391,7 +21474,9 @@
               "params": [],
               "throws": [],
               "javadoc_summary": "Reverses the order of elements in each row in-place (horizontal flip).",
-              "contract": [],
+              "contract": [
+                "</p> <p> If multiple logical rows reference the same backing array, that shared row is reversed exactly once; all of its aliases therefore observe the same horizontally flipped values."
+              ],
               "examples": [],
               "see_also": [
                 "#flipHorizontally()",
@@ -22609,7 +22694,7 @@
                 {
                   "name": "count",
                   "type": "long",
-                  "javadoc": "the number of elements to process; typically the total element count or a subset being operated on",
+                  "javadoc": "the non-negative number of work items to process; typically the total element count or a subset being operated on",
                   "nullability": "unspecified"
                 }
               ],
@@ -22620,7 +22705,7 @@
                 "<p> This method makes the parallelization decision using a multifactor evaluation: </p> <ol> <li> <b> Runtime Support: </b> Parallel streams must be available in the runtime environment.",
                 "If not supported, always returns {@code false} .",
                 "</li> </ul> </li> <li> <b> Element Count: </b> When using {@code AUTO} setting, returns {@code true} only if {@code count >= 8192} .",
-                "</li> </ol> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}}); Matrices.setParallelMode(ParallelMode.FORCE_OFF); Matrices.shouldRunInParallel(matrix, 100000L); // returns false (forced off, count ignored) Matrices.setParallelMode(ParallelMode.AUTO); // restore default Matrices.shouldRunInParallel(matrix, 5000L); // returns false (5000 < 8192) Matrices.shouldRunInParallel((IntMatrix) null, 100L); // throws IllegalArgumentException } </pre>"
+                "</li> </ol> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}}); Matrices.setParallelMode(ParallelMode.FORCE_OFF); Matrices.shouldRunInParallel(matrix, 100000L); // returns false (forced off, count ignored) Matrices.setParallelMode(ParallelMode.AUTO); // restore default Matrices.shouldRunInParallel(matrix, 5000L); // returns false (5000 < 8192) Matrices.shouldRunInParallel((IntMatrix) null, 100L); // throws IllegalArgumentException Matrices.shouldRunInParallel(matrix, -1L); // throws IllegalArgumentException } </pre>"
               ],
               "examples": [],
               "see_also": [
@@ -23774,7 +23859,8 @@
               ],
               "examples": [],
               "see_also": [
-                "#zipToInt(Collection, Throwables.ByteNFunction)"
+                "#zipToInt(Collection, Throwables.ByteNFunction)",
+                "#zipToInt(ByteMatrix, ByteMatrix, Throwables.ByteBiFunction)"
               ]
             },
             {
@@ -24233,7 +24319,8 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#zipToLong(Collection, Throwables.IntNFunction, boolean)"
+                "#zipToLong(Collection, Throwables.IntNFunction, boolean)",
+                "#zipToLong(IntMatrix, IntMatrix, Throwables.IntBiFunction)"
               ]
             },
             {
@@ -24289,7 +24376,10 @@
                 "Only use this optimization if the function immediately processes and discards the array."
               ],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#zipToLong(Collection, Throwables.IntNFunction)",
+                "#zipToLong(IntMatrix, IntMatrix, Throwables.IntBiFunction)"
+              ]
             },
             {
               "name": "zipToDouble",
@@ -24452,7 +24542,8 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#zipToDouble(Collection, Throwables.IntNFunction, boolean)"
+                "#zipToDouble(Collection, Throwables.IntNFunction, boolean)",
+                "#zipToDouble(IntMatrix, IntMatrix, Throwables.IntBiFunction)"
               ]
             },
             {
@@ -24508,7 +24599,10 @@
                 "Only use this optimization if the function immediately processes and discards the array."
               ],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#zipToDouble(Collection, Throwables.IntNFunction)",
+                "#zipToDouble(IntMatrix, IntMatrix, Throwables.IntBiFunction)"
+              ]
             },
             {
               "name": "zipToObj",
@@ -26028,7 +26122,9 @@
               "params": [],
               "throws": [],
               "javadoc_summary": "Creates an empty matrix with zero rows and zero columns.",
-              "contract": [],
+              "contract": [
+                "If a reified component type is needed by later shape-expanding operations, construct a typed empty matrix such as {@code new Matrix<>(new String[0][0])} instead."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -26774,7 +26870,9 @@
                 }
               ],
               "javadoc_summary": "Updates all elements in the specified column by applying the given operator.",
-              "contract": [],
+              "contract": [
+                "If multiple logical rows share the same backing row array, the shared physical cell is transformed once rather than once per alias."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -27017,7 +27115,9 @@
                 }
               ],
               "javadoc_summary": "Updates all elements in the matrix by applying the given operator.",
-              "contract": [],
+              "contract": [
+                "If multiple logical rows share the same backing row array, each physical row is transformed once, in the order of its first logical occurrence."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -27056,7 +27156,9 @@
                 }
               ],
               "javadoc_summary": "Updates all elements in the matrix based on their position.",
-              "contract": [],
+              "contract": [
+                "Every logical coordinate is visited, so if multiple logical rows share the same backing row array, a later alias may overwrite a value assigned through an earlier alias."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -27097,7 +27199,9 @@
                 }
               ],
               "javadoc_summary": "Replaces all elements that match the predicate with the new value.",
-              "contract": [],
+              "contract": [
+                "If multiple logical rows share the same backing row array, the predicate is evaluated once per physical cell and that backing row is updated once."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -27913,7 +28017,9 @@
               "params": [],
               "throws": [],
               "javadoc_summary": "Reverses the order of elements in each row (horizontal flip).",
-              "contract": [],
+              "contract": [
+                "If multiple logical rows share the same backing row array, that physical row is reversed only once."
+              ],
               "examples": [],
               "see_also": [
                 "#flipHorizontally()"
@@ -28228,7 +28334,8 @@
               ],
               "javadoc_summary": "Vertically stacks this matrix with another matrix.",
               "contract": [
-                "The matrices must have the same number of columns."
+                "The matrices must have the same number of columns.",
+                "When neither operand supplies rows, the shared {@link #empty()} instance is type-neutral if the other operand has a reified component type."
               ],
               "examples": [],
               "see_also": [
@@ -28261,7 +28368,8 @@
               ],
               "javadoc_summary": "Horizontally stacks this matrix with another matrix.",
               "contract": [
-                "The matrices must have the same number of rows."
+                "The matrices must have the same number of rows.",
+                "The shared {@link #empty()} instance is type-neutral when paired with a typed zero-row matrix."
               ],
               "examples": [],
               "see_also": [
@@ -29174,7 +29282,9 @@
               ],
               "throws": [],
               "javadoc_summary": "Creates a ShortMatrix from a two-dimensional short array.",
-              "contract": [],
+              "contract": [
+                "<p> <b> &#9888; &#65039; Shared backing: </b> When the input has at least one row, the provided array is used directly without defensive copying."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -29197,7 +29307,7 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a {@code ShortMatrix} that owns a defensive deep copy of the supplied two-dimensional array.",
+              "javadoc_summary": "Creates a {@code ShortMatrix} from the supplied two-dimensional array.",
               "contract": [],
               "examples": [],
               "see_also": [
@@ -30071,7 +30181,9 @@
                 }
               ],
               "javadoc_summary": "Updates all elements in a column in-place by applying the specified operator to each element.",
-              "contract": [],
+              "contract": [
+                "If multiple logical rows reference the same backing array, its shared column cell is transformed exactly once, when that backing row is first encountered."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -30316,7 +30428,8 @@
               "javadoc_summary": "Updates all elements in the matrix in-place by applying the specified operator.",
               "contract": [
                 "If parallelized, the supplied function must be thread-safe.",
-                "Elements are processed in row-major order when executed sequentially."
+                "Distinct backing rows and their elements are processed in first-occurrence row-major order when executed sequentially.",
+                "</p> <p> If multiple logical rows reference the same backing array, every element in that shared row is transformed exactly once."
               ],
               "examples": [],
               "see_also": []
@@ -30357,7 +30470,8 @@
               ],
               "javadoc_summary": "Updates all elements in the matrix in-place based on their position (row and column indices).",
               "contract": [
-                "If parallelized, the supplied function must be thread-safe."
+                "If parallelized, the supplied function must be thread-safe.",
+                "</p> <p> If logical rows share a backing array, every logical coordinate is still visited, but traversal is kept sequential so later aliases overwrite earlier ones deterministically."
               ],
               "examples": [],
               "see_also": []
@@ -30400,7 +30514,8 @@
               ],
               "javadoc_summary": "Conditionally replaces elements in-place based on a predicate.",
               "contract": [
-                "If parallelized, the supplied function must be thread-safe."
+                "If parallelized, the supplied function must be thread-safe.",
+                "</p> <p> If multiple logical rows share the same backing array, the predicate is evaluated once per physical cell and that backing row is updated once."
               ],
               "examples": [],
               "see_also": []
@@ -30443,7 +30558,8 @@
               ],
               "javadoc_summary": "Conditionally replaces elements in-place based on their position (row and column indices).",
               "contract": [
-                "If parallelized, the supplied function must be thread-safe."
+                "If parallelized, the supplied function must be thread-safe.",
+                "If logical rows share a backing array, a replacement made through any matching coordinate is therefore visible through every alias."
               ],
               "examples": [],
               "see_also": []
@@ -30787,7 +30903,7 @@
                 {
                   "name": "defaultValue",
                   "type": "short",
-                  "javadoc": "the value used to fill cells that are added when a dimension grows; ignored when a dimension shrinks",
+                  "javadoc": "the value used to fill cells that are added when a dimension grows; ignored when neither dimension grows",
                   "nullability": "unspecified"
                 }
               ],
@@ -30800,6 +30916,7 @@
               "javadoc_summary": "Returns a new matrix whose dimensions are exactly {@code newRowCount × newColumnCount} , anchored at the top-left corner of this matrix.",
               "contract": [
                 "<ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded.",
+                "If neither dimension grows, {@code defaultValue} is not used.",
                 "</li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code defaultValue} .",
                 "Use {@code extend} when the entire original content must be preserved.",
                 "</p> <p> <b> Usage Examples: </b> </p> <pre> {@code ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}); // Grow: fill new cells with 9 ShortMatrix grown = matrix.resize(4, 4, (short) 9); grown.get(3, 3); // returns 9 (new cell uses defaultValue) grown.get(0, 0); // returns 1 (preserved) // Truncate: defaultValue is ignored when shrinking ShortMatrix truncated = matrix.resize(2, 2, (short) 9); truncated.get(1, 1); // returns 5 (no new cells, default unused) matrix.resize(0, 0, (short) 9).isEmpty(); // returns true matrix.resize(2, -1, (short) 9); // throws IllegalArgumentException (negative dimension) } </pre>"
@@ -30921,7 +31038,9 @@
               "params": [],
               "throws": [],
               "javadoc_summary": "Reverses the order of elements in each row in-place (horizontal flip).",
-              "contract": [],
+              "contract": [
+                "</p> <p> If multiple logical rows reference the same backing array, that shared row is reversed exactly once; all of its aliases therefore observe the same horizontally flipped values."
+              ],
               "examples": [],
               "see_also": [
                 "#flipHorizontally()",

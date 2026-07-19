@@ -1,7 +1,7 @@
-# abacus-matrix API Index (v3.8.2)
+# abacus-matrix API Index (v3.8.4)
 - Build: unknown
 - Java: 17
-- Generated: 2026-07-13
+- Generated: 2026-07-18
 
 ## Packages
 - com.landawn.abacus.matrix — Mutable, rectangular, array-backed matrices for Java primitive and reference values.
@@ -544,6 +544,8 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 ##### of(...) -> BooleanMatrix
 - **Signature:** `public static BooleanMatrix of(final boolean[]... a)`
 - **Summary:** Creates a {@code BooleanMatrix} from a two-dimensional boolean array.
+- **Contract:**
+  - <p> <b> &#9888; &#65039; Shared backing: </b> When the input has at least one row, the provided array is used directly without defensive copying.
 - **Parameters:**
   - `a` (`boolean[][]`) — the two-dimensional boolean array to wrap; must not be {@code null} ; may be empty, in which case the empty matrix singleton is returned
 - **Returns:** a new {@code BooleanMatrix} backed by {@code a} , or the empty {@code BooleanMatrix} if {@code a} is empty
@@ -747,6 +749,8 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 ##### updateColumn(...) -> void
 - **Signature:** `public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.BooleanUnaryOperator<E> operator) throws IndexOutOfBoundsException, IllegalArgumentException, E`
 - **Summary:** Updates all elements in a column in-place by applying the specified operator to each element.
+- **Contract:**
+  - </p> <p> If multiple logical rows share the same backing array, the operator is applied to that backing row only once, at its first occurrence.
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to update (0-based)
   - `operator` (`Throwables.BooleanUnaryOperator<E>`) — the operator to apply to each element in the column; receives the current element value and returns the new value
@@ -822,6 +826,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
   - Elements are processed in row-major order when executed sequentially.
+  - </p> <p> If multiple logical rows share the same backing array, each backing row is updated only once, at its first occurrence.
 - **Parameters:**
   - `operator` (`Throwables.BooleanUnaryOperator<E>`) — the operator to apply to each element; receives the current element value and returns the new value
 - **Throws:**
@@ -831,6 +836,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Summary:** Updates all elements in the matrix in-place based on their position (row and column indices).
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
+  - </p> <p> If logical rows share a backing array, every logical coordinate is still visited, but traversal is kept sequential so later aliases overwrite earlier ones deterministically.
 - **Parameters:**
   - `mapper` (`Throwables.IntBiFunction<? extends Boolean, E>`) — the function that receives row index and column index (0-based) and returns the new value for that position; the returned {@code Boolean} is unboxed, so it must not be {@code null}
 - **Throws:**
@@ -841,6 +847,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Summary:** Conditionally replaces elements in-place based on a predicate.
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
+  - </p> <p> If multiple logical rows share the same backing array, the predicate is evaluated once per physical cell and that backing row is updated once.
 - **Parameters:**
   - `predicate` (`Throwables.BooleanPredicate<E>`) — the condition to test each element; elements for which this returns {@code true} will be replaced
   - `newValue` (`boolean`) — the value to use for replacing matching elements
@@ -850,6 +857,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Summary:** Conditionally replaces elements in-place based on their position (row and column indices).
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
+  - If logical rows share a backing array, a replacement made through any matching coordinate is therefore visible through every alias.
 - **Parameters:**
   - `predicate` (`Throwables.IntBiPredicate<E>`) — the condition that tests row index and column index (0-based); elements at positions for which this returns {@code true} will be replaced
   - `newValue` (`boolean`) — the value to use for replacing matching elements
@@ -938,13 +946,14 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Summary:** Returns a new matrix whose dimensions are exactly {@code newRowCount × newColumnCount} , anchored at the top-left corner of this matrix.
 - **Contract:**
   - <ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded.
+  - If neither dimension grows, {@code defaultValue} is not used.
   - </li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code defaultValue} .
   - Use {@code extend} when the entire original content must be preserved.
   - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code BooleanMatrix matrix = BooleanMatrix.of(new boolean\[\]\[\] { {true, false, true}, {false, true, false}, {true, false, true} }); // Grow: fill new cells with true BooleanMatrix grown = matrix.resize(4, 4, true); // Result: \[\[true, false, true, true\], // \[false, true, false, true\], // \[true, false, true, true\], // \[true, true, true, true\]\] grown.get(0, 3); // returns true (new cell filled with defaultValue) grown.get(3, 3); // returns true (new cell) grown.get(0, 0); // returns true (preserved cell) // Truncate: defaultValue is ignored when shrinking BooleanMatrix truncated = matrix.resize(2, 2, true); truncated.rowCount(); // returns 2 truncated.get(0, 1); // returns false (preserved, defaultValue not applied) matrix.resize(0, 0, true).isEmpty(); // returns true matrix.resize(2, -1, true); // throws IllegalArgumentException (negative dimension) } </pre>
 - **Parameters:**
   - `newRowCount` (`int`) — the row count of the returned matrix; must be {@code >= 0}
   - `newColumnCount` (`int`) — the column count of the returned matrix; must be {@code >= 0}
-  - `defaultValue` (`boolean`) — the value used to fill cells that are added when a dimension grows; ignored when a dimension shrinks
+  - `defaultValue` (`boolean`) — the value used to fill cells that are added when a dimension grows; ignored when neither dimension grows
 - **Returns:** a new {@code BooleanMatrix} with the specified dimensions
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code newRowCount} or {@code newColumnCount} is negative, if the resulting shape is not representable (zero rows with a non-zero column count), or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
@@ -974,6 +983,8 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 ##### flipHorizontallyInPlace(...) -> void
 - **Signature:** `@Override public void flipHorizontallyInPlace()`
 - **Summary:** Reverses the order of elements in each row in-place (horizontal flip).
+- **Contract:**
+  - </p> <p> If multiple logical rows share the same backing array, that backing row is reversed only once, preserving the alias relationship.
 - **Parameters:**
   - (none)
 - **See also:** #flipHorizontally(), #flipVerticallyInPlace()
@@ -1064,6 +1075,8 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 ##### mutateFlattened(...) -> void
 - **Signature:** `@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super boolean[], E> action) throws E`
 - **Summary:** Exposes the elements of this matrix to {@code action} as a single one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix.
+- **Contract:**
+  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code BooleanMatrix matrix = BooleanMatrix.of(new boolean\[\]\[\] {{true, false}, {false, true}}); matrix.mutateFlattened(arr -> java.util.Arrays.fill(arr, true)); // global view, written back row by row matrix.countTrue(); // returns 4 (all elements now true) matrix.get(0, 1); // returns true (was false) int\[\] seen = {0}; matrix.mutateFlattened(arr -> seen\[0\] = arr.length); // flattened length equals total element count // seen\[0\] is now 4 BooleanMatrix.empty().mutateFlattened(arr -> seen\[0\] = -1); // no-op: action is not invoked when the matrix has zero rows // seen\[0\] is still 4 } </pre>
 - **Parameters:**
   - `action` (`Throwables.Consumer<? super boolean[], E>`) — the operation to apply to the flattened array; must not be {@code null}
 - **Throws:**
@@ -1079,6 +1092,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Returns:** a new {@code BooleanMatrix} containing the element-wise logical AND
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code other} is {@code null} or the matrices have different dimensions
+- **See also:** #or(BooleanMatrix), #xor(BooleanMatrix), #zipWith(BooleanMatrix, Throwables.BooleanBinaryOperator)
 ##### or(...) -> BooleanMatrix
 - **Signature:** `public BooleanMatrix or(final BooleanMatrix other) throws IllegalArgumentException`
 - **Summary:** Performs element-wise logical OR of this matrix with another matrix.
@@ -1089,6 +1103,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Returns:** a new {@code BooleanMatrix} containing the element-wise logical OR
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code other} is {@code null} or the matrices have different dimensions
+- **See also:** #and(BooleanMatrix), #xor(BooleanMatrix), #zipWith(BooleanMatrix, Throwables.BooleanBinaryOperator)
 ##### xor(...) -> BooleanMatrix
 - **Signature:** `public BooleanMatrix xor(final BooleanMatrix other) throws IllegalArgumentException`
 - **Summary:** Performs element-wise logical XOR of this matrix with another matrix.
@@ -1099,6 +1114,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Returns:** a new {@code BooleanMatrix} containing the element-wise logical XOR
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code other} is {@code null} or the matrices have different dimensions
+- **See also:** #and(BooleanMatrix), #or(BooleanMatrix), #zipWith(BooleanMatrix, Throwables.BooleanBinaryOperator)
 ##### countTrue(...) -> long
 - **Signature:** `public long countTrue()`
 - **Summary:** Counts the number of {@code true} elements in this matrix.
@@ -1580,6 +1596,8 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 ##### updateColumn(...) -> void
 - **Signature:** `public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.ByteUnaryOperator<E> operator) throws IndexOutOfBoundsException, IllegalArgumentException, E`
 - **Summary:** Updates all elements in a column in-place by applying the specified operator to each element.
+- **Contract:**
+  - </p> <p> If multiple logical rows share the same backing array, the operator is applied to that backing row only once, at its first occurrence.
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to update (0-based)
   - `operator` (`Throwables.ByteUnaryOperator<E>`) — the operator to apply to each element in the column; receives the current element value and returns the new value
@@ -1655,6 +1673,7 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
   - Elements are processed in row-major order when executed sequentially.
+  - </p> <p> If multiple logical rows share the same backing array, each backing row is updated only once, at its first occurrence.
 - **Parameters:**
   - `operator` (`Throwables.ByteUnaryOperator<E>`) — the operator to apply to each element; receives the current element value and returns the new value
 - **Throws:**
@@ -1664,6 +1683,7 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Summary:** Updates all elements in the matrix in-place based on their position (row and column indices).
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
+  - </p> <p> If logical rows share a backing array, every logical coordinate is still visited, but traversal is kept sequential so later aliases overwrite earlier ones deterministically.
 - **Parameters:**
   - `mapper` (`Throwables.IntBiFunction<? extends Byte, E>`) — the function that receives row index and column index (0-based) and returns the new value for that position; the returned {@code Byte} is unboxed, so it must not be {@code null}
 - **Throws:**
@@ -1674,6 +1694,7 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Summary:** Conditionally replaces elements in-place based on a predicate.
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
+  - </p> <p> If multiple logical rows share the same backing array, the predicate is evaluated once per physical cell and that backing row is updated once.
 - **Parameters:**
   - `predicate` (`Throwables.BytePredicate<E>`) — the condition to test each element; elements for which this returns {@code true} will be replaced
   - `newValue` (`byte`) — the value to use for replacing matching elements
@@ -1683,6 +1704,7 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Summary:** Conditionally replaces elements in-place based on their position (row and column indices).
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
+  - If logical rows share a backing array, a replacement made through any matching coordinate is therefore visible through every alias.
 - **Parameters:**
   - `predicate` (`Throwables.IntBiPredicate<E>`) — the condition that tests row index and column index (0-based); elements at positions for which this returns {@code true} will be replaced
   - `newValue` (`byte`) — the value to use for replacing matching elements
@@ -1771,13 +1793,14 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Summary:** Returns a new matrix whose dimensions are exactly {@code newRowCount × newColumnCount} , anchored at the top-left corner of this matrix.
 - **Contract:**
   - <ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded.
+  - If neither dimension grows, {@code defaultValue} is not used.
   - </li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code defaultValue} .
   - Use {@code extend} when the entire original content must be preserved.
   - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code ByteMatrix matrix = ByteMatrix.of(new byte\[\]\[\] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}); // Grow: fill new cells with 9 ByteMatrix grown = matrix.resize(4, 4, (byte) 9); grown.get(3, 3); // returns (byte) 9 (new cell uses defaultValue) grown.get(0, 0); // returns (byte) 1 (preserved) // Truncate: defaultValue is ignored when shrinking ByteMatrix truncated = matrix.resize(2, 2, (byte) 9); truncated.get(1, 1); // returns (byte) 5 (no new cells, default unused) matrix.resize(0, 0, (byte) 9).isEmpty(); // returns true matrix.resize(2, -1, (byte) 9); // throws IllegalArgumentException (negative dimension) } </pre>
 - **Parameters:**
   - `newRowCount` (`int`) — the row count of the returned matrix; must be {@code >= 0}
   - `newColumnCount` (`int`) — the column count of the returned matrix; must be {@code >= 0}
-  - `defaultValue` (`byte`) — the value used to fill cells that are added when a dimension grows; ignored when a dimension shrinks
+  - `defaultValue` (`byte`) — the value used to fill cells that are added when a dimension grows; ignored when neither dimension grows
 - **Returns:** a new ByteMatrix with the specified dimensions
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code newRowCount} or {@code newColumnCount} is negative, if the resulting shape is not representable (zero rows with a non-zero column count), or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
@@ -1807,6 +1830,8 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 ##### flipHorizontallyInPlace(...) -> void
 - **Signature:** `@Override public void flipHorizontallyInPlace()`
 - **Summary:** Reverses the order of elements in each row in-place (horizontal flip).
+- **Contract:**
+  - </p> <p> If multiple logical rows share the same backing array, that backing row is reversed only once, preserving the alias relationship.
 - **Parameters:**
   - (none)
 - **See also:** #flipHorizontally(), #flipVerticallyInPlace()
@@ -2174,6 +2199,8 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 ##### of(...) -> CharMatrix
 - **Signature:** `public static CharMatrix of(final char[]... a)`
 - **Summary:** Creates a {@code CharMatrix} from a two-dimensional char array.
+- **Contract:**
+  - <p> <b> &#9888; &#65039; Shared backing: </b> When the input has at least one row, the provided array is used directly without defensive copying.
 - **Parameters:**
   - `a` (`char[][]`) — the two-dimensional char array to wrap, or empty for an empty matrix; must not be {@code null}
 - **Returns:** a new {@code CharMatrix} backed by {@code a} , or the shared empty matrix if {@code a} is empty
@@ -2407,6 +2434,8 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 ##### updateColumn(...) -> void
 - **Signature:** `public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.CharUnaryOperator<E> operator) throws IndexOutOfBoundsException, IllegalArgumentException, E`
 - **Summary:** Updates all elements in a column in-place by applying the specified operator to each element.
+- **Contract:**
+  - </p> <p> If multiple logical rows share the same backing array, the operator is applied to that backing row only once, at its first occurrence.
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to update (0-based)
   - `operator` (`Throwables.CharUnaryOperator<E>`) — the operator to apply to each element in the column; receives the current element value and returns the new value
@@ -2482,6 +2511,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
   - Elements are processed in row-major order when executed sequentially.
+  - </p> <p> If multiple logical rows share the same backing array, each backing row is updated only once, at its first occurrence.
 - **Parameters:**
   - `operator` (`Throwables.CharUnaryOperator<E>`) — the operator to apply to each element; receives the current element value and returns the new value
 - **Throws:**
@@ -2491,6 +2521,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Summary:** Updates all elements in the matrix in-place based on their position (row and column indices).
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
+  - </p> <p> If logical rows share a backing array, every logical coordinate is still visited, but traversal is kept sequential so later aliases overwrite earlier ones deterministically.
 - **Parameters:**
   - `mapper` (`Throwables.IntBiFunction<? extends Character, E>`) — the function that receives row index and column index (0-based) and returns the new value for that position; the returned {@code Character} is unboxed, so it must not be {@code null}
 - **Throws:**
@@ -2501,6 +2532,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Summary:** Conditionally replaces elements in-place based on a predicate.
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
+  - </p> <p> If multiple logical rows share the same backing array, the predicate is evaluated once per physical cell and that backing row is updated once.
 - **Parameters:**
   - `predicate` (`Throwables.CharPredicate<E>`) — the condition to test each element; elements for which this returns {@code true} will be replaced
   - `newValue` (`char`) — the value to use for replacing matching elements
@@ -2510,6 +2542,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Summary:** Conditionally replaces elements in-place based on their position (row and column indices).
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
+  - If logical rows share a backing array, a replacement made through any matching coordinate is therefore visible through every alias.
 - **Parameters:**
   - `predicate` (`Throwables.IntBiPredicate<E>`) — the condition that tests row index and column index (0-based); elements at positions for which this returns {@code true} will be replaced
   - `newValue` (`char`) — the value to use for replacing matching elements
@@ -2598,13 +2631,14 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Summary:** Returns a new matrix whose dimensions are exactly {@code newRowCount × newColumnCount} , anchored at the top-left corner of this matrix.
 - **Contract:**
   - <ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded.
+  - If neither dimension grows, {@code defaultValue} is not used.
   - </li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code defaultValue} .
   - Use {@code extend} when the entire original content must be preserved.
   - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code CharMatrix matrix = CharMatrix.of(new char\[\]\[\] {{'a', 'b', 'c'}, {'d', 'e', 'f'}, {'g', 'h', 'i'}}); // Grow: fill new cells with 'x' CharMatrix grown = matrix.resize(4, 4, 'x'); // Result: \[\['a', 'b', 'c', 'x'\], // \['d', 'e', 'f', 'x'\], // \['g', 'h', 'i', 'x'\], // \['x', 'x', 'x', 'x'\]\] // Truncate: defaultValue is ignored when shrinking CharMatrix truncated = matrix.resize(2, 2, 'x'); // Result: \[\['a', 'b'\], // \['d', 'e'\]\] matrix.resize(0, 0, 'x').isEmpty(); // returns true matrix.resize(3, -1, 'x'); // throws IllegalArgumentException (negative dimension) } </pre>
 - **Parameters:**
   - `newRowCount` (`int`) — the row count of the returned matrix; must be {@code >= 0}
   - `newColumnCount` (`int`) — the column count of the returned matrix; must be {@code >= 0}
-  - `defaultValue` (`char`) — the value used to fill cells that are added when a dimension grows; ignored when a dimension shrinks
+  - `defaultValue` (`char`) — the value used to fill cells that are added when a dimension grows; ignored when neither dimension grows
 - **Returns:** a new CharMatrix with the specified dimensions
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code newRowCount} or {@code newColumnCount} is negative, if the resulting shape is not representable (zero rows with a non-zero column count), or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
@@ -2634,6 +2668,8 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 ##### flipHorizontallyInPlace(...) -> void
 - **Signature:** `@Override public void flipHorizontallyInPlace()`
 - **Summary:** Reverses the order of elements in each row horizontally (in-place).
+- **Contract:**
+  - If multiple logical rows share the same backing array, that backing row is reversed only once, preserving the alias relationship.
 - **Parameters:**
   - (none)
 - **See also:** #flipHorizontally()
@@ -3005,6 +3041,8 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 ##### of(...) -> DoubleMatrix
 - **Signature:** `public static DoubleMatrix of(final double[]... a)`
 - **Summary:** Creates a DoubleMatrix from a two-dimensional double array.
+- **Contract:**
+  - <p> <b> &#9888; &#65039; Shared backing: </b> When the input has at least one row, the provided array is used directly without defensive copying.
 - **Parameters:**
   - `a` (`double[][]`) — the two-dimensional double array to create the matrix from, or empty for an empty matrix; must not be {@code null}
 - **Returns:** a new {@code DoubleMatrix} wrapping the provided data, or the shared empty {@code DoubleMatrix} if the input is empty
@@ -3232,6 +3270,8 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 ##### updateColumn(...) -> void
 - **Signature:** `public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.DoubleUnaryOperator<E> operator) throws IndexOutOfBoundsException, IllegalArgumentException, E`
 - **Summary:** Updates all elements in a column in-place by applying the specified operator to each element.
+- **Contract:**
+  - </p> If multiple logical rows share one backing array, that backing value is transformed only once.
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to update (0-based)
   - `operator` (`Throwables.DoubleUnaryOperator<E>`) — the operator to apply to each element in the column; receives the current element value and returns the new value
@@ -3307,6 +3347,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
   - Elements are processed in row-major order when executed sequentially.
+  - </p> <p> If multiple logical rows share one backing array, each value in that array is transformed only once.
 - **Parameters:**
   - `operator` (`Throwables.DoubleUnaryOperator<E>`) — the operator to apply to each element; receives the current element value and returns the new value
 - **Throws:**
@@ -3316,6 +3357,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Summary:** Updates all elements in the matrix in-place based on their position (row and column indices).
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
+  - </p> <p> If logical rows share a backing array, every logical coordinate is still visited, but traversal is kept sequential so later aliases overwrite earlier ones deterministically.
 - **Parameters:**
   - `mapper` (`Throwables.IntBiFunction<? extends Double, E>`) — the function that receives row index and column index (0-based) and returns the new value for that position; the returned {@code Double} is unboxed, so it must not be {@code null}
 - **Throws:**
@@ -3326,6 +3368,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Summary:** Conditionally replaces elements in-place based on a predicate.
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
+  - </p> <p> If multiple logical rows share the same backing array, the predicate is evaluated once per physical cell and that backing row is updated once.
 - **Parameters:**
   - `predicate` (`Throwables.DoublePredicate<E>`) — the condition to test each element; elements for which this returns {@code true} will be replaced
   - `newValue` (`double`) — the value to use for replacing matching elements (may be {@code NaN} , {@code +/-Infinity} , or {@code -0.0} )
@@ -3335,6 +3378,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Summary:** Conditionally replaces elements in-place based on their position (row and column indices).
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
+  - If logical rows share a backing array, a replacement made through any matching coordinate is therefore visible through every alias.
 - **Parameters:**
   - `predicate` (`Throwables.IntBiPredicate<E>`) — the condition to test each position; receives row index and column index (0-based) and returns {@code true} if the element at that position should be replaced
   - `newValue` (`double`) — the value to use for replacing at matching positions
@@ -3482,6 +3526,8 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 ##### flipHorizontallyInPlace(...) -> void
 - **Signature:** `@Override public void flipHorizontallyInPlace()`
 - **Summary:** Reverses the order of elements in each row in-place (horizontal flip).
+- **Contract:**
+  - </p> If multiple logical rows share one backing array, that array is reversed only once, preserving the alias relationship.
 - **Parameters:**
   - (none)
 - **See also:** #flipHorizontally(), #flipVerticallyInPlace()
@@ -4061,6 +4107,8 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 ##### updateColumn(...) -> void
 - **Signature:** `public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.FloatUnaryOperator<E> operator) throws IndexOutOfBoundsException, IllegalArgumentException, E`
 - **Summary:** Updates all elements in a column in-place by applying the specified operator to each element.
+- **Contract:**
+  - </p> If multiple logical rows share one backing array, that backing value is transformed only once.
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to update (0-based)
   - `operator` (`Throwables.FloatUnaryOperator<E>`) — the operator to apply to each element in the column; receives the current element value and returns the new value
@@ -4136,6 +4184,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
   - Elements are processed in row-major order when executed sequentially.
+  - </p> <p> If multiple logical rows share one backing array, each value in that array is transformed only once.
 - **Parameters:**
   - `operator` (`Throwables.FloatUnaryOperator<E>`) — the operator to apply to each element; receives the current element value and returns the new value
 - **Throws:**
@@ -4145,6 +4194,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Summary:** Updates all elements in the matrix in-place based on their position (row and column indices).
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
+  - </p> <p> If logical rows share a backing array, every logical coordinate is still visited, but traversal is kept sequential so later aliases overwrite earlier ones deterministically.
 - **Parameters:**
   - `mapper` (`Throwables.IntBiFunction<? extends Float, E>`) — the function that receives row index and column index (0-based) and returns the new value for that position; the returned {@code Float} is unboxed, so it must not be {@code null}
 - **Throws:**
@@ -4155,6 +4205,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Summary:** Conditionally replaces elements in-place based on a predicate.
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
+  - </p> <p> If multiple logical rows share the same backing array, the predicate is evaluated once per physical cell and that backing row is updated once.
 - **Parameters:**
   - `predicate` (`Throwables.FloatPredicate<E>`) — the condition to test each element; elements for which this returns {@code true} will be replaced
   - `newValue` (`float`) — the value to use for replacing matching elements (may be {@code NaN} , {@code +/-Infinity} , or {@code -0.0f} )
@@ -4164,6 +4215,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Summary:** Conditionally replaces elements in-place based on their position (row and column indices).
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
+  - If logical rows share a backing array, a replacement made through any matching coordinate is therefore visible through every alias.
 - **Parameters:**
   - `predicate` (`Throwables.IntBiPredicate<E>`) — the condition to test each position; receives row index and column index (0-based) and returns {@code true} if the element at that position should be replaced
   - `newValue` (`float`) — the value to use for replacing at matching positions
@@ -4322,6 +4374,8 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 ##### flipHorizontallyInPlace(...) -> void
 - **Signature:** `@Override public void flipHorizontallyInPlace()`
 - **Summary:** Reverses the order of elements in each row in-place (horizontal flip).
+- **Contract:**
+  - </p> If multiple logical rows share one backing array, that array is reversed only once, preserving the alias relationship.
 - **Parameters:**
   - (none)
 - **See also:** #flipHorizontally(), #flipVerticallyInPlace()
@@ -4687,15 +4741,17 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 ##### of(...) -> IntMatrix
 - **Signature:** `public static IntMatrix of(final int[]... a)`
 - **Summary:** Creates an {@code IntMatrix} from a two-dimensional int array.
+- **Contract:**
+  - <p> <b> &#9888; &#65039; Shared backing: </b> When the input has at least one row, the provided array is used directly without defensive copying.
 - **Parameters:**
   - `a` (`int[][]`) — the two-dimensional int array to wrap, or empty for an empty matrix; must not be {@code null}
 - **Returns:** a new {@code IntMatrix} backed by {@code a} , or the shared empty matrix if {@code a} is empty
 ##### copyOf(...) -> IntMatrix
 - **Signature:** `public static IntMatrix copyOf(final int[]... a)`
-- **Summary:** Creates an {@code IntMatrix} that owns a defensive deep copy of the supplied two-dimensional array.
+- **Summary:** Creates an {@code IntMatrix} from the supplied two-dimensional array.
 - **Parameters:**
   - `a` (`int[][]`) — the two-dimensional int array to copy, or empty for an empty matrix; must not be {@code null}
-- **Returns:** a new {@code IntMatrix} backed by a deep copy of {@code a} , or the shared empty matrix if {@code a} is empty
+- **Returns:** a new {@code IntMatrix} backed by a deep copy of {@code a} when it is non-empty, or the shared empty matrix if {@code a} has no rows
 - **See also:** #of(int\[\]\[\]), #copy()
 ##### from(...) -> IntMatrix
 - **Signature:** `public static IntMatrix from(final char[]... a)`
@@ -4950,6 +5006,8 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 ##### updateColumn(...) -> void
 - **Signature:** `public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.IntUnaryOperator<E> operator) throws IndexOutOfBoundsException, IllegalArgumentException, E`
 - **Summary:** Updates all elements in a column in-place by applying the specified operator to each element.
+- **Contract:**
+  - If multiple logical rows reference the same backing array, its shared column cell is transformed exactly once, when that backing row is first encountered.
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to update (0-based)
   - `operator` (`Throwables.IntUnaryOperator<E>`) — the operator to apply to each element in the column; receives the current element value and returns the new value
@@ -5024,7 +5082,8 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Summary:** Updates all elements in the matrix in-place by applying the specified operator.
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
-  - Elements are processed in row-major order when executed sequentially.
+  - Distinct backing rows and their elements are processed in first-occurrence row-major order when executed sequentially.
+  - </p> <p> If multiple logical rows reference the same backing array, every element in that shared row is transformed exactly once.
 - **Parameters:**
   - `operator` (`Throwables.IntUnaryOperator<E>`) — the operator to apply to each element; receives the current element value and returns the new value
 - **Throws:**
@@ -5034,6 +5093,7 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Summary:** Updates all elements in the matrix in-place based on their position (row and column indices).
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
+  - </p> <p> If logical rows share a backing array, every logical coordinate is still visited, but traversal is kept sequential so later aliases overwrite earlier ones deterministically.
 - **Parameters:**
   - `mapper` (`Throwables.IntBiFunction<? extends Integer, E>`) — the function that receives row index and column index (0-based) and returns the new value for that position; the returned {@code Integer} is unboxed, so it must not be {@code null}
 - **Throws:**
@@ -5044,6 +5104,7 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Summary:** Conditionally replaces elements in-place based on a predicate.
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
+  - </p> <p> If multiple logical rows share the same backing array, the predicate is evaluated once per physical cell and that backing row is updated once.
 - **Parameters:**
   - `predicate` (`Throwables.IntPredicate<E>`) — the condition to test each element; elements for which this returns {@code true} will be replaced
   - `newValue` (`int`) — the value to use for replacing matching elements
@@ -5053,6 +5114,7 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Summary:** Conditionally replaces elements in-place based on their position (row and column indices).
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
+  - If logical rows share a backing array, a replacement made through any matching coordinate is therefore visible through every alias.
 - **Parameters:**
   - `predicate` (`Throwables.IntBiPredicate<E>`) — the condition that tests row index and column index (0-based); elements at positions for which this returns {@code true} will be replaced
   - `newValue` (`int`) — the value to use for replacing matching elements
@@ -5163,13 +5225,14 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Summary:** Returns a new matrix whose dimensions are exactly {@code newRowCount x newColumnCount} , anchored at the top-left corner of this matrix.
 - **Contract:**
   - <ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded.
+  - If neither dimension grows, {@code defaultValue} is not used.
   - </li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code defaultValue} .
   - Use {@code extend} when the entire original content must be preserved.
   - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.of(new int\[\]\[\] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}); // Grow: fill new cells with 9 IntMatrix grown = matrix.resize(4, 4, 9); grown.get(3, 3); // returns 9 (new cell uses defaultValue) grown.get(0, 0); // returns 1 (preserved) // Truncate: defaultValue is ignored when shrinking IntMatrix truncated = matrix.resize(2, 2, 9); truncated.get(1, 1); // returns 5 (no new cells, default unused) matrix.resize(0, 0, 9).isEmpty(); // returns true matrix.resize(2, -1, 9); // throws IllegalArgumentException (negative dimension) } </pre>
 - **Parameters:**
   - `newRowCount` (`int`) — the row count of the returned matrix; must be {@code >= 0}
   - `newColumnCount` (`int`) — the column count of the returned matrix; must be {@code >= 0}
-  - `defaultValue` (`int`) — the value used to fill cells that are added when a dimension grows; ignored when a dimension shrinks
+  - `defaultValue` (`int`) — the value used to fill cells that are added when a dimension grows; ignored when neither dimension grows
 - **Returns:** a new IntMatrix with the specified dimensions
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code newRowCount} or {@code newColumnCount} is negative, if the resulting shape is not representable (zero rows with a non-zero column count), or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
@@ -5199,6 +5262,8 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 ##### flipHorizontallyInPlace(...) -> void
 - **Signature:** `@Override public void flipHorizontallyInPlace()`
 - **Summary:** Reverses the order of elements in each row in-place (horizontal flip).
+- **Contract:**
+  - </p> <p> If multiple logical rows reference the same backing array, that shared row is reversed exactly once; all of its aliases therefore observe the same horizontally flipped values.
 - **Parameters:**
   - (none)
 - **See also:** #flipHorizontally(), #flipVerticallyInPlace()
@@ -5558,15 +5623,17 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 ##### of(...) -> LongMatrix
 - **Signature:** `public static LongMatrix of(final long[]... a)`
 - **Summary:** Creates a {@code LongMatrix} from a two-dimensional long array.
+- **Contract:**
+  - <p> <b> &#9888; &#65039; Shared backing: </b> When the input has at least one row, the provided array is used directly without defensive copying.
 - **Parameters:**
   - `a` (`long[][]`) — the two-dimensional long array to wrap, or empty for an empty matrix; must not be {@code null}
 - **Returns:** a new {@code LongMatrix} backed by {@code a} , or the shared empty matrix if {@code a} is empty
 ##### copyOf(...) -> LongMatrix
 - **Signature:** `public static LongMatrix copyOf(final long[]... a)`
-- **Summary:** Creates a {@code LongMatrix} that owns a defensive deep copy of the supplied two-dimensional array.
+- **Summary:** Creates a {@code LongMatrix} from the supplied two-dimensional array.
 - **Parameters:**
   - `a` (`long[][]`) — the two-dimensional long array to copy, or empty for an empty matrix; must not be {@code null}
-- **Returns:** a new {@code LongMatrix} backed by a deep copy of {@code a} , or the shared empty matrix if {@code a} is empty
+- **Returns:** a new {@code LongMatrix} backed by a deep copy of {@code a} when it is non-empty, or the shared empty matrix if {@code a} has no rows
 - **See also:** #of(long\[\]\[\]), #copy()
 ##### from(...) -> LongMatrix
 - **Signature:** `public static LongMatrix from(final int[]... a)`
@@ -5806,6 +5873,8 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 ##### updateColumn(...) -> void
 - **Signature:** `public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.LongUnaryOperator<E> operator) throws IndexOutOfBoundsException, IllegalArgumentException, E`
 - **Summary:** Updates all elements in a column in-place by applying the specified operator to each element.
+- **Contract:**
+  - If multiple logical rows reference the same backing array, its shared column cell is transformed exactly once, when that backing row is first encountered.
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to update (0-based)
   - `operator` (`Throwables.LongUnaryOperator<E>`) — the operator to apply to each element in the column; receives the current element value and returns the new value
@@ -5880,7 +5949,8 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Summary:** Updates all elements in the matrix in-place by applying the specified operator.
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
-  - Elements are processed in row-major order when executed sequentially.
+  - Distinct backing rows and their elements are processed in first-occurrence row-major order when executed sequentially.
+  - </p> <p> If multiple logical rows reference the same backing array, every element in that shared row is transformed exactly once.
 - **Parameters:**
   - `operator` (`Throwables.LongUnaryOperator<E>`) — the operator to apply to each element; receives the current element value and returns the new value
 - **Throws:**
@@ -5890,6 +5960,7 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Summary:** Updates all elements in the matrix in-place based on their position (row and column indices).
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
+  - </p> <p> If logical rows share a backing array, every logical coordinate is still visited, but traversal is kept sequential so later aliases overwrite earlier ones deterministically.
 - **Parameters:**
   - `mapper` (`Throwables.IntBiFunction<? extends Long, E>`) — the function that receives row index and column index (0-based) and returns the new value for that position; the returned {@code Long} is unboxed, so it must not be {@code null}
 - **Throws:**
@@ -5900,6 +5971,7 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Summary:** Conditionally replaces elements in-place based on a predicate.
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
+  - </p> <p> If multiple logical rows share the same backing array, the predicate is evaluated once per physical cell and that backing row is updated once.
 - **Parameters:**
   - `predicate` (`Throwables.LongPredicate<E>`) — the condition to test each element; elements for which this returns {@code true} will be replaced
   - `newValue` (`long`) — the value to use for replacing matching elements
@@ -5909,6 +5981,7 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Summary:** Conditionally replaces elements in-place based on their position (row and column indices).
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
+  - If logical rows share a backing array, a replacement made through any matching coordinate is therefore visible through every alias.
 - **Parameters:**
   - `predicate` (`Throwables.IntBiPredicate<E>`) — the condition that tests row index and column index (0-based); elements at positions for which this returns {@code true} will be replaced
   - `newValue` (`long`) — the value to use for replacing matching elements
@@ -6019,13 +6092,14 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Summary:** Returns a new matrix whose dimensions are exactly {@code newRowCount × newColumnCount} , anchored at the top-left corner of this matrix.
 - **Contract:**
   - <ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded.
+  - If neither dimension grows, {@code defaultValue} is not used.
   - </li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code defaultValue} .
   - Use {@code extend} when the entire original content must be preserved.
   - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code LongMatrix matrix = LongMatrix.of(new long\[\]\[\] {{1L, 2L, 3L}, {4L, 5L, 6L}, {7L, 8L, 9L}}); // Grow: fill new cells with 9L LongMatrix grown = matrix.resize(4, 4, 9L); grown.get(3, 3); // returns 9L (new cell uses defaultValue) grown.get(0, 0); // returns 1L (preserved) // Truncate: defaultValue is ignored when shrinking LongMatrix truncated = matrix.resize(2, 2, 9L); truncated.get(1, 1); // returns 5L (no new cells, default unused) matrix.resize(0, 0, 9L).isEmpty(); // returns true matrix.resize(2, -1, 9L); // throws IllegalArgumentException (negative dimension) } </pre>
 - **Parameters:**
   - `newRowCount` (`int`) — the row count of the returned matrix; must be {@code >= 0}
   - `newColumnCount` (`int`) — the column count of the returned matrix; must be {@code >= 0}
-  - `defaultValue` (`long`) — the value used to fill cells that are added when a dimension grows; ignored when a dimension shrinks
+  - `defaultValue` (`long`) — the value used to fill cells that are added when a dimension grows; ignored when neither dimension grows
 - **Returns:** a new LongMatrix with the specified dimensions
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code newRowCount} or {@code newColumnCount} is negative, if the resulting shape is not representable (zero rows with a non-zero column count), or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
@@ -6055,6 +6129,8 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 ##### flipHorizontallyInPlace(...) -> void
 - **Signature:** `@Override public void flipHorizontallyInPlace()`
 - **Summary:** Reverses the order of elements in each row in-place (horizontal flip).
+- **Contract:**
+  - </p> <p> If multiple logical rows reference the same backing array, that shared row is reversed exactly once; all of its aliases therefore observe the same horizontally flipped values.
 - **Parameters:**
   - (none)
 - **See also:** #flipHorizontally(), #flipVerticallyInPlace()
@@ -6442,10 +6518,10 @@ Utility and policy holder shared by the matrix implementations in this package.
   - <p> This method makes the parallelization decision using a multifactor evaluation: </p> <ol> <li> <b> Runtime Support: </b> Parallel streams must be available in the runtime environment.
   - If not supported, always returns {@code false} .
   - </li> </ul> </li> <li> <b> Element Count: </b> When using {@code AUTO} setting, returns {@code true} only if {@code count >= 8192} .
-  - </li> </ol> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.of(new int\[\]\[\] {{1, 2}, {3, 4}}); Matrices.setParallelMode(ParallelMode.FORCE_OFF); Matrices.shouldRunInParallel(matrix, 100000L); // returns false (forced off, count ignored) Matrices.setParallelMode(ParallelMode.AUTO); // restore default Matrices.shouldRunInParallel(matrix, 5000L); // returns false (5000 < 8192) Matrices.shouldRunInParallel((IntMatrix) null, 100L); // throws IllegalArgumentException } </pre>
+  - </li> </ol> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.of(new int\[\]\[\] {{1, 2}, {3, 4}}); Matrices.setParallelMode(ParallelMode.FORCE_OFF); Matrices.shouldRunInParallel(matrix, 100000L); // returns false (forced off, count ignored) Matrices.setParallelMode(ParallelMode.AUTO); // restore default Matrices.shouldRunInParallel(matrix, 5000L); // returns false (5000 < 8192) Matrices.shouldRunInParallel((IntMatrix) null, 100L); // throws IllegalArgumentException Matrices.shouldRunInParallel(matrix, -1L); // throws IllegalArgumentException } </pre>
 - **Parameters:**
   - `m` (`AbstractMatrix<?, ?, ?, ?, ?>`) — the matrix being evaluated; only checked for {@code null} , the matrix's own element count is not consulted (the supplied {@code count} drives the decision)
-  - `count` (`long`) — the number of elements to process; typically the total element count or a subset being operated on
+  - `count` (`long`) — the non-negative number of work items to process; typically the total element count or a subset being operated on
 - **Returns:** {@code true} if parallel processing should be used; {@code false} for sequential processing
 - **See also:** #setParallelMode(ParallelMode), ParallelMode
 ##### isSameShape(...) -> boolean
@@ -6619,7 +6695,7 @@ Utility and policy holder shared by the matrix implementations in this package.
   - Equivalent to chaining {@link AbstractMatrix#stackVertically(AbstractMatrix)} calls, but avoids the boilerplate when stacking three or more matrices.
 - **Parameters:**
   - `matrices` (`Collection<? extends M>`) — the matrices to stack vertically, must not be {@code null} , empty, or contain {@code null} elements
-- **Returns:** a new matrix containing the rows of all input matrices, never {@code null}
+- **Returns:** a matrix containing the rows of all input matrices, never {@code null} ; normally a new instance, except that inputs consisting only of the shared {@link Matrix#empty()} instance yield that shared instance
 - **See also:** AbstractMatrix#stackVertically(AbstractMatrix), #stackHorizontally(Collection)
 ##### stackHorizontally(...) -> M
 - **Signature:** `public static <M extends AbstractMatrix<?, ?, ?, ?, M>> M stackHorizontally(final Collection<? extends M> matrices)`
@@ -6629,7 +6705,7 @@ Utility and policy holder shared by the matrix implementations in this package.
   - Equivalent to chaining {@link AbstractMatrix#stackHorizontally(AbstractMatrix)} calls, but avoids the boilerplate when stacking three or more matrices.
 - **Parameters:**
   - `matrices` (`Collection<? extends M>`) — the matrices to stack horizontally, must not be {@code null} , empty, or contain {@code null} elements
-- **Returns:** a new matrix containing the columns of all input matrices, never {@code null}
+- **Returns:** a matrix containing the columns of all input matrices, never {@code null} ; normally a new instance, except that inputs consisting only of the shared {@link Matrix#empty()} instance yield that shared instance
 - **See also:** AbstractMatrix#stackHorizontally(AbstractMatrix), #stackVertically(Collection)
 ##### zip(...) -> ByteMatrix
 - **Signature:** `public static <E extends Exception> ByteMatrix zip(final ByteMatrix a, final ByteMatrix b, final Throwables.ByteBinaryOperator<E> zipFunction) throws E`
@@ -6925,7 +7001,7 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
   - `E` — if the zip function throws an exception during execution
-- **See also:** #zipToInt(Collection, Throwables.ByteNFunction)
+- **See also:** #zipToInt(Collection, Throwables.ByteNFunction), #zipToInt(ByteMatrix, ByteMatrix, Throwables.ByteBiFunction)
 ##### zipToObj(...) -> Matrix<R>
 - **Signature:** `public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction, final Class<R> targetElementType) throws E`
 - **Summary:** Combines multiple {@link ByteMatrix} objects element-wise using a function that operates on byte arrays.
@@ -7070,7 +7146,7 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Returns:** a new {@link LongMatrix} with the combined values, never {@code null}
 - **Throws:**
   - `E` — if the zip function throws an exception during execution
-- **See also:** #zipToLong(Collection, Throwables.IntNFunction, boolean)
+- **See also:** #zipToLong(Collection, Throwables.IntNFunction, boolean), #zipToLong(IntMatrix, IntMatrix, Throwables.IntBiFunction)
 - **Signature:** `public static <E extends Exception> LongMatrix zipToLong(final Collection<IntMatrix> coll, final Throwables.IntNFunction<Long, E> zipFunction, final boolean shareIntermediateArray) throws IllegalArgumentException, E`
 - **Summary:** Combines multiple {@link IntMatrix} objects element-wise using a function that returns {@code Long} values, with control over intermediate array sharing.
 - **Contract:**
@@ -7084,6 +7160,7 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
   - `E` — if the zip function throws an exception during execution
+- **See also:** #zipToLong(Collection, Throwables.IntNFunction), #zipToLong(IntMatrix, IntMatrix, Throwables.IntBiFunction)
 ##### zipToDouble(...) -> DoubleMatrix
 - **Signature:** `public static <E extends Exception> DoubleMatrix zipToDouble(final IntMatrix a, final IntMatrix b, final Throwables.IntBiFunction<Double, E> zipFunction) throws IllegalArgumentException, E`
 - **Summary:** Combines two {@link IntMatrix} objects element-wise using a function that returns {@code Double} values, producing a {@link DoubleMatrix} .
@@ -7117,7 +7194,7 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
   - `E` — if the zip function throws an exception during execution
-- **See also:** #zipToDouble(Collection, Throwables.IntNFunction, boolean)
+- **See also:** #zipToDouble(Collection, Throwables.IntNFunction, boolean), #zipToDouble(IntMatrix, IntMatrix, Throwables.IntBiFunction)
 - **Signature:** `public static <E extends Exception> DoubleMatrix zipToDouble(final Collection<IntMatrix> coll, final Throwables.IntNFunction<Double, E> zipFunction, final boolean shareIntermediateArray) throws IllegalArgumentException, E`
 - **Summary:** Combines multiple {@link IntMatrix} objects element-wise using a function that returns {@code Double} values, with control over intermediate array sharing.
 - **Contract:**
@@ -7131,6 +7208,7 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
   - `E` — if the zip function throws an exception during execution
+- **See also:** #zipToDouble(Collection, Throwables.IntNFunction), #zipToDouble(IntMatrix, IntMatrix, Throwables.IntBiFunction)
 - **Signature:** `public static <E extends Exception> DoubleMatrix zipToDouble(final LongMatrix a, final LongMatrix b, final Throwables.LongBiFunction<Double, E> zipFunction) throws IllegalArgumentException, E`
 - **Summary:** Combines two {@link LongMatrix} objects element-wise using a function that returns {@code Double} values, producing a {@link DoubleMatrix} .
 - **Parameters:**
@@ -7194,6 +7272,8 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 ##### empty(...) -> Matrix<T>
 - **Signature:** `@SuppressWarnings("unchecked") public static <T> Matrix<T> empty()`
 - **Summary:** Creates an empty matrix with zero rows and zero columns.
+- **Contract:**
+  - If a reified component type is needed by later shape-expanding operations, construct a typed empty matrix such as {@code new Matrix<>(new String\[0\]\[0\])} instead.
 - **Parameters:**
   - (none)
 - **Returns:** an empty matrix
@@ -7390,6 +7470,8 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 ##### updateColumn(...) -> void
 - **Signature:** `public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.UnaryOperator<T, E> operator) throws IndexOutOfBoundsException, IllegalArgumentException, E`
 - **Summary:** Updates all elements in the specified column by applying the given operator.
+- **Contract:**
+  - If multiple logical rows share the same backing row array, the shared physical cell is transformed once rather than once per alias.
 - **Parameters:**
   - `columnIndex` (`int`) — the column index to update (0-based)
   - `operator` (`Throwables.UnaryOperator<T, E>`) — the operator to apply to each element (must not be {@code null} )
@@ -7462,6 +7544,8 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 ##### updateAll(...) -> void
 - **Signature:** `public <E extends Exception> void updateAll(final Throwables.UnaryOperator<T, E> operator) throws IllegalArgumentException, E`
 - **Summary:** Updates all elements in the matrix by applying the given operator.
+- **Contract:**
+  - If multiple logical rows share the same backing row array, each physical row is transformed once, in the order of its first logical occurrence.
 - **Parameters:**
   - `operator` (`Throwables.UnaryOperator<T, E>`) — the operator to apply to each element (must not be {@code null} )
 - **Throws:**
@@ -7469,6 +7553,8 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
   - `E` — if the operator throws an exception
 - **Signature:** `public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends T, E> mapper) throws IllegalArgumentException, E`
 - **Summary:** Updates all elements in the matrix based on their position.
+- **Contract:**
+  - Every logical coordinate is visited, so if multiple logical rows share the same backing row array, a later alias may overwrite a value assigned through an earlier alias.
 - **Parameters:**
   - `mapper` (`Throwables.IntBiFunction<? extends T, E>`) — the function that takes row and column indices and returns the new value (must not be {@code null} )
 - **Throws:**
@@ -7477,6 +7563,8 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 ##### replaceIf(...) -> void
 - **Signature:** `public <E extends Exception> void replaceIf(final Throwables.Predicate<? super T, E> predicate, final T newValue) throws E`
 - **Summary:** Replaces all elements that match the predicate with the new value.
+- **Contract:**
+  - If multiple logical rows share the same backing row array, the predicate is evaluated once per physical cell and that backing row is updated once.
 - **Parameters:**
   - `predicate` (`Throwables.Predicate<? super T, E>`) — the condition to test each element (must not be {@code null} )
   - `newValue` (`T`) — the value to use as replacement (may be {@code null} )
@@ -7691,6 +7779,8 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 ##### flipHorizontallyInPlace(...) -> void
 - **Signature:** `@Override public void flipHorizontallyInPlace()`
 - **Summary:** Reverses the order of elements in each row (horizontal flip).
+- **Contract:**
+  - If multiple logical rows share the same backing row array, that physical row is reversed only once.
 - **Parameters:**
   - (none)
 - **See also:** #flipHorizontally()
@@ -7790,6 +7880,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Summary:** Vertically stacks this matrix with another matrix.
 - **Contract:**
   - The matrices must have the same number of columns.
+  - When neither operand supplies rows, the shared {@link #empty()} instance is type-neutral if the other operand has a reified component type.
 - **Parameters:**
   - `other` (`Matrix<T>`) — the matrix to stack below this matrix (must not be {@code null} )
 - **Returns:** a new vertically stacked matrix with dimensions (this.rowCount + other.rowCount) × columnCount
@@ -7801,6 +7892,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Summary:** Horizontally stacks this matrix with another matrix.
 - **Contract:**
   - The matrices must have the same number of rows.
+  - The shared {@link #empty()} instance is type-neutral when paired with a typed zero-row matrix.
 - **Parameters:**
   - `other` (`Matrix<T>`) — the matrix to stack to the right of this matrix (must not be {@code null} )
 - **Returns:** a new horizontally stacked matrix with dimensions rowCount × (this.columnCount + other.columnCount)
@@ -8049,15 +8141,17 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 ##### of(...) -> ShortMatrix
 - **Signature:** `public static ShortMatrix of(final short[]... a)`
 - **Summary:** Creates a ShortMatrix from a two-dimensional short array.
+- **Contract:**
+  - <p> <b> &#9888; &#65039; Shared backing: </b> When the input has at least one row, the provided array is used directly without defensive copying.
 - **Parameters:**
   - `a` (`short[][]`) — the two-dimensional short array to create the matrix from, or empty for an empty matrix; must not be {@code null}
 - **Returns:** a new {@code ShortMatrix} wrapping the provided data, or the shared empty {@code ShortMatrix} if input is empty
 ##### copyOf(...) -> ShortMatrix
 - **Signature:** `public static ShortMatrix copyOf(final short[]... a)`
-- **Summary:** Creates a {@code ShortMatrix} that owns a defensive deep copy of the supplied two-dimensional array.
+- **Summary:** Creates a {@code ShortMatrix} from the supplied two-dimensional array.
 - **Parameters:**
   - `a` (`short[][]`) — the two-dimensional short array to copy, or empty for an empty matrix; must not be {@code null}
-- **Returns:** a new {@code ShortMatrix} backed by a deep copy of {@code a} , or the shared empty matrix if {@code a} is empty
+- **Returns:** a new {@code ShortMatrix} backed by a deep copy of {@code a} when it is non-empty, or the shared empty matrix if {@code a} has no rows
 - **See also:** #of(short\[\]\[\]), #copy()
 ##### randomRow(...) -> ShortMatrix
 - **Signature:** `public static ShortMatrix randomRow(final int length)`
@@ -8287,6 +8381,8 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 ##### updateColumn(...) -> void
 - **Signature:** `public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.ShortUnaryOperator<E> operator) throws IndexOutOfBoundsException, IllegalArgumentException, E`
 - **Summary:** Updates all elements in a column in-place by applying the specified operator to each element.
+- **Contract:**
+  - If multiple logical rows reference the same backing array, its shared column cell is transformed exactly once, when that backing row is first encountered.
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to update (0-based)
   - `operator` (`Throwables.ShortUnaryOperator<E>`) — the operator to apply to each element in the column; receives the current element value and returns the new value
@@ -8361,7 +8457,8 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Summary:** Updates all elements in the matrix in-place by applying the specified operator.
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
-  - Elements are processed in row-major order when executed sequentially.
+  - Distinct backing rows and their elements are processed in first-occurrence row-major order when executed sequentially.
+  - </p> <p> If multiple logical rows reference the same backing array, every element in that shared row is transformed exactly once.
 - **Parameters:**
   - `operator` (`Throwables.ShortUnaryOperator<E>`) — the operator to apply to each element; receives the current element value and returns the new value
 - **Throws:**
@@ -8371,6 +8468,7 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Summary:** Updates all elements in the matrix in-place based on their position (row and column indices).
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
+  - </p> <p> If logical rows share a backing array, every logical coordinate is still visited, but traversal is kept sequential so later aliases overwrite earlier ones deterministically.
 - **Parameters:**
   - `mapper` (`Throwables.IntBiFunction<? extends Short, E>`) — the function that receives row index and column index (0-based) and returns the new value for that position; the returned {@code Short} is unboxed, so it must not be {@code null}
 - **Throws:**
@@ -8381,6 +8479,7 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Summary:** Conditionally replaces elements in-place based on a predicate.
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
+  - </p> <p> If multiple logical rows share the same backing array, the predicate is evaluated once per physical cell and that backing row is updated once.
 - **Parameters:**
   - `predicate` (`Throwables.ShortPredicate<E>`) — the condition to test each element; elements for which this returns {@code true} will be replaced
   - `newValue` (`short`) — the value to use for replacing matching elements
@@ -8390,6 +8489,7 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Summary:** Conditionally replaces elements in-place based on their position (row and column indices).
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
+  - If logical rows share a backing array, a replacement made through any matching coordinate is therefore visible through every alias.
 - **Parameters:**
   - `predicate` (`Throwables.IntBiPredicate<E>`) — the condition that tests row index and column index (0-based); elements at positions for which this returns {@code true} will be replaced
   - `newValue` (`short`) — the value to use for replacing matching elements
@@ -8478,13 +8578,14 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Summary:** Returns a new matrix whose dimensions are exactly {@code newRowCount × newColumnCount} , anchored at the top-left corner of this matrix.
 - **Contract:**
   - <ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded.
+  - If neither dimension grows, {@code defaultValue} is not used.
   - </li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code defaultValue} .
   - Use {@code extend} when the entire original content must be preserved.
   - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code ShortMatrix matrix = ShortMatrix.of(new short\[\]\[\] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}); // Grow: fill new cells with 9 ShortMatrix grown = matrix.resize(4, 4, (short) 9); grown.get(3, 3); // returns 9 (new cell uses defaultValue) grown.get(0, 0); // returns 1 (preserved) // Truncate: defaultValue is ignored when shrinking ShortMatrix truncated = matrix.resize(2, 2, (short) 9); truncated.get(1, 1); // returns 5 (no new cells, default unused) matrix.resize(0, 0, (short) 9).isEmpty(); // returns true matrix.resize(2, -1, (short) 9); // throws IllegalArgumentException (negative dimension) } </pre>
 - **Parameters:**
   - `newRowCount` (`int`) — the row count of the returned matrix; must be {@code >= 0}
   - `newColumnCount` (`int`) — the column count of the returned matrix; must be {@code >= 0}
-  - `defaultValue` (`short`) — the value used to fill cells that are added when a dimension grows; ignored when a dimension shrinks
+  - `defaultValue` (`short`) — the value used to fill cells that are added when a dimension grows; ignored when neither dimension grows
 - **Returns:** a new ShortMatrix with the specified dimensions
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code newRowCount} or {@code newColumnCount} is negative, if the resulting shape is not representable (zero rows with a non-zero column count), or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
@@ -8514,6 +8615,8 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 ##### flipHorizontallyInPlace(...) -> void
 - **Signature:** `@Override public void flipHorizontallyInPlace()`
 - **Summary:** Reverses the order of elements in each row in-place (horizontal flip).
+- **Contract:**
+  - </p> <p> If multiple logical rows reference the same backing array, that shared row is reversed exactly once; all of its aliases therefore observe the same horizontally flipped values.
 - **Parameters:**
   - (none)
 - **See also:** #flipHorizontally(), #flipVerticallyInPlace()
