@@ -1609,7 +1609,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * matrix.get(0, 1);                       // returns 0L
      *
      * matrix.fill(Long.MIN_VALUE);
-     * matrix.get(0, 0);                      // returns -9223372036854775808 (boundary value)
+     * matrix.get(0, 0);                      // returns -9223372036854775808L (boundary value)
      * LongMatrix.empty().fill(7L);           // no-op on empty matrix
      * }</pre>
      *
@@ -2637,7 +2637,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * matrix.rowCopy(0);                      // returns [1, 3]
      * matrix.rowCopy(1);                      // returns [4, 5] (sorted globally, placed back row-major)
      *
-     * long[] captured = new long[1];
+     * int[] captured = new int[1];
      * matrix.mutateFlattened(arr -> captured[0] = arr.length);
      * captured[0];                            // returns 4 (flat view length)
      *
@@ -2768,7 +2768,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * sum.get(1, 1);                          // returns 12L -> [[6, 8], [10, 12]]
      *
      * LongMatrix big = LongMatrix.of(new long[][] {{Long.MAX_VALUE}});
-     * big.add(LongMatrix.of(new long[][] {{1L}})).get(0, 0); // returns -9223372036854775808 (long overflow wraps)
+     * big.add(LongMatrix.of(new long[][] {{1L}})).get(0, 0); // returns -9223372036854775808L (long overflow wraps)
      *
      * LongMatrix wrongShape = LongMatrix.of(new long[][] {{1L, 2L, 3L}});
      * a.add(wrongShape);                     // throws IllegalArgumentException (different shapes)
@@ -2823,7 +2823,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * diff.get(1, 1);                         // returns 4L -> [[4, 4], [4, 4]]
      *
      * LongMatrix min = LongMatrix.of(new long[][] {{Long.MIN_VALUE}});
-     * min.subtract(LongMatrix.of(new long[][] {{1L}})).get(0, 0); // returns 9223372036854775807 (long overflow wraps)
+     * min.subtract(LongMatrix.of(new long[][] {{1L}})).get(0, 0); // returns 9223372036854775807L (long overflow wraps)
      *
      * LongMatrix wrongShape = LongMatrix.of(new long[][] {{1L, 2L, 3L}});
      * a.subtract(wrongShape);                // throws IllegalArgumentException (different shapes)
@@ -3881,7 +3881,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * java.util.concurrent.atomic.AtomicLong emptySum = new java.util.concurrent.atomic.AtomicLong();
      * LongMatrix.empty().forEach(emptySum::addAndGet);
-     * emptySum.get();                                                   // 0 (no elements visited)
+     * emptySum.get();                                                   // 0L (no elements visited)
      * matrix.forEach((Throwables.LongConsumer<RuntimeException>) null); // throws IllegalArgumentException
      * }</pre>
      *

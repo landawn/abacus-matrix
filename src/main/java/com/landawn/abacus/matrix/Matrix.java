@@ -2185,6 +2185,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @see #flipHorizontally()
+     * @see #flipVerticallyInPlace()
      */
     @Override
     public void flipHorizontallyInPlace() {
@@ -2215,6 +2216,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @see #flipVertically()
+     * @see #flipHorizontallyInPlace()
      */
     @Override
     public void flipVerticallyInPlace() {

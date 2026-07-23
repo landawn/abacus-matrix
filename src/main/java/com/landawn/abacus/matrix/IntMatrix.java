@@ -2335,7 +2335,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * IntMatrix.empty().rotate90().isEmpty(); // returns true
      * }</pre>
      *
-     * @return a new matrix rotated 90 degrees clockwise (dimensions {@code columnCount x rowCount}),
+     * @return a new matrix rotated 90 degrees clockwise (dimensions {@code columnCount × rowCount}),
      *         or an empty matrix if this matrix has zero columns
      * @see #rotate180()
      * @see #rotate270()
@@ -2423,7 +2423,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * IntMatrix.empty().rotate270().isEmpty(); // returns true
      * }</pre>
      *
-     * @return a new matrix rotated 270 degrees clockwise (dimensions {@code columnCount x rowCount}),
+     * @return a new matrix rotated 270 degrees clockwise (dimensions {@code columnCount × rowCount}),
      *         or an empty matrix if this matrix has zero columns
      * @see #rotate90()
      * @see #rotate180()

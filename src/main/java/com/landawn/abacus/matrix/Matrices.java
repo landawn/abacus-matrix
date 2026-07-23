@@ -2476,7 +2476,7 @@ public final class Matrices {
      * @see #zipToDouble(IntMatrix, IntMatrix, Throwables.IntBiFunction)
      */
     public static <E extends Exception> DoubleMatrix zipToDouble(final Collection<IntMatrix> coll, final Throwables.IntNFunction<Double, E> zipFunction)
-            throws IllegalArgumentException, E {
+            throws E {
         return zipToDouble(coll, zipFunction, false);
     }
 

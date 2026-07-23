@@ -546,8 +546,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * <p><b>Note on the rowView/columnView asymmetry:</b> this class exposes
      * {@link #rowView(int)} but no {@code columnView(int)} counterpart. Matrices store
-     * elements in row-major form, so a row corresponds to a contiguous slice of the
-     * backing storage and can be aliased directly. A column is interleaved across rows
+     * elements as one array per row, so a row is exactly one backing array and can be
+     * aliased directly. A column is interleaved across rows
      * and cannot be returned as a live, single-array view without either copying or
      * synthesizing a wrapper. {@code columnCopy} is the supported accessor; for
      * element-by-element iteration over a column use {@link #columnMajorStream(int)}.</p>
@@ -2554,8 +2554,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
     /**
      * Validates that this matrix has the same shape (dimensions) as the specified matrix.
-     * This is a helper method used internally to enforce shape compatibility before
-     * operations that require matrices of the same dimensions (e.g., element-wise addition).
+     * This helper is available to subclasses to enforce shape compatibility before
+     * operations that require matrices of the same dimensions; it is not currently
+     * called by any operation in this package.
      *
      * @param other the matrix to compare shape with; must not be {@code null}
      * @throws IllegalArgumentException if {@code other} is {@code null}, or if the matrices have

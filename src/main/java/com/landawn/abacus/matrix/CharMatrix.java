@@ -38,7 +38,7 @@ import com.landawn.abacus.util.stream.Stream;
  * validated backing array. Constructors and {@link #of(char[]...)} generally wrap the supplied storage
  * directly, while factories, conversions, and mapping operations allocate new arrays.</p>
  *
- * <p>Cells introduced by growth or reshaping default to {@code '\u0000'} (the NUL character) unless an overload accepts an
+ * <p>Cells introduced by growth or reshaping default to {@code (char) 0} (the NUL character) unless an overload accepts an
  * explicit fill value. Arithmetic operations (e.g. {@link #add(CharMatrix)}, {@link #subtract(CharMatrix)},
  * {@link #matrixMultiply(CharMatrix)}) compute results on the unsigned 16-bit code unit as {@code int} and cast
  * back to {@code char}, so values wrap modulo {@code 65536} (the range {@code [0, 65535]}); for example
@@ -373,7 +373,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
     /**
      * Creates a square matrix from the specified main diagonal elements (upper-left to lower-right).
-     * All other elements (off-diagonal) are set to zero (the null character '\u0000'). The matrix size is n×n where n is the length
+     * All other elements (off-diagonal) are set to zero (the null character U+0000). The matrix size is n×n where n is the length
      * of the diagonal array. The main diagonal runs from top-left to bottom-right.
      *
      * <p><b>Usage Examples:</b></p>
@@ -381,13 +381,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * CharMatrix matrix = CharMatrix.mainDiagonal(new char[] {'a', 'b', 'c'});
      * matrix.get(0, 0);                                 // returns 'a'
      * matrix.get(2, 2);                                 // returns 'c'
-     * matrix.get(0, 1) == '\u0000';                     // true (off-diagonal default)
+     * matrix.get(0, 1) == (char) 0;                     // true (off-diagonal default)
      * CharMatrix.mainDiagonal((char[]) null);           // throws IllegalArgumentException (null array)
      * CharMatrix.mainDiagonal(new char[0]).isEmpty();   // returns true
      * // Resulting 3x3 matrix:
-     * //   {'a', '\u0000', '\u0000'},
-     * //   {'\u0000', 'b', '\u0000'},
-     * //   {'\u0000', '\u0000', 'c'}
+     * //   {'a', (char) 0, (char) 0},
+     * //   {(char) 0, 'b', (char) 0},
+     * //   {(char) 0, (char) 0, 'c'}
      * }</pre>
      *
      * @param mainDiagonal the array of main diagonal elements; must not be {@code null}, but may be empty,
@@ -406,7 +406,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
     /**
      * Creates a square matrix from the specified anti-diagonal elements (upper-right to lower-left).
-     * All other elements (off-diagonal) are set to zero (the null character '\u0000'). The matrix size is n×n where n is the length
+     * All other elements (off-diagonal) are set to zero (the null character U+0000). The matrix size is n×n where n is the length
      * of the diagonal array. The anti-diagonal runs from top-right to bottom-left.
      *
      * <p><b>Usage Examples:</b></p>
@@ -414,13 +414,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * CharMatrix matrix = CharMatrix.antiDiagonal(new char[] {'a', 'b', 'c'});
      * matrix.get(0, 2);                                 // returns 'a'
      * matrix.get(2, 0);                                 // returns 'c'
-     * matrix.get(0, 0) == '\u0000';                     // true (off-anti-diagonal default)
+     * matrix.get(0, 0) == (char) 0;                     // true (off-anti-diagonal default)
      * CharMatrix.antiDiagonal((char[]) null);           // throws IllegalArgumentException (null array)
      * CharMatrix.antiDiagonal(new char[0]).isEmpty();   // returns true
      * // Resulting 3x3 matrix:
-     * //   {'\u0000', '\u0000', 'a'},
-     * //   {'\u0000', 'b', '\u0000'},
-     * //   {'c', '\u0000', '\u0000'}
+     * //   {(char) 0, (char) 0, 'a'},
+     * //   {(char) 0, 'b', (char) 0},
+     * //   {'c', (char) 0, (char) 0}
      * }</pre>
      *
      * @param antiDiagonal the array of anti-diagonal elements; must not be {@code null}, but may be empty,
@@ -439,7 +439,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
     /**
      * Creates a square matrix from the specified main diagonal and anti-diagonal elements.
-     * All other elements are set to zero (the null character '\u0000'). If both arrays are non-empty, they must have the same length.
+     * All other elements are set to zero (the null character U+0000). If both arrays are non-empty, they must have the same length.
      * The resulting matrix has dimensions n×n where n is the length of the non-empty diagonal array.
      * When both diagonals are provided and they overlap (at the center element of odd-sized matrices),
      * the main diagonal value takes precedence.
@@ -452,9 +452,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * matrix.get(1, 1);            // returns 'b' (overlap: main takes precedence)
      * matrix.get(2, 0);            // returns 'z'
      * // Resulting 3x3 matrix:
-     * //   {'a', '\u0000', 'x'},
-     * //   {'\u0000', 'b', '\u0000'},
-     * //   {'z', '\u0000', 'c'}
+     * //   {'a', (char) 0, 'x'},
+     * //   {(char) 0, 'b', (char) 0},
+     * //   {'z', (char) 0, 'c'}
      *
      * CharMatrix.diagonals((char[]) null, (char[]) null);                     // throws IllegalArgumentException (both null)
      * CharMatrix.diagonals(new char[] {'a', 'b'}, new char[] {'x', 'y', 'z'}); // throws IllegalArgumentException (length mismatch)
@@ -500,7 +500,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
     /**
      * Converts a boxed {@link Matrix Matrix&lt;Character&gt;} to a primitive {@code CharMatrix}.
-     * {@code null} values in the input matrix are converted to {@code '\u0000'} (the null character).
+     * {@code null} values in the input matrix are converted to {@code (char) 0} (the null character).
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -510,7 +510,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * primitive.get(1, 1);                        // returns 'c'
      * primitive.get(1, 0);                        // returns the null character (null mapped to default)
      * CharMatrix.unbox((Matrix<Character>) null); // throws IllegalArgumentException
-     * // null is converted to '\u0000': [['a', 'b'], ['\u0000', 'c']]
+     * // null is converted to (char) 0: [['a', 'b'], [(char) 0, 'c']]
      * }</pre>
      *
      * @param x the boxed {@code Character} matrix to convert; must not be {@code null}
@@ -1530,8 +1530,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[3][3]);
      * matrix.fill(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * // Top-left 2x2 region is filled; the rest keeps the null character '\u0000':
-     * //   [['a', 'b', '\u0000'], ['c', 'd', '\u0000'], ['\u0000', '\u0000', '\u0000']]
+     * // Top-left 2x2 region is filled; the rest keeps the null character (char) 0:
+     * //   [['a', 'b', (char) 0], ['c', 'd', (char) 0], [(char) 0, (char) 0, (char) 0]]
      * matrix.get(0, 0);           // returns 'a'
      * matrix.get(1, 1);           // returns 'd'
      *
@@ -1705,12 +1705,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
     /**
      * Returns a new matrix whose dimensions are exactly {@code newRowCount × newColumnCount},
-     * anchored at the top-left corner of this matrix. New cells are filled with {@code '\u0000'}.
+     * anchored at the top-left corner of this matrix. New cells are filled with {@code (char) 0}.
      *
      * <ul>
      *   <li><b>If a dimension shrinks</b> — elements beyond the new boundary are discarded
      *       (excess rows removed from the bottom, excess columns removed from the right).</li>
-     *   <li><b>If a dimension grows</b> — new cells are filled with {@code '\u0000'}.</li>
+     *   <li><b>If a dimension grows</b> — new cells are filled with {@code (char) 0}.</li>
      *   <li><b>Mixed case</b> — each dimension is treated independently, so it is valid
      *       to grow rows while truncating columns, or vice versa.</li>
      * </ul>
@@ -1726,12 +1726,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}, {'g', 'h', 'i'}});
      *
-     * // Grow: both dimensions larger — new cells filled with '\u0000'
+     * // Grow: both dimensions larger — new cells filled with (char) 0
      * CharMatrix grown = matrix.resize(4, 4);
-     * // Result: [['a', 'b', 'c', '\u0000'],
-     * //          ['d', 'e', 'f', '\u0000'],
-     * //          ['g', 'h', 'i', '\u0000'],
-     * //          ['\u0000', '\u0000', '\u0000', '\u0000']]
+     * // Result: [['a', 'b', 'c', (char) 0],
+     * //          ['d', 'e', 'f', (char) 0],
+     * //          ['g', 'h', 'i', (char) 0],
+     * //          [(char) 0, (char) 0, (char) 0, (char) 0]]
      *
      * // Truncate: both dimensions smaller — bottom rows and right columns discarded
      * CharMatrix truncated = matrix.resize(2, 2);
@@ -1743,7 +1743,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * // Result: [['a', 'b'],
      * //          ['d', 'e'],
      * //          ['g', 'h'],
-     * //          ['\u0000', '\u0000']]
+     * //          [(char) 0, (char) 0]]
      *
      * matrix.resize(0, 0).isEmpty(); // returns true
      * matrix.resize(-1, 4);          // throws IllegalArgumentException (negative dimension)
@@ -1845,7 +1845,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
     /**
      * Returns a new matrix formed by surrounding this matrix with padding on all four edges.
-     * New cells are filled with {@code '\u0000'}.
+     * New cells are filled with {@code (char) 0}.
      *
      * <p>Unlike {@link #resize(int, int)}, this method <b>never truncates</b>: the entire content
      * of this matrix is always present in the result. Each parameter specifies how many rows or
@@ -1862,17 +1862,17 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
      *
-     * // Uniform 1-cell border of '\u0000'
+     * // Uniform 1-cell border of (char) 0
      * CharMatrix bordered = matrix.extend(1, 1, 1, 1);
-     * // Result: [['\u0000', '\u0000', '\u0000', '\u0000'],
-     * //          ['\u0000', 'a',      'b',      '\u0000'],
-     * //          ['\u0000', 'c',      'd',      '\u0000'],
-     * //          ['\u0000', '\u0000', '\u0000', '\u0000']]
+     * // Result: [[(char) 0, (char) 0, (char) 0, (char) 0],
+     * //          [(char) 0, 'a',      'b',      (char) 0],
+     * //          [(char) 0, 'c',      'd',      (char) 0],
+     * //          [(char) 0, (char) 0, (char) 0, (char) 0]]
      *
      * // Asymmetric: 2 columns on the left only, no row padding
      * CharMatrix shifted = matrix.extend(0, 0, 2, 0);
-     * // Result: [['\u0000', '\u0000', 'a', 'b'],
-     * //          ['\u0000', '\u0000', 'c', 'd']]
+     * // Result: [[(char) 0, (char) 0, 'a', 'b'],
+     * //          [(char) 0, (char) 0, 'c', 'd']]
      *
      * matrix.extend(0, 0, 0, 0).equals(matrix); // returns true (no padding -> equal copy)
      * matrix.extend(-1, 0, 0, 0);               // throws IllegalArgumentException (negative padding)
@@ -2015,6 +2015,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * }</pre>
      *
      * @see #flipHorizontally()
+     * @see #flipVerticallyInPlace()
      */
     @Override
     public void flipHorizontallyInPlace() {
@@ -2044,6 +2045,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * }</pre>
      *
      * @see #flipVertically()
+     * @see #flipHorizontallyInPlace()
      */
     @Override
     public void flipVerticallyInPlace() {
@@ -2303,7 +2305,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * Elements are taken in row-major order from this matrix and placed into the new shape.
      * The new shape must have at least as many total cells as the original
      * ({@code (long) newRowCount * newColumnCount >= elementCount()}).
-     * Any extra trailing cells in the new shape are filled with {@code '\u0000'}.
+     * Any extra trailing cells in the new shape are filled with {@code (char) 0}.
      * The original matrix is not modified.
      *
      * <p><b>Usage Examples:</b></p>
@@ -2314,7 +2316,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * reshaped.get(2, 1);                     // returns 'f'
      *
      * CharMatrix extended = matrix.reshape(2, 4);
-     * extended.get(1, 2);                     // returns '\u0000' (extra trailing cell) -> [['a','b','c','d'],['e','f','\u0000','\u0000']]
+     * extended.get(1, 2);                     // returns (char) 0 (extra trailing cell) -> [['a','b','c','d'],['e','f',(char) 0,(char) 0]]
      *
      * matrix.reshape(0, 0);                   // throws IllegalArgumentException (too small for 6 elements)
      * matrix.reshape(-1, 6);                  // throws IllegalArgumentException (negative dimension)
@@ -3872,7 +3874,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     }
 
     /**
-     * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1, 2]\n[3, 4]"}); a
+     * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[a, b]\n[c, d]"}); a
      * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #appendTo(Appendable)}.
      *
      * @return the formatted multi-line representation of this matrix
