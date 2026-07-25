@@ -180,6 +180,15 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     final A[] a;
 
     /**
+     * Memoized result of {@link #hasAliasedRows()}: {@code 0} = not yet computed, {@code 1} = aliased,
+     * {@code 2} = not aliased. The answer is invariant for the lifetime of the instance because {@link #a}
+     * is {@code final} and the only structural mutation performed by this package is the row swap in
+     * {@code flipVerticallyInPlace}, which permutes the same set of row references. Matrices are not
+     * thread-safe, so this needs no synchronization.
+     */
+    private byte aliasedRowsState;
+
+    /**
      * The element type tracked for this matrix. For primitive matrices this is the matching
      * primitive class (e.g. {@code int.class}); for {@link Matrix} it is the backing array
      * component type, or an explicit element type selected by the factory.
@@ -278,6 +287,14 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
     /** Returns whether two or more logical rows share the same backing array. */
     final boolean hasAliasedRows() {
+        if (aliasedRowsState == 0) {
+            aliasedRowsState = computeHasAliasedRows() ? (byte) 1 : (byte) 2;
+        }
+
+        return aliasedRowsState == 1;
+    }
+
+    private boolean computeHasAliasedRows() {
         if (a.length < 2) {
             return false;
         }
@@ -303,7 +320,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @throws E if the action throws an exception
      */
     final <E extends Exception> void forEachDistinctRow(final Throwables.Consumer<? super A, E> action) throws E {
-        if (a.length < 2) {
+        if (!hasAliasedRows()) {
+            // Every row is distinct, so the identity set below would visit all of them anyway.
+            // Skipping it keeps this the same cost as a plain loop for the overwhelmingly common case.
             for (final A row : a) {
                 action.accept(row);
             }
@@ -2577,9 +2596,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
     /**
      * Validates that this matrix has the same shape (dimensions) as the specified matrix.
-     * This helper is available to subclasses to enforce shape compatibility before
-     * operations that require matrices of the same dimensions; it is not currently
-     * called by any operation in this package.
+     * This helper is provided for subclasses to enforce shape compatibility before
+     * operations that require matrices of the same dimensions (for example element-wise
+     * addition); it is an extension point, not an invariant enforced by this class.
      *
      * @param other the matrix to compare shape with; must not be {@code null}
      * @throws IllegalArgumentException if {@code other} is {@code null}, or if the matrices have

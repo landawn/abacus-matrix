@@ -33,7 +33,7 @@ import com.landawn.abacus.util.stream.Stream;
  * Matrix implementation backed by a rectangular {@code boolean[][]}.
  *
  * <p>This type specializes {@link AbstractMatrix} for {@code boolean} values while keeping the data in
- * a validated backing array. Constructors and {@link #of(boolean[]...)} generally wrap the supplied storage
+ * a validated backing array. The constructor and {@link #of(boolean[]...)} wrap the supplied storage
  * directly. Copy-producing factories and operations such as conversions and mappings use separate
  * storage for non-empty results; {@link #empty()} returns a shared zero-cell singleton.</p>
  *

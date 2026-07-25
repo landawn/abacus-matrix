@@ -1394,6 +1394,10 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     public <E extends Exception> void updateAll(final Throwables.IntUnaryOperator<E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, "operator");
 
+        if (columnCount == 0) {
+            return;
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
             if (hasAliasedRows()) {
                 final int[][] distinctRows = new int[rowCount][];
@@ -2226,6 +2230,10 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      */
     @Override
     public void flipHorizontallyInPlace() {
+        if (columnCount < 2) {
+            return;
+        }
+
         forEachDistinctRow(N::reverse);
     }
 

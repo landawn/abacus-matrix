@@ -1225,6 +1225,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     public <E extends Exception> void updateAll(final Throwables.ShortUnaryOperator<E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, "operator");
 
+        if (columnCount == 0) {
+            return;
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
             if (hasAliasedRows()) {
                 final short[][] distinctRows = new short[rowCount][];
@@ -1988,6 +1992,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      */
     @Override
     public void flipHorizontallyInPlace() {
+        if (columnCount < 2) {
+            return;
+        }
+
         forEachDistinctRow(N::reverse);
     }
 

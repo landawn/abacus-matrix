@@ -35,7 +35,7 @@ import com.landawn.abacus.util.stream.Stream;
  * Matrix implementation backed by a rectangular {@code byte[][]}.
  *
  * <p>This type specializes {@link AbstractMatrix} for {@code byte} values while keeping the data in a
- * validated backing array. Constructors and {@link #of(byte[]...)} generally wrap the supplied storage
+ * validated backing array. The constructor and {@link #of(byte[]...)} wrap the supplied storage
  * directly. Copy-producing factories and operations such as conversions and mappings use separate
  * storage for non-empty results; {@link #empty()} returns a shared zero-cell singleton.</p>
  *

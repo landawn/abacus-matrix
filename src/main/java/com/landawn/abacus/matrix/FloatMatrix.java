@@ -35,7 +35,7 @@ import com.landawn.abacus.util.stream.Stream;
  * Matrix implementation backed by a rectangular {@code float[][]}.
  *
  * <p>This type specializes {@link AbstractMatrix} for {@code float} values while keeping the data in
- * a validated backing array. Constructors and {@link #of(float[]...)} generally wrap the supplied storage
+ * a validated backing array. The constructor and {@link #of(float[]...)} wrap the supplied storage
  * directly. Copy-producing factories and operations such as conversions and mappings use separate
  * storage for non-empty results; {@link #empty()} returns a shared zero-cell singleton.</p>
  *
@@ -122,10 +122,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     /**
      * Creates a {@code FloatMatrix} from a two-dimensional float array.
      *
-     * <p><b>&#9888;&#65039; Shared backing:</b> When the input is non-empty the provided array is used directly without
-     * defensive copying after rectangular-shape validation. Changes to the input array are reflected
-     * in the returned matrix, and vice versa. A zero-row input is instead canonicalized to the shared
-     * empty matrix, so its outer-array identity is not retained.</p>
+     * <p><b>&#9888;&#65039; Shared backing:</b> When the input has at least one row, the provided array is used directly without defensive copying.
+     * Changes to the input array are reflected in the returned matrix, and vice versa. A zero-row input is instead canonicalized to the shared empty matrix,
+     * so its outer-array identity is not retained.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -151,8 +150,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     /**
      * Creates a {@code FloatMatrix} that owns a defensive deep copy of the supplied two-dimensional array.
      *
-     * <p>Unlike {@link #of(float[][])} for non-empty inputs, which wraps the caller's array without copying, this factory clones
-     * every row of a non-empty input into a freshly allocated backing array. Subsequent modifications to {@code a} (or its rows)
+     * <p>For an input with at least one row, unlike {@link #of(float[][])}, which wraps the caller's array without copying,
+     * this factory allocates a new outer array and clones every row. Subsequent modifications to {@code a} (or its rows)
      * are therefore <b>not</b> visible through the returned matrix, and vice versa. A zero-row input is canonicalized to the shared
      * empty matrix, so its outer-array identity is not retained.</p>
      *
@@ -1176,6 +1175,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
      * Elements are processed in row-major order when executed sequentially.</p>
+     *
      * <p>If multiple logical rows share one backing array, each value in that array is transformed only once.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -1198,6 +1198,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     public <E extends Exception> void updateAll(final Throwables.FloatUnaryOperator<E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, "operator");
+
+        if (columnCount == 0) {
+            return;
+        }
 
         if (Matrices.shouldRunInParallel(this)) {
             if (hasAliasedRows()) {
@@ -2084,6 +2088,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     @Override
     public void flipHorizontallyInPlace() {
+        if (columnCount < 2) {
+            return;
+        }
+
         forEachDistinctRow(N::reverse);
     }
 
@@ -4011,8 +4019,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * boolean sameHash = matrix1.hashCode() == matrix2.hashCode(); // true (equal content)
      *
      * FloatMatrix matrix3 = FloatMatrix.of(new float[][] {{9.0f, 2.0f}, {3.0f, 4.0f}});
-     * boolean sameHashForDifferentContent = matrix1.hashCode() == matrix3.hashCode();              // false for these values
-     * boolean emptyHashesMatch = FloatMatrix.empty().hashCode() == FloatMatrix.empty().hashCode(); // true
+     * boolean sameHashForDifferentContent = matrix1.hashCode() == matrix3.hashCode(); // false for these values
+     * FloatMatrix.empty().hashCode();                                                 // returns 1 (stable hash of the empty matrix)
      * }</pre>
      *
      * @return a hash code value for this matrix

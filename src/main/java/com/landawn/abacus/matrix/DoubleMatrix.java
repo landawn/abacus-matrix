@@ -35,7 +35,7 @@ import com.landawn.abacus.util.stream.Stream;
  * Matrix implementation backed by a rectangular {@code double[][]}.
  *
  * <p>This type specializes {@link AbstractMatrix} for {@code double} values while keeping the data in
- * a validated backing array. Constructors and {@link #of(double[]...)} generally wrap the supplied storage
+ * a validated backing array. The constructor and {@link #of(double[]...)} wrap the supplied storage
  * directly. Copy-producing factories and operations such as conversions and mappings use separate
  * storage for non-empty results; {@link #empty()} returns a shared zero-cell singleton.</p>
  *
@@ -156,8 +156,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     /**
      * Creates a {@code DoubleMatrix} that owns a defensive deep copy of the supplied two-dimensional array.
      *
-     * <p>Unlike {@link #of(double[][])} for non-empty inputs, which wraps the caller's array without copying, this factory clones
-     * every row of a non-empty input into a freshly allocated backing array. Subsequent modifications to {@code a} (or its rows)
+     * <p>For an input with at least one row, unlike {@link #of(double[][])}, which wraps the caller's array without copying,
+     * this factory allocates a new outer array and clones every row. Subsequent modifications to {@code a} (or its rows)
      * are therefore <b>not</b> visible through the returned matrix, and vice versa. A zero-row input is canonicalized to the shared
      * empty matrix, so its outer-array identity is not retained.</p>
      *
@@ -1292,6 +1292,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
      * Elements are processed in row-major order when executed sequentially.</p>
+     *
      * <p>If multiple logical rows share one backing array, each value in that array is transformed only once.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -1314,6 +1315,10 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     public <E extends Exception> void updateAll(final Throwables.DoubleUnaryOperator<E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, "operator");
+
+        if (columnCount == 0) {
+            return;
+        }
 
         if (Matrices.shouldRunInParallel(this)) {
             if (hasAliasedRows()) {
@@ -2173,6 +2178,10 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     @Override
     public void flipHorizontallyInPlace() {
+        if (columnCount < 2) {
+            return;
+        }
+
         forEachDistinctRow(N::reverse);
     }
 
@@ -4116,8 +4125,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * boolean sameHash = matrix1.hashCode() == matrix2.hashCode(); // true (equal content)
      *
      * DoubleMatrix matrix3 = DoubleMatrix.of(new double[][] {{9.0, 2.0}, {3.0, 4.0}});
-     * boolean sameHashForDifferentContent = matrix1.hashCode() == matrix3.hashCode();                // false for these values
-     * boolean emptyHashesMatch = DoubleMatrix.empty().hashCode() == DoubleMatrix.empty().hashCode(); // true
+     * boolean sameHashForDifferentContent = matrix1.hashCode() == matrix3.hashCode(); // false for these values
+     * DoubleMatrix.empty().hashCode();                                                // returns 1 (stable hash of the empty matrix)
      * }</pre>
      *
      * @return a hash code value for this matrix

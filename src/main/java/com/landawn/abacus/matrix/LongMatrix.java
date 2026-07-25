@@ -1281,6 +1281,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     public <E extends Exception> void updateAll(final Throwables.LongUnaryOperator<E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, "operator");
 
+        if (columnCount == 0) {
+            return;
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
             if (hasAliasedRows()) {
                 final long[][] distinctRows = new long[rowCount][];
@@ -2113,6 +2117,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     @Override
     public void flipHorizontallyInPlace() {
+        if (columnCount < 2) {
+            return;
+        }
+
         forEachDistinctRow(N::reverse);
     }
 

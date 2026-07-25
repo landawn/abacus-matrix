@@ -2766,7 +2766,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws ArithmeticException if {@code elementCount()} exceeds {@code Integer.MAX_VALUE} and therefore
      *         cannot be represented by one Java array
      * @throws ArrayStoreException if a modified value cannot be stored in the corresponding backing row's runtime
-     *         component type; rows copied before the failing row remain modified
+     *         component type; rows copied before the failing row remain modified, as do the elements stored before
+     *         the offending element inside that row
      * @throws E if the operation throws an exception
      * @see Arrays.ff#mutateFlattened(Object[][], Throwables.Consumer)
      */
@@ -2868,8 +2869,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * other case creates a new matrix. Neither input matrix is modified.
      *
      * <p>The result's runtime element type is the most specific type assignable from both
-     * inputs' runtime element types (observable via {@link #elementType()}). The shared
-     * {@link #empty()} instance is type-neutral when paired with a typed zero-row matrix.</p>
+     * inputs' runtime element types (observable via {@link #elementType()}). An operand with no
+     * columns contributes no cells and therefore does not widen the type of the operand that
+     * supplies the result columns. The shared {@link #empty()} instance is type-neutral when
+     * paired with a typed zero-row matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2910,6 +2913,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         if (isSharedEmptyMatrix() && !other.isSharedEmptyMatrix()) {
             mergedElementType = other.elementType;
         } else if (other.isSharedEmptyMatrix() && !isSharedEmptyMatrix()) {
+            mergedElementType = elementType;
+        } else if (columnCount == 0 && other.columnCount > 0) {
+            mergedElementType = other.elementType;
+        } else if (other.columnCount == 0 && columnCount > 0) {
             mergedElementType = elementType;
         } else {
             @SuppressWarnings("unchecked")
@@ -3850,7 +3857,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param columnNames the collection of names to assign to the resulting Dataset columns; the collection must be
      *        non-{@code null}, each name must be non-{@code null}, non-empty, and unique, and the collection size must equal
-     *        {@code columnCount}. An empty collection is valid when {@code columnCount} is zero
+     *        {@code columnCount}. An empty collection is valid only for a {@code 0 x 0} matrix; a matrix with rows but
+     *        zero columns cannot be converted at all
      * @return a Dataset containing the matrix data with the specified column names
      *         (one row per matrix row)
      * @throws IllegalArgumentException if {@code columnNames} is {@code null}, contains a {@code null}, empty, or duplicate name,

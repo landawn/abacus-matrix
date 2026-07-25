@@ -300,7 +300,7 @@ public final class Matrices {
      * The estimate is saturated so a product larger than {@link Long#MAX_VALUE} cannot wrap to
      * a negative value and incorrectly fall below the automatic parallelization threshold.
      *
-     * @param m the left matrix, whose element count is {@code rowCount * commonDimension}
+     * @param m the left matrix, whose element count is {@code rowCount * commonDimension}; must not be {@code null}
      * @param resultColumnCount the number of columns in the product; must be non-negative
      * @return {@code true} if the product should use the parallel multiplication path
      * @throws IllegalArgumentException if {@code m} is {@code null} or {@code resultColumnCount} is negative
@@ -3988,8 +3988,7 @@ public final class Matrices {
         }
 
         if (left.isArray() && right.isArray() && !left.getComponentType().isPrimitive() && !right.getComponentType().isPrimitive()) {
-            final Class<?> commonComponentType = resolveCommonAssignableType(left.getComponentType(), right.getComponentType());
-            return java.lang.reflect.Array.newInstance(commonComponentType, 0).getClass();
+            return resolveCommonAssignableType(left.getComponentType(), right.getComponentType()).arrayType();
         }
 
         final Map<Class<?>, Integer> leftDistances = collectTypeDistances(left);
@@ -4069,7 +4068,7 @@ public final class Matrices {
                 componentTypes[i] = types[i].getComponentType();
             }
 
-            return java.lang.reflect.Array.newInstance(resolveCommonType(componentTypes), 0).getClass();
+            return resolveCommonType(componentTypes).arrayType();
         }
 
         final Map<Class<?>, Map<Class<?>, Integer>> distancesByType = new LinkedHashMap<>();
