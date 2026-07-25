@@ -96,13 +96,20 @@ public final class Matrices {
      * independent parallelization behaviors. This enables fine-grained control over parallel
      * execution in multithreaded applications.</p>
      *
-     * <p>The returned value indicates how matrix operations should decide whether to use
-     * parallel processing:</p>
+     * <p>The returned value guides operations that consult
+     * {@link #shouldRunInParallel(AbstractMatrix)} or
+     * {@link #shouldRunInParallel(AbstractMatrix, long)}:</p>
      * <ul>
-     * <li>{@link ParallelMode#FORCE_ON} - requests parallel execution whenever the runtime supports it.</li>
-     * <li>{@link ParallelMode#FORCE_OFF} - forces sequential execution regardless of matrix size.</li>
-     * <li>{@link ParallelMode#AUTO} - automatically decides based on runtime support and matrix size (threshold: 8192 elements).</li>
+     * <li>{@link ParallelMode#FORCE_ON} - requests parallel execution whenever the runtime supports it and
+     *     the operation's safety constraints allow it.</li>
+     * <li>{@link ParallelMode#FORCE_OFF} - selects sequential execution for policy-aware operations.</li>
+     * <li>{@link ParallelMode#AUTO} - decides from runtime support and the operation's estimated work count
+     *     (current threshold: 8192).</li>
      * </ul>
+     *
+     * <p>Explicit traversal overloads with an {@code inParallel} argument are controlled by that
+     * argument instead. Individual operations may also use a subset or multiply-add work estimate,
+     * or keep execution sequential when shared storage would make parallel mutation unsafe.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -129,18 +136,21 @@ public final class Matrices {
     /**
      * Sets the parallel processing behavior for matrix operations in the current thread.
      *
-     * <p>This method configures a thread-local setting that controls how matrix operations
-     * decide whether to use parallel processing. The setting only affects the current thread,
-     * allowing different threads to have independent parallelization strategies.</p>
+     * <p>This method configures a thread-local setting used by operations that consult
+     * {@link #shouldRunInParallel(AbstractMatrix)} or
+     * {@link #shouldRunInParallel(AbstractMatrix, long)}. The setting only affects the current
+     * thread, allowing different threads to have independent parallelization strategies. Explicit
+     * traversal overloads with an {@code inParallel} argument remain controlled by that argument.</p>
      *
      * <p>Available settings:</p>
      * <ul>
-     * <li>{@link ParallelMode#FORCE_ON} - requests parallel processing for all matrix operations when
-     *     the runtime supports it, regardless of matrix size.</li>
-     * <li>{@link ParallelMode#FORCE_OFF} - forces all matrix operations to use sequential processing,
-     *     regardless of matrix size. Use this to avoid parallelization overhead for small matrices.</li>
-     * <li>{@link ParallelMode#AUTO} - automatically decides based on runtime support and matrix size. Operations
-     *     on matrices with 8192 or more elements use parallel processing when parallel stream support is available; smaller matrices use sequential processing.</li>
+     * <li>{@link ParallelMode#FORCE_ON} - requests parallel processing for policy-aware operations when
+     *     runtime support and the operation's safety constraints allow it, regardless of work size.</li>
+     * <li>{@link ParallelMode#FORCE_OFF} - selects sequential processing for policy-aware operations,
+     *     regardless of work size.</li>
+     * <li>{@link ParallelMode#AUTO} - decides from runtime support and the work count estimated by each
+     *     operation. The current threshold is 8192 work items; an operation may estimate a subset,
+     *     Cartesian product, or another workload rather than using the matrix's element count.</li>
      * </ul>
      *
      * <p><b>Usage Examples:</b></p>
@@ -234,10 +244,10 @@ public final class Matrices {
      * Matrices.shouldRunInParallel(matrix, 100000L);          // returns false (forced off, count ignored)
      *
      * Matrices.setParallelMode(ParallelMode.AUTO);         // restore default
-     * Matrices.shouldRunInParallel(matrix, 5000L);            // returns false (5000 < 8192)
+     * Matrices.shouldRunInParallel(matrix, 5000L);         // returns false (5000 < 8192)
      *
      * Matrices.shouldRunInParallel((IntMatrix) null, 100L);   // throws IllegalArgumentException
-     * Matrices.shouldRunInParallel(matrix, -1L);               // throws IllegalArgumentException
+     * Matrices.shouldRunInParallel(matrix, -1L);              // throws IllegalArgumentException
      * }</pre>
      *
      * @param m the matrix being evaluated; only checked for {@code null}, the matrix's own
@@ -802,18 +812,18 @@ public final class Matrices {
             });
         } else {
             return IntStream.range(fromColumnIndex, toColumnIndex).transform(s -> parallel ? s.parallel() : s).flatmapToObj(j -> {
-                        final List<T> ret = new ArrayList<>(rowCount);
+                final List<T> ret = new ArrayList<>(rowCount);
 
-                        try {
-                            for (int i = fromRowIndex; i < toRowIndex; i++) {
-                                ret.add(mapper.apply(i, j));
-                            }
-                        } catch (final Exception e) {
-                            throw ExceptionUtil.toRuntimeException(e, true);
-                        }
+                try {
+                    for (int i = fromRowIndex; i < toRowIndex; i++) {
+                        ret.add(mapper.apply(i, j));
+                    }
+                } catch (final Exception e) {
+                    throw ExceptionUtil.toRuntimeException(e, true);
+                }
 
-                        return ret;
-                    });
+                return ret;
+            });
         }
     }
 
@@ -938,18 +948,18 @@ public final class Matrices {
             });
         } else {
             return IntStream.range(fromColumnIndex, toColumnIndex).transform(s -> parallel ? s.parallel() : s).flatMapArray(j -> {
-                        final int[] ret = new int[rowCount];
+                final int[] ret = new int[rowCount];
 
-                        try {
-                            for (int i = fromRowIndex; i < toRowIndex; i++) {
-                                ret[i - fromRowIndex] = mapper.applyAsInt(i, j);
-                            }
-                        } catch (final Exception e) {
-                            throw ExceptionUtil.toRuntimeException(e, true);
-                        }
+                try {
+                    for (int i = fromRowIndex; i < toRowIndex; i++) {
+                        ret[i - fromRowIndex] = mapper.applyAsInt(i, j);
+                    }
+                } catch (final Exception e) {
+                    throw ExceptionUtil.toRuntimeException(e, true);
+                }
 
-                        return ret;
-                    });
+                return ret;
+            });
         }
     }
 
@@ -1797,7 +1807,7 @@ public final class Matrices {
      * Matrix<Integer> count = Matrices.zipToObj(Arrays.asList(m1, m2, m3), arr -> arr.length, Integer.class);
      * // count is filled with 3 at every position (count.get(0, 0) == 3)
      *
-     * ByteMatrix wrong = ByteMatrix.of(new byte[][] {{1, 2, 3}});                  // different shape
+     * ByteMatrix wrong = ByteMatrix.of(new byte[][] {{1, 2, 3}});                       // different shape
      * Matrices.zipToObj(Arrays.asList(m1, wrong), arr -> 0, Integer.class);             // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToObj(Collections.<ByteMatrix> emptyList(), arr -> 0, Integer.class); // throws IllegalArgumentException (empty)
      * }</pre>
@@ -1852,7 +1862,7 @@ public final class Matrices {
      * }, false, Integer.class);
      * // sum.get(0, 0) == 1 + 5 + 8 == 14
      *
-     * ByteMatrix wrong = ByteMatrix.of(new byte[][] {{1, 2, 3}});               // different shape
+     * ByteMatrix wrong = ByteMatrix.of(new byte[][] {{1, 2, 3}});                    // different shape
      * Matrices.zipToObj(Arrays.asList(m1, wrong), arr -> 0, false, Integer.class);   // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToObj(Arrays.asList(m1, m2), arr -> 0, false, null);               // throws IllegalArgumentException (null type)
      * }</pre>
@@ -2589,7 +2599,7 @@ public final class Matrices {
      *     arr -> arr[0] + "-" + arr[1] + "-" + arr[2], String.class);
      * // joined.get(0, 0) equals "1-5-9"
      *
-     * IntMatrix wrong = IntMatrix.of(new int[][] {{1, 2, 3}});                    // different shape
+     * IntMatrix wrong = IntMatrix.of(new int[][] {{1, 2, 3}});                         // different shape
      * Matrices.zipToObj(Arrays.asList(m1, wrong), arr -> 0, Integer.class);            // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToObj(Collections.<IntMatrix> emptyList(), arr -> 0, Integer.class); // throws IllegalArgumentException (empty)
      * }</pre>
@@ -2646,7 +2656,7 @@ public final class Matrices {
      *     arr -> java.util.Arrays.stream(arr).sum(), true, Integer.class);
      * // sum.get(0, 0) == 15
      *
-     * IntMatrix wrong = IntMatrix.of(new int[][] {{1, 2, 3}});                  // different shape
+     * IntMatrix wrong = IntMatrix.of(new int[][] {{1, 2, 3}});                       // different shape
      * Matrices.zipToObj(Arrays.asList(m1, wrong), arr -> 0, false, Integer.class);   // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToObj(Arrays.asList(m1, m2), arr -> 0, false, null);               // throws IllegalArgumentException (null type)
      * }</pre>
@@ -3119,7 +3129,7 @@ public final class Matrices {
      *     arr -> java.util.Arrays.stream(arr).sum(), Long.class);
      * // sum.get(0, 0) == 15L
      *
-     * LongMatrix wrong = LongMatrix.of(new long[][] {{1L, 2L, 3L}});             // different shape
+     * LongMatrix wrong = LongMatrix.of(new long[][] {{1L, 2L, 3L}});                  // different shape
      * Matrices.zipToObj(Arrays.asList(m1, wrong), arr -> 0L, Long.class);             // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToObj(Collections.<LongMatrix> emptyList(), arr -> 0L, Long.class); // throws IllegalArgumentException (empty)
      * }</pre>
@@ -3176,7 +3186,7 @@ public final class Matrices {
      * }, false, Long.class);
      * // product.get(0, 0) == 1L * 5L * 9L == 45L
      *
-     * LongMatrix wrong = LongMatrix.of(new long[][] {{1L, 2L, 3L}});           // different shape
+     * LongMatrix wrong = LongMatrix.of(new long[][] {{1L, 2L, 3L}});                // different shape
      * Matrices.zipToObj(Arrays.asList(m1, wrong), arr -> 0L, false, Long.class);    // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToObj(Arrays.asList(m1, m2), arr -> 0L, false, null);             // throws IllegalArgumentException (null type)
      * }</pre>
@@ -3411,7 +3421,7 @@ public final class Matrices {
      *     arr -> java.util.Arrays.stream(arr).sum(), Double.class);
      * // sum.get(1, 1) == 24.0
      *
-     * DoubleMatrix wrong = DoubleMatrix.of(new double[][] {{1.0, 2.0, 3.0}});         // different shape
+     * DoubleMatrix wrong = DoubleMatrix.of(new double[][] {{1.0, 2.0, 3.0}});              // different shape
      * Matrices.zipToObj(Arrays.asList(m1, wrong), arr -> 0.0, Double.class);               // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToObj(Collections.<DoubleMatrix> emptyList(), arr -> 0.0, Double.class); // throws IllegalArgumentException (empty)
      * }</pre>
@@ -3465,7 +3475,7 @@ public final class Matrices {
      *     arr -> java.util.Arrays.stream(arr).max().orElse(0.0), false, Double.class);
      * // max.get(1, 1) == 12.0
      *
-     * DoubleMatrix wrong = DoubleMatrix.of(new double[][] {{1.0, 2.0, 3.0}});   // different shape
+     * DoubleMatrix wrong = DoubleMatrix.of(new double[][] {{1.0, 2.0, 3.0}});        // different shape
      * Matrices.zipToObj(Arrays.asList(m1, wrong), arr -> 0.0, false, Double.class);  // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToObj(Arrays.asList(m1, m2), arr -> 0.0, false, null);             // throws IllegalArgumentException (null type)
      * }</pre>

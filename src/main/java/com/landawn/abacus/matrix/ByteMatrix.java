@@ -36,7 +36,8 @@ import com.landawn.abacus.util.stream.Stream;
  *
  * <p>This type specializes {@link AbstractMatrix} for {@code byte} values while keeping the data in a
  * validated backing array. Constructors and {@link #of(byte[]...)} generally wrap the supplied storage
- * directly, while factories, conversions, and mapping operations allocate new arrays.</p>
+ * directly. Copy-producing factories and operations such as conversions and mappings use separate
+ * storage for non-empty results; {@link #empty()} returns a shared zero-cell singleton.</p>
  *
  * <p>Cells introduced by growth or reshaping default to {@code 0} unless an overload accepts an
  * explicit fill value.</p>
@@ -104,11 +105,11 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.empty();
-     * matrix.rowCount();                          // returns 0
-     * matrix.columnCount();                       // returns 0
-     * matrix.elementCount();                      // returns 0L
-     * matrix.isEmpty();                           // returns true
-     * ByteMatrix.empty() == ByteMatrix.empty();   // true (same shared singleton)
+     * matrix.rowCount();                                                // returns 0
+     * matrix.columnCount();                                             // returns 0
+     * matrix.elementCount();                                            // returns 0L
+     * matrix.isEmpty();                                                 // returns true
+     * boolean sameSingleton = ByteMatrix.empty() == ByteMatrix.empty(); // true (same shared singleton)
      * }</pre>
      *
      * @return the shared empty {@code ByteMatrix} singleton
@@ -165,7 +166,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * data[0][0] = 10;
      * matrix.get(0, 0);                       // returns 1 (copy is independent)
      *
-     * ByteMatrix.copyOf((byte[][]) null);  // throws IllegalArgumentException
+     * ByteMatrix.copyOf((byte[][]) null);            // throws IllegalArgumentException
      * ByteMatrix.copyOf(new byte[][] {{1, 2}, {3}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
      *
@@ -205,7 +206,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * ByteMatrix none = ByteMatrix.randomRow(0);
      * none.columnCount();            // returns 0 (1x0 matrix)
      *
-     * ByteMatrix.randomRow(-1);         // throws IllegalArgumentException (negative length)
+     * ByteMatrix.randomRow(-1);      // throws IllegalArgumentException (negative length)
      * }</pre>
      *
      * @param length the number of columns in the new matrix; must be {@code >= 0}
@@ -1069,7 +1070,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
      * matrix.setMainDiagonal(new byte[] {9, 8});
      * matrix.mainDiagonalCopy();              // returns [9, 8]
-     * matrix.get(1, 1);                      // returns (byte) 8 (diagonal element updated)
+     * matrix.get(1, 1);                       // returns (byte) 8 (diagonal element updated)
      *
      * matrix.setMainDiagonal(new byte[] {1}); // throws IllegalArgumentException (length != rowCount)
      * ByteMatrix nonSquare = ByteMatrix.of(new byte[][] {{1, 2, 3}, {4, 5, 6}});
@@ -1100,7 +1101,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
      * matrix.updateMainDiagonal(b -> (byte) (b * b));
      * matrix.mainDiagonalCopy();                   // returns [1, 16]
-     * matrix.get(0, 1);                           // returns (byte) 2 (off-diagonal unchanged)
+     * matrix.get(0, 1);                            // returns (byte) 2 (off-diagonal unchanged)
      *
      * matrix.updateMainDiagonal(null);            // throws IllegalArgumentException (operator is null)
      * ByteMatrix nonSquare = ByteMatrix.of(new byte[][] {{1, 2, 3}, {4, 5, 6}});
@@ -1173,7 +1174,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
      * matrix.setAntiDiagonal(new byte[] {9, 8});
      * matrix.antiDiagonalCopy();              // returns [9, 8]
-     * matrix.get(0, 1);                      // returns (byte) 9 (anti-diagonal cell)
+     * matrix.get(0, 1);                       // returns (byte) 9 (anti-diagonal cell)
      *
      * matrix.setAntiDiagonal(new byte[] {1}); // throws IllegalArgumentException (length != rowCount)
      * ByteMatrix nonSquare = ByteMatrix.of(new byte[][] {{1, 2, 3}, {4, 5, 6}});
@@ -1205,7 +1206,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
      * matrix.updateAntiDiagonal(b -> (byte) -b);
      * matrix.antiDiagonalCopy();                   // returns [-2, -3]
-     * matrix.get(0, 0);                           // returns (byte) 1 (off anti-diagonal unchanged)
+     * matrix.get(0, 0);                            // returns (byte) 1 (off anti-diagonal unchanged)
      *
      * matrix.updateAntiDiagonal(null);            // throws IllegalArgumentException (operator is null)
      * ByteMatrix nonSquare = ByteMatrix.of(new byte[][] {{1, 2, 3}, {4, 5, 6}});
@@ -1580,6 +1581,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * The source array can extend beyond this matrix's bounds; only the overlapping region is copied.
      * The matrix is modified in-place. {@code null} rows in {@code source} are skipped (the
      * corresponding destination row is left unchanged). Elements outside the matrix bounds are ignored.
+     * Any source row that aliases this matrix's backing storage is snapshotted before copying, so
+     * overlapping copies read the source values as they were when this method was called.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1893,7 +1896,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param padLeft number of padding columns to add to the left of the original matrix; must be {@code >= 0}
      * @param padRight number of padding columns to add to the right of the original matrix; must be {@code >= 0}
      * @return a new ByteMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
-     * @throws IllegalArgumentException if any parameter is negative,
+     * @throws IllegalArgumentException if any padding parameter is negative,
      *         if the resulting dimensions would overflow {@code Integer.MAX_VALUE},
      *         or if the resulting shape is not representable (zero rows with a non-zero column count)
      * @see #extend(int, int, int, int, byte)
@@ -2551,10 +2554,16 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * Exposes the elements of this matrix to {@code action} as a single one-dimensional array
      * laid out in row-major order, then propagates any modifications back into the matrix.
      *
-     * <p>This enables operations that need a global view of all matrix elements (e.g., sorting all
+     * <p>This enables operations that need all matrix elements together (e.g., sorting all
      * elements across the entire matrix). The shape of this matrix is preserved; only element
      * values change. See {@link Arrays#mutateFlattened(byte[][], Throwables.Consumer)} for the exact
      * semantics of the underlying operation.</p>
+     *
+     * <p>The action receives a temporary array. Its mutations are copied back only if the action
+     * returns normally; if the action throws, those mutations are discarded. An action is not invoked
+     * when this matrix has zero rows, while an {@code n x 0} matrix with {@code n > 0} invokes it once
+     * with an empty array. If logical rows share a backing array, write-back is row-major, so values for
+     * the last logical row using that array determine its final contents.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2565,14 +2574,15 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * int[] captured = new int[1];
      * matrix.mutateFlattened(arr -> captured[0] = arr.length);
-     * captured[0];                            // returns 4 (flat view length)
+     * int flattenedLength = captured[0];      // 4 (temporary array length)
      *
-     * ByteMatrix.empty().mutateFlattened(arr -> { });  // no-op on empty matrix
+     * ByteMatrix.empty().mutateFlattened(arr -> { });  // zero rows: action is not invoked
      * }</pre>
      *
      * @param <E> the type of exception that the operation may throw
-     * @param action the operation to apply to the flattened array
+     * @param action the operation to apply to the temporary flattened array
      * @throws IllegalArgumentException if {@code action} is {@code null}
+     * @throws ArithmeticException if the element count exceeds {@link Integer#MAX_VALUE}
      * @throws E if the operation throws an exception
      * @see Arrays#mutateFlattened(byte[][], Throwables.Consumer)
      */
@@ -2819,7 +2829,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * ByteMatrix m2x3 = ByteMatrix.of(new byte[][] {{1, 2, 3}, {4, 5, 6}});      // 2x3
      * ByteMatrix m3x2 = ByteMatrix.of(new byte[][] {{7, 8}, {9, 10}, {11, 12}}); // 3x2
-     * m2x3.matrixMultiply(m3x2).rowCount();                                              // returns 2 (result is 2x2)
+     * m2x3.matrixMultiply(m3x2).rowCount();                                      // returns 2 (result is 2x2)
      *
      * a.matrixMultiply(m3x2);                        // throws IllegalArgumentException (a.columnCount=2 != m3x2.rowCount=3)
      * a.matrixMultiply((ByteMatrix) null);           // throws IllegalArgumentException (other is null)
@@ -3877,13 +3887,13 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      *
-     * int[] center = {0};
-     * matrix.forEach(1, 2, 1, 2, value -> center[0] = value);
-     * center[0];                              // 5 (center element only)
+     * java.util.concurrent.atomic.AtomicInteger center = new java.util.concurrent.atomic.AtomicInteger();
+     * matrix.forEach(1, 2, 1, 2, center::set);
+     * int centerValue = center.get();          // 5 (center element only)
      *
-     * int[] subSum = {0};
-     * matrix.forEach(0, 2, 1, 3, value -> subSum[0] += value);
-     * subSum[0];                              // 16 (2 + 3 + 5 + 6)
+     * java.util.concurrent.atomic.AtomicInteger subSum = new java.util.concurrent.atomic.AtomicInteger();
+     * matrix.forEach(0, 2, 1, 3, subSum::addAndGet);
+     * int selectedSum = subSum.get();          // 16 (2 + 3 + 5 + 6)
      *
      * matrix.forEach(0, 5, 0, 3, value -> { });                                     // throws IndexOutOfBoundsException (toRowIndex > rowCount)
      * matrix.forEach(0, 2, 0, 2, (Throwables.ByteConsumer<RuntimeException>) null); // throws IllegalArgumentException
@@ -3973,11 +3983,11 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <pre>{@code
      * ByteMatrix matrix1 = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
      * ByteMatrix matrix2 = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
-     * matrix1.hashCode() == matrix2.hashCode(); // returns true (equal content)
+     * boolean sameHash = matrix1.hashCode() == matrix2.hashCode(); // true (equal content)
      *
      * ByteMatrix different = ByteMatrix.of(new byte[][] {{1, 2}, {3, 5}});
-     * matrix1.hashCode() == different.hashCode(); // returns false (different content, typically)
-     * ByteMatrix.empty().hashCode();              // returns a stable hash for the empty matrix
+     * boolean sameHashForDifferentContent = matrix1.hashCode() == different.hashCode(); // false for these values
+     * ByteMatrix.empty().hashCode();                                                    // returns a stable hash for the empty matrix
      * }</pre>
      *
      * @return a hash code value for this matrix

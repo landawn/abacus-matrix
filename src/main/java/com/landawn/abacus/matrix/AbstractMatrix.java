@@ -40,7 +40,8 @@ import com.landawn.abacus.util.stream.Stream;
  *
  * <p>Several APIs intentionally cross the usual defensive-copy boundary for performance-sensitive code:
  * {@link #unsafeBackingArray()} and {@link #rowView(int)} expose live storage, while
- * {@link #mutateFlattened(Throwables.Consumer)} lets callers mutate the matrix through a flattened array.
+ * {@link #mutateFlattened(Throwables.Consumer)} lets callers mutate the matrix through a temporary
+ * flattened array that is copied back afterward.
  * Callers that need isolation should prefer
  * copy-producing operations such as {@link #copy()}, {@link #flatten()}, and {@link #rowCopy(int)}.</p>
  *
@@ -364,10 +365,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     }
 
     /**
-     * Validates that a newly materialized shape stays within the package's flat-cardinality limit.
-     * Although matrix storage is row-based, shape-changing operations cap the total cell count at
-     * {@link Integer#MAX_VALUE} so their results remain compatible with APIs that expose a flat array
-     * or list.
+     * Validates that a newly materialized shape stays within the flat-cardinality limit used by
+     * operations such as {@code reshape} that intentionally require compatibility with a single
+     * flat array or list. Row-array operations that do not require flat materialization may support
+     * a larger total cell count as long as each individual dimension is representable.
      *
      * @param rowCount the row count
      * @param columnCount the column count
@@ -473,15 +474,15 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
      * int[][] array = matrix.unsafeBackingArray();
-     * array.length;                                             // returns 2 (one entry per row)
+     * int rowArrayCount = array.length;                         // 2 (one entry per row)
      * array[0][0] = 10;                                         // WILL modify the matrix
      * matrix.get(0, 0);                                         // returns 10 (mutation visible through the matrix)
      *
      * IntMatrix empty = IntMatrix.of(new int[0][0]);
-     * empty.unsafeBackingArray().length;                            // returns 0 (zero-row matrix yields zero-length array)
+     * int emptyRowArrayCount = empty.unsafeBackingArray().length;   // 0 (zero-row matrix yields zero-length array)
      *
      * IntMatrix rowsNoCols = IntMatrix.of(new int[3][0]);
-     * rowsNoCols.unsafeBackingArray().length;                      // returns 3 (3 x 0 matrix keeps 3 empty rows)
+     * int zeroColumnRowCount = rowsNoCols.unsafeBackingArray().length; // 3 (3 x 0 matrix keeps 3 empty rows)
      * }</pre>
      *
      * @return the underlying two-dimensional array (not a copy); its length equals {@code rowCount}
@@ -619,7 +620,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     }
 
     /**
-     * Returns the total number of elements in this matrix (rows x columns).
+     * Returns the total number of elements in this matrix (rows × columns).
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -909,10 +910,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
      * IntMatrix reshaped = matrix.reshapeByColumnCount(2);                  // returns {{1, 2}, {3, 4}, {5, 6}}
-     * reshaped.rowCount();                                     // returns 3 (ceil(6 / 2))
+     * reshaped.rowCount();                                                  // returns 3 (ceil(6 / 2))
      *
      * IntMatrix padded = matrix.reshapeByColumnCount(4);                    // returns {{1, 2, 3, 4}, {5, 6, 0, 0}}
-     * padded.get(1, 3);                                        // returns 0 (trailing cell padded)
+     * padded.get(1, 3);                                                     // returns 0 (trailing cell padded)
      *
      * matrix.reshapeByColumnCount(0);                                       // throws IllegalArgumentException (newColumnCount <= 0)
      *
@@ -945,7 +946,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Returns a new matrix with the elements of this matrix rearranged into the specified dimensions.
      * Elements are taken in row-major order from the original matrix and placed into the
      * new shape. The new shape must have at least as many total elements as the original
-     * ({@code newRowCount * newColumnCount >= elementCount()}).
+     * ({@code (long) newRowCount * newColumnCount >= elementCount()}).
      * If the new shape has more elements, the extra positions are filled with
      * default values ({@code 0} for numeric types, {@code false} for boolean, {@code null} for objects).
      * The original matrix is not modified.
@@ -1286,28 +1287,41 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     public abstract PL flatten();
 
     /**
-     * Applies the specified operation to the flattened (row-major order) view of this matrix.
-     * The operation receives a single one-dimensional array containing all elements in row-major order,
-     * and any modifications to that array are reflected back in this matrix.
+     * Applies the specified operation to a temporary flattened (row-major order) representation of this matrix.
+     * The operation receives a single one-dimensional array containing all elements in row-major order. If the
+     * operation returns normally, the array is copied back into the matrix in row-major order; if the operation
+     * throws, copy-back is not started.
      *
      * <p>This is useful for operations that are easier to perform on a flat array representation,
      * such as sorting all elements, applying statistical transformations, or batch updates.</p>
      *
-     * <p><b>&#9888;&#65039; Unsafe API boundary:</b> the supplied action receives a mutable flattened view of the matrix data.
-     * Any mutation performed by the action is reflected back into this matrix.</p>
+     * <p><b>&#9888;&#65039; Unsafe API boundary:</b> the supplied action receives a mutable temporary array whose
+     * contents can replace matrix state. If logical rows share a backing row array, their flattened segments cannot
+     * remain independent during copy-back: rows are written in logical row order, so a later aliased row overwrites
+     * values written through an earlier alias.</p>
+     *
+     * <p>A zero-row matrix does not invoke {@code action}. A matrix with one or more rows but zero columns invokes
+     * {@code action} once with a zero-length array.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{3, 1, 4}, {1, 5, 9}});
      * matrix.mutateFlattened(flat -> java.util.Arrays.sort(flat));   // sorts all elements in row-major order
-     * matrix.get(0, 0);                                           // returns 1 (matrix becomes {{1, 1, 3}, {4, 5, 9}})
-     * matrix.get(1, 2);                                           // returns 9
+     * matrix.get(0, 0);                                              // returns 1 (matrix becomes {{1, 1, 3}, {4, 5, 9}})
+     * matrix.get(1, 2);                                              // returns 9
      *
      * matrix.mutateFlattened(flat -> { for (int i = 0; i < flat.length; i++) flat[i] *= 2; });   // doubles all elements
-     * matrix.get(0, 0);                                                                       // returns 2
+     * matrix.get(0, 0);                                                                          // returns 2
      *
      * IntMatrix empty = IntMatrix.of(new int[0][0]);
-     * empty.mutateFlattened(flat -> java.util.Arrays.sort(flat));    // no-op on an empty matrix; stays empty
+     * int[] zeroRowCalls = {0};
+     * empty.mutateFlattened(flat -> zeroRowCalls[0]++);              // action is not invoked
+     * int callbackCount = zeroRowCalls[0];                           // 0
+     *
+     * int[] shared = {1, 2};
+     * IntMatrix aliased = IntMatrix.of(new int[][] {shared, shared});
+     * aliased.mutateFlattened(flat -> { flat[0] = 10; flat[1] = 20; flat[2] = 30; flat[3] = 40; });
+     * aliased.rowCopy(0);                                            // returns [30, 40] (later aliased row wins)
      *
      * // Checked exceptions propagate to the caller (do not wrap in try/catch inside the block)
      * matrix.mutateFlattened(flat -> { throw new java.io.IOException(); });   // throws IOException
@@ -1316,6 +1330,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param <E> the type of exception that the operation might throw
      * @param action the operation to apply to the one-dimensional flattened array (for example {@code int[]} for {@code IntMatrix})
      * @throws IllegalArgumentException if {@code action} is {@code null}
+     * @throws ArithmeticException if {@code elementCount()} exceeds {@code Integer.MAX_VALUE} and therefore
+     *         cannot be represented by one Java array
      * @throws E if the operation throws an exception
      */
     public abstract <E extends Exception> void mutateFlattened(Throwables.Consumer<? super A, E> action) throws E;
@@ -1326,7 +1342,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Elements are processed in row-major order (row by row from left to right) when executed sequentially.
      * For large matrices the operation may be automatically parallelized, in which case the order in which
      * positions are visited is unspecified and the supplied action must be thread-safe; every position is
-     * still visited exactly once.
+     * still visited exactly once. When logical rows share a backing row array, the operation runs sequentially
+     * to avoid concurrent access to shared row storage and preserve deterministic row-major visitation.
      *
      * <p>This method is useful when you need to access matrix positions without caring about
      * the actual element values, or when the element access logic is handled inside the action.</p>
@@ -1359,7 +1376,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     public <E extends Exception> void forEachIndices(final Throwables.IntBiConsumer<E> action) throws E {
         N.checkArgNotNull(action, "action");
 
-        if (Matrices.shouldRunInParallel(this)) {
+        if (Matrices.shouldRunInParallel(this) && !hasAliasedRows()) {
             Matrices.forEachIndices(rowCount, columnCount, action, true);
         } else {
             for (int i = 0; i < rowCount; i++) {
@@ -1376,7 +1393,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Elements are processed in row-major order within the specified region when executed sequentially.
      * For large regions the operation may be automatically parallelized, in which case the order in which
      * positions are visited is unspecified and the supplied action must be thread-safe; every position is
-     * still visited exactly once.
+     * still visited exactly once. When logical rows share a backing row array, the operation runs sequentially
+     * to avoid concurrent access to shared row storage and preserve deterministic row-major visitation.
      *
      * <p>This allows selective processing of matrix subregions without creating a copy.</p>
      *
@@ -1416,7 +1434,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
-        if (Matrices.shouldRunInParallel(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
+        if (Matrices.shouldRunInParallel(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex)) && !hasAliasedRows()) {
             Matrices.forEachIndices(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, action, true);
         } else {
             for (int i = fromRowIndex; i < toRowIndex; i++) {
@@ -1433,7 +1451,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Elements are processed in row-major order (row by row from left to right) when executed sequentially.
      * For large matrices the operation may be automatically parallelized, in which case the order in which
      * positions are visited is unspecified and the supplied action must be thread-safe; every position is
-     * still visited exactly once.
+     * still visited exactly once. When logical rows share a backing row array, the operation runs sequentially
+     * to avoid concurrent access to shared row storage and preserve deterministic row-major visitation.
      *
      * <p>This variant is useful when the action needs access to matrix elements or methods,
      * allowing you to read/write values or use matrix operations within the action.</p>
@@ -1447,8 +1466,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * matrix.forEachIndices((i, j, m) -> sum.addAndGet(m.get(i, j)));
      * sum.get();                                              // returns 10 (1 + 2 + 3 + 4)
      *
-     * // Set each element to the sum of its indices
-     * matrix.forEachIndices((i, j, m) -> m.set(i, j, i + j));
+     * // Force row-major execution for an in-place update whose order should be explicit
+     * Matrices.runWithParallelMode(ParallelMode.FORCE_OFF,
+     *         () -> matrix.forEachIndices((i, j, m) -> m.set(i, j, i + j)));
      * matrix.get(1, 1);                                       // returns 2 (1 + 1)
      * matrix.get(0, 0);                                       // returns 0
      *
@@ -1465,7 +1485,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
         final M matrix = (M) this;
 
-        if (Matrices.shouldRunInParallel(this)) {
+        if (Matrices.shouldRunInParallel(this) && !hasAliasedRows()) {
             final Throwables.IntBiConsumer<E> elementAction = (i, j) -> action.accept(i, j, matrix);
             Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
         } else {
@@ -1483,7 +1503,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Elements are processed in row-major order within the specified region when executed sequentially.
      * For large regions the operation may be automatically parallelized, in which case the order in which
      * positions are visited is unspecified and the supplied action must be thread-safe; every position is
-     * still visited exactly once.
+     * still visited exactly once. When logical rows share a backing row array, the operation runs sequentially
+     * to avoid concurrent access to shared row storage and preserve deterministic row-major visitation.
      *
      * <p>This combines region-based iteration with matrix access, allowing you to process
      * a subregion while having access to the entire matrix.</p>
@@ -1497,8 +1518,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * matrix.forEachIndices(1, 3, 1, 3, (i, j, m) -> regionSum.addAndGet(m.get(i, j)));
      * regionSum.get();                                        // returns 40
      *
-     * // Negate every element in the first column via the matrix reference
-     * matrix.forEachIndices(0, matrix.rowCount(), 0, 1, (i, j, m) -> m.set(i, j, -m.get(i, j)));
+     * // Negate every element in the first column with explicit row-major execution
+     * Matrices.runWithParallelMode(ParallelMode.FORCE_OFF,
+     *         () -> matrix.forEachIndices(0, matrix.rowCount(), 0, 1,
+     *                 (i, j, m) -> m.set(i, j, -m.get(i, j))));
      * matrix.get(0, 0);                                       // returns -1
      * matrix.get(2, 0);                                       // returns -11
      *
@@ -1523,7 +1546,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
         final M matrix = (M) this;
 
-        if (Matrices.shouldRunInParallel(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
+        if (Matrices.shouldRunInParallel(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex)) && !hasAliasedRows()) {
             final Throwables.IntBiConsumer<E> elementAction = (i, j) -> action.accept(i, j, matrix);
             Matrices.forEachIndices(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, elementAction, true);
         } else {
@@ -1725,8 +1748,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      * int[] diag = matrix.mainDiagonalCopy();                  // returns [1, 5, 9]
-     * diag[0] = 99;                                           // copy; does NOT affect the matrix
-     * matrix.get(0, 0);                                       // returns 1 (original unchanged)
+     * diag[0] = 99;                                            // copy; does NOT affect the matrix
+     * matrix.get(0, 0);                                        // returns 1 (original unchanged)
      *
      * IntMatrix single = IntMatrix.of(new int[][] {{42}});
      * single.mainDiagonalCopy();                               // returns [42]
@@ -1775,8 +1798,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      * int[] diag = matrix.antiDiagonalCopy();                  // returns [3, 5, 7]
-     * diag[0] = 99;                                           // copy; does NOT affect the matrix
-     * matrix.get(0, 2);                                       // returns 3 (original unchanged)
+     * diag[0] = 99;                                            // copy; does NOT affect the matrix
+     * matrix.get(0, 2);                                        // returns 3 (original unchanged)
      *
      * IntMatrix single = IntMatrix.of(new int[][] {{42}});
      * single.antiDiagonalCopy();                               // returns [42]
@@ -2414,7 +2437,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * // Capture a value via side effect
      * int[] holder = new int[1];
      * matrix.accept(m -> holder[0] = m.rowCount() * m.columnCount());
-     * holder[0];                                              // returns 4
+     * int elementCount = holder[0];                           // 4
      *
      * // Modify matrix elements in place
      * matrix.accept(m -> { for (int i = 0; i < m.rowCount(); i++) m.set(i, 0, 0); });   // zero the first column

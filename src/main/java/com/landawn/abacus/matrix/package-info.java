@@ -50,27 +50,30 @@
  * {@link com.landawn.abacus.matrix.Matrix#of(Object[][])} does the same, as do the primitive
  * {@code of(...)} factories when the input has at least one row. A primitive {@code of(...)} factory
  * canonicalizes a zero-row input to its shared {@code 0 x 0} singleton, so the caller's empty outer-array
- * identity is not retained. Primitive {@code copyOf(...)} factories do the same for zero-row inputs; for
- * non-empty inputs they defensively copy every row. Use {@code copyOf(...)} to copy a non-empty input array or
- * {@link com.landawn.abacus.matrix.AbstractMatrix#copy()} to copy a matrix. For reference matrices, these
- * operations copy the array structure but not the referenced element objects.</p>
+ * identity is not retained. Primitive {@code copyOf(...)} factories do the same for zero-row inputs and copy
+ * every row of non-empty inputs. {@link com.landawn.abacus.matrix.Matrix#copyOf(Object[][])} always clones the
+ * outer array and every row, including the outer array of a zero-row input. Use {@code copyOf(...)} to copy an
+ * input array or {@link com.landawn.abacus.matrix.AbstractMatrix#copy()} to copy a matrix. For reference matrices,
+ * these operations copy the array structure but not the referenced element objects.</p>
  *
  * <p>Rows are required to be rectangular but need not be identity-distinct. If the same row array
- * appears multiple times in wrapped storage, all of those logical rows remain aliases. Value-only
- * in-place transformations process each distinct backing row once so an operation does not compound
- * merely because a reference is repeated. Position-based updates retain logical-coordinate semantics;
- * primitive implementations use sequential traversal when aliased coordinates could otherwise write
- * conflicting values concurrently.</p>
+ * appears multiple times in wrapped storage, all of those logical rows remain aliases. Unary value
+ * transformations process each distinct backing row once so an operation does not compound merely because
+ * a reference is repeated. Coordinate traversal that writes a position-dependent value runs sequentially
+ * when rows are aliased, so a later logical row deterministically overwrites an earlier one; {@code replaceIf}
+ * writes the same value at every matching coordinate and may still run in parallel. {@code mutateFlattened}
+ * copies its temporary array back in row-major order, so values from a later logical row win when aliased
+ * rows conflict.</p>
  *
  * <p>{@link com.landawn.abacus.matrix.AbstractMatrix#unsafeBackingArray()} and methods whose names end
  * in {@code View}, such as {@link com.landawn.abacus.matrix.AbstractMatrix#rowView(int)}, expose live
  * storage. Methods whose names end in {@code Copy}, together with
  * {@link com.landawn.abacus.matrix.AbstractMatrix#flatten()}, return independent containers.</p>
  *
- * <p>Methods named {@code set*}, {@code update*}, {@code fill}, {@code replaceIf}, or ending in
- * {@code InPlace} modify the receiving matrix. The specialized {@code mutateFlattened} operation lets
- * its action modify the matrix through a flattened array. Shape transformations, arithmetic operations,
- * {@code map}, {@code zipWith}, {@code copy}, and methods without the {@code InPlace} suffix return new
+ * <p>On a matrix instance, methods named {@code set*}, {@code update*}, {@code fill}, {@code replaceIf},
+ * or ending in {@code InPlace} modify the receiver. The specialized {@code mutateFlattened} operation lets
+ * its action modify the matrix through a temporary flattened array. Shape transformations whose names do not
+ * end in {@code InPlace}, arithmetic operations, {@code map}, {@code zipWith}, and {@code copy} return new
  * matrices instead. Matrix instances are mutable and are not thread-safe.</p>
  *
  * <h2>Traversal and parallel execution</h2>

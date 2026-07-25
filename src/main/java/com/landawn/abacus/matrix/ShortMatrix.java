@@ -38,7 +38,9 @@ import com.landawn.abacus.util.stream.Stream;
  * a validated backing array. The {@link #ShortMatrix(short[][]) constructor} and {@link #of(short[][]) of(...)}
  * wrap the supplied storage directly (no defensive copy), so later mutations to either the input
  * array or the matrix remain visible through the other view; call {@link #copy()} to obtain an
- * independently owned matrix. Factories, conversions, and mapping operations always allocate new arrays.</p>
+ * independently owned matrix. {@link #copyOf(short[][])}, conversions, and mapping operations do not
+ * share mutable cell storage with a non-empty source; operations producing an empty matrix may return
+ * the shared empty singleton.</p>
  *
  * <p>Cells introduced by growth or reshaping default to {@code 0} unless an overload accepts an
  * explicit fill value.</p>
@@ -105,11 +107,11 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.empty();
-     * matrix.rowCount();                           // returns 0
-     * matrix.columnCount();                        // returns 0
-     * matrix.isEmpty();                            // returns true
-     * matrix.elementCount();                       // returns 0L
-     * ShortMatrix.empty() == ShortMatrix.empty();  // true (same shared singleton)
+     * matrix.rowCount();                                                  // returns 0
+     * matrix.columnCount();                                               // returns 0
+     * matrix.isEmpty();                                                   // returns true
+     * matrix.elementCount();                                              // returns 0L
+     * boolean sameSingleton = ShortMatrix.empty() == ShortMatrix.empty(); // true (same shared singleton)
      * }</pre>
      *
      * @return the shared empty {@code ShortMatrix} singleton
@@ -131,7 +133,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * matrix.get(0, 1);                          // returns (short) 2
      * matrix.rowCount();                         // returns 2
      *
-     * ShortMatrix.of((short[][]) null);   // throws IllegalArgumentException
+     * ShortMatrix.of((short[][]) null);             // throws IllegalArgumentException
      * ShortMatrix.of(new short[0][0]).isEmpty();    // returns true (empty input -> empty matrix)
      * ShortMatrix.of(new short[][] {{1, 2}, {3}});  // throws IllegalArgumentException (jagged rows)
      * }</pre>
@@ -161,7 +163,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * data[0][0] = 10;
      * matrix.get(0, 0);                       // returns 1 (copy is independent)
      *
-     * ShortMatrix.copyOf((short[][]) null);  // throws IllegalArgumentException
+     * ShortMatrix.copyOf((short[][]) null);            // throws IllegalArgumentException
      * ShortMatrix.copyOf(new short[][] {{1, 2}, {3}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
      *
@@ -454,7 +456,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * matrix.get(1, 1);                       // returns (short) 2 (center: main wins over anti)
      * // matrix is [[1, 0, 4], [0, 2, 0], [6, 0, 3]]
      *
-     * ShortMatrix.diagonals((short[]) null, (short[]) null);            // throws IllegalArgumentException (both null)
+     * ShortMatrix.diagonals((short[]) null, (short[]) null);             // throws IllegalArgumentException (both null)
      * ShortMatrix.diagonals(new short[] {1, 2}, new short[] {3, 4, 5});  // throws IllegalArgumentException (length mismatch)
      * }</pre>
      *
@@ -950,8 +952,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * This modifies the matrix directly.
      *
      * <p>The operator is applied to each element in the specified column sequentially
-     * from top to bottom (row {@code 0} to row {@code rowCount - 1}). If multiple logical rows reference the same backing array,
-     * its shared column cell is transformed exactly once, when that backing row is first encountered.</p>
+     * from top to bottom (row {@code 0} to row {@code rowCount - 1}). If multiple logical rows
+     * reference the same backing array, the shared cell at {@code columnIndex} is transformed exactly
+     * once, when that backing row is first encountered.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1031,7 +1034,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2}, {3, 4}});
      * matrix.setMainDiagonal(new short[] {9, 8});
      * matrix.mainDiagonalCopy();              // returns [9, 8]
-     * matrix.get(1, 1);                      // returns 8 (diagonal element updated)
+     * matrix.get(1, 1);                       // returns 8 (diagonal element updated)
      *
      * matrix.setMainDiagonal(new short[] {1}); // throws IllegalArgumentException (length != rowCount)
      * ShortMatrix nonSquare = ShortMatrix.of(new short[][] {{1, 2, 3}, {4, 5, 6}});
@@ -1062,7 +1065,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2}, {3, 4}});
      * matrix.updateMainDiagonal(x -> (short) (x * x));
      * matrix.mainDiagonalCopy();              // returns [1, 16]
-     * matrix.get(0, 1);                      // returns 2 (off-diagonal unchanged)
+     * matrix.get(0, 1);                       // returns 2 (off-diagonal unchanged)
      *
      * matrix.updateMainDiagonal(null);       // throws IllegalArgumentException (operator is null)
      * ShortMatrix nonSquare = ShortMatrix.of(new short[][] {{1, 2, 3}, {4, 5, 6}});
@@ -1135,7 +1138,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2}, {3, 4}});
      * matrix.setAntiDiagonal(new short[] {9, 8});
      * matrix.antiDiagonalCopy();              // returns [9, 8]
-     * matrix.get(0, 1);                      // returns 9 (anti-diagonal cell)
+     * matrix.get(0, 1);                       // returns 9 (anti-diagonal cell)
      *
      * matrix.setAntiDiagonal(new short[] {1}); // throws IllegalArgumentException (length != rowCount)
      * ShortMatrix nonSquare = ShortMatrix.of(new short[][] {{1, 2, 3}, {4, 5, 6}});
@@ -1167,7 +1170,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2}, {3, 4}});
      * matrix.updateAntiDiagonal(x -> (short) -x);
      * matrix.antiDiagonalCopy();              // returns [-2, -3]
-     * matrix.get(0, 0);                      // returns 1 (off anti-diagonal unchanged)
+     * matrix.get(0, 0);                       // returns 1 (off anti-diagonal unchanged)
      *
      * matrix.updateAntiDiagonal(null);       // throws IllegalArgumentException (operator is null)
      * ShortMatrix nonSquare = ShortMatrix.of(new short[][] {{1, 2, 3}, {4, 5, 6}});
@@ -1533,6 +1536,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * The source array can extend beyond this matrix's bounds; only the overlapping region is copied.
      * The matrix is modified in-place. {@code null} rows in {@code source} are skipped (the
      * corresponding destination row is left unchanged). Elements outside the matrix bounds are ignored.
+     * Any source row that aliases this matrix's backing storage is snapshotted before copying, so
+     * overlapping copies read the source values as they were when this method was called.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2497,13 +2502,21 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     }
 
     /**
-     * Exposes the elements of this matrix to {@code action} as a single one-dimensional array
-     * laid out in row-major order, then propagates any modifications back into the matrix.
+     * Exposes the elements of this matrix to {@code action} as a temporary one-dimensional array
+     * laid out in row-major order, then propagates any modifications back into the matrix if the
+     * action completes normally.
      *
-     * <p>This enables operations that need a global view of all matrix elements (e.g., sorting all
+     * <p>This enables operations that need to process all matrix elements together (e.g., sorting all
      * elements across the entire matrix). The shape of this matrix is preserved; only element
-     * values change. See {@link Arrays#mutateFlattened(short[][], Throwables.Consumer)} for the exact
-     * semantics of the underlying operation.</p>
+     * values change. If the action throws, none of its changes to the temporary array are copied
+     * back. If logical rows share a backing array, each logical row still occupies its own segment
+     * in the temporary array; copy-back proceeds in row-major order, so a later logical row wins
+     * where aliases target the same backing cells.</p>
+     *
+     * <p>For a matrix with no rows, the action is not invoked. For a matrix with one or more
+     * zero-length rows, the action is invoked once with an empty array. See
+     * {@link Arrays#mutateFlattened(short[][], Throwables.Consumer)} for the exact semantics of the
+     * underlying operation.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2514,14 +2527,15 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * int[] captured = new int[1];
      * matrix.mutateFlattened(arr -> captured[0] = arr.length);
-     * captured[0];                            // returns 4 (flat view length)
+     * int flattenedLength = captured[0];      // 4 (temporary array length)
      *
      * ShortMatrix.empty().mutateFlattened(arr -> { });  // no-op on empty matrix
      * }</pre>
      *
      * @param <E> the type of exception that the operation may throw
-     * @param action the operation to apply to the flattened array
+     * @param action the operation to apply to the temporary flattened array
      * @throws IllegalArgumentException if {@code action} is {@code null}
+     * @throws ArithmeticException if the number of matrix elements exceeds {@link Integer#MAX_VALUE}
      * @throws E if the operation throws an exception
      * @see Arrays#mutateFlattened(short[][], Throwables.Consumer)
      */
@@ -2765,7 +2779,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * ShortMatrix m2x3 = ShortMatrix.of(new short[][] {{1, 2, 3}, {4, 5, 6}});      // 2x3
      * ShortMatrix m3x2 = ShortMatrix.of(new short[][] {{7, 8}, {9, 10}, {11, 12}}); // 3x2
-     * m2x3.matrixMultiply(m3x2).rowCount();                                                 // returns 2 (result is 2x2)
+     * m2x3.matrixMultiply(m3x2).rowCount();                                         // returns 2 (result is 2x2)
      *
      * a.matrixMultiply(m3x2);                        // throws IllegalArgumentException (a.columnCount=2 != m3x2.rowCount=3)
      * a.matrixMultiply((ShortMatrix) null);          // throws IllegalArgumentException (other is null)
@@ -3806,13 +3820,13 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      *
-     * int[] center = {0};
-     * matrix.forEach(1, 2, 1, 2, value -> center[0] = value);
-     * center[0];                              // 5 (center element only)
+     * java.util.concurrent.atomic.AtomicInteger center = new java.util.concurrent.atomic.AtomicInteger();
+     * matrix.forEach(1, 2, 1, 2, center::set);
+     * int centerValue = center.get();          // 5 (center element only)
      *
-     * int[] subSum = {0};
-     * matrix.forEach(0, 2, 1, 3, value -> subSum[0] += value);
-     * subSum[0];                              // 16 (2 + 3 + 5 + 6)
+     * java.util.concurrent.atomic.AtomicInteger subSum = new java.util.concurrent.atomic.AtomicInteger();
+     * matrix.forEach(0, 2, 1, 3, subSum::addAndGet);
+     * int selectedSum = subSum.get();          // 16 (2 + 3 + 5 + 6)
      *
      * matrix.forEach(0, 5, 0, 3, value -> { });                                      // throws IndexOutOfBoundsException (toRowIndex > rowCount)
      * matrix.forEach(0, 2, 0, 2, (Throwables.ShortConsumer<RuntimeException>) null); // throws IllegalArgumentException
@@ -3902,11 +3916,11 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <pre>{@code
      * ShortMatrix matrix1 = ShortMatrix.of(new short[][] {{1, 2}, {3, 4}});
      * ShortMatrix matrix2 = ShortMatrix.of(new short[][] {{1, 2}, {3, 4}});
-     * matrix1.hashCode() == matrix2.hashCode(); // returns true (equal content)
+     * boolean sameHash = matrix1.hashCode() == matrix2.hashCode(); // true (equal content)
      *
      * ShortMatrix different = ShortMatrix.of(new short[][] {{1, 2}, {3, 5}});
-     * matrix1.hashCode() == different.hashCode(); // returns false (different content, typically)
-     * ShortMatrix.empty().hashCode();             // returns a stable hash for the empty matrix
+     * boolean sameHashForDifferentContent = matrix1.hashCode() == different.hashCode(); // false for these values
+     * ShortMatrix.empty().hashCode();                                                   // returns a stable hash for the empty matrix
      * }</pre>
      *
      * @return a hash code value for this matrix

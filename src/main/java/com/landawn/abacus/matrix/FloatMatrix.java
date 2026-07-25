@@ -36,7 +36,8 @@ import com.landawn.abacus.util.stream.Stream;
  *
  * <p>This type specializes {@link AbstractMatrix} for {@code float} values while keeping the data in
  * a validated backing array. Constructors and {@link #of(float[]...)} generally wrap the supplied storage
- * directly, while factories, conversions, and mapping operations allocate new arrays.</p>
+ * directly. Copy-producing factories and operations such as conversions and mappings use separate
+ * storage for non-empty results; {@link #empty()} returns a shared zero-cell singleton.</p>
  *
  * <p>Cells introduced by growth or reshaping default to {@code 0.0f} unless an overload accepts an
  * explicit fill value.</p>
@@ -87,7 +88,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * data[0][0] = 9.0f;                         // backing array is shared
      * matrix.get(0, 0);                          // returns 9.0f (change is visible)
      *
-     * new FloatMatrix(null);                      // throws IllegalArgumentException
+     * new FloatMatrix(null);                                 // throws IllegalArgumentException
      * new FloatMatrix(new float[0][0]).isEmpty();            // returns true
      * new FloatMatrix(new float[][] {{1.0f}, {2.0f, 3.0f}}); // throws IllegalArgumentException (not rectangular)
      * }</pre>
@@ -106,10 +107,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.empty();
-     * matrix.rowCount();                            // returns 0
-     * matrix.columnCount();                         // returns 0
-     * matrix.isEmpty();                             // returns true
-     * FloatMatrix.empty() == FloatMatrix.empty();   // true (shared singleton)
+     * matrix.rowCount();                                                  // returns 0
+     * matrix.columnCount();                                               // returns 0
+     * matrix.isEmpty();                                                   // returns true
+     * boolean sameSingleton = FloatMatrix.empty() == FloatMatrix.empty(); // true (shared singleton)
      * }</pre>
      *
      * @return the shared empty {@code FloatMatrix} singleton
@@ -132,7 +133,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * matrix.get(0, 1);                         // returns 2.0f
      * matrix.rowCount();                        // returns 2
      *
-     * FloatMatrix.of((float[][]) null);           // throws IllegalArgumentException
+     * FloatMatrix.of((float[][]) null);                     // throws IllegalArgumentException
      * FloatMatrix.of(new float[0][0]).columnCount();        // returns 0
      * FloatMatrix.of(new float[][] {{1.0f}, {2.0f, 3.0f}}); // throws IllegalArgumentException (not rectangular)
      * }</pre>
@@ -162,7 +163,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * data[0][0] = 10.0f;
      * matrix.get(0, 0);                       // returns 1.0f (copy is independent)
      *
-     * FloatMatrix.copyOf((float[][]) null);  // throws IllegalArgumentException
+     * FloatMatrix.copyOf((float[][]) null);                     // throws IllegalArgumentException
      * FloatMatrix.copyOf(new float[][] {{1.0f, 2.0f}, {3.0f}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
      *
@@ -258,9 +259,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.randomRow(5);
-     * matrix.rowCount();                                   // returns 1
-     * matrix.columnCount();                                // returns 5
-     * matrix.get(0, 0) >= 0.0f && matrix.get(0, 0) < 1.0f; // returns true
+     * matrix.rowCount();                                                                      // returns 1
+     * matrix.columnCount();                                                                   // returns 5
+     * boolean firstValueInUnitInterval = matrix.get(0, 0) >= 0.0f && matrix.get(0, 0) < 1.0f; // true
      *
      * FloatMatrix.randomRow(0).columnCount(); // returns 0 (empty row)
      * FloatMatrix.randomRow(-1);              // throws IllegalArgumentException (negative length)
@@ -284,9 +285,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.random(2, 3);
-     * matrix.rowCount();                                   // returns 2
-     * matrix.columnCount();                                // returns 3
-     * matrix.get(1, 2) >= 0.0f && matrix.get(1, 2) < 1.0f; // returns true
+     * matrix.rowCount();                                                                        // returns 2
+     * matrix.columnCount();                                                                     // returns 3
+     * boolean sampledValueInUnitInterval = matrix.get(1, 2) >= 0.0f && matrix.get(1, 2) < 1.0f; // true
      *
      * FloatMatrix.random(0, 0).isEmpty(); // returns true
      * FloatMatrix.random(-1, 3);          // throws IllegalArgumentException (negative rowCount)
@@ -899,10 +900,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * matrix.get(0, 1);                  // returns 4.0f
      * matrix.get(1, 0);                  // returns 4.0f (row 1 unchanged)
      *
-     * matrix.updateRow(0, x -> x / 0.0f);          // row 0 becomes Infinity values
-     * matrix.get(0, 0) == Float.POSITIVE_INFINITY; // returns true
-     * matrix.updateRow(5, x -> x);                 // throws IndexOutOfBoundsException (row out of range)
-     * matrix.updateRow(0, null);                   // throws IllegalArgumentException (operator is null)
+     * matrix.updateRow(0, x -> x / 0.0f);                                               // row 0 becomes Infinity values
+     * boolean rowValueIsPositiveInfinity = matrix.get(0, 0) == Float.POSITIVE_INFINITY; // true
+     * matrix.updateRow(5, x -> x);                                                      // throws IndexOutOfBoundsException (row out of range)
+     * matrix.updateRow(0, null);                                                        // throws IllegalArgumentException (operator is null)
      * }</pre>
      *
      * @param <E> the type of exception that the operator may throw
@@ -932,7 +933,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * <p>The operator is applied to each element in the specified column sequentially
      * from top to bottom (row 0 to row rowCount-1).</p>
-     * If multiple logical rows share one backing array, that backing value is transformed only once.
+     *
+     * <p>If multiple logical rows share one backing array, that backing value is transformed only once.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1042,10 +1044,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * matrix.get(1, 1);                        // returns 16.0f
      * matrix.get(0, 1);                        // returns 2.0f (off-diagonal unchanged)
      *
-     * matrix.updateMainDiagonal(x -> x / 0.0f);                                      // 1.0f/0.0f -> Infinity at (0,0)
-     * matrix.get(0, 0) == Float.POSITIVE_INFINITY;                                   // returns true
-     * matrix.updateMainDiagonal(null);                                               // throws IllegalArgumentException (operator is null)
-     * FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}}).updateMainDiagonal(x -> x); // throws IllegalStateException (not square)
+     * matrix.updateMainDiagonal(x -> x / 0.0f);                                              // 1.0f/0.0f -> Infinity at (0,0)
+     * boolean diagonalValueIsPositiveInfinity = matrix.get(0, 0) == Float.POSITIVE_INFINITY; // true
+     * matrix.updateMainDiagonal(null);                                                       // throws IllegalArgumentException (operator is null)
+     * FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}}).updateMainDiagonal(x -> x);         // throws IllegalStateException (not square)
      * }</pre>
      *
      * @param <E> the type of exception that the operator may throw
@@ -1146,10 +1148,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * matrix.get(1, 0);                     // returns -3.0f
      * matrix.get(0, 0);                     // returns 1.0f (off anti-diagonal unchanged)
      *
-     * matrix.updateAntiDiagonal(x -> x / 0.0f);                                      // -2.0f/0.0f -> -Infinity at (0,1)
-     * matrix.get(0, 1) == Float.NEGATIVE_INFINITY;                                   // returns true
-     * matrix.updateAntiDiagonal(null);                                               // throws IllegalArgumentException (operator is null)
-     * FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}}).updateAntiDiagonal(x -> x); // throws IllegalStateException (not square)
+     * matrix.updateAntiDiagonal(x -> x / 0.0f);                                                  // -2.0f/0.0f -> -Infinity at (0,1)
+     * boolean antiDiagonalValueIsNegativeInfinity = matrix.get(0, 1) == Float.NEGATIVE_INFINITY; // true
+     * matrix.updateAntiDiagonal(null);                                                           // throws IllegalArgumentException (operator is null)
+     * FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}}).updateAntiDiagonal(x -> x);             // throws IllegalStateException (not square)
      * }</pre>
      *
      * @param <E> the type of exception that the operator may throw
@@ -1387,8 +1389,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix recip = matrix.map(f -> 1.0f / f);
      * recip.get(0, 0);                     // returns 1.0f
      * FloatMatrix divZero = matrix.map(f -> f / 0.0f);
-     * divZero.get(0, 0) == Float.POSITIVE_INFINITY; // returns true
-     * FloatMatrix.empty().map(f -> f).isEmpty();    // returns true
+     * boolean mappedValueIsPositiveInfinity = divZero.get(0, 0) == Float.POSITIVE_INFINITY; // true
+     * FloatMatrix.empty().map(f -> f).isEmpty();                                            // returns true
      * }</pre>
      *
      * @param <E> the exception type that the function may throw
@@ -1605,6 +1607,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * The source array can extend beyond this matrix's bounds; only the overlapping region is copied.
      * The matrix is modified in-place. {@code null} rows in {@code source} are skipped (the
      * corresponding destination row is left unchanged). Elements outside the matrix bounds are ignored.
+     * Any source row that aliases this matrix's backing storage is snapshotted before copying, so
+     * overlapping copies read the source values as they were when this method was called.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2059,7 +2063,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * <p>This is an in-place operation that modifies the current matrix.
      * For a non-destructive version that returns a new matrix, use {@link #flipHorizontally()}.</p>
-     * If multiple logical rows share one backing array, that array is reversed only once, preserving the alias relationship.
+     *
+     * <p>If multiple logical rows share one backing array, that array is reversed only once, preserving the alias relationship.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2600,29 +2605,34 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * operation to that flattened array, and then copies the (possibly modified) elements back
      * into the matrix in row-major order.
      *
-     * <p>This enables operations that need a global view of all matrix elements (e.g., sorting all
-     * elements across the entire matrix). The action receives a flattened view of the matrix
-     * elements; after the action completes, the (possibly mutated) values are written back into
-     * the matrix in row-major order. When sorting with {@link java.util.Arrays#sort(float[])},
+     * <p>This enables operations that need all matrix elements together (e.g., sorting across the
+     * entire matrix). When sorting with {@link java.util.Arrays#sort(float[])},
      * note that {@code NaN} is ordered greater than all other values (including {@code +Infinity})
      * and {@code -0.0f} is ordered less than {@code +0.0f}.</p>
+     *
+     * <p>The action receives a temporary array. Its mutations are copied back only if the action
+     * returns normally; if the action throws, those mutations are discarded. An action is not invoked
+     * when this matrix has zero rows, while an {@code n x 0} matrix with {@code n > 0} invokes it once
+     * with an empty array. If logical rows share a backing array, write-back is row-major, so values for
+     * the last logical row using that array determine its final contents.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{5.0f, 3.0f}, {4.0f, 1.0f}});
-     * matrix.mutateFlattened(arr -> java.util.Arrays.sort(arr)); // global sort, then row-major write-back
-     * matrix.get(0, 0);                                       // returns 1.0f
-     * matrix.get(1, 1);                                       // returns 5.0f
+     * matrix.mutateFlattened(arr -> java.util.Arrays.sort(arr)); // sort temporary array, then copy back row-major
+     * matrix.get(0, 0);                                          // returns 1.0f
+     * matrix.get(1, 1);                                          // returns 5.0f
      *
      * FloatMatrix counts = FloatMatrix.of(new float[][] {{0.0f, 0.0f}});
      * counts.mutateFlattened(arr -> { for (int k = 0; k < arr.length; k++) arr[k] = k; });
-     * counts.get(0, 1);                                                    // returns 1.0f
-     * FloatMatrix.empty().mutateFlattened(arr -> java.util.Arrays.sort(arr)); // no-op on empty matrix (no exception)
+     * counts.get(0, 1);                                                       // returns 1.0f
+     * FloatMatrix.empty().mutateFlattened(arr -> java.util.Arrays.sort(arr)); // zero rows: action is not invoked
      * }</pre>
      *
      * @param <E> the type of exception that the action may throw
-     * @param action the operation to apply to the flattened array
+     * @param action the operation to apply to the temporary flattened array
      * @throws IllegalArgumentException if {@code action} is {@code null}
+     * @throws ArithmeticException if the element count exceeds {@link Integer#MAX_VALUE}
      * @throws E if the operation throws an exception
      * @see Arrays#mutateFlattened(float[][], Throwables.Consumer)
      */
@@ -2869,8 +2879,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix a = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
      * FloatMatrix b = FloatMatrix.of(new float[][] {{5.0f, 6.0f}, {7.0f, 8.0f}});
      * FloatMatrix product = a.matrixMultiply(b); // [[19.0, 22.0], [43.0, 50.0]]
-     * product.get(0, 0);                 // returns 19.0f
-     * product.get(1, 1);                 // returns 50.0f
+     * product.get(0, 0);                         // returns 19.0f
+     * product.get(1, 1);                         // returns 50.0f
      *
      * // 2x3 times 3x2 yields a 2x2 product
      * FloatMatrix m = FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}, {4.0f, 5.0f, 6.0f}});
@@ -3100,8 +3110,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * maxes.get(0, 0);                   // returns 3.0f
      * // Division by zero yields Infinity element-wise
      * FloatMatrix zeros = FloatMatrix.of(new float[][] {{0.0f, 0.0f}});
-     * matrix1.zipWith(zeros, (a, b) -> a / b).get(0, 0) == Float.POSITIVE_INFINITY; // returns true
-     * matrix1.zipWith(FloatMatrix.of(new float[][] {{1.0f}}), (a, b) -> a + b);     // throws IllegalArgumentException (shape mismatch)
+     * boolean quotientIsPositiveInfinity = matrix1.zipWith(zeros, (a, b) -> a / b).get(0, 0) == Float.POSITIVE_INFINITY; // true
+     * matrix1.zipWith(FloatMatrix.of(new float[][] {{1.0f}}), (a, b) -> a + b);                                          // throws IllegalArgumentException (shape mismatch)
      * }</pre>
      *
      * @param <E> the type of exception that the zip function may throw
@@ -3904,13 +3914,13 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f},
      *                                                     {4.0f, 5.0f, 6.0f},
      *                                                     {7.0f, 8.0f, 9.0f}});
-     * float[] sum = {0.0f};
-     * matrix.forEach(0, 2, 0, 2, value -> sum[0] += value);   // visits 1.0, 2.0, 4.0, 5.0
-     * sum[0];                                                 // returns 12.0f
+     * java.util.concurrent.atomic.DoubleAdder sum = new java.util.concurrent.atomic.DoubleAdder();
+     * matrix.forEach(0, 2, 0, 2, sum::add);   // visits 1.0f, 2.0f, 4.0f, 5.0f
+     * float selectedSum = sum.floatValue();   // 12.0f
      *
-     * int[] count = {0};
-     * matrix.forEach(1, 3, 1, 3, value -> count[0]++);
-     * count[0];                                // returns 4 (2x2 sub-region)
+     * java.util.concurrent.atomic.AtomicInteger count = new java.util.concurrent.atomic.AtomicInteger();
+     * matrix.forEach(1, 3, 1, 3, value -> count.incrementAndGet());
+     * int selectedCount = count.get();         // 4 (2x2 sub-region)
      * matrix.forEach(0, 5, 0, 2, value -> {}); // throws IndexOutOfBoundsException (toRowIndex > rowCount)
      * }</pre>
      *
@@ -3998,11 +4008,11 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <pre>{@code
      * FloatMatrix matrix1 = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
      * FloatMatrix matrix2 = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
-     * matrix1.hashCode() == matrix2.hashCode();   // returns true (equal content)
+     * boolean sameHash = matrix1.hashCode() == matrix2.hashCode(); // true (equal content)
      *
      * FloatMatrix matrix3 = FloatMatrix.of(new float[][] {{9.0f, 2.0f}, {3.0f, 4.0f}});
-     * matrix1.hashCode() == matrix3.hashCode();                         // returns false (different content)
-     * FloatMatrix.empty().hashCode() == FloatMatrix.empty().hashCode(); // returns true
+     * boolean sameHashForDifferentContent = matrix1.hashCode() == matrix3.hashCode();              // false for these values
+     * boolean emptyHashesMatch = FloatMatrix.empty().hashCode() == FloatMatrix.empty().hashCode(); // true
      * }</pre>
      *
      * @return a hash code value for this matrix

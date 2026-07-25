@@ -399,6 +399,65 @@ class AbstractMatrixTest extends TestBase {
     }
 
     @Test
+    public void testForEachIndicesUsesRowMajorOrderForAliasedRowsWhenParallelIsForced() throws Exception {
+        int[] sharedRow = new int[2];
+        int[][] backingArray = new int[3][];
+
+        for (int i = 0; i < backingArray.length; i++) {
+            backingArray[i] = sharedRow;
+        }
+
+        IntMatrix matrix = IntMatrix.of(backingArray);
+        List<Integer> expectedFull = new ArrayList<>();
+
+        for (int i = 0; i < matrix.rowCount(); i++) {
+            for (int j = 0; j < matrix.columnCount(); j++) {
+                expectedFull.add(i * matrix.columnCount() + j);
+            }
+        }
+
+        List<Integer> visits = new ArrayList<>();
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> matrix.forEachIndices((i, j) -> {
+            visits.add(i * matrix.columnCount() + j);
+            matrix.set(i, j, i);
+        }));
+        assertEquals(expectedFull, visits);
+        assertArrayEquals(new int[] { 2, 2 }, sharedRow);
+
+        visits.clear();
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> matrix.forEachIndices((i, j, m) -> {
+            visits.add(i * m.columnCount() + j);
+            m.set(i, j, i + 100);
+        }));
+        assertEquals(expectedFull, visits);
+        assertArrayEquals(new int[] { 102, 102 }, sharedRow);
+
+        List<Integer> expectedRegion = new ArrayList<>();
+
+        for (int i = 1; i < 3; i++) {
+            for (int j = 0; j < matrix.columnCount(); j++) {
+                expectedRegion.add(i * matrix.columnCount() + j);
+            }
+        }
+
+        visits.clear();
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> matrix.forEachIndices(1, 3, 0, matrix.columnCount(), (i, j) -> {
+            visits.add(i * matrix.columnCount() + j);
+            matrix.set(i, j, i + 200);
+        }));
+        assertEquals(expectedRegion, visits);
+        assertArrayEquals(new int[] { 202, 202 }, sharedRow);
+
+        visits.clear();
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> matrix.forEachIndices(1, 3, 0, matrix.columnCount(), (i, j, m) -> {
+            visits.add(i * m.columnCount() + j);
+            m.set(i, j, i + 300);
+        }));
+        assertEquals(expectedRegion, visits);
+        assertArrayEquals(new int[] { 302, 302 }, sharedRow);
+    }
+
+    @Test
     public void testForEachNullAction() {
         IntMatrix matrix = createTestMatrix();
 
@@ -3671,6 +3730,40 @@ class AbstractMatrixTest extends TestBase {
             assertEquals(4, matrix.get(1, 0));
             assertEquals(5, matrix.get(1, 1));
             assertEquals(9, matrix.get(1, 2));
+
+            IntMatrix temporary = IntMatrix.of(new int[][] { { 1, 2 } });
+            temporary.mutateFlattened(flattened -> {
+                flattened[0] = 9;
+                assertEquals(1, temporary.get(0, 0));
+            });
+            assertArrayEquals(new int[] { 9, 2 }, temporary.rowCopy(0));
+
+            assertThrows(IllegalStateException.class, () -> temporary.mutateFlattened(flattened -> {
+                flattened[1] = 8;
+                throw new IllegalStateException("abort");
+            }));
+            assertArrayEquals(new int[] { 9, 2 }, temporary.rowCopy(0));
+
+            AtomicInteger zeroRowCalls = new AtomicInteger();
+            IntMatrix.empty().mutateFlattened(flattened -> zeroRowCalls.incrementAndGet());
+            assertEquals(0, zeroRowCalls.get());
+
+            AtomicInteger zeroColumnCalls = new AtomicInteger();
+            IntMatrix.of(new int[2][0]).mutateFlattened(flattened -> {
+                zeroColumnCalls.incrementAndGet();
+                assertEquals(0, flattened.length);
+            });
+            assertEquals(1, zeroColumnCalls.get());
+
+            int[] shared = { 1, 2 };
+            IntMatrix aliased = IntMatrix.of(new int[][] { shared, shared });
+            aliased.mutateFlattened(flattened -> {
+                flattened[0] = 10;
+                flattened[1] = 20;
+                flattened[2] = 30;
+                flattened[3] = 40;
+            });
+            assertArrayEquals(new int[] { 30, 40 }, shared);
         }
 
         @Test

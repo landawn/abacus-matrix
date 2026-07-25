@@ -41,8 +41,8 @@ import com.landawn.abacus.util.stream.Stream;
  * <p>This type provides the same shape, traversal, and transformation operations as the primitive
  * matrix variants ({@link IntMatrix}, {@link LongMatrix}, {@link DoubleMatrix}, etc.) while
  * preserving reference semantics. Constructors and {@code of(...)} generally wrap the supplied
- * backing array directly, while builders, conversions, and mapping methods allocate fresh
- * storage.</p>
+ * backing array directly, while {@link #copyOf(Object[][])}, conversions, and mapping methods
+ * allocate fresh storage.</p>
  *
  * <p>Rectangular-shape validation does not require row references to be distinct. If the same
  * row array appears more than once in a wrapped backing array, those logical rows share storage;
@@ -193,7 +193,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p>Unlike {@link #of(Object[][])}, which wraps the caller's array without copying, this factory clones
      * every row into a freshly-allocated backing array. Subsequent modifications to {@code a} (or its rows)
      * are therefore <b>not</b> visible through the returned matrix, and vice versa. The element references
-     * themselves are not cloned (each row is shallow-copied, like {@link #copy()}).</p>
+     * themselves are not cloned (each row is shallow-copied, like {@link #copy()}). A zero-row input also
+     * receives a distinct empty outer array.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -202,7 +203,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * data[0][0] = "x";
      * matrix.get(0, 0);                            // returns "a" (copy is independent)
      *
-     * Matrix.copyOf((String[][]) null);                          // throws IllegalArgumentException
+     * Matrix.copyOf((String[][]) null);                           // throws IllegalArgumentException
      * Matrix.copyOf(new String[] {"a"}, new String[] {"b", "c"}); // throws IllegalArgumentException (not rectangular)
      * }</pre>
      *
@@ -216,10 +217,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     @SafeVarargs
     public static <T> Matrix<T> copyOf(final T[]... a) {
-        if (N.isEmpty(a)) {
-            return new Matrix<>(a);
-        }
-
+        N.checkArgNotNull(a, "Matrix array cannot be null");
         final T[][] c = a.clone();
 
         for (int i = 0, len = c.length; i < len; i++) {
@@ -388,12 +386,15 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param <T> the type of elements in the matrix
      * @param mainDiagonal the values for the main diagonal (upper-left to lower-right); may be {@code null} if
-     *                     {@code antiDiagonal} is non-{@code null}
+     *                     {@code antiDiagonal} is non-{@code null}; may be empty
      * @param antiDiagonal the values for the anti-diagonal (upper-right to lower-left); may be {@code null} if
-     *                     {@code mainDiagonal} is non-{@code null}
-     * @return a square matrix with the given diagonal values
+     *                     {@code mainDiagonal} is non-{@code null}; may be empty
+     * @return a square matrix with the given diagonal values, or an empty matrix when both supplied diagonals
+     *         are empty or one is {@code null} and the other is empty
      * @throws IllegalArgumentException if both arrays are {@code null}, or if both diagonals are non-empty
      *         and have different lengths
+     * @see #mainDiagonal(Object[])
+     * @see #antiDiagonal(Object[])
      */
     @SuppressWarnings("null")
     public static <T> Matrix<T> diagonals(final T[] mainDiagonal, final T[] antiDiagonal) throws IllegalArgumentException {
@@ -945,7 +946,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Matrix<Integer> m = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      * m.setMainDiagonal(new Integer[] {10, 20, 30});
      * m.mainDiagonalCopy();   // returns [10, 20, 30]
-     * m.get(0, 1);           // returns 2 (off-diagonal unchanged)
+     * m.get(0, 1);            // returns 2 (off-diagonal unchanged)
      *
      * Matrix<Integer> nonSquare = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
      * nonSquare.setMainDiagonal(new Integer[] {1, 2});   // throws IllegalStateException (not square)
@@ -1055,8 +1056,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Matrix<Integer> m = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      * m.setAntiDiagonal(new Integer[] {10, 20, 30});
      * m.antiDiagonalCopy();   // returns [10, 20, 30]
-     * m.get(0, 2);           // returns 10
-     * m.get(2, 0);           // returns 30
+     * m.get(0, 2);            // returns 10
+     * m.get(2, 0);            // returns 30
      *
      * Matrix<Integer> nonSquare = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
      * nonSquare.setAntiDiagonal(new Integer[] {1, 2});   // throws IllegalStateException (not square)
@@ -1268,7 +1269,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <pre>{@code
      * Matrix<Integer> matrix = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      * matrix.replaceIf((i, j) -> i == j, 0);   // replace diagonal elements with zero
-     * matrix.mainDiagonalCopy();                // returns [0, 0, 0]
+     * matrix.mainDiagonalCopy();               // returns [0, 0, 0]
      *
      * matrix.replaceIf((i, j) -> i < j, null); // replace upper triangle with null
      * matrix.get(0, 1);                        // returns null
@@ -1722,6 +1723,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Copies as much data as will fit from the starting position.
      * If the source data extends beyond the matrix bounds, it is truncated.
      * Source rows that are {@code null} are skipped, leaving the corresponding destination row unchanged.
+     * Any source row that aliases this matrix's backing storage is snapshotted before copying, so
+     * overlapping copies read the source values as they were when this method was called.
      *
      * <p>This method modifies the matrix in-place.</p>
      *
@@ -2495,7 +2498,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Reshapes this matrix to have the specified dimensions.
      * Elements are taken in row-major order from the original matrix and placed into the
      * new shape. The new shape must have at least as many total elements as the original
-     * ({@code newRowCount * newColumnCount >= elementCount()}).
+     * ({@code (long) newRowCount * newColumnCount >= elementCount()}).
      * If the new shape has more elements, the extra positions are filled with
      * {@code null}. Creates a new matrix; the original matrix is not modified.
      *
@@ -2725,28 +2728,45 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     }
 
     /**
-     * Applies an operation to the flattened (row-major order) view of this matrix.
-     * The operation receives a single one-dimensional array containing all elements in row-major order,
-     * and any modifications to that array are reflected back in this matrix.
+     * Applies an operation to a temporary flattened (row-major order) representation of this matrix.
+     * The operation receives a single one-dimensional array containing all elements in row-major order. If the
+     * operation returns normally, the array is copied back into the matrix in row-major order; if the operation
+     * throws, copy-back is not started.
      *
-     * <p><b>&#9888;&#65039; Unsafe API boundary:</b> the supplied action can mutate matrix state through the flattened view.
-     * Prefer {@link #copy()} or other defensive APIs unless in-place mutation is intentional.</p>
+     * <p><b>&#9888;&#65039; Unsafe API boundary:</b> the supplied action can replace matrix state through the temporary
+     * array. If logical rows share a backing row array, rows are copied back in logical row order, so values from a
+     * later aliased row overwrite values from an earlier alias. Prefer {@link #copy()} or other defensive APIs unless
+     * in-place mutation is intentional.</p>
+     *
+     * <p>A zero-row matrix does not invoke {@code action}. A matrix with one or more rows but zero columns invokes
+     * {@code action} once with a zero-length array. Copy-back can also be partial if an earlier row is stored
+     * successfully before a later row throws {@link ArrayStoreException} because it has a narrower runtime component
+     * type.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Integer> matrix = Matrix.of(new Integer[][] {{3, 1, 2}, {6, 4, 5}});
      * matrix.mutateFlattened(arr -> java.util.Arrays.sort(arr));   // sort across the whole matrix
-     * matrix.rowCopy(0);                                        // returns [1, 2, 3]
-     * matrix.rowCopy(1);                                        // returns [4, 5, 6]
+     * matrix.rowCopy(0);                                           // returns [1, 2, 3]
+     * matrix.rowCopy(1);                                           // returns [4, 5, 6]
      *
      * Matrix<Integer> reversible = Matrix.of(new Integer[][] {{1, 2}, {3, 4}});
      * reversible.mutateFlattened(arr -> { for (int i = 0; i < arr.length / 2; i++) { Integer t = arr[i]; arr[i] = arr[arr.length - 1 - i]; arr[arr.length - 1 - i] = t; } });
      * reversible.rowCopy(0);   // returns [4, 3]
+     *
+     * Integer[] shared = {1, 2};
+     * Matrix<Integer> aliased = Matrix.of(new Integer[][] {shared, shared});
+     * aliased.mutateFlattened(arr -> { arr[0] = 10; arr[1] = 20; arr[2] = 30; arr[3] = 40; });
+     * aliased.rowCopy(0);      // returns [30, 40] (later aliased row wins)
      * }</pre>
      *
      * @param <E> the type of exception that the operation may throw
      * @param action the operation to apply to the flattened array
      * @throws IllegalArgumentException if {@code action} is {@code null}
+     * @throws ArithmeticException if {@code elementCount()} exceeds {@code Integer.MAX_VALUE} and therefore
+     *         cannot be represented by one Java array
+     * @throws ArrayStoreException if a modified value cannot be stored in the corresponding backing row's runtime
+     *         component type; rows copied before the failing row remain modified
      * @throws E if the operation throws an exception
      * @see Arrays.ff#mutateFlattened(Object[][], Throwables.Consumer)
      */
@@ -3758,14 +3778,15 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Matrix<Integer> matrix = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      *
      * // Process only the center element
-     * List<Integer> center = new ArrayList<>();
+     * List<Integer> center = Collections.synchronizedList(new ArrayList<>());
      * matrix.forEach(1, 2, 1, 2, value -> center.add(value));
      * // center is now [5]
      *
      * // Process a 2x2 sub-matrix
-     * List<Integer> subMatrix = new ArrayList<>();
+     * List<Integer> subMatrix = Collections.synchronizedList(new ArrayList<>());
      * matrix.forEach(0, 2, 1, 3, value -> subMatrix.add(value));
-     * // subMatrix is now [2, 3, 5, 6]
+     * subMatrix.containsAll(List.of(2, 3, 5, 6));              // returns true (order is unspecified if parallelized)
+     * subMatrix.size();                                        // returns 4
      *
      * matrix.forEach(0, 5, 0, 2, value -> {});   // throws IndexOutOfBoundsException (toRowIndex out of range)
      * }</pre>
@@ -3820,12 +3841,16 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * dataset.getColumn("A");   // returns [1, 4]
      * dataset.size();           // returns 2 (one row per matrix row)
      *
+     * Dataset emptyDataset = Matrix.empty().toDataset(List.of());
+     * emptyDataset.size();      // returns 0
+     *
      * matrix.toDataset(null);                  // throws IllegalArgumentException (null names)
      * matrix.toDataset(N.asList("A", "B"));    // throws IllegalArgumentException (size != columnCount)
      * }</pre>
      *
-     * @param columnNames the non-{@code null}, non-empty, unique names to assign to each column in the resulting Dataset;
-     *        size must equal {@code columnCount}
+     * @param columnNames the collection of names to assign to the resulting Dataset columns; the collection must be
+     *        non-{@code null}, each name must be non-{@code null}, non-empty, and unique, and the collection size must equal
+     *        {@code columnCount}. An empty collection is valid when {@code columnCount} is zero
      * @return a Dataset containing the matrix data with the specified column names
      *         (one row per matrix row)
      * @throws IllegalArgumentException if {@code columnNames} is {@code null}, contains a {@code null}, empty, or duplicate name,
@@ -3877,12 +3902,16 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * dataset.getColumn("Row1");   // returns [1, 2, 3]
      * dataset.getColumn("Row2");   // returns [4, 5, 6]
      *
+     * Dataset emptyDataset = Matrix.empty().toTransposedDataset(List.of());
+     * emptyDataset.size();          // returns 0
+     *
      * matrix.toTransposedDataset(null);                // throws IllegalArgumentException (null names)
      * matrix.toTransposedDataset(N.asList("Row1"));    // throws IllegalArgumentException (size != rowCount)
      * }</pre>
      *
-     * @param columnNames the non-{@code null}, non-empty, unique column names of the resulting Dataset;
-     *        size must equal {@code rowCount}
+     * @param columnNames the resulting Dataset column names; the collection must be non-{@code null}, each name must be
+     *        non-{@code null}, non-empty, and unique, and the collection size must equal {@code rowCount}. An empty collection
+     *        is valid when {@code rowCount} is zero
      * @return a Dataset containing the matrix data organized vertically (one column per matrix row)
      * @throws IllegalArgumentException if {@code columnNames} is {@code null}, contains a {@code null}, empty, or duplicate name,
      *         or if its size does not equal {@code rowCount}
@@ -3960,11 +3989,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <pre>{@code
      * Matrix<Integer> m1 = Matrix.of(new Integer[][] {{1, 2}, {3, 4}});
      * Matrix<Integer> m2 = Matrix.of(new Integer[][] {{1, 2}, {3, 4}});
-     * m1.hashCode() == m2.hashCode();                         // returns true  (equal matrices, same hash)
-     * m1.hashCode();                                          // returns 32833
+     * boolean equalHashes = m1.hashCode() == m2.hashCode();   // true  (equal matrices, same hash)
+     * int m1Hash = m1.hashCode();                             // 32833
      *
      * Matrix<Integer> m3 = Matrix.of(new Integer[][] {{1, 2}, {3, 5}});
-     * m1.hashCode() == m3.hashCode();                         // returns false (different content, different hash)
+     * boolean sameHashForDifferentContent = m1.hashCode() == m3.hashCode(); // false for these values
      *
      * Matrix.empty().hashCode();                              // returns 1     (empty matrix)
      * Matrix.of(new String[][] {{null}}).hashCode();          // returns 62    (null element contributes 0 per element)

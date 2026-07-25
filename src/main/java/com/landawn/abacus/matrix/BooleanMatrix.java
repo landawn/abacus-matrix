@@ -34,7 +34,8 @@ import com.landawn.abacus.util.stream.Stream;
  *
  * <p>This type specializes {@link AbstractMatrix} for {@code boolean} values while keeping the data in
  * a validated backing array. Constructors and {@link #of(boolean[]...)} generally wrap the supplied storage
- * directly, while factories, conversions, and mapping operations allocate new arrays.</p>
+ * directly. Copy-producing factories and operations such as conversions and mappings use separate
+ * storage for non-empty results; {@link #empty()} returns a shared zero-cell singleton.</p>
  *
  * <p>Cells introduced by growth or reshaping default to {@code false} unless an overload accepts an
  * explicit fill value. Optional return values use {@link OptionalBoolean}.</p>
@@ -76,7 +77,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * data[0][0] = false;              // also mutates the matrix (no defensive copy)
      * matrix.get(0, 0);                // returns false
      *
-     * new BooleanMatrix(null);                         // throws IllegalArgumentException
+     * new BooleanMatrix(null);                                    // throws IllegalArgumentException
      * new BooleanMatrix(new boolean[0][0]).columnCount();         // returns 0
      * new BooleanMatrix(new boolean[][] {{true}, {true, false}}); // throws IllegalArgumentException (jagged rows)
      * }</pre>
@@ -100,8 +101,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * matrix.isEmpty();           // returns true
      * matrix.countTrue();         // returns 0
      *
-     * BooleanMatrix.empty() == BooleanMatrix.empty();   // returns true (shared singleton)
-     * matrix.get(0, 0);                                 // throws ArrayIndexOutOfBoundsException (no elements)
+     * boolean sameSingleton = BooleanMatrix.empty() == BooleanMatrix.empty(); // true (shared singleton)
+     * matrix.get(0, 0);                                                       // throws ArrayIndexOutOfBoundsException (no elements)
      * }</pre>
      *
      * @return the shared empty {@code BooleanMatrix} singleton (zero rows, zero columns)
@@ -124,7 +125,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * matrix.get(1, 0);                               // returns false
      * matrix.rowCount();                              // returns 2
      *
-     * BooleanMatrix.of((boolean[][]) null);            // throws IllegalArgumentException
+     * BooleanMatrix.of((boolean[][]) null);                      // throws IllegalArgumentException
      * BooleanMatrix.of().isEmpty();                              // returns true (no rows -> empty singleton)
      * BooleanMatrix.of(new boolean[][] {{true}, {true, false}}); // throws IllegalArgumentException (jagged rows)
      * }</pre>
@@ -154,7 +155,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * data[0][0] = false;
      * matrix.get(0, 0);                       // returns true (copy is independent)
      *
-     * BooleanMatrix.copyOf((boolean[][]) null);            // throws IllegalArgumentException
+     * BooleanMatrix.copyOf((boolean[][]) null);                      // throws IllegalArgumentException
      * BooleanMatrix.copyOf(new boolean[][] {{true, false}, {true}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
      *
@@ -294,7 +295,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * matrix.get(2, 2);          // returns true
      * matrix.get(0, 2);          // returns false (off-diagonal)
      *
-     * BooleanMatrix.mainDiagonal((boolean[]) null);            // throws IllegalArgumentException (null array)
+     * BooleanMatrix.mainDiagonal((boolean[]) null);             // throws IllegalArgumentException (null array)
      * BooleanMatrix.mainDiagonal(new boolean[0]).isEmpty();     // returns true
      * }</pre>
      *
@@ -328,7 +329,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * matrix.get(2, 0);          // returns true
      * matrix.get(0, 0);          // returns false (off-anti-diagonal)
      *
-     * BooleanMatrix.antiDiagonal((boolean[]) null);            // throws IllegalArgumentException (null array)
+     * BooleanMatrix.antiDiagonal((boolean[]) null);             // throws IllegalArgumentException (null array)
      * BooleanMatrix.antiDiagonal(new boolean[0]).isEmpty();     // returns true
      * }</pre>
      *
@@ -914,8 +915,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *     {false, false, false}
      * });
      * boolean[] diagonal = matrix.mainDiagonalCopy();   // returns [true, true, false]
-     * diagonal[0] = false;                             // copy is independent; matrix unchanged
-     * matrix.get(0, 0);                                // returns true
+     * diagonal[0] = false;                              // copy is independent; matrix unchanged
+     * matrix.get(0, 0);                                 // returns true
      *
      * BooleanMatrix wide = BooleanMatrix.of(new boolean[][] {{true, false, true}});
      * wide.mainDiagonalCopy();   // throws IllegalStateException (not square: 1x3)
@@ -1028,8 +1029,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *     {false, false, false}
      * });
      * boolean[] antiDiag = matrix.antiDiagonalCopy();   // returns [true, true, false] (a[0][2], a[1][1], a[2][0])
-     * antiDiag[0] = false;                             // copy is independent; matrix unchanged
-     * matrix.get(0, 2);                                // returns true
+     * antiDiag[0] = false;                              // copy is independent; matrix unchanged
+     * matrix.get(0, 2);                                 // returns true
      *
      * BooleanMatrix wide = BooleanMatrix.of(new boolean[][] {{true, false, true}});
      * wide.antiDiagonalCopy();   // throws IllegalStateException (not square: 1x3)
@@ -1475,6 +1476,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * The source array can extend beyond this matrix's bounds; only the overlapping region is copied.
      * The matrix is modified in-place. {@code null} rows in {@code source} are skipped (the
      * corresponding destination row is left unchanged). Elements outside the matrix bounds are ignored.
+     * Any source row that aliases this matrix's backing storage is snapshotted before copying, so
+     * overlapping copies read the source values as they were when this method was called.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1834,7 +1837,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param padLeft number of padding columns to add to the left of the original matrix; must be {@code >= 0}
      * @param padRight number of padding columns to add to the right of the original matrix; must be {@code >= 0}
      * @return a new {@code BooleanMatrix} with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
-     * @throws IllegalArgumentException if any parameter is negative,
+     * @throws IllegalArgumentException if any padding parameter is negative,
      *         if the resulting dimensions would overflow {@code Integer.MAX_VALUE},
      *         or if the resulting shape is not representable (zero rows with a non-zero column count)
      * @see #extend(int, int, int, int, boolean)
@@ -2519,17 +2522,23 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * Exposes the elements of this matrix to {@code action} as a single one-dimensional array
      * laid out in row-major order, then propagates any modifications back into the matrix.
      *
-     * <p>This enables operations that need a global view of all matrix elements (e.g., sorting all
+     * <p>This enables operations that need all matrix elements together (e.g., sorting all
      * elements across the entire matrix). The shape of this matrix is preserved; only element
      * values change. See {@link Arrays#mutateFlattened(boolean[][], Throwables.Consumer)} for the exact
      * semantics of the underlying operation.</p>
      *
+     * <p>The action receives a temporary array. Its mutations are copied back only if the action
+     * returns normally; if the action throws, those mutations are discarded. An action is not invoked
+     * when this matrix has zero rows, while an {@code n x 0} matrix with {@code n > 0} invokes it once
+     * with an empty array. If logical rows share a backing array, write-back is row-major, so values for
+     * the last logical row using that array determine its final contents.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] {{true, false}, {false, true}});
-     * matrix.mutateFlattened(arr -> java.util.Arrays.fill(arr, true));   // global view, written back row by row
-     * matrix.countTrue();                                             // returns 4 (all elements now true)
-     * matrix.get(0, 1);                                               // returns true (was false)
+     * matrix.mutateFlattened(arr -> java.util.Arrays.fill(arr, true));   // temporary row-major array, then copied back
+     * matrix.countTrue();                                                // returns 4 (all elements now true)
+     * matrix.get(0, 1);                                                  // returns true (was false)
      *
      * int[] seen = {0};
      * matrix.mutateFlattened(arr -> seen[0] = arr.length);   // flattened length equals total element count
@@ -2540,8 +2549,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * }</pre>
      *
      * @param <E> the type of exception that the operation may throw
-     * @param action the operation to apply to the flattened array; must not be {@code null}
+     * @param action the operation to apply to the temporary flattened array; must not be {@code null}
      * @throws IllegalArgumentException if {@code action} is {@code null}
+     * @throws ArithmeticException if the element count exceeds {@link Integer#MAX_VALUE}
      * @throws E if the operation throws an exception
      * @see Arrays#mutateFlattened(boolean[][], Throwables.Consumer)
      */
@@ -3863,11 +3873,13 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * });
      *
      * List<Boolean> center = new ArrayList<>();
-     * matrix.forEach(0, 2, 0, 2, value -> center.add(value));
+     * Matrices.runWithParallelMode(ParallelMode.FORCE_OFF,
+     *         () -> matrix.forEach(0, 2, 0, 2, value -> center.add(value)));
      * // center is now [true, false, false, true] (top-left 2x2, row-major)
      *
      * int[] bottomRowTrue = {0};
-     * matrix.forEach(2, 3, 0, 3, value -> { if (value) bottomRowTrue[0]++; });
+     * Matrices.runWithParallelMode(ParallelMode.FORCE_OFF,
+     *         () -> matrix.forEach(2, 3, 0, 3, value -> { if (value) bottomRowTrue[0]++; }));
      * // bottomRowTrue[0] is now 3
      *
      * matrix.forEach(0, 9, 0, 3, value -> {});                                         // throws IndexOutOfBoundsException (toRowIndex > rowCount)
@@ -3958,11 +3970,11 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * <pre>{@code
      * BooleanMatrix matrix1 = BooleanMatrix.of(new boolean[][] {{true, false}, {false, true}});
      * BooleanMatrix matrix2 = BooleanMatrix.of(new boolean[][] {{true, false}, {false, true}});
-     * matrix1.hashCode() == matrix2.hashCode();   // returns true (same content)
+     * boolean sameHash = matrix1.hashCode() == matrix2.hashCode(); // true (same content)
      *
      * BooleanMatrix matrix3 = BooleanMatrix.of(new boolean[][] {{false, false}, {false, false}});
-     * matrix1.hashCode() == matrix3.hashCode();   // returns false (different content, almost always)
-     * BooleanMatrix.empty().hashCode();           // returns 1 (stable hash of the empty matrix)
+     * boolean sameHashForDifferentContent = matrix1.hashCode() == matrix3.hashCode(); // false for these values
+     * BooleanMatrix.empty().hashCode();                                               // returns 1 (stable hash of the empty matrix)
      * }</pre>
      *
      * @return a hash code value for this matrix

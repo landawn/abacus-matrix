@@ -35,8 +35,10 @@ import com.landawn.abacus.util.stream.Stream;
  * Matrix implementation backed by a rectangular {@code long[][]}.
  *
  * <p>This type specializes {@link AbstractMatrix} for {@code long} values while keeping the data in a
- * validated backing array. Constructors and {@link #of(long[]...)} generally wrap the supplied storage
- * directly, while factories, conversions, and mapping operations allocate new arrays.</p>
+ * validated backing array. The constructor and {@link #of(long[]...)} wrap the supplied storage
+ * directly. {@link #copyOf(long[]...)}, conversions, and mapping operations do not share mutable cell
+ * storage with a non-empty source; operations producing an empty matrix may return the canonical empty
+ * singleton.</p>
  *
  * <p>Cells introduced by growth or reshaping default to {@code 0L} unless an overload accepts an
  * explicit fill value. Arithmetic operations (e.g. {@link #add(LongMatrix)}, {@link #subtract(LongMatrix)},
@@ -76,7 +78,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * data[0][0] = 10L;
      * matrix.get(0, 0);                       // returns 10L (backing array is shared)
      *
-     * new LongMatrix(null);               // throws IllegalArgumentException
+     * new LongMatrix(null);                          // throws IllegalArgumentException
      * new LongMatrix(new long[][] {{1L}, {2L, 3L}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
      *
@@ -94,10 +96,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.empty();
-     * matrix.rowCount();                          // returns 0
-     * matrix.columnCount();                       // returns 0
-     * matrix.isEmpty();                           // returns true
-     * LongMatrix.empty() == LongMatrix.empty();   // true (shared singleton)
+     * matrix.rowCount();                                                // returns 0
+     * matrix.columnCount();                                             // returns 0
+     * matrix.isEmpty();                                                 // returns true
+     * boolean sameSingleton = LongMatrix.empty() == LongMatrix.empty(); // true (shared singleton)
      * }</pre>
      *
      * @return the canonical empty {@code LongMatrix} (singleton)
@@ -119,7 +121,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * matrix.get(0, 1);                       // returns 2L
      * matrix.rowCount();                      // returns 2
      *
-     * LongMatrix.of((long[][]) null);     // throws IllegalArgumentException
+     * LongMatrix.of((long[][]) null);               // throws IllegalArgumentException
      * LongMatrix.of().isEmpty();                    // returns true (no rows)
      * LongMatrix.of(new long[][] {{1L, 2L}, {3L}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
@@ -149,7 +151,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * data[0][0] = 10L;
      * matrix.get(0, 0);                       // returns 1L (copy is independent)
      *
-     * LongMatrix.copyOf((long[][]) null);  // throws IllegalArgumentException
+     * LongMatrix.copyOf((long[][]) null);               // throws IllegalArgumentException
      * LongMatrix.copyOf(new long[][] {{1L, 2L}, {3L}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
      *
@@ -441,7 +443,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * matrix.get(0, 1);                       // returns 0L (off-diagonal)
      * // matrix is [[1, 0, 0], [0, 2, 0], [0, 0, 3]]
      *
-     * LongMatrix.mainDiagonal(null);            // throws IllegalArgumentException (null array)
+     * LongMatrix.mainDiagonal(null);                    // throws IllegalArgumentException (null array)
      * LongMatrix.mainDiagonal(new long[0]).isEmpty();   // returns true
      * }</pre>
      *
@@ -471,7 +473,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * matrix.get(0, 0);                       // returns 0L (off anti-diagonal)
      * // matrix is [[0, 0, 1], [0, 2, 0], [3, 0, 0]]
      *
-     * LongMatrix.antiDiagonal(null);            // throws IllegalArgumentException (null array)
+     * LongMatrix.antiDiagonal(null);                    // throws IllegalArgumentException (null array)
      * LongMatrix.antiDiagonal(new long[0]).isEmpty();   // returns true
      * }</pre>
      *
@@ -1006,8 +1008,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * This modifies the matrix directly.
      *
      * <p>The operator is applied to each element in the specified column sequentially
-     * from top to bottom (row {@code 0} to row {@code rowCount - 1}). If multiple logical rows reference the same backing array,
-     * its shared column cell is transformed exactly once, when that backing row is first encountered.</p>
+     * from top to bottom (row {@code 0} to row {@code rowCount - 1}). If multiple logical rows
+     * reference the same backing array, the shared cell at {@code columnIndex} is transformed exactly
+     * once, when that backing row is first encountered.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1087,7 +1090,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
      * matrix.setMainDiagonal(new long[] {9L, 8L});
      * matrix.mainDiagonalCopy();              // returns [9, 8]
-     * matrix.get(1, 1);                      // returns 8L (diagonal element updated)
+     * matrix.get(1, 1);                       // returns 8L (diagonal element updated)
      *
      * matrix.setMainDiagonal(new long[] {1L}); // throws IllegalArgumentException (length != rowCount)
      * LongMatrix nonSquare = LongMatrix.of(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
@@ -1118,7 +1121,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
      * matrix.updateMainDiagonal(x -> x * x);
      * matrix.mainDiagonalCopy();              // returns [1, 16]
-     * matrix.get(0, 1);                      // returns 2L (off-diagonal unchanged)
+     * matrix.get(0, 1);                       // returns 2L (off-diagonal unchanged)
      *
      * matrix.updateMainDiagonal(null);       // throws IllegalArgumentException (operator is null)
      * LongMatrix nonSquare = LongMatrix.of(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
@@ -1191,7 +1194,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
      * matrix.setAntiDiagonal(new long[] {9L, 8L});
      * matrix.antiDiagonalCopy();              // returns [9, 8]
-     * matrix.get(0, 1);                      // returns 9L (anti-diagonal cell)
+     * matrix.get(0, 1);                       // returns 9L (anti-diagonal cell)
      *
      * matrix.setAntiDiagonal(new long[] {1L}); // throws IllegalArgumentException (length != rowCount)
      * LongMatrix nonSquare = LongMatrix.of(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
@@ -1223,7 +1226,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
      * matrix.updateAntiDiagonal(x -> -x);
      * matrix.antiDiagonalCopy();              // returns [-2, -3]
-     * matrix.get(0, 0);                      // returns 1L (off anti-diagonal unchanged)
+     * matrix.get(0, 0);                       // returns 1L (off anti-diagonal unchanged)
      *
      * matrix.updateAntiDiagonal(null);       // throws IllegalArgumentException (operator is null)
      * LongMatrix nonSquare = LongMatrix.of(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
@@ -1658,6 +1661,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * The source array can extend beyond this matrix's bounds; only the overlapping region is copied.
      * The matrix is modified in-place. {@code null} rows in {@code source} are skipped (the
      * corresponding destination row is left unchanged). Elements outside the matrix bounds are ignored.
+     * Any source row that aliases this matrix's backing storage is snapshotted before copying, so
+     * overlapping copies read the source values as they were when this method was called.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2622,13 +2627,21 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     }
 
     /**
-     * Exposes the elements of this matrix to {@code action} as a single one-dimensional array
-     * laid out in row-major order, then propagates any modifications back into the matrix.
+     * Exposes the elements of this matrix to {@code action} as a temporary one-dimensional array
+     * laid out in row-major order, then propagates any modifications back into the matrix if the
+     * action completes normally.
      *
-     * <p>This enables operations that need a global view of all matrix elements (e.g., sorting all
+     * <p>This enables operations that need to process all matrix elements together (e.g., sorting all
      * elements across the entire matrix). The shape of this matrix is preserved; only element
-     * values change. See {@link Arrays#mutateFlattened(long[][], Throwables.Consumer)} for the exact
-     * semantics of the underlying operation.</p>
+     * values change. If the action throws, none of its changes to the temporary array are copied
+     * back. If logical rows share a backing array, each logical row still occupies its own segment
+     * in the temporary array; copy-back proceeds in row-major order, so a later logical row wins
+     * where aliases target the same backing cells.</p>
+     *
+     * <p>For a matrix with no rows, the action is not invoked. For a matrix with one or more
+     * zero-length rows, the action is invoked once with an empty array. See
+     * {@link Arrays#mutateFlattened(long[][], Throwables.Consumer)} for the exact semantics of the
+     * underlying operation.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2639,14 +2652,15 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * int[] captured = new int[1];
      * matrix.mutateFlattened(arr -> captured[0] = arr.length);
-     * captured[0];                            // returns 4 (flat view length)
+     * int flattenedLength = captured[0];      // 4 (temporary array length)
      *
      * LongMatrix.empty().mutateFlattened(arr -> { });  // no-op on empty matrix
      * }</pre>
      *
      * @param <E> the type of exception that the operation may throw
-     * @param action the operation to apply to the flattened array
+     * @param action the operation to apply to the temporary flattened array
      * @throws IllegalArgumentException if {@code action} is {@code null}
+     * @throws ArithmeticException if the number of matrix elements exceeds {@link Integer#MAX_VALUE}
      * @throws E if the operation throws an exception
      * @see Arrays#mutateFlattened(long[][], Throwables.Consumer)
      */
@@ -2884,7 +2898,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * LongMatrix m2x3 = LongMatrix.of(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});      // 2x3
      * LongMatrix m3x2 = LongMatrix.of(new long[][] {{7L, 8L}, {9L, 10L}, {11L, 12L}}); // 3x2
-     * m2x3.matrixMultiply(m3x2).rowCount();                                                    // returns 2 (result is 2x2)
+     * m2x3.matrixMultiply(m3x2).rowCount();                                            // returns 2 (result is 2x2)
      *
      * a.matrixMultiply(m3x2);                        // throws IllegalArgumentException (a.columnCount=2 != m3x2.rowCount=3)
      * a.matrixMultiply((LongMatrix) null);           // throws IllegalArgumentException (other is null)
@@ -3008,7 +3022,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * primitive conversion (which may lose precision despite being a widening conversion).
      *
      * <p><b>&#9888;&#65039; Warning:</b> Precision loss may occur for large long values. The {@code float} type has
-     * only 24 bits of mantissa precision, so long values with absolute values greater than 2<sup>24</sup>
+     * only 24 bits of significand precision, so long values with absolute values greater than 2<sup>24</sup>
      * ({@code 16_777_216}) may be rounded.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -3046,7 +3060,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * primitive conversion (which may lose precision despite being a widening conversion).
      *
      * <p><b>&#9888;&#65039; Warning:</b> Precision loss may occur for large long values. The {@code double} type has
-     * only 53 bits of mantissa precision, so long values with absolute values greater than 2<sup>53</sup>
+     * only 53 bits of significand precision, so long values with absolute values greater than 2<sup>53</sup>
      * ({@code 9_007_199_254_740_992}) may be rounded.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -3909,13 +3923,13 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}, {7L, 8L, 9L}});
      *
-     * long[] center = {0L};
-     * matrix.forEach(1, 2, 1, 2, value -> center[0] = value);
-     * center[0];                              // 5L (center element only)
+     * java.util.concurrent.atomic.AtomicLong center = new java.util.concurrent.atomic.AtomicLong();
+     * matrix.forEach(1, 2, 1, 2, center::set);
+     * long centerValue = center.get();         // 5L (center element only)
      *
-     * long[] subSum = {0L};
-     * matrix.forEach(0, 2, 1, 3, value -> subSum[0] += value);
-     * subSum[0];                              // 16L (2 + 3 + 5 + 6)
+     * java.util.concurrent.atomic.AtomicLong subSum = new java.util.concurrent.atomic.AtomicLong();
+     * matrix.forEach(0, 2, 1, 3, subSum::addAndGet);
+     * long selectedSum = subSum.get();         // 16L (2 + 3 + 5 + 6)
      *
      * matrix.forEach(0, 5, 0, 3, value -> { });                                     // throws IndexOutOfBoundsException (toRowIndex > rowCount)
      * matrix.forEach(0, 2, 0, 2, (Throwables.LongConsumer<RuntimeException>) null); // throws IllegalArgumentException
@@ -4005,11 +4019,11 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <pre>{@code
      * LongMatrix matrix1 = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
      * LongMatrix matrix2 = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
-     * matrix1.hashCode() == matrix2.hashCode(); // returns true (equal content)
+     * boolean sameHash = matrix1.hashCode() == matrix2.hashCode(); // true (equal content)
      *
      * LongMatrix different = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 5L}});
-     * matrix1.hashCode() == different.hashCode(); // returns false (different content, typically)
-     * LongMatrix.empty().hashCode();              // returns a stable hash for the empty matrix
+     * boolean sameHashForDifferentContent = matrix1.hashCode() == different.hashCode(); // false for these values
+     * LongMatrix.empty().hashCode();                                                    // returns a stable hash for the empty matrix
      * }</pre>
      *
      * @return a hash code value for this matrix

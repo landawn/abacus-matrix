@@ -90,8 +90,13 @@ class MatrixTest extends TestBase {
         m.set(1, 1, "z");
         assertEquals("d", arr[1][1]);
 
-        // empty -> empty matrix
-        assertTrue(Matrix.copyOf(new String[0][0]).isEmpty());
+        // A zero-row input is copied too, including its outer array and runtime type.
+        Integer[][] emptySource = new Integer[0][0];
+        Matrix<Integer> emptyCopy = Matrix.copyOf(emptySource);
+        assertTrue(emptyCopy.isEmpty());
+        assertNotSame(emptySource, emptyCopy.unsafeBackingArray());
+        assertEquals(Integer[][].class, emptyCopy.unsafeBackingArray().getClass());
+        assertEquals(Integer.class, emptyCopy.elementType());
 
         // null -> IllegalArgumentException (consistent with Matrix.of(null))
         assertThrows(IllegalArgumentException.class, () -> Matrix.copyOf((String[][]) null));
@@ -1068,6 +1073,56 @@ class MatrixTest extends TestBase {
     }
 
     @Test
+    public void testMutateFlattenedWriteBackContract() {
+        Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2 }, { 3, 4 } });
+
+        matrix.mutateFlattened(flat -> {
+            flat[0] = 9;
+            assertEquals(1, matrix.get(0, 0)); // temporary buffer is not live
+        });
+        assertArrayEquals(new Integer[] { 9, 2 }, matrix.rowCopy(0));
+
+        assertThrows(IllegalStateException.class, () -> matrix.mutateFlattened(flat -> {
+            flat[1] = 8;
+            throw new IllegalStateException("abort");
+        }));
+        assertArrayEquals(new Integer[] { 9, 2 }, matrix.rowCopy(0)); // no copy-back after callback failure
+
+        int[] zeroRowCalls = { 0 };
+        Matrix.<Integer>empty().mutateFlattened(flat -> zeroRowCalls[0]++);
+        assertEquals(0, zeroRowCalls[0]);
+
+        int[] zeroColumnCalls = { 0 };
+        Matrix.of(new Integer[2][0]).mutateFlattened(flat -> {
+            zeroColumnCalls[0]++;
+            assertEquals(0, flat.length);
+        });
+        assertEquals(1, zeroColumnCalls[0]);
+
+        Integer[] shared = { 1, 2 };
+        Matrix<Integer> aliased = Matrix.of(new Integer[][] { shared, shared });
+        aliased.mutateFlattened(flat -> {
+            flat[0] = 10;
+            flat[1] = 20;
+            flat[2] = 30;
+            flat[3] = 40;
+        });
+        assertArrayEquals(new Integer[] { 30, 40 }, shared); // later logical row wins
+
+        Number[][] narrowRows = new Number[2][];
+        narrowRows[0] = new Number[] { 1 };
+        narrowRows[1] = new Integer[] { 2 };
+        Matrix<Number> heterogeneous = Matrix.of(narrowRows);
+
+        assertThrows(ArrayStoreException.class, () -> heterogeneous.mutateFlattened(flat -> {
+            flat[0] = 10.5;
+            flat[1] = 20.5;
+        }));
+        assertEquals(Double.valueOf(10.5), heterogeneous.get(0, 0)); // earlier row was already copied
+        assertEquals(Integer.valueOf(2), heterogeneous.get(1, 0));
+    }
+
+    @Test
     public void testVstack() {
         Matrix<Integer> m1 = Matrix.of(new Integer[][] { { 1, 2 }, { 3, 4 } });
         Matrix<Integer> m2 = Matrix.of(new Integer[][] { { 5, 6 }, { 7, 8 } });
@@ -1432,6 +1487,19 @@ class MatrixTest extends TestBase {
         Matrix<String> matrix = Matrix.of(new String[3][0]);
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.toDataset(List.of()));
+    }
+
+    @Test
+    public void testEmptyMatrixDatasetConversions() {
+        Matrix<Integer> matrix = Matrix.copyOf(new Integer[0][0]);
+
+        Dataset rowDataset = matrix.toDataset(List.of());
+        Dataset transposedDataset = matrix.toTransposedDataset(List.of());
+
+        Assertions.assertEquals(0, rowDataset.columnCount());
+        Assertions.assertEquals(0, rowDataset.size());
+        Assertions.assertEquals(0, transposedDataset.columnCount());
+        Assertions.assertEquals(0, transposedDataset.size());
     }
 
     @Test
