@@ -451,8 +451,8 @@ public final class Matrices {
      * is initialized to {@code null} (the default value for reference types, including primitive
      * wrapper types).</p>
      *
-     * <p>The requested dimensions must form a representable matrix shape: a positive
-     * {@code rowCount}, or a {@code columnCount} of zero. A zero {@code rowCount} combined with a
+     * <p>The requested dimensions must form a representable matrix shape: either a positive
+     * {@code rowCount} or a {@code columnCount} of zero. A zero {@code rowCount} combined with a
      * non-zero {@code columnCount} is rejected.</p>
      *
      * <p><b>Usage Examples:</b></p>
