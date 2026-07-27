@@ -2,7 +2,7 @@
   "library": {
     "name": "abacus-matrix",
     "version": "3.8.4",
-    "generated_at": "2026-07-18",
+    "generated_at": "2026-07-26",
     "java_target": "17",
     "source": {
       "git_sha": "unknown"
@@ -225,7 +225,7 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns the total number of elements in this matrix (rows x columns).",
+              "javadoc_summary": "Returns the total number of elements in this matrix (rows × columns).",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -458,7 +458,7 @@
               "throws": [],
               "javadoc_summary": "Returns a new matrix with the elements of this matrix rearranged into the specified dimensions.",
               "contract": [
-                "The new shape must have at least as many total elements as the original ( {@code newRowCount * newColumnCount >= elementCount()} ).",
+                "The new shape must have at least as many total elements as the original ( {@code (long) newRowCount * newColumnCount >= elementCount()} ).",
                 "If the new shape has more elements, the extra positions are filled with default values ( {@code 0} for numeric types, {@code false} for boolean, {@code null} for objects)."
               ],
               "examples": [],
@@ -780,8 +780,11 @@
                   "condition": "if the operation throws an exception"
                 }
               ],
-              "javadoc_summary": "Applies the specified operation to the flattened (row-major order) view of this matrix.",
-              "contract": [],
+              "javadoc_summary": "Applies the specified operation to a temporary flattened (row-major order) representation of this matrix.",
+              "contract": [
+                "If the operation returns normally, the array is copied back into the matrix in row-major order; if the operation throws, copy-back is not started.",
+                "If logical rows share a backing row array, their flattened segments cannot remain independent during copy-back: rows are written in logical row order, so a later aliased row overwrites values written through an earlier alias."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -819,6 +822,7 @@
               "contract": [
                 "Elements are processed in row-major order (row by row from left to right) when executed sequentially.",
                 "For large matrices the operation may be automatically parallelized, in which case the order in which positions are visited is unspecified and the supplied action must be thread-safe; every position is still visited exactly once.",
+                "When logical rows share a backing row array, the operation runs sequentially to avoid concurrent access to shared row storage and preserve deterministic row-major visitation.",
                 "<p> This method is useful when you need to access matrix positions without caring about the actual element values, or when the element access logic is handled inside the action.",
                 "</p> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}); // Count every visited position AtomicInteger visited = new AtomicInteger(0); matrix.forEachIndices((i, j) -> visited.incrementAndGet()); visited.get(); // returns 9 (3 x 3 = 9 positions) // Count elements on the main diagonal AtomicInteger diagonalCount = new AtomicInteger(0); matrix.forEachIndices((i, j) -> { if (i == j) diagonalCount.incrementAndGet(); }); diagonalCount.get(); // returns 3 IntMatrix empty = IntMatrix.of(new int[0][0]); empty.forEachIndices((i, j) -> visited.incrementAndGet()); // no positions; action never invoked matrix.forEachIndices((Throwables.IntBiConsumer<RuntimeException>) null); // throws IllegalArgumentException (null action) } </pre>"
               ],
@@ -886,7 +890,8 @@
               "javadoc_summary": "Performs the specified action for each element position in the specified rectangular region of the matrix.",
               "contract": [
                 "Elements are processed in row-major order within the specified region when executed sequentially.",
-                "For large regions the operation may be automatically parallelized, in which case the order in which positions are visited is unspecified and the supplied action must be thread-safe; every position is still visited exactly once."
+                "For large regions the operation may be automatically parallelized, in which case the order in which positions are visited is unspecified and the supplied action must be thread-safe; every position is still visited exactly once.",
+                "When logical rows share a backing row array, the operation runs sequentially to avoid concurrent access to shared row storage and preserve deterministic row-major visitation."
               ],
               "examples": [],
               "see_also": []
@@ -925,7 +930,9 @@
               "contract": [
                 "Elements are processed in row-major order (row by row from left to right) when executed sequentially.",
                 "For large matrices the operation may be automatically parallelized, in which case the order in which positions are visited is unspecified and the supplied action must be thread-safe; every position is still visited exactly once.",
-                "<p> This variant is useful when the action needs access to matrix elements or methods, allowing you to read/write values or use matrix operations within the action."
+                "When logical rows share a backing row array, the operation runs sequentially to avoid concurrent access to shared row storage and preserve deterministic row-major visitation.",
+                "<p> This variant is useful when the action needs access to matrix elements or methods, allowing you to read/write values or use matrix operations within the action.",
+                "</p> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}}); // Sum every element via the supplied matrix reference AtomicInteger sum = new AtomicInteger(0); matrix.forEachIndices((i, j, m) -> sum.addAndGet(m.get(i, j))); sum.get(); // returns 10 (1 + 2 + 3 + 4) // Force row-major execution for an in-place update whose order should be explicit Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.forEachIndices((i, j, m) -> m.set(i, j, i + j))); matrix.get(1, 1); // returns 2 (1 + 1) matrix.get(0, 0); // returns 0 matrix.forEachIndices((Throwables.BiIntObjConsumer<IntMatrix, RuntimeException>) null); // throws IllegalArgumentException (null action) } </pre>"
               ],
               "examples": [],
               "see_also": []
@@ -991,7 +998,8 @@
               "javadoc_summary": "Performs the specified action for each element position in the specified rectangular region, providing the matrix itself.",
               "contract": [
                 "Elements are processed in row-major order within the specified region when executed sequentially.",
-                "For large regions the operation may be automatically parallelized, in which case the order in which positions are visited is unspecified and the supplied action must be thread-safe; every position is still visited exactly once."
+                "For large regions the operation may be automatically parallelized, in which case the order in which positions are visited is unspecified and the supplied action must be thread-safe; every position is still visited exactly once.",
+                "When logical rows share a backing row array, the operation runs sequentially to avoid concurrent access to shared row storage and preserve deterministic row-major visitation."
               ],
               "examples": [],
               "see_also": []
@@ -1740,7 +1748,7 @@
               ],
               "javadoc_summary": "Executes the specified action with this matrix as the parameter.",
               "contract": [
-                "</p> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}}); // Capture a value via side effect int[] holder = new int[1]; matrix.accept(m -> holder[0] = m.rowCount() * m.columnCount()); holder[0]; // returns 4 // Modify matrix elements in place matrix.accept(m -> { for (int i = 0; i < m.rowCount(); i++) m.set(i, 0, 0); }); // zero the first column matrix.get(0, 0); // returns 0 matrix.get(1, 0); // returns 0 // A non-empty matrix passes a validation guard without throwing matrix.accept(m -> { if (m.isEmpty()) throw new IllegalStateException(); }); // no exception matrix.accept((Throwables.Consumer<IntMatrix, RuntimeException>) null); // throws IllegalArgumentException (null action) } </pre>"
+                "</p> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}}); // Capture a value via side effect int[] holder = new int[1]; matrix.accept(m -> holder[0] = m.rowCount() * m.columnCount()); int elementCount = holder[0]; // 4 // Modify matrix elements in place matrix.accept(m -> { for (int i = 0; i < m.rowCount(); i++) m.set(i, 0, 0); }); // zero the first column matrix.get(0, 0); // returns 0 matrix.get(1, 0); // returns 0 // A non-empty matrix passes a validation guard without throwing matrix.accept(m -> { if (m.isEmpty()) throw new IllegalStateException(); }); // no exception matrix.accept((Throwables.Consumer<IntMatrix, RuntimeException>) null); // throws IllegalArgumentException (null action) } </pre>"
               ],
               "examples": [],
               "see_also": []
@@ -3229,7 +3237,9 @@
                 }
               ],
               "javadoc_summary": "Fills a region of this matrix with values from another two-dimensional array, starting at the specified destination position.",
-              "contract": [],
+              "contract": [
+                "Any source row that aliases this matrix's backing storage is snapshotted before copying, so overlapping copies read the source values as they were when this method was called."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -3812,7 +3822,7 @@
                 {
                   "name": "action",
                   "type": "Throwables.Consumer<? super boolean[], E>",
-                  "javadoc": "the operation to apply to the flattened array; must not be {@code null}",
+                  "javadoc": "the operation to apply to the temporary flattened array; must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
@@ -3824,7 +3834,10 @@
               ],
               "javadoc_summary": "Exposes the elements of this matrix to {@code action} as a single one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix.",
               "contract": [
-                "</p> <p> <b> Usage Examples: </b> </p> <pre> {@code BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] {{true, false}, {false, true}}); matrix.mutateFlattened(arr -> java.util.Arrays.fill(arr, true)); // global view, written back row by row matrix.countTrue(); // returns 4 (all elements now true) matrix.get(0, 1); // returns true (was false) int[] seen = {0}; matrix.mutateFlattened(arr -> seen[0] = arr.length); // flattened length equals total element count // seen[0] is now 4 BooleanMatrix.empty().mutateFlattened(arr -> seen[0] = -1); // no-op: action is not invoked when the matrix has zero rows // seen[0] is still 4 } </pre>"
+                "Its mutations are copied back only if the action returns normally; if the action throws, those mutations are discarded.",
+                "An action is not invoked when this matrix has zero rows, while an {@code n x 0} matrix with {@code n > 0} invokes it once with an empty array.",
+                "If logical rows share a backing array, write-back is row-major, so values for the last logical row using that array determine its final contents.",
+                "</p> <p> <b> Usage Examples: </b> </p> <pre> {@code BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] {{true, false}, {false, true}}); matrix.mutateFlattened(arr -> java.util.Arrays.fill(arr, true)); // temporary row-major array, then copied back matrix.countTrue(); // returns 4 (all elements now true) matrix.get(0, 1); // returns true (was false) int[] seen = {0}; matrix.mutateFlattened(arr -> seen[0] = arr.length); // flattened length equals total element count // seen[0] is now 4 BooleanMatrix.empty().mutateFlattened(arr -> seen[0] = -1); // no-op: action is not invoked when the matrix has zero rows // seen[0] is still 4 } </pre>"
               ],
               "examples": [],
               "see_also": [
@@ -4095,7 +4108,7 @@
                 {
                   "name": "zipFunction",
                   "type": "Throwables.BooleanBinaryOperator<E>",
-                  "javadoc": "the binary operator to apply to corresponding elements; receives element from this matrix as first argument and element from {@code other} as second argument",
+                  "javadoc": "the binary operator to apply to corresponding elements; receives the element from this matrix as first argument and the element from {@code other} as second argument",
                   "nullability": "unspecified"
                 }
               ],
@@ -4151,7 +4164,7 @@
                 {
                   "name": "zipFunction",
                   "type": "Throwables.BooleanTernaryOperator<E>",
-                  "javadoc": "the ternary operator to apply to corresponding elements; receives element from this matrix as first argument, element from {@code other} as second argument, and element from {@code third} as third argument",
+                  "javadoc": "the ternary operator to apply to corresponding elements; receives the element from this matrix as first argument, the element from {@code other} as second argument, and the element from {@code third} as third argument",
                   "nullability": "unspecified"
                 }
               ],
@@ -4570,7 +4583,7 @@
               "contract": [
                 "Elements are processed in row-major order within the specified bounds when executed sequentially.",
                 "The operation may be parallelized internally if the sub-matrix is large enough to benefit from parallel processing; if parallelized, the order in which elements are visited is unspecified and the action must be thread-safe, but every element is still visited exactly once.",
-                "</p> <p> <b> Usage Examples: </b> </p> <pre> {@code BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] { {true, false, true}, {false, true, false}, {true, true, true} }); List<Boolean> center = new ArrayList<>(); matrix.forEach(0, 2, 0, 2, value -> center.add(value)); // center is now [true, false, false, true] (top-left 2x2, row-major) int[] bottomRowTrue = {0}; matrix.forEach(2, 3, 0, 3, value -> { if (value) bottomRowTrue[0]++; }); // bottomRowTrue[0] is now 3 matrix.forEach(0, 9, 0, 3, value -> {}); // throws IndexOutOfBoundsException (toRowIndex > rowCount) matrix.forEach(0, 2, 0, 2, (Throwables.BooleanConsumer<RuntimeException>) null); // throws IllegalArgumentException (null action) } </pre>"
+                "</p> <p> <b> Usage Examples: </b> </p> <pre> {@code BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] { {true, false, true}, {false, true, false}, {true, true, true} }); List<Boolean> center = new ArrayList<>(); Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.forEach(0, 2, 0, 2, value -> center.add(value))); // center is now [true, false, false, true] (top-left 2x2, row-major) int[] bottomRowTrue = {0}; Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.forEach(2, 3, 0, 3, value -> { if (value) bottomRowTrue[0]++; })); // bottomRowTrue[0] is now 3 matrix.forEach(0, 9, 0, 3, value -> {}); // throws IndexOutOfBoundsException (toRowIndex > rowCount) matrix.forEach(0, 2, 0, 2, (Throwables.BooleanConsumer<RuntimeException>) null); // throws IllegalArgumentException (null action) } </pre>"
               ],
               "examples": [],
               "see_also": []
@@ -4853,20 +4866,20 @@
                 {
                   "name": "startInclusive",
                   "type": "byte",
-                  "javadoc": "the starting value (inclusive)",
+                  "javadoc": "the starting byte value (inclusive)",
                   "nullability": "unspecified"
                 },
                 {
                   "name": "endExclusive",
                   "type": "byte",
-                  "javadoc": "the ending value (exclusive)",
+                  "javadoc": "the ending byte value (exclusive)",
                   "nullability": "unspecified"
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a 1-row ByteMatrix containing a range of byte values from startInclusive to endExclusive.",
+              "javadoc_summary": "Creates a single-row {@code ByteMatrix} containing a half-open range of byte values.",
               "contract": [
-                "If {@code startInclusive >= endExclusive} , a 1×0 matrix is returned."
+                "If {@code endExclusive <= startInclusive} , the result is an empty matrix."
               ],
               "examples": [],
               "see_also": []
@@ -4885,13 +4898,13 @@
                 {
                   "name": "startInclusive",
                   "type": "byte",
-                  "javadoc": "the starting value (inclusive)",
+                  "javadoc": "the starting byte value (inclusive)",
                   "nullability": "unspecified"
                 },
                 {
                   "name": "endExclusive",
                   "type": "byte",
-                  "javadoc": "the ending value (exclusive)",
+                  "javadoc": "the ending byte value (exclusive)",
                   "nullability": "unspecified"
                 },
                 {
@@ -4902,9 +4915,9 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a 1-row ByteMatrix containing a range of byte values with a specified step.",
+              "javadoc_summary": "Creates a single-row {@code ByteMatrix} containing the half-open range {@code [startInclusive, endExclusive)} stepped by {@code step} .",
               "contract": [
-                "If the step would not reach endExclusive from startInclusive, a 1×0 matrix is returned."
+                "If the step direction does not advance from {@code startInclusive} toward {@code endExclusive} , a {@code 1x0} matrix is returned."
               ],
               "examples": [],
               "see_also": []
@@ -4923,20 +4936,20 @@
                 {
                   "name": "startInclusive",
                   "type": "byte",
-                  "javadoc": "the starting value (inclusive)",
+                  "javadoc": "the starting byte value (inclusive)",
                   "nullability": "unspecified"
                 },
                 {
                   "name": "endInclusive",
                   "type": "byte",
-                  "javadoc": "the ending value (inclusive)",
+                  "javadoc": "the ending byte value (inclusive)",
                   "nullability": "unspecified"
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a 1-row ByteMatrix containing a closed range of byte values from startInclusive to endInclusive.",
+              "javadoc_summary": "Creates a single-row {@code ByteMatrix} containing a closed range of byte values.",
               "contract": [
-                "If {@code startInclusive > endInclusive} , a 1×0 matrix is returned."
+                "If {@code endInclusive < startInclusive} , the result is an empty matrix."
               ],
               "examples": [],
               "see_also": []
@@ -4955,13 +4968,13 @@
                 {
                   "name": "startInclusive",
                   "type": "byte",
-                  "javadoc": "the starting value (inclusive)",
+                  "javadoc": "the starting byte value (inclusive)",
                   "nullability": "unspecified"
                 },
                 {
                   "name": "endInclusive",
                   "type": "byte",
-                  "javadoc": "the ending value (inclusive, if reachable by stepping)",
+                  "javadoc": "the ending byte value (inclusive, if reachable by stepping)",
                   "nullability": "unspecified"
                 },
                 {
@@ -4972,10 +4985,10 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a 1-row ByteMatrix containing a closed range of byte values with a specified step.",
+              "javadoc_summary": "Creates a single-row {@code ByteMatrix} containing the closed range {@code [startInclusive, endInclusive]} stepped by {@code step} .",
               "contract": [
                 "The end value is included only if it is reachable by stepping from start.",
-                "If the step would not reach endInclusive from startInclusive, a 1×0 matrix is returned."
+                "If the step direction does not advance from {@code startInclusive} toward {@code endInclusive} , a {@code 1x0} matrix is returned."
               ],
               "examples": [],
               "see_also": []
@@ -6176,7 +6189,9 @@
                 }
               ],
               "javadoc_summary": "Fills a region of this matrix with values from another two-dimensional array, starting at the specified destination position.",
-              "contract": [],
+              "contract": [
+                "Any source row that aliases this matrix's backing storage is snapshotted before copying, so overlapping copies read the source values as they were when this method was called."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -6756,7 +6771,7 @@
                 {
                   "name": "action",
                   "type": "Throwables.Consumer<? super byte[], E>",
-                  "javadoc": "the operation to apply to the flattened array",
+                  "javadoc": "the operation to apply to the temporary flattened array",
                   "nullability": "unspecified"
                 }
               ],
@@ -6767,7 +6782,11 @@
                 }
               ],
               "javadoc_summary": "Exposes the elements of this matrix to {@code action} as a single one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix.",
-              "contract": [],
+              "contract": [
+                "Its mutations are copied back only if the action returns normally; if the action throws, those mutations are discarded.",
+                "An action is not invoked when this matrix has zero rows, while an {@code n x 0} matrix with {@code n > 0} invokes it once with an empty array.",
+                "If logical rows share a backing array, write-back is row-major, so values for the last logical row using that array determine its final contents."
+              ],
               "examples": [],
               "see_also": [
                 "Arrays#mutateFlattened(byte[][], Throwables.Consumer)"
@@ -7863,8 +7882,10 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a single-row CharMatrix containing a range of char values with a step.",
-              "contract": [],
+              "javadoc_summary": "Creates a single-row {@code CharMatrix} containing the half-open range {@code [startInclusive, endExclusive)} stepped by {@code step} .",
+              "contract": [
+                "If the step direction does not advance from {@code startInclusive} toward {@code endExclusive} , a {@code 1x0} matrix is returned."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -7931,8 +7952,10 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a single-row CharMatrix containing a closed range of char values with a step.",
-              "contract": [],
+              "javadoc_summary": "Creates a single-row {@code CharMatrix} containing the closed range {@code [startInclusive, endInclusive]} stepped by {@code step} .",
+              "contract": [
+                "If the step direction does not advance from {@code startInclusive} toward {@code endInclusive} , a {@code 1x0} matrix is returned."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -8570,7 +8593,7 @@
               ],
               "javadoc_summary": "Updates all elements in a column in-place by applying the specified operator to each element.",
               "contract": [
-                "</p> <p> If multiple logical rows share the same backing array, the operator is applied to that backing row only once, at its first occurrence."
+                "</p> <p> If multiple logical rows share the same backing array, the shared cell at {@code columnIndex} is transformed exactly once, when that backing row is first encountered."
               ],
               "examples": [],
               "see_also": []
@@ -9130,7 +9153,9 @@
                 }
               ],
               "javadoc_summary": "Fills a region of this matrix with values from another two-dimensional array, starting at the specified destination position.",
-              "contract": [],
+              "contract": [
+                "Any source row that aliases this matrix's backing storage is snapshotted before copying, so overlapping copies read the source values as they were when this method was called."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -9257,7 +9282,7 @@
               "javadoc_summary": "Returns a new matrix whose dimensions are exactly {@code newRowCount × newColumnCount} , anchored at the top-left corner of this matrix.",
               "contract": [
                 "<ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded (excess rows removed from the bottom, excess columns removed from the right).",
-                "</li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code '\u0000'} .",
+                "</li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code (char) 0} .",
                 "Use {@code extend} when the entire original content must be preserved."
               ],
               "examples": [],
@@ -9431,7 +9456,8 @@
               ],
               "examples": [],
               "see_also": [
-                "#flipHorizontally()"
+                "#flipHorizontally()",
+                "#flipVerticallyInPlace()"
               ]
             },
             {
@@ -9449,7 +9475,8 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#flipVertically()"
+                "#flipVertically()",
+                "#flipHorizontallyInPlace()"
               ]
             },
             {
@@ -9712,7 +9739,7 @@
                 {
                   "name": "action",
                   "type": "Throwables.Consumer<? super char[], E>",
-                  "javadoc": "the operation to apply to the flattened array",
+                  "javadoc": "the operation to apply to the temporary flattened array",
                   "nullability": "unspecified"
                 }
               ],
@@ -9722,8 +9749,12 @@
                   "condition": "if the operation throws an exception"
                 }
               ],
-              "javadoc_summary": "Exposes the elements of this matrix to {@code action} as a single one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix.",
-              "contract": [],
+              "javadoc_summary": "Exposes the elements of this matrix to {@code action} as a temporary one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix if the action completes normally.",
+              "contract": [
+                "Exposes the elements of this matrix to {@code action} as a temporary one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix if the action completes normally.",
+                "If the action throws, none of its changes to the temporary array are copied back.",
+                "If logical rows share a backing array, each logical row still occupies its own segment in the temporary array; copy-back proceeds in row-major order, so a later logical row wins where aliases target the same backing cells."
+              ],
               "examples": [],
               "see_also": [
                 "Arrays#mutateFlattened(char[][], Throwables.Consumer)"
@@ -10613,12 +10644,12 @@
                 {
                   "name": "a",
                   "type": "double[][]",
-                  "javadoc": "the two-dimensional double array to create the matrix from, or empty for an empty matrix; must not be {@code null}",
+                  "javadoc": "the two-dimensional double array to wrap, or empty for an empty matrix; must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a DoubleMatrix from a two-dimensional double array.",
+              "javadoc_summary": "Creates a {@code DoubleMatrix} from a two-dimensional double array.",
               "contract": [
                 "<p> <b> &#9888; &#65039; Shared backing: </b> When the input has at least one row, the provided array is used directly without defensive copying."
               ],
@@ -10671,7 +10702,7 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a DoubleMatrix from a two-dimensional int array by converting int values to double.",
+              "javadoc_summary": "Creates a {@code DoubleMatrix} from a two-dimensional int array by converting int values to double.",
               "contract": [
                 "<p> All rows must have the same length as the first row (rectangular array required)."
               ],
@@ -10699,7 +10730,7 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a DoubleMatrix from a two-dimensional long array by converting long values to double.",
+              "javadoc_summary": "Creates a {@code DoubleMatrix} from a two-dimensional long array by converting long values to double.",
               "contract": [
                 "<p> All rows must have the same length as the first row (rectangular array required).",
                 "</p> <p> <b> &#9888; &#65039; Precision: </b> Long values that require more than 53 bits of precision may lose precision when converted to double, since a double has 53 bits of significand precision (52 stored fraction bits plus an implicit leading bit for normal values)."
@@ -10728,7 +10759,7 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a DoubleMatrix from a two-dimensional float array by widening float values to double.",
+              "javadoc_summary": "Creates a {@code DoubleMatrix} from a two-dimensional float array by widening float values to double.",
               "contract": [
                 "<p> All rows must have the same length as the first row (rectangular array required)."
               ],
@@ -10938,12 +10969,12 @@
                 {
                   "name": "x",
                   "type": "Matrix<Double>",
-                  "javadoc": "the boxed Double matrix to convert; must not be {@code null}",
+                  "javadoc": "the boxed {@code Double} matrix to convert; must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Converts a boxed Double matrix to a primitive DoubleMatrix.",
+              "javadoc_summary": "Converts a boxed {@link Matrix Matrix&lt;Double&gt;} to a primitive {@code DoubleMatrix} .",
               "contract": [],
               "examples": [],
               "see_also": [
@@ -11463,7 +11494,7 @@
               ],
               "javadoc_summary": "Updates all elements in a column in-place by applying the specified operator to each element.",
               "contract": [
-                "</p> If multiple logical rows share one backing array, that backing value is transformed only once."
+                "</p> <p> If multiple logical rows share one backing array, that backing value is transformed only once."
               ],
               "examples": [],
               "see_also": []
@@ -11914,7 +11945,7 @@
                   "condition": "if the function throws an exception"
                 }
               ],
-              "javadoc_summary": "Creates a new IntMatrix by applying a function that converts double values to int.",
+              "javadoc_summary": "Creates a new {@code IntMatrix} by applying a function that converts double values to int.",
               "contract": [
                 "If parallelized, the supplied function must be thread-safe."
               ],
@@ -11953,7 +11984,7 @@
                   "condition": "if the function throws an exception"
                 }
               ],
-              "javadoc_summary": "Creates a new LongMatrix by applying a function that converts double values to long.",
+              "javadoc_summary": "Creates a new {@code LongMatrix} by applying a function that converts double values to long.",
               "contract": [
                 "If parallelized, the supplied function must be thread-safe."
               ],
@@ -12101,7 +12132,9 @@
                 }
               ],
               "javadoc_summary": "Fills a region of this matrix with values from another two-dimensional array, starting at the specified destination position.",
-              "contract": [],
+              "contract": [
+                "Any source row that aliases this matrix's backing storage is snapshotted before copying, so overlapping copies read the source values as they were when this method was called."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -12398,7 +12431,7 @@
               "throws": [],
               "javadoc_summary": "Reverses the order of elements in each row in-place (horizontal flip).",
               "contract": [
-                "</p> If multiple logical rows share one backing array, that array is reversed only once, preserving the alias relationship."
+                "</p> <p> If multiple logical rows share one backing array, that array is reversed only once, preserving the alias relationship."
               ],
               "examples": [],
               "see_also": [
@@ -12566,7 +12599,7 @@
               "throws": [],
               "javadoc_summary": "Reshapes the matrix to new dimensions while preserving element order.",
               "contract": [
-                "<p> The new shape must have at least as many total elements as the original ( {@code newRowCount * newColumnCount >= elementCount()} ).",
+                "<p> The new shape must have at least as many total elements as the original ( {@code (long) newRowCount * newColumnCount >= elementCount()} ).",
                 "If the new shape has more total elements, the additional positions are filled with zeros."
               ],
               "examples": [],
@@ -12686,7 +12719,7 @@
                 {
                   "name": "action",
                   "type": "Throwables.Consumer<? super double[], E>",
-                  "javadoc": "the operation to apply to the flattened array",
+                  "javadoc": "the operation to apply to the temporary flattened array",
                   "nullability": "unspecified"
                 }
               ],
@@ -12698,7 +12731,10 @@
               ],
               "javadoc_summary": "Flattens all elements of this matrix into a single one-dimensional array, applies the given operation to that flattened array, and then copies the (possibly modified) elements back into the matrix in row-major order.",
               "contract": [
-                "When sorting with {@link java.util.Arrays#sort(double[])} , note that {@code NaN} is ordered greater than all other values (including {@code +Infinity} ) and {@code -0.0} is ordered less than {@code +0.0} ."
+                "When sorting with {@link java.util.Arrays#sort(double[])} , note that {@code NaN} is ordered greater than all other values (including {@code +Infinity} ) and {@code -0.0} is ordered less than {@code +0.0} .",
+                "Its mutations are copied back only if the action returns normally; if the action throws, those mutations are discarded.",
+                "An action is not invoked when this matrix has zero rows, while an {@code n x 0} matrix with {@code n > 0} invokes it once with an empty array.",
+                "If logical rows share a backing array, write-back is row-major, so values for the last logical row using that array determine its final contents."
               ],
               "examples": [],
               "see_also": [
@@ -12862,7 +12898,7 @@
               ],
               "javadoc_summary": "Performs matrix multiplication of this matrix with another matrix.",
               "contract": [
-                "The number of columns in this matrix must equal the number of rows in the other matrix."
+                "The number of columns in this matrix must equal the number of rows in {@code other} ."
               ],
               "examples": [],
               "see_also": []
@@ -13575,7 +13611,7 @@
               "throws": [],
               "javadoc_summary": "Creates a {@code FloatMatrix} from a two-dimensional float array.",
               "contract": [
-                "<p> <b> &#9888; &#65039; Shared backing: </b> When the input is non-empty the provided array is used directly without defensive copying after rectangular-shape validation."
+                "<p> <b> &#9888; &#65039; Shared backing: </b> When the input has at least one row, the provided array is used directly without defensive copying."
               ],
               "examples": [],
               "see_also": []
@@ -14364,7 +14400,7 @@
               ],
               "javadoc_summary": "Updates all elements in a column in-place by applying the specified operator to each element.",
               "contract": [
-                "</p> If multiple logical rows share one backing array, that backing value is transformed only once."
+                "</p> <p> If multiple logical rows share one backing array, that backing value is transformed only once."
               ],
               "examples": [],
               "see_also": []
@@ -15041,7 +15077,9 @@
                 }
               ],
               "javadoc_summary": "Fills a region of this matrix with values from another two-dimensional array, starting at the specified destination position.",
-              "contract": [],
+              "contract": [
+                "Any source row that aliases this matrix's backing storage is snapshotted before copying, so overlapping copies read the source values as they were when this method was called."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -15338,7 +15376,7 @@
               "throws": [],
               "javadoc_summary": "Reverses the order of elements in each row in-place (horizontal flip).",
               "contract": [
-                "</p> If multiple logical rows share one backing array, that array is reversed only once, preserving the alias relationship."
+                "</p> <p> If multiple logical rows share one backing array, that array is reversed only once, preserving the alias relationship."
               ],
               "examples": [],
               "see_also": [
@@ -15625,7 +15663,7 @@
                 {
                   "name": "action",
                   "type": "Throwables.Consumer<? super float[], E>",
-                  "javadoc": "the operation to apply to the flattened array",
+                  "javadoc": "the operation to apply to the temporary flattened array",
                   "nullability": "unspecified"
                 }
               ],
@@ -15637,7 +15675,10 @@
               ],
               "javadoc_summary": "Flattens all elements of this matrix into a single one-dimensional array, applies the given operation to that flattened array, and then copies the (possibly modified) elements back into the matrix in row-major order.",
               "contract": [
-                "When sorting with {@link java.util.Arrays#sort(float[])} , note that {@code NaN} is ordered greater than all other values (including {@code +Infinity} ) and {@code -0.0f} is ordered less than {@code +0.0f} ."
+                "When sorting with {@link java.util.Arrays#sort(float[])} , note that {@code NaN} is ordered greater than all other values (including {@code +Infinity} ) and {@code -0.0f} is ordered less than {@code +0.0f} .",
+                "Its mutations are copied back only if the action returns normally; if the action throws, those mutations are discarded.",
+                "An action is not invoked when this matrix has zero rows, while an {@code n x 0} matrix with {@code n > 0} invokes it once with an empty array.",
+                "If logical rows share a backing array, write-back is row-major, so values for the last logical row using that array determine its final contents."
               ],
               "examples": [],
               "see_also": [
@@ -15801,7 +15842,7 @@
               ],
               "javadoc_summary": "Performs matrix multiplication of this matrix with another matrix.",
               "contract": [
-                "The number of columns in this matrix must equal the number of rows in the other matrix.",
+                "The number of columns in this matrix must equal the number of rows in {@code other} .",
                 "Consider using {@link #toDoubleMatrix()} for higher precision if needed."
               ],
               "examples": [],
@@ -17500,7 +17541,7 @@
               ],
               "javadoc_summary": "Updates all elements in a column in-place by applying the specified operator to each element.",
               "contract": [
-                "If multiple logical rows reference the same backing array, its shared column cell is transformed exactly once, when that backing row is first encountered."
+                "If multiple logical rows reference the same backing array, the shared cell at {@code columnIndex} is transformed exactly once, when that backing row is first encountered."
               ],
               "examples": [],
               "see_also": []
@@ -18138,7 +18179,9 @@
                 }
               ],
               "javadoc_summary": "Fills a region of this matrix with values from another two-dimensional array, starting at the specified destination position.",
-              "contract": [],
+              "contract": [
+                "Any source row that aliases this matrix's backing storage is snapshotted before copying, so overlapping copies read the source values as they were when this method was called."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -18718,7 +18761,7 @@
                 {
                   "name": "action",
                   "type": "Throwables.Consumer<? super int[], E>",
-                  "javadoc": "the operation to apply to the flattened array",
+                  "javadoc": "the operation to apply to the temporary flattened array",
                   "nullability": "unspecified"
                 }
               ],
@@ -18728,8 +18771,12 @@
                   "condition": "if the operation throws an exception"
                 }
               ],
-              "javadoc_summary": "Exposes the elements of this matrix to {@code action} as a single one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix.",
-              "contract": [],
+              "javadoc_summary": "Exposes the elements of this matrix to {@code action} as a temporary one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix if the action completes normally.",
+              "contract": [
+                "Exposes the elements of this matrix to {@code action} as a temporary one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix if the action completes normally.",
+                "If the action throws, none of its changes to the temporary array are copied back.",
+                "If logical rows share a backing array, each logical row still occupies its own segment in the temporary array; copy-back proceeds in row-major order, so a later logical row wins where aliases target the same backing cells."
+              ],
               "examples": [],
               "see_also": [
                 "Arrays#mutateFlattened(int[][], Throwables.Consumer)"
@@ -20540,7 +20587,7 @@
               ],
               "javadoc_summary": "Updates all elements in a column in-place by applying the specified operator to each element.",
               "contract": [
-                "If multiple logical rows reference the same backing array, its shared column cell is transformed exactly once, when that backing row is first encountered."
+                "If multiple logical rows reference the same backing array, the shared cell at {@code columnIndex} is transformed exactly once, when that backing row is first encountered."
               ],
               "examples": [],
               "see_also": []
@@ -21178,7 +21225,9 @@
                 }
               ],
               "javadoc_summary": "Fills a region of this matrix with values from another two-dimensional array, starting at the specified destination position.",
-              "contract": [],
+              "contract": [
+                "Any source row that aliases this matrix's backing storage is snapshotted before copying, so overlapping copies read the source values as they were when this method was called."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -21758,7 +21807,7 @@
                 {
                   "name": "action",
                   "type": "Throwables.Consumer<? super long[], E>",
-                  "javadoc": "the operation to apply to the flattened array",
+                  "javadoc": "the operation to apply to the temporary flattened array",
                   "nullability": "unspecified"
                 }
               ],
@@ -21768,8 +21817,12 @@
                   "condition": "if the operation throws an exception"
                 }
               ],
-              "javadoc_summary": "Exposes the elements of this matrix to {@code action} as a single one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix.",
-              "contract": [],
+              "javadoc_summary": "Exposes the elements of this matrix to {@code action} as a temporary one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix if the action completes normally.",
+              "contract": [
+                "Exposes the elements of this matrix to {@code action} as a temporary one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix if the action completes normally.",
+                "If the action throws, none of its changes to the temporary array are copied back.",
+                "If logical rows share a backing array, each logical row still occupies its own segment in the temporary array; copy-back proceeds in row-major order, so a later logical row wins where aliases target the same backing cells."
+              ],
               "examples": [],
               "see_also": [
                 "Arrays#mutateFlattened(long[][], Throwables.Consumer)"
@@ -22597,9 +22650,10 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns the current parallel processing setting for the current thread.",
+              "javadoc_summary": "Returns the parallel processing setting for the current thread.",
               "contract": [
-                "</p> <p> The returned value indicates how matrix operations should decide whether to use parallel processing: </p> <ul> <li> {@link ParallelMode#FORCE_ON} - requests parallel execution whenever the runtime supports it."
+                "</p> <p> The returned value guides operations that consult {@link #shouldRunInParallel(AbstractMatrix)} or {@link #shouldRunInParallel(AbstractMatrix, long)} : </p> <ul> <li> {@link ParallelMode#FORCE_ON} - requests parallel execution whenever the runtime supports it and the operation's safety constraints allow it.",
+                "Individual operations may also use a subset or multiply-add work estimate, or keep execution sequential when shared storage would make parallel mutation unsafe."
               ],
               "examples": [],
               "see_also": [
@@ -22633,8 +22687,8 @@
               ],
               "javadoc_summary": "Sets the parallel processing behavior for matrix operations in the current thread.",
               "contract": [
-                "</p> <p> Available settings: </p> <ul> <li> {@link ParallelMode#FORCE_ON} - requests parallel processing for all matrix operations when the runtime supports it, regardless of matrix size.",
-                "Operations on matrices with 8192 or more elements use parallel processing when parallel stream support is available; smaller matrices use sequential processing."
+                "<p> This method configures a thread-local setting used by operations that consult {@link #shouldRunInParallel(AbstractMatrix)} or {@link #shouldRunInParallel(AbstractMatrix, long)} .",
+                "</p> <p> Available settings: </p> <ul> <li> {@link ParallelMode#FORCE_ON} - requests parallel processing for policy-aware operations when runtime support and the operation's safety constraints allow it, regardless of work size."
               ],
               "examples": [],
               "see_also": [
@@ -22867,7 +22921,7 @@
               "throws": [],
               "javadoc_summary": "Creates a new two-dimensional array with the specified dimensions and element type.",
               "contract": [
-                "</p> <p> The requested dimensions must form a representable matrix shape: a positive {@code rowCount} , or a {@code columnCount} of zero."
+                "</p> <p> The requested dimensions must form a representable matrix shape: either a positive {@code rowCount} or a {@code columnCount} of zero."
               ],
               "performance": "<p> This utility method constructs a properly typed two-dimensional array at runtime, handling the complexity of creating generic arrays in Java.",
               "examples": [],
@@ -23132,7 +23186,7 @@
                 {
                   "name": "toRowIndex",
                   "type": "int",
-                  "javadoc": "the ending row index (exclusive), must be greater than or equal to fromRowIndex",
+                  "javadoc": "the ending row index (exclusive), must be greater than or equal to {@code fromRowIndex}",
                   "nullability": "unspecified"
                 },
                 {
@@ -23144,7 +23198,7 @@
                 {
                   "name": "toColumnIndex",
                   "type": "int",
-                  "javadoc": "the ending column index (exclusive), must be greater than or equal to fromColumnIndex",
+                  "javadoc": "the ending column index (exclusive), must be greater than or equal to {@code fromColumnIndex}",
                   "nullability": "unspecified"
                 },
                 {
@@ -23242,7 +23296,7 @@
                 {
                   "name": "toRowIndex",
                   "type": "int",
-                  "javadoc": "the ending row index (exclusive), must be greater than or equal to fromRowIndex",
+                  "javadoc": "the ending row index (exclusive), must be greater than or equal to {@code fromRowIndex}",
                   "nullability": "unspecified"
                 },
                 {
@@ -23254,7 +23308,7 @@
                 {
                   "name": "toColumnIndex",
                   "type": "int",
-                  "javadoc": "the ending column index (exclusive), must be greater than or equal to fromColumnIndex",
+                  "javadoc": "the ending column index (exclusive), must be greater than or equal to {@code fromColumnIndex}",
                   "nullability": "unspecified"
                 },
                 {
@@ -23984,7 +24038,8 @@
               "javadoc_summary": "Combines multiple {@link ByteMatrix} objects element-wise using a function that operates on byte arrays, with control over intermediate array sharing.",
               "contract": [
                 "The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> &#9888; &#65039; Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.",
-                "Only use this optimization if the function immediately processes and discards the array."
+                "Only use this optimization if the function immediately processes and discards the array.",
+                "</p> <p> All matrices in the collection must have identical dimensions."
               ],
               "examples": [],
               "see_also": [
@@ -24316,7 +24371,9 @@
                 }
               ],
               "javadoc_summary": "Combines multiple {@link IntMatrix} objects element-wise using a function that returns {@code Long} values.",
-              "contract": [],
+              "contract": [
+                "</p> <p> All matrices in the collection must have identical dimensions."
+              ],
               "examples": [],
               "see_also": [
                 "#zipToLong(Collection, Throwables.IntNFunction, boolean)",
@@ -24373,7 +24430,8 @@
               "javadoc_summary": "Combines multiple {@link IntMatrix} objects element-wise using a function that returns {@code Long} values, with control over intermediate array sharing.",
               "contract": [
                 "The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> &#9888; &#65039; Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.",
-                "Only use this optimization if the function immediately processes and discards the array."
+                "Only use this optimization if the function immediately processes and discards the array.",
+                "</p> <p> All matrices in the collection must have identical dimensions."
               ],
               "examples": [],
               "see_also": [
@@ -24429,7 +24487,9 @@
                 }
               ],
               "javadoc_summary": "Combines two {@link IntMatrix} objects element-wise using a function that returns {@code Double} values, producing a {@link DoubleMatrix} .",
-              "contract": [],
+              "contract": [
+                "</p> <p> Both matrices must have identical dimensions."
+              ],
               "examples": [],
               "see_also": [
                 "#zipToDouble(IntMatrix, IntMatrix, IntMatrix, Throwables.IntTriFunction)",
@@ -24490,7 +24550,9 @@
                 }
               ],
               "javadoc_summary": "Combines three {@link IntMatrix} objects element-wise using a function that returns {@code Double} values, producing a {@link DoubleMatrix} .",
-              "contract": [],
+              "contract": [
+                "</p> <p> All three matrices must have identical dimensions."
+              ],
               "examples": [],
               "see_also": [
                 "#zipToDouble(IntMatrix, IntMatrix, Throwables.IntBiFunction)",
@@ -24504,7 +24566,7 @@
                 "public",
                 "static"
               ],
-              "signature": "public static <E extends Exception> DoubleMatrix zipToDouble(final Collection<IntMatrix> coll, final Throwables.IntNFunction<Double, E> zipFunction) throws IllegalArgumentException, E",
+              "signature": "public static <E extends Exception> DoubleMatrix zipToDouble(final Collection<IntMatrix> coll, final Throwables.IntNFunction<Double, E> zipFunction) throws E",
               "return_type": "DoubleMatrix",
               "type_params": [
                 {
@@ -24530,16 +24592,14 @@
               ],
               "throws": [
                 {
-                  "type": "java.lang.IllegalArgumentException",
-                  "condition": "if {@code coll} is {@code null} , empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}"
-                },
-                {
                   "type": "E",
                   "condition": "if the zip function throws an exception during execution"
                 }
               ],
               "javadoc_summary": "Combines multiple {@link IntMatrix} objects element-wise using a function that returns {@code Double} values.",
-              "contract": [],
+              "contract": [
+                "</p> <p> All matrices in the collection must have identical dimensions."
+              ],
               "examples": [],
               "see_also": [
                 "#zipToDouble(Collection, Throwables.IntNFunction, boolean)",
@@ -24596,7 +24656,8 @@
               "javadoc_summary": "Combines multiple {@link IntMatrix} objects element-wise using a function that returns {@code Double} values, with control over intermediate array sharing.",
               "contract": [
                 "The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> &#9888; &#65039; Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.",
-                "Only use this optimization if the function immediately processes and discards the array."
+                "Only use this optimization if the function immediately processes and discards the array.",
+                "</p> <p> All matrices in the collection must have identical dimensions."
               ],
               "examples": [],
               "see_also": [
@@ -24891,7 +24952,7 @@
               ],
               "javadoc_summary": "Combines multiple {@link LongMatrix} objects element-wise using a binary operator applied sequentially.",
               "contract": [
-                "All matrices in the collection must have identical dimensions."
+                "} </pre> <p> All matrices in the collection must have identical dimensions."
               ],
               "examples": [],
               "see_also": [
@@ -24948,7 +25009,9 @@
                 }
               ],
               "javadoc_summary": "Combines two {@link LongMatrix} objects element-wise using a function that returns {@code Double} values, producing a {@link DoubleMatrix} .",
-              "contract": [],
+              "contract": [
+                "</p> <p> Both matrices must have identical dimensions."
+              ],
               "examples": [],
               "see_also": [
                 "#zipToDouble(LongMatrix, LongMatrix, LongMatrix, Throwables.LongTriFunction)",
@@ -25009,7 +25072,9 @@
                 }
               ],
               "javadoc_summary": "Combines three {@link LongMatrix} objects element-wise using a function that returns {@code Double} values, producing a {@link DoubleMatrix} .",
-              "contract": [],
+              "contract": [
+                "</p> <p> All three matrices must have identical dimensions."
+              ],
               "examples": [],
               "see_also": [
                 "#zipToDouble(LongMatrix, LongMatrix, Throwables.LongBiFunction)",
@@ -25054,7 +25119,9 @@
                 }
               ],
               "javadoc_summary": "Combines multiple {@link LongMatrix} objects element-wise using a function that returns {@code Double} values.",
-              "contract": [],
+              "contract": [
+                "</p> <p> All matrices in the collection must have identical dimensions."
+              ],
               "examples": [],
               "see_also": [
                 "#zipToDouble(Collection, Throwables.LongNFunction, boolean)",
@@ -25111,7 +25178,8 @@
               "javadoc_summary": "Combines multiple {@link LongMatrix} objects element-wise using a function that returns {@code Double} values, with control over intermediate array sharing.",
               "contract": [
                 "The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> &#9888; &#65039; Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.",
-                "Only use this optimization if the function immediately processes and discards the array."
+                "Only use this optimization if the function immediately processes and discards the array.",
+                "</p> <p> All matrices in the collection must have identical dimensions."
               ],
               "examples": [],
               "see_also": [
@@ -25169,7 +25237,9 @@
                 }
               ],
               "javadoc_summary": "Combines multiple {@link LongMatrix} objects element-wise using a function that operates on long arrays.",
-              "contract": [],
+              "contract": [
+                "</p> <p> All matrices in the collection must have identical dimensions."
+              ],
               "examples": [],
               "see_also": [
                 "#zipToObj(Collection, Throwables.LongNFunction, boolean, Class)",
@@ -25404,7 +25474,7 @@
               ],
               "javadoc_summary": "Combines multiple {@link DoubleMatrix} objects element-wise using a binary operator applied sequentially.",
               "contract": [
-                "All matrices in the collection must have identical dimensions."
+                "} </pre> <p> All matrices in the collection must have identical dimensions."
               ],
               "examples": [],
               "see_also": [
@@ -25463,7 +25533,9 @@
                 }
               ],
               "javadoc_summary": "Combines multiple {@link DoubleMatrix} objects element-wise using a function that operates on double arrays.",
-              "contract": [],
+              "contract": [
+                "</p> <p> All matrices in the collection must have identical dimensions."
+              ],
               "examples": [],
               "see_also": [
                 "#zipToObj(Collection, Throwables.DoubleNFunction, boolean, Class)",
@@ -26044,7 +26116,8 @@
               "contract": [
                 "</p> <p> The {@code shareIntermediateArray} parameter controls memory optimization: </p> <ul> <li> {@code true} and sequential execution: Reuses the same intermediate array for all positions, reducing memory allocations but requiring the zip function to not retain references to the array </li> <li> {@code false} or parallel execution: Creates a new array for each position, safer but uses more memory </li> </ul> <p> <b> &#9888; &#65039; Warning: </b> When {@code shareIntermediateArray} is {@code true} , the zip function must NOT store references to the array, as it will be mutated for subsequent positions.",
                 "Only use this optimization if the function immediately processes and discards the array.",
-                "The runtime component type of the array passed to {@code zipFunction} is the resolved common element type of the input matrices (which may be more specific than the static {@code T} ), so the function should treat the array as read-only: writing an element of an incompatible type into it would throw an {@code ArrayStoreException} ."
+                "The runtime component type of the array passed to {@code zipFunction} is the resolved common element type of the input matrices (which may be more specific than the static {@code T} ), so the function should treat the array as read-only: writing an element of an incompatible type into it would throw an {@code ArrayStoreException} .",
+                "</p> <p> All matrices in the collection must have identical dimensions."
               ],
               "examples": [],
               "see_also": [
@@ -26154,7 +26227,7 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a Matrix from a two-dimensional array.",
+              "javadoc_summary": "Creates a {@code Matrix} from a two-dimensional array.",
               "contract": [
                 "</p> <p> All rows must have the same length as the first row (rectangular array required).",
                 "The array must not be {@code null} ."
@@ -26335,13 +26408,13 @@
                 {
                   "name": "mainDiagonal",
                   "type": "T[]",
-                  "javadoc": "the values for the main diagonal (upper-left to lower-right); may be {@code null} if {@code antiDiagonal} is non- {@code null}",
+                  "javadoc": "the values for the main diagonal (upper-left to lower-right); may be {@code null} if {@code antiDiagonal} is non- {@code null} ; may be empty",
                   "nullability": "unspecified"
                 },
                 {
                   "name": "antiDiagonal",
                   "type": "T[]",
-                  "javadoc": "the values for the anti-diagonal (upper-right to lower-left); may be {@code null} if {@code mainDiagonal} is non- {@code null}",
+                  "javadoc": "the values for the anti-diagonal (upper-right to lower-left); may be {@code null} if {@code mainDiagonal} is non- {@code null} ; may be empty",
                   "nullability": "unspecified"
                 }
               ],
@@ -26357,7 +26430,10 @@
                 "At least one diagonal must be non- {@code null} , and two non-empty diagonals must have the same length."
               ],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#mainDiagonal(Object[])",
+                "#antiDiagonal(Object[])"
+              ]
             },
             {
               "name": "get",
@@ -27720,7 +27796,8 @@
               ],
               "javadoc_summary": "Copies values into the matrix from another two-dimensional array starting at the specified position.",
               "contract": [
-                "If the source data extends beyond the matrix bounds, it is truncated."
+                "If the source data extends beyond the matrix bounds, it is truncated.",
+                "Any source row that aliases this matrix's backing storage is snapshotted before copying, so overlapping copies read the source values as they were when this method was called."
               ],
               "examples": [],
               "see_also": []
@@ -28022,7 +28099,8 @@
               ],
               "examples": [],
               "see_also": [
-                "#flipHorizontally()"
+                "#flipHorizontally()",
+                "#flipVerticallyInPlace()"
               ]
             },
             {
@@ -28042,7 +28120,8 @@
               ],
               "examples": [],
               "see_also": [
-                "#flipVertically()"
+                "#flipVertically()",
+                "#flipHorizontallyInPlace()"
               ]
             },
             {
@@ -28178,7 +28257,7 @@
               "throws": [],
               "javadoc_summary": "Reshapes this matrix to have the specified dimensions.",
               "contract": [
-                "The new shape must have at least as many total elements as the original ( {@code newRowCount * newColumnCount >= elementCount()} ).",
+                "The new shape must have at least as many total elements as the original ( {@code (long) newRowCount * newColumnCount >= elementCount()} ).",
                 "If the new shape has more elements, the extra positions are filled with {@code null} ."
               ],
               "examples": [],
@@ -28302,8 +28381,12 @@
                   "condition": "if the operation throws an exception"
                 }
               ],
-              "javadoc_summary": "Applies an operation to the flattened (row-major order) view of this matrix.",
-              "contract": [],
+              "javadoc_summary": "Applies an operation to a temporary flattened (row-major order) representation of this matrix.",
+              "contract": [
+                "If the operation returns normally, the array is copied back into the matrix in row-major order; if the operation throws, copy-back is not started.",
+                "If logical rows share a backing row array, rows are copied back in logical row order, so values from a later aliased row overwrite values from an earlier alias.",
+                "Copy-back can also be partial if an earlier row is stored successfully before a later row throws {@link ArrayStoreException} because it has a narrower runtime component type."
+              ],
               "examples": [],
               "see_also": [
                 "Arrays.ff#mutateFlattened(Object[][], Throwables.Consumer)"
@@ -29024,7 +29107,8 @@
               "javadoc_summary": "Applies the given action to each element in the specified sub-matrix region.",
               "contract": [
                 "Elements are processed in row-major order within the specified bounds when executed sequentially.",
-                "The operation may be parallelized internally if the sub-matrix is large enough to benefit from parallel processing; if parallelized, the order in which elements are visited is unspecified and the action must be thread-safe, but every element is still visited exactly once."
+                "The operation may be parallelized internally if the sub-matrix is large enough to benefit from parallel processing; if parallelized, the order in which elements are visited is unspecified and the action must be thread-safe, but every element is still visited exactly once.",
+                "</p> <p> <b> Usage Examples: </b> </p> <pre> {@code Matrix<Integer> matrix = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}); // Process only the center element List<Integer> center = java.util.Collections.synchronizedList(new ArrayList<>()); matrix.forEach(1, 2, 1, 2, value -> center.add(value)); // center is now [5] // Process a 2x2 sub-matrix List<Integer> subMatrix = java.util.Collections.synchronizedList(new ArrayList<>()); matrix.forEach(0, 2, 1, 3, value -> subMatrix.add(value)); subMatrix.containsAll(List.of(2, 3, 5, 6)); // returns true (order is unspecified if parallelized) subMatrix.size(); // returns 4 matrix.forEach(0, 5, 0, 2, value -> {}); // throws IndexOutOfBoundsException (toRowIndex out of range) } </pre>"
               ],
               "examples": [],
               "see_also": []
@@ -29042,7 +29126,7 @@
                 {
                   "name": "columnNames",
                   "type": "Collection<String>",
-                  "javadoc": "the non- {@code null} , non-empty, unique names to assign to each column in the resulting Dataset; size must equal {@code columnCount}",
+                  "javadoc": "the collection of names to assign to the resulting Dataset columns; the collection must be non- {@code null} , each name must be non- {@code null} , non-empty, and unique, and the collection size must equal {@code columnCount} . An empty collection is valid only for a {@code 0x0} matrix; a matrix with rows but zero columns cannot be converted at all",
                   "nullability": "unspecified"
                 }
               ],
@@ -29075,7 +29159,7 @@
                 {
                   "name": "columnNames",
                   "type": "Collection<String>",
-                  "javadoc": "the non- {@code null} , non-empty, unique column names of the resulting Dataset; size must equal {@code rowCount}",
+                  "javadoc": "the resulting Dataset column names; the collection must be non- {@code null} , each name must be non- {@code null} , non-empty, and unique, and the collection size must equal {@code rowCount} . An empty collection is valid when {@code rowCount} is zero",
                   "nullability": "unspecified"
                 }
               ],
@@ -29164,7 +29248,7 @@
           "modifiers": [
             "public"
           ],
-          "javadoc_summary": "Thread-local parallelization policy consulted by {@link Matrices} when deciding whether to execute matrix operations in parallel.",
+          "javadoc_summary": "Thread-local parallelization policy consulted by {@link Matrices} when automatic matrix operations decide whether to execute in parallel.",
           "thread_safety": "unspecified",
           "nullability": "unspecified",
           "type_params": [],
@@ -29180,7 +29264,7 @@
               ],
               "type": "ParallelMode",
               "value": "new ParallelMode()",
-              "javadoc_summary": "Requests parallel execution for the current thread whenever the runtime supports it, regardless of matrix size."
+              "javadoc_summary": "Requests parallel execution for automatic operations on the current thread regardless of operation size, provided the runtime supports it and the operation's safety restrictions permit it."
             },
             {
               "name": "FORCE_OFF",
@@ -29191,7 +29275,7 @@
               ],
               "type": "ParallelMode",
               "value": "new ParallelMode()",
-              "javadoc_summary": "Forces sequential execution for the current thread regardless of matrix size or runtime support."
+              "javadoc_summary": "Selects sequential execution for automatic operations that consult the current thread's policy."
             },
             {
               "name": "AUTO",
@@ -29202,7 +29286,7 @@
               ],
               "type": "ParallelMode",
               "value": "new ParallelMode()",
-              "javadoc_summary": "Uses parallel execution for the current thread only when the runtime supports it <i> and </i> the per-operation element count meets the size threshold checked by {@link Matrices#shouldRunInParallel(AbstractMatrix, long)} ."
+              "javadoc_summary": "Uses parallel execution for automatic operations on the current thread only when the runtime supports it, the operation's safety restrictions permit it, and the operation-specific work count meets the threshold checked by {@link Matrices#shouldRunInParallel(AbstractMatrix, long)} ."
             }
           ]
         },
@@ -29281,7 +29365,7 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a ShortMatrix from a two-dimensional short array.",
+              "javadoc_summary": "Creates a {@code ShortMatrix} from a two-dimensional short array.",
               "contract": [
                 "<p> <b> &#9888; &#65039; Shared backing: </b> When the input has at least one row, the provided array is used directly without defensive copying."
               ],
@@ -29432,9 +29516,9 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a 1-row ShortMatrix with values from startInclusive to endExclusive.",
+              "javadoc_summary": "Creates a 1-row {@code ShortMatrix} containing the half-open range {@code [startInclusive, endExclusive)} with step {@code 1} .",
               "contract": [
-                "If {@code startInclusive >= endExclusive} , a 1×0 matrix is returned."
+                "If {@code startInclusive >= endExclusive} , a {@code 1x0} matrix is returned."
               ],
               "examples": [],
               "see_also": []
@@ -29465,14 +29549,14 @@
                 {
                   "name": "step",
                   "type": "short",
-                  "javadoc": "the step size (must not be zero; can be positive or negative)",
+                  "javadoc": "the step size (must not be zero; positive for ascending, negative for descending)",
                   "nullability": "unspecified"
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a 1-row ShortMatrix with values from startInclusive to endExclusive with the specified step.",
+              "javadoc_summary": "Creates a 1-row {@code ShortMatrix} containing the half-open range {@code [startInclusive, endExclusive)} stepped by {@code step} .",
               "contract": [
-                "If the step would not reach endExclusive from startInclusive, a 1×0 matrix is returned."
+                "If the step direction does not advance from {@code startInclusive} toward {@code endExclusive} , a {@code 1x0} matrix is returned."
               ],
               "examples": [],
               "see_also": []
@@ -29502,9 +29586,9 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a 1-row ShortMatrix with values from startInclusive to endInclusive.",
+              "javadoc_summary": "Creates a 1-row {@code ShortMatrix} containing the closed range {@code [startInclusive, endInclusive]} with step {@code 1} .",
               "contract": [
-                "If {@code startInclusive > endInclusive} , a 1×0 matrix is returned."
+                "If {@code startInclusive > endInclusive} , a {@code 1x0} matrix is returned."
               ],
               "examples": [],
               "see_also": []
@@ -29535,15 +29619,15 @@
                 {
                   "name": "step",
                   "type": "short",
-                  "javadoc": "the step size (must not be zero; can be positive or negative)",
+                  "javadoc": "the step size (must not be zero; positive for ascending, negative for descending)",
                   "nullability": "unspecified"
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a 1-row ShortMatrix with values from startInclusive to endInclusive with the specified step.",
+              "javadoc_summary": "Creates a 1-row {@code ShortMatrix} containing the closed range {@code [startInclusive, endInclusive]} stepped by {@code step} .",
               "contract": [
-                "The end value is included only if it is reachable by stepping from start.",
-                "If the step would not reach endInclusive from startInclusive, a 1×0 matrix is returned."
+                "{@code endInclusive} is included only if it is reachable from {@code startInclusive} via {@code step} ; otherwise the last element is the reachable value nearest to {@code endInclusive} without stepping past it.",
+                "If the step direction does not advance toward {@code endInclusive} , a {@code 1x0} matrix is returned."
               ],
               "examples": [],
               "see_also": []
@@ -30182,7 +30266,7 @@
               ],
               "javadoc_summary": "Updates all elements in a column in-place by applying the specified operator to each element.",
               "contract": [
-                "If multiple logical rows reference the same backing array, its shared column cell is transformed exactly once, when that backing row is first encountered."
+                "If multiple logical rows reference the same backing array, the shared cell at {@code columnIndex} is transformed exactly once, when that backing row is first encountered."
               ],
               "examples": [],
               "see_also": []
@@ -30742,7 +30826,9 @@
                 }
               ],
               "javadoc_summary": "Fills a region of this matrix with values from another two-dimensional array, starting at the specified destination position.",
-              "contract": [],
+              "contract": [
+                "Any source row that aliases this matrix's backing storage is snapshotted before copying, so overlapping copies read the source values as they were when this method was called."
+              ],
               "examples": [],
               "see_also": []
             },
@@ -31322,7 +31408,7 @@
                 {
                   "name": "action",
                   "type": "Throwables.Consumer<? super short[], E>",
-                  "javadoc": "the operation to apply to the flattened array",
+                  "javadoc": "the operation to apply to the temporary flattened array",
                   "nullability": "unspecified"
                 }
               ],
@@ -31332,8 +31418,12 @@
                   "condition": "if the operation throws an exception"
                 }
               ],
-              "javadoc_summary": "Exposes the elements of this matrix to {@code action} as a single one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix.",
-              "contract": [],
+              "javadoc_summary": "Exposes the elements of this matrix to {@code action} as a temporary one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix if the action completes normally.",
+              "contract": [
+                "Exposes the elements of this matrix to {@code action} as a temporary one-dimensional array laid out in row-major order, then propagates any modifications back into the matrix if the action completes normally.",
+                "If the action throws, none of its changes to the temporary array are copied back.",
+                "If logical rows share a backing array, each logical row still occupies its own segment in the temporary array; copy-back proceeds in row-major order, so a later logical row wins where aliases target the same backing cells."
+              ],
               "examples": [],
               "see_also": [
                 "Arrays#mutateFlattened(short[][], Throwables.Consumer)"
