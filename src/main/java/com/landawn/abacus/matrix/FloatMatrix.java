@@ -150,7 +150,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     /**
      * Creates a {@code FloatMatrix} that owns a defensive deep copy of the supplied two-dimensional array.
      *
-     * <p>For an input with at least one row, unlike {@link #of(float[][])}, which wraps the caller's array without copying,
+     * <p>For a non-empty input, unlike {@link #of(float[][])}, which wraps the caller's array without copying,
      * this factory allocates a new outer array and clones every row. Subsequent modifications to {@code a} (or its rows)
      * are therefore <b>not</b> visible through the returned matrix, and vice versa. A zero-row input is canonicalized to the shared
      * empty matrix, so its outer-array identity is not retained.</p>
@@ -352,7 +352,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
     /**
      * Creates a square matrix from the specified main diagonal elements (upper-left to lower-right).
-     * All other elements are set to zero.
+     * All other elements are set to zero. The matrix size is n×n where n is the length
+     * of the diagonal array.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2749,9 +2750,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     /**
      * Performs element-wise addition of this matrix with another matrix.
      * The matrices must have the same dimensions (same number of rows and columns).
-     *
-     * <p>For large matrices (8192+ elements), this operation may be parallelized automatically
-     * for better performance.</p>
+     * The original matrices are not modified.
      *
      * <p><b>Floating-point notes:</b> Adding {@code +Infinity} and {@code -Infinity} produces
      * {@code NaN}. If either operand is {@code NaN}, the result at that position is {@code NaN}.
@@ -2807,9 +2806,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     /**
      * Performs element-wise subtraction of another matrix from this matrix.
      * The matrices must have the same dimensions (same number of rows and columns).
-     *
-     * <p>For large matrices (8192+ elements), this operation may be parallelized automatically
-     * for better performance.</p>
+     * The original matrices are not modified.
      *
      * <p><b>Floating-point notes:</b> Subtracting {@code +Infinity} from {@code +Infinity}
      * (or {@code -Infinity} from {@code -Infinity}) produces {@code NaN}. If either operand is
@@ -2863,15 +2860,14 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
     /**
      * Performs matrix multiplication of this matrix with another matrix.
-     * The number of columns in this matrix must equal the number of rows in the other matrix.
-     * The resulting matrix has dimensions (this.rowCount × other.columnCount).
+     * The number of columns in this matrix must equal the number of rows in {@code other}.
+     * The resulting matrix has dimensions {@code this.rowCount × other.columnCount}.
+     * The original matrices are not modified.
      *
      * <p>This operation uses standard matrix multiplication where each element (i,j) in the result
      * is computed as the dot product of row i from this matrix and column j from the other matrix.
      * Since float has limited precision (~7 decimal digits), accumulated rounding errors may occur
      * for large matrices. Consider using {@link #toDoubleMatrix()} for higher precision if needed.</p>
-     *
-     * <p>For large matrices, this operation may be parallelized automatically for better performance.</p>
      *
      * <p><b>Note:</b> This is the linear-algebra matrix product, not element-wise multiplication.
      * For element-wise multiplication use

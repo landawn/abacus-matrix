@@ -1418,9 +1418,6 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * Fills all elements in the matrix with the specified value.
      * This method modifies the matrix in-place.
      *
-     * <p>This is a fast operation that sets every element in the matrix to the same value,
-     * effectively creating a uniform matrix.
-     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.of(new boolean[][] {{true, false}, {false, true}});
@@ -2982,9 +2979,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * @param <E> the type of exception that the function may throw
      * @param other the second matrix (must have the same dimensions as this matrix)
-     * @param zipFunction the binary operator to apply to corresponding elements; receives
-     *                    element from this matrix as first argument and element from {@code other}
-     *                    as second argument
+     * @param zipFunction the binary operator to apply to corresponding elements; receives the
+     *                    element from this matrix as first argument and the element from
+     *                    {@code other} as second argument
      * @return a new {@code BooleanMatrix} with the results of the element-wise operation
      * @throws IllegalArgumentException if {@code other} or {@code zipFunction} is {@code null},
      *         or if the matrices have different shapes
@@ -3039,9 +3036,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param <E> the type of exception that the function may throw
      * @param other the second matrix (must have the same dimensions as this matrix)
      * @param third the third matrix (must have the same dimensions as this matrix)
-     * @param zipFunction the ternary operator to apply to corresponding elements; receives
-     *                    element from this matrix as first argument, element from {@code other} as
-     *                    second argument, and element from {@code third} as third argument
+     * @param zipFunction the ternary operator to apply to corresponding elements; receives the
+     *                    element from this matrix as first argument, the element from {@code other}
+     *                    as second argument, and the element from {@code third} as third argument
      * @return a new {@code BooleanMatrix} with the results of the element-wise operation
      * @throws IllegalArgumentException if any of {@code other}, {@code third}, or {@code zipFunction} is {@code null},
      *         or if any of the matrices have different shapes

@@ -62,6 +62,10 @@ import com.landawn.abacus.util.stream.Stream;
  */
 public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStream, Stream<CharStream>, CharMatrix> {
 
+    /**
+     * Exclusive upper bound for random value generation: the size of the unsigned 16-bit
+     * {@code char} range ({@code Character.MAX_VALUE + 1}, i.e. {@code 65536}).
+     */
     static final int BOUND = Character.MAX_VALUE + 1;
     private static final CharMatrix EMPTY_CHAR_MATRIX = new CharMatrix(new char[0][0]);
 
@@ -303,9 +307,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     }
 
     /**
-     * Creates a single-row CharMatrix containing a range of char values with a step.
-     * The range increments by the specified step size. Supports both ascending (positive step)
-     * and descending (negative step) sequences.
+     * Creates a single-row {@code CharMatrix} containing the half-open range
+     * {@code [startInclusive, endExclusive)} stepped by {@code step}.
+     * Supports both ascending (positive step) and descending (negative step) sequences.
+     * If the step direction does not advance from {@code startInclusive} toward {@code endExclusive},
+     * a {@code 1x0} matrix is returned.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -319,7 +325,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param startInclusive the starting char value (inclusive)
      * @param endExclusive the ending char value (exclusive)
      * @param step the step size (must not be zero; can be positive or negative)
-     * @return a new 1×n CharMatrix with values incremented by the step size
+     * @return a new {@code 1xn} {@code CharMatrix} of values from {@code startInclusive} stepped by {@code step}
      * @throws IllegalArgumentException if {@code step} is zero
      */
     public static CharMatrix range(final char startInclusive, final char endExclusive, final int step) {
@@ -349,9 +355,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     }
 
     /**
-     * Creates a single-row CharMatrix containing a closed range of char values with a step.
-     * The range is [startInclusive, endInclusive]. The range increments by the specified step size.
+     * Creates a single-row {@code CharMatrix} containing the closed range
+     * {@code [startInclusive, endInclusive]} stepped by {@code step}.
      * Supports both ascending (positive step) and descending (negative step) sequences.
+     * If the step direction does not advance from {@code startInclusive} toward {@code endInclusive},
+     * a {@code 1x0} matrix is returned.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -366,7 +374,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param startInclusive the starting char value (inclusive)
      * @param endInclusive the ending char value (inclusive, if reachable by stepping)
      * @param step the step size (must not be zero; can be positive or negative)
-     * @return a new 1×n CharMatrix with values incremented by the step size
+     * @return a new {@code 1xn} {@code CharMatrix} of values from {@code startInclusive} stepped by {@code step}
      * @throws IllegalArgumentException if {@code step} is zero
      */
     public static CharMatrix rangeClosed(final char startInclusive, final char endInclusive, final int step) {

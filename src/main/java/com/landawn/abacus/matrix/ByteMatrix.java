@@ -297,9 +297,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     }
 
     /**
-     * Creates a 1-row ByteMatrix containing a range of byte values from startInclusive to endExclusive.
-     * The range increments by 1 for each element. If {@code startInclusive >= endExclusive}, a 1×0
-     * matrix is returned.
+     * Creates a single-row {@code ByteMatrix} containing a half-open range of byte values.
+     * The range is {@code [startInclusive, endExclusive)} with an implicit step of {@code +1}.
+     * If {@code endExclusive <= startInclusive}, the result is an empty matrix.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -317,18 +317,20 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * reversed.columnCount();                            // returns 0 (start > end -> 1x0)
      * }</pre>
      *
-     * @param startInclusive the starting value (inclusive)
-     * @param endExclusive the ending value (exclusive)
-     * @return a new 1×n ByteMatrix where n = max(0, endExclusive - startInclusive)
+     * @param startInclusive the starting byte value (inclusive)
+     * @param endExclusive the ending byte value (exclusive)
+     * @return a single-row {@code ByteMatrix} containing the range of values
      */
     public static ByteMatrix range(final byte startInclusive, final byte endExclusive) {
         return new ByteMatrix(new byte[][] { Array.range(startInclusive, endExclusive) });
     }
 
     /**
-     * Creates a 1-row ByteMatrix containing a range of byte values with a specified step.
-     * The step size can be positive (for ascending sequences) or negative (for descending sequences).
-     * If the step would not reach endExclusive from startInclusive, a 1×0 matrix is returned.
+     * Creates a single-row {@code ByteMatrix} containing the half-open range
+     * {@code [startInclusive, endExclusive)} stepped by {@code step}.
+     * Supports both ascending (positive step) and descending (negative step) sequences.
+     * If the step direction does not advance from {@code startInclusive} toward {@code endExclusive},
+     * a {@code 1x0} matrix is returned.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -344,8 +346,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * ByteMatrix.range((byte) 0, (byte) 10, (byte) 0);          // throws IllegalArgumentException (step is zero)
      * }</pre>
      *
-     * @param startInclusive the starting value (inclusive)
-     * @param endExclusive the ending value (exclusive)
+     * @param startInclusive the starting byte value (inclusive)
+     * @param endExclusive the ending byte value (exclusive)
      * @param step the step size (must not be zero; can be positive or negative)
      * @return a new 1×n ByteMatrix with values incremented by the step size
      * @throws IllegalArgumentException if {@code step} is zero
@@ -355,9 +357,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     }
 
     /**
-     * Creates a 1-row ByteMatrix containing a closed range of byte values from startInclusive to endInclusive.
-     * The range increments by 1 for each element and includes the end value. If
-     * {@code startInclusive > endInclusive}, a 1×0 matrix is returned.
+     * Creates a single-row {@code ByteMatrix} containing a closed range of byte values.
+     * The range is {@code [startInclusive, endInclusive]} with an implicit step of {@code +1}.
+     * If {@code endInclusive < startInclusive}, the result is an empty matrix.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -373,19 +375,20 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * ByteMatrix.rangeClosed((byte) 0, (byte) 3).columnCount();   // returns 4
      * }</pre>
      *
-     * @param startInclusive the starting value (inclusive)
-     * @param endInclusive the ending value (inclusive)
-     * @return a new 1×n ByteMatrix where n = max(0, endInclusive - startInclusive + 1)
+     * @param startInclusive the starting byte value (inclusive)
+     * @param endInclusive the ending byte value (inclusive)
+     * @return a single-row {@code ByteMatrix} containing the range of values
      */
     public static ByteMatrix rangeClosed(final byte startInclusive, final byte endInclusive) {
         return new ByteMatrix(new byte[][] { Array.rangeClosed(startInclusive, endInclusive) });
     }
 
     /**
-     * Creates a 1-row ByteMatrix containing a closed range of byte values with a specified step.
-     * The step size can be positive (for ascending sequences) or negative (for descending sequences).
-     * The end value is included only if it is reachable by stepping from start. If the step would not
-     * reach endInclusive from startInclusive, a 1×0 matrix is returned.
+     * Creates a single-row {@code ByteMatrix} containing the closed range
+     * {@code [startInclusive, endInclusive]} stepped by {@code step}.
+     * Supports both ascending (positive step) and descending (negative step) sequences.
+     * The end value is included only if it is reachable by stepping from start. If the step direction
+     * does not advance from {@code startInclusive} toward {@code endInclusive}, a {@code 1x0} matrix is returned.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -401,8 +404,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * ByteMatrix.rangeClosed((byte) 0, (byte) 8, (byte) 0);     // throws IllegalArgumentException (step is zero)
      * }</pre>
      *
-     * @param startInclusive the starting value (inclusive)
-     * @param endInclusive the ending value (inclusive, if reachable by stepping)
+     * @param startInclusive the starting byte value (inclusive)
+     * @param endInclusive the ending byte value (inclusive, if reachable by stepping)
      * @param step the step size (must not be zero; can be positive or negative)
      * @return a new 1×n ByteMatrix with values incremented by the step size
      * @throws IllegalArgumentException if {@code step} is zero

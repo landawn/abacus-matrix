@@ -123,7 +123,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     }
 
     /**
-     * Creates a DoubleMatrix from a two-dimensional double array.
+     * Creates a {@code DoubleMatrix} from a two-dimensional double array.
      *
      * <p><b>&#9888;&#65039; Shared backing:</b> When the input has at least one row, the provided array is used directly without defensive copying.
      * Changes to the input array are reflected in the returned matrix, and vice versa. A zero-row input is instead canonicalized to the shared empty matrix,
@@ -143,8 +143,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * DoubleMatrix.of(new double[][] {{1.0}, {2.0, 3.0}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
      *
-     * @param a the two-dimensional double array to create the matrix from, or empty for an empty matrix; must not be {@code null}
-     * @return a new {@code DoubleMatrix} wrapping the provided data, or the shared empty {@code DoubleMatrix} if the input is empty
+     * @param a the two-dimensional double array to wrap, or empty for an empty matrix; must not be {@code null}
+     * @return a new {@code DoubleMatrix} backed by {@code a}, or the shared empty matrix if {@code a} is empty
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
@@ -196,7 +196,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     }
 
     /**
-     * Creates a DoubleMatrix from a two-dimensional int array by converting int values to double.
+     * Creates a {@code DoubleMatrix} from a two-dimensional int array by converting int values to double.
      *
      * <p>All rows must have the same length as the first row (rectangular array required).</p>
      *
@@ -212,7 +212,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @param a the two-dimensional int array to convert to a double matrix, or empty for an empty matrix; must not be {@code null}
-     * @return a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if input is empty
+     * @return a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if {@code a} is empty
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row is {@code null}, or if rows have different lengths (non-rectangular array)
      * @see IntMatrix#toDoubleMatrix()
      */
@@ -248,7 +248,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     }
 
     /**
-     * Creates a DoubleMatrix from a two-dimensional long array by converting long values to double.
+     * Creates a {@code DoubleMatrix} from a two-dimensional long array by converting long values to double.
      *
      * <p>All rows must have the same length as the first row (rectangular array required).</p>
      *
@@ -273,7 +273,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @param a the two-dimensional long array to convert to a double matrix, or empty for an empty matrix; must not be {@code null}
-     * @return a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if input is empty
+     * @return a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if {@code a} is empty
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row is {@code null}, or if rows have different lengths (non-rectangular array)
      * @see LongMatrix#toDoubleMatrix()
      */
@@ -309,7 +309,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     }
 
     /**
-     * Creates a DoubleMatrix from a two-dimensional float array by widening float values to double.
+     * Creates a {@code DoubleMatrix} from a two-dimensional float array by widening float values to double.
      * The widening conversion is exact for finite values, {@code NaN}, and {@code +/-Infinity};
      * no precision is lost since every {@code float} is representable as a {@code double}.
      *
@@ -332,7 +332,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @param a the two-dimensional float array to convert to a double matrix, or empty for an empty matrix; must not be {@code null}
-     * @return a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if input is empty
+     * @return a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if {@code a} is empty
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row is {@code null}, or if rows have different lengths (non-rectangular array)
      * @see FloatMatrix#toDoubleMatrix()
      */
@@ -595,7 +595,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     }
 
     /**
-     * Converts a boxed Double matrix to a primitive DoubleMatrix.
+     * Converts a boxed {@link Matrix Matrix&lt;Double&gt;} to a primitive {@code DoubleMatrix}.
      * {@code null} values in the input matrix are converted to {@code 0.0}.
      *
      * <p><b>Usage Examples:</b></p>
@@ -611,8 +611,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * DoubleMatrix.unbox((Matrix<Double>) null); // throws IllegalArgumentException
      * }</pre>
      *
-     * @param x the boxed Double matrix to convert; must not be {@code null}
-     * @return a new DoubleMatrix with unboxed values ({@code null} elements become {@code 0.0})
+     * @param x the boxed {@code Double} matrix to convert; must not be {@code null}
+     * @return a new {@code DoubleMatrix} with unboxed values ({@code null} elements become {@code 0.0})
      * @throws IllegalArgumentException if {@code x} is {@code null}
      * @see #boxed()
      */
@@ -1532,7 +1532,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     }
 
     /**
-     * Creates a new IntMatrix by applying a function that converts double values to int.
+     * Creates a new {@code IntMatrix} by applying a function that converts double values to int.
      * This operation may be executed in parallel for better performance on large matrices. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Usage Examples:</b></p>
@@ -1566,7 +1566,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     }
 
     /**
-     * Creates a new LongMatrix by applying a function that converts double values to long.
+     * Creates a new {@code LongMatrix} by applying a function that converts double values to long.
      * This operation may be executed in parallel for better performance on large matrices. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Usage Examples:</b></p>
@@ -2840,9 +2840,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     /**
      * Performs element-wise addition of this matrix with another matrix.
      * The matrices must have the same dimensions (same number of rows and columns).
-     *
-     * <p>For large matrices (8192+ elements), this operation may be parallelized automatically
-     * for better performance.</p>
+     * The original matrices are not modified.
      *
      * <p><b>Floating-point notes:</b> Adding {@code +Infinity} and {@code -Infinity} produces
      * {@code NaN}. If either operand is {@code NaN}, the result at that position is {@code NaN}.
@@ -2898,9 +2896,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     /**
      * Performs element-wise subtraction of another matrix from this matrix.
      * The matrices must have the same dimensions (same number of rows and columns).
-     *
-     * <p>For large matrices (8192+ elements), this operation may be parallelized automatically
-     * for better performance.</p>
+     * The original matrices are not modified.
      *
      * <p><b>Floating-point notes:</b> Subtracting {@code +Infinity} from {@code +Infinity}
      * (or {@code -Infinity} from {@code -Infinity}) produces {@code NaN}. If either operand is
@@ -2954,15 +2950,14 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
 
     /**
      * Performs matrix multiplication of this matrix with another matrix.
-     * The number of columns in this matrix must equal the number of rows in the other matrix.
-     * The resulting matrix has dimensions (this.rowCount × other.columnCount).
+     * The number of columns in this matrix must equal the number of rows in {@code other}.
+     * The resulting matrix has dimensions {@code this.rowCount × other.columnCount}.
+     * The original matrices are not modified.
      *
      * <p>This operation uses standard matrix multiplication where each element (i,j) in the result
      * is computed as the dot product of row i from this matrix and column j from the other matrix.
      * Accumulated rounding errors may occur for large matrices, since {@code double} has finite
      * precision (~15-16 decimal digits).</p>
-     *
-     * <p>For large matrices, this operation may be parallelized automatically for better performance.</p>
      *
      * <p><b>Note:</b> This is the linear-algebra matrix product, not element-wise multiplication.
      * For element-wise multiplication use

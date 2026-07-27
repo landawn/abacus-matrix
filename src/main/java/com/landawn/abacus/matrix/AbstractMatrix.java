@@ -101,10 +101,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      */
     protected static final Random RAND = new SecureRandom();
 
+    /** The {@code char} default value ({@code '\0'}), used to fill newly introduced cells. */
     static final char CHAR_0 = (char) 0;
 
+    /** The {@code byte} default value ({@code 0}), used to fill newly introduced cells. */
     static final byte BYTE_0 = (byte) 0;
 
+    /** The {@code short} default value ({@code 0}), used to fill newly introduced cells. */
     static final short SHORT_0 = (short) 0;
 
     // ==================== Standardized Exception Message Constants ====================
@@ -246,7 +249,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         return source;
     }
 
-    /** Snapshots only source rows that alias this matrix's live backing rows. */
+    /** Returns {@code source}, or a copy in which rows aliasing this matrix's live backing rows are replaced by snapshots. */
     final A[] snapshotRowsIfBackingRows(final A[] source) {
         if (a.length == 0) {
             return source;
@@ -1605,7 +1608,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
      * @return a stream of adjacent points in the four cardinal directions (0 to 4 points depending on position)
-     * @throws IndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
     public Stream<Point> adjacent4Points(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -1655,7 +1658,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
      * @return a stream of adjacent points in all 8 directions (0 to 8 points depending on position)
-     * @throws IndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
     public Stream<Point> adjacent8Points(final int rowIndex, final int columnIndex) {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -2642,7 +2645,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * @param rowIndex the row index to validate (must be in range [0, rowCount))
      * @param columnIndex the column index to validate (must be in range [0, columnCount))
-     * @throws IndexOutOfBoundsException if rowIndex or columnIndex is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
     protected void checkRowColumnIndex(final int rowIndex, final int columnIndex) {
         checkRowIndex(rowIndex);

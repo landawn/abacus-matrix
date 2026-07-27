@@ -121,7 +121,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     }
 
     /**
-     * Creates a ShortMatrix from a two-dimensional short array.
+     * Creates a {@code ShortMatrix} from a two-dimensional short array.
      *
      * <p><b>&#9888;&#65039; Shared backing:</b> When the input has at least one row, the provided array is used directly without defensive copying.
      * Changes to the input array are reflected in the returned matrix, and vice versa. A zero-row input is instead canonicalized to the shared empty matrix,
@@ -288,8 +288,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     }
 
     /**
-     * Creates a 1-row ShortMatrix with values from startInclusive to endExclusive.
-     * The values are generated with a step of 1. If {@code startInclusive >= endExclusive}, a 1×0 matrix is returned.
+     * Creates a 1-row {@code ShortMatrix} containing the half-open range
+     * {@code [startInclusive, endExclusive)} with step {@code 1}.
+     * If {@code startInclusive >= endExclusive}, a {@code 1x0} matrix is returned.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -303,16 +304,18 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param startInclusive the starting value (inclusive)
      * @param endExclusive the ending value (exclusive)
-     * @return a new 1×n ShortMatrix where n = max(0, endExclusive - startInclusive)
+     * @return a new {@code 1xn} {@code ShortMatrix} where {@code n = max(0, endExclusive - startInclusive)}
      */
     public static ShortMatrix range(final short startInclusive, final short endExclusive) {
         return new ShortMatrix(new short[][] { Array.range(startInclusive, endExclusive) });
     }
 
     /**
-     * Creates a 1-row ShortMatrix with values from startInclusive to endExclusive with the specified step.
+     * Creates a 1-row {@code ShortMatrix} containing the half-open range
+     * {@code [startInclusive, endExclusive)} stepped by {@code step}.
      * The step size can be positive (for ascending sequences) or negative (for descending sequences).
-     * If the step would not reach endExclusive from startInclusive, a 1×0 matrix is returned.
+     * If the step direction does not advance from {@code startInclusive} toward {@code endExclusive},
+     * a {@code 1x0} matrix is returned.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -325,8 +328,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param startInclusive the starting value (inclusive)
      * @param endExclusive the ending value (exclusive)
-     * @param step the step size (must not be zero; can be positive or negative)
-     * @return a new 1×n ShortMatrix with values incremented by the step size
+     * @param step the step size (must not be zero; positive for ascending, negative for descending)
+     * @return a new {@code 1xn} {@code ShortMatrix} of values from {@code startInclusive} stepped by {@code step}
      * @throws IllegalArgumentException if {@code step} is zero
      */
     public static ShortMatrix range(final short startInclusive, final short endExclusive, final short step) {
@@ -334,9 +337,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     }
 
     /**
-     * Creates a 1-row ShortMatrix with values from startInclusive to endInclusive.
-     * This method includes the end value, unlike {@link #range(short, short)}.
-     * If {@code startInclusive > endInclusive}, a 1×0 matrix is returned.
+     * Creates a 1-row {@code ShortMatrix} containing the closed range
+     * {@code [startInclusive, endInclusive]} with step {@code 1}.
+     * Unlike {@link #range(short, short)} this includes {@code endInclusive}.
+     * If {@code startInclusive > endInclusive}, a {@code 1x0} matrix is returned.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -349,17 +353,19 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param startInclusive the starting value (inclusive)
      * @param endInclusive the ending value (inclusive)
-     * @return a new 1×n ShortMatrix where n = max(0, endInclusive - startInclusive + 1)
+     * @return a new {@code 1xn} {@code ShortMatrix} where {@code n = max(0, endInclusive - startInclusive + 1)}
      */
     public static ShortMatrix rangeClosed(final short startInclusive, final short endInclusive) {
         return new ShortMatrix(new short[][] { Array.rangeClosed(startInclusive, endInclusive) });
     }
 
     /**
-     * Creates a 1-row ShortMatrix with values from startInclusive to endInclusive with the specified step.
+     * Creates a 1-row {@code ShortMatrix} containing the closed range
+     * {@code [startInclusive, endInclusive]} stepped by {@code step}.
      * The step size can be positive (for ascending sequences) or negative (for descending sequences).
-     * The end value is included only if it is reachable by stepping from start. If the step would not
-     * reach endInclusive from startInclusive, a 1×0 matrix is returned.
+     * {@code endInclusive} is included only if it is reachable from {@code startInclusive} via {@code step};
+     * otherwise the last element is the reachable value nearest to {@code endInclusive} without stepping past it.
+     * If the step direction does not advance toward {@code endInclusive}, a {@code 1x0} matrix is returned.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -373,8 +379,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param startInclusive the starting value (inclusive)
      * @param endInclusive the ending value (inclusive, if reachable by stepping)
-     * @param step the step size (must not be zero; can be positive or negative)
-     * @return a new 1×n ShortMatrix with values incremented by the step size
+     * @param step the step size (must not be zero; positive for ascending, negative for descending)
+     * @return a new {@code 1xn} {@code ShortMatrix} of values from {@code startInclusive} stepped by {@code step}
      * @throws IllegalArgumentException if {@code step} is zero
      */
     public static ShortMatrix rangeClosed(final short startInclusive, final short endInclusive, final short step) {

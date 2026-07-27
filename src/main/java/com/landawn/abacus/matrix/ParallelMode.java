@@ -63,7 +63,7 @@ public enum ParallelMode {
 
     /**
      * Uses parallel execution for automatic operations on the current thread only when the runtime supports
-     * it, the operation's safety restrictions permit it, and its operation-specific work count meets the
+     * it, the operation's safety restrictions permit it, and the operation-specific work count meets the
      * threshold checked by {@link Matrices#shouldRunInParallel(AbstractMatrix, long)}.
      *
      * <p>This is the default mode and is recommended for most workloads: small operations stay sequential

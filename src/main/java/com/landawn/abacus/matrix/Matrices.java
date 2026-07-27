@@ -61,11 +61,23 @@ import com.landawn.abacus.util.stream.Stream;
  */
 public final class Matrices {
 
+    /** Logger for this class. */
     static final Logger logger = LoggerFactory.getLogger(Matrices.class);
 
+    /** Minimum estimated work count for automatic parallelization under {@link ParallelMode#AUTO}. */
     static final int MIN_COUNT_FOR_PARALLEL = 8192;
 
+    /**
+     * Whether parallel stream support is available in the runtime environment.
+     * Detected once at class initialization; when {@code false}, all parallelization requests
+     * fall back to sequential execution.
+     */
     static final boolean IS_PARALLEL_STREAM_SUPPORTED;
+
+    /**
+     * The per-thread {@link ParallelMode} setting that drives automatic parallelization decisions.
+     * Defaults to {@link ParallelMode#AUTO} for every thread.
+     */
     static final ThreadLocal<ParallelMode> PARALLEL_MODE_TL = ThreadLocal.withInitial(() -> ParallelMode.AUTO);
 
     static {
@@ -90,7 +102,7 @@ public final class Matrices {
     }
 
     /**
-     * Returns the current parallel processing setting for the current thread.
+     * Returns the parallel processing setting for the current thread.
      *
      * <p>The parallel processing setting is thread-local, allowing different threads to have
      * independent parallelization behaviors. This enables fine-grained control over parallel
@@ -770,9 +782,9 @@ public final class Matrices {
      *
      * @param <T> the type of elements in the result stream
      * @param fromRowIndex the starting row index (inclusive), must be non-negative
-     * @param toRowIndex the ending row index (exclusive), must be greater than or equal to fromRowIndex
+     * @param toRowIndex the ending row index (exclusive), must be greater than or equal to {@code fromRowIndex}
      * @param fromColumnIndex the starting column index (inclusive), must be non-negative
-     * @param toColumnIndex the ending column index (exclusive), must be greater than or equal to fromColumnIndex
+     * @param toColumnIndex the ending column index (exclusive), must be greater than or equal to {@code fromColumnIndex}
      * @param mapper the function to apply at each position (i, j), receives row index and column index, must not be {@code null}
      *        and must be thread-safe if parallel execution is requested
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
@@ -906,9 +918,9 @@ public final class Matrices {
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive), must be non-negative
-     * @param toRowIndex the ending row index (exclusive), must be greater than or equal to fromRowIndex
+     * @param toRowIndex the ending row index (exclusive), must be greater than or equal to {@code fromRowIndex}
      * @param fromColumnIndex the starting column index (inclusive), must be non-negative
-     * @param toColumnIndex the ending column index (exclusive), must be greater than or equal to fromColumnIndex
+     * @param toColumnIndex the ending column index (exclusive), must be greater than or equal to {@code fromColumnIndex}
      * @param mapper the function to apply at each position (i, j), receives row index and column index, must not be {@code null}
      *        and must be thread-safe if parallel execution is requested
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
@@ -976,8 +988,8 @@ public final class Matrices {
      *
      * <p>Index meanings:</p>
      * <ul>
-     * <li>{@code i} - row index in matrix {@code a} (and result matrix C).</li>
-     * <li>{@code j} - column index in matrix {@code b} (and result matrix C).</li>
+     * <li>{@code i} - row index in matrix {@code a} (and result matrix {@code C}).</li>
+     * <li>{@code j} - column index in matrix {@code b} (and result matrix {@code C}).</li>
      * <li>{@code k} - common dimension (columns in {@code a}, rows in {@code b}).</li>
      * </ul>
      *
@@ -1330,6 +1342,15 @@ public final class Matrices {
         return currentLevel.get(0);
     }
 
+    /**
+     * Checks whether all matrices in the collection share the same runtime storage: the same
+     * matrix class and, for generic {@link Matrix} instances, the same runtime element type.
+     * Only then may n-ary stacking regroup the inputs in balanced rounds without changing
+     * which intermediate allocation would fail.
+     *
+     * @param matrices the matrices to check, must be non-empty and contain no {@code null} elements
+     * @return {@code true} if all matrices have compatible storage for balanced stacking
+     */
     private static boolean hasCompatibleStackStorage(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> matrices) {
         final Iterator<? extends AbstractMatrix<?, ?, ?, ?, ?>> iterator = matrices.iterator();
         final AbstractMatrix<?, ?, ?, ?, ?> first = iterator.next();
@@ -1845,6 +1866,8 @@ public final class Matrices {
      * store references to the array, as it will be mutated for subsequent positions. Only use this
      * optimization if the function immediately processes and discards the array.</p>
      *
+     * <p>All matrices in the collection must have identical dimensions.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix m1 = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
@@ -2214,6 +2237,8 @@ public final class Matrices {
      * {@link #zipToLong(Collection, Throwables.IntNFunction, boolean)} with
      * {@code shareIntermediateArray = false}.</p>
      *
+     * <p>All matrices in the collection must have identical dimensions.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix m1 = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
@@ -2265,6 +2290,8 @@ public final class Matrices {
      * <p><b>&#9888;&#65039; Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
      * store references to the array, as it will be mutated for subsequent positions. Only use this
      * optimization if the function immediately processes and discards the array.</p>
+     *
+     * <p>All matrices in the collection must have identical dimensions.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2341,6 +2368,8 @@ public final class Matrices {
      * takes two {@code int} values and returns a {@code Double}. This is useful for operations requiring
      * floating-point precision, such as division or statistical calculations.</p>
      *
+     * <p>Both matrices must have identical dimensions.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix m1 = IntMatrix.of(new int[][] {{10, 20}, {30, 40}});
@@ -2395,6 +2424,8 @@ public final class Matrices {
      * <p>This method performs element-wise combination of three integer matrices using a function that
      * takes three {@code int} values and returns a {@code Double}. For each position (i, j), the function
      * is called with elements from all three matrices.</p>
+     *
+     * <p>All three matrices must have identical dimensions.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2456,6 +2487,8 @@ public final class Matrices {
      * This is a convenience method that calls {@link #zipToDouble(Collection, Throwables.IntNFunction, boolean)}
      * with {@code shareIntermediateArray = false}.</p>
      *
+     * <p>All matrices in the collection must have identical dimensions.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix m1 = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
@@ -2506,6 +2539,8 @@ public final class Matrices {
      * <p><b>&#9888;&#65039; Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
      * store references to the array, as it will be mutated for subsequent positions. Only use this
      * optimization if the function immediately processes and discards the array.</p>
+     *
+     * <p>All matrices in the collection must have identical dimensions.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2801,8 +2836,19 @@ public final class Matrices {
      * Combines multiple {@link LongMatrix} objects element-wise using a binary operator applied sequentially.
      *
      * <p>This method combines an arbitrary number of long matrices by applying the binary operator
-     * sequentially across all matrices at each position. The operation is optimized for single and
-     * two-element collections. All matrices in the collection must have identical dimensions.</p>
+     * sequentially across all matrices at each position. For a collection of matrices [m1, m2, m3, ...],
+     * the result at position (i, j) is computed as:</p>
+     * <pre>{@code
+     * // result[i][j] = zipFunction(zipFunction(m1[i][j], m2[i][j]), m3[i][j])...
+     * }</pre>
+     *
+     * <p>All matrices in the collection must have identical dimensions. The operation is optimized
+     * for single and two-element collections:</p>
+     * <ul>
+     * <li>One matrix: Returns a copy of that matrix</li>
+     * <li>Two matrices: Directly applies the binary operator</li>
+     * <li>Three or more: Applies the operator sequentially, accumulating results</li>
+     * </ul>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2875,6 +2921,8 @@ public final class Matrices {
      * takes two {@code long} values and returns a {@code Double}. This is useful for operations requiring
      * floating-point precision, such as division or statistical calculations on long values.</p>
      *
+     * <p>Both matrices must have identical dimensions.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix m1 = LongMatrix.of(new long[][] {{100L, 200L}, {300L, 400L}});
@@ -2929,6 +2977,8 @@ public final class Matrices {
      * <p>This method performs element-wise combination of three long matrices using a function that
      * takes three {@code long} values and returns a {@code Double}. For each position (i, j), the function
      * is called with elements from all three matrices.</p>
+     *
+     * <p>All three matrices must have identical dimensions.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2990,6 +3040,8 @@ public final class Matrices {
      * This is a convenience method that calls {@link #zipToDouble(Collection, Throwables.LongNFunction, boolean)}
      * with {@code shareIntermediateArray = false}.</p>
      *
+     * <p>All matrices in the collection must have identical dimensions.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix m1 = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
@@ -3040,6 +3092,8 @@ public final class Matrices {
      * <p><b>&#9888;&#65039; Warning:</b> When {@code shareIntermediateArray} is {@code true}, the zip function must NOT
      * store references to the array, as it will be mutated for subsequent positions. Only use this
      * optimization if the function immediately processes and discards the array.</p>
+     *
+     * <p>All matrices in the collection must have identical dimensions.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3111,6 +3165,8 @@ public final class Matrices {
      * an array of longs (one from each matrix at each position) and produces a result of any type.
      * This is a convenience method that calls {@link #zipToObj(Collection, Throwables.LongNFunction, boolean, Class)}
      * with {@code shareIntermediateArray = false}.</p>
+     *
+     * <p>All matrices in the collection must have identical dimensions.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3333,8 +3389,19 @@ public final class Matrices {
      * Combines multiple {@link DoubleMatrix} objects element-wise using a binary operator applied sequentially.
      *
      * <p>This method combines an arbitrary number of double matrices by applying the binary operator
-     * sequentially across all matrices at each position. The operation is optimized for single and
-     * two-element collections. All matrices in the collection must have identical dimensions.</p>
+     * sequentially across all matrices at each position. For a collection of matrices [m1, m2, m3, ...],
+     * the result at position (i, j) is computed as:</p>
+     * <pre>{@code
+     * // result[i][j] = zipFunction(zipFunction(m1[i][j], m2[i][j]), m3[i][j])...
+     * }</pre>
+     *
+     * <p>All matrices in the collection must have identical dimensions. The operation is optimized
+     * for single and two-element collections:</p>
+     * <ul>
+     * <li>One matrix: Returns a copy of that matrix</li>
+     * <li>Two matrices: Directly applies the binary operator</li>
+     * <li>Three or more: Applies the operator sequentially, accumulating results</li>
+     * </ul>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3406,6 +3473,8 @@ public final class Matrices {
      * an array of doubles (one from each matrix at each position) and produces a result of any type.
      * This is a convenience method that calls {@link #zipToObj(Collection, Throwables.DoubleNFunction, boolean, Class)}
      * with {@code shareIntermediateArray = false}.</p>
+     *
+     * <p>All matrices in the collection must have identical dimensions.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3748,8 +3817,7 @@ public final class Matrices {
      *
      * <p>All matrices in the collection must have identical dimensions. Their element types need not
      * be identical; the result matrix uses the most specific element type assignable from every input
-     * matrix's element type. The operation
-     * is optimized for single-element collections:</p>
+     * matrix's element type. The operation is optimized for single-element collections:</p>
      * <ul>
      * <li>One matrix: Returns a copy of that matrix</li>
      * <li>Two or more: Applies the operator sequentially per cell, accumulating results (left fold)</li>
@@ -3893,6 +3961,8 @@ public final class Matrices {
      * matrices (which may be more specific than the static {@code T}), so the function should treat the
      * array as read-only: writing an element of an incompatible type into it would throw an
      * {@code ArrayStoreException}.</p>
+     *
+     * <p>All matrices in the collection must have identical dimensions.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

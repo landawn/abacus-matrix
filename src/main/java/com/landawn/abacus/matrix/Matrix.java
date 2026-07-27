@@ -150,7 +150,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     }
 
     /**
-     * Creates a Matrix from a two-dimensional array.
+     * Creates a {@code Matrix} from a two-dimensional array.
      *
      * <p><b>&#9888;&#65039; Shared backing:</b> The matrix maintains a reference to the provided array,
      * not a copy. Modifications to the original array will affect the matrix,
@@ -178,7 +178,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param <T> the type of elements in the matrix
      * @param a the two-dimensional array to create the matrix from (must not be {@code null})
-     * @return a new Matrix containing the provided data
+     * @return a new {@code Matrix} containing the provided data
      * @throws IllegalArgumentException if the array is {@code null}, if any row is {@code null}, or if rows have
      *         different lengths (non-rectangular array)
      */
@@ -3785,12 +3785,12 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Matrix<Integer> matrix = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      *
      * // Process only the center element
-     * List<Integer> center = Collections.synchronizedList(new ArrayList<>());
+     * List<Integer> center = java.util.Collections.synchronizedList(new ArrayList<>());
      * matrix.forEach(1, 2, 1, 2, value -> center.add(value));
      * // center is now [5]
      *
      * // Process a 2x2 sub-matrix
-     * List<Integer> subMatrix = Collections.synchronizedList(new ArrayList<>());
+     * List<Integer> subMatrix = java.util.Collections.synchronizedList(new ArrayList<>());
      * matrix.forEach(0, 2, 1, 3, value -> subMatrix.add(value));
      * subMatrix.containsAll(List.of(2, 3, 5, 6));              // returns true (order is unspecified if parallelized)
      * subMatrix.size();                                        // returns 4
@@ -3857,7 +3857,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param columnNames the collection of names to assign to the resulting Dataset columns; the collection must be
      *        non-{@code null}, each name must be non-{@code null}, non-empty, and unique, and the collection size must equal
-     *        {@code columnCount}. An empty collection is valid only for a {@code 0 x 0} matrix; a matrix with rows but
+     *        {@code columnCount}. An empty collection is valid only for a {@code 0x0} matrix; a matrix with rows but
      *        zero columns cannot be converted at all
      * @return a Dataset containing the matrix data with the specified column names
      *         (one row per matrix row)
