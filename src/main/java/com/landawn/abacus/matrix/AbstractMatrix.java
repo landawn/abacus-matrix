@@ -186,8 +186,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Memoized result of {@link #hasAliasedRows()}: {@code 0} = not yet computed, {@code 1} = aliased,
      * {@code 2} = not aliased. The answer is invariant for the lifetime of the instance because {@link #a}
      * is {@code final} and the only structural mutation performed by this package is the row swap in
-     * {@code flipVerticallyInPlace}, which permutes the same set of row references. Matrices are not
-     * thread-safe, so this needs no synchronization.
+     * {@code flipVerticallyInPlace}, which permutes the same set of row references. Row reassignment done
+     * externally through {@link #unsafeBackingArray()} is outside that contract and can leave this value
+     * stale. Matrices are not thread-safe, so this needs no synchronization.
      */
     private byte aliasedRowsState;
 
@@ -489,7 +490,11 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Any changes made to the returned array (including reassigning row references or mutating row contents)
      * will be reflected in this matrix. Reassigned rows must remain non-{@code null} and keep the original
      * {@link #columnCount()}; violating those shape invariants leaves the matrix in an invalid state because
-     * its dimensions are cached at construction. If you need an independent matrix instance, use {@link #copy()}.
+     * its dimensions are cached at construction. Reassignment must also preserve which entries refer to the
+     * same row array: whether this matrix has aliased rows is computed once and then cached, so introducing
+     * or removing aliasing through this array can make row-wise in-place operations such as {@code updateAll}
+     * and {@code updateColumn} apply the operator the wrong number of times.
+     * If you need an independent matrix instance, use {@link #copy()}.
      * If you only need the data flattened into a single one-dimensional array, use {@link #flatten()}.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -2546,31 +2551,34 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
     /**
      * Prints this matrix to standard output in a formatted, human-readable manner.
-     * Each concrete implementation provides its own formatting based on the element type.
+     * Each concrete implementation renders the values of its own element type.
      * This method is primarily intended for debugging and logging purposes.
      *
-     * <p>The exact output format depends on the matrix type:
+     * <p>Every matrix type shares the same layout: one row per line, each row rendered as its elements
+     * separated by {@code ", "} and enclosed in square brackets; a zero-row matrix prints {@code "[]"}.
+     * Values are not padded, so columns are not aligned. Only the per-element rendering differs:
      * <ul>
-     *   <li>Numeric matrices typically display values aligned in rows and columns</li>
-     *   <li>Object matrices display using the {@code toString()} method of elements</li>
+     *   <li>Primitive matrices display each element's natural string form (for example {@code 1} for
+     *       {@code int}, {@code 1.0} for {@code double}, {@code true} for {@code boolean})</li>
+     *   <li>Object matrices display using the {@code toString()} method of elements, with a
+     *       {@code null} element rendered as {@code "null"}</li>
      * </ul>
      *
      * <p>To capture the formatted rendering instead of printing it, use {@link #appendTo(Appendable)}.</p>
      *
-     * <p><b>Usage Examples:</b> (the exact rendering is implementation-defined; the strings below are
-     * only an illustration of one possible format)</p>
+     * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * matrix.println();                                        // prints something such as "[1, 2]\n[3, 4]"
+     * matrix.println();                                        // prints "[1, 2]\n[3, 4]"
      *
      * IntMatrix single = IntMatrix.of(new int[][] {{1, 2, 3}});
-     * single.println();                                        // prints for example "[1, 2, 3]"
+     * single.println();                                        // prints "[1, 2, 3]"
      *
      * IntMatrix empty = IntMatrix.of(new int[0][0]);
-     * empty.println();                                         // prints for example "[]"
+     * empty.println();                                         // prints "[]"
      *
      * IntMatrix rowsNoCols = IntMatrix.of(new int[2][0]);
-     * rowsNoCols.println();                                    // prints for example "[]\n[]" (two empty rows)
+     * rowsNoCols.println();                                    // prints "[]\n[]" (two empty rows)
      * }</pre>
      *
      * @see #appendTo(Appendable)

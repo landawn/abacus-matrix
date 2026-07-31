@@ -1367,7 +1367,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * This modifies the matrix directly.
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
-     * Distinct backing rows and their elements are processed in first-occurrence row-major order when executed sequentially.</p>
+     * When this operation is not parallelized, distinct backing rows and their elements are processed in
+     * first-occurrence row-major order; when it is parallelized, the encounter order is unspecified.</p>
      *
      * <p>If multiple logical rows reference the same backing array, every element in that shared row is transformed exactly once.</p>
      *

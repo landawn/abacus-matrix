@@ -529,6 +529,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
      * @throws ArrayStoreException if {@code value} is non-{@code null} and not assignable to
      *         the row's runtime storage component type
+     * @see #set(int, int, Object)
      */
     public void set(final Point point, final T value) {
         N.checkArgNotNull(point, "point");
@@ -705,6 +706,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @return a new array containing the values from the specified row
      * @throws IndexOutOfBoundsException if {@code rowIndex} is negative or greater than or equal to {@code rowCount}
      * @see #rowView(int)
+     * @see #columnCopy(int)
      */
     @Override
     public T[] rowCopy(final int rowIndex) throws IndexOutOfBoundsException {
@@ -734,6 +736,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param columnIndex the index of the column to retrieve (0-based)
      * @return a new array containing the values from the specified column
      * @throws IndexOutOfBoundsException if {@code columnIndex} is negative or greater than or equal to {@code columnCount}
+     * @see #rowCopy(int)
+     * @see #rowView(int)
      */
     @Override
     public T[] columnCopy(final int columnIndex) throws IndexOutOfBoundsException {
@@ -1713,6 +1717,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws IllegalArgumentException if {@code source} is {@code null}
      * @throws ArrayStoreException if any copied element of {@code source} is not assignable to the
      *         corresponding row's runtime storage component type
+     * @see #fill(int, int, Object[][])
      */
     public void fill(final T[][] source) {
         fill(0, 0, source);
@@ -2312,6 +2317,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @return a new matrix that is this matrix rotated 90 degrees clockwise,
      *         or an empty matrix if this matrix has zero columns
+     * @see #rotate180()
+     * @see #rotate270()
+     * @see #transpose()
      */
     @Override
     public Matrix<T> rotate90() {
@@ -2404,6 +2412,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @return a new matrix that is this matrix rotated 270 degrees clockwise,
      *         or an empty matrix if this matrix has zero columns
+     * @see #rotate90()
+     * @see #rotate180()
+     * @see #transpose()
      */
     @Override
     public Matrix<T> rotate270() {
@@ -2710,6 +2721,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @return a list of all elements in row-major order, with size equal to {@code rowCount * columnCount}
      * @throws IllegalStateException if the matrix is too large to flatten ({@code rowCount * columnCount > Integer.MAX_VALUE})
+     * @see #rowMajorStream()
      */
     @Override
     public List<T> flatten() {
@@ -4071,6 +4083,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @return a string representation of this matrix
+     * @see #println()
      */
     @Override
     public String toString() {

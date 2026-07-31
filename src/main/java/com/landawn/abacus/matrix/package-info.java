@@ -75,7 +75,7 @@
  * its action modify the matrix through a temporary flattened array. Shape transformations whose names do not
  * end in {@code InPlace}, arithmetic operations, {@code map}, {@code zipWith}, and {@code copy} leave the
  * receiver unchanged and return a separate matrix instead, except that a degenerate empty result may be the
- * type-neutral shared empty instance. Matrix instances are mutable and are not thread-safe.</p>
+ * shared empty instance of the returned matrix type. Matrix instances are mutable and are not thread-safe.</p>
  *
  * <h2>Traversal and parallel execution</h2>
  *

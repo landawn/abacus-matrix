@@ -1204,7 +1204,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * This modifies the matrix directly.
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
-     * Distinct backing rows and their elements are processed in first-occurrence row-major order when executed sequentially.</p>
+     * When this operation is not parallelized, distinct backing rows and their elements are processed in
+     * first-occurrence row-major order; when it is parallelized, the encounter order is unspecified.</p>
      *
      * <p>If multiple logical rows reference the same backing array, every element in that shared row is transformed exactly once.</p>
      *
@@ -2873,7 +2874,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
 
     /**
      * Converts this short matrix to an int matrix.
-     * Each short value is promoted to an int value.
+     * Each short value is promoted to a 32-bit integer with sign extension.
+     * This is a lossless conversion that preserves all values and their signs.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2897,7 +2899,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
 
     /**
      * Converts this short matrix to a long matrix.
-     * Each short value is promoted to a long value.
+     * Each short value is promoted to a 64-bit long integer with sign extension.
+     * This is a lossless conversion that preserves all values and their signs.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2930,7 +2933,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
 
     /**
      * Converts this short matrix to a float matrix.
-     * Each short value is converted to a float value.
+     * Each short value is converted to a 32-bit floating-point number.
+     * This is a lossless conversion since all short values can be exactly represented as floats.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2963,7 +2967,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
 
     /**
      * Converts this short matrix to a double matrix.
-     * Each short value is converted to a double value.
+     * Each short value is converted to a 64-bit double-precision floating-point number.
+     * This is a lossless conversion since all short values can be exactly represented as doubles.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

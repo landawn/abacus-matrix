@@ -1216,7 +1216,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * This modifies the matrix directly.
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
-     * Elements are processed in row-major order when executed sequentially.</p>
+     * When this operation is not parallelized, elements are processed in first-occurrence row-major order;
+     * when it is parallelized, the encounter order is unspecified.</p>
      *
      * <p>If multiple logical rows share the same backing array, each backing row is updated only
      * once, at its first occurrence.</p>
@@ -2686,7 +2687,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * {@code char}, not on text (e.g. {@code 'a' + 1} yields {@code 'b'}). If you want explicit integer
      * arithmetic, convert with {@link #toIntMatrix()} first.</p>
      *
-     * <p><b>Overflow:</b> each result element is computed as {@code (char) (a[i][j] + other[i][j])},
+     * <p><b>Overflow:</b> each result element is computed as {@code (char) (this[i][j] + other[i][j])},
      * so values wrap modulo {@code 65536} on overflow. If you need a non-wrapping result, call
      * {@link #toIntMatrix()} first and add there.</p>
      *
