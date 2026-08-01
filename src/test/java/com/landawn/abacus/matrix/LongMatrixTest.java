@@ -5805,8 +5805,8 @@ class LongMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> matrix.replaceIf((Throwables.LongPredicate<RuntimeException>) null, 0L));
             assertThrows(IllegalArgumentException.class, () -> matrix.replaceIf((Throwables.IntBiPredicate<RuntimeException>) null, 0L));
 
-            assertThrows(IllegalStateException.class, () -> emptyLike.updateMainDiagonal((Throwables.LongUnaryOperator<RuntimeException>) null));
-            assertThrows(IllegalStateException.class, () -> emptyLike.updateAntiDiagonal((Throwables.LongUnaryOperator<RuntimeException>) null));
+            assertThrows(IllegalArgumentException.class, () -> emptyLike.updateMainDiagonal((Throwables.LongUnaryOperator<RuntimeException>) null));
+            assertThrows(IllegalArgumentException.class, () -> emptyLike.updateAntiDiagonal((Throwables.LongUnaryOperator<RuntimeException>) null));
             assertThrows(IllegalArgumentException.class, () -> emptyLike.replaceIf((Throwables.LongPredicate<RuntimeException>) null, 0L));
             assertThrows(IllegalArgumentException.class, () -> emptyLike.replaceIf((Throwables.IntBiPredicate<RuntimeException>) null, 0L));
         }

@@ -807,6 +807,10 @@ class MatricesTest extends TestBase {
                 () -> Matrices.zipToInt(byteMatrix1, byteMatrix2, byteMatrix3, (Throwables.ByteTriFunction<Integer, RuntimeException>) null));
         assertThrows(IllegalArgumentException.class,
                 () -> Matrices.zipToInt(N.asList(byteMatrix1, byteMatrix2), (Throwables.ByteNFunction<Integer, RuntimeException>) null, false));
+        assertThrows(IllegalArgumentException.class,
+                () -> Matrices.zipToInt(N.asList(byteMatrix1, byteMatrix2), (Throwables.ByteNFunction<Integer, RuntimeException>) null));
+        assertThrows(IllegalArgumentException.class, () -> Matrices.zipToObj(N.asList(byteMatrix1, byteMatrix2),
+                (Throwables.ByteNFunction<Integer, RuntimeException>) null, Integer.class));
 
         assertThrows(IllegalArgumentException.class,
                 () -> Matrices.zip(N.asList(intMatrix1, intMatrix2), (Throwables.IntBinaryOperator<RuntimeException>) null));
@@ -824,6 +828,12 @@ class MatricesTest extends TestBase {
                 () -> Matrices.zipToDouble(intMatrix1, intMatrix2, intMatrix3, (Throwables.IntTriFunction<Double, RuntimeException>) null));
         assertThrows(IllegalArgumentException.class,
                 () -> Matrices.zipToDouble(N.asList(intMatrix1, intMatrix2), (Throwables.IntNFunction<Double, RuntimeException>) null, false));
+        assertThrows(IllegalArgumentException.class,
+                () -> Matrices.zipToLong(N.asList(intMatrix1, intMatrix2), (Throwables.IntNFunction<Long, RuntimeException>) null));
+        assertThrows(IllegalArgumentException.class,
+                () -> Matrices.zipToDouble(N.asList(intMatrix1, intMatrix2), (Throwables.IntNFunction<Double, RuntimeException>) null));
+        assertThrows(IllegalArgumentException.class,
+                () -> Matrices.zipToObj(N.asList(intMatrix1, intMatrix2), (Throwables.IntNFunction<Integer, RuntimeException>) null, Integer.class));
 
         assertThrows(IllegalArgumentException.class,
                 () -> Matrices.zip(N.asList(longMatrix1, longMatrix2), (Throwables.LongBinaryOperator<RuntimeException>) null));
@@ -836,11 +846,17 @@ class MatricesTest extends TestBase {
                 () -> Matrices.zipToDouble(longMatrix1, longMatrix2, longMatrix3, (Throwables.LongTriFunction<Double, RuntimeException>) null));
         assertThrows(IllegalArgumentException.class,
                 () -> Matrices.zipToDouble(N.asList(longMatrix1, longMatrix2), (Throwables.LongNFunction<Double, RuntimeException>) null, false));
+        assertThrows(IllegalArgumentException.class,
+                () -> Matrices.zipToDouble(N.asList(longMatrix1, longMatrix2), (Throwables.LongNFunction<Double, RuntimeException>) null));
+        assertThrows(IllegalArgumentException.class,
+                () -> Matrices.zipToObj(N.asList(longMatrix1, longMatrix2), (Throwables.LongNFunction<Long, RuntimeException>) null, Long.class));
 
         assertThrows(IllegalArgumentException.class,
                 () -> Matrices.zip(N.asList(doubleMatrix1, doubleMatrix2), (Throwables.DoubleBinaryOperator<RuntimeException>) null));
         assertThrows(IllegalArgumentException.class, () -> Matrices.zipToObj(N.asList(doubleMatrix1, doubleMatrix2),
                 (Throwables.DoubleNFunction<Double, RuntimeException>) null, false, Double.class));
+        assertThrows(IllegalArgumentException.class, () -> Matrices.zipToObj(N.asList(doubleMatrix1, doubleMatrix2),
+                (Throwables.DoubleNFunction<Double, RuntimeException>) null, Double.class));
         assertThrows(IllegalArgumentException.class,
                 () -> Matrices.zipToObj(N.asList(doubleMatrix1, doubleMatrix2), arr -> arr[0], false, (Class<Double>) null));
 
@@ -848,6 +864,8 @@ class MatricesTest extends TestBase {
                 () -> Matrices.zip(N.asList(stringMatrix1, stringMatrix2), (Throwables.BinaryOperator<String, RuntimeException>) null));
         assertThrows(IllegalArgumentException.class, () -> Matrices.zip(N.asList(stringMatrix1, stringMatrix2),
                 (Throwables.Function<String[], String, RuntimeException>) null, false, String.class));
+        assertThrows(IllegalArgumentException.class, () -> Matrices.zip(N.asList(stringMatrix1, stringMatrix2),
+                (Throwables.Function<String[], String, RuntimeException>) null, String.class));
         assertThrows(IllegalArgumentException.class, () -> Matrices.zip(N.asList(stringMatrix1, stringMatrix2), arr -> arr[0], false, (Class<String>) null));
     }
 

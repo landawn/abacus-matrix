@@ -5682,8 +5682,8 @@ class BooleanMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> matrix.replaceIf((Throwables.BooleanPredicate<RuntimeException>) null, true));
             assertThrows(IllegalArgumentException.class, () -> matrix.replaceIf((Throwables.IntBiPredicate<RuntimeException>) null, true));
 
-            assertThrows(IllegalStateException.class, () -> emptyLike.updateMainDiagonal((Throwables.BooleanUnaryOperator<RuntimeException>) null));
-            assertThrows(IllegalStateException.class, () -> emptyLike.updateAntiDiagonal((Throwables.BooleanUnaryOperator<RuntimeException>) null));
+            assertThrows(IllegalArgumentException.class, () -> emptyLike.updateMainDiagonal((Throwables.BooleanUnaryOperator<RuntimeException>) null));
+            assertThrows(IllegalArgumentException.class, () -> emptyLike.updateAntiDiagonal((Throwables.BooleanUnaryOperator<RuntimeException>) null));
             assertThrows(IllegalArgumentException.class, () -> emptyLike.replaceIf((Throwables.BooleanPredicate<RuntimeException>) null, true));
             assertThrows(IllegalArgumentException.class, () -> emptyLike.replaceIf((Throwables.IntBiPredicate<RuntimeException>) null, true));
         }

@@ -1401,7 +1401,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @throws E if the action throws an exception
      */
     public <E extends Exception> void forEachIndices(final Throwables.IntBiConsumer<E> action) throws E {
-        N.checkArgNotNull(action, "action");
+        N.checkArgNotNull(action, cs.action);
 
         if (Matrices.shouldRunInParallel(this) && !hasAliasedRows()) {
             Matrices.forEachIndices(rowCount, columnCount, action, true);
@@ -1457,7 +1457,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      */
     public <E extends Exception> void forEachIndices(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
             final Throwables.IntBiConsumer<E> action) throws IndexOutOfBoundsException, E {
-        N.checkArgNotNull(action, "action");
+        N.checkArgNotNull(action, cs.action);
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
@@ -1508,7 +1508,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @throws E if the action throws an exception
      */
     public <E extends Exception> void forEachIndices(final Throwables.BiIntObjConsumer<M, E> action) throws E {
-        N.checkArgNotNull(action, "action");
+        N.checkArgNotNull(action, cs.action);
 
         final M matrix = (M) this;
 
@@ -1567,7 +1567,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      */
     public <E extends Exception> void forEachIndices(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
             final Throwables.BiIntObjConsumer<M, E> action) throws IndexOutOfBoundsException, E {
-        N.checkArgNotNull(action, "action");
+        N.checkArgNotNull(action, cs.action);
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
@@ -2483,7 +2483,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @throws E if the action throws an exception
      */
     public <E extends Exception> void accept(final Throwables.Consumer<? super M, E> action) throws E {
-        N.checkArgNotNull(action, "action");
+        N.checkArgNotNull(action, cs.action);
+
         action.accept((M) this);
     }
 
@@ -2515,7 +2516,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @throws E if the function throws an exception
      */
     public <R, E extends Exception> R apply(final Throwables.Function<? super M, R, E> mapper) throws E {
-        N.checkArgNotNull(mapper, "mapper");
+        N.checkArgNotNull(mapper, cs.mapper);
+
         return mapper.apply((M) this);
     }
 

@@ -6026,8 +6026,8 @@ class ByteMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> matrix.replaceIf((Throwables.BytePredicate<RuntimeException>) null, (byte) 0));
             assertThrows(IllegalArgumentException.class, () -> matrix.replaceIf((Throwables.IntBiPredicate<RuntimeException>) null, (byte) 0));
 
-            assertThrows(IllegalStateException.class, () -> emptyLike.updateMainDiagonal((Throwables.ByteUnaryOperator<RuntimeException>) null));
-            assertThrows(IllegalStateException.class, () -> emptyLike.updateAntiDiagonal((Throwables.ByteUnaryOperator<RuntimeException>) null));
+            assertThrows(IllegalArgumentException.class, () -> emptyLike.updateMainDiagonal((Throwables.ByteUnaryOperator<RuntimeException>) null));
+            assertThrows(IllegalArgumentException.class, () -> emptyLike.updateAntiDiagonal((Throwables.ByteUnaryOperator<RuntimeException>) null));
             assertThrows(IllegalArgumentException.class, () -> emptyLike.replaceIf((Throwables.BytePredicate<RuntimeException>) null, (byte) 0));
             assertThrows(IllegalArgumentException.class, () -> emptyLike.replaceIf((Throwables.IntBiPredicate<RuntimeException>) null, (byte) 0));
         }

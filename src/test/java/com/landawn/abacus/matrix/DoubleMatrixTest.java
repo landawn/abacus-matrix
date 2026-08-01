@@ -6241,8 +6241,8 @@ class DoubleMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> matrix.replaceIf((Throwables.DoublePredicate<RuntimeException>) null, 0d));
             assertThrows(IllegalArgumentException.class, () -> matrix.replaceIf((Throwables.IntBiPredicate<RuntimeException>) null, 0d));
 
-            assertThrows(IllegalStateException.class, () -> emptyLike.updateMainDiagonal((Throwables.DoubleUnaryOperator<RuntimeException>) null));
-            assertThrows(IllegalStateException.class, () -> emptyLike.updateAntiDiagonal((Throwables.DoubleUnaryOperator<RuntimeException>) null));
+            assertThrows(IllegalArgumentException.class, () -> emptyLike.updateMainDiagonal((Throwables.DoubleUnaryOperator<RuntimeException>) null));
+            assertThrows(IllegalArgumentException.class, () -> emptyLike.updateAntiDiagonal((Throwables.DoubleUnaryOperator<RuntimeException>) null));
             assertThrows(IllegalArgumentException.class, () -> emptyLike.replaceIf((Throwables.DoublePredicate<RuntimeException>) null, 0d));
             assertThrows(IllegalArgumentException.class, () -> emptyLike.replaceIf((Throwables.IntBiPredicate<RuntimeException>) null, 0d));
         }

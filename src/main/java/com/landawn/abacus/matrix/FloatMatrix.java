@@ -916,7 +916,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     public <E extends Exception> void updateRow(final int rowIndex, final Throwables.FloatUnaryOperator<E> operator)
             throws IndexOutOfBoundsException, IllegalArgumentException, E {
-        N.checkArgNotNull(operator, "operator");
+        N.checkArgNotNull(operator, cs.operator);
 
         checkRowIndex(rowIndex);
 
@@ -958,7 +958,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.FloatUnaryOperator<E> operator)
             throws IndexOutOfBoundsException, IllegalArgumentException, E {
-        N.checkArgNotNull(operator, "operator");
+        N.checkArgNotNull(operator, cs.operator);
 
         checkColumnIndex(columnIndex);
 
@@ -1058,8 +1058,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     public <E extends Exception> void updateMainDiagonal(final Throwables.FloatUnaryOperator<E> operator)
             throws IllegalStateException, IllegalArgumentException, E {
+        N.checkArgNotNull(operator, cs.operator);
+
         checkIsSquare();
-        N.checkArgNotNull(operator, "operator");
 
         for (int i = 0; i < rowCount; i++) {
             a[i][i] = operator.applyAsFloat(a[i][i]);
@@ -1162,8 +1163,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     public <E extends Exception> void updateAntiDiagonal(final Throwables.FloatUnaryOperator<E> operator)
             throws IllegalStateException, IllegalArgumentException, E {
+        N.checkArgNotNull(operator, cs.operator);
+
         checkIsSquare();
-        N.checkArgNotNull(operator, "operator");
 
         for (int i = 0; i < rowCount; i++) {
             a[i][columnCount - i - 1] = operator.applyAsFloat(a[i][columnCount - i - 1]);
@@ -1199,7 +1201,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateAll(final Throwables.FloatUnaryOperator<E> operator) throws IllegalArgumentException, E {
-        N.checkArgNotNull(operator, "operator");
+        N.checkArgNotNull(operator, cs.operator);
 
         if (columnCount == 0) {
             return;
@@ -1259,7 +1261,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws E if the mapper throws an exception
      */
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Float, E> mapper) throws IllegalArgumentException, E {
-        N.checkArgNotNull(mapper, "mapper");
+        N.checkArgNotNull(mapper, cs.mapper);
+
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this) && !hasAliasedRows());
     }
@@ -1305,7 +1308,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws E if the predicate throws an exception
      */
     public <E extends Exception> void replaceIf(final Throwables.FloatPredicate<E> predicate, final float newValue) throws E {
-        N.checkArgNotNull(predicate, "predicate");
+        N.checkArgNotNull(predicate, cs.predicate);
 
         if (Matrices.shouldRunInParallel(this)) {
             if (hasAliasedRows()) {
@@ -1370,7 +1373,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws E if the predicate throws an exception
      */
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final float newValue) throws E {
-        N.checkArgNotNull(predicate, "predicate");
+        N.checkArgNotNull(predicate, cs.predicate);
+
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
             if (predicate.test(i, j)) {
                 a[i][j] = newValue;
@@ -1407,7 +1411,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @see #updateAll(Throwables.FloatUnaryOperator)
      */
     public <E extends Exception> FloatMatrix map(final Throwables.FloatUnaryOperator<E> mapper) throws E {
-        N.checkArgNotNull(mapper, "mapper");
+        N.checkArgNotNull(mapper, cs.mapper);
+
         final float[][] result = new float[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsFloat(a[i][j]);
 
@@ -1439,7 +1444,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @see #toIntMatrix()
      */
     public <E extends Exception> IntMatrix mapToInt(final Throwables.FloatToIntFunction<E> mapper) throws E {
-        N.checkArgNotNull(mapper, "mapper");
+        N.checkArgNotNull(mapper, cs.mapper);
+
         final int[][] result = new int[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsInt(a[i][j]);
 
@@ -1471,7 +1477,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @see #toLongMatrix()
      */
     public <E extends Exception> LongMatrix mapToLong(final Throwables.FloatToLongFunction<E> mapper) throws E {
-        N.checkArgNotNull(mapper, "mapper");
+        N.checkArgNotNull(mapper, cs.mapper);
+
         final long[][] result = new long[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsLong(a[i][j]);
 
@@ -1503,7 +1510,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @see #toDoubleMatrix()
      */
     public <E extends Exception> DoubleMatrix mapToDouble(final Throwables.FloatToDoubleFunction<E> mapper) throws E {
-        N.checkArgNotNull(mapper, "mapper");
+        N.checkArgNotNull(mapper, cs.mapper);
+
         final double[][] result = new double[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsDouble(a[i][j]);
 
@@ -1539,8 +1547,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws E if the function throws an exception
      */
     public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.FloatFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E {
-        N.checkArgNotNull(mapper, "mapper");
+        N.checkArgNotNull(mapper, cs.mapper);
         N.checkArgNotNull(targetElementType, "targetElementType");
+
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
 
@@ -2648,7 +2657,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     @Override
     public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super float[], E> action) throws E {
-        N.checkArgNotNull(action, "action");
+        N.checkArgNotNull(action, cs.action);
 
         Arrays.mutateFlattened(a, action);
     }
@@ -3133,7 +3142,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     public <E extends Exception> FloatMatrix zipWith(final FloatMatrix other, final Throwables.FloatBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
         N.checkArgNotNull(other, "other");
-        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgument(isSameShape(other), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -3189,7 +3198,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
             throws IllegalArgumentException, E {
         N.checkArgNotNull(other, "other");
         N.checkArgNotNull(third, "third");
-        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: this is {}x{}, other is {}x{}, third is {}x{}",
                 rowCount, columnCount, other.rowCount, other.columnCount, third.rowCount, third.columnCount);
 
@@ -3901,6 +3910,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @see #forEach(int, int, int, int, Throwables.FloatConsumer)
      */
     public <E extends Exception> void forEach(final Throwables.FloatConsumer<E> action) throws E {
+        N.checkArgNotNull(action, cs.action);
+
         forEach(0, rowCount, 0, columnCount, action);
     }
 
@@ -3941,9 +3952,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     public <E extends Exception> void forEach(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
             final Throwables.FloatConsumer<E> action) throws IndexOutOfBoundsException, E {
+        N.checkArgNotNull(action, cs.action);
+
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
-        N.checkArgNotNull(action, "action");
 
         if (Matrices.shouldRunInParallel(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
             final Throwables.IntBiConsumer<E> elementAction = (i, j) -> action.accept(a[i][j]);

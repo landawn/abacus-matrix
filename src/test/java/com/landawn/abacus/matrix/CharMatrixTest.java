@@ -6398,8 +6398,8 @@ class CharMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> matrix.replaceIf((Throwables.CharPredicate<RuntimeException>) null, 'x'));
             assertThrows(IllegalArgumentException.class, () -> matrix.replaceIf((Throwables.IntBiPredicate<RuntimeException>) null, 'x'));
 
-            assertThrows(IllegalStateException.class, () -> emptyLike.updateMainDiagonal((Throwables.CharUnaryOperator<RuntimeException>) null));
-            assertThrows(IllegalStateException.class, () -> emptyLike.updateAntiDiagonal((Throwables.CharUnaryOperator<RuntimeException>) null));
+            assertThrows(IllegalArgumentException.class, () -> emptyLike.updateMainDiagonal((Throwables.CharUnaryOperator<RuntimeException>) null));
+            assertThrows(IllegalArgumentException.class, () -> emptyLike.updateAntiDiagonal((Throwables.CharUnaryOperator<RuntimeException>) null));
             assertThrows(IllegalArgumentException.class, () -> emptyLike.replaceIf((Throwables.CharPredicate<RuntimeException>) null, 'x'));
             assertThrows(IllegalArgumentException.class, () -> emptyLike.replaceIf((Throwables.IntBiPredicate<RuntimeException>) null, 'x'));
         }

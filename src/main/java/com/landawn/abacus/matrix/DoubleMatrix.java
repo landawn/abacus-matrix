@@ -1032,7 +1032,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     public <E extends Exception> void updateRow(final int rowIndex, final Throwables.DoubleUnaryOperator<E> operator)
             throws IndexOutOfBoundsException, IllegalArgumentException, E {
-        N.checkArgNotNull(operator, "operator");
+        N.checkArgNotNull(operator, cs.operator);
 
         checkRowIndex(rowIndex);
 
@@ -1074,7 +1074,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.DoubleUnaryOperator<E> operator)
             throws IndexOutOfBoundsException, IllegalArgumentException, E {
-        N.checkArgNotNull(operator, "operator");
+        N.checkArgNotNull(operator, cs.operator);
 
         checkColumnIndex(columnIndex);
 
@@ -1174,8 +1174,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     public <E extends Exception> void updateMainDiagonal(final Throwables.DoubleUnaryOperator<E> operator)
             throws IllegalStateException, IllegalArgumentException, E {
+        N.checkArgNotNull(operator, cs.operator);
+
         checkIsSquare();
-        N.checkArgNotNull(operator, "operator");
 
         for (int i = 0; i < rowCount; i++) {
             a[i][i] = operator.applyAsDouble(a[i][i]);
@@ -1278,8 +1279,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     public <E extends Exception> void updateAntiDiagonal(final Throwables.DoubleUnaryOperator<E> operator)
             throws IllegalStateException, IllegalArgumentException, E {
+        N.checkArgNotNull(operator, cs.operator);
+
         checkIsSquare();
-        N.checkArgNotNull(operator, "operator");
 
         for (int i = 0; i < rowCount; i++) {
             a[i][columnCount - i - 1] = operator.applyAsDouble(a[i][columnCount - i - 1]);
@@ -1315,7 +1317,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateAll(final Throwables.DoubleUnaryOperator<E> operator) throws IllegalArgumentException, E {
-        N.checkArgNotNull(operator, "operator");
+        N.checkArgNotNull(operator, cs.operator);
 
         if (columnCount == 0) {
             return;
@@ -1375,7 +1377,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws E if the mapper throws an exception
      */
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Double, E> mapper) throws IllegalArgumentException, E {
-        N.checkArgNotNull(mapper, "mapper");
+        N.checkArgNotNull(mapper, cs.mapper);
+
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this) && !hasAliasedRows());
     }
@@ -1421,7 +1424,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws E if the predicate throws an exception
      */
     public <E extends Exception> void replaceIf(final Throwables.DoublePredicate<E> predicate, final double newValue) throws E {
-        N.checkArgNotNull(predicate, "predicate");
+        N.checkArgNotNull(predicate, cs.predicate);
 
         if (Matrices.shouldRunInParallel(this)) {
             if (hasAliasedRows()) {
@@ -1486,7 +1489,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws E if the predicate throws an exception
      */
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final double newValue) throws E {
-        N.checkArgNotNull(predicate, "predicate");
+        N.checkArgNotNull(predicate, cs.predicate);
+
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
             if (predicate.test(i, j)) {
                 a[i][j] = newValue;
@@ -1523,7 +1527,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @see #updateAll(Throwables.DoubleUnaryOperator)
      */
     public <E extends Exception> DoubleMatrix map(final Throwables.DoubleUnaryOperator<E> mapper) throws E {
-        N.checkArgNotNull(mapper, "mapper");
+        N.checkArgNotNull(mapper, cs.mapper);
+
         final double[][] result = new double[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsDouble(a[i][j]);
 
@@ -1557,7 +1562,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @see #toIntMatrix()
      */
     public <E extends Exception> IntMatrix mapToInt(final Throwables.DoubleToIntFunction<E> mapper) throws E {
-        N.checkArgNotNull(mapper, "mapper");
+        N.checkArgNotNull(mapper, cs.mapper);
+
         final int[][] result = new int[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsInt(a[i][j]);
 
@@ -1591,7 +1597,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @see #toLongMatrix()
      */
     public <E extends Exception> LongMatrix mapToLong(final Throwables.DoubleToLongFunction<E> mapper) throws E {
-        N.checkArgNotNull(mapper, "mapper");
+        N.checkArgNotNull(mapper, cs.mapper);
+
         final long[][] result = new long[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsLong(a[i][j]);
 
@@ -1627,8 +1634,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws E if the function throws an exception
      */
     public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.DoubleFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E {
-        N.checkArgNotNull(mapper, "mapper");
+        N.checkArgNotNull(mapper, cs.mapper);
         N.checkArgNotNull(targetElementType, "targetElementType");
+
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
 
@@ -2738,7 +2746,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     @Override
     public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super double[], E> action) throws E {
-        N.checkArgNotNull(action, "action");
+        N.checkArgNotNull(action, cs.action);
 
         Arrays.mutateFlattened(a, action);
     }
@@ -3238,7 +3246,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     public <E extends Exception> DoubleMatrix zipWith(final DoubleMatrix other, final Throwables.DoubleBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
         N.checkArgNotNull(other, "other");
-        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgument(isSameShape(other), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -3294,7 +3302,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
             throws IllegalArgumentException, E {
         N.checkArgNotNull(other, "other");
         N.checkArgNotNull(third, "third");
-        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: this is {}x{}, other is {}x{}, third is {}x{}",
                 rowCount, columnCount, other.rowCount, other.columnCount, third.rowCount, third.columnCount);
 
@@ -4006,6 +4014,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @see #forEach(int, int, int, int, Throwables.DoubleConsumer)
      */
     public <E extends Exception> void forEach(final Throwables.DoubleConsumer<E> action) throws E {
+        N.checkArgNotNull(action, cs.action);
+
         forEach(0, rowCount, 0, columnCount, action);
     }
 
@@ -4046,9 +4056,10 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     public <E extends Exception> void forEach(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
             final Throwables.DoubleConsumer<E> action) throws IndexOutOfBoundsException, E {
+        N.checkArgNotNull(action, cs.action);
+
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
-        N.checkArgNotNull(action, "action");
 
         if (Matrices.shouldRunInParallel(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
             final Throwables.IntBiConsumer<E> elementAction = (i, j) -> action.accept(a[i][j]);

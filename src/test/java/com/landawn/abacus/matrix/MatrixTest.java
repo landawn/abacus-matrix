@@ -626,8 +626,8 @@ class MatrixTest extends TestBase {
         Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.replaceIf((Throwables.Predicate<Integer, RuntimeException>) null, 0));
         Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.replaceIf((Throwables.IntBiPredicate<RuntimeException>) null, 0));
 
-        Assertions.assertThrows(IllegalStateException.class, () -> emptyLike.updateMainDiagonal((Throwables.UnaryOperator<Integer, RuntimeException>) null));
-        Assertions.assertThrows(IllegalStateException.class, () -> emptyLike.updateAntiDiagonal((Throwables.UnaryOperator<Integer, RuntimeException>) null));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> emptyLike.updateMainDiagonal((Throwables.UnaryOperator<Integer, RuntimeException>) null));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> emptyLike.updateAntiDiagonal((Throwables.UnaryOperator<Integer, RuntimeException>) null));
         Assertions.assertThrows(IllegalArgumentException.class, () -> emptyLike.replaceIf((Throwables.Predicate<Integer, RuntimeException>) null, 0));
         Assertions.assertThrows(IllegalArgumentException.class, () -> emptyLike.replaceIf((Throwables.IntBiPredicate<RuntimeException>) null, 0));
     }

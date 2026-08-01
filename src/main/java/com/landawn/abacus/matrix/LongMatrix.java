@@ -992,7 +992,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     public <E extends Exception> void updateRow(final int rowIndex, final Throwables.LongUnaryOperator<E> operator)
             throws IndexOutOfBoundsException, IllegalArgumentException, E {
-        N.checkArgNotNull(operator, "operator");
+        N.checkArgNotNull(operator, cs.operator);
 
         checkRowIndex(rowIndex);
 
@@ -1035,7 +1035,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.LongUnaryOperator<E> operator)
             throws IndexOutOfBoundsException, IllegalArgumentException, E {
-        N.checkArgNotNull(operator, "operator");
+        N.checkArgNotNull(operator, cs.operator);
 
         checkColumnIndex(columnIndex);
 
@@ -1136,8 +1136,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     public <E extends Exception> void updateMainDiagonal(final Throwables.LongUnaryOperator<E> operator)
             throws IllegalStateException, IllegalArgumentException, E {
+        N.checkArgNotNull(operator, cs.operator);
+
         checkIsSquare();
-        N.checkArgNotNull(operator, "operator");
 
         for (int i = 0; i < rowCount; i++) {
             a[i][i] = operator.applyAsLong(a[i][i]);
@@ -1241,8 +1242,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     public <E extends Exception> void updateAntiDiagonal(final Throwables.LongUnaryOperator<E> operator)
             throws IllegalStateException, IllegalArgumentException, E {
+        N.checkArgNotNull(operator, cs.operator);
+
         checkIsSquare();
-        N.checkArgNotNull(operator, "operator");
 
         for (int i = 0; i < rowCount; i++) {
             a[i][columnCount - i - 1] = operator.applyAsLong(a[i][columnCount - i - 1]);
@@ -1280,7 +1282,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateAll(final Throwables.LongUnaryOperator<E> operator) throws IllegalArgumentException, E {
-        N.checkArgNotNull(operator, "operator");
+        N.checkArgNotNull(operator, cs.operator);
 
         if (columnCount == 0) {
             return;
@@ -1342,7 +1344,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @throws E if the mapper throws an exception
      */
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Long, E> mapper) throws IllegalArgumentException, E {
-        N.checkArgNotNull(mapper, "mapper");
+        N.checkArgNotNull(mapper, cs.mapper);
+
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this) && !hasAliasedRows());
     }
@@ -1379,7 +1382,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @throws E if the predicate throws an exception
      */
     public <E extends Exception> void replaceIf(final Throwables.LongPredicate<E> predicate, final long newValue) throws E {
-        N.checkArgNotNull(predicate, "predicate");
+        N.checkArgNotNull(predicate, cs.predicate);
 
         if (Matrices.shouldRunInParallel(this)) {
             if (hasAliasedRows()) {
@@ -1447,7 +1450,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @throws E if the predicate throws an exception
      */
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final long newValue) throws E {
-        N.checkArgNotNull(predicate, "predicate");
+        N.checkArgNotNull(predicate, cs.predicate);
+
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
             if (predicate.test(i, j)) {
                 a[i][j] = newValue;
@@ -1486,7 +1490,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @see #updateAll(Throwables.LongUnaryOperator)
      */
     public <E extends Exception> LongMatrix map(final Throwables.LongUnaryOperator<E> mapper) throws E {
-        N.checkArgNotNull(mapper, "mapper");
+        N.checkArgNotNull(mapper, cs.mapper);
+
         final long[][] result = new long[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsLong(a[i][j]);
 
@@ -1521,7 +1526,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @see #toIntMatrix()
      */
     public <E extends Exception> IntMatrix mapToInt(final Throwables.LongToIntFunction<E> mapper) throws E {
-        N.checkArgNotNull(mapper, "mapper");
+        N.checkArgNotNull(mapper, cs.mapper);
+
         final int[][] result = new int[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsInt(a[i][j]);
 
@@ -1555,7 +1561,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @see #toDoubleMatrix()
      */
     public <E extends Exception> DoubleMatrix mapToDouble(final Throwables.LongToDoubleFunction<E> mapper) throws E {
-        N.checkArgNotNull(mapper, "mapper");
+        N.checkArgNotNull(mapper, cs.mapper);
+
         final double[][] result = new double[rowCount][columnCount];
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsDouble(a[i][j]);
 
@@ -1592,8 +1599,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @throws E if the function throws an exception
      */
     public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.LongFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E {
-        N.checkArgNotNull(mapper, "mapper");
+        N.checkArgNotNull(mapper, cs.mapper);
         N.checkArgNotNull(targetElementType, "targetElementType");
+
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
 
@@ -2675,7 +2683,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     @Override
     public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super long[], E> action) throws E {
-        N.checkArgNotNull(action, "action");
+        N.checkArgNotNull(action, cs.action);
 
         Arrays.mutateFlattened(a, action);
     }
@@ -3134,7 +3142,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     public <E extends Exception> LongMatrix zipWith(final LongMatrix other, final Throwables.LongBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
         N.checkArgNotNull(other, "other");
-        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgument(isSameShape(other), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -3193,7 +3201,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
             throws IllegalArgumentException, E {
         N.checkArgNotNull(other, "other");
         N.checkArgNotNull(third, "third");
-        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: this is {}x{}, other is {}x{}, third is {}x{}",
                 rowCount, columnCount, other.rowCount, other.columnCount, third.rowCount, third.columnCount);
 
@@ -3915,6 +3923,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @see #forEach(int, int, int, int, Throwables.LongConsumer)
      */
     public <E extends Exception> void forEach(final Throwables.LongConsumer<E> action) throws E {
+        N.checkArgNotNull(action, cs.action);
+
         forEach(0, rowCount, 0, columnCount, action);
     }
 
@@ -3956,9 +3966,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     public <E extends Exception> void forEach(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
             final Throwables.LongConsumer<E> action) throws IndexOutOfBoundsException, E {
+        N.checkArgNotNull(action, cs.action);
+
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
-        N.checkArgNotNull(action, "action");
 
         if (Matrices.shouldRunInParallel(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
             final Throwables.IntBiConsumer<E> elementAction = (i, j) -> action.accept(a[i][j]);

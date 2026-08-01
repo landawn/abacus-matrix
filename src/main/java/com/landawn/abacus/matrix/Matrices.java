@@ -549,7 +549,8 @@ public final class Matrices {
      * @see #getParallelMode()
      */
     public static <E extends Exception> void runWithParallelMode(final ParallelMode parallelMode, final Throwables.Runnable<E> action) throws E {
-        N.checkArgNotNull(action, "action");
+        N.checkArgNotNull(parallelMode, cs.parallelMode);
+        N.checkArgNotNull(action, cs.action);
 
         final ParallelMode original = Matrices.getParallelMode();
         Matrices.setParallelMode(parallelMode);
@@ -603,7 +604,7 @@ public final class Matrices {
      */
     public static <E extends Exception> void forEachIndices(final int rowCount, final int columnCount, final Throwables.IntBiConsumer<E> action,
             final boolean inParallel) throws E {
-        N.checkArgNotNull(action, "action");
+        N.checkArgNotNull(action, cs.action);
         N.checkArgument(rowCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
         N.checkArgument(columnCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
 
@@ -658,9 +659,10 @@ public final class Matrices {
      */
     public static <E extends Exception> void forEachIndices(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
             final Throwables.IntBiConsumer<E> action, final boolean inParallel) throws IndexOutOfBoundsException, E {
+        N.checkArgNotNull(action, cs.action);
+
         N.checkFromToIndex(fromRowIndex, toRowIndex, Integer.MAX_VALUE);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, Integer.MAX_VALUE);
-        N.checkArgNotNull(action, "action");
 
         final int rowCount = toRowIndex - fromRowIndex;
         final int columnCount = toColumnIndex - fromColumnIndex;
@@ -742,7 +744,7 @@ public final class Matrices {
      */
     public static <T> Stream<T> mapIndices(final int rowCount, final int columnCount, final Throwables.IntBiFunction<? extends T, ? extends Exception> mapper,
             final boolean inParallel) {
-        N.checkArgNotNull(mapper, "mapper");
+        N.checkArgNotNull(mapper, cs.mapper);
         N.checkArgument(rowCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
         N.checkArgument(columnCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
 
@@ -797,9 +799,10 @@ public final class Matrices {
     @SuppressWarnings("resource")
     public static <T> Stream<T> mapIndices(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
             final Throwables.IntBiFunction<? extends T, ? extends Exception> mapper, final boolean inParallel) throws IndexOutOfBoundsException {
+        N.checkArgNotNull(mapper, cs.mapper);
+
         N.checkFromToIndex(fromRowIndex, toRowIndex, Integer.MAX_VALUE);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, Integer.MAX_VALUE);
-        N.checkArgNotNull(mapper, "mapper");
 
         final int rowCount = toRowIndex - fromRowIndex;
         final int columnCount = toColumnIndex - fromColumnIndex;
@@ -881,7 +884,7 @@ public final class Matrices {
      */
     public static IntStream mapIndicesToInt(final int rowCount, final int columnCount, final Throwables.IntBinaryOperator<? extends Exception> mapper,
             final boolean inParallel) {
-        N.checkArgNotNull(mapper, "mapper");
+        N.checkArgNotNull(mapper, cs.mapper);
         N.checkArgument(rowCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
         N.checkArgument(columnCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
 
@@ -933,9 +936,10 @@ public final class Matrices {
     @SuppressWarnings("resource")
     public static IntStream mapIndicesToInt(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
             final Throwables.IntBinaryOperator<? extends Exception> mapper, final boolean inParallel) throws IndexOutOfBoundsException {
+        N.checkArgNotNull(mapper, cs.mapper);
+
         N.checkFromToIndex(fromRowIndex, toRowIndex, Integer.MAX_VALUE);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, Integer.MAX_VALUE);
-        N.checkArgNotNull(mapper, "mapper");
 
         final int rowCount = toRowIndex - fromRowIndex;
         final int columnCount = toColumnIndex - fromColumnIndex;
@@ -1031,7 +1035,7 @@ public final class Matrices {
             final Throwables.IntTriConsumer<RuntimeException> action) throws IllegalArgumentException {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
-        N.checkArgNotNull(action, "action");
+        N.checkArgNotNull(action, cs.action);
 
         N.checkArgument(a.columnCount == b.rowCount,
                 "Matrix dimensions incompatible for multiplication: a is {}x{}, b is {}x{} (a.columnCount must equal b.rowCount)", a.rowCount, a.columnCount,
@@ -1087,7 +1091,7 @@ public final class Matrices {
             final boolean inParallel) throws IllegalArgumentException {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
-        N.checkArgNotNull(action, "action");
+        N.checkArgNotNull(action, cs.action);
 
         N.checkArgument(a.columnCount == b.rowCount,
                 "Matrix dimensions incompatible for multiplication: a is {}x{}, b is {}x{} (a.columnCount must equal b.rowCount)", a.rowCount, a.columnCount,
@@ -1408,7 +1412,8 @@ public final class Matrices {
     public static <E extends Exception> ByteMatrix zip(final ByteMatrix a, final ByteMatrix b, final Throwables.ByteBinaryOperator<E> zipFunction) throws E {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
-        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
         return a.zipWith(b, zipFunction);
     }
 
@@ -1456,7 +1461,8 @@ public final class Matrices {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
         N.checkArgNotNull(c, "c");
-        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
         return a.zipWith(b, c, zipFunction);
     }
 
@@ -1507,8 +1513,10 @@ public final class Matrices {
      */
     public static <E extends Exception> ByteMatrix zip(final Collection<ByteMatrix> coll, final Throwables.ByteBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
+        N.checkArgNotNull(coll, cs.coll);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
         checkShapeForZip(coll);
-        N.checkArgNotNull(zipFunction, "zipFunction");
 
         final int size = coll.size();
         final ByteMatrix[] matrices = coll.toArray(new ByteMatrix[size]);
@@ -1580,7 +1588,8 @@ public final class Matrices {
             throws IllegalArgumentException, E {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
-        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
         checkShapeForZip(a, b);
 
         final int rowCount = a.rowCount;
@@ -1645,7 +1654,8 @@ public final class Matrices {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
         N.checkArgNotNull(c, "c");
-        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
         checkShapeForZip(a, b, c);
 
         final int rowCount = a.rowCount;
@@ -1709,6 +1719,9 @@ public final class Matrices {
      * @see #zipToInt(ByteMatrix, ByteMatrix, Throwables.ByteBiFunction)
      */
     public static <E extends Exception> IntMatrix zipToInt(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<Integer, E> zipFunction) throws E {
+        N.checkArgNotNull(coll, cs.coll);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
         return zipToInt(coll, zipFunction, false);
     }
 
@@ -1770,8 +1783,10 @@ public final class Matrices {
      */
     public static <E extends Exception> IntMatrix zipToInt(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<Integer, E> zipFunction,
             final boolean shareIntermediateArray) throws IllegalArgumentException, E {
+        N.checkArgNotNull(coll, cs.coll);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
         checkShapeForZip(coll);
-        N.checkArgNotNull(zipFunction, "zipFunction");
 
         final int size = coll.size();
         final ByteMatrix[] matrices = coll.toArray(new ByteMatrix[size]);
@@ -1846,6 +1861,11 @@ public final class Matrices {
      */
     public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction,
             final Class<R> targetElementType) throws E {
+        N.checkArgNotNull(coll, cs.coll);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
+        N.checkArgNotNull(targetElementType, cs.targetElementType);
+
         return zipToObj(coll, zipFunction, false, targetElementType);
     }
 
@@ -1905,9 +1925,12 @@ public final class Matrices {
      */
     public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction,
             final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E {
+        N.checkArgNotNull(coll, cs.coll);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
+        N.checkArgNotNull(targetElementType, cs.targetElementType);
+
         checkShapeForZip(coll);
-        N.checkArgNotNull(zipFunction, "zipFunction");
-        N.checkArgNotNull(targetElementType, "targetElementType");
 
         final int size = coll.size();
         final ByteMatrix[] matrices = coll.toArray(new ByteMatrix[size]);
@@ -1974,7 +1997,8 @@ public final class Matrices {
     public static <E extends Exception> IntMatrix zip(final IntMatrix a, final IntMatrix b, final Throwables.IntBinaryOperator<E> zipFunction) throws E {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
-        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
         return a.zipWith(b, zipFunction);
     }
 
@@ -2022,7 +2046,8 @@ public final class Matrices {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
         N.checkArgNotNull(c, "c");
-        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
         return a.zipWith(b, c, zipFunction);
     }
 
@@ -2076,8 +2101,10 @@ public final class Matrices {
      */
     public static <E extends Exception> IntMatrix zip(final Collection<IntMatrix> coll, final Throwables.IntBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
+        N.checkArgNotNull(coll, cs.coll);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
         checkShapeForZip(coll);
-        N.checkArgNotNull(zipFunction, "zipFunction");
 
         final int size = coll.size();
         final IntMatrix[] matrices = coll.toArray(new IntMatrix[size]);
@@ -2148,7 +2175,7 @@ public final class Matrices {
             throws IllegalArgumentException, E {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
-        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
         checkShapeForZip(a, b);
 
         final int rowCount = a.rowCount;
@@ -2209,7 +2236,7 @@ public final class Matrices {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
         N.checkArgNotNull(c, "c");
-        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
         checkShapeForZip(a, b, c);
 
         final int rowCount = a.rowCount;
@@ -2271,6 +2298,9 @@ public final class Matrices {
      * @see #zipToLong(IntMatrix, IntMatrix, Throwables.IntBiFunction)
      */
     public static <E extends Exception> LongMatrix zipToLong(final Collection<IntMatrix> coll, final Throwables.IntNFunction<Long, E> zipFunction) throws E {
+        N.checkArgNotNull(coll, cs.coll);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
         return zipToLong(coll, zipFunction, false);
     }
 
@@ -2332,8 +2362,10 @@ public final class Matrices {
      */
     public static <E extends Exception> LongMatrix zipToLong(final Collection<IntMatrix> coll, final Throwables.IntNFunction<Long, E> zipFunction,
             final boolean shareIntermediateArray) throws IllegalArgumentException, E {
+        N.checkArgNotNull(coll, cs.coll);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
         checkShapeForZip(coll);
-        N.checkArgNotNull(zipFunction, "zipFunction");
 
         final int size = coll.size();
         final IntMatrix[] matrices = coll.toArray(new IntMatrix[size]);
@@ -2401,7 +2433,7 @@ public final class Matrices {
             throws IllegalArgumentException, E {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
-        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
         checkShapeForZip(a, b);
 
         final int rowCount = a.rowCount;
@@ -2462,7 +2494,7 @@ public final class Matrices {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
         N.checkArgNotNull(c, "c");
-        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
         checkShapeForZip(a, b, c);
 
         final int rowCount = a.rowCount;
@@ -2520,6 +2552,9 @@ public final class Matrices {
      */
     public static <E extends Exception> DoubleMatrix zipToDouble(final Collection<IntMatrix> coll, final Throwables.IntNFunction<Double, E> zipFunction)
             throws E {
+        N.checkArgNotNull(coll, cs.coll);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
         return zipToDouble(coll, zipFunction, false);
     }
 
@@ -2578,8 +2613,10 @@ public final class Matrices {
      */
     public static <E extends Exception> DoubleMatrix zipToDouble(final Collection<IntMatrix> coll, final Throwables.IntNFunction<Double, E> zipFunction,
             final boolean shareIntermediateArray) throws IllegalArgumentException, E {
+        N.checkArgNotNull(coll, cs.coll);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
         checkShapeForZip(coll);
-        N.checkArgNotNull(zipFunction, "zipFunction");
 
         final int size = coll.size();
         final IntMatrix[] matrices = coll.toArray(new IntMatrix[size]);
@@ -2652,6 +2689,10 @@ public final class Matrices {
      */
     public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction,
             final Class<R> targetElementType) throws E {
+        N.checkArgNotNull(coll, cs.coll);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+        N.checkArgNotNull(targetElementType, cs.targetElementType);
+
         return zipToObj(coll, zipFunction, false, targetElementType);
     }
 
@@ -2711,9 +2752,11 @@ public final class Matrices {
      */
     public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction,
             final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E {
+        N.checkArgNotNull(coll, cs.coll);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+        N.checkArgNotNull(targetElementType, cs.targetElementType);
+
         checkShapeForZip(coll);
-        N.checkArgNotNull(zipFunction, "zipFunction");
-        N.checkArgNotNull(targetElementType, "targetElementType");
 
         final int size = coll.size();
         final IntMatrix[] matrices = coll.toArray(new IntMatrix[size]);
@@ -2780,7 +2823,8 @@ public final class Matrices {
     public static <E extends Exception> LongMatrix zip(final LongMatrix a, final LongMatrix b, final Throwables.LongBinaryOperator<E> zipFunction) throws E {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
-        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
         return a.zipWith(b, zipFunction);
     }
 
@@ -2828,7 +2872,8 @@ public final class Matrices {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
         N.checkArgNotNull(c, "c");
-        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
         return a.zipWith(b, c, zipFunction);
     }
 
@@ -2882,8 +2927,10 @@ public final class Matrices {
      */
     public static <E extends Exception> LongMatrix zip(final Collection<LongMatrix> coll, final Throwables.LongBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
+        N.checkArgNotNull(coll, cs.coll);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
         checkShapeForZip(coll);
-        N.checkArgNotNull(zipFunction, "zipFunction");
 
         final int size = coll.size();
         final LongMatrix[] matrices = coll.toArray(new LongMatrix[size]);
@@ -2954,7 +3001,7 @@ public final class Matrices {
             throws IllegalArgumentException, E {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
-        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
         checkShapeForZip(a, b);
 
         final int rowCount = a.rowCount;
@@ -3015,7 +3062,7 @@ public final class Matrices {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
         N.checkArgNotNull(c, "c");
-        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
         checkShapeForZip(a, b, c);
 
         final int rowCount = a.rowCount;
@@ -3073,6 +3120,9 @@ public final class Matrices {
      */
     public static <E extends Exception> DoubleMatrix zipToDouble(final Collection<LongMatrix> coll, final Throwables.LongNFunction<Double, E> zipFunction)
             throws E {
+        N.checkArgNotNull(coll, cs.coll);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
         return zipToDouble(coll, zipFunction, false);
     }
 
@@ -3130,8 +3180,10 @@ public final class Matrices {
      */
     public static <E extends Exception> DoubleMatrix zipToDouble(final Collection<LongMatrix> coll, final Throwables.LongNFunction<Double, E> zipFunction,
             final boolean shareIntermediateArray) throws IllegalArgumentException, E {
+        N.checkArgNotNull(coll, cs.coll);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
         checkShapeForZip(coll);
-        N.checkArgNotNull(zipFunction, "zipFunction");
 
         final int size = coll.size();
         final LongMatrix[] matrices = coll.toArray(new LongMatrix[size]);
@@ -3203,6 +3255,10 @@ public final class Matrices {
      */
     public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction,
             final Class<R> targetElementType) throws E {
+        N.checkArgNotNull(coll, cs.coll);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+        N.checkArgNotNull(targetElementType, cs.targetElementType);
+
         return zipToObj(coll, zipFunction, false, targetElementType);
     }
 
@@ -3262,9 +3318,11 @@ public final class Matrices {
      */
     public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction,
             final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E {
+        N.checkArgNotNull(coll, cs.coll);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+        N.checkArgNotNull(targetElementType, cs.targetElementType);
+
         checkShapeForZip(coll);
-        N.checkArgNotNull(zipFunction, "zipFunction");
-        N.checkArgNotNull(targetElementType, "targetElementType");
 
         final int size = coll.size();
         final LongMatrix[] matrices = coll.toArray(new LongMatrix[size]);
@@ -3332,7 +3390,8 @@ public final class Matrices {
             throws E {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
-        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
         return a.zipWith(b, zipFunction);
     }
 
@@ -3381,7 +3440,8 @@ public final class Matrices {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
         N.checkArgNotNull(c, "c");
-        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
         return a.zipWith(b, c, zipFunction);
     }
 
@@ -3435,8 +3495,10 @@ public final class Matrices {
      */
     public static <E extends Exception> DoubleMatrix zip(final Collection<DoubleMatrix> coll, final Throwables.DoubleBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
+        N.checkArgNotNull(coll, cs.coll);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
         checkShapeForZip(coll);
-        N.checkArgNotNull(zipFunction, "zipFunction");
 
         final int size = coll.size();
         final DoubleMatrix[] matrices = coll.toArray(new DoubleMatrix[size]);
@@ -3508,6 +3570,10 @@ public final class Matrices {
      */
     public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<DoubleMatrix> coll, final Throwables.DoubleNFunction<? extends R, E> zipFunction,
             final Class<R> targetElementType) throws E {
+        N.checkArgNotNull(coll, cs.coll);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+        N.checkArgNotNull(targetElementType, cs.targetElementType);
+
         return zipToObj(coll, zipFunction, false, targetElementType);
     }
 
@@ -3564,9 +3630,11 @@ public final class Matrices {
      */
     public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<DoubleMatrix> coll, final Throwables.DoubleNFunction<? extends R, E> zipFunction,
             final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E {
+        N.checkArgNotNull(coll, cs.coll);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+        N.checkArgNotNull(targetElementType, cs.targetElementType);
+
         checkShapeForZip(coll);
-        N.checkArgNotNull(zipFunction, "zipFunction");
-        N.checkArgNotNull(targetElementType, "targetElementType");
 
         final int size = coll.size();
         final DoubleMatrix[] matrices = coll.toArray(new DoubleMatrix[size]);
@@ -3638,7 +3706,8 @@ public final class Matrices {
             final Throwables.BiFunction<? super A, ? super B, A, E> zipFunction) throws E {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
-        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
         return a.zipWith(b, zipFunction);
     }
 
@@ -3689,8 +3758,9 @@ public final class Matrices {
             final Throwables.BiFunction<? super A, ? super B, R, E> zipFunction, final Class<R> targetElementType) throws E {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
-        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgNotNull(targetElementType, "targetElementType");
+
         return a.zipWith(b, zipFunction, targetElementType);
     }
 
@@ -3743,7 +3813,8 @@ public final class Matrices {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
         N.checkArgNotNull(c, "c");
-        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
         return a.zipWith(b, c, zipFunction);
     }
 
@@ -3800,8 +3871,9 @@ public final class Matrices {
         N.checkArgNotNull(a, "a");
         N.checkArgNotNull(b, "b");
         N.checkArgNotNull(c, "c");
-        N.checkArgNotNull(zipFunction, "zipFunction");
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgNotNull(targetElementType, "targetElementType");
+
         return a.zipWith(b, c, zipFunction, targetElementType);
     }
 
@@ -3858,8 +3930,10 @@ public final class Matrices {
      */
     public static <T, E extends Exception> Matrix<T> zip(final Collection<Matrix<T>> coll, final Throwables.BinaryOperator<T, E> zipFunction)
             throws IllegalArgumentException, E {
+        N.checkArgNotNull(coll, cs.coll);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+
         checkShapeForZip(coll);
-        N.checkArgNotNull(zipFunction, "zipFunction");
 
         final int size = coll.size();
         final Matrix<T>[] matrices = coll.toArray(new Matrix[size]);
@@ -3935,6 +4009,10 @@ public final class Matrices {
      */
     public static <T, R, E extends Exception> Matrix<R> zip(final Collection<Matrix<T>> coll, final Throwables.Function<? super T[], R, E> zipFunction,
             final Class<R> targetElementType) throws E {
+        N.checkArgNotNull(coll, cs.coll);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+        N.checkArgNotNull(targetElementType, cs.targetElementType);
+
         return zip(coll, zipFunction, false, targetElementType);
     }
 
@@ -3999,9 +4077,11 @@ public final class Matrices {
      */
     public static <T, R, E extends Exception> Matrix<R> zip(final Collection<Matrix<T>> coll, final Throwables.Function<? super T[], R, E> zipFunction,
             final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E {
+        N.checkArgNotNull(coll, cs.coll);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+        N.checkArgNotNull(targetElementType, cs.targetElementType);
+
         checkShapeForZip(coll);
-        N.checkArgNotNull(zipFunction, "zipFunction");
-        N.checkArgNotNull(targetElementType, "targetElementType");
 
         final int size = coll.size();
         final Matrix<T>[] matrices = coll.toArray(new Matrix[size]);
