@@ -1,7 +1,7 @@
-# abacus-matrix API Index (v3.8.4)
+# abacus-matrix API Index (v3.8.5)
 - Build: unknown
 - Java: 17
-- Generated: 2026-07-26
+- Generated: 2026-08-01
 
 ## Packages
 - com.landawn.abacus.matrix — Mutable, rectangular, array-backed matrices for Java primitive and reference values.
@@ -28,12 +28,12 @@ Shared implementation base for the matrix types in this package.
 - **Returns:** the {@link Class} object representing the element type of this matrix
 ##### unsafeBackingArray(...) -> A\[\]
 - **Signature:** `@SuppressFBWarnings("EI_EXPOSE_REP") public A[] unsafeBackingArray()`
-- **Summary:** Returns the underlying two-dimensional array of this matrix.
+- **Summary:** Returns the underlying two-dimensional array of this matrix without copying.
 - **Contract:**
-  - This method exposes the internal array representation for performance reasons and should be used with caution as modifications to the returned array will directly affect the matrix.
-  - Reassigned rows must remain non- {@code null} and keep the original {@link #columnCount()} ; violating those shape invariants leaves the matrix in an invalid state because its dimensions are cached at construction.
+  - Reassigned rows must remain non- {@code null} and keep the original {@link #columnCount()} ; violating those shape invariants leaves the matrix in an invalid state because its dimensions are fixed at construction.
+  - Reassignment must also preserve which entries refer to the same row array: whether this matrix has aliased rows is computed once and then cached, so introducing or removing aliasing through this array can make row-wise in-place operations such as {@code updateAll} and {@code updateColumn} apply the operator the wrong number of times.
   - If you need an independent matrix instance, use {@link #copy()} .
-  - If you only need the data flattened into a single one-dimensional array, use {@link #flatten()} .
+  - If you only need the data as a flat list in row-major order, use {@link #flatten()} .
 - **Parameters:**
   - (none)
 - **Returns:** the underlying two-dimensional array (not a copy); its length equals {@code rowCount} (so a {@code 0} -row matrix yields a zero-length array, but a {@code rowCount × 0} matrix yields a {@code rowCount} -length array of zero-length rows)
@@ -87,7 +87,7 @@ Shared implementation base for the matrix types in this package.
   - A matrix is considered empty if either the number of rows or columns is zero, resulting in a total count of zero elements.
 - **Parameters:**
   - (none)
-- **Returns:** {@code true} if the matrix has no elements (count == 0), {@code false} otherwise
+- **Returns:** {@code true} if the matrix has no elements ( {@code elementCount == 0} ), {@code false} otherwise
 ##### copy(...) -> M
 - **Signature:** `public abstract M copy()`
 - **Summary:** Returns a structural copy of this matrix.
@@ -270,7 +270,7 @@ Shared implementation base for the matrix types in this package.
   - `toColumnIndex` (`int`) — the ending column index (exclusive)
   - `action` (`Throwables.IntBiConsumer<E>`) — the action to perform for each position, receives (rowIndex, columnIndex)
 - **Throws:**
-  - `java.lang.IndexOutOfBoundsException` — if any index is out of bounds
+  - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , {@code fromRowIndex > toRowIndex} , {@code fromColumnIndex < 0} , {@code toColumnIndex > columnCount} , or {@code fromColumnIndex > toColumnIndex}
   - `E` — if the action throws an exception
 - **Signature:** `public <E extends Exception> void forEachIndices(final Throwables.BiIntObjConsumer<M, E> action) throws E`
 - **Summary:** Performs the specified action for each element position in the matrix, providing the matrix itself as a parameter.
@@ -297,7 +297,7 @@ Shared implementation base for the matrix types in this package.
   - `toColumnIndex` (`int`) — the ending column index (exclusive)
   - `action` (`Throwables.BiIntObjConsumer<M, E>`) — the action to perform, receiving (rowIndex, columnIndex, matrix)
 - **Throws:**
-  - `java.lang.IndexOutOfBoundsException` — if any index is out of bounds
+  - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , {@code fromRowIndex > toRowIndex} , {@code fromColumnIndex < 0} , {@code toColumnIndex > columnCount} , or {@code fromColumnIndex > toColumnIndex}
   - `E` — if the action throws an exception
 ##### adjacent4Points(...) -> Stream<Point>
 - **Signature:** `public Stream<Point> adjacent4Points(final int rowIndex, final int columnIndex)`
@@ -432,7 +432,7 @@ Shared implementation base for the matrix types in this package.
   - The matrix must be square (rowCount == columnCount) for this operation.
 - **Parameters:**
   - (none)
-- **Returns:** a stream of diagonal elements
+- **Returns:** a stream of the main-diagonal elements
 ##### antiDiagonalStream(...) -> ES
 - **Signature:** `public abstract ES antiDiagonalStream()`
 - **Summary:** Returns a stream of elements along the anti-diagonal (upper-right to lower-left).
@@ -833,7 +833,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Summary:** Updates all elements in the matrix in-place by applying the specified operator.
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
-  - Elements are processed in row-major order when executed sequentially.
+  - When this operation is not parallelized, elements are processed in first-occurrence row-major order; when it is parallelized, the encounter order is unspecified.
   - </p> <p> If multiple logical rows share the same backing array, each backing row is updated only once, at its first occurrence.
 - **Parameters:**
   - `operator` (`Throwables.BooleanUnaryOperator<E>`) — the operator to apply to each element; receives the current element value and returns the new value
@@ -1418,7 +1418,7 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
   - `startInclusive` (`byte`) — the starting byte value (inclusive)
   - `endExclusive` (`byte`) — the ending byte value (exclusive)
   - `step` (`byte`) — the step size (must not be zero; can be positive or negative)
-- **Returns:** a new 1×n ByteMatrix with values incremented by the step size
+- **Returns:** a new {@code 1 × n} {@code ByteMatrix} of values from {@code startInclusive} stepped by {@code step}
 ##### rangeClosed(...) -> ByteMatrix
 - **Signature:** `public static ByteMatrix rangeClosed(final byte startInclusive, final byte endInclusive)`
 - **Summary:** Creates a single-row {@code ByteMatrix} containing a closed range of byte values.
@@ -1437,7 +1437,7 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
   - `startInclusive` (`byte`) — the starting byte value (inclusive)
   - `endInclusive` (`byte`) — the ending byte value (inclusive, if reachable by stepping)
   - `step` (`byte`) — the step size (must not be zero; can be positive or negative)
-- **Returns:** a new 1×n ByteMatrix with values incremented by the step size
+- **Returns:** a new {@code 1 × n} {@code ByteMatrix} of values from {@code startInclusive} stepped by {@code step}
 ##### mainDiagonal(...) -> ByteMatrix
 - **Signature:** `public static ByteMatrix mainDiagonal(final byte[] mainDiagonal)`
 - **Summary:** Creates a square matrix from the specified main diagonal elements (upper-left to lower-right).
@@ -1685,7 +1685,7 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Summary:** Updates all elements in the matrix in-place by applying the specified operator.
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
-  - Elements are processed in row-major order when executed sequentially.
+  - When this operation is not parallelized, elements are processed in first-occurrence row-major order; when it is parallelized, the encounter order is unspecified.
   - </p> <p> If multiple logical rows share the same backing array, each backing row is updated only once, at its first occurrence.
 - **Parameters:**
   - `operator` (`Throwables.ByteUnaryOperator<E>`) — the operator to apply to each element; receives the current element value and returns the new value
@@ -2318,6 +2318,8 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 ##### unbox(...) -> CharMatrix
 - **Signature:** `public static CharMatrix unbox(final Matrix<Character> x)`
 - **Summary:** Converts a boxed {@link Matrix Matrix&lt;Character&gt;} to a primitive {@code CharMatrix} .
+- **Contract:**
+  - This conversion improves memory efficiency and performance when working with large matrices.
 - **Parameters:**
   - `x` (`Matrix<Character>`) — the boxed {@code Character} matrix to convert; must not be {@code null}
 - **Returns:** a new {@code CharMatrix} with primitive char values
@@ -2533,7 +2535,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Summary:** Updates all elements in the matrix in-place by applying the specified operator.
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
-  - Elements are processed in row-major order when executed sequentially.
+  - When this operation is not parallelized, elements are processed in first-occurrence row-major order; when it is parallelized, the encounter order is unspecified.
   - </p> <p> If multiple logical rows share the same backing array, each backing row is updated only once, at its first occurrence.
 - **Parameters:**
   - `operator` (`Throwables.CharUnaryOperator<E>`) — the operator to apply to each element; receives the current element value and returns the new value
@@ -3089,7 +3091,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
   - <p> All rows must have the same length as the first row (rectangular array required).
 - **Parameters:**
   - `a` (`int[][]`) — the two-dimensional int array to convert to a double matrix, or empty for an empty matrix; must not be {@code null}
-- **Returns:** a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if {@code a} is empty
+- **Returns:** a new {@code DoubleMatrix} with converted values, or the shared empty {@code DoubleMatrix} if {@code a} is empty
 - **See also:** IntMatrix#toDoubleMatrix()
 - **Signature:** `public static DoubleMatrix from(final long[]... a)`
 - **Summary:** Creates a {@code DoubleMatrix} from a two-dimensional long array by converting long values to double.
@@ -3098,7 +3100,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
   - </p> <p> <b> &#9888; &#65039; Precision: </b> Long values that require more than 53 bits of precision may lose precision when converted to double, since a double has 53 bits of significand precision (52 stored fraction bits plus an implicit leading bit for normal values).
 - **Parameters:**
   - `a` (`long[][]`) — the two-dimensional long array to convert to a double matrix, or empty for an empty matrix; must not be {@code null}
-- **Returns:** a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if {@code a} is empty
+- **Returns:** a new {@code DoubleMatrix} with converted values, or the shared empty {@code DoubleMatrix} if {@code a} is empty
 - **See also:** LongMatrix#toDoubleMatrix()
 - **Signature:** `public static DoubleMatrix from(final float[]... a)`
 - **Summary:** Creates a {@code DoubleMatrix} from a two-dimensional float array by widening float values to double.
@@ -3106,7 +3108,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
   - <p> All rows must have the same length as the first row (rectangular array required).
 - **Parameters:**
   - `a` (`float[][]`) — the two-dimensional float array to convert to a double matrix, or empty for an empty matrix; must not be {@code null}
-- **Returns:** a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if {@code a} is empty
+- **Returns:** a new {@code DoubleMatrix} with converted values, or the shared empty {@code DoubleMatrix} if {@code a} is empty
 - **See also:** FloatMatrix#toDoubleMatrix()
 ##### randomRow(...) -> DoubleMatrix
 - **Signature:** `public static DoubleMatrix randomRow(final int length)`
@@ -3153,16 +3155,18 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Parameters:**
   - `mainDiagonal` (`double[]`) — the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non- {@code null} ; may be empty
   - `antiDiagonal` (`double[]`) — the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non- {@code null} ; may be empty
-- **Returns:** a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
+- **Returns:** a square matrix with the specified diagonals, or the shared empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null} , or if both arrays are non-empty and have different lengths
 - **See also:** #mainDiagonal(double\[\]), #antiDiagonal(double\[\])
 ##### unbox(...) -> DoubleMatrix
 - **Signature:** `public static DoubleMatrix unbox(final Matrix<Double> x)`
-- **Summary:** Converts a boxed {@link Matrix Matrix&lt;Double&gt;} to a primitive {@code DoubleMatrix} .
+- **Summary:** Converts a boxed {@code Matrix<Double>} to a primitive {@code DoubleMatrix} .
+- **Contract:**
+  - This conversion improves memory efficiency and performance when working with large matrices.
 - **Parameters:**
-  - `x` (`Matrix<Double>`) — the boxed {@code Double} matrix to convert; must not be {@code null}
-- **Returns:** a new {@code DoubleMatrix} with unboxed values ( {@code null} elements become {@code 0.0} )
+  - `x` (`Matrix<Double>`) — the boxed {@code Matrix<Double>} to convert; must not be {@code null}
+- **Returns:** a new {@code DoubleMatrix} with primitive double values, with the same shape as {@code x} ( {@code null} elements become {@code 0.0} )
 - **See also:** #boxed()
 
 #### Public Instance Methods
@@ -3375,7 +3379,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Summary:** Updates all elements in the matrix in-place by applying the specified operator.
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
-  - Elements are processed in row-major order when executed sequentially.
+  - When this operation is not parallelized, elements are processed in first-occurrence row-major order; when it is parallelized, the encounter order is unspecified.
   - </p> <p> If multiple logical rows share one backing array, each value in that array is transformed only once.
 - **Parameters:**
   - `operator` (`Throwables.DoubleUnaryOperator<E>`) — the operator to apply to each element; receives the current element value and returns the new value
@@ -3399,7 +3403,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
   - If parallelized, the supplied function must be thread-safe.
   - </p> <p> If multiple logical rows share the same backing array, the predicate is evaluated once per physical cell and that backing row is updated once.
 - **Parameters:**
-  - `predicate` (`Throwables.DoublePredicate<E>`) — the condition to test each element; elements for which this returns {@code true} will be replaced
+  - `predicate` (`Throwables.DoublePredicate<E>`) — the condition to test each element; elements for which this returns {@code true} will be replaced; must not be {@code null}
   - `newValue` (`double`) — the value to use for replacing matching elements (may be {@code NaN} , {@code +/-Infinity} , or {@code -0.0} )
 - **Throws:**
   - `E` — if the predicate throws an exception
@@ -3409,8 +3413,8 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
   - If parallelized, the supplied function must be thread-safe.
   - If logical rows share a backing array, a replacement made through any matching coordinate is therefore visible through every alias.
 - **Parameters:**
-  - `predicate` (`Throwables.IntBiPredicate<E>`) — the condition to test each position; receives row index and column index (0-based) and returns {@code true} if the element at that position should be replaced
-  - `newValue` (`double`) — the value to use for replacing at matching positions
+  - `predicate` (`Throwables.IntBiPredicate<E>`) — the condition to test each position; receives row index and column index (0-based) and returns {@code true} if the element at that position should be replaced; must not be {@code null}
+  - `newValue` (`double`) — the value to use for replacing at matching positions (may be {@code NaN} , {@code +/-Infinity} , or {@code -0.0} )
 - **Throws:**
   - `E` — if the predicate throws an exception
 ##### map(...) -> DoubleMatrix
@@ -3611,10 +3615,9 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Returns:** a new {@code DoubleMatrix} that is the transpose of this matrix with dimensions {@code columnCount × rowCount} ; an {@code N x 0} matrix transposes to the empty {@code 0 x 0} matrix, because the swapped shape {@code 0 x N} (zero rows with a non-zero column count) is not representable
 ##### reshape(...) -> DoubleMatrix
 - **Signature:** `@SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG") @Override public DoubleMatrix reshape(final int newRowCount, final int newColumnCount)`
-- **Summary:** Reshapes the matrix to new dimensions while preserving element order.
+- **Summary:** Reshapes this matrix to have the specified dimensions.
 - **Contract:**
-  - <p> The new shape must have at least as many total elements as the original ( {@code (long) newRowCount * newColumnCount >= elementCount()} ).
-  - If the new shape has more total elements, the additional positions are filled with zeros.
+  - The new shape must have at least as many total cells as the original ( {@code (long) newRowCount * newColumnCount >= elementCount()} ).
 - **Parameters:**
   - `newRowCount` (`int`) — the number of rows in the reshaped matrix; must be {@code >= 0}
   - `newColumnCount` (`int`) — the number of columns in the reshaped matrix; must be {@code >= 0}
@@ -3940,7 +3943,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **See also:** #of(float\[\]\[\]), #copy()
 ##### from(...) -> FloatMatrix
 - **Signature:** `public static FloatMatrix from(final int[]... a)`
-- **Summary:** Creates a FloatMatrix from a two-dimensional int array by converting int values to float.
+- **Summary:** Creates a {@code FloatMatrix} from a two-dimensional int array by converting int values to float.
 - **Contract:**
   - <p> <b> &#9888; &#65039; Precision: </b> Int values requiring more than 24 significant bits may lose precision when converted to float, whose significand precision is 24 bits including the implicit leading bit.
   - </p> <p> <b> Requirements: </b> </p> <ul> <li> All rows must be non- {@code null} and have the same length as the first row (rectangular array required) </li> </ul> <p> <b> Usage Examples: </b> </p> <pre> {@code FloatMatrix matrix = FloatMatrix.from(new int\[\]\[\] {{1, 2}, {3, 4}}); matrix.get(1, 0); // returns 3.0f matrix.rowCount(); // returns 2 // Precision: 16_777_217 has 25 significant bits and rounds when stored as float FloatMatrix.from(new int\[\]\[\] {{16777217}}).get(0, 0); // returns 1.6777216E7f (rounded) FloatMatrix.from((int\[\]\[\]) null); // throws IllegalArgumentException FloatMatrix.from(new int\[0\]\[0\]).columnCount(); // returns 0 FloatMatrix.from(new int\[\]\[\] {{1}, {2, 3}}); // throws IllegalArgumentException (rows differ in length) } </pre>
@@ -3993,7 +3996,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Parameters:**
   - `mainDiagonal` (`float[]`) — the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non- {@code null} ; may be empty
   - `antiDiagonal` (`float[]`) — the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non- {@code null} ; may be empty
-- **Returns:** a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
+- **Returns:** a square matrix with the specified diagonals, or the shared empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null} , or if both arrays are non-empty and have different lengths
 - **See also:** #mainDiagonal(float\[\]), #antiDiagonal(float\[\])
@@ -4004,7 +4007,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
   - This conversion improves memory efficiency and performance when working with large matrices.
 - **Parameters:**
   - `x` (`Matrix<Float>`) — the boxed {@code Matrix<Float>} to convert; must not be {@code null}
-- **Returns:** a new {@code FloatMatrix} with primitive float values, with the same shape as {@code x}
+- **Returns:** a new {@code FloatMatrix} with primitive float values, with the same shape as {@code x} ( {@code null} elements become {@code 0.0f} )
 - **See also:** #boxed()
 
 #### Public Instance Methods
@@ -4217,7 +4220,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Summary:** Updates all elements in the matrix in-place by applying the specified operator.
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
-  - Elements are processed in row-major order when executed sequentially.
+  - When this operation is not parallelized, elements are processed in first-occurrence row-major order; when it is parallelized, the encounter order is unspecified.
   - </p> <p> If multiple logical rows share one backing array, each value in that array is transformed only once.
 - **Parameters:**
   - `operator` (`Throwables.FloatUnaryOperator<E>`) — the operator to apply to each element; receives the current element value and returns the new value
@@ -4241,7 +4244,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
   - If parallelized, the supplied function must be thread-safe.
   - </p> <p> If multiple logical rows share the same backing array, the predicate is evaluated once per physical cell and that backing row is updated once.
 - **Parameters:**
-  - `predicate` (`Throwables.FloatPredicate<E>`) — the condition to test each element; elements for which this returns {@code true} will be replaced
+  - `predicate` (`Throwables.FloatPredicate<E>`) — the condition to test each element; elements for which this returns {@code true} will be replaced; must not be {@code null}
   - `newValue` (`float`) — the value to use for replacing matching elements (may be {@code NaN} , {@code +/-Infinity} , or {@code -0.0f} )
 - **Throws:**
   - `E` — if the predicate throws an exception
@@ -4251,8 +4254,8 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
   - If parallelized, the supplied function must be thread-safe.
   - If logical rows share a backing array, a replacement made through any matching coordinate is therefore visible through every alias.
 - **Parameters:**
-  - `predicate` (`Throwables.IntBiPredicate<E>`) — the condition to test each position; receives row index and column index (0-based) and returns {@code true} if the element at that position should be replaced
-  - `newValue` (`float`) — the value to use for replacing at matching positions
+  - `predicate` (`Throwables.IntBiPredicate<E>`) — the condition to test each position; receives row index and column index (0-based) and returns {@code true} if the element at that position should be replaced; must not be {@code null}
+  - `newValue` (`float`) — the value to use for replacing at matching positions (may be {@code NaN} , {@code +/-Infinity} , or {@code -0.0f} )
 - **Throws:**
   - `E` — if the predicate throws an exception
 ##### map(...) -> FloatMatrix
@@ -4268,7 +4271,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **See also:** #updateAll(Throwables.FloatUnaryOperator)
 ##### mapToInt(...) -> IntMatrix
 - **Signature:** `public <E extends Exception> IntMatrix mapToInt(final Throwables.FloatToIntFunction<E> mapper) throws E`
-- **Summary:** Creates a new IntMatrix by applying a function that converts float values to int.
+- **Summary:** Creates a new {@code IntMatrix} by applying a function that converts float values to int.
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
@@ -4279,7 +4282,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **See also:** #toIntMatrix()
 ##### mapToLong(...) -> LongMatrix
 - **Signature:** `public <E extends Exception> LongMatrix mapToLong(final Throwables.FloatToLongFunction<E> mapper) throws E`
-- **Summary:** Creates a new LongMatrix by applying a function that converts float values to long.
+- **Summary:** Creates a new {@code LongMatrix} by applying a function that converts float values to long.
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
@@ -4290,7 +4293,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **See also:** #toLongMatrix()
 ##### mapToDouble(...) -> DoubleMatrix
 - **Signature:** `public <E extends Exception> DoubleMatrix mapToDouble(final Throwables.FloatToDoubleFunction<E> mapper) throws E`
-- **Summary:** Creates a new DoubleMatrix by applying a function that converts float values to double.
+- **Summary:** Creates a new {@code DoubleMatrix} by applying a function that converts float values to double.
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
 - **Parameters:**
@@ -4894,10 +4897,11 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Signature:** `public static IntMatrix diagonals(final int[] mainDiagonal, final int[] antiDiagonal) throws IllegalArgumentException`
 - **Summary:** Creates a square matrix from the specified main diagonal and anti-diagonal elements.
 - **Contract:**
-  - If both arrays are non-empty, they must have the same length.
+  - At least one array must be non- {@code null} ; if both arrays contain elements, they must have the same length.
+  - If neither input contains any elements, the shared empty matrix is returned.
   - When both diagonals are provided and they overlap (at the center element of odd-sized matrices), the main diagonal value takes precedence.
 - **Parameters:**
-  - `mainDiagonal` (`int[]`) — the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non- {@code null} ; may be empty
+  - `mainDiagonal` (`int[]`) — the array of main-diagonal elements; may be {@code null} if {@code antiDiagonal} is non- {@code null} ; may be empty
   - `antiDiagonal` (`int[]`) — the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non- {@code null} ; may be empty
 - **Returns:** a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
 - **Throws:**
@@ -4908,7 +4912,7 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Summary:** Converts a boxed {@link Matrix Matrix&lt;Integer&gt;} to a primitive {@code IntMatrix} .
 - **Parameters:**
   - `x` (`Matrix<Integer>`) — the boxed {@code Integer} matrix to convert; must not be {@code null}
-- **Returns:** a new {@code IntMatrix} with primitive int values
+- **Returns:** a new {@code IntMatrix} with primitive int values, or the shared empty matrix if {@code x} has no rows
 - **See also:** #boxed()
 
 #### Public Instance Methods
@@ -5121,7 +5125,7 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Summary:** Updates all elements in the matrix in-place by applying the specified operator.
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
-  - Distinct backing rows and their elements are processed in first-occurrence row-major order when executed sequentially.
+  - When this operation is not parallelized, distinct backing rows and their elements are processed in first-occurrence row-major order; when it is parallelized, the encounter order is unspecified.
   - </p> <p> If multiple logical rows reference the same backing array, every element in that shared row is transformed exactly once.
 - **Parameters:**
   - `operator` (`Throwables.IntUnaryOperator<E>`) — the operator to apply to each element; receives the current element value and returns the new value
@@ -5430,7 +5434,6 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Summary:** Performs element-wise addition with another matrix.
 - **Contract:**
   - The matrices must have the same dimensions.
-  - If you need a wider result, call {@link #toLongMatrix()} first or use {@link #mapToLong(Throwables.IntToLongFunction)} .
 - **Parameters:**
   - `other` (`IntMatrix`) — the matrix to add to this matrix; must not be {@code null} and must have the same shape
 - **Returns:** a new {@code IntMatrix} containing the element-wise sum
@@ -5442,6 +5445,7 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Summary:** Performs element-wise subtraction ( {@code this - other} ).
 - **Contract:**
   - The matrices must have the same dimensions.
+  - If you need a wider result, call {@link #toLongMatrix()} first or use {@link #mapToLong(Throwables.IntToLongFunction)} .
 - **Parameters:**
   - `other` (`IntMatrix`) — the matrix to subtract from this matrix; must not be {@code null} and must have the same shape
 - **Returns:** a new {@code IntMatrix} containing the element-wise difference {@code this - other}
@@ -5753,14 +5757,14 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Summary:** Creates a square matrix from the specified main diagonal elements (upper-left to lower-right).
 - **Parameters:**
   - `mainDiagonal` (`long[]`) — the array of main-diagonal elements; must not be {@code null} , but may be empty
-- **Returns:** a new {@code n x n} {@code LongMatrix} (where {@code n = mainDiagonal.length} ) with the supplied values on the main diagonal and {@code 0} elsewhere; the shared empty matrix if {@code mainDiagonal} is empty
+- **Returns:** a new {@code n x n} {@code LongMatrix} (where {@code n = mainDiagonal.length} ) with the supplied values on the main diagonal and {@code 0L} elsewhere; the shared empty matrix if {@code mainDiagonal} is empty
 - **See also:** #antiDiagonal(long\[\]), #diagonals(long\[\], long\[\])
 ##### antiDiagonal(...) -> LongMatrix
 - **Signature:** `public static LongMatrix antiDiagonal(final long[] antiDiagonal)`
 - **Summary:** Creates a square matrix from the specified anti-diagonal elements (upper-right to lower-left).
 - **Parameters:**
   - `antiDiagonal` (`long[]`) — the array of anti-diagonal elements; must not be {@code null} , but may be empty
-- **Returns:** a new {@code n x n} {@code LongMatrix} (where {@code n = antiDiagonal.length} ) with the supplied values on the anti-diagonal and {@code 0} elsewhere; the shared empty matrix if {@code antiDiagonal} is empty
+- **Returns:** a new {@code n x n} {@code LongMatrix} (where {@code n = antiDiagonal.length} ) with the supplied values on the anti-diagonal and {@code 0L} elsewhere; the shared empty matrix if {@code antiDiagonal} is empty
 - **See also:** #mainDiagonal(long\[\]), #diagonals(long\[\], long\[\])
 ##### diagonals(...) -> LongMatrix
 - **Signature:** `public static LongMatrix diagonals(final long[] mainDiagonal, final long[] antiDiagonal) throws IllegalArgumentException`
@@ -5781,7 +5785,7 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Summary:** Converts a boxed {@link Matrix Matrix&lt;Long&gt;} to a primitive {@code LongMatrix} .
 - **Parameters:**
   - `x` (`Matrix<Long>`) — the boxed {@code Long} matrix to convert; must not be {@code null}
-- **Returns:** a new {@code LongMatrix} with primitive long values
+- **Returns:** a new {@code LongMatrix} with primitive long values, or the shared empty matrix if {@code x} has no rows
 - **See also:** #boxed()
 
 #### Public Instance Methods
@@ -5994,7 +5998,7 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Summary:** Updates all elements in the matrix in-place by applying the specified operator.
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
-  - Distinct backing rows and their elements are processed in first-occurrence row-major order when executed sequentially.
+  - When this operation is not parallelized, distinct backing rows and their elements are processed in first-occurrence row-major order; when it is parallelized, the encounter order is unspecified.
   - </p> <p> If multiple logical rows reference the same backing array, every element in that shared row is transformed exactly once.
 - **Parameters:**
   - `operator` (`Throwables.LongUnaryOperator<E>`) — the operator to apply to each element; receives the current element value and returns the new value
@@ -6556,20 +6560,20 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Summary:** Determines whether the given matrix should be processed using parallel execution.
 - **Contract:**
   - Determines whether the given matrix should be processed using parallel execution.
-  - <p> This method evaluates whether parallel processing should be used for operations on the specified matrix based on its total element count.
-  - The decision considers: </p> <ul> <li> The current thread's {@link ParallelMode} setting </li> <li> Whether parallel stream support is available in the runtime environment </li> <li> The total number of elements in the matrix (rows × columns) </li> </ul> <p> This is a convenience method that delegates to {@link #shouldRunInParallel(AbstractMatrix, long)} using the matrix's total element count.
+  - <p> This method evaluates whether parallel processing should be used for operations on the specified matrix, using its total element count as the work estimate.
+  - The decision considers: </p> <ul> <li> The current thread's {@link ParallelMode} setting </li> <li> Whether parallel stream support is available in the runtime environment </li> <li> The total number of elements in the matrix (rows × columns), consulted only under {@link ParallelMode#AUTO} </li> </ul> <p> This is a convenience method that delegates to {@link #shouldRunInParallel(AbstractMatrix, long)} using the matrix's total element count as the work-item count.
   - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix small = IntMatrix.of(new int\[\]\[\] {{1, 2}, {3, 4}}); // 4 elements IntMatrix large = IntMatrix.of(new int\[200\]\[200\]); // 40000 elements Matrices.setParallelMode(ParallelMode.FORCE_OFF); Matrices.shouldRunInParallel(small); // returns false (forced off) Matrices.shouldRunInParallel(large); // returns false (forced off) Matrices.setParallelMode(ParallelMode.AUTO); // restore default; under AUTO the // small matrix is never parallelized Matrices.shouldRunInParallel(small); // returns false (4 < 8192) Matrices.shouldRunInParallel((IntMatrix) null); // throws IllegalArgumentException } </pre>
 - **Parameters:**
   - `m` (`AbstractMatrix<?, ?, ?, ?, ?>`) — the matrix to evaluate for parallelization, must not be {@code null}
 - **Returns:** {@code true} if parallel processing should be used for this matrix; {@code false} for sequential processing
 - **See also:** #shouldRunInParallel(AbstractMatrix, long), #setParallelMode(ParallelMode)
 - **Signature:** `public static boolean shouldRunInParallel(final AbstractMatrix<?, ?, ?, ?, ?> m, final long count)`
-- **Summary:** Determines whether a matrix operation should be processed using parallel execution based on the element count and current parallel settings.
+- **Summary:** Determines whether a matrix operation should be processed using parallel execution based on the supplied work-item count and current parallel settings.
 - **Contract:**
-  - Determines whether a matrix operation should be processed using parallel execution based on the element count and current parallel settings.
+  - Determines whether a matrix operation should be processed using parallel execution based on the supplied work-item count and current parallel settings.
   - <p> This method makes the parallelization decision using a multifactor evaluation: </p> <ol> <li> <b> Runtime Support: </b> Parallel streams must be available in the runtime environment.
   - If not supported, always returns {@code false} .
-  - </li> </ul> </li> <li> <b> Element Count: </b> When using {@code AUTO} setting, returns {@code true} only if {@code count >= 8192} .
+  - </li> </ul> </li> <li> <b> Work Count: </b> When using {@code AUTO} setting, returns {@code true} only if {@code count >= 8192} .
   - </li> </ol> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.of(new int\[\]\[\] {{1, 2}, {3, 4}}); Matrices.setParallelMode(ParallelMode.FORCE_OFF); Matrices.shouldRunInParallel(matrix, 100000L); // returns false (forced off, count ignored) Matrices.setParallelMode(ParallelMode.AUTO); // restore default Matrices.shouldRunInParallel(matrix, 5000L); // returns false (5000 < 8192) Matrices.shouldRunInParallel((IntMatrix) null, 100L); // throws IllegalArgumentException Matrices.shouldRunInParallel(matrix, -1L); // throws IllegalArgumentException } </pre>
 - **Parameters:**
   - `m` (`AbstractMatrix<?, ?, ?, ?, ?>`) — the matrix being evaluated; only checked for {@code null} , the matrix's own element count is not consulted (the supplied {@code count} drives the decision)
@@ -6643,9 +6647,8 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Signature:** `public static <E extends Exception> void forEachIndices(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex, final Throwables.IntBiConsumer<E> action, final boolean inParallel) throws IndexOutOfBoundsException, E`
 - **Summary:** Executes an action for each position in a specified subregion of a matrix grid.
 - **Contract:**
-  - </p> <p> Iteration strategy: </p> <ul> <li> In sequential mode, if there are fewer or equal rows than columns, iterates by rows first (row-major order).
-  - </li> <li> In sequential mode, if there are more rows than columns, iterates by columns first (column-major order).
-  - </li> <li> When parallel execution is enabled, the outer loop runs over the larger of the two dimensions (so the work splits into as many independent units as possible) and is parallelized while the inner loop remains sequential.
+  - </li> <li> Parallel mode (when parallel streams are available): the outer loop runs over the larger of the two dimensions and is parallelized while the inner loop remains sequential; encounter order is unspecified.
+  - If parallel streams are unavailable, execution falls back to the sequential order above.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive), must be non-negative
   - `toRowIndex` (`int`) — the ending row index (exclusive), must be greater than or equal to {@code fromRowIndex}
@@ -6660,7 +6663,7 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Signature:** `public static <T> Stream<T> mapIndices(final int rowCount, final int columnCount, final Throwables.IntBiFunction<? extends T, ? extends Exception> mapper, final boolean inParallel)`
 - **Summary:** Executes a function for each position in a matrix grid and returns the results as a stream.
 - **Contract:**
-  - </p> <p> If {@code mapper} throws an exception, it is surfaced as a {@code RuntimeException} when the returned stream is consumed.
+  - </p> <p> If {@code mapper} throws a checked exception, it is wrapped in a {@code RuntimeException} and rethrown when the returned stream is consumed.
 - **Parameters:**
   - `rowCount` (`int`) — the number of rows to iterate over, must be non-negative
   - `columnCount` (`int`) — the number of columns to iterate over, must be non-negative
@@ -6671,9 +6674,8 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Signature:** `@SuppressWarnings("resource") public static <T> Stream<T> mapIndices(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex, final Throwables.IntBiFunction<? extends T, ? extends Exception> mapper, final boolean inParallel) throws IndexOutOfBoundsException`
 - **Summary:** Executes a function for each position in a specified subregion of a matrix grid and returns the results as a stream.
 - **Contract:**
-  - </p> <p> For sequential execution, the order of elements in the stream depends on whether there are more rows or columns: </p> <ul> <li> If rows is less than or equal to columns: elements are ordered by rows first (row-major order).
-  - </li> <li> If rows is greater than columns: elements are ordered by columns first (column-major order).
-  - </li> </ul> <p> When {@code inParallel} is {@code true} , the encounter order of the returned stream is unspecified.
+  - </li> </ul> <p> When {@code inParallel} is {@code true} and parallel streams are available, the encounter order of the returned stream is unspecified.
+  - If parallel streams are unavailable, sequential order above is used even when {@code inParallel} is {@code true} .
   - </p> <p> If {@code mapper} throws a checked exception, it is wrapped in a {@code RuntimeException} and rethrown when the returned stream is consumed.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive), must be non-negative
@@ -6689,7 +6691,7 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Signature:** `public static IntStream mapIndicesToInt(final int rowCount, final int columnCount, final Throwables.IntBinaryOperator<? extends Exception> mapper, final boolean inParallel)`
 - **Summary:** Executes a function that returns {@code int} values for each position in a matrix grid and returns the results as an {@link IntStream} .
 - **Contract:**
-  - </p> <p> If {@code mapper} throws an exception, it is surfaced as a {@code RuntimeException} when the returned stream is consumed.
+  - </p> <p> If {@code mapper} throws a checked exception, it is wrapped in a {@code RuntimeException} and rethrown when the returned stream is consumed.
 - **Parameters:**
   - `rowCount` (`int`) — the number of rows to iterate over, must be non-negative
   - `columnCount` (`int`) — the number of columns to iterate over, must be non-negative
@@ -6700,8 +6702,9 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Signature:** `@SuppressWarnings("resource") public static IntStream mapIndicesToInt(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex, final Throwables.IntBinaryOperator<? extends Exception> mapper, final boolean inParallel) throws IndexOutOfBoundsException`
 - **Summary:** Executes a function that returns {@code int} values for each position in a specified subregion of a matrix grid and returns the results as an {@link IntStream} .
 - **Contract:**
-  - </p> <p> For sequential execution, the iteration order is automatically optimized based on the relative sizes of the row and column ranges to improve cache locality and performance (row-major when the row range is not larger than the column range, column-major otherwise).
-  - When {@code inParallel} is {@code true} , the encounter order of the returned stream is unspecified.
+  - </p> <p> For sequential execution, stream encounter order is row-major when the row range is not larger than the column range, and column-major otherwise.
+  - When {@code inParallel} is {@code true} and parallel streams are available, the encounter order of the returned stream is unspecified.
+  - If parallel streams are unavailable, sequential order above is used even when {@code inParallel} is {@code true} .
   - </p> <p> If {@code mapper} throws a checked exception, it is wrapped in a {@code RuntimeException} and rethrown when the returned stream is consumed.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive), must be non-negative
@@ -6730,7 +6733,9 @@ Utility and policy holder shared by the matrix implementations in this package.
 - **Signature:** `public static <M extends AbstractMatrix<?, ?, ?, ?, ?>> void forEachCartesianIndices(final M a, final M b, final Throwables.IntTriConsumer<RuntimeException> action, // NOSONAR final boolean inParallel) throws IllegalArgumentException`
 - **Summary:** Performs matrix multiplication iteration using a custom accumulator function with explicit control over parallel execution.
 - **Contract:**
+  - Callers must not rely on a fixed (i, j, k) visitation order beyond that policy.
   - </p> <p> When parallel execution is requested and supported, the outermost loop is parallelized while inner loops remain sequential.
+  - If parallel streams are unavailable, sequential execution is used even when {@code inParallel} is {@code true} .
 - **Parameters:**
   - `a` (`M`) — the first matrix (left operand), must not be {@code null}
   - `b` (`M`) — the second matrix (right operand), must not be {@code null}
@@ -7359,13 +7364,13 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
   - The array must not be {@code null} .
 - **Parameters:**
   - `a` (`T[][]`) — the two-dimensional array to create the matrix from (must not be {@code null} )
-- **Returns:** a new {@code Matrix} containing the provided data
+- **Returns:** a new {@code Matrix} backed by the provided array (not a copy)
 ##### copyOf(...) -> Matrix<T>
 - **Signature:** `@SafeVarargs public static <T> Matrix<T> copyOf(final T[]... a)`
-- **Summary:** Creates a {@code Matrix} that owns a defensive deep copy of the supplied two-dimensional array.
+- **Summary:** Creates a {@code Matrix} that owns a defensive copy of the supplied two-dimensional array structure.
 - **Parameters:**
   - `a` (`T[][]`) — the two-dimensional array to copy (must not be {@code null} )
-- **Returns:** a new {@code Matrix} backed by a deep copy of {@code a}
+- **Returns:** a new {@code Matrix} backed by a defensive copy of {@code a} 's array structure (outer array and each row cloned; element references shared)
 - **See also:** #of(Object\[\]\[\]), #copy()
 ##### repeat(...) -> Matrix<T>
 - **Signature:** `public static <T> Matrix<T> repeat(final int rowCount, final int columnCount, final T element) throws IllegalArgumentException`
@@ -7441,6 +7446,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Parameters:**
   - `point` (`Point`) — the point containing row and column indices (must not be {@code null} )
   - `value` (`T`) — the value to set; may be {@code null}
+- **See also:** #set(int, int, Object)
 ##### valueAbove(...) -> Nullable<T>
 - **Signature:** `public Nullable<T> valueAbove(final int rowIndex, final int columnIndex)`
 - **Summary:** Returns the element directly above the specified position, if it exists.
@@ -7501,15 +7507,16 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Returns:** a new array containing the values from the specified row
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code rowIndex} is negative or greater than or equal to {@code rowCount}
-- **See also:** #rowView(int)
+- **See also:** #rowView(int), #columnCopy(int)
 ##### columnCopy(...) -> T\[\]
 - **Signature:** `@Override public T[] columnCopy(final int columnIndex) throws IndexOutOfBoundsException`
-- **Summary:** Returns a copy of the specified column as a new array.
+- **Summary:** Returns a defensive (shallow) copy of the specified column as a new array.
 - **Parameters:**
   - `columnIndex` (`int`) — the index of the column to retrieve (0-based)
 - **Returns:** a new array containing the values from the specified column
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code columnIndex} is negative or greater than or equal to {@code columnCount}
+- **See also:** #rowCopy(int), #rowView(int)
 ##### setRow(...) -> void
 - **Signature:** `public void setRow(final int rowIndex, final T[] row) throws IndexOutOfBoundsException, IllegalArgumentException`
 - **Summary:** Replaces an entire row with values from the given array.
@@ -7556,7 +7563,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
   - `E` — if the operator throws an exception
 ##### mainDiagonalCopy(...) -> T\[\]
 - **Signature:** `@Override public T[] mainDiagonalCopy() throws IllegalStateException`
-- **Summary:** Returns the main diagonal elements (upper-left to lower-right).
+- **Summary:** Returns a defensive (shallow) copy of the main diagonal elements (upper-left to lower-right).
 - **Contract:**
   - The matrix must be square (same number of rows and columns).
 - **Parameters:**
@@ -7587,7 +7594,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
   - `E` — if the operator throws an exception
 ##### antiDiagonalCopy(...) -> T\[\]
 - **Signature:** `@Override public T[] antiDiagonalCopy() throws IllegalStateException`
-- **Summary:** Returns the anti-diagonal elements (upper-right to lower-left).
+- **Summary:** Returns a defensive (shallow) copy of the anti-diagonal elements (upper-right to lower-left).
 - **Contract:**
   - The matrix must be square (same number of rows and columns).
 - **Parameters:**
@@ -7766,6 +7773,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
   - If the source array is smaller than this matrix, the remaining cells are unchanged.
 - **Parameters:**
   - `source` (`T[][]`) — the source two-dimensional array to copy values from (must not be {@code null} )
+- **See also:** #fill(int, int, Object\[\]\[\])
 - **Signature:** `public void fill(final int destRowIndex, final int destColumnIndex, final T[][] source) throws IndexOutOfBoundsException, IllegalArgumentException`
 - **Summary:** Copies values into the matrix from another two-dimensional array starting at the specified position.
 - **Contract:**
@@ -7793,7 +7801,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex} or {@code toRowIndex} is out of range ( {@code fromRowIndex < 0 || toRowIndex > rowCount || fromRowIndex > toRowIndex} )
 - **Signature:** `@Override public Matrix<T> copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
-- **Summary:** Creates a copy of a submatrix defined by row and column ranges.
+- **Summary:** Creates a structural copy of a submatrix defined by row and column ranges.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
   - `toRowIndex` (`int`) — the ending row index (exclusive)
@@ -7801,7 +7809,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
   - `toColumnIndex` (`int`) — the ending column index (exclusive)
 - **Returns:** a new Matrix containing the specified submatrix
 - **Throws:**
-  - `java.lang.IndexOutOfBoundsException` — if any of the row or column indices are out of range
+  - `java.lang.IndexOutOfBoundsException` — if any range is invalid ( {@code fromRowIndex < 0 || toRowIndex > rowCount || fromRowIndex > toRowIndex} , or the analogous conditions for the column range)
 ##### resize(...) -> Matrix<T>
 - **Signature:** `public Matrix<T> resize(final int newRowCount, final int newColumnCount)`
 - **Summary:** Returns a new matrix whose dimensions are exactly {@code newRowCount × newColumnCount} , anchored at the top-left corner of this matrix.
@@ -7888,6 +7896,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new matrix that is this matrix rotated 90 degrees clockwise, or an empty matrix if this matrix has zero columns
+- **See also:** #rotate180(), #rotate270(), #transpose()
 ##### rotate180(...) -> Matrix<T>
 - **Signature:** `@Override public Matrix<T> rotate180()`
 - **Summary:** Returns a new matrix that is this matrix rotated 180 degrees.
@@ -7901,6 +7910,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new matrix that is this matrix rotated 270 degrees clockwise, or an empty matrix if this matrix has zero columns
+- **See also:** #rotate90(), #rotate180(), #transpose()
 ##### transpose(...) -> Matrix<T>
 - **Signature:** `@Override public Matrix<T> transpose()`
 - **Summary:** Returns a new matrix that is the transpose of this matrix.
@@ -7943,6 +7953,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a list of all elements in row-major order, with size equal to {@code rowCount * columnCount}
+- **See also:** #rowMajorStream()
 ##### mutateFlattened(...) -> void
 - **Signature:** `@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super T[], E> action) throws E`
 - **Summary:** Applies an operation to a temporary flattened (row-major order) representation of this matrix.
@@ -7960,7 +7971,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Summary:** Vertically stacks this matrix with another matrix.
 - **Contract:**
   - The matrices must have the same number of columns.
-  - When neither operand supplies rows, the shared {@link #empty()} instance is type-neutral if the other operand has a reified component type.
+  - The shared {@link #empty()} instance is type-neutral when paired with a typed empty matrix.
 - **Parameters:**
   - `other` (`Matrix<T>`) — the matrix to stack below this matrix (must not be {@code null} )
 - **Returns:** a new vertically stacked matrix with dimensions (this.rowCount + other.rowCount) × columnCount
@@ -7972,7 +7983,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Summary:** Horizontally stacks this matrix with another matrix.
 - **Contract:**
   - The matrices must have the same number of rows.
-  - The shared {@link #empty()} instance is type-neutral when paired with a typed zero-row matrix.
+  - The shared {@link #empty()} instance is type-neutral when paired with a typed empty matrix.
 - **Parameters:**
   - `other` (`Matrix<T>`) — the matrix to stack to the right of this matrix (must not be {@code null} )
 - **Returns:** a new horizontally stacked matrix with dimensions rowCount × (this.columnCount + other.columnCount)
@@ -8187,6 +8198,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a string representation of this matrix
+- **See also:** #println()
 
 ### Enum ParallelMode (com.landawn.abacus.matrix.ParallelMode)
 Thread-local parallelization policy consulted by {@link Matrices} when automatic matrix operations decide whether to execute in parallel.
@@ -8311,10 +8323,11 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Signature:** `public static ShortMatrix diagonals(final short[] mainDiagonal, final short[] antiDiagonal) throws IllegalArgumentException`
 - **Summary:** Creates a square matrix from the specified main diagonal and anti-diagonal elements.
 - **Contract:**
-  - If both arrays are non-empty, they must have the same length.
+  - At least one array must be non- {@code null} ; if both arrays contain elements, they must have the same length.
+  - If neither input contains any elements, the shared empty matrix is returned.
   - When both diagonals are provided and they overlap (at the center element of odd-sized matrices), the main diagonal value takes precedence.
 - **Parameters:**
-  - `mainDiagonal` (`short[]`) — the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non- {@code null} ; may be empty
+  - `mainDiagonal` (`short[]`) — the array of main-diagonal elements; may be {@code null} if {@code antiDiagonal} is non- {@code null} ; may be empty
   - `antiDiagonal` (`short[]`) — the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non- {@code null} ; may be empty
 - **Returns:** a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
 - **Throws:**
@@ -8325,7 +8338,7 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Summary:** Converts a boxed {@link Matrix Matrix&lt;Short&gt;} to a primitive {@code ShortMatrix} .
 - **Parameters:**
   - `x` (`Matrix<Short>`) — the boxed {@code Short} matrix to convert; must not be {@code null}
-- **Returns:** a new {@code ShortMatrix} with primitive short values
+- **Returns:** a new {@code ShortMatrix} with primitive short values, or the shared empty matrix if {@code x} has no rows
 - **See also:** #boxed()
 
 #### Public Instance Methods
@@ -8538,7 +8551,7 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Summary:** Updates all elements in the matrix in-place by applying the specified operator.
 - **Contract:**
   - If parallelized, the supplied function must be thread-safe.
-  - Distinct backing rows and their elements are processed in first-occurrence row-major order when executed sequentially.
+  - When this operation is not parallelized, distinct backing rows and their elements are processed in first-occurrence row-major order; when it is parallelized, the encounter order is unspecified.
   - </p> <p> If multiple logical rows reference the same backing array, every element in that shared row is transformed exactly once.
 - **Parameters:**
   - `operator` (`Throwables.ShortUnaryOperator<E>`) — the operator to apply to each element; receives the current element value and returns the new value

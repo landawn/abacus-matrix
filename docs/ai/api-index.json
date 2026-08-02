@@ -1,8 +1,8 @@
 {
   "library": {
     "name": "abacus-matrix",
-    "version": "3.8.4",
-    "generated_at": "2026-07-26",
+    "version": "3.8.5",
+    "generated_at": "2026-08-01",
     "java_target": "17",
     "source": {
       "git_sha": "unknown"
@@ -85,12 +85,12 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns the underlying two-dimensional array of this matrix.",
+              "javadoc_summary": "Returns the underlying two-dimensional array of this matrix without copying.",
               "contract": [
-                "This method exposes the internal array representation for performance reasons and should be used with caution as modifications to the returned array will directly affect the matrix.",
-                "Reassigned rows must remain non- {@code null} and keep the original {@link #columnCount()} ; violating those shape invariants leaves the matrix in an invalid state because its dimensions are cached at construction.",
+                "Reassigned rows must remain non- {@code null} and keep the original {@link #columnCount()} ; violating those shape invariants leaves the matrix in an invalid state because its dimensions are fixed at construction.",
+                "Reassignment must also preserve which entries refer to the same row array: whether this matrix has aliased rows is computed once and then cached, so introducing or removing aliasing through this array can make row-wise in-place operations such as {@code updateAll} and {@code updateColumn} apply the operator the wrong number of times.",
                 "If you need an independent matrix instance, use {@link #copy()} .",
-                "If you only need the data flattened into a single one-dimensional array, use {@link #flatten()} ."
+                "If you only need the data as a flat list in row-major order, use {@link #flatten()} ."
               ],
               "examples": [],
               "see_also": []
@@ -880,7 +880,7 @@
               "throws": [
                 {
                   "type": "java.lang.IndexOutOfBoundsException",
-                  "condition": "if any index is out of bounds"
+                  "condition": "if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , {@code fromRowIndex > toRowIndex} , {@code fromColumnIndex < 0} , {@code toColumnIndex > columnCount} , or {@code fromColumnIndex > toColumnIndex}"
                 },
                 {
                   "type": "E",
@@ -988,7 +988,7 @@
               "throws": [
                 {
                   "type": "java.lang.IndexOutOfBoundsException",
-                  "condition": "if any index is out of bounds"
+                  "condition": "if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , {@code fromRowIndex > toRowIndex} , {@code fromColumnIndex < 0} , {@code toColumnIndex > columnCount} , or {@code fromColumnIndex > toColumnIndex}"
                 },
                 {
                   "type": "E",
@@ -2923,7 +2923,7 @@
               "javadoc_summary": "Updates all elements in the matrix in-place by applying the specified operator.",
               "contract": [
                 "If parallelized, the supplied function must be thread-safe.",
-                "Elements are processed in row-major order when executed sequentially.",
+                "When this operation is not parallelized, elements are processed in first-occurrence row-major order; when it is parallelized, the encounter order is unspecified.",
                 "</p> <p> If multiple logical rows share the same backing array, each backing row is updated only once, at its first occurrence."
               ],
               "examples": [],
@@ -5875,7 +5875,7 @@
               "javadoc_summary": "Updates all elements in the matrix in-place by applying the specified operator.",
               "contract": [
                 "If parallelized, the supplied function must be thread-safe.",
-                "Elements are processed in row-major order when executed sequentially.",
+                "When this operation is not parallelized, elements are processed in first-occurrence row-major order; when it is parallelized, the encounter order is unspecified.",
                 "</p> <p> If multiple logical rows share the same backing array, each backing row is updated only once, at its first occurrence."
               ],
               "examples": [],
@@ -8074,7 +8074,9 @@
               ],
               "throws": [],
               "javadoc_summary": "Converts a boxed {@link Matrix Matrix&lt;Character&gt;} to a primitive {@code CharMatrix} .",
-              "contract": [],
+              "contract": [
+                "This conversion improves memory efficiency and performance when working with large matrices."
+              ],
               "examples": [],
               "see_also": [
                 "#boxed()"
@@ -8839,7 +8841,7 @@
               "javadoc_summary": "Updates all elements in the matrix in-place by applying the specified operator.",
               "contract": [
                 "If parallelized, the supplied function must be thread-safe.",
-                "Elements are processed in row-major order when executed sequentially.",
+                "When this operation is not parallelized, elements are processed in first-occurrence row-major order; when it is parallelized, the encounter order is unspecified.",
                 "</p> <p> If multiple logical rows share the same backing array, each backing row is updated only once, at its first occurrence."
               ],
               "examples": [],
@@ -10969,13 +10971,15 @@
                 {
                   "name": "x",
                   "type": "Matrix<Double>",
-                  "javadoc": "the boxed {@code Double} matrix to convert; must not be {@code null}",
+                  "javadoc": "the boxed {@code Matrix<Double>} to convert; must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Converts a boxed {@link Matrix Matrix&lt;Double&gt;} to a primitive {@code DoubleMatrix} .",
-              "contract": [],
+              "javadoc_summary": "Converts a boxed {@code Matrix<Double>} to a primitive {@code DoubleMatrix} .",
+              "contract": [
+                "This conversion improves memory efficiency and performance when working with large matrices."
+              ],
               "examples": [],
               "see_also": [
                 "#boxed()"
@@ -11740,7 +11744,7 @@
               "javadoc_summary": "Updates all elements in the matrix in-place by applying the specified operator.",
               "contract": [
                 "If parallelized, the supplied function must be thread-safe.",
-                "Elements are processed in row-major order when executed sequentially.",
+                "When this operation is not parallelized, elements are processed in first-occurrence row-major order; when it is parallelized, the encounter order is unspecified.",
                 "</p> <p> If multiple logical rows share one backing array, each value in that array is transformed only once."
               ],
               "examples": [],
@@ -11808,7 +11812,7 @@
                 {
                   "name": "predicate",
                   "type": "Throwables.DoublePredicate<E>",
-                  "javadoc": "the condition to test each element; elements for which this returns {@code true} will be replaced",
+                  "javadoc": "the condition to test each element; elements for which this returns {@code true} will be replaced; must not be {@code null}",
                   "nullability": "unspecified"
                 },
                 {
@@ -11852,13 +11856,13 @@
                 {
                   "name": "predicate",
                   "type": "Throwables.IntBiPredicate<E>",
-                  "javadoc": "the condition to test each position; receives row index and column index (0-based) and returns {@code true} if the element at that position should be replaced",
+                  "javadoc": "the condition to test each position; receives row index and column index (0-based) and returns {@code true} if the element at that position should be replaced; must not be {@code null}",
                   "nullability": "unspecified"
                 },
                 {
                   "name": "newValue",
                   "type": "double",
-                  "javadoc": "the value to use for replacing at matching positions",
+                  "javadoc": "the value to use for replacing at matching positions (may be {@code NaN} , {@code +/-Infinity} , or {@code -0.0} )",
                   "nullability": "unspecified"
                 }
               ],
@@ -12597,10 +12601,9 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Reshapes the matrix to new dimensions while preserving element order.",
+              "javadoc_summary": "Reshapes this matrix to have the specified dimensions.",
               "contract": [
-                "<p> The new shape must have at least as many total elements as the original ( {@code (long) newRowCount * newColumnCount >= elementCount()} ).",
-                "If the new shape has more total elements, the additional positions are filled with zeros."
+                "The new shape must have at least as many total cells as the original ( {@code (long) newRowCount * newColumnCount >= elementCount()} )."
               ],
               "examples": [],
               "see_also": []
@@ -13662,7 +13665,7 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a FloatMatrix from a two-dimensional int array by converting int values to float.",
+              "javadoc_summary": "Creates a {@code FloatMatrix} from a two-dimensional int array by converting int values to float.",
               "contract": [
                 "<p> <b> &#9888; &#65039; Precision: </b> Int values requiring more than 24 significant bits may lose precision when converted to float, whose significand precision is 24 bits including the implicit leading bit.",
                 "</p> <p> <b> Requirements: </b> </p> <ul> <li> All rows must be non- {@code null} and have the same length as the first row (rectangular array required) </li> </ul> <p> <b> Usage Examples: </b> </p> <pre> {@code FloatMatrix matrix = FloatMatrix.from(new int[][] {{1, 2}, {3, 4}}); matrix.get(1, 0); // returns 3.0f matrix.rowCount(); // returns 2 // Precision: 16_777_217 has 25 significant bits and rounds when stored as float FloatMatrix.from(new int[][] {{16777217}}).get(0, 0); // returns 1.6777216E7f (rounded) FloatMatrix.from((int[][]) null); // throws IllegalArgumentException FloatMatrix.from(new int[0][0]).columnCount(); // returns 0 FloatMatrix.from(new int[][] {{1}, {2, 3}}); // throws IllegalArgumentException (rows differ in length) } </pre>"
@@ -14646,7 +14649,7 @@
               "javadoc_summary": "Updates all elements in the matrix in-place by applying the specified operator.",
               "contract": [
                 "If parallelized, the supplied function must be thread-safe.",
-                "Elements are processed in row-major order when executed sequentially.",
+                "When this operation is not parallelized, elements are processed in first-occurrence row-major order; when it is parallelized, the encounter order is unspecified.",
                 "</p> <p> If multiple logical rows share one backing array, each value in that array is transformed only once."
               ],
               "examples": [],
@@ -14714,7 +14717,7 @@
                 {
                   "name": "predicate",
                   "type": "Throwables.FloatPredicate<E>",
-                  "javadoc": "the condition to test each element; elements for which this returns {@code true} will be replaced",
+                  "javadoc": "the condition to test each element; elements for which this returns {@code true} will be replaced; must not be {@code null}",
                   "nullability": "unspecified"
                 },
                 {
@@ -14758,13 +14761,13 @@
                 {
                   "name": "predicate",
                   "type": "Throwables.IntBiPredicate<E>",
-                  "javadoc": "the condition to test each position; receives row index and column index (0-based) and returns {@code true} if the element at that position should be replaced",
+                  "javadoc": "the condition to test each position; receives row index and column index (0-based) and returns {@code true} if the element at that position should be replaced; must not be {@code null}",
                   "nullability": "unspecified"
                 },
                 {
                   "name": "newValue",
                   "type": "float",
-                  "javadoc": "the value to use for replacing at matching positions",
+                  "javadoc": "the value to use for replacing at matching positions (may be {@code NaN} , {@code +/-Infinity} , or {@code -0.0f} )",
                   "nullability": "unspecified"
                 }
               ],
@@ -14851,7 +14854,7 @@
                   "condition": "if the function throws an exception"
                 }
               ],
-              "javadoc_summary": "Creates a new IntMatrix by applying a function that converts float values to int.",
+              "javadoc_summary": "Creates a new {@code IntMatrix} by applying a function that converts float values to int.",
               "contract": [
                 "If parallelized, the supplied function must be thread-safe."
               ],
@@ -14890,7 +14893,7 @@
                   "condition": "if the function throws an exception"
                 }
               ],
-              "javadoc_summary": "Creates a new LongMatrix by applying a function that converts float values to long.",
+              "javadoc_summary": "Creates a new {@code LongMatrix} by applying a function that converts float values to long.",
               "contract": [
                 "If parallelized, the supplied function must be thread-safe."
               ],
@@ -14929,7 +14932,7 @@
                   "condition": "if the function throws an exception"
                 }
               ],
-              "javadoc_summary": "Creates a new DoubleMatrix by applying a function that converts float values to double.",
+              "javadoc_summary": "Creates a new {@code DoubleMatrix} by applying a function that converts float values to double.",
               "contract": [
                 "If parallelized, the supplied function must be thread-safe."
               ],
@@ -16975,7 +16978,7 @@
                 {
                   "name": "mainDiagonal",
                   "type": "int[]",
-                  "javadoc": "the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non- {@code null} ; may be empty",
+                  "javadoc": "the array of main-diagonal elements; may be {@code null} if {@code antiDiagonal} is non- {@code null} ; may be empty",
                   "nullability": "unspecified"
                 },
                 {
@@ -16993,7 +16996,8 @@
               ],
               "javadoc_summary": "Creates a square matrix from the specified main diagonal and anti-diagonal elements.",
               "contract": [
-                "If both arrays are non-empty, they must have the same length.",
+                "At least one array must be non- {@code null} ; if both arrays contain elements, they must have the same length.",
+                "If neither input contains any elements, the shared empty matrix is returned.",
                 "When both diagonals are provided and they overlap (at the center element of odd-sized matrices), the main diagonal value takes precedence."
               ],
               "examples": [],
@@ -17787,7 +17791,7 @@
               "javadoc_summary": "Updates all elements in the matrix in-place by applying the specified operator.",
               "contract": [
                 "If parallelized, the supplied function must be thread-safe.",
-                "Distinct backing rows and their elements are processed in first-occurrence row-major order when executed sequentially.",
+                "When this operation is not parallelized, distinct backing rows and their elements are processed in first-occurrence row-major order; when it is parallelized, the encounter order is unspecified.",
                 "</p> <p> If multiple logical rows reference the same backing array, every element in that shared row is transformed exactly once."
               ],
               "examples": [],
@@ -18871,8 +18875,7 @@
               ],
               "javadoc_summary": "Performs element-wise addition with another matrix.",
               "contract": [
-                "The matrices must have the same dimensions.",
-                "If you need a wider result, call {@link #toLongMatrix()} first or use {@link #mapToLong(Throwables.IntToLongFunction)} ."
+                "The matrices must have the same dimensions."
               ],
               "examples": [],
               "see_also": [
@@ -18905,7 +18908,8 @@
               ],
               "javadoc_summary": "Performs element-wise subtraction ( {@code this - other} ).",
               "contract": [
-                "The matrices must have the same dimensions."
+                "The matrices must have the same dimensions.",
+                "If you need a wider result, call {@link #toLongMatrix()} first or use {@link #mapToLong(Throwables.IntToLongFunction)} ."
               ],
               "examples": [],
               "see_also": [
@@ -20833,7 +20837,7 @@
               "javadoc_summary": "Updates all elements in the matrix in-place by applying the specified operator.",
               "contract": [
                 "If parallelized, the supplied function must be thread-safe.",
-                "Distinct backing rows and their elements are processed in first-occurrence row-major order when executed sequentially.",
+                "When this operation is not parallelized, distinct backing rows and their elements are processed in first-occurrence row-major order; when it is parallelized, the encounter order is unspecified.",
                 "</p> <p> If multiple logical rows reference the same backing array, every element in that shared row is transformed exactly once."
               ],
               "examples": [],
@@ -22718,8 +22722,8 @@
               "javadoc_summary": "Determines whether the given matrix should be processed using parallel execution.",
               "contract": [
                 "Determines whether the given matrix should be processed using parallel execution.",
-                "<p> This method evaluates whether parallel processing should be used for operations on the specified matrix based on its total element count.",
-                "The decision considers: </p> <ul> <li> The current thread's {@link ParallelMode} setting </li> <li> Whether parallel stream support is available in the runtime environment </li> <li> The total number of elements in the matrix (rows × columns) </li> </ul> <p> This is a convenience method that delegates to {@link #shouldRunInParallel(AbstractMatrix, long)} using the matrix's total element count.",
+                "<p> This method evaluates whether parallel processing should be used for operations on the specified matrix, using its total element count as the work estimate.",
+                "The decision considers: </p> <ul> <li> The current thread's {@link ParallelMode} setting </li> <li> Whether parallel stream support is available in the runtime environment </li> <li> The total number of elements in the matrix (rows × columns), consulted only under {@link ParallelMode#AUTO} </li> </ul> <p> This is a convenience method that delegates to {@link #shouldRunInParallel(AbstractMatrix, long)} using the matrix's total element count as the work-item count.",
                 "</p> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix small = IntMatrix.of(new int[][] {{1, 2}, {3, 4}}); // 4 elements IntMatrix large = IntMatrix.of(new int[200][200]); // 40000 elements Matrices.setParallelMode(ParallelMode.FORCE_OFF); Matrices.shouldRunInParallel(small); // returns false (forced off) Matrices.shouldRunInParallel(large); // returns false (forced off) Matrices.setParallelMode(ParallelMode.AUTO); // restore default; under AUTO the // small matrix is never parallelized Matrices.shouldRunInParallel(small); // returns false (4 < 8192) Matrices.shouldRunInParallel((IntMatrix) null); // throws IllegalArgumentException } </pre>"
               ],
               "examples": [],
@@ -22753,12 +22757,12 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Determines whether a matrix operation should be processed using parallel execution based on the element count and current parallel settings.",
+              "javadoc_summary": "Determines whether a matrix operation should be processed using parallel execution based on the supplied work-item count and current parallel settings.",
               "contract": [
-                "Determines whether a matrix operation should be processed using parallel execution based on the element count and current parallel settings.",
+                "Determines whether a matrix operation should be processed using parallel execution based on the supplied work-item count and current parallel settings.",
                 "<p> This method makes the parallelization decision using a multifactor evaluation: </p> <ol> <li> <b> Runtime Support: </b> Parallel streams must be available in the runtime environment.",
                 "If not supported, always returns {@code false} .",
-                "</li> </ul> </li> <li> <b> Element Count: </b> When using {@code AUTO} setting, returns {@code true} only if {@code count >= 8192} .",
+                "</li> </ul> </li> <li> <b> Work Count: </b> When using {@code AUTO} setting, returns {@code true} only if {@code count >= 8192} .",
                 "</li> </ol> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}}); Matrices.setParallelMode(ParallelMode.FORCE_OFF); Matrices.shouldRunInParallel(matrix, 100000L); // returns false (forced off, count ignored) Matrices.setParallelMode(ParallelMode.AUTO); // restore default Matrices.shouldRunInParallel(matrix, 5000L); // returns false (5000 < 8192) Matrices.shouldRunInParallel((IntMatrix) null, 100L); // throws IllegalArgumentException Matrices.shouldRunInParallel(matrix, -1L); // throws IllegalArgumentException } </pre>"
               ],
               "examples": [],
@@ -23099,9 +23103,8 @@
               ],
               "javadoc_summary": "Executes an action for each position in a specified subregion of a matrix grid.",
               "contract": [
-                "</p> <p> Iteration strategy: </p> <ul> <li> In sequential mode, if there are fewer or equal rows than columns, iterates by rows first (row-major order).",
-                "</li> <li> In sequential mode, if there are more rows than columns, iterates by columns first (column-major order).",
-                "</li> <li> When parallel execution is enabled, the outer loop runs over the larger of the two dimensions (so the work splits into as many independent units as possible) and is parallelized while the inner loop remains sequential."
+                "</li> <li> Parallel mode (when parallel streams are available): the outer loop runs over the larger of the two dimensions and is parallelized while the inner loop remains sequential; encounter order is unspecified.",
+                "If parallel streams are unavailable, execution falls back to the sequential order above."
               ],
               "examples": [],
               "see_also": []
@@ -23152,7 +23155,7 @@
               "throws": [],
               "javadoc_summary": "Executes a function for each position in a matrix grid and returns the results as a stream.",
               "contract": [
-                "</p> <p> If {@code mapper} throws an exception, it is surfaced as a {@code RuntimeException} when the returned stream is consumed."
+                "</p> <p> If {@code mapper} throws a checked exception, it is wrapped in a {@code RuntimeException} and rethrown when the returned stream is consumed."
               ],
               "examples": [],
               "see_also": [
@@ -23222,9 +23225,8 @@
               ],
               "javadoc_summary": "Executes a function for each position in a specified subregion of a matrix grid and returns the results as a stream.",
               "contract": [
-                "</p> <p> For sequential execution, the order of elements in the stream depends on whether there are more rows or columns: </p> <ul> <li> If rows is less than or equal to columns: elements are ordered by rows first (row-major order).",
-                "</li> <li> If rows is greater than columns: elements are ordered by columns first (column-major order).",
-                "</li> </ul> <p> When {@code inParallel} is {@code true} , the encounter order of the returned stream is unspecified.",
+                "</li> </ul> <p> When {@code inParallel} is {@code true} and parallel streams are available, the encounter order of the returned stream is unspecified.",
+                "If parallel streams are unavailable, sequential order above is used even when {@code inParallel} is {@code true} .",
                 "</p> <p> If {@code mapper} throws a checked exception, it is wrapped in a {@code RuntimeException} and rethrown when the returned stream is consumed."
               ],
               "examples": [],
@@ -23269,7 +23271,7 @@
               "throws": [],
               "javadoc_summary": "Executes a function that returns {@code int} values for each position in a matrix grid and returns the results as an {@link IntStream} .",
               "contract": [
-                "</p> <p> If {@code mapper} throws an exception, it is surfaced as a {@code RuntimeException} when the returned stream is consumed."
+                "</p> <p> If {@code mapper} throws a checked exception, it is wrapped in a {@code RuntimeException} and rethrown when the returned stream is consumed."
               ],
               "examples": [],
               "see_also": [
@@ -23332,8 +23334,9 @@
               ],
               "javadoc_summary": "Executes a function that returns {@code int} values for each position in a specified subregion of a matrix grid and returns the results as an {@link IntStream} .",
               "contract": [
-                "</p> <p> For sequential execution, the iteration order is automatically optimized based on the relative sizes of the row and column ranges to improve cache locality and performance (row-major when the row range is not larger than the column range, column-major otherwise).",
-                "When {@code inParallel} is {@code true} , the encounter order of the returned stream is unspecified.",
+                "</p> <p> For sequential execution, stream encounter order is row-major when the row range is not larger than the column range, and column-major otherwise.",
+                "When {@code inParallel} is {@code true} and parallel streams are available, the encounter order of the returned stream is unspecified.",
+                "If parallel streams are unavailable, sequential order above is used even when {@code inParallel} is {@code true} .",
                 "</p> <p> If {@code mapper} throws a checked exception, it is wrapped in a {@code RuntimeException} and rethrown when the returned stream is consumed."
               ],
               "examples": [],
@@ -23444,7 +23447,9 @@
               ],
               "javadoc_summary": "Performs matrix multiplication iteration using a custom accumulator function with explicit control over parallel execution.",
               "contract": [
-                "</p> <p> When parallel execution is requested and supported, the outermost loop is parallelized while inner loops remain sequential."
+                "Callers must not rely on a fixed (i, j, k) visitation order beyond that policy.",
+                "</p> <p> When parallel execution is requested and supported, the outermost loop is parallelized while inner loops remain sequential.",
+                "If parallel streams are unavailable, sequential execution is used even when {@code inParallel} is {@code true} ."
               ],
               "examples": [],
               "see_also": [
@@ -26261,7 +26266,7 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a {@code Matrix} that owns a defensive deep copy of the supplied two-dimensional array.",
+              "javadoc_summary": "Creates a {@code Matrix} that owns a defensive copy of the supplied two-dimensional array structure.",
               "contract": [],
               "examples": [],
               "see_also": [
@@ -26551,7 +26556,9 @@
               "javadoc_summary": "Sets the element at the specified point.",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#set(int, int, Object)"
+              ]
             },
             {
               "name": "valueAbove",
@@ -26741,7 +26748,8 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#rowView(int)"
+                "#rowView(int)",
+                "#columnCopy(int)"
               ]
             },
             {
@@ -26767,10 +26775,13 @@
                   "condition": "if {@code columnIndex} is negative or greater than or equal to {@code columnCount}"
                 }
               ],
-              "javadoc_summary": "Returns a copy of the specified column as a new array.",
+              "javadoc_summary": "Returns a defensive (shallow) copy of the specified column as a new array.",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#rowCopy(int)",
+                "#rowView(int)"
+              ]
             },
             {
               "name": "setRow",
@@ -26968,7 +26979,7 @@
                   "condition": "if the matrix is not square (rowCount != columnCount)"
                 }
               ],
-              "javadoc_summary": "Returns the main diagonal elements (upper-left to lower-right).",
+              "javadoc_summary": "Returns a defensive (shallow) copy of the main diagonal elements (upper-left to lower-right).",
               "contract": [
                 "The matrix must be square (same number of rows and columns)."
               ],
@@ -27070,7 +27081,7 @@
                   "condition": "if the matrix is not square (rowCount != columnCount)"
                 }
               ],
-              "javadoc_summary": "Returns the anti-diagonal elements (upper-right to lower-left).",
+              "javadoc_summary": "Returns a defensive (shallow) copy of the anti-diagonal elements (upper-right to lower-left).",
               "contract": [
                 "The matrix must be square (same number of rows and columns)."
               ],
@@ -27753,7 +27764,9 @@
                 "If the source array is smaller than this matrix, the remaining cells are unchanged."
               ],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#fill(int, int, Object[][])"
+              ]
             },
             {
               "name": "fill",
@@ -27890,10 +27903,10 @@
               "throws": [
                 {
                   "type": "java.lang.IndexOutOfBoundsException",
-                  "condition": "if any of the row or column indices are out of range"
+                  "condition": "if any range is invalid ( {@code fromRowIndex < 0 || toRowIndex > rowCount || fromRowIndex > toRowIndex} , or the analogous conditions for the column range)"
                 }
               ],
-              "javadoc_summary": "Creates a copy of a submatrix defined by row and column ranges.",
+              "javadoc_summary": "Creates a structural copy of a submatrix defined by row and column ranges.",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -28178,7 +28191,11 @@
               "javadoc_summary": "Returns a new matrix that is this matrix rotated 90 degrees clockwise.",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#rotate180()",
+                "#rotate270()",
+                "#transpose()"
+              ]
             },
             {
               "name": "rotate180",
@@ -28213,7 +28230,11 @@
               "javadoc_summary": "Returns a new matrix that is this matrix rotated 270 degrees clockwise.",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#rotate90()",
+                "#rotate180()",
+                "#transpose()"
+              ]
             },
             {
               "name": "transpose",
@@ -28349,7 +28370,9 @@
               "javadoc_summary": "Returns a list containing all matrix elements in row-major order.",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#rowMajorStream()"
+              ]
             },
             {
               "name": "mutateFlattened",
@@ -28418,7 +28441,7 @@
               "javadoc_summary": "Vertically stacks this matrix with another matrix.",
               "contract": [
                 "The matrices must have the same number of columns.",
-                "When neither operand supplies rows, the shared {@link #empty()} instance is type-neutral if the other operand has a reified component type."
+                "The shared {@link #empty()} instance is type-neutral when paired with a typed empty matrix."
               ],
               "examples": [],
               "see_also": [
@@ -28452,7 +28475,7 @@
               "javadoc_summary": "Horizontally stacks this matrix with another matrix.",
               "contract": [
                 "The matrices must have the same number of rows.",
-                "The shared {@link #empty()} instance is type-neutral when paired with a typed zero-row matrix."
+                "The shared {@link #empty()} instance is type-neutral when paired with a typed empty matrix."
               ],
               "examples": [],
               "see_also": [
@@ -29236,7 +29259,9 @@
               "javadoc_summary": "Returns a string representation of this matrix.",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#println()"
+              ]
             }
           ],
           "fields": []
@@ -29700,7 +29725,7 @@
                 {
                   "name": "mainDiagonal",
                   "type": "short[]",
-                  "javadoc": "the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non- {@code null} ; may be empty",
+                  "javadoc": "the array of main-diagonal elements; may be {@code null} if {@code antiDiagonal} is non- {@code null} ; may be empty",
                   "nullability": "unspecified"
                 },
                 {
@@ -29718,7 +29743,8 @@
               ],
               "javadoc_summary": "Creates a square matrix from the specified main diagonal and anti-diagonal elements.",
               "contract": [
-                "If both arrays are non-empty, they must have the same length.",
+                "At least one array must be non- {@code null} ; if both arrays contain elements, they must have the same length.",
+                "If neither input contains any elements, the shared empty matrix is returned.",
                 "When both diagonals are provided and they overlap (at the center element of odd-sized matrices), the main diagonal value takes precedence."
               ],
               "examples": [],
@@ -30512,7 +30538,7 @@
               "javadoc_summary": "Updates all elements in the matrix in-place by applying the specified operator.",
               "contract": [
                 "If parallelized, the supplied function must be thread-safe.",
-                "Distinct backing rows and their elements are processed in first-occurrence row-major order when executed sequentially.",
+                "When this operation is not parallelized, distinct backing rows and their elements are processed in first-occurrence row-major order; when it is parallelized, the encounter order is unspecified.",
                 "</p> <p> If multiple logical rows reference the same backing array, every element in that shared row is transformed exactly once."
               ],
               "examples": [],
