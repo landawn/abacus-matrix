@@ -40,7 +40,7 @@ import com.landawn.abacus.util.stream.Stream;
  *
  * <p>This type provides the same shape, traversal, and transformation operations as the primitive
  * matrix variants ({@link IntMatrix}, {@link LongMatrix}, {@link DoubleMatrix}, etc.) while
- * preserving reference semantics. Constructors and {@code of(...)} generally wrap the supplied
+ * preserving reference semantics. Constructors and {@code of(...)} wrap the supplied
  * backing array directly, while {@link #copyOf(Object[][])}, conversions, and mapping methods
  * allocate fresh storage.</p>
  *
@@ -55,9 +55,9 @@ import com.landawn.abacus.util.stream.Stream;
  * ({@code null} equal only to {@code null}; array-typed elements are compared and hashed deeply
  * by content), not reference identity.</p>
  *
- * <p>When a new backing array must be created, the implementation tracks either an explicit
- * target type or the runtime component type so array-typed results remain reifiable where
- * possible.</p>
+ * <p>Operations that allocate a new backing array preserve a reifiable component type where
+ * possible, either from an explicit target type argument or from this matrix's resolved runtime
+ * element type.</p>
  *
  * @param <T> the element type stored in the matrix
  * @see IntMatrix
@@ -178,7 +178,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param <T> the type of elements in the matrix
      * @param a the two-dimensional array to create the matrix from (must not be {@code null})
-     * @return a new {@code Matrix} containing the provided data
+     * @return a new {@code Matrix} backed by the provided array (not a copy)
      * @throws IllegalArgumentException if the array is {@code null}, if any row is {@code null}, or if rows have
      *         different lengths (non-rectangular array)
      */
@@ -188,7 +188,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     }
 
     /**
-     * Creates a {@code Matrix} that owns a defensive deep copy of the supplied two-dimensional array.
+     * Creates a {@code Matrix} that owns a defensive copy of the supplied two-dimensional array structure.
      *
      * <p>Unlike {@link #of(Object[][])}, which wraps the caller's array without copying, this factory clones
      * every row into a freshly-allocated backing array. Subsequent modifications to {@code a} (or its rows)
@@ -209,7 +209,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param <T> the type of elements in the matrix
      * @param a the two-dimensional array to copy (must not be {@code null})
-     * @return a new {@code Matrix} backed by a deep copy of {@code a}
+     * @return a new {@code Matrix} backed by a defensive copy of {@code a}'s array structure
+     *         (outer array and each row cloned; element references shared)
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row is {@code null}, or if rows have
      *         different lengths (non-rectangular array)
      * @see #of(Object[][])
@@ -280,10 +281,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
     /**
      * Creates a square diagonal matrix with the given values on the main diagonal (upper-left to lower-right).
-     * All other elements are {@code null}. The matrix dimension is determined by the length of the diagonal array.
-     *
-     * <p>The main diagonal runs from upper-left to lower-right. The resulting matrix is always square
-     * with size n×n where n is the length of the diagonal array.</p>
+     * All other elements are {@code null}. The resulting matrix is always square with size {@code n×n},
+     * where {@code n} is the length of the diagonal array.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -307,7 +306,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param <T> the type of elements in the matrix
      * @param mainDiagonal the diagonal values (must not be {@code null})
      * @return a square matrix with the given diagonal values on the main diagonal
-     * @throws IllegalArgumentException if the diagonal array is {@code null}
+     * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null}
      * @see #diagonals(Object[], Object[])
      * @see #antiDiagonal(Object[])
      */
@@ -319,11 +318,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
     /**
      * Creates a square diagonal matrix with the given values on the anti-diagonal (upper-right to lower-left).
-     * All other elements are {@code null}. The matrix dimension is determined by the length of the diagonal array.
-     *
-     * <p>The anti-diagonal runs from upper-right to lower-left. The resulting matrix is always square
-     * with size n×n where n is the length of the diagonal array. The first element in the array
-     * goes to the top-right corner, and subsequent elements move diagonally down-left.</p>
+     * All other elements are {@code null}. The resulting matrix is always square with size {@code n×n},
+     * where {@code n} is the length of the diagonal array. The first element in the array goes to the
+     * top-right corner, and subsequent elements move diagonally down-left.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -347,7 +344,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param <T> the type of elements in the matrix
      * @param antiDiagonal the anti-diagonal values (must not be {@code null})
      * @return a square matrix with the given anti-diagonal values
-     * @throws IllegalArgumentException if the diagonal array is {@code null}
+     * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null}
      * @see #diagonals(Object[], Object[])
      * @see #mainDiagonal(Object[])
      */
@@ -653,9 +650,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>&#9888;&#65039; Runtime component type:</b> the returned array is the row exactly as it is
      * stored internally. For matrices created by factories such as {@link #repeat(int, int, Object)}
-     * or {@link #diagonals} the backing row may have a more specific runtime component type than
-     * {@code Object[]} (it is allocated from the resolved element type), but no conversion is
-     * performed by this method.</p>
+     * or {@link #diagonals(Object[], Object[])} the backing row may have a more specific runtime
+     * component type than {@code Object[]} (it is allocated from the resolved element type), but no
+     * conversion is performed by this method.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -716,11 +713,12 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     }
 
     /**
-     * Returns a copy of the specified column as a new array.
+     * Returns a defensive (shallow) copy of the specified column as a new array.
      *
-     * <p>Unlike {@link #rowView(int)}, this method always returns a new array copy since
-     * columns are not stored contiguously in memory. Modifications to the returned array
-     * will not affect the matrix.</p>
+     * <p>Unlike {@link #rowView(int)}, this method always returns a new array because columns are not
+     * stored contiguously. Replacing slots in the returned array does not affect this matrix;
+     * however, the element references themselves are shared with the matrix (same shallow-copy
+     * semantics as {@link #rowCopy(int)}).</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -905,10 +903,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     }
 
     /**
-     * Returns the main diagonal elements (upper-left to lower-right).
+     * Returns a defensive (shallow) copy of the main diagonal elements (upper-left to lower-right).
      * The matrix must be square (same number of rows and columns).
-     * Returns a new array containing the diagonal values, modifications to which
-     * will not affect the matrix.
+     * The returned array is new, so replacing its slots does not affect this matrix; element
+     * references themselves are shared with the matrix.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1014,11 +1012,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     }
 
     /**
-     * Returns the anti-diagonal elements (upper-right to lower-left).
+     * Returns a defensive (shallow) copy of the anti-diagonal elements (upper-right to lower-left).
      * The matrix must be square (same number of rows and columns).
-     * Returns a new array containing the anti-diagonal values.
      * The first element is from the top-right corner, the last from the bottom-left corner.
-     * Modifications to the returned array will not affect the matrix.
+     * The returned array is new, so replacing its slots does not affect this matrix; element
+     * references themselves are shared with the matrix.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1851,7 +1849,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     }
 
     /**
-     * Creates a copy of a submatrix defined by row and column ranges.
+     * Creates a structural copy of a submatrix defined by row and column ranges.
+     * The returned matrix has independent row storage. Element object references are copied,
+     * not cloned; mutable element objects remain shared with the original matrix.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1870,7 +1870,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @return a new Matrix containing the specified submatrix
-     * @throws IndexOutOfBoundsException if any of the row or column indices are out of range
+     * @throws IndexOutOfBoundsException if any range is invalid
+     *         ({@code fromRowIndex < 0 || toRowIndex > rowCount || fromRowIndex > toRowIndex},
+     *         or the analogous conditions for the column range)
      */
     @Override
     public Matrix<T> copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
@@ -2718,8 +2720,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
     /**
      * Returns a list containing all matrix elements in row-major order.
-     * The returned list is backed by a freshly allocated array, so subsequent modifications
-     * to the matrix do not affect the list and vice versa.
+     * The list is independent of this matrix's row storage (replacing a list slot or a matrix cell
+     * does not affect the other), but element object references are shared; mutating a mutable
+     * element object is visible through both.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2813,8 +2816,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p>The result's runtime element type is the most specific type assignable from both
      * inputs' runtime element types (observable via {@link #elementType()}). An operand with no
      * rows contributes no row storage and therefore does not widen the type of the operand that
-     * supplies the result rows. When neither operand supplies rows, the shared {@link #empty()}
-     * instance is type-neutral if the other operand has a reified component type.</p>
+     * supplies the result rows. The shared {@link #empty()} instance is type-neutral when paired
+     * with a typed empty matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2896,7 +2899,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * inputs' runtime element types (observable via {@link #elementType()}). An operand with no
      * columns contributes no cells and therefore does not widen the type of the operand that
      * supplies the result columns. The shared {@link #empty()} instance is type-neutral when
-     * paired with a typed zero-row matrix.</p>
+     * paired with a typed empty matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3755,8 +3758,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Returns the length of the given array.
      *
-     * <p>This is an internal helper method used by the abstract base class for iteration
-     * and size calculations. It handles {@code null} arrays by returning {@code 0}.</p>
+     * <p>Treats a {@code null} row as length {@code 0}.</p>
      *
      * @param row the array to check (may be {@code null})
      * @return the length of {@code row}, or {@code 0} if {@code row} is {@code null}

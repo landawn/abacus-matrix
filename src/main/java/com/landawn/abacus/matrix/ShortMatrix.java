@@ -46,14 +46,12 @@ import com.landawn.abacus.util.stream.Stream;
  * explicit fill value.</p>
  *
  * <p><b>Short arithmetic:</b> the built-in short arithmetic operations ({@link #add(ShortMatrix)},
- * {@link #subtract(ShortMatrix)}, and {@link #matrixMultiply(ShortMatrix)}) use Java's standard
- * numeric promotion to {@code int} and narrow each stored result back to {@code short} (via an explicit
- * {@code (short)} cast for {@code add}/{@code subtract}, or via the implicit narrowing of the {@code +=}
- * accumulation in {@code matrixMultiply}), so values outside {@code [Short.MIN_VALUE, Short.MAX_VALUE]}
- * wrap modulo 65536. The {@code zipWith}/{@code map} variants instead store whatever {@code short} the
- * supplied operator returns, so any narrowing of an {@code int} computation must be performed inside the
- * operator itself. To preserve the full magnitude, widen first via {@link #toIntMatrix()} or
- * {@link #toLongMatrix()}.</p>
+ * {@link #subtract(ShortMatrix)}, and {@link #matrixMultiply(ShortMatrix)}) store results as {@code short}
+ * values. Results outside {@code [Short.MIN_VALUE, Short.MAX_VALUE]} wrap modulo 65536 (including
+ * intermediate accumulations in {@code matrixMultiply}). The {@code zipWith}/{@code map} variants store
+ * whatever {@code short} the supplied operator returns, so any narrowing of an {@code int} computation
+ * must be performed inside the operator itself. To preserve the full magnitude, widen first via
+ * {@link #toIntMatrix()} or {@link #toLongMatrix()}.</p>
  *
  * <p><b>Aggregations:</b> this class does not provide dedicated reduction methods such as
  * {@code sum()}, {@code min()}, {@code max()} or {@code average()}. Compute such aggregations
@@ -161,7 +159,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * short[][] data = {{1, 2}, {3, 4}};
      * ShortMatrix matrix = ShortMatrix.copyOf(data);
      * data[0][0] = 10;
-     * matrix.get(0, 0);                       // returns 1 (copy is independent)
+     * matrix.get(0, 0);                       // returns (short) 1 (copy is independent)
      *
      * ShortMatrix.copyOf((short[][]) null);            // throws IllegalArgumentException
      * ShortMatrix.copyOf(new short[][] {{1, 2}, {3}}); // throws IllegalArgumentException (non-rectangular)
@@ -234,7 +232,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
      * @return a new {@code ShortMatrix} of dimensions {@code rowCount x columnCount} filled with random values
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
-     *         or if the resulting shape is not representable
+     *         or if the resulting shape cannot be represented (e.g. zero rows with non-zero columns)
      */
     public static ShortMatrix random(final int rowCount, final int columnCount) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -449,8 +447,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
 
     /**
      * Creates a square matrix from the specified main diagonal and anti-diagonal elements.
-     * All other elements are set to zero. If both arrays are non-empty, they must have the same length.
-     * The resulting matrix has dimensions n×n where n is the length of the non-empty diagonal array.
+     * All other elements are set to zero. At least one array must be non-{@code null}; if both arrays
+     * contain elements, they must have the same length.
+     * The resulting matrix has dimensions {@code n x n}, where {@code n} is the length of the
+     * non-empty diagonal array. If neither input contains any elements, the shared empty matrix is returned.
      * When both diagonals are provided and they overlap (at the center element of odd-sized matrices),
      * the main diagonal value takes precedence.
      *
@@ -459,14 +459,14 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * ShortMatrix matrix = ShortMatrix.diagonals(new short[] {1, 2, 3}, new short[] {4, 5, 6});
      * matrix.get(0, 0);                       // returns (short) 1 (main diagonal)
      * matrix.get(0, 2);                       // returns (short) 4 (anti-diagonal)
-     * matrix.get(1, 1);                       // returns (short) 2 (center: main wins over anti)
+     * matrix.get(1, 1);                       // returns (short) 2 (overlap: main takes precedence)
      * // matrix is [[1, 0, 4], [0, 2, 0], [6, 0, 3]]
      *
      * ShortMatrix.diagonals((short[]) null, (short[]) null);             // throws IllegalArgumentException (both null)
      * ShortMatrix.diagonals(new short[] {1, 2}, new short[] {3, 4, 5});  // throws IllegalArgumentException (length mismatch)
      * }</pre>
      *
-     * @param mainDiagonal the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non-{@code null};
+     * @param mainDiagonal the array of main-diagonal elements; may be {@code null} if {@code antiDiagonal} is non-{@code null};
      *        may be empty
      * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non-{@code null};
      *        may be empty
@@ -521,7 +521,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @param x the boxed {@code Short} matrix to convert; must not be {@code null}
-     * @return a new {@code ShortMatrix} with primitive short values
+     * @return a new {@code ShortMatrix} with primitive short values, or the shared empty matrix if {@code x} has no rows
      * @throws IllegalArgumentException if {@code x} is {@code null}
      * @see #boxed()
      */
@@ -917,7 +917,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * This modifies the matrix directly.
      *
      * <p>The operator is applied to each element in the specified row sequentially
-     * from left to right (column 0 to column columnCount-1).</p>
+     * from left to right (column {@code 0} to column {@code columnCount - 1}).</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2666,9 +2666,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * Performs element-wise addition with another matrix.
      * The matrices must have the same dimensions. The original matrices are not modified.
      *
-     * <p><b>Overflow:</b> each pair of elements is added as {@code int} (Java numeric promotion) and
-     * the result is narrowed back to {@code short} via an explicit cast, so values overflowing the
-     * short range {@code [-32768, 32767]} wrap modulo 65536. If you need a wider result, call
+     * <p><b>Overflow:</b> each pair of elements is added using Java numeric promotion to {@code int}
+     * and the sum is stored as a {@code short}, so values outside the short range
+     * {@code [-32768, 32767]} wrap modulo 65536. If you need a wider result, call
      * {@link #toIntMatrix()} (or {@link #toLongMatrix()}) first.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -2723,9 +2723,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * Performs element-wise subtraction ({@code this - other}).
      * The matrices must have the same dimensions. The original matrices are not modified.
      *
-     * <p><b>Overflow:</b> each pair of elements is subtracted as {@code int} (Java numeric promotion)
-     * and the result is narrowed back to {@code short} via an explicit cast, so values outside the
-     * short range {@code [-32768, 32767]} wrap modulo 65536. If you need a wider result, call
+     * <p><b>Overflow:</b> each pair of elements is subtracted using Java numeric promotion to {@code int}
+     * and the difference is stored as a {@code short}, so values outside the short range
+     * {@code [-32768, 32767]} wrap modulo 65536. If you need a wider result, call
      * {@link #toIntMatrix()} (or {@link #toLongMatrix()}) first.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -2784,9 +2784,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p><b>Note:</b> This is the linear-algebra matrix product, not element-wise multiplication.
      * For element-wise multiplication use {@link #zipWith(ShortMatrix, Throwables.ShortBinaryOperator)}.</p>
      *
-     * <p><b>Overflow:</b> each partial product {@code a[i][k] * other[k][j]} is computed as an
-     * {@code int} (via Java's numeric promotion), but it is then accumulated into the {@code short}
-     * result cell with implicit narrowing, so intermediate sums wrap modulo 65536 and the final
+     * <p><b>Overflow:</b> each partial product is computed with Java numeric promotion to {@code int}
+     * and accumulated into a {@code short} cell, so intermediate sums wrap modulo 65536 and the final
      * result is always in the short range {@code [-32768, 32767]}. For inputs that may overflow,
      * widen via {@link #toIntMatrix()} (or {@link #toLongMatrix()}) and multiply there.</p>
      *

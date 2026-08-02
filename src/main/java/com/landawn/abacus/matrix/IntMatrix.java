@@ -392,7 +392,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
      * @return a new {@code IntMatrix} of dimensions {@code rowCount x columnCount} filled with random values
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
-     *         or if the resulting shape is not representable
+     *         or if the resulting shape cannot be represented (e.g. zero rows with non-zero columns)
      */
     public static IntMatrix random(final int rowCount, final int columnCount) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -423,6 +423,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * IntMatrix.repeat(0, 0, 5).isEmpty(); // returns true
      * IntMatrix.repeat(-1, 3, 7);          // throws IllegalArgumentException (negative rowCount)
      * IntMatrix.repeat(2, -1, 7);          // throws IllegalArgumentException (negative columnCount)
+     * IntMatrix.repeat(0, 3, 7);           // throws IllegalArgumentException (0 rows with non-zero columns)
      * }</pre>
      *
      * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
@@ -430,7 +431,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param element the int value to fill every cell with
      * @return a new {@code IntMatrix} of dimensions {@code rowCount x columnCount} filled with {@code element}
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
-     *         or if the resulting shape is not representable
+     *         or if the resulting shape cannot be represented (e.g. zero rows with non-zero columns)
      */
     public static IntMatrix repeat(final int rowCount, final int columnCount, final int element) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -608,8 +609,10 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
 
     /**
      * Creates a square matrix from the specified main diagonal and anti-diagonal elements.
-     * All other elements are set to zero. If both arrays are non-empty, they must have the same length.
-     * The resulting matrix has dimensions {@code n x n}, where {@code n} is the length of the non-empty diagonal array.
+     * All other elements are set to zero. At least one array must be non-{@code null}; if both arrays
+     * contain elements, they must have the same length.
+     * The resulting matrix has dimensions {@code n x n}, where {@code n} is the length of the
+     * non-empty diagonal array. If neither input contains any elements, the shared empty matrix is returned.
      * When both diagonals are provided and they overlap (at the center element of odd-sized matrices),
      * the main diagonal value takes precedence.
      *
@@ -625,7 +628,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * IntMatrix.diagonals(new int[] {1, 2}, new int[] {3, 4, 5}); // throws IllegalArgumentException (length mismatch)
      * }</pre>
      *
-     * @param mainDiagonal the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non-{@code null};
+     * @param mainDiagonal the array of main-diagonal elements; may be {@code null} if {@code antiDiagonal} is non-{@code null};
      *        may be empty
      * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non-{@code null};
      *        may be empty
@@ -680,7 +683,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * }</pre>
      *
      * @param x the boxed {@code Integer} matrix to convert; must not be {@code null}
-     * @return a new {@code IntMatrix} with primitive int values
+     * @return a new {@code IntMatrix} with primitive int values, or the shared empty matrix if {@code x} has no rows
      * @throws IllegalArgumentException if {@code x} is {@code null}
      * @see #boxed()
      */
@@ -2901,8 +2904,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * The matrices must have the same dimensions. The original matrices are not modified.
      *
      * <p><b>Overflow:</b> arithmetic uses standard Java {@code int} addition, which silently
-     * wraps around modulo 2<sup>32</sup> on overflow. If you need a wider result, call
-     * {@link #toLongMatrix()} first or use {@link #mapToLong(Throwables.IntToLongFunction)}.</p>
+     * wraps around modulo 2<sup>32</sup> on overflow.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2957,7 +2959,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * The matrices must have the same dimensions. The original matrices are not modified.
      *
      * <p><b>Overflow:</b> arithmetic uses standard Java {@code int} subtraction, which silently
-     * wraps around modulo 2<sup>32</sup> on overflow.</p>
+     * wraps around modulo 2<sup>32</sup> on overflow. If you need a wider result, call
+     * {@link #toLongMatrix()} first or use {@link #mapToLong(Throwables.IntToLongFunction)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

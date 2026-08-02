@@ -277,7 +277,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
      * @return a new {@code LongMatrix} of dimensions {@code rowCount x columnCount} filled with random values
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
-     *         or if the resulting shape is not representable
+     *         or if the resulting shape cannot be represented (e.g. zero rows with non-zero columns)
      */
     public static LongMatrix random(final int rowCount, final int columnCount) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -308,6 +308,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * LongMatrix.repeat(0, 0, 5L).isEmpty(); // returns true
      * LongMatrix.repeat(-1, 3, 7L);          // throws IllegalArgumentException (negative rowCount)
      * LongMatrix.repeat(2, -1, 7L);          // throws IllegalArgumentException (negative columnCount)
+     * LongMatrix.repeat(0, 3, 7L);           // throws IllegalArgumentException (0 rows with non-zero columns)
      * }</pre>
      *
      * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
@@ -315,7 +316,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param element the long value to fill every cell with
      * @return a new {@code LongMatrix} of dimensions {@code rowCount x columnCount} filled with {@code element}
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
-     *         or if the resulting shape is not representable
+     *         or if the resulting shape cannot be represented (e.g. zero rows with non-zero columns)
      */
     public static LongMatrix repeat(final int rowCount, final int columnCount, final long element) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
@@ -449,7 +450,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * @param mainDiagonal the array of main-diagonal elements; must not be {@code null}, but may be empty
      * @return a new {@code n x n} {@code LongMatrix} (where {@code n = mainDiagonal.length}) with
-     *         the supplied values on the main diagonal and {@code 0} elsewhere; the shared empty
+     *         the supplied values on the main diagonal and {@code 0L} elsewhere; the shared empty
      *         matrix if {@code mainDiagonal} is empty
      * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null}
      * @see #antiDiagonal(long[])
@@ -479,7 +480,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * @param antiDiagonal the array of anti-diagonal elements; must not be {@code null}, but may be empty
      * @return a new {@code n x n} {@code LongMatrix} (where {@code n = antiDiagonal.length}) with
-     *         the supplied values on the anti-diagonal and {@code 0} elsewhere; the shared empty
+     *         the supplied values on the anti-diagonal and {@code 0L} elsewhere; the shared empty
      *         matrix if {@code antiDiagonal} is empty
      * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null}
      * @see #mainDiagonal(long[])
@@ -567,7 +568,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * }</pre>
      *
      * @param x the boxed {@code Long} matrix to convert; must not be {@code null}
-     * @return a new {@code LongMatrix} with primitive long values
+     * @return a new {@code LongMatrix} with primitive long values, or the shared empty matrix if {@code x} has no rows
      * @throws IllegalArgumentException if {@code x} is {@code null}
      * @see #boxed()
      */

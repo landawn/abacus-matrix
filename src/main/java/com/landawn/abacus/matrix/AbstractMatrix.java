@@ -171,14 +171,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
     /**
      * The total number of elements in this matrix (rows × columns).
-     * This value is cached for performance and is immutable after matrix creation.
+     * Fixed at construction for the lifetime of the instance.
      */
     final long elementCount;
 
     /**
      * The underlying two-dimensional array storing the matrix data.
-     * Direct access to this array should be avoided; use the provided methods instead.
-     * Exposed via {@link #unsafeBackingArray()}.
+     * Public callers obtain this reference only through {@link #unsafeBackingArray()}.
      */
     final A[] a;
 
@@ -482,20 +481,19 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     }
 
     /**
-     * Returns the underlying two-dimensional array of this matrix.
-     * This method exposes the internal array representation for performance reasons and should be used with caution
-     * as modifications to the returned array will directly affect the matrix.
+     * Returns the underlying two-dimensional array of this matrix without copying.
+     * Modifications to the returned array (including reassigning its row references) are visible through this matrix.
      *
      * <p><b>&#9888;&#65039; Unsafe API boundary:</b> This method returns the actual internal array, not a copy.
      * Any changes made to the returned array (including reassigning row references or mutating row contents)
      * will be reflected in this matrix. Reassigned rows must remain non-{@code null} and keep the original
      * {@link #columnCount()}; violating those shape invariants leaves the matrix in an invalid state because
-     * its dimensions are cached at construction. Reassignment must also preserve which entries refer to the
+     * its dimensions are fixed at construction. Reassignment must also preserve which entries refer to the
      * same row array: whether this matrix has aliased rows is computed once and then cached, so introducing
      * or removing aliasing through this array can make row-wise in-place operations such as {@code updateAll}
      * and {@code updateColumn} apply the operator the wrong number of times.
      * If you need an independent matrix instance, use {@link #copy()}.
-     * If you only need the data flattened into a single one-dimensional array, use {@link #flatten()}.</p>
+     * If you only need the data as a flat list in row-major order, use {@link #flatten()}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -693,7 +691,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * matrix.isEmpty();                                        // returns false (2 x 2)
      * }</pre>
      *
-     * @return {@code true} if the matrix has no elements (count == 0), {@code false} otherwise
+     * @return {@code true} if the matrix has no elements ({@code elementCount == 0}), {@code false} otherwise
      */
     public boolean isEmpty() {
         return elementCount == 0;
@@ -706,9 +704,6 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * <p>For object matrices, element references are copied, not the referenced objects
      * themselves; mutating a shared mutable element can still be observed through both matrices.</p>
-     *
-     * <p>This method creates new array instances and copies all element values.
-     * For large matrices, this operation can be memory and time intensive.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -765,8 +760,6 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * The returned matrix contains only the specified rows and columns and has its own row arrays.
      * For object matrices, element references are copied, not the referenced objects themselves.
      *
-     * <p>This method allows you to extract any rectangular subregion of the matrix.</p>
-     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
@@ -790,8 +783,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *         ({@code fromRowIndex == toRowIndex}) the result is an empty {@code 0 x 0} matrix
      *         (the column count is not preserved), whereas an empty column range with a non-empty row range
      *         correctly yields {@code (toRowIndex - fromRowIndex) x 0}
-     * @throws IndexOutOfBoundsException if any index is out of bounds, {@code fromRowIndex > toRowIndex},
-     *         or {@code fromColumnIndex > toColumnIndex}
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount},
+     *         {@code fromRowIndex > toRowIndex}, {@code fromColumnIndex < 0},
+     *         {@code toColumnIndex > columnCount}, or {@code fromColumnIndex > toColumnIndex}
      */
     public abstract M copy(int fromRowIndex, int toRowIndex, int fromColumnIndex, int toColumnIndex);
 
@@ -1123,7 +1117,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * padded.get(0, 0);                                      // returns 0 (top-left padding)
      * padded.get(1, 1);                                      // returns 1 (original (0,0) shifted to center)
      *
-     * IntMatrix unchanged = matrix.extend(0, 0, 0, 0);      // returns an identical 2 x 2 matrix
+     * IntMatrix unchanged = matrix.extend(0, 0, 0, 0);      // returns a 2 x 2 matrix with the same values
      * unchanged.get(1, 1);                                  // returns 4
      *
      * matrix.extend(-1, 0, 0, 0);                           // throws IllegalArgumentException (negative pad)
@@ -1451,7 +1445,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @param action the action to perform for each position, receives (rowIndex, columnIndex)
-     * @throws IndexOutOfBoundsException if any index is out of bounds
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount},
+     *         {@code fromRowIndex > toRowIndex}, {@code fromColumnIndex < 0},
+     *         {@code toColumnIndex > columnCount}, or {@code fromColumnIndex > toColumnIndex}
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the action throws an exception
      */
@@ -1561,7 +1557,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @param action the action to perform, receiving (rowIndex, columnIndex, matrix)
-     * @throws IndexOutOfBoundsException if any index is out of bounds
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount},
+     *         {@code fromRowIndex > toRowIndex}, {@code fromColumnIndex < 0},
+     *         {@code toColumnIndex > columnCount}, or {@code fromColumnIndex > toColumnIndex}
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the action throws an exception
      */
@@ -2165,7 +2163,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * nonSquare.mainDiagonalStream();                         // throws IllegalStateException (not square)
      * }</pre>
      *
-     * @return a stream of diagonal elements
+     * @return a stream of the main-diagonal elements
      * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     public abstract ES mainDiagonalStream();

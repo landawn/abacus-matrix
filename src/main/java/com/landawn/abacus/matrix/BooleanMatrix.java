@@ -659,7 +659,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * <p><b>&#9888;&#65039; Live view:</b> This method returns a reference to the internal array, not a copy.
      * Modifications to the returned array will affect the matrix. If you need an independent
-     * copy, use {@link #rowCopy(int)} instead.
+     * copy, use {@link #rowCopy(int)} instead.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -717,7 +717,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * <p>Unlike {@link #rowView(int)}, this method always returns a new array copy since
      * columns are not stored contiguously in memory. Modifications to the returned array
-     * will not affect the matrix.
+     * will not affect the matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -755,7 +755,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * All elements in the row are replaced with values from the provided array.
      *
      * <p>The values from the source array are copied into the matrix row.
-     * The source array must have exactly the same length as the number of columns in the matrix.
+     * The source array must have exactly the same length as the number of columns in the matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -787,7 +787,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * All elements in the column are replaced with values from the provided array.
      *
      * <p>The values from the source array are copied into the matrix column.
-     * The source array must have exactly the same length as the number of rows in the matrix.
+     * The source array must have exactly the same length as the number of rows in the matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -905,7 +905,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * The matrix must be square ({@code rowCount == columnCount}) for this operation.
      *
      * <p>This method extracts the main diagonal elements at positions {@code (0,0), (1,1), (2,2), ...}.
-     * The returned array is a copy; modifications to it will not affect the matrix.
+     * The returned array is a copy; modifications to it will not affect the matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1020,7 +1020,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * <p>This method extracts the anti-diagonal (secondary diagonal) elements from
      * top-right to bottom-left, at positions {@code (0,n-1), (1,n-2), (2,n-3), ...}.
-     * The returned array is a copy; modifications to it will not affect the matrix.
+     * The returned array is a copy; modifications to it will not affect the matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2082,7 +2082,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     /**
      * Returns a new matrix that is this matrix rotated 90 degrees clockwise.
      * The resulting matrix has dimensions swapped (rows become columns), with the first
-     * column of the result being the last row of the original, reading upward.
+     * row of the result being the first column of the original read from bottom to top.
      * Creates a new matrix; the original matrix is not modified.
      *
      * <p><b>Usage Examples:</b></p>
@@ -2176,7 +2176,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     /**
      * Returns a new matrix that is this matrix rotated 270 degrees clockwise (or 90 degrees counter-clockwise).
      * The resulting matrix has dimensions swapped (rows become columns), with the first
-     * column of the result being the first row of the original, reading downward.
+     * row of the result being the last column of the original read from top to bottom.
      * Creates a new matrix; the original matrix is not modified.
      *
      * <p><b>Usage Examples:</b></p>
@@ -2568,7 +2568,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
 
     /**
      * Performs element-wise logical AND of this matrix with another matrix.
-     * The matrices must have the same dimensions.
+     * The matrices must have the same dimensions. The original matrices are not modified.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2618,7 +2618,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
 
     /**
      * Performs element-wise logical OR of this matrix with another matrix.
-     * The matrices must have the same dimensions.
+     * The matrices must have the same dimensions. The original matrices are not modified.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2668,7 +2668,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
 
     /**
      * Performs element-wise logical XOR of this matrix with another matrix.
-     * The matrices must have the same dimensions.
+     * The matrices must have the same dimensions. The original matrices are not modified.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

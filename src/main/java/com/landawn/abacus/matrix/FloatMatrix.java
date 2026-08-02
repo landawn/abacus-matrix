@@ -42,7 +42,7 @@ import com.landawn.abacus.util.stream.Stream;
  * <p>Cells introduced by growth or reshaping default to {@code 0.0f} unless an overload accepts an
  * explicit fill value.</p>
  *
- * <p><b>IEEE 754 semantics:</b> elements are single-precision floats. Be aware that
+ * <p><b>IEEE 754 semantics:</b> elements are IEEE 754 single-precision values. Be aware that
  * {@code NaN != NaN} under {@code ==}, that {@code +0.0f} and {@code -0.0f} compare equal under
  * {@code ==} but have different bit patterns, and that {@code +Infinity}/{@code -Infinity}
  * propagate through arithmetic. Equality on this matrix uses
@@ -190,7 +190,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Creates a FloatMatrix from a two-dimensional int array by converting int values to float.
+     * Creates a {@code FloatMatrix} from a two-dimensional int array by converting int values to float.
      * Each int value is converted to the nearest representable float value.
      *
      * <p><b>&#9888;&#65039; Precision:</b> Int values requiring more than 24 significant bits may lose precision when
@@ -445,7 +445,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *        may be empty
      * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non-{@code null};
      *        may be empty
-     * @return a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
+     * @return a square matrix with the specified diagonals, or the shared empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
      * @throws IllegalArgumentException if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null}, or if both arrays are non-empty and have different lengths
      * @see #mainDiagonal(float[])
      * @see #antiDiagonal(float[])
@@ -497,6 +497,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @param x the boxed {@code Matrix<Float>} to convert; must not be {@code null}
      * @return a new {@code FloatMatrix} with primitive float values, with the same shape as {@code x}
+     *         ({@code null} elements become {@code 0.0f})
      * @throws IllegalArgumentException if {@code x} is {@code null}
      * @see #boxed()
      */
@@ -1301,7 +1302,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @param <E> the type of exception that the predicate may throw
      * @param predicate the condition to test each element; elements for which this returns
-     *                  {@code true} will be replaced
+     *                  {@code true} will be replaced; must not be {@code null}
      * @param newValue the value to use for replacing matching elements (may be {@code NaN},
      *                 {@code +/-Infinity}, or {@code -0.0f})
      * @throws IllegalArgumentException if {@code predicate} is {@code null}
@@ -1367,8 +1368,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @param <E> the type of exception that the predicate may throw
      * @param predicate the condition to test each position; receives row index and column index (0-based)
-     *                  and returns {@code true} if the element at that position should be replaced
-     * @param newValue the value to use for replacing at matching positions
+     *                  and returns {@code true} if the element at that position should be replaced;
+     *                  must not be {@code null}
+     * @param newValue the value to use for replacing at matching positions (may be {@code NaN},
+     *                 {@code +/-Infinity}, or {@code -0.0f})
      * @throws IllegalArgumentException if {@code predicate} is {@code null}
      * @throws E if the predicate throws an exception
      */
@@ -1422,7 +1425,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Creates a new IntMatrix by applying a function that converts float values to int.
+     * Creates a new {@code IntMatrix} by applying a function that converts float values to int.
      * This operation may be executed in parallel for better performance on large matrices. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Usage Examples:</b></p>
@@ -1455,7 +1458,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Creates a new LongMatrix by applying a function that converts float values to long.
+     * Creates a new {@code LongMatrix} by applying a function that converts float values to long.
      * This operation may be executed in parallel for better performance on large matrices. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Usage Examples:</b></p>
@@ -1488,7 +1491,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Creates a new DoubleMatrix by applying a function that converts float values to double.
+     * Creates a new {@code DoubleMatrix} by applying a function that converts float values to double.
      * This operation may be executed in parallel for better performance on large matrices. If parallelized, the supplied function must be thread-safe.
      *
      * <p><b>Usage Examples:</b></p>
@@ -2876,12 +2879,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * <p>This operation uses standard matrix multiplication where each element (i,j) in the result
      * is computed as the dot product of row i from this matrix and column j from the other matrix.
-     * Since float has limited precision (~7 decimal digits), accumulated rounding errors may occur
-     * for large matrices. Consider using {@link #toDoubleMatrix()} for higher precision if needed.</p>
+     * Products and partial sums are accumulated as {@code float}. Since float has limited precision
+     * (~7 decimal digits), accumulated rounding errors may occur for large matrices. Consider using
+     * {@link #toDoubleMatrix()} for higher precision if needed.</p>
      *
      * <p><b>Note:</b> This is the linear-algebra matrix product, not element-wise multiplication.
-     * For element-wise multiplication use
-     * {@link #zipWith(FloatMatrix, com.landawn.abacus.util.Throwables.FloatBinaryOperator)}.</p>
+     * For element-wise multiplication use {@link #zipWith(FloatMatrix, Throwables.FloatBinaryOperator)}.</p>
      *
      * <p><b>Floating-point notes:</b> Standard IEEE-754 arithmetic applies; {@code NaN} or
      * {@code Infinity} operands propagate into the corresponding result cells, and intermediate

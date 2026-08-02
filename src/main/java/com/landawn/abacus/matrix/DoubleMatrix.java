@@ -42,7 +42,7 @@ import com.landawn.abacus.util.stream.Stream;
  * <p>Cells introduced by growth or reshaping default to {@code 0.0d} unless an overload accepts an
  * explicit fill value.</p>
  *
- * <p><b>IEEE 754 semantics:</b> elements are double-precision doubles. Be aware that
+ * <p><b>IEEE 754 semantics:</b> elements are IEEE 754 double-precision values. Be aware that
  * {@code NaN != NaN} under {@code ==}, that {@code +0.0} and {@code -0.0} compare equal under
  * {@code ==} but have different bit patterns, and that {@code +Infinity}/{@code -Infinity}
  * propagate through arithmetic. Equality on this matrix uses
@@ -212,7 +212,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @param a the two-dimensional int array to convert to a double matrix, or empty for an empty matrix; must not be {@code null}
-     * @return a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if {@code a} is empty
+     * @return a new {@code DoubleMatrix} with converted values, or the shared empty {@code DoubleMatrix} if {@code a} is empty
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row is {@code null}, or if rows have different lengths (non-rectangular array)
      * @see IntMatrix#toDoubleMatrix()
      */
@@ -273,7 +273,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @param a the two-dimensional long array to convert to a double matrix, or empty for an empty matrix; must not be {@code null}
-     * @return a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if {@code a} is empty
+     * @return a new {@code DoubleMatrix} with converted values, or the shared empty {@code DoubleMatrix} if {@code a} is empty
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row is {@code null}, or if rows have different lengths (non-rectangular array)
      * @see LongMatrix#toDoubleMatrix()
      */
@@ -332,7 +332,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @param a the two-dimensional float array to convert to a double matrix, or empty for an empty matrix; must not be {@code null}
-     * @return a new {@code DoubleMatrix} with converted values, or an empty {@code DoubleMatrix} if {@code a} is empty
+     * @return a new {@code DoubleMatrix} with converted values, or the shared empty {@code DoubleMatrix} if {@code a} is empty
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row is {@code null}, or if rows have different lengths (non-rectangular array)
      * @see FloatMatrix#toDoubleMatrix()
      */
@@ -560,7 +560,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *        may be empty
      * @param antiDiagonal the array of anti-diagonal elements; may be {@code null} if {@code mainDiagonal} is non-{@code null};
      *        may be empty
-     * @return a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
+     * @return a square matrix with the specified diagonals, or the shared empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
      * @throws IllegalArgumentException if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null}, or if both arrays are non-empty and have different lengths
      * @see #mainDiagonal(double[])
      * @see #antiDiagonal(double[])
@@ -595,8 +595,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     }
 
     /**
-     * Converts a boxed {@link Matrix Matrix&lt;Double&gt;} to a primitive {@code DoubleMatrix}.
-     * {@code null} values in the input matrix are converted to {@code 0.0}.
+     * Converts a boxed {@code Matrix<Double>} to a primitive {@code DoubleMatrix}. This conversion
+     * improves memory efficiency and performance when working with large matrices.
+     * {@code null} elements in the input matrix are converted to {@code 0.0}.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -611,8 +612,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * DoubleMatrix.unbox((Matrix<Double>) null); // throws IllegalArgumentException
      * }</pre>
      *
-     * @param x the boxed {@code Double} matrix to convert; must not be {@code null}
-     * @return a new {@code DoubleMatrix} with unboxed values ({@code null} elements become {@code 0.0})
+     * @param x the boxed {@code Matrix<Double>} to convert; must not be {@code null}
+     * @return a new {@code DoubleMatrix} with primitive double values, with the same shape as {@code x}
+     *         ({@code null} elements become {@code 0.0})
      * @throws IllegalArgumentException if {@code x} is {@code null}
      * @see #boxed()
      */
@@ -1417,7 +1419,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * @param <E> the type of exception that the predicate may throw
      * @param predicate the condition to test each element; elements for which this returns
-     *                  {@code true} will be replaced
+     *                  {@code true} will be replaced; must not be {@code null}
      * @param newValue the value to use for replacing matching elements (may be {@code NaN},
      *                 {@code +/-Infinity}, or {@code -0.0})
      * @throws IllegalArgumentException if {@code predicate} is {@code null}
@@ -1483,8 +1485,10 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * @param <E> the type of exception that the predicate may throw
      * @param predicate the condition to test each position; receives row index and column index (0-based)
-     *                  and returns {@code true} if the element at that position should be replaced
-     * @param newValue the value to use for replacing at matching positions
+     *                  and returns {@code true} if the element at that position should be replaced;
+     *                  must not be {@code null}
+     * @param newValue the value to use for replacing at matching positions (may be {@code NaN},
+     *                 {@code +/-Infinity}, or {@code -0.0})
      * @throws IllegalArgumentException if {@code predicate} is {@code null}
      * @throws E if the predicate throws an exception
      */
@@ -2477,12 +2481,12 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     }
 
     /**
-     * Reshapes the matrix to new dimensions while preserving element order.
-     * Elements are read in row-major order from the original matrix and placed into the new shape.
-     *
-     * <p>The new shape must have at least as many total elements as the original
+     * Reshapes this matrix to have the specified dimensions.
+     * Elements are taken in row-major order from this matrix and placed into the new shape.
+     * The new shape must have at least as many total cells as the original
      * ({@code (long) newRowCount * newColumnCount >= elementCount()}).
-     * If the new shape has more total elements, the additional positions are filled with zeros.</p>
+     * Any extra trailing cells in the new shape are filled with {@code 0.0}.
+     * The original matrix is not modified.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2965,12 +2969,11 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * <p>This operation uses standard matrix multiplication where each element (i,j) in the result
      * is computed as the dot product of row i from this matrix and column j from the other matrix.
-     * Accumulated rounding errors may occur for large matrices, since {@code double} has finite
-     * precision (~15-16 decimal digits).</p>
+     * Products and partial sums are accumulated as {@code double}. Accumulated rounding errors may
+     * occur for large matrices, since {@code double} has finite precision (~15-16 decimal digits).</p>
      *
      * <p><b>Note:</b> This is the linear-algebra matrix product, not element-wise multiplication.
-     * For element-wise multiplication use
-     * {@link #zipWith(DoubleMatrix, com.landawn.abacus.util.Throwables.DoubleBinaryOperator)}.</p>
+     * For element-wise multiplication use {@link #zipWith(DoubleMatrix, Throwables.DoubleBinaryOperator)}.</p>
      *
      * <p><b>Floating-point notes:</b> Standard IEEE-754 arithmetic applies; {@code NaN} or
      * {@code Infinity} operands propagate into the corresponding result cells, and intermediate

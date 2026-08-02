@@ -38,13 +38,17 @@ import com.landawn.abacus.util.stream.Stream;
  * <p>This class is non-instantiable and exposes static helpers for:</p>
  * <ul>
  * <li>Configuring and querying the per-thread {@link ParallelMode} that drives automatic
- *     parallelization decisions for matrix operations.</li>
+ *     parallelization decisions for matrix operations ({@link #getParallelMode()},
+ *     {@link #setParallelMode(ParallelMode)},
+ *     {@link #runWithParallelMode(ParallelMode, Throwables.Runnable)}, and
+ *     {@link #shouldRunInParallel(AbstractMatrix, long)}).</li>
  * <li>Shape-checking utilities ({@link #isSameShape(AbstractMatrix, AbstractMatrix)} and overloads).</li>
  * <li>Index traversal helpers ({@link #forEachIndices(int, int, Throwables.IntBiConsumer, boolean) forEachIndices},
- *     {@link #mapIndices(int, int, Throwables.IntBiFunction, boolean) mapIndices},
- *     {@link #mapIndicesToInt(int, int, Throwables.IntBinaryOperator, boolean) mapIndicesToInt},
- *     and {@link #forEachCartesianIndices(AbstractMatrix, AbstractMatrix, Throwables.IntTriConsumer) forEachCartesianIndices}
- *     used to express matrix multiplication).</li>
+ *     {@link #mapIndices(int, int, Throwables.IntBiFunction, boolean) mapIndices}, and
+ *     {@link #mapIndicesToInt(int, int, Throwables.IntBinaryOperator, boolean) mapIndicesToInt}).</li>
+ * <li>A Cartesian product helper
+ *     ({@link #forEachCartesianIndices(AbstractMatrix, AbstractMatrix, Throwables.IntTriConsumer) forEachCartesianIndices})
+ *     used to express matrix multiplication; the product arithmetic itself lives on the matrix classes.</li>
  * <li>n-ary stacking helpers ({@link #stackVertically(Collection)} and {@link #stackHorizontally(Collection)}).</li>
  * <li>Element-wise zipping helpers across the various typed matrices ({@link ByteMatrix}, {@link IntMatrix},
  *     {@link LongMatrix}, {@link DoubleMatrix}, and the generic {@link Matrix}).</li>
@@ -56,8 +60,9 @@ import com.landawn.abacus.util.stream.Stream;
  * shape, and these helpers to combine a whole collection of matrices or to produce a differently
  * typed result.</p>
  *
- * <p>The class also holds helpers for overflow-safe size calculations and backing-array
- * allocation used by the matrix implementations.</p>
+ * <p>The class also provides {@link #newMatrixArray(int, int, Class)} for typed backing-array
+ * allocation, plus package-private helpers for overflow-safe work-size calculations used by
+ * matrix multiplication and related operations.</p>
  */
 public final class Matrices {
 
@@ -191,15 +196,16 @@ public final class Matrices {
      * Determines whether the given matrix should be processed using parallel execution.
      *
      * <p>This method evaluates whether parallel processing should be used for operations on the
-     * specified matrix based on its total element count. The decision considers:</p>
+     * specified matrix, using its total element count as the work estimate. The decision considers:</p>
      * <ul>
      * <li>The current thread's {@link ParallelMode} setting</li>
      * <li>Whether parallel stream support is available in the runtime environment</li>
-     * <li>The total number of elements in the matrix (rows × columns)</li>
+     * <li>The total number of elements in the matrix (rows × columns), consulted only under
+     *     {@link ParallelMode#AUTO}</li>
      * </ul>
      *
      * <p>This is a convenience method that delegates to {@link #shouldRunInParallel(AbstractMatrix, long)}
-     * using the matrix's total element count.</p>
+     * using the matrix's total element count as the work-item count.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -230,7 +236,7 @@ public final class Matrices {
 
     /**
      * Determines whether a matrix operation should be processed using parallel execution
-     * based on the element count and current parallel settings.
+     * based on the supplied work-item count and current parallel settings.
      *
      * <p>This method makes the parallelization decision using a multifactor evaluation:</p>
      * <ol>
@@ -240,12 +246,13 @@ public final class Matrices {
      *     <ul>
      *     <li>{@link ParallelMode#FORCE_ON} - returns {@code true} whenever runtime support is available.</li>
      *     <li>{@link ParallelMode#FORCE_OFF} - always returns {@code false}.</li>
-     *     <li>{@link ParallelMode#AUTO} - decides based on element count.</li>
+     *     <li>{@link ParallelMode#AUTO} - decides based on the supplied work-item count.</li>
      *     </ul>
      * </li>
-     * <li><b>Element Count:</b> When using {@code AUTO} setting, returns {@code true} only if
+     * <li><b>Work Count:</b> When using {@code AUTO} setting, returns {@code true} only if
      *     {@code count >= 8192}. This threshold balances the overhead of parallel execution
-     *     against the performance benefits for larger datasets.</li>
+     *     against the performance benefits for larger workloads. Callers may pass the matrix
+     *     element count, a subset size, a multiply-add product, or another work estimate.</li>
      * </ol>
      *
      * <p><b>Usage Examples:</b></p>
@@ -567,8 +574,8 @@ public final class Matrices {
      *
      * <p>This method iterates over all positions in a matrix of the specified dimensions,
      * executing the provided action with the row and column indices (i, j) for each position.
-     * The iteration order is optimized based on the relative sizes of rows and columns to
-     * improve cache locality.</p>
+     * Sequential and parallel visitation order match
+     * {@link #forEachIndices(int, int, int, int, Throwables.IntBiConsumer, boolean)}.</p>
      *
      * <p>This is a convenience method that delegates to
      * {@link #forEachIndices(int, int, int, int, Throwables.IntBiConsumer, boolean)} with the full
@@ -615,17 +622,15 @@ public final class Matrices {
      * Executes an action for each position in a specified subregion of a matrix grid.
      *
      * <p>This method iterates over a rectangular region defined by the row and column index ranges,
-     * executing the provided action with the (i, j) indices for each position in the region.
-     * The iteration order is automatically optimized based on the relative sizes of the row and
-     * column ranges to improve cache locality and performance.</p>
+     * executing the provided action with the (i, j) indices for each position in the region.</p>
      *
-     * <p>Iteration strategy:</p>
+     * <p>Visitation order:</p>
      * <ul>
-     * <li>In sequential mode, if there are fewer or equal rows than columns, iterates by rows first (row-major order).</li>
-     * <li>In sequential mode, if there are more rows than columns, iterates by columns first (column-major order).</li>
-     * <li>When parallel execution is enabled, the outer loop runs over the larger of the two dimensions
-     *     (so the work splits into as many independent units as possible) and is parallelized while the
-     *     inner loop remains sequential.</li>
+     * <li>Sequential mode with row count ≤ column count: row-major order (outer loop over rows).</li>
+     * <li>Sequential mode with row count &gt; column count: column-major order (outer loop over columns).</li>
+     * <li>Parallel mode (when parallel streams are available): the outer loop runs over the larger of the
+     *     two dimensions and is parallelized while the inner loop remains sequential; encounter order is
+     *     unspecified. If parallel streams are unavailable, execution falls back to the sequential order above.</li>
      * </ul>
      *
      * <p><b>Usage Examples:</b></p>
@@ -706,15 +711,16 @@ public final class Matrices {
      * Executes a function for each position in a matrix grid and returns the results as a stream.
      *
      * <p>This method applies the provided function to each position (i, j) in a matrix of the
-     * specified dimensions and collects all results into a {@link Stream}. The iteration order
-     * is optimized based on the relative sizes of rows and columns.</p>
+     * specified dimensions and collects all results into a {@link Stream}. Sequential and parallel
+     * encounter order match {@link #mapIndices(int, int, int, int, Throwables.IntBiFunction, boolean)}.</p>
      *
      * <p>This is a convenience method that delegates to
      * {@link #mapIndices(int, int, int, int, Throwables.IntBiFunction, boolean)} with the full
      * range of rows and columns (starting from 0).</p>
      *
-     * <p>If {@code mapper} throws an exception, it is surfaced as a {@code RuntimeException}
-     * when the returned stream is consumed.</p>
+     * <p>If {@code mapper} throws a checked exception, it is wrapped in a {@code RuntimeException}
+     * and rethrown when the returned stream is consumed. Runtime exceptions from {@code mapper}
+     * are rethrown as-is.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -739,7 +745,8 @@ public final class Matrices {
      *        (if parallel streams are unavailable in the runtime, execution falls back to sequential)
      * @return a {@link Stream} of results from applying the function at each position, never {@code null}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}, or if {@code rowCount} or {@code columnCount} is negative
-     * @throws RuntimeException if {@code mapper} throws an exception while the returned stream is consumed
+     * @throws RuntimeException if {@code mapper} throws a checked exception while the returned stream is consumed
+     *         (runtime exceptions from {@code mapper} are rethrown as-is)
      * @see #mapIndices(int, int, int, int, Throwables.IntBiFunction, boolean)
      */
     public static <T> Stream<T> mapIndices(final int rowCount, final int columnCount, final Throwables.IntBiFunction<? extends T, ? extends Exception> mapper,
@@ -756,19 +763,20 @@ public final class Matrices {
      * returns the results as a stream.
      *
      * <p>This method applies the provided function to each position (i, j) in the rectangular
-     * region defined by the row and column index ranges, collecting all results into a {@link Stream}.
-     * The iteration order is automatically optimized based on the relative sizes of the row and
-     * column ranges to improve performance.</p>
+     * region defined by the row and column index ranges, collecting all results into a {@link Stream}.</p>
      *
-     * <p>For sequential execution, the order of elements in the stream depends on whether there are more rows or columns:</p>
+     * <p>For sequential execution, stream encounter order is:</p>
      * <ul>
-     * <li>If rows is less than or equal to columns: elements are ordered by rows first (row-major order).</li>
-     * <li>If rows is greater than columns: elements are ordered by columns first (column-major order).</li>
+     * <li>Row count ≤ column count: row-major order.</li>
+     * <li>Row count &gt; column count: column-major order.</li>
      * </ul>
-     * <p>When {@code inParallel} is {@code true}, the encounter order of the returned stream is unspecified.</p>
+     * <p>When {@code inParallel} is {@code true} and parallel streams are available, the encounter
+     * order of the returned stream is unspecified. If parallel streams are unavailable, sequential
+     * order above is used even when {@code inParallel} is {@code true}.</p>
      *
      * <p>If {@code mapper} throws a checked exception, it is wrapped in a {@code RuntimeException}
-     * and rethrown when the returned stream is consumed.</p>
+     * and rethrown when the returned stream is consumed. Runtime exceptions from {@code mapper}
+     * are rethrown as-is.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -794,7 +802,8 @@ public final class Matrices {
      * @return a {@link Stream} of results from applying the function at each position, never {@code null}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws IndexOutOfBoundsException if any index is negative, if {@code toRowIndex} is less than {@code fromRowIndex}, or if {@code toColumnIndex} is less than {@code fromColumnIndex}
-     * @throws RuntimeException if {@code mapper} throws an exception while the returned stream is consumed
+     * @throws RuntimeException if {@code mapper} throws a checked exception while the returned stream is consumed
+     *         (runtime exceptions from {@code mapper} are rethrown as-is)
      */
     @SuppressWarnings("resource")
     public static <T> Stream<T> mapIndices(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
@@ -847,15 +856,17 @@ public final class Matrices {
      * and returns the results as an {@link IntStream}.
      *
      * <p>This method applies the provided integer binary operator to each position (i, j) in a
-     * matrix of the specified dimensions and collects all results into an {@link IntStream}.
-     * This is optimized for primitive {@code int} operations, avoiding boxing overhead.</p>
+     * matrix of the specified dimensions and collects all results into an {@link IntStream},
+     * avoiding boxing overhead of a generic {@link Stream}.</p>
      *
      * <p>This is a convenience method that delegates to
      * {@link #mapIndicesToInt(int, int, int, int, Throwables.IntBinaryOperator, boolean)} with the
-     * full range of rows and columns (starting from 0).</p>
+     * full range of rows and columns (starting from 0). Sequential and parallel encounter order
+     * match that overload.</p>
      *
-     * <p>If {@code mapper} throws an exception, it is surfaced as a {@code RuntimeException}
-     * when the returned stream is consumed.</p>
+     * <p>If {@code mapper} throws a checked exception, it is wrapped in a {@code RuntimeException}
+     * and rethrown when the returned stream is consumed. Runtime exceptions from {@code mapper}
+     * are rethrown as-is.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -879,7 +890,8 @@ public final class Matrices {
      *        (if parallel streams are unavailable in the runtime, execution falls back to sequential)
      * @return an {@link IntStream} of results from applying the function at each position, never {@code null}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}, or if {@code rowCount} or {@code columnCount} is negative
-     * @throws RuntimeException if {@code mapper} throws an exception while the returned stream is consumed
+     * @throws RuntimeException if {@code mapper} throws a checked exception while the returned stream is consumed
+     *         (runtime exceptions from {@code mapper} are rethrown as-is)
      * @see #mapIndicesToInt(int, int, int, int, Throwables.IntBinaryOperator, boolean)
      */
     public static IntStream mapIndicesToInt(final int rowCount, final int columnCount, final Throwables.IntBinaryOperator<? extends Exception> mapper,
@@ -897,16 +909,17 @@ public final class Matrices {
      *
      * <p>This method applies the provided integer binary operator to each position (i, j) in the
      * rectangular region defined by the row and column index ranges, collecting all results into
-     * an {@link IntStream}. This is optimized for primitive {@code int} operations, avoiding
-     * boxing overhead associated with generic streams.</p>
+     * an {@link IntStream} and avoiding boxing overhead of a generic {@link Stream}.</p>
      *
-     * <p>For sequential execution, the iteration order is automatically optimized based on the relative
-     * sizes of the row and column ranges to improve cache locality and performance (row-major when the
-     * row range is not larger than the column range, column-major otherwise). When {@code inParallel}
-     * is {@code true}, the encounter order of the returned stream is unspecified.</p>
+     * <p>For sequential execution, stream encounter order is row-major when the row range is not
+     * larger than the column range, and column-major otherwise. When {@code inParallel} is
+     * {@code true} and parallel streams are available, the encounter order of the returned stream
+     * is unspecified. If parallel streams are unavailable, sequential order above is used even when
+     * {@code inParallel} is {@code true}.</p>
      *
      * <p>If {@code mapper} throws a checked exception, it is wrapped in a {@code RuntimeException}
-     * and rethrown when the returned stream is consumed.</p>
+     * and rethrown when the returned stream is consumed. Runtime exceptions from {@code mapper}
+     * are rethrown as-is.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -931,7 +944,8 @@ public final class Matrices {
      * @return an {@link IntStream} of results from applying the function at each position, never {@code null}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws IndexOutOfBoundsException if any index is negative, if {@code toRowIndex} is less than {@code fromRowIndex}, or if {@code toColumnIndex} is less than {@code fromColumnIndex}
-     * @throws RuntimeException if {@code mapper} throws an exception while the returned stream is consumed
+     * @throws RuntimeException if {@code mapper} throws a checked exception while the returned stream is consumed
+     *         (runtime exceptions from {@code mapper} are rethrown as-is)
      */
     @SuppressWarnings("resource")
     public static IntStream mapIndicesToInt(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
@@ -1050,20 +1064,20 @@ public final class Matrices {
      *
      * <p>This method provides the same iteration functionality as
      * {@link #forEachCartesianIndices(AbstractMatrix, AbstractMatrix, Throwables.IntTriConsumer)} but with
-     * explicit control over whether to use parallel processing. The iteration strategy is
-     * automatically optimized based on the matrix dimensions to minimize cache misses and
-     * maximize performance.</p>
+     * explicit control over whether to use parallel processing.</p>
      *
-     * <p>The iteration order is determined by which dimension is smallest among:
-     * {@code a.rowCount}, {@code a.columnCount} (= {@code b.rowCount}), and {@code b.columnCount}. In sequential
-     * mode the smallest dimension is used for the outermost loop to maximize cache locality.</p>
+     * <p>In sequential mode, the outermost loop is the smallest among {@code a.rowCount},
+     * {@code a.columnCount} (= {@code b.rowCount}), and {@code b.columnCount}; the relative order of the
+     * remaining two dimensions follows the same size heuristic. Callers must not rely on a fixed
+     * (i, j, k) visitation order beyond that policy.</p>
      *
      * <p>When parallel execution is requested and supported, the outermost loop is parallelized while inner
      * loops remain sequential. To avoid concurrent writes to the same accumulator cell, the
      * {@code k} loop (over {@code a.columnCount} = {@code b.rowCount}) is never parallelized: the
      * parallel loop runs over the larger of {@code i} ({@code a.rowCount}) and {@code j}
-     * ({@code b.columnCount}), so the work splits into as many independent units as possible. Each
-     * parallel iteration therefore targets an independent set of output cells.</p>
+     * ({@code b.columnCount}). Each parallel iteration therefore targets an independent set of output
+     * cells. If parallel streams are unavailable, sequential execution is used even when
+     * {@code inParallel} is {@code true}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1377,7 +1391,7 @@ public final class Matrices {
      *
      * <p>This method performs element-wise combination of two byte matrices using the provided
      * binary operator. For each position (i, j), the function is called with the corresponding
-     * elements from both matrices: {@code zipFunction.apply(a[i][j], b[i][j])}.</p>
+     * elements from both matrices: {@code zipFunction.applyAsByte(a[i][j], b[i][j])}.</p>
      *
      * <p>Both matrices must have identical dimensions (same number of rows and columns).
      * The operation delegates to the {@link ByteMatrix#zipWith(ByteMatrix, Throwables.ByteBinaryOperator)} method.</p>
@@ -1422,7 +1436,7 @@ public final class Matrices {
      *
      * <p>This method performs element-wise combination of three byte matrices using the provided
      * ternary operator. For each position (i, j), the function is called with the corresponding
-     * elements from all three matrices: {@code zipFunction.apply(a[i][j], b[i][j], c[i][j])}.</p>
+     * elements from all three matrices: {@code zipFunction.applyAsByte(a[i][j], b[i][j], c[i][j])}.</p>
      *
      * <p>All three matrices must have identical dimensions (same number of rows and columns).
      * The operation delegates to the {@link ByteMatrix#zipWith(ByteMatrix, ByteMatrix, Throwables.ByteTernaryOperator)} method.</p>
@@ -1962,7 +1976,7 @@ public final class Matrices {
      *
      * <p>This method performs element-wise combination of two integer matrices using the provided
      * binary operator. For each position (i, j), the function is called with the corresponding
-     * elements from both matrices: {@code zipFunction.apply(a[i][j], b[i][j])}.</p>
+     * elements from both matrices: {@code zipFunction.applyAsInt(a[i][j], b[i][j])}.</p>
      *
      * <p>Both matrices must have identical dimensions (same number of rows and columns).
      * The operation delegates to the {@link IntMatrix#zipWith(IntMatrix, Throwables.IntBinaryOperator)} method.</p>
@@ -2007,7 +2021,7 @@ public final class Matrices {
      *
      * <p>This method performs element-wise combination of three integer matrices using the provided
      * ternary operator. For each position (i, j), the function is called with the corresponding
-     * elements from all three matrices: {@code zipFunction.apply(a[i][j], b[i][j], c[i][j])}.</p>
+     * elements from all three matrices: {@code zipFunction.applyAsInt(a[i][j], b[i][j], c[i][j])}.</p>
      *
      * <p>All three matrices must have identical dimensions (same number of rows and columns).
      * The operation delegates to the {@link IntMatrix#zipWith(IntMatrix, IntMatrix, Throwables.IntTernaryOperator)} method.</p>
@@ -2788,7 +2802,7 @@ public final class Matrices {
      *
      * <p>This method performs element-wise combination of two long matrices using the provided
      * binary operator. For each position (i, j), the function is called with the corresponding
-     * elements from both matrices: {@code zipFunction.apply(a[i][j], b[i][j])}.</p>
+     * elements from both matrices: {@code zipFunction.applyAsLong(a[i][j], b[i][j])}.</p>
      *
      * <p>Both matrices must have identical dimensions (same number of rows and columns).
      * The operation delegates to the {@link LongMatrix#zipWith(LongMatrix, Throwables.LongBinaryOperator)} method.</p>
@@ -2833,7 +2847,7 @@ public final class Matrices {
      *
      * <p>This method performs element-wise combination of three long matrices using the provided
      * ternary operator. For each position (i, j), the function is called with the corresponding
-     * elements from all three matrices: {@code zipFunction.apply(a[i][j], b[i][j], c[i][j])}.</p>
+     * elements from all three matrices: {@code zipFunction.applyAsLong(a[i][j], b[i][j], c[i][j])}.</p>
      *
      * <p>All three matrices must have identical dimensions (same number of rows and columns).
      * The operation delegates to the {@link LongMatrix#zipWith(LongMatrix, LongMatrix, Throwables.LongTernaryOperator)} method.</p>
@@ -3354,7 +3368,7 @@ public final class Matrices {
      *
      * <p>This method performs element-wise combination of two double matrices using the provided
      * binary operator. For each position (i, j), the function is called with the corresponding
-     * elements from both matrices: {@code zipFunction.apply(a[i][j], b[i][j])}.</p>
+     * elements from both matrices: {@code zipFunction.applyAsDouble(a[i][j], b[i][j])}.</p>
      *
      * <p>Both matrices must have identical dimensions (same number of rows and columns).
      * The operation delegates to the {@link DoubleMatrix#zipWith(DoubleMatrix, Throwables.DoubleBinaryOperator)} method.</p>
@@ -3400,7 +3414,7 @@ public final class Matrices {
      *
      * <p>This method performs element-wise combination of three double matrices using the provided
      * ternary operator. For each position (i, j), the function is called with the corresponding
-     * elements from all three matrices: {@code zipFunction.apply(a[i][j], b[i][j], c[i][j])}.</p>
+     * elements from all three matrices: {@code zipFunction.applyAsDouble(a[i][j], b[i][j], c[i][j])}.</p>
      *
      * <p>All three matrices must have identical dimensions (same number of rows and columns).
      * The operation delegates to the {@link DoubleMatrix#zipWith(DoubleMatrix, DoubleMatrix, Throwables.DoubleTernaryOperator)} method.</p>

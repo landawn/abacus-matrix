@@ -512,6 +512,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * Converts a boxed {@link Matrix Matrix&lt;Character&gt;} to a primitive {@code CharMatrix}.
      * {@code null} values in the input matrix are converted to {@code (char) 0} (the null character).
      *
+     * <p>This method performs the opposite operation of {@link #boxed()}, converting
+     * from object-based {@code Character} values to primitive {@code char} values. This conversion
+     * improves memory efficiency and performance when working with large matrices.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Character> boxedMatrix = Matrix.of(new Character[][] {{'a', 'b'}, {null, 'c'}});
@@ -815,7 +819,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * <p>Unlike {@link #rowView(int)}, this method always returns a new array copy since
      * columns are not stored contiguously in memory. Modifications to the returned array
-     * will not affect the matrix.
+     * will not affect the matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -855,7 +859,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * All elements in the row are replaced with values from the provided array.
      *
      * <p>The values from the source array are copied into the matrix row.
-     * The source array must have exactly the same length as the number of columns in the matrix.
+     * The source array must have exactly the same length as the number of columns in the matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -886,7 +890,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * All elements in the column are replaced with values from the provided array.
      *
      * <p>The values from the source array are copied into the matrix column.
-     * The source array must have exactly the same length as the number of rows in the matrix.
+     * The source array must have exactly the same length as the number of rows in the matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1001,7 +1005,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * The matrix must be square (rowCount == columnCount) for this operation.
      *
      * <p>This method extracts the main diagonal elements at positions (0,0), (1,1), (2,2), etc.
-     * The returned array is a copy; modifications to it will not affect the matrix.
+     * The returned array is a copy; modifications to it will not affect the matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1108,7 +1112,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * <p>This method extracts the anti-diagonal (secondary diagonal) elements from
      * upper-right to lower-left, at positions (0,n-1), (1,n-2), (2,n-3), etc.
-     * The returned array is a copy; modifications to it will not affect the matrix.
+     * The returned array is a copy; modifications to it will not affect the matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2133,6 +2137,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
     /**
      * Returns a new matrix that is this matrix rotated 90 degrees clockwise.
+     * The resulting matrix has dimensions swapped (rows become columns), with the first
+     * row of the result being the first column of the original read from bottom to top.
+     * The original matrix is not modified.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2183,6 +2190,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
     /**
      * Returns a new matrix that is this matrix rotated 180 degrees.
+     * This is equivalent to flipping both horizontally and vertically, reversing the
+     * order of all elements. The resulting matrix has the same dimensions as the original.
+     * The original matrix is not modified.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2216,6 +2226,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     /**
      * Returns a new matrix that is this matrix rotated 270 degrees clockwise.
      * This is equivalent to rotating 90 degrees counter-clockwise.
+     * The resulting matrix has dimensions swapped (rows become columns), with the first
+     * row of the result being the last column of the original read from top to bottom.
+     * The original matrix is not modified.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

@@ -349,7 +349,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param startInclusive the starting byte value (inclusive)
      * @param endExclusive the ending byte value (exclusive)
      * @param step the step size (must not be zero; can be positive or negative)
-     * @return a new 1×n ByteMatrix with values incremented by the step size
+     * @return a new {@code 1 × n} {@code ByteMatrix} of values from {@code startInclusive} stepped by {@code step}
      * @throws IllegalArgumentException if {@code step} is zero
      */
     public static ByteMatrix range(final byte startInclusive, final byte endExclusive, final byte step) {
@@ -407,7 +407,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param startInclusive the starting byte value (inclusive)
      * @param endInclusive the ending byte value (inclusive, if reachable by stepping)
      * @param step the step size (must not be zero; can be positive or negative)
-     * @return a new 1×n ByteMatrix with values incremented by the step size
+     * @return a new {@code 1 × n} {@code ByteMatrix} of values from {@code startInclusive} stepped by {@code step}
      * @throws IllegalArgumentException if {@code step} is zero
      */
     public static ByteMatrix rangeClosed(final byte startInclusive, final byte endInclusive, final byte step) {
@@ -840,7 +840,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * <p>Unlike {@link #rowView(int)}, this method always returns a new array copy since
      * columns are not stored contiguously in memory. Modifications to the returned array
-     * will not affect the matrix.
+     * will not affect the matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -880,7 +880,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * All elements in the row are replaced with values from the provided array.
      *
      * <p>The values from the source array are copied into the matrix row.
-     * The source array must have exactly the same length as the number of columns in the matrix.
+     * The source array must have exactly the same length as the number of columns in the matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -913,7 +913,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * All elements in the column are replaced with values from the provided array.
      *
      * <p>The values from the source array are copied into the matrix column.
-     * The source array must have exactly the same length as the number of rows in the matrix.
+     * The source array must have exactly the same length as the number of rows in the matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1030,7 +1030,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * The matrix must be square (rowCount == columnCount) for this operation.
      *
      * <p>This method extracts the main diagonal elements at positions (0,0), (1,1), (2,2), etc.
-     * The returned array is a copy; modifications to it will not affect the matrix.
+     * The returned array is a copy; modifications to it will not affect the matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1134,7 +1134,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * <p>This method extracts the anti-diagonal (secondary diagonal) elements from
      * upper-right to lower-left, at positions (0,n-1), (1,n-2), (2,n-3), etc.
-     * The returned array is a copy; modifications to it will not affect the matrix.
+     * The returned array is a copy; modifications to it will not affect the matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
