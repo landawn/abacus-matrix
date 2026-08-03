@@ -73,16 +73,16 @@ class LongMatrixTest extends TestBase {
     }
 
     @Test
-    public void testOf() {
+    public void testWrap() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
         Assertions.assertEquals(2, matrix.rowCount());
         Assertions.assertEquals(2, matrix.columnCount());
 
-        LongMatrix emptyMatrix = LongMatrix.of();
+        LongMatrix emptyMatrix = LongMatrix.wrap();
         Assertions.assertTrue(emptyMatrix.isEmpty());
 
-        assertThrows(IllegalArgumentException.class, () -> LongMatrix.of((long[][]) null));
+        assertThrows(IllegalArgumentException.class, () -> LongMatrix.wrap((long[][]) null));
     }
 
     @Test
@@ -202,7 +202,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testUnbox() {
         Long[][] boxed = { { 1L, 2L }, { 3L, 4L } };
-        Matrix<Long> boxedMatrix = Matrix.of(boxed);
+        Matrix<Long> boxedMatrix = Matrix.wrap(boxed);
         LongMatrix unboxed = LongMatrix.unbox(boxedMatrix);
         Assertions.assertEquals(2, unboxed.rowCount());
         Assertions.assertEquals(2, unboxed.columnCount());
@@ -219,7 +219,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testGet() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
         Assertions.assertEquals(1L, matrix.get(0, 0));
         Assertions.assertEquals(2L, matrix.get(0, 1));
         Assertions.assertEquals(3L, matrix.get(1, 0));
@@ -232,7 +232,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testGetWithPoint() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
         Assertions.assertEquals(1L, matrix.get(Point.of(0, 0)));
         Assertions.assertEquals(4L, matrix.get(Point.of(1, 1)));
     }
@@ -240,7 +240,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testSet() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
         matrix.set(0, 0, 10L);
         Assertions.assertEquals(10L, matrix.get(0, 0));
 
@@ -250,7 +250,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testSetWithPoint() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
         matrix.set(Point.of(1, 1), 10L);
         Assertions.assertEquals(10L, matrix.get(1, 1));
     }
@@ -258,7 +258,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testUpOf() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         OptionalLong up = matrix.valueAbove(1, 0);
         Assertions.assertTrue(up.isPresent());
@@ -271,7 +271,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testDownOf() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         OptionalLong down = matrix.valueBelow(0, 0);
         Assertions.assertTrue(down.isPresent());
@@ -284,7 +284,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testLeftOf() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         OptionalLong left = matrix.valueLeft(0, 1);
         Assertions.assertTrue(left.isPresent());
@@ -297,7 +297,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testRightOf() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         OptionalLong right = matrix.valueRight(0, 0);
         Assertions.assertTrue(right.isPresent());
@@ -310,7 +310,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testRow() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         long[] row0 = matrix.rowView(0);
         Assertions.assertArrayEquals(new long[] { 1L, 2L, 3L }, row0);
@@ -326,7 +326,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testRowCopy() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         long[] rowCopy = matrix.rowCopy(0);
         Assertions.assertArrayEquals(new long[] { 1L, 2L, 3L }, rowCopy);
@@ -337,7 +337,7 @@ class LongMatrixTest extends TestBase {
 
     @Test
     public void testRowCopy_InvalidIndex() {
-        LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+        LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
 
         Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowCopy(-1));
         Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowCopy(2));
@@ -346,7 +346,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testColumn() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         long[] col0 = matrix.columnCopy(0);
         Assertions.assertArrayEquals(new long[] { 1L, 4L }, col0);
@@ -361,7 +361,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testSetRow() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         matrix.setRow(0, new long[] { 10L, 20L, 30L });
         Assertions.assertArrayEquals(new long[] { 10L, 20L, 30L }, matrix.rowView(0));
@@ -373,7 +373,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testSetColumn() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         matrix.setColumn(0, new long[] { 10L, 20L });
         Assertions.assertArrayEquals(new long[] { 10L, 20L }, matrix.columnCopy(0));
@@ -385,7 +385,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testUpdateRow() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         matrix.updateRow(0, x -> x * 2);
         Assertions.assertArrayEquals(new long[] { 2L, 4L, 6L }, matrix.rowView(0));
@@ -394,7 +394,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testUpdateColumn() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         matrix.updateColumn(1, x -> x + 10);
         Assertions.assertArrayEquals(new long[] { 12L, 15L }, matrix.columnCopy(1));
@@ -403,7 +403,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testUpdateRowAndUpdateColumnInvalidIndex() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.updateRow(-1, x -> x * 2));
         Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.updateColumn(3, x -> x + 10));
@@ -412,7 +412,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testUpdateRowAndUpdateColumnNullOperator() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.updateRow(0, (Throwables.LongUnaryOperator<RuntimeException>) null));
         Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.updateColumn(0, (Throwables.LongUnaryOperator<RuntimeException>) null));
@@ -421,19 +421,19 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testGetLU2RD() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         long[] diagonal = matrix.mainDiagonalCopy();
         Assertions.assertArrayEquals(new long[] { 1L, 5L, 9L }, diagonal);
 
-        LongMatrix nonSquare = LongMatrix.of(new long[][] { { 1L, 2L } });
+        LongMatrix nonSquare = LongMatrix.wrap(new long[][] { { 1L, 2L } });
         Assertions.assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalCopy());
     }
 
     @Test
     public void testSetLU2RD() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         matrix.setMainDiagonal(new long[] { 10L, 20L, 30L });
         Assertions.assertEquals(10L, matrix.get(0, 0));
@@ -446,7 +446,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testUpdateLU2RD() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         matrix.updateMainDiagonal(x -> x * x);
         Assertions.assertEquals(1L, matrix.get(0, 0));
@@ -457,7 +457,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testGetRU2LD() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         long[] diagonal = matrix.antiDiagonalCopy();
         Assertions.assertArrayEquals(new long[] { 3L, 5L, 7L }, diagonal);
@@ -466,7 +466,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testSetRU2LD() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         matrix.setAntiDiagonal(new long[] { 10L, 20L, 30L });
         Assertions.assertEquals(10L, matrix.get(0, 2));
@@ -477,7 +477,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testUpdateRU2LD() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         matrix.updateAntiDiagonal(x -> -x);
         Assertions.assertEquals(-3L, matrix.get(0, 2));
@@ -488,7 +488,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testUpdateAll() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         matrix.updateAll(x -> x * 2);
         Assertions.assertEquals(2L, matrix.get(0, 0));
@@ -512,7 +512,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testUpdateAllWithIndices() {
         long[][] a = { { 0L, 0L }, { 0L, 0L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         matrix.updateAll((i, j) -> (long) (i + j));
         Assertions.assertEquals(0L, matrix.get(0, 0));
@@ -524,7 +524,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testReplaceIf() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         matrix.replaceIf(x -> x < 3, 0L);
         Assertions.assertEquals(0L, matrix.get(0, 0));
@@ -536,7 +536,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testReplaceIfWithIndices() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         matrix.replaceIf((i, j) -> i == j, 1L);
         Assertions.assertEquals(1L, matrix.get(0, 0));
@@ -548,7 +548,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testMap() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         LongMatrix squared = matrix.map(x -> x * x);
         Assertions.assertEquals(1L, squared.get(0, 0));
@@ -560,7 +560,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testMapNullMapper() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.map((Throwables.LongUnaryOperator<RuntimeException>) null));
         Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.mapToObj((Throwables.LongFunction<String, RuntimeException>) null, String.class));
@@ -569,7 +569,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testMapToInt() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         IntMatrix intMatrix = matrix.mapToInt(x -> (int) (x % 100));
         Assertions.assertEquals(1, intMatrix.get(0, 0));
@@ -579,7 +579,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testMapToDouble() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         DoubleMatrix doubleMatrix = matrix.mapToDouble(x -> Math.sqrt(x));
         Assertions.assertEquals(1.0, doubleMatrix.get(0, 0));
@@ -589,7 +589,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testMapToObj() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         Matrix<String> stringMatrix = matrix.mapToObj(Long::toString, String.class);
         Assertions.assertEquals("1", stringMatrix.get(0, 0));
@@ -599,7 +599,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testFill() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         matrix.fill(0L);
         Assertions.assertEquals(0L, matrix.get(0, 0));
@@ -611,7 +611,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testFillWithArray() {
         long[][] a = { { 0L, 0L, 0L }, { 0L, 0L, 0L }, { 0L, 0L, 0L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         long[][] b = { { 1L, 2L }, { 3L, 4L } };
         matrix.fill(b);
@@ -625,7 +625,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testFillWithIndices() {
         long[][] a = { { 0L, 0L, 0L }, { 0L, 0L, 0L }, { 0L, 0L, 0L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         long[][] b = { { 1L, 2L } };
         matrix.fill(1, 1, b);
@@ -640,7 +640,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testCopy() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
         LongMatrix copy = matrix.copy();
 
         Assertions.assertEquals(matrix.rowCount(), copy.rowCount());
@@ -655,7 +655,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testCopyRows() {
         long[][] a = { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
         LongMatrix copy = matrix.copyRows(1, 3);
 
         Assertions.assertEquals(2, copy.rowCount());
@@ -671,7 +671,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testCopyRegion() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
         LongMatrix copy = matrix.copyRegion(1, 3, 0, 2);
 
         Assertions.assertEquals(2, copy.rowCount());
@@ -685,7 +685,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testCopyRangesEmpty_returnsEmptyMatrix() {
         // Regression: copyRows(from, from) on a matrix with columns > 0 must not throw.
-        LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+        LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
 
         LongMatrix empty = m.copyRows(0, 0);
         Assertions.assertEquals(0, empty.rowCount());
@@ -701,9 +701,9 @@ class LongMatrixTest extends TestBase {
     }
 
     @Test
-    public void testExtend() {
+    public void testPad() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         LongMatrix extended = matrix.resize(3, 3);
         Assertions.assertEquals(3, extended.rowCount());
@@ -719,9 +719,9 @@ class LongMatrixTest extends TestBase {
     }
 
     @Test
-    public void testExtendWithDefaultValue() {
+    public void testPadWithDefaultValue() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         LongMatrix extended = matrix.resize(3, 3, -1L);
         Assertions.assertEquals(-1L, extended.get(2, 2));
@@ -733,11 +733,11 @@ class LongMatrixTest extends TestBase {
     }
 
     @Test
-    public void testExtendInAllDirections() {
+    public void testPadInAllDirections() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
-        LongMatrix extended = matrix.extend(1, 1, 1, 1);
+        LongMatrix extended = matrix.pad(1, 1, 1, 1);
         Assertions.assertEquals(4, extended.rowCount());
         Assertions.assertEquals(4, extended.columnCount());
         Assertions.assertEquals(1L, extended.get(1, 1));
@@ -746,24 +746,24 @@ class LongMatrixTest extends TestBase {
     }
 
     @Test
-    public void testExtendInAllDirectionsWithDefaultValue() {
+    public void testPadInAllDirectionsWithDefaultValue() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
-        LongMatrix extended = matrix.extend(1, 1, 1, 1, 99L);
+        LongMatrix extended = matrix.pad(1, 1, 1, 1, 99L);
         Assertions.assertEquals(99L, extended.get(0, 0));
         Assertions.assertEquals(99L, extended.get(0, 3));
         Assertions.assertEquals(99L, extended.get(3, 0));
         Assertions.assertEquals(99L, extended.get(3, 3));
         Assertions.assertEquals(1L, extended.get(1, 1));
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.extend(-1, 0, 0, 0, 0L));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.pad(-1, 0, 0, 0, 0L));
     }
 
     @Test
     public void testReverseH() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         matrix.flipHorizontallyInPlace();
         Assertions.assertEquals(3L, matrix.get(0, 0));
@@ -775,7 +775,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testReverseV() {
         long[][] a = { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         matrix.flipVerticallyInPlace();
         Assertions.assertEquals(5L, matrix.get(0, 0));
@@ -787,7 +787,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testFlipH() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         LongMatrix flipped = matrix.flipHorizontally();
         Assertions.assertEquals(3L, flipped.get(0, 0));
@@ -798,7 +798,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testFlipV() {
         long[][] a = { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         LongMatrix flipped = matrix.flipVertically();
         Assertions.assertEquals(5L, flipped.get(0, 0));
@@ -809,7 +809,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testRotate90() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         LongMatrix rotated = matrix.rotate90();
         Assertions.assertEquals(2, rotated.rowCount());
@@ -823,7 +823,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testRotate180() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         LongMatrix rotated = matrix.rotate180();
         Assertions.assertEquals(2, rotated.rowCount());
@@ -837,7 +837,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testRotate270() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         LongMatrix rotated = matrix.rotate270();
         Assertions.assertEquals(2, rotated.rowCount());
@@ -851,7 +851,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testTranspose() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         LongMatrix transposed = matrix.transpose();
         Assertions.assertEquals(3, transposed.rowCount());
@@ -865,7 +865,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testReshape() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         LongMatrix reshaped = matrix.reshape(3, 2);
         Assertions.assertEquals(3, reshaped.rowCount());
@@ -875,7 +875,7 @@ class LongMatrixTest extends TestBase {
         Assertions.assertEquals(3L, reshaped.get(1, 0));
         Assertions.assertEquals(4L, reshaped.get(1, 1));
 
-        LongMatrix empty = LongMatrix.empty().reshape(2, 3);
+        LongMatrix empty = LongMatrix.empty().reshapeAndPad(2, 3);
         Assertions.assertEquals(2, empty.rowCount());
         Assertions.assertEquals(3, empty.columnCount());
 
@@ -887,7 +887,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testRepeatElements() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         LongMatrix repeated = matrix.repeatElements(2, 3);
         Assertions.assertEquals(4, repeated.rowCount());
@@ -905,7 +905,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testTile() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         LongMatrix repeated = matrix.tile(2, 3);
         Assertions.assertEquals(4, repeated.rowCount());
@@ -923,7 +923,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testFlatten() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         LongList flat = matrix.flatten();
         Assertions.assertEquals(6, flat.size());
@@ -938,7 +938,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testFlatOp() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         List<Long> collected = new ArrayList<>();
         matrix.mutateFlattened(row -> {
@@ -956,8 +956,8 @@ class LongMatrixTest extends TestBase {
     public void testVstack() {
         long[][] a = { { 1L, 2L, 3L } };
         long[][] b = { { 4L, 5L, 6L }, { 7L, 8L, 9L } };
-        LongMatrix matrixA = LongMatrix.of(a);
-        LongMatrix matrixB = LongMatrix.of(b);
+        LongMatrix matrixA = LongMatrix.wrap(a);
+        LongMatrix matrixB = LongMatrix.wrap(b);
 
         LongMatrix stacked = matrixA.stackVertically(matrixB);
         Assertions.assertEquals(3, stacked.rowCount());
@@ -966,7 +966,7 @@ class LongMatrixTest extends TestBase {
         Assertions.assertEquals(4L, stacked.get(1, 0));
         Assertions.assertEquals(9L, stacked.get(2, 2));
 
-        LongMatrix differentCols = LongMatrix.of(new long[][] { { 1L, 2L } });
+        LongMatrix differentCols = LongMatrix.wrap(new long[][] { { 1L, 2L } });
         Assertions.assertThrows(IllegalArgumentException.class, () -> matrixA.stackVertically(differentCols));
     }
 
@@ -974,8 +974,8 @@ class LongMatrixTest extends TestBase {
     public void testHstack() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
         long[][] b = { { 5L }, { 6L } };
-        LongMatrix matrixA = LongMatrix.of(a);
-        LongMatrix matrixB = LongMatrix.of(b);
+        LongMatrix matrixA = LongMatrix.wrap(a);
+        LongMatrix matrixB = LongMatrix.wrap(b);
 
         LongMatrix stacked = matrixA.stackHorizontally(matrixB);
         Assertions.assertEquals(2, stacked.rowCount());
@@ -984,7 +984,7 @@ class LongMatrixTest extends TestBase {
         Assertions.assertEquals(5L, stacked.get(0, 2));
         Assertions.assertEquals(6L, stacked.get(1, 2));
 
-        LongMatrix differentRows = LongMatrix.of(new long[][] { { 1L } });
+        LongMatrix differentRows = LongMatrix.wrap(new long[][] { { 1L } });
         Assertions.assertThrows(IllegalArgumentException.class, () -> matrixA.stackHorizontally(differentRows));
     }
 
@@ -992,8 +992,8 @@ class LongMatrixTest extends TestBase {
     public void testAdd() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
         long[][] b = { { 5L, 6L }, { 7L, 8L } };
-        LongMatrix matrixA = LongMatrix.of(a);
-        LongMatrix matrixB = LongMatrix.of(b);
+        LongMatrix matrixA = LongMatrix.wrap(a);
+        LongMatrix matrixB = LongMatrix.wrap(b);
 
         LongMatrix sum = matrixA.add(matrixB);
         Assertions.assertEquals(6L, sum.get(0, 0));
@@ -1001,7 +1001,7 @@ class LongMatrixTest extends TestBase {
         Assertions.assertEquals(10L, sum.get(1, 0));
         Assertions.assertEquals(12L, sum.get(1, 1));
 
-        LongMatrix differentShape = LongMatrix.of(new long[][] { { 1L } });
+        LongMatrix differentShape = LongMatrix.wrap(new long[][] { { 1L } });
         Assertions.assertThrows(IllegalArgumentException.class, () -> matrixA.add(differentShape));
     }
 
@@ -1009,8 +1009,8 @@ class LongMatrixTest extends TestBase {
     public void testSubtract() {
         long[][] a = { { 5L, 6L }, { 7L, 8L } };
         long[][] b = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrixA = LongMatrix.of(a);
-        LongMatrix matrixB = LongMatrix.of(b);
+        LongMatrix matrixA = LongMatrix.wrap(a);
+        LongMatrix matrixB = LongMatrix.wrap(b);
 
         LongMatrix diff = matrixA.subtract(matrixB);
         Assertions.assertEquals(4L, diff.get(0, 0));
@@ -1018,7 +1018,7 @@ class LongMatrixTest extends TestBase {
         Assertions.assertEquals(4L, diff.get(1, 0));
         Assertions.assertEquals(4L, diff.get(1, 1));
 
-        LongMatrix differentShape = LongMatrix.of(new long[][] { { 1L } });
+        LongMatrix differentShape = LongMatrix.wrap(new long[][] { { 1L } });
         Assertions.assertThrows(IllegalArgumentException.class, () -> matrixA.subtract(differentShape));
     }
 
@@ -1026,8 +1026,8 @@ class LongMatrixTest extends TestBase {
     public void testMultiply() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
         long[][] b = { { 5L, 6L }, { 7L, 8L } };
-        LongMatrix matrixA = LongMatrix.of(a);
-        LongMatrix matrixB = LongMatrix.of(b);
+        LongMatrix matrixA = LongMatrix.wrap(a);
+        LongMatrix matrixB = LongMatrix.wrap(b);
 
         LongMatrix product = matrixA.matrixMultiply(matrixB);
         Assertions.assertEquals(2, product.rowCount());
@@ -1037,14 +1037,14 @@ class LongMatrixTest extends TestBase {
         Assertions.assertEquals(43L, product.get(1, 0));
         Assertions.assertEquals(50L, product.get(1, 1));
 
-        LongMatrix incompatible = LongMatrix.of(new long[][] { { 1L, 2L, 3L } });
+        LongMatrix incompatible = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L } });
         Assertions.assertThrows(IllegalArgumentException.class, () -> matrixA.matrixMultiply(incompatible));
     }
 
     @Test
     public void testBoxed() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         Matrix<Long> boxed = matrix.boxed();
         Assertions.assertEquals(2, boxed.rowCount());
@@ -1056,7 +1056,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testToIntMatrix() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         IntMatrix intMatrix = matrix.toIntMatrix();
         assertEquals(2, intMatrix.rowCount());
@@ -1068,7 +1068,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testToFloatMatrix() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         FloatMatrix floatMatrix = matrix.toFloatMatrix();
         Assertions.assertEquals(2, floatMatrix.rowCount());
@@ -1080,7 +1080,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testToDoubleMatrix() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         DoubleMatrix doubleMatrix = matrix.toDoubleMatrix();
         Assertions.assertEquals(2, doubleMatrix.rowCount());
@@ -1093,8 +1093,8 @@ class LongMatrixTest extends TestBase {
     public void testZipWith() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
         long[][] b = { { 5L, 6L }, { 7L, 8L } };
-        LongMatrix matrixA = LongMatrix.of(a);
-        LongMatrix matrixB = LongMatrix.of(b);
+        LongMatrix matrixA = LongMatrix.wrap(a);
+        LongMatrix matrixB = LongMatrix.wrap(b);
 
         LongMatrix result = matrixA.zipWith(matrixB, Math::max);
         Assertions.assertEquals(5L, result.get(0, 0));
@@ -1102,7 +1102,7 @@ class LongMatrixTest extends TestBase {
         Assertions.assertEquals(7L, result.get(1, 0));
         Assertions.assertEquals(8L, result.get(1, 1));
 
-        LongMatrix differentShape = LongMatrix.of(new long[][] { { 1L } });
+        LongMatrix differentShape = LongMatrix.wrap(new long[][] { { 1L } });
         Assertions.assertThrows(IllegalArgumentException.class, () -> matrixA.zipWith(differentShape, (x, y) -> x));
     }
 
@@ -1111,9 +1111,9 @@ class LongMatrixTest extends TestBase {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
         long[][] b = { { 5L, 6L }, { 7L, 8L } };
         long[][] c = { { 9L, 10L }, { 11L, 12L } };
-        LongMatrix matrixA = LongMatrix.of(a);
-        LongMatrix matrixB = LongMatrix.of(b);
-        LongMatrix matrixC = LongMatrix.of(c);
+        LongMatrix matrixA = LongMatrix.wrap(a);
+        LongMatrix matrixB = LongMatrix.wrap(b);
+        LongMatrix matrixC = LongMatrix.wrap(c);
 
         LongMatrix result = matrixA.zipWith(matrixB, matrixC, (x, y, z) -> (x + y + z) / 3);
         Assertions.assertEquals(5L, result.get(0, 0));
@@ -1125,7 +1125,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testStreamLU2RD() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         long[] diagonal = matrix.mainDiagonalStream().toArray();
         Assertions.assertArrayEquals(new long[] { 1L, 5L, 9L }, diagonal);
@@ -1133,14 +1133,14 @@ class LongMatrixTest extends TestBase {
         LongMatrix empty = LongMatrix.empty();
         Assertions.assertTrue(empty.mainDiagonalStream().toList().isEmpty());
 
-        LongMatrix nonSquare = LongMatrix.of(new long[][] { { 1L, 2L } });
+        LongMatrix nonSquare = LongMatrix.wrap(new long[][] { { 1L, 2L } });
         Assertions.assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalStream());
     }
 
     @Test
     public void testStreamRU2LD() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         long[] diagonal = matrix.antiDiagonalStream().toArray();
         Assertions.assertArrayEquals(new long[] { 3L, 5L, 7L }, diagonal);
@@ -1149,7 +1149,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testStreamH() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         long[] all = matrix.rowMajorStream().toArray();
         Assertions.assertArrayEquals(new long[] { 1L, 2L, 3L, 4L, 5L, 6L }, all);
@@ -1161,7 +1161,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testStreamHRow() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         long[] row1 = matrix.rowMajorStream(1).toArray();
         Assertions.assertArrayEquals(new long[] { 4L, 5L, 6L }, row1);
@@ -1170,7 +1170,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testStreamHRange() {
         long[][] a = { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         long[] range = matrix.rowMajorStream(1, 3).toArray();
         Assertions.assertArrayEquals(new long[] { 3L, 4L, 5L, 6L }, range);
@@ -1182,7 +1182,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testStreamV() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         long[] all = matrix.columnMajorStream().toArray();
         Assertions.assertArrayEquals(new long[] { 1L, 4L, 2L, 5L, 3L, 6L }, all);
@@ -1191,7 +1191,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testStreamVColumn() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         long[] col1 = matrix.columnMajorStream(1).toArray();
         Assertions.assertArrayEquals(new long[] { 2L, 5L }, col1);
@@ -1200,7 +1200,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testStreamVRange() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         long[] range = matrix.columnMajorStream(1, 3).toArray();
         Assertions.assertArrayEquals(new long[] { 2L, 5L, 3L, 6L }, range);
@@ -1209,7 +1209,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testStreamR() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         List<LongStream> rows = matrix.rowStreams().toList();
         Assertions.assertEquals(2, rows.size());
@@ -1220,7 +1220,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testStreamRRange() {
         long[][] a = { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         List<LongStream> rows = matrix.rowStreams(1, 3).toList();
         Assertions.assertEquals(2, rows.size());
@@ -1231,7 +1231,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testStreamC() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         List<LongStream> columnCount = matrix.columnStreams().toList();
         Assertions.assertEquals(3, columnCount.size());
@@ -1243,7 +1243,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testStreamCRange() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         List<LongStream> columnCount = matrix.columnStreams(1, 3).toList();
         Assertions.assertEquals(2, columnCount.size());
@@ -1253,7 +1253,7 @@ class LongMatrixTest extends TestBase {
 
     @Test
     public void testLength() {
-        LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+        LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
         // length is protected, cannot test directly from here
         // It's tested indirectly through other operations
         Assertions.assertEquals(2, matrix.columnCount());
@@ -1262,7 +1262,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testForEach() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         List<Long> collected = new ArrayList<>();
         matrix.forEach(val -> collected.add(val));
@@ -1277,7 +1277,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testForEachWithRange() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         List<Long> collected = new ArrayList<>();
         matrix.forEach(1, 3, 1, 3, val -> collected.add(val));
@@ -1295,7 +1295,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testForEachNullAction() {
         long[][] a = { { 1L, 2 }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.forEach((Throwables.LongConsumer<RuntimeException>) null));
         Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.forEach(0, 1, 0, 2, (Throwables.LongConsumer<RuntimeException>) null));
@@ -1304,7 +1304,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testPrintln() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         assertFalse(matrix.isEmpty());
         org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> matrix.println());
@@ -1313,8 +1313,8 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testHashCode() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix1 = LongMatrix.of(a);
-        LongMatrix matrix2 = LongMatrix.of(a.clone());
+        LongMatrix matrix1 = LongMatrix.wrap(a);
+        LongMatrix matrix2 = LongMatrix.wrap(a.clone());
 
         // Same content should have same hash code
         Assertions.assertEquals(matrix1.hashCode(), matrix2.hashCode());
@@ -1323,10 +1323,10 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testEquals() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix1 = LongMatrix.of(a);
-        LongMatrix matrix2 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-        LongMatrix matrix3 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 5L } });
-        LongMatrix matrix4 = LongMatrix.of(new long[][] { { 1L, 2L } });
+        LongMatrix matrix1 = LongMatrix.wrap(a);
+        LongMatrix matrix2 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+        LongMatrix matrix3 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 5L } });
+        LongMatrix matrix4 = LongMatrix.wrap(new long[][] { { 1L, 2L } });
 
         Assertions.assertEquals(matrix1, matrix1); // same instance
         Assertions.assertEquals(matrix1, matrix2); // same content
@@ -1339,7 +1339,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testToString() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
-        LongMatrix matrix = LongMatrix.of(a);
+        LongMatrix matrix = LongMatrix.wrap(a);
 
         String str = matrix.toString();
         Assertions.assertNotNull(str);
@@ -1375,13 +1375,13 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrix_get() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             assertEquals(2L, matrix.get(0, 1));
         }
 
         @Test
         public void testLongMatrix_above() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             u.OptionalLong value = matrix.valueAbove(1, 0);
             assertEquals(1L, value.get());
             u.OptionalLong empty = matrix.valueAbove(0, 0);
@@ -1390,7 +1390,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrix_below() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             u.OptionalLong value = matrix.valueBelow(0, 0);
             assertEquals(3L, value.get());
             u.OptionalLong empty = matrix.valueBelow(1, 0);
@@ -1399,7 +1399,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrix_left() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             u.OptionalLong value = matrix.valueLeft(0, 1);
             assertEquals(1L, value.get());
             u.OptionalLong empty = matrix.valueLeft(0, 0);
@@ -1408,7 +1408,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrix_right() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             u.OptionalLong value = matrix.valueRight(0, 0);
             assertEquals(2L, value.get());
             u.OptionalLong empty = matrix.valueRight(0, 1);
@@ -1417,21 +1417,21 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrix_rowView() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             long[] firstRow = matrix.rowView(0);
             assertArrayEquals(new long[] { 1L, 2L, 3L }, firstRow);
         }
 
         @Test
         public void testLongMatrix_columnCopy() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             long[] firstColumn = matrix.columnCopy(0);
             assertArrayEquals(new long[] { 1L, 4L }, firstColumn);
         }
 
         @Test
         public void testLongMatrix_updateRow() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             matrix.updateRow(0, x -> x * 2);
             assertArrayEquals(new long[] { 2L, 4L, 6L }, matrix.rowView(0));
             assertArrayEquals(new long[] { 4L, 5L, 6L }, matrix.rowView(1));
@@ -1439,7 +1439,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrix_updateColumn() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
             matrix.updateColumn(0, x -> x + 10L);
             assertEquals(11L, matrix.get(0, 0));
             assertEquals(2L, matrix.get(0, 1));
@@ -1449,14 +1449,14 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrix_mainDiagonalCopy() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             long[] diagonal = matrix.mainDiagonalCopy();
             assertArrayEquals(new long[] { 1L, 5L, 9L }, diagonal);
         }
 
         @Test
         public void testLongMatrix_updateMainDiagonal() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             matrix.updateMainDiagonal(x -> x * x);
             assertEquals(1L, matrix.get(0, 0));
             assertEquals(2L, matrix.get(0, 1));
@@ -1466,14 +1466,14 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrix_antiDiagonalCopy() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             long[] diagonal = matrix.antiDiagonalCopy();
             assertArrayEquals(new long[] { 3L, 5L, 7L }, diagonal);
         }
 
         @Test
         public void testLongMatrix_updateAntiDiagonal() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             matrix.updateAntiDiagonal(x -> -x);
             assertEquals(1L, matrix.get(0, 0));
             assertEquals(-2L, matrix.get(0, 1));
@@ -1483,7 +1483,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrix_updateAll() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             matrix.updateAll(x -> x * 2);
             assertEquals(2L, matrix.get(0, 0));
             assertEquals(4L, matrix.get(0, 1));
@@ -1493,7 +1493,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrix_replaceIf() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { -1L, 2L, -3L }, { 4L, -5L, 6L } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { -1L, 2L, -3L }, { 4L, -5L, 6L } });
             matrix.replaceIf(x -> x < 0, 0L);
             assertEquals(0L, matrix.get(0, 0));
             assertEquals(2L, matrix.get(0, 1));
@@ -1505,7 +1505,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrix_fill() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } });
             matrix.fill(5L);
             assertEquals(5L, matrix.get(0, 0));
             assertEquals(5L, matrix.get(1, 1));
@@ -1513,7 +1513,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrix_resize() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } });
             LongMatrix extended = matrix.resize(3, 3);
             assertEquals(1L, extended.get(0, 0));
             assertEquals(2L, extended.get(0, 1));
@@ -1523,7 +1523,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrix_resizeWithFill() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } });
             LongMatrix extended = matrix.resize(3, 4, 9L);
             assertEquals(1L, extended.get(0, 0));
             assertEquals(9L, extended.get(0, 2));
@@ -1537,7 +1537,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrix_flipHorizontallyInPlace() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             matrix.flipHorizontallyInPlace();
             assertArrayEquals(new long[] { 3, 2, 1 }, matrix.rowView(0));
             assertArrayEquals(new long[] { 6, 5, 4 }, matrix.rowView(1));
@@ -1545,7 +1545,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrix_flipVerticallyInPlace() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             matrix.flipVerticallyInPlace();
             assertArrayEquals(new long[] { 7, 8, 9 }, matrix.rowView(0));
             assertArrayEquals(new long[] { 4, 5, 6 }, matrix.rowView(1));
@@ -1554,7 +1554,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrix_repeatElements() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } });
             LongMatrix repeated = matrix.repeatElements(2, 3);
             assertEquals(4, repeated.rowCount());
             assertEquals(6, repeated.columnCount());
@@ -1566,7 +1566,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrix_tile() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } });
             LongMatrix tiled = matrix.tile(2, 3);
             assertEquals(4, tiled.rowCount());
             assertEquals(6, tiled.columnCount());
@@ -1576,14 +1576,14 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrix_flatten() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongList list = matrix.flatten();
             assertEquals(LongList.of(1L, 2L, 3L, 4L), list);
         }
 
         @Test
         public void testLongMatrix_mutateFlattened() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 5, 3 }, { 4, 1 } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 5, 3 }, { 4, 1 } });
             matrix.mutateFlattened(arr -> java.util.Arrays.sort(arr));
             assertEquals(1L, matrix.get(0, 0));
             assertEquals(3L, matrix.get(0, 1));
@@ -1593,8 +1593,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrix_stackVertically() {
-            LongMatrix matrix1 = LongMatrix.of(new long[][] { { 1, 2, 3 } });
-            LongMatrix matrix2 = LongMatrix.of(new long[][] { { 4, 5, 6 }, { 7, 8, 9 } });
+            LongMatrix matrix1 = LongMatrix.wrap(new long[][] { { 1, 2, 3 } });
+            LongMatrix matrix2 = LongMatrix.wrap(new long[][] { { 4, 5, 6 }, { 7, 8, 9 } });
             LongMatrix stacked = matrix1.stackVertically(matrix2);
             assertEquals(3, stacked.rowCount());
             assertArrayEquals(new long[] { 1, 2, 3 }, stacked.rowView(0));
@@ -1604,8 +1604,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrix_stackHorizontally() {
-            LongMatrix matrix1 = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
-            LongMatrix matrix2 = LongMatrix.of(new long[][] { { 5 }, { 6 } });
+            LongMatrix matrix1 = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } });
+            LongMatrix matrix2 = LongMatrix.wrap(new long[][] { { 5 }, { 6 } });
             LongMatrix stacked = matrix1.stackHorizontally(matrix2);
             assertEquals(2, stacked.rowCount());
             assertEquals(3, stacked.columnCount());
@@ -1615,8 +1615,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrix_add() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 5, 6 }, { 7, 8 } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 5, 6 }, { 7, 8 } });
             LongMatrix sum = m1.add(m2);
             assertEquals(6L, sum.get(0, 0));
             assertEquals(8L, sum.get(0, 1));
@@ -1626,8 +1626,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrix_subtract() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 5, 6 }, { 7, 8 } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 5, 6 }, { 7, 8 } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } });
             LongMatrix diff = m1.subtract(m2);
             assertEquals(4L, diff.get(0, 0));
             assertEquals(4L, diff.get(0, 1));
@@ -1637,8 +1637,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrix_matrixMultiply() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 5, 6 }, { 7, 8 } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 5, 6 }, { 7, 8 } });
             LongMatrix product = m1.matrixMultiply(m2);
             assertEquals(19L, product.get(0, 0));
             assertEquals(22L, product.get(0, 1));
@@ -1648,29 +1648,29 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrix_horizontalStreamSum() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             long sum = matrix.rowMajorStream().sum();
             assertEquals(21L, sum);
         }
 
         @Test
         public void testLongMatrix_horizontalStreamRow() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             long rowSum = matrix.rowMajorStream(1).sum();
             assertEquals(15L, rowSum);
         }
 
         @Test
         public void testLongMatrix_horizontalStreamRange() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
             long[] subset = matrix.rowMajorStream(0, 2).toArray();
             assertArrayEquals(new long[] { 1, 2, 3, 4 }, subset);
         }
 
         @Test
         public void testLongMatrix_zipWith() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 5, 6 }, { 7, 8 } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 5, 6 }, { 7, 8 } });
             LongMatrix max = m1.zipWith(m2, Math::max);
             assertEquals(5L, max.get(0, 0));
             assertEquals(6L, max.get(0, 1));
@@ -1680,9 +1680,9 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrix_zipWith3() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 5, 6 }, { 7, 8 } });
-            LongMatrix m3 = LongMatrix.of(new long[][] { { 9, 10 }, { 11, 12 } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 5, 6 }, { 7, 8 } });
+            LongMatrix m3 = LongMatrix.wrap(new long[][] { { 9, 10 }, { 11, 12 } });
             LongMatrix average = m1.zipWith(m2, m3, (a, b, c) -> (a + b + c) / 3);
             assertEquals(5L, average.get(0, 0));
             assertEquals(6L, average.get(0, 1));
@@ -1706,7 +1706,7 @@ class LongMatrixTest extends TestBase {
         public void testLongMatrixForEach() {
             // LongMatrix.java: matrix.forEach(value -> System.out.print(value + " "));
             // Output: 1 2 3 4
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } });
             List<Long> values = new ArrayList<>();
             matrix.forEach(value -> values.add(value));
             assertEquals(4, values.size());
@@ -1720,7 +1720,7 @@ class LongMatrixTest extends TestBase {
         public void testLongMatrixForEachWithRange() {
             // LongMatrix.java: matrix.forEach(1, 3, 1, 3, value -> System.out.print(value + " "));
             // Output: 5 6 8 9 (elements from rows 1-2, columns 1-2)
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             List<Long> values = new ArrayList<>();
             matrix.forEach(1, 3, 1, 3, value -> values.add(value));
             assertEquals(4, values.size());
@@ -1749,7 +1749,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrixToString() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             assertEquals("[[1, 2, 3], [4, 5, 6]]", matrix.toString());
         }
     }
@@ -1949,7 +1949,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testUnbox() {
             Long[][] boxed = { { 1L, 2L }, { 3L, 4L } };
-            Matrix<Long> boxedMatrix = Matrix.of(boxed);
+            Matrix<Long> boxedMatrix = Matrix.wrap(boxed);
             LongMatrix unboxed = LongMatrix.unbox(boxedMatrix);
             assertEquals(2, unboxed.rowCount());
             assertEquals(2, unboxed.columnCount());
@@ -1960,7 +1960,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testUnbox_withNullValues() {
             Long[][] boxed = { { 1L, null }, { null, 4L } };
-            Matrix<Long> boxedMatrix = Matrix.of(boxed);
+            Matrix<Long> boxedMatrix = Matrix.wrap(boxed);
             LongMatrix unboxed = LongMatrix.unbox(boxedMatrix);
             assertEquals(1L, unboxed.get(0, 0));
             assertEquals(0L, unboxed.get(0, 1)); // null -> 0
@@ -1972,7 +1972,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testComponentType() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L } });
             assertEquals(long.class, m.elementType());
         }
 
@@ -1980,7 +1980,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testGet() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             assertEquals(1L, m.get(0, 0));
             assertEquals(5L, m.get(1, 1));
             assertEquals(6L, m.get(1, 2));
@@ -1988,7 +1988,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testGet_outOfBounds() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             assertThrows(ArrayIndexOutOfBoundsException.class, () -> m.get(-1, 0));
             assertThrows(ArrayIndexOutOfBoundsException.class, () -> m.get(2, 0));
             assertThrows(ArrayIndexOutOfBoundsException.class, () -> m.get(0, -1));
@@ -1997,7 +1997,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testGetWithPoint() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             assertEquals(1L, m.get(Point.of(0, 0)));
             assertEquals(4L, m.get(Point.of(1, 1)));
             assertEquals(2L, m.get(Point.of(0, 1)));
@@ -2005,7 +2005,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testSet() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.set(0, 0, 10L);
             assertEquals(10L, m.get(0, 0));
 
@@ -2015,21 +2015,21 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testSet_outOfBounds() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             assertThrows(ArrayIndexOutOfBoundsException.class, () -> m.set(-1, 0, 0L));
             assertThrows(ArrayIndexOutOfBoundsException.class, () -> m.set(2, 0, 0L));
         }
 
         @Test
         public void testSetWithPoint() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.set(Point.of(0, 0), 50L);
             assertEquals(50L, m.get(Point.of(0, 0)));
         }
 
         @Test
         public void testSet_withLargeValues() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.set(0, 0, Long.MAX_VALUE);
             m.set(1, 1, Long.MIN_VALUE);
             assertEquals(Long.MAX_VALUE, m.get(0, 0));
@@ -2040,7 +2040,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testUpOf() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
 
             OptionalLong up = m.valueAbove(1, 0);
             assertTrue(up.isPresent());
@@ -2053,7 +2053,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testDownOf() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
 
             OptionalLong down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
@@ -2066,7 +2066,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLeftOf() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
 
             OptionalLong left = m.valueLeft(0, 1);
             assertTrue(left.isPresent());
@@ -2079,7 +2079,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testRightOf() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
 
             OptionalLong right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
@@ -2094,21 +2094,21 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testRow() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             assertArrayEquals(new long[] { 1L, 2L, 3L }, m.rowView(0));
             assertArrayEquals(new long[] { 4L, 5L, 6L }, m.rowView(1));
         }
 
         @Test
         public void testRow_outOfBounds() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(-1));
             assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(2));
         }
 
         @Test
         public void testColumn() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             assertArrayEquals(new long[] { 1L, 4L }, m.columnCopy(0));
             assertArrayEquals(new long[] { 2L, 5L }, m.columnCopy(1));
             assertArrayEquals(new long[] { 3L, 6L }, m.columnCopy(2));
@@ -2116,14 +2116,14 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testColumn_outOfBounds() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(-1));
             assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(2));
         }
 
         @Test
         public void testSetRow() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.setRow(0, new long[] { 10L, 20L });
             assertArrayEquals(new long[] { 10L, 20L }, m.rowView(0));
             assertArrayEquals(new long[] { 3L, 4L }, m.rowView(1)); // unchanged
@@ -2131,14 +2131,14 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testSetRow_wrongSize() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             assertThrows(IllegalArgumentException.class, () -> m.setRow(0, new long[] { 1L }));
             assertThrows(IllegalArgumentException.class, () -> m.setRow(0, new long[] { 1L, 2L, 3L }));
         }
 
         @Test
         public void testSetColumn() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.setColumn(0, new long[] { 10L, 20L });
             assertArrayEquals(new long[] { 10L, 20L }, m.columnCopy(0));
             assertArrayEquals(new long[] { 2L, 4L }, m.columnCopy(1)); // unchanged
@@ -2146,14 +2146,14 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testSetColumn_wrongSize() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             assertThrows(IllegalArgumentException.class, () -> m.setColumn(0, new long[] { 1L }));
             assertThrows(IllegalArgumentException.class, () -> m.setColumn(0, new long[] { 1L, 2L, 3L }));
         }
 
         @Test
         public void testUpdateRow() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.updateRow(0, x -> x * 2L);
             assertArrayEquals(new long[] { 2L, 4L }, m.rowView(0));
             assertArrayEquals(new long[] { 3L, 4L }, m.rowView(1)); // unchanged
@@ -2161,7 +2161,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testUpdateColumn() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.updateColumn(0, x -> x + 10L);
             assertArrayEquals(new long[] { 11L, 13L }, m.columnCopy(0));
             assertArrayEquals(new long[] { 2L, 4L }, m.columnCopy(1)); // unchanged
@@ -2171,19 +2171,19 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testGetLU2RD() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             assertArrayEquals(new long[] { 1L, 5L, 9L }, m.mainDiagonalCopy());
         }
 
         @Test
         public void testGetLU2RD_nonSquare() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
         }
 
         @Test
         public void testSetLU2RD() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             m.setMainDiagonal(new long[] { 10L, 20L, 30L });
             assertEquals(10L, m.get(0, 0));
             assertEquals(20L, m.get(1, 1));
@@ -2192,19 +2192,19 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testSetLU2RD_nonSquare() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             assertThrows(IllegalStateException.class, () -> m.setMainDiagonal(new long[] { 1L }));
         }
 
         @Test
         public void testSetLU2RD_arrayTooShort() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             assertThrows(IllegalArgumentException.class, () -> m.setMainDiagonal(new long[] { 1L, 2L }));
         }
 
         @Test
         public void testUpdateLU2RD() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             m.updateMainDiagonal(x -> x * 10L);
             assertEquals(10L, m.get(0, 0));
             assertEquals(50L, m.get(1, 1));
@@ -2214,25 +2214,25 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testUpdateLU2RD_nonSquare() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             assertThrows(IllegalStateException.class, () -> m.updateMainDiagonal(x -> x * 2L));
         }
 
         @Test
         public void testGetRU2LD() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             assertArrayEquals(new long[] { 3L, 5L, 7L }, m.antiDiagonalCopy());
         }
 
         @Test
         public void testGetRU2LD_nonSquare() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
         }
 
         @Test
         public void testSetRU2LD() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             m.setAntiDiagonal(new long[] { 10L, 20L, 30L });
             assertEquals(10L, m.get(0, 2));
             assertEquals(20L, m.get(1, 1));
@@ -2241,19 +2241,19 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testSetRU2LD_nonSquare() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             assertThrows(IllegalStateException.class, () -> m.setAntiDiagonal(new long[] { 1L }));
         }
 
         @Test
         public void testSetRU2LD_arrayTooShort() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             assertThrows(IllegalArgumentException.class, () -> m.setAntiDiagonal(new long[] { 1L, 2L }));
         }
 
         @Test
         public void testUpdateRU2LD() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             m.updateAntiDiagonal(x -> x * 10L);
             assertEquals(30L, m.get(0, 2));
             assertEquals(50L, m.get(1, 1));
@@ -2263,7 +2263,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testUpdateRU2LD_nonSquare() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             assertThrows(IllegalStateException.class, () -> m.updateAntiDiagonal(x -> x * 2L));
         }
 
@@ -2271,7 +2271,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testUpdateAll() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.updateAll(x -> x * 2L);
             assertEquals(2L, m.get(0, 0));
             assertEquals(4L, m.get(0, 1));
@@ -2281,7 +2281,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testUpdateAll_withIndices() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 0L, 0L }, { 0L, 0L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 0L, 0L }, { 0L, 0L } });
             m.updateAll((i, j) -> (long) (i * 10 + j));
             assertEquals(0L, m.get(0, 0));
             assertEquals(1L, m.get(0, 1));
@@ -2291,7 +2291,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testReplaceIf() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             m.replaceIf(x -> x > 3L, 0L);
             assertEquals(1L, m.get(0, 0));
             assertEquals(2L, m.get(0, 1));
@@ -2303,7 +2303,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testReplaceIf_withIndices() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             m.replaceIf((i, j) -> i == j, 0L); // Replace diagonal
             assertEquals(0L, m.get(0, 0));
             assertEquals(0L, m.get(1, 1));
@@ -2313,7 +2313,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testMap() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix result = m.map(x -> x * 2L);
             assertEquals(2L, result.get(0, 0));
             assertEquals(4L, result.get(0, 1));
@@ -2326,7 +2326,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testMapToInt() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             IntMatrix result = m.mapToInt(x -> (int) (x * 10));
             assertEquals(10, result.get(0, 0));
             assertEquals(40, result.get(1, 1));
@@ -2334,7 +2334,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testMapToDouble() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             DoubleMatrix result = m.mapToDouble(x -> x * 0.1);
             assertEquals(0.1, result.get(0, 0), 0.0001);
             assertEquals(0.4, result.get(1, 1), 0.0001);
@@ -2342,7 +2342,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testMapToObj() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             Matrix<String> result = m.mapToObj(x -> "val:" + x, String.class);
             assertEquals("val:1", result.get(0, 0));
             assertEquals("val:4", result.get(1, 1));
@@ -2352,7 +2352,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testFill_withValue() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.fill(99L);
             for (int i = 0; i < m.rowCount(); i++) {
                 for (int j = 0; j < m.columnCount(); j++) {
@@ -2363,7 +2363,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testFill_withArray() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 0L, 0L, 0L }, { 0L, 0L, 0L }, { 0L, 0L, 0L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 0L, 0L, 0L }, { 0L, 0L, 0L }, { 0L, 0L, 0L } });
             long[][] patch = { { 1L, 2L }, { 3L, 4L } };
             m.fill(patch);
             assertEquals(1L, m.get(0, 0));
@@ -2375,7 +2375,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testFill_withArrayAtPosition() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 0L, 0L, 0L }, { 0L, 0L, 0L }, { 0L, 0L, 0L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 0L, 0L, 0L }, { 0L, 0L, 0L }, { 0L, 0L, 0L } });
             long[][] patch = { { 1L, 2L }, { 3L, 4L } };
             m.fill(1, 1, patch);
             assertEquals(0L, m.get(0, 0)); // unchanged
@@ -2387,7 +2387,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testFill_outOfBounds() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             long[][] patch = { { 1L, 2L }, { 3L, 4L } };
             assertThrows(IndexOutOfBoundsException.class, () -> m.fill(-1, 0, patch));
         }
@@ -2396,7 +2396,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testCopy() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix copy = m.copy();
             assertEquals(m.rowCount(), copy.rowCount());
             assertEquals(m.columnCount(), copy.columnCount());
@@ -2410,7 +2410,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testCopyRows() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             LongMatrix subset = m.copyRows(1, 3);
             assertEquals(2, subset.rowCount());
             assertEquals(3, subset.columnCount());
@@ -2420,7 +2420,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testCopyRows_outOfBounds() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             assertThrows(IndexOutOfBoundsException.class, () -> m.copyRows(-1, 2));
             assertThrows(IndexOutOfBoundsException.class, () -> m.copyRows(0, 3));
             assertThrows(IndexOutOfBoundsException.class, () -> m.copyRows(2, 1));
@@ -2428,7 +2428,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testCopyRegion() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             LongMatrix submatrix = m.copyRegion(0, 2, 1, 3);
             assertEquals(2, submatrix.rowCount());
             assertEquals(2, submatrix.columnCount());
@@ -2438,7 +2438,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testCopyRegion_outOfBounds() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             assertThrows(IndexOutOfBoundsException.class, () -> m.copyRegion(0, 2, -1, 2));
             assertThrows(IndexOutOfBoundsException.class, () -> m.copyRegion(0, 2, 0, 3));
         }
@@ -2446,8 +2446,8 @@ class LongMatrixTest extends TestBase {
         // ============ Extend Tests ============
 
         @Test
-        public void testExtend_larger() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+        public void testPad_larger() {
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix extended = m.resize(4, 4);
             assertEquals(4, extended.rowCount());
             assertEquals(4, extended.columnCount());
@@ -2457,8 +2457,8 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testExtend_smaller() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+        public void testPad_smaller() {
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             LongMatrix truncated = m.resize(2, 2);
             assertEquals(2, truncated.rowCount());
             assertEquals(2, truncated.columnCount());
@@ -2467,8 +2467,8 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testExtend_withDefaultValue() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+        public void testPad_withDefaultValue() {
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix extended = m.resize(3, 3, -1L);
             assertEquals(3, extended.rowCount());
             assertEquals(3, extended.columnCount());
@@ -2477,16 +2477,16 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testExtend_withNegativeDimensions() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+        public void testPad_withNegativeDimensions() {
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             assertThrows(IllegalArgumentException.class, () -> m.resize(-1, 3, 0L));
             assertThrows(IllegalArgumentException.class, () -> m.resize(3, -1, 0L));
         }
 
         @Test
-        public void testExtend_directional() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
-            LongMatrix extended = m.extend(1, 1, 2, 2);
+        public void testPad_directional() {
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix extended = m.pad(1, 1, 2, 2);
             assertEquals(5, extended.rowCount()); // 1 + 3 + 1
             assertEquals(7, extended.columnCount()); // 2 + 3 + 2
 
@@ -2499,9 +2499,9 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testExtend_directionalWithDefault() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
-            LongMatrix extended = m.extend(1, 1, 1, 1, -1L);
+        public void testPad_directionalWithDefault() {
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix extended = m.pad(1, 1, 1, 1, -1L);
             assertEquals(5, extended.rowCount());
             assertEquals(5, extended.columnCount());
 
@@ -2514,14 +2514,14 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testExtend_directionalWithNegativeValues() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            assertThrows(IllegalArgumentException.class, () -> m.extend(-1, 1, 1, 1, 0L));
+        public void testPad_directionalWithNegativeValues() {
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            assertThrows(IllegalArgumentException.class, () -> m.pad(-1, 1, 1, 1, 0L));
         }
 
         @Test
         public void testReverseV() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
             m.flipVerticallyInPlace();
             assertEquals(5L, m.get(0, 0));
             assertEquals(6L, m.get(0, 1));
@@ -2532,7 +2532,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testRotate90() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix rotated = m.rotate90();
             assertEquals(2, rotated.rowCount());
             assertEquals(2, rotated.columnCount());
@@ -2544,7 +2544,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testRotate180() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix rotated = m.rotate180();
             assertEquals(2, rotated.rowCount());
             assertEquals(2, rotated.columnCount());
@@ -2557,7 +2557,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testRotate90_verticalMatrix() {
             // Test the rows > columnCount branch (3 rows, 2 columnCount)
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
             LongMatrix rotated = m.rotate90();
             assertEquals(2, rotated.rowCount());
             assertEquals(3, rotated.columnCount());
@@ -2572,7 +2572,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testRotate270_verticalMatrix() {
             // Test the rows > columnCount branch (3 rows, 2 columnCount)
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
             LongMatrix rotated = m.rotate270();
             assertEquals(2, rotated.rowCount());
             assertEquals(3, rotated.columnCount());
@@ -2588,7 +2588,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testTranspose() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             LongMatrix transposed = m.transpose();
             assertEquals(3, transposed.rowCount());
             assertEquals(2, transposed.columnCount());
@@ -2602,7 +2602,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testTranspose_square() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix transposed = m.transpose();
             assertEquals(2, transposed.rowCount());
             assertEquals(2, transposed.columnCount());
@@ -2614,7 +2614,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testTranspose_verticalMatrix() {
             // Test the rows > columnCount branch (3 rows, 2 columnCount)
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
             LongMatrix transposed = m.transpose();
             assertEquals(2, transposed.rowCount());
             assertEquals(3, transposed.columnCount());
@@ -2630,7 +2630,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testReshape() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             LongMatrix reshaped = m.reshape(1, 9);
             assertEquals(1, reshaped.rowCount());
             assertEquals(9, reshaped.columnCount());
@@ -2641,7 +2641,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testReshape_back() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             LongMatrix reshaped = m.reshape(1, 9);
             LongMatrix reshapedBack = reshaped.reshape(3, 3);
             assertEquals(m, reshapedBack);
@@ -2650,7 +2650,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testReshape_empty() {
             LongMatrix empty = LongMatrix.empty();
-            LongMatrix reshaped = empty.reshape(2, 3);
+            LongMatrix reshaped = empty.reshapeAndPad(2, 3);
             assertEquals(2, reshaped.rowCount());
             assertEquals(3, reshaped.columnCount());
         }
@@ -2659,7 +2659,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testRepeatElements() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             LongMatrix repeated = m.repeatElements(2, 3);
             assertEquals(2, repeated.rowCount());
             assertEquals(6, repeated.columnCount());
@@ -2676,14 +2676,14 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testRepeatElements_invalidArguments() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(0, 1));
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(1, 0));
         }
 
         @Test
         public void testTile() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix repeated = m.tile(2, 3);
             assertEquals(4, repeated.rowCount());
             assertEquals(6, repeated.columnCount());
@@ -2704,7 +2704,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testTile_invalidArguments() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
             assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
         }
@@ -2713,7 +2713,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testFlatten() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             LongList flat = m.flatten();
             assertEquals(9, flat.size());
             for (int i = 0; i < 9; i++) {
@@ -2730,7 +2730,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testFlatOp() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             List<Long> sums = new ArrayList<>();
             m.mutateFlattened(row -> {
                 long sum = 0;
@@ -2747,8 +2747,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testVstack() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 7L, 8L, 9L }, { 10L, 11L, 12L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 7L, 8L, 9L }, { 10L, 11L, 12L } });
             LongMatrix stacked = m1.stackVertically(m2);
 
             assertEquals(4, stacked.rowCount());
@@ -2760,15 +2760,15 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testVstack_differentColumnCounts() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 1L, 2L, 3L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L } });
             assertThrows(IllegalArgumentException.class, () -> m1.stackVertically(m2));
         }
 
         @Test
         public void testHstack() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 5L, 6L }, { 7L, 8L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 5L, 6L }, { 7L, 8L } });
             LongMatrix stacked = m1.stackHorizontally(m2);
 
             assertEquals(2, stacked.rowCount());
@@ -2780,8 +2780,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testHstack_differentRowCounts() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 5L, 6L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 5L, 6L } });
             assertThrows(IllegalArgumentException.class, () -> m1.stackHorizontally(m2));
         }
 
@@ -2789,8 +2789,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testAdd() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 5L, 6L }, { 7L, 8L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 5L, 6L }, { 7L, 8L } });
             LongMatrix sum = m1.add(m2);
 
             assertEquals(6L, sum.get(0, 0));
@@ -2801,15 +2801,15 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testAdd_differentDimensions() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 1L, 2L, 3L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L } });
             assertThrows(IllegalArgumentException.class, () -> m1.add(m2));
         }
 
         @Test
         public void testAdd_withLargeValues() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1000000000000L, 2000000000000L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 3000000000000L, 4000000000000L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1000000000000L, 2000000000000L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 3000000000000L, 4000000000000L } });
             LongMatrix sum = m1.add(m2);
             assertEquals(4000000000000L, sum.get(0, 0));
             assertEquals(6000000000000L, sum.get(0, 1));
@@ -2817,8 +2817,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testSubtract() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 5L, 6L }, { 7L, 8L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 5L, 6L }, { 7L, 8L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix diff = m1.subtract(m2);
 
             assertEquals(4L, diff.get(0, 0));
@@ -2829,15 +2829,15 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testSubtract_differentDimensions() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 5L, 6L }, { 7L, 8L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 1L, 2L, 3L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 5L, 6L }, { 7L, 8L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L } });
             assertThrows(IllegalArgumentException.class, () -> m1.subtract(m2));
         }
 
         @Test
         public void testMultiply() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 5L, 6L }, { 7L, 8L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 5L, 6L }, { 7L, 8L } });
             LongMatrix product = m1.matrixMultiply(m2);
 
             assertEquals(19L, product.get(0, 0)); // 1*5 + 2*7
@@ -2848,15 +2848,15 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testMultiply_incompatibleDimensions() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 1L, 2L, 3L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L } });
             assertThrows(IllegalArgumentException.class, () -> m1.matrixMultiply(m2));
         }
 
         @Test
         public void testMultiply_rectangularMatrices() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L, 3L } }); // 1x3
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 4L }, { 5L }, { 6L } }); // 3x1
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L } }); // 1x3
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 4L }, { 5L }, { 6L } }); // 3x1
             LongMatrix product = m1.matrixMultiply(m2);
 
             assertEquals(1, product.rowCount());
@@ -2866,7 +2866,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testmatrixMultiply_emptyProductReturnsCanonicalEmpty() {
-            // Regression: matrixMultiply must build its result via LongMatrix.of(result) (not the raw
+            // Regression: matrixMultiply must build its result via LongMatrix.wrap(result) (not the raw
             // constructor) so an empty product yields the shared EMPTY singleton, and must call
             // checkRepresentableShape before allocation for consistency with the other
             // result-allocating methods (resize/reshape/transpose/rotate).
@@ -2877,8 +2877,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testMultiply_withLargeValues() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1000000L, 2000000L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 3000000L }, { 4000000L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1000000L, 2000000L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 3000000L }, { 4000000L } });
             LongMatrix product = m1.matrixMultiply(m2);
             assertEquals(11000000000000L, product.get(0, 0)); // 1000000*3000000 + 2000000*4000000
         }
@@ -2887,7 +2887,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testBoxed() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             Matrix<Long> boxed = m.boxed();
             assertEquals(2, boxed.rowCount());
             assertEquals(3, boxed.columnCount());
@@ -2897,7 +2897,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testToFloatMatrix() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             FloatMatrix floatMatrix = m.toFloatMatrix();
             assertEquals(2, floatMatrix.rowCount());
             assertEquals(2, floatMatrix.columnCount());
@@ -2907,7 +2907,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testToDoubleMatrix() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             DoubleMatrix doubleMatrix = m.toDoubleMatrix();
             assertEquals(2, doubleMatrix.rowCount());
             assertEquals(2, doubleMatrix.columnCount());
@@ -2918,7 +2918,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testBoxed_verticalMatrix() {
             // Test the rows > columnCount branch (3 rows, 2 columnCount)
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
             Matrix<Long> boxed = m.boxed();
             assertEquals(3, boxed.rowCount());
             assertEquals(2, boxed.columnCount());
@@ -2929,7 +2929,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testBoxed_extremeValues() {
-            LongMatrix m = LongMatrix.of(new long[][] { { Long.MAX_VALUE, Long.MIN_VALUE }, { 0L, -1L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { Long.MAX_VALUE, Long.MIN_VALUE }, { 0L, -1L } });
             Matrix<Long> boxed = m.boxed();
             assertEquals(Long.valueOf(Long.MAX_VALUE), boxed.get(0, 0));
             assertEquals(Long.valueOf(Long.MIN_VALUE), boxed.get(0, 1));
@@ -2940,7 +2940,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testToFloatMatrix_verticalMatrix() {
             // Test the rows > columnCount branch (4 rows, 2 columnCount)
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L }, { 7L, 8L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L }, { 7L, 8L } });
             FloatMatrix floatMatrix = m.toFloatMatrix();
             assertEquals(4, floatMatrix.rowCount());
             assertEquals(2, floatMatrix.columnCount());
@@ -2951,7 +2951,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testToFloatMatrix_extremeValues() {
             // Test conversion with extreme long values - may lose precision
-            LongMatrix m = LongMatrix.of(new long[][] { { Long.MAX_VALUE, Long.MIN_VALUE }, { 1000000000000L, -1000000000000L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { Long.MAX_VALUE, Long.MIN_VALUE }, { 1000000000000L, -1000000000000L } });
             FloatMatrix floatMatrix = m.toFloatMatrix();
             // Verify conversion happened (exact values may lose precision)
             assertNotNull(floatMatrix);
@@ -2962,7 +2962,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testToDoubleMatrix_verticalMatrix() {
             // Test the rows > columnCount branch via create() (3 rows, 2 columnCount)
-            LongMatrix m = LongMatrix.of(new long[][] { { 10L, 20L }, { 30L, 40L }, { 50L, 60L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 10L, 20L }, { 30L, 40L }, { 50L, 60L } });
             DoubleMatrix doubleMatrix = m.toDoubleMatrix();
             assertEquals(3, doubleMatrix.rowCount());
             assertEquals(2, doubleMatrix.columnCount());
@@ -2973,7 +2973,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testToDoubleMatrix_extremeValues() {
             // Test with extreme long values - check precision
-            LongMatrix m = LongMatrix.of(new long[][] { { Long.MAX_VALUE, Long.MIN_VALUE }, { 9007199254740992L, -9007199254740992L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { Long.MAX_VALUE, Long.MIN_VALUE }, { 9007199254740992L, -9007199254740992L } });
             DoubleMatrix doubleMatrix = m.toDoubleMatrix();
             // Double has 53 bits of precision, so very large longs may lose precision
             assertNotNull(doubleMatrix);
@@ -2987,7 +2987,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testUnbox_verticalMatrix() {
             // Test unbox with rows > columnCount (3 rows, 2 columnCount)
-            Matrix<Long> boxedMatrix = Matrix.of(new Long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
+            Matrix<Long> boxedMatrix = Matrix.wrap(new Long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
             LongMatrix m = LongMatrix.unbox(boxedMatrix);
             assertEquals(3, m.rowCount());
             assertEquals(2, m.columnCount());
@@ -2999,8 +2999,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testZipWith() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 5L, 6L }, { 7L, 8L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 5L, 6L }, { 7L, 8L } });
             LongMatrix result = m1.zipWith(m2, (a, b) -> a * b);
 
             assertEquals(5L, result.get(0, 0)); // 1*5
@@ -3011,16 +3011,16 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testZipWith_differentShapes() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 1L, 2L, 3L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L } });
             assertThrows(IllegalArgumentException.class, () -> m1.zipWith(m2, (a, b) -> a + b));
         }
 
         @Test
         public void testZipWith_threeMatrices_differentShapes() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 5L, 6L }, { 7L, 8L } });
-            LongMatrix m3 = LongMatrix.of(new long[][] { { 9L, 10L, 11L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 5L, 6L }, { 7L, 8L } });
+            LongMatrix m3 = LongMatrix.wrap(new long[][] { { 9L, 10L, 11L } });
             assertThrows(IllegalArgumentException.class, () -> m1.zipWith(m2, m3, (a, b, c) -> a + b + c));
         }
 
@@ -3028,7 +3028,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testStreamLU2RD() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             long[] diagonal = m.mainDiagonalStream().toArray();
             assertArrayEquals(new long[] { 1L, 5L, 9L }, diagonal);
         }
@@ -3041,13 +3041,13 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testStreamLU2RD_nonSquare() {
-            LongMatrix nonSquare = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix nonSquare = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalStream());
         }
 
         @Test
         public void testStreamRU2LD() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             long[] antiDiagonal = m.antiDiagonalStream().toArray();
             assertArrayEquals(new long[] { 3L, 5L, 7L }, antiDiagonal);
         }
@@ -3060,13 +3060,13 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testStreamRU2LD_nonSquare() {
-            LongMatrix nonSquare = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix nonSquare = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             assertThrows(IllegalStateException.class, () -> nonSquare.antiDiagonalStream());
         }
 
         @Test
         public void testStreamH() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             long[] all = m.rowMajorStream().toArray();
             assertArrayEquals(new long[] { 1L, 2L, 3L, 4L, 5L, 6L }, all);
         }
@@ -3079,14 +3079,14 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testStreamH_withRow_outOfBounds() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(-1));
             assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(2));
         }
 
         @Test
         public void testStreamH_withRange_outOfBounds() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(-1, 2));
             assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(0, 3));
             assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(2, 1));
@@ -3094,7 +3094,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testStreamV() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             long[] all = m.columnMajorStream().toArray();
             assertArrayEquals(new long[] { 1L, 4L, 2L, 5L, 3L, 6L }, all);
         }
@@ -3107,21 +3107,21 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testStreamV_withColumn_outOfBounds() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(-1));
             assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(2));
         }
 
         @Test
         public void testStreamV_withRange() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             long[] columnCount = m.columnMajorStream(1, 3).toArray();
             assertArrayEquals(new long[] { 2L, 5L, 8L, 3L, 6L, 9L }, columnCount);
         }
 
         @Test
         public void testStreamV_withRange_outOfBounds() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(-1, 2));
             assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(0, 3));
             assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(2, 1));
@@ -3129,7 +3129,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testStreamR() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             List<long[]> rows = m.rowStreams().map(LongStream::toArray).toList();
             assertEquals(2, rows.size());
             assertArrayEquals(new long[] { 1L, 2L, 3L }, rows.get(0));
@@ -3144,7 +3144,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testStreamR_withRange() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             List<long[]> rows = m.rowStreams(1, 3).map(LongStream::toArray).toList();
             assertEquals(2, rows.size());
             assertArrayEquals(new long[] { 4L, 5L, 6L }, rows.get(0));
@@ -3153,14 +3153,14 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testStreamR_withRange_outOfBounds() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             assertThrows(IndexOutOfBoundsException.class, () -> m.rowStreams(-1, 2));
             assertThrows(IndexOutOfBoundsException.class, () -> m.rowStreams(0, 3));
         }
 
         @Test
         public void testStreamC() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             List<long[]> columnCount = m.columnStreams().map(LongStream::toArray).toList();
             assertEquals(3, columnCount.size());
             assertArrayEquals(new long[] { 1L, 4L }, columnCount.get(0));
@@ -3176,7 +3176,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testStreamC_withRange() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             List<long[]> columnCount = m.columnStreams(1, 3).map(LongStream::toArray).toList();
             assertEquals(2, columnCount.size());
             assertArrayEquals(new long[] { 2L, 5L, 8L }, columnCount.get(0));
@@ -3185,7 +3185,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testStreamC_withRange_outOfBounds() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             assertThrows(IndexOutOfBoundsException.class, () -> m.columnStreams(-1, 2));
             assertThrows(IndexOutOfBoundsException.class, () -> m.columnStreams(0, 3));
         }
@@ -3194,7 +3194,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testForEach() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             List<Long> values = new ArrayList<>();
             m.forEach(v -> values.add(v));
             assertEquals(9, values.size());
@@ -3205,7 +3205,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testForEach_withBounds() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             List<Long> values = new ArrayList<>();
             m.forEach(1, 3, 1, 3, v -> values.add(v));
             assertEquals(4, values.size());
@@ -3217,7 +3217,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testForEach_withBounds_outOfBounds() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             assertThrows(IndexOutOfBoundsException.class, () -> m.forEach(-1, 2, 0, 2, v -> {
             }));
             assertThrows(IndexOutOfBoundsException.class, () -> m.forEach(0, 3, 0, 2, v -> {
@@ -3228,7 +3228,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testPrintln() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             assertFalse(m.isEmpty());
             org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> m.println());
 
@@ -3239,9 +3239,9 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testHashCode() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m3 = LongMatrix.of(new long[][] { { 1L, 2L }, { 4L, 3L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m3 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 4L, 3L } });
 
             assertEquals(m1.hashCode(), m2.hashCode());
             assertNotEquals(m1.hashCode(), m3.hashCode()); // Usually different
@@ -3249,10 +3249,10 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testEquals() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m3 = LongMatrix.of(new long[][] { { 1L, 2L }, { 4L, 3L } });
-            LongMatrix m4 = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m3 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 4L, 3L } });
+            LongMatrix m4 = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
 
             assertTrue(m1.equals(m1)); // Same object
             assertTrue(m1.equals(m2)); // Same values
@@ -3264,7 +3264,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testToString() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             String str = m.toString();
             assertNotNull(str);
             assertTrue(str.contains("1"));
@@ -3277,7 +3277,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testStatisticalOperations() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
 
             // Test sum
             long totalSum = m.rowMajorStream().sum();
@@ -3330,8 +3330,8 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testArithmeticEdgeCases() {
             // Test with zero matrix
-            LongMatrix zeros = LongMatrix.of(new long[][] { { 0L, 0L }, { 0L, 0L } });
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix zeros = LongMatrix.wrap(new long[][] { { 0L, 0L }, { 0L, 0L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
 
             LongMatrix addZero = m.add(zeros);
             assertEquals(m, addZero);
@@ -3344,8 +3344,8 @@ class LongMatrixTest extends TestBase {
             assertEquals(zeros, multiplyZero);
 
             // Test addition commutativity
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 5L, 6L }, { 7L, 8L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 5L, 6L }, { 7L, 8L } });
             assertEquals(m1.add(m2), m2.add(m1));
 
             // Test subtraction anti-commutativity
@@ -3368,8 +3368,8 @@ class LongMatrixTest extends TestBase {
                 }
             }
 
-            LongMatrix large1 = LongMatrix.of(arr1);
-            LongMatrix large2 = LongMatrix.of(arr2);
+            LongMatrix large1 = LongMatrix.wrap(arr1);
+            LongMatrix large2 = LongMatrix.wrap(arr2);
 
             // Test addition
             LongMatrix largeSum = large1.add(large2);
@@ -3383,7 +3383,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testScalarOperationsWithMap() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
 
             // Scalar addition
             LongMatrix addScalar = m.map(x -> x + 10L);
@@ -3396,7 +3396,7 @@ class LongMatrixTest extends TestBase {
             assertEquals(12L, multiplyScalar.get(1, 1));
 
             // Scalar division
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 10L, 20L }, { 30L, 40L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 10L, 20L }, { 30L, 40L } });
             LongMatrix divideScalar = m2.map(x -> x / 10L);
             assertEquals(1L, divideScalar.get(0, 0));
             assertEquals(4L, divideScalar.get(1, 1));
@@ -3404,8 +3404,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testElementWiseMultiplyWithZipWith() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 2L, 3L }, { 4L, 5L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 2L, 3L }, { 4L, 5L } });
 
             // Element-wise multiplication
             LongMatrix elementWiseProduct = m1.zipWith(m2, (a, b) -> a * b);
@@ -3426,8 +3426,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongOverflow() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { Long.MAX_VALUE, 1L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 1L, Long.MAX_VALUE } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { Long.MAX_VALUE, 1L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 1L, Long.MAX_VALUE } });
 
             // Addition overflow
             LongMatrix sum = m1.add(m2);
@@ -3435,14 +3435,14 @@ class LongMatrixTest extends TestBase {
             assertTrue(sum.get(0, 0) < 0);
 
             // Test max and min values
-            LongMatrix extremes = LongMatrix.of(new long[][] { { Long.MAX_VALUE, Long.MIN_VALUE } });
+            LongMatrix extremes = LongMatrix.wrap(new long[][] { { Long.MAX_VALUE, Long.MIN_VALUE } });
             assertEquals(Long.MAX_VALUE, extremes.get(0, 0));
             assertEquals(Long.MIN_VALUE, extremes.get(0, 1));
         }
 
         @Test
         public void testNegativeValues() {
-            LongMatrix m = LongMatrix.of(new long[][] { { -1L, -2L }, { -3L, -4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { -1L, -2L }, { -3L, -4L } });
 
             assertEquals(-1L, m.get(0, 0));
             assertEquals(-4L, m.get(1, 1));
@@ -3456,7 +3456,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testVeryLargeValues() {
             long largeValue = 1_000_000_000_000L; // 1 trillion
-            LongMatrix m = LongMatrix.of(new long[][] { { largeValue, largeValue * 2 }, { largeValue * 3, largeValue * 4 } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { largeValue, largeValue * 2 }, { largeValue * 3, largeValue * 4 } });
 
             assertEquals(largeValue, m.get(0, 0));
             assertEquals(largeValue * 2, m.get(0, 1));
@@ -3489,8 +3489,8 @@ class LongMatrixTest extends TestBase {
         public void testLargeValueArithmetic() {
             // Test addition with large values
             long billion = 1_000_000_000L;
-            LongMatrix m1 = LongMatrix.of(new long[][] { { billion * 100, billion * 200 } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { billion * 300, billion * 400 } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { billion * 100, billion * 200 } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { billion * 300, billion * 400 } });
 
             LongMatrix sum = m1.add(m2);
             assertEquals(billion * 400, sum.get(0, 0));
@@ -3516,7 +3516,7 @@ class LongMatrixTest extends TestBase {
     class LongMatrix2510Test extends TestBase {
         @Test
         public void testTranspose_square() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix transposed = m.transpose();
             assertEquals(2, transposed.rowCount());
             assertEquals(2, transposed.columnCount());
@@ -3530,7 +3530,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testReshape() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             LongMatrix reshaped = m.reshape(1, 9);
             assertEquals(1, reshaped.rowCount());
             assertEquals(9, reshaped.columnCount());
@@ -3542,7 +3542,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testFlatten() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             LongList flat = m.flatten();
             assertEquals(6, flat.size());
             assertArrayEquals(new long[] { 1L, 2L, 3L, 4L, 5L, 6L }, flat.toArray());
@@ -3559,7 +3559,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testFlatOp() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             final int[] count = { 0 };
             m.mutateFlattened(row -> count[0] += row.length);
             assertEquals(4, count[0]);
@@ -3569,8 +3569,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testVstack() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 5L, 6L }, { 7L, 8L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 5L, 6L }, { 7L, 8L } });
             LongMatrix stacked = m1.stackVertically(m2);
             assertEquals(4, stacked.rowCount());
             assertEquals(2, stacked.columnCount());
@@ -3582,15 +3582,15 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testVstack_differentColumnCount() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 3L, 4L, 5L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 3L, 4L, 5L } });
             assertThrows(IllegalArgumentException.class, () -> m1.stackVertically(m2));
         }
 
         @Test
         public void testHstack() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 5L, 6L }, { 7L, 8L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 5L, 6L }, { 7L, 8L } });
             LongMatrix stacked = m1.stackHorizontally(m2);
             assertEquals(2, stacked.rowCount());
             assertEquals(4, stacked.columnCount());
@@ -3602,29 +3602,29 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testHstack_differentRowCount() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 3L, 4L }, { 5L, 6L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 3L, 4L }, { 5L, 6L } });
             assertThrows(IllegalArgumentException.class, () -> m1.stackHorizontally(m2));
         }
 
         @Test
         public void testAdd_differentDimensions() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 3L, 4L }, { 5L, 6L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 3L, 4L }, { 5L, 6L } });
             assertThrows(IllegalArgumentException.class, () -> m1.add(m2));
         }
 
         @Test
         public void testSubtract_differentDimensions() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 3L, 4L }, { 5L, 6L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 3L, 4L }, { 5L, 6L } });
             assertThrows(IllegalArgumentException.class, () -> m1.subtract(m2));
         }
 
         @Test
         public void testMultiply() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 2L, 3L }, { 4L, 5L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 2L, 3L }, { 4L, 5L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix result = m1.matrixMultiply(m2);
             assertEquals(11L, result.get(0, 0));
             assertEquals(16L, result.get(0, 1));
@@ -3636,7 +3636,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testBoxed() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             Matrix<Long> boxed = m.boxed();
             assertEquals(Long.valueOf(1L), boxed.get(0, 0));
             assertEquals(Long.valueOf(4L), boxed.get(1, 1));
@@ -3644,7 +3644,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testToFloatMatrix() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             FloatMatrix result = m.toFloatMatrix();
             assertEquals(1.0f, result.get(0, 0), 0.001f);
             assertEquals(4.0f, result.get(1, 1), 0.001f);
@@ -3652,7 +3652,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testToDoubleMatrix() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             DoubleMatrix result = m.toDoubleMatrix();
             assertEquals(1.0, result.get(0, 0), 0.001);
             assertEquals(4.0, result.get(1, 1), 0.001);
@@ -3662,8 +3662,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testZipWith_twoMatrices() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 5L, 6L }, { 7L, 8L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 5L, 6L }, { 7L, 8L } });
             LongMatrix result = m1.zipWith(m2, (a, b) -> a + b);
             assertEquals(6L, result.get(0, 0));
             assertEquals(8L, result.get(0, 1));
@@ -3673,16 +3673,16 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testZipWith_twoMatrices_differentDimensions() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 3L, 4L }, { 5L, 6L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 3L, 4L }, { 5L, 6L } });
             assertThrows(IllegalArgumentException.class, () -> m1.zipWith(m2, (a, b) -> a + b));
         }
 
         @Test
         public void testZipWith_threeMatrices() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 5L, 6L }, { 7L, 8L } });
-            LongMatrix m3 = LongMatrix.of(new long[][] { { 9L, 10L }, { 11L, 12L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 5L, 6L }, { 7L, 8L } });
+            LongMatrix m3 = LongMatrix.wrap(new long[][] { { 9L, 10L }, { 11L, 12L } });
             LongMatrix result = m1.zipWith(m2, m3, (a, b, c) -> a + b + c);
             assertEquals(15L, result.get(0, 0)); // 1 + 5 + 9
             assertEquals(18L, result.get(0, 1)); // 2 + 6 + 10
@@ -3692,69 +3692,69 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testZipWith_threeMatrices_differentDimensions() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 3L, 4L } });
-            LongMatrix m3 = LongMatrix.of(new long[][] { { 5L, 6L }, { 7L, 8L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 3L, 4L } });
+            LongMatrix m3 = LongMatrix.wrap(new long[][] { { 5L, 6L }, { 7L, 8L } });
             assertThrows(IllegalArgumentException.class, () -> m1.zipWith(m2, m3, (a, b, c) -> a + b + c));
         }
 
         @Test
         public void testStreamLU2RD_nonSquare() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             assertThrows(IllegalStateException.class, () -> m.mainDiagonalStream().toArray());
         }
 
         @Test
         public void testStreamRU2LD() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             long[] diagonal = m.antiDiagonalStream().toArray();
             assertArrayEquals(new long[] { 3L, 5L, 7L }, diagonal);
         }
 
         @Test
         public void testStreamRU2LD_nonSquare() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             assertThrows(IllegalStateException.class, () -> m.antiDiagonalStream().toArray());
         }
 
         @Test
         public void testStreamH_withRowIndex() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             long[] row1 = m.rowMajorStream(1).toArray();
             assertArrayEquals(new long[] { 4L, 5L, 6L }, row1);
         }
 
         @Test
         public void testStreamH_withRowRange() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             long[] rows = m.rowMajorStream(1, 3).toArray();
             assertArrayEquals(new long[] { 4L, 5L, 6L, 7L, 8L, 9L }, rows);
         }
 
         @Test
         public void testStreamH_outOfBounds() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(-1, 1));
             assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(0, 2));
         }
 
         @Test
         public void testStreamV_withColumnIndex() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             long[] col1 = m.columnMajorStream(1).toArray();
             assertArrayEquals(new long[] { 2L, 5L }, col1);
         }
 
         @Test
         public void testStreamV_withColumnRange() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             long[] columnCount = m.columnMajorStream(1, 3).toArray();
             assertArrayEquals(new long[] { 2L, 5L, 3L, 6L }, columnCount);
         }
 
         @Test
         public void testStreamV_outOfBounds() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(-1, 1));
             assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(0, 3));
         }
@@ -3763,7 +3763,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testStreamR() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             List<long[]> rows = m.rowStreams().map(LongStream::toArray).toList();
             assertEquals(2, rows.size());
             assertArrayEquals(new long[] { 1L, 2L }, rows.get(0));
@@ -3772,7 +3772,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testStreamC() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             List<long[]> columnCount = m.columnStreams().map(LongStream::toArray).toList();
             assertEquals(2, columnCount.size());
             assertArrayEquals(new long[] { 1L, 3L }, columnCount.get(0));
@@ -3783,7 +3783,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testPointsH() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             List<Point> points = m.rowMajorPoints().toList();
             assertEquals(4, points.size());
             assertEquals(Point.of(0, 0), points.get(0));
@@ -3794,7 +3794,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testPointsV() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             List<Point> points = m.columnMajorPoints().toList();
             assertEquals(4, points.size());
             assertEquals(Point.of(0, 0), points.get(0));
@@ -3813,7 +3813,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testElementCount() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             assertEquals(6, m.elementCount());
         }
 
@@ -3831,7 +3831,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testIsEmpty_false() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L } });
             assertFalse(m.isEmpty());
         }
 
@@ -3839,9 +3839,9 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testEquals() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m3 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 5L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m3 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 5L } });
 
             assertEquals(m1, m2);
             assertNotEquals(m1, m3);
@@ -3849,8 +3849,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testHashCode_equal() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
 
             assertEquals(m1.hashCode(), m2.hashCode());
         }
@@ -3859,7 +3859,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testToString() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             String str = m.toString();
             assertNotNull(str);
             assertTrue(str.length() > 0);
@@ -3886,8 +3886,8 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testOf_withSingleColumn() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L }, { 2L }, { 3L }, { 4L } });
+        public void testWrap_withSingleColumn() {
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L }, { 2L }, { 3L }, { 4L } });
             assertEquals(4, m.rowCount());
             assertEquals(1, m.columnCount());
         }
@@ -3931,14 +3931,14 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testGet_withPoint() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             Point p = Point.of(1, 0);
             assertEquals(3L, m.get(p));
         }
 
         @Test
         public void testSet_withPoint() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             Point p = Point.of(1, 0);
             m.set(p, 99L);
             assertEquals(99L, m.get(1, 0));
@@ -3948,7 +3948,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testUpOf() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             OptionalLong up = m.valueAbove(1, 0);
             assertTrue(up.isPresent());
             assertEquals(1L, up.get());
@@ -3959,7 +3959,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testDownOf() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             OptionalLong down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertEquals(3L, down.get());
@@ -3970,7 +3970,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLeftOf() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             OptionalLong left = m.valueLeft(0, 1);
             assertTrue(left.isPresent());
             assertEquals(1L, left.get());
@@ -3981,7 +3981,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testRightOf() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             OptionalLong right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertEquals(2L, right.get());
@@ -3992,21 +3992,21 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testRow_invalidIndex() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(-1));
             assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(1));
         }
 
         @Test
         public void testColumn_invalidIndex() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(-1));
             assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(2));
         }
 
         @Test
         public void testSetRow() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.setRow(0, new long[] { 10L, 20L });
             assertArrayEquals(new long[] { 10L, 20L }, m.rowView(0));
             assertEquals(3L, m.get(1, 0));
@@ -4014,13 +4014,13 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testSetRow_invalidLength() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             assertThrows(IllegalArgumentException.class, () -> m.setRow(0, new long[] { 1L, 2L, 3L }));
         }
 
         @Test
         public void testSetColumn() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.setColumn(0, new long[] { 10L, 30L });
             assertEquals(10L, m.get(0, 0));
             assertEquals(30L, m.get(1, 0));
@@ -4029,13 +4029,13 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testSetColumn_invalidLength() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             assertThrows(IllegalArgumentException.class, () -> m.setColumn(0, new long[] { 1L, 2L, 3L }));
         }
 
         @Test
         public void testUpdateColumn() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.updateColumn(0, x -> x * 10);
             assertEquals(10L, m.get(0, 0));
             assertEquals(30L, m.get(1, 0));
@@ -4045,13 +4045,13 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testSetLU2RD_invalidLength() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             assertThrows(IllegalArgumentException.class, () -> m.setMainDiagonal(new long[] { 1L, 2L, 3L }));
         }
 
         @Test
         public void testUpdateLU2RD() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             m.updateMainDiagonal(x -> x * 10);
             assertEquals(10L, m.get(0, 0));
             assertEquals(50L, m.get(1, 1));
@@ -4060,7 +4060,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testSetRU2LD() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             m.setAntiDiagonal(new long[] { 30L, 50L, 70L });
             assertEquals(30L, m.get(0, 2));
             assertEquals(50L, m.get(1, 1));
@@ -4069,7 +4069,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testUpdateRU2LD() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             m.updateAntiDiagonal(x -> x + 100L);
             assertEquals(103L, m.get(0, 2));
             assertEquals(105L, m.get(1, 1));
@@ -4078,7 +4078,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testUpdateAll_biFunction() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.updateAll((i, j) -> i * 10L + j);
             assertEquals(0L, m.get(0, 0));
             assertEquals(1L, m.get(0, 1));
@@ -4088,7 +4088,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testReplaceIf_predicate() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             m.replaceIf(x -> x % 2 == 0, 99L);
             assertEquals(1L, m.get(0, 0));
             assertEquals(99L, m.get(0, 1));
@@ -4098,7 +4098,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testReplaceIf_biPredicate() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.replaceIf((i, j) -> i == j, 0L);
             assertEquals(0L, m.get(0, 0));
             assertEquals(2L, m.get(0, 1));
@@ -4110,7 +4110,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testMap() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix result = m.map(x -> x * 10);
             assertEquals(10L, result.get(0, 0));
             assertEquals(20L, result.get(0, 1));
@@ -4122,7 +4122,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testMapToDouble() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             DoubleMatrix result = m.mapToDouble(x -> x * 0.5);
             assertEquals(0.5, result.get(0, 0), 0.0001);
             assertEquals(2.0, result.get(1, 1), 0.0001);
@@ -4130,7 +4130,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testMapToObj() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             Matrix<String> result = m.mapToObj(x -> "Value:" + x, String.class);
             assertEquals("Value:1", result.get(0, 0));
             assertEquals("Value:4", result.get(1, 1));
@@ -4140,7 +4140,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testFill_value() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.fill(99L);
             assertEquals(99L, m.get(0, 0));
             assertEquals(99L, m.get(0, 1));
@@ -4150,7 +4150,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testFill_array() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.fill(new long[][] { { 10L, 20L }, { 30L, 40L } });
             assertEquals(10L, m.get(0, 0));
             assertEquals(20L, m.get(0, 1));
@@ -4160,7 +4160,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testFill_arrayWithOffset() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             m.fill(1, 1, new long[][] { { 99L, 88L } });
             assertEquals(1L, m.get(0, 0));
             assertEquals(99L, m.get(1, 1));
@@ -4171,7 +4171,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testCopy() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix copy = m.copy();
             assertEquals(2, copy.rowCount());
             assertEquals(2, copy.columnCount());
@@ -4184,7 +4184,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testCopyRegion() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             LongMatrix copy = m.copyRegion(1, 2, 1, 3);
             assertEquals(1, copy.rowCount());
             assertEquals(2, copy.columnCount());
@@ -4195,8 +4195,8 @@ class LongMatrixTest extends TestBase {
         // ============ Extend Methods ============
 
         @Test
-        public void testExtend_newSize() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+        public void testPad_newSize() {
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix extended = m.resize(3, 3);
             assertEquals(3, extended.rowCount());
             assertEquals(3, extended.columnCount());
@@ -4205,8 +4205,8 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testExtend_withDefaultValue() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+        public void testPad_withDefaultValue() {
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             LongMatrix extended = m.resize(2, 3, 99L);
             assertEquals(2, extended.rowCount());
             assertEquals(3, extended.columnCount());
@@ -4216,9 +4216,9 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testExtend_directions() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 5L } });
-            LongMatrix extended = m.extend(1, 1, 1, 1);
+        public void testPad_directions() {
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 5L } });
+            LongMatrix extended = m.pad(1, 1, 1, 1);
             assertEquals(3, extended.rowCount());
             assertEquals(3, extended.columnCount());
             assertEquals(5L, extended.get(1, 1));
@@ -4226,9 +4226,9 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testExtend_directionsWithDefault() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 5L } });
-            LongMatrix extended = m.extend(1, 1, 1, 1, 9L);
+        public void testPad_directionsWithDefault() {
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 5L } });
+            LongMatrix extended = m.pad(1, 1, 1, 1, 9L);
             assertEquals(3, extended.rowCount());
             assertEquals(3, extended.columnCount());
             assertEquals(5L, extended.get(1, 1));
@@ -4240,7 +4240,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testReverseH() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             m.flipHorizontallyInPlace();
             assertEquals(3L, m.get(0, 0));
             assertEquals(2L, m.get(0, 1));
@@ -4250,7 +4250,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testReverseV() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
             m.flipVerticallyInPlace();
             assertEquals(5L, m.get(0, 0));
             assertEquals(6L, m.get(0, 1));
@@ -4259,7 +4259,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testFlipH() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             LongMatrix flipped = m.flipHorizontally();
             assertEquals(3L, flipped.get(0, 0));
             assertEquals(1L, flipped.get(0, 2));
@@ -4269,7 +4269,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testFlipV() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix flipped = m.flipVertically();
             assertEquals(3L, flipped.get(0, 0));
             assertEquals(1L, flipped.get(1, 0));
@@ -4281,7 +4281,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testRotate90() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             LongMatrix rotated = m.rotate90();
             assertEquals(3, rotated.rowCount());
             assertEquals(2, rotated.columnCount());
@@ -4292,7 +4292,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testRotate270() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             LongMatrix rotated = m.rotate270();
             assertEquals(3, rotated.rowCount());
             assertEquals(2, rotated.columnCount());
@@ -4304,7 +4304,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testTranspose() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             LongMatrix transposed = m.transpose();
             assertEquals(3, transposed.rowCount());
             assertEquals(2, transposed.columnCount());
@@ -4315,7 +4315,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testReshape() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             LongMatrix reshaped = m.reshape(3, 2);
             assertEquals(3, reshaped.rowCount());
             assertEquals(2, reshaped.columnCount());
@@ -4326,7 +4326,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testRepeatElements() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix result = m.repeatElements(2, 2);
             assertEquals(4, result.rowCount());
             assertEquals(4, result.columnCount());
@@ -4338,7 +4338,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testTile() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             LongMatrix result = m.tile(2, 2);
             assertEquals(2, result.rowCount());
             assertEquals(4, result.columnCount());
@@ -4352,7 +4352,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testFlatten() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongList flattened = m.flatten();
             assertEquals(4, flattened.size());
             assertEquals(1L, flattened.get(0));
@@ -4363,7 +4363,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testFlatOp() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             final long[] sum = { 0L };
             m.mutateFlattened(row -> {
                 for (long val : row) {
@@ -4377,8 +4377,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testVstack() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 3L, 4L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 3L, 4L } });
             LongMatrix stacked = m1.stackVertically(m2);
             assertEquals(2, stacked.rowCount());
             assertEquals(2, stacked.columnCount());
@@ -4388,8 +4388,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testHstack() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L }, { 3L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 2L }, { 4L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L }, { 3L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 2L }, { 4L } });
             LongMatrix stacked = m1.stackHorizontally(m2);
             assertEquals(2, stacked.rowCount());
             assertEquals(2, stacked.columnCount());
@@ -4399,8 +4399,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testHstack_incompatibleRows() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 2L }, { 3L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 2L }, { 3L } });
             assertThrows(IllegalArgumentException.class, () -> m1.stackHorizontally(m2));
         }
 
@@ -4408,8 +4408,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testAdd() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 10L, 20L }, { 30L, 40L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 10L, 20L }, { 30L, 40L } });
             LongMatrix result = m1.add(m2);
             assertEquals(11L, result.get(0, 0));
             assertEquals(22L, result.get(0, 1));
@@ -4419,8 +4419,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testSubtract() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 10L, 20L }, { 30L, 40L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 10L, 20L }, { 30L, 40L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix result = m1.subtract(m2);
             assertEquals(9L, result.get(0, 0));
             assertEquals(18L, result.get(0, 1));
@@ -4430,8 +4430,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testMultiply() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 10L, 20L }, { 30L, 40L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 10L, 20L }, { 30L, 40L } });
             LongMatrix result = m1.matrixMultiply(m2);
             assertEquals(70, result.get(0, 0));
             assertEquals(100, result.get(0, 1));
@@ -4443,7 +4443,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testBoxed() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             Matrix<Long> boxed = m.boxed();
             assertEquals(2, boxed.rowCount());
             assertEquals(2, boxed.columnCount());
@@ -4453,7 +4453,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testToIntMatrix() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             IntMatrix result = m.mapToInt(l -> (int) l);
             assertEquals(2, result.rowCount());
             assertEquals(2, result.columnCount());
@@ -4464,7 +4464,7 @@ class LongMatrixTest extends TestBase {
         // LongMatrix doesn't have mapToFloat method - removed test
         // @Test
         // public void testToFloatMatrix() {
-        //     LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+        //     LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
         //     FloatMatrix result = m.mapToFloat(l -> (float) l);
         //     assertEquals(2, result.rowCount());
         //     assertEquals(2, result.columnCount());
@@ -4474,7 +4474,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testToDoubleMatrix() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             DoubleMatrix result = m.mapToDouble(l -> (double) l);
             assertEquals(2, result.rowCount());
             assertEquals(2, result.columnCount());
@@ -4486,8 +4486,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testZipWith_twoMatrices() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 10L, 20L }, { 30L, 40L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 10L, 20L }, { 30L, 40L } });
             LongMatrix result = m1.zipWith(m2, (a, b) -> a + b);
             assertEquals(11L, result.get(0, 0));
             assertEquals(22L, result.get(0, 1));
@@ -4497,9 +4497,9 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testZipWith_threeMatrices() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 10L, 20L } });
-            LongMatrix m3 = LongMatrix.of(new long[][] { { 100L, 200L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 10L, 20L } });
+            LongMatrix m3 = LongMatrix.wrap(new long[][] { { 100L, 200L } });
             LongMatrix result = m1.zipWith(m2, m3, (a, b, c) -> a + b + c);
             assertEquals(111L, result.get(0, 0));
             assertEquals(222L, result.get(0, 1));
@@ -4509,14 +4509,14 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testStreamH_rowRange() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
             long[] rows = m.rowMajorStream(1, 3).toArray();
             assertArrayEquals(new long[] { 3L, 4L, 5L, 6L }, rows);
         }
 
         @Test
         public void testStreamV_columnRange() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             long[] columnCount = m.columnMajorStream(0, 2).toArray();
             assertArrayEquals(new long[] { 1L, 4L, 2L, 5L }, columnCount);
         }
@@ -4528,14 +4528,14 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testIsEmpty() {
             assertTrue(LongMatrix.empty().isEmpty());
-            assertFalse(LongMatrix.of(new long[][] { { 1L } }).isEmpty());
+            assertFalse(LongMatrix.wrap(new long[][] { { 1L } }).isEmpty());
         }
 
         @Test
         public void testEquals() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m3 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 5L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m3 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 5L } });
 
             assertEquals(m1, m2);
             assertNotEquals(m1, m3);
@@ -4545,7 +4545,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testToString() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             String str = m.toString();
             assertNotNull(str);
             assertTrue(str.contains("1"));
@@ -4554,7 +4554,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testToArray() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             long[][] arr = m.unsafeBackingArray();
             assertEquals(2, arr.length);
             assertEquals(2, arr[0].length);
@@ -4572,7 +4572,7 @@ class LongMatrixTest extends TestBase {
                     data[i][j] = i + j;
                 }
             }
-            LongMatrix m = LongMatrix.of(data);
+            LongMatrix m = LongMatrix.wrap(data);
             assertEquals(100, m.rowCount());
             assertEquals(50, m.columnCount());
             assertEquals(0L, m.get(0, 0));
@@ -4581,7 +4581,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testSingleRowOperations() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L, 4L, 5L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L, 4L, 5L } });
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
 
@@ -4592,7 +4592,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testSingleColumnOperations() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L }, { 2L }, { 3L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L }, { 2L }, { 3L } });
             assertEquals(3, m.rowCount());
             assertEquals(1, m.columnCount());
 
@@ -4603,7 +4603,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testChainedOperations() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix result = m.map(x -> x * 2).transpose().map(x -> x + 1);
             assertEquals(2, result.rowCount());
             assertEquals(2, result.columnCount());
@@ -4654,7 +4654,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void test_of_withValidArray() {
             long[][] arr = { { 1L, 2L }, { 3L, 4L } };
-            LongMatrix m = LongMatrix.of(arr);
+            LongMatrix m = LongMatrix.wrap(arr);
             assertEquals(2, m.rowCount());
             assertEquals(2, m.columnCount());
             assertEquals(1L, m.get(0, 0));
@@ -4662,18 +4662,18 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_of_withNullArray() {
-            assertThrows(IllegalArgumentException.class, () -> LongMatrix.of((long[][]) null));
+            assertThrows(IllegalArgumentException.class, () -> LongMatrix.wrap((long[][]) null));
         }
 
         @Test
         public void test_of_withEmptyArray() {
-            LongMatrix m = LongMatrix.of(new long[0][0]);
+            LongMatrix m = LongMatrix.wrap(new long[0][0]);
             assertTrue(m.isEmpty());
         }
 
         @Test
         public void test_of_withSingleRow() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L, 4L, 5L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L, 4L, 5L } });
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
         }
@@ -4845,7 +4845,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_unbox() {
-            Matrix<Long> boxed = Matrix.of(new Long[][] { { 1L, 2L }, { 3L, 4L } });
+            Matrix<Long> boxed = Matrix.wrap(new Long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix m = LongMatrix.unbox(boxed);
             assertEquals(2, m.rowCount());
             assertEquals(2, m.columnCount());
@@ -4855,7 +4855,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_unbox_withNulls() {
-            Matrix<Long> boxed = Matrix.of(new Long[][] { { 1L, null }, { null, 4L } });
+            Matrix<Long> boxed = Matrix.wrap(new Long[][] { { 1L, null }, { null, 4L } });
             LongMatrix m = LongMatrix.unbox(boxed);
             assertEquals(2, m.rowCount());
             assertEquals(2, m.columnCount());
@@ -4871,7 +4871,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_get_byIndices() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             assertEquals(1L, m.get(0, 0));
             assertEquals(2L, m.get(0, 1));
             assertEquals(3L, m.get(1, 0));
@@ -4880,21 +4880,21 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_get_byPoint() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             Point p = Point.of(0, 1);
             assertEquals(2L, m.get(p));
         }
 
         @Test
         public void test_set_byIndices() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.set(0, 1, 9L);
             assertEquals(9L, m.get(0, 1));
         }
 
         @Test
         public void test_set_byPoint() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             Point p = Point.of(1, 1);
             m.set(p, 9L);
             assertEquals(9L, m.get(p));
@@ -4904,7 +4904,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_upOf() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             OptionalLong up = m.valueAbove(1, 0);
             assertTrue(up.isPresent());
             assertEquals(1L, up.get());
@@ -4912,14 +4912,14 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_upOf_firstRow() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             OptionalLong up = m.valueAbove(0, 0);
             assertFalse(up.isPresent());
         }
 
         @Test
         public void test_downOf() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             OptionalLong down = m.valueBelow(0, 0);
             assertTrue(down.isPresent());
             assertEquals(3L, down.get());
@@ -4927,14 +4927,14 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_downOf_lastRow() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             OptionalLong down = m.valueBelow(1, 0);
             assertFalse(down.isPresent());
         }
 
         @Test
         public void test_leftOf() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             OptionalLong left = m.valueLeft(0, 1);
             assertTrue(left.isPresent());
             assertEquals(1L, left.get());
@@ -4942,14 +4942,14 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_leftOf_firstColumn() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             OptionalLong left = m.valueLeft(0, 0);
             assertFalse(left.isPresent());
         }
 
         @Test
         public void test_rightOf() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             OptionalLong right = m.valueRight(0, 0);
             assertTrue(right.isPresent());
             assertEquals(2L, right.get());
@@ -4957,7 +4957,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_rightOf_lastColumn() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             OptionalLong right = m.valueRight(0, 1);
             assertFalse(right.isPresent());
         }
@@ -4966,65 +4966,65 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_row() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             long[] row = m.rowView(0);
             assertArrayEquals(new long[] { 1L, 2L }, row);
         }
 
         @Test
         public void test_row_invalidIndex() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             assertThrows(IndexOutOfBoundsException.class, () -> m.rowView(5));
         }
 
         @Test
         public void test_column() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             long[] col = m.columnCopy(0);
             assertArrayEquals(new long[] { 1L, 3L }, col);
         }
 
         @Test
         public void test_column_invalidIndex() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             assertThrows(IndexOutOfBoundsException.class, () -> m.columnCopy(5));
         }
 
         @Test
         public void test_setRow() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.setRow(0, new long[] { 9L, 8L });
             assertArrayEquals(new long[] { 9L, 8L }, m.rowView(0));
         }
 
         @Test
         public void test_setRow_invalidRowIndex() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             assertThrows(IndexOutOfBoundsException.class, () -> m.setRow(5, new long[] { 1L, 2L }));
         }
 
         @Test
         public void test_setRow_invalidLength() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             assertThrows(IllegalArgumentException.class, () -> m.setRow(0, new long[] { 1L }));
         }
 
         @Test
         public void test_setColumn() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.setColumn(0, new long[] { 9L, 8L });
             assertArrayEquals(new long[] { 9L, 8L }, m.columnCopy(0));
         }
 
         @Test
         public void test_setColumn_invalidColumnIndex() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             assertThrows(IndexOutOfBoundsException.class, () -> m.setColumn(5, new long[] { 1L }));
         }
 
         @Test
         public void test_setColumn_invalidLength() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             assertThrows(IllegalArgumentException.class, () -> m.setColumn(0, new long[] { 1L }));
         }
 
@@ -5032,7 +5032,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_updateRow() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.updateRow(0, x -> x * 2);
             assertArrayEquals(new long[] { 2L, 4L }, m.rowView(0));
             assertArrayEquals(new long[] { 3L, 4L }, m.rowView(1));
@@ -5040,7 +5040,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_updateColumn() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.updateColumn(0, x -> x * 2);
             assertArrayEquals(new long[] { 2L, 6L }, m.columnCopy(0));
             assertArrayEquals(new long[] { 2L, 4L }, m.columnCopy(1));
@@ -5050,60 +5050,60 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_mainDiagonalCopy() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             long[] diag = m.mainDiagonalCopy();
             assertArrayEquals(new long[] { 1L, 5L, 9L }, diag);
         }
 
         @Test
         public void test_mainDiagonalCopy_nonSquare() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
             assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
         }
 
         @Test
         public void test_setMainDiagonal() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.setMainDiagonal(new long[] { 9L, 8L });
             assertArrayEquals(new long[] { 9L, 8L }, m.mainDiagonalCopy());
         }
 
         @Test
         public void test_setMainDiagonal_nonSquare() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             assertThrows(IllegalStateException.class, () -> m.setMainDiagonal(new long[] { 9L }));
         }
 
         @Test
         public void test_setMainDiagonal_invalidLength() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             assertThrows(IllegalArgumentException.class, () -> m.setMainDiagonal(new long[] { 9L }));
         }
 
         @Test
         public void test_updateMainDiagonal() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.updateMainDiagonal(x -> x * 2);
             assertArrayEquals(new long[] { 2L, 8L }, m.mainDiagonalCopy());
         }
 
         @Test
         public void test_antiDiagonalCopy() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             long[] diag = m.antiDiagonalCopy();
             assertArrayEquals(new long[] { 3L, 5L, 7L }, diag);
         }
 
         @Test
         public void test_setAntiDiagonal() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.setAntiDiagonal(new long[] { 9L, 8L });
             assertArrayEquals(new long[] { 9L, 8L }, m.antiDiagonalCopy());
         }
 
         @Test
         public void test_updateAntiDiagonal() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.updateAntiDiagonal(x -> x * 2);
             long[] diag = m.antiDiagonalCopy();
             assertEquals(4L, diag[0]);
@@ -5114,7 +5114,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_updateAll_unaryOperator() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.updateAll(x -> x * 2);
             assertEquals(2L, m.get(0, 0));
             assertEquals(4L, m.get(0, 1));
@@ -5124,7 +5124,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_updateAll_biFunction() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.updateAll((i, j) -> (i + 1) * 10L + (j + 1));
             assertEquals(11L, m.get(0, 0));
             assertEquals(12L, m.get(0, 1));
@@ -5136,7 +5136,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_replaceIf_predicate() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.replaceIf(x -> x > 2, 99L);
             assertEquals(1L, m.get(0, 0));
             assertEquals(2L, m.get(0, 1));
@@ -5146,7 +5146,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_replaceIf_biPredicate() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.replaceIf((i, j) -> i == j, 99L);
             assertEquals(99L, m.get(0, 0));
             assertEquals(2L, m.get(0, 1));
@@ -5158,7 +5158,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_map() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix result = m.map(x -> x * 2);
             assertEquals(2L, result.get(0, 0));
             assertEquals(4L, result.get(0, 1));
@@ -5170,7 +5170,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_mapToInt() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             IntMatrix result = m.mapToInt(x -> (int) x);
             assertEquals(1, result.get(0, 0));
             assertEquals(2, result.get(0, 1));
@@ -5180,7 +5180,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_mapToDouble() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             DoubleMatrix result = m.mapToDouble(x -> (double) x);
             assertEquals(1.0, result.get(0, 0), 0.0);
             assertEquals(2.0, result.get(0, 1), 0.0);
@@ -5190,7 +5190,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_mapToObj() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             Matrix<String> result = m.mapToObj(x -> String.valueOf(x), String.class);
             assertEquals("1", result.get(0, 0));
             assertEquals("2", result.get(0, 1));
@@ -5202,7 +5202,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_fill_value() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.fill(9L);
             assertEquals(9L, m.get(0, 0));
             assertEquals(9L, m.get(0, 1));
@@ -5212,7 +5212,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_fill_array() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             m.fill(new long[][] { { 9L, 8L }, { 7L, 6L } });
             assertEquals(9L, m.get(0, 0));
             assertEquals(8L, m.get(0, 1));
@@ -5222,7 +5222,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_fill_withOffset() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             m.fill(1, 1, new long[][] { { 99L } });
             assertEquals(1L, m.get(0, 0));
             assertEquals(99L, m.get(1, 1));
@@ -5233,7 +5233,7 @@ class LongMatrixTest extends TestBase {
         public void test_fill_withOffset_arrayLargerThanMatrix() {
             // Test that fill() gracefully handles source arrays larger than the target matrix
             // by copying only what fits (as documented in the javadoc)
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             m.fill(0, 0, new long[][] { { 9L, 8L, 7L } }); // Source array has 3 elements, matrix has 2
             // Should copy only the first 2 elements that fit
             assertEquals(9L, m.get(0, 0));
@@ -5244,7 +5244,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_copy() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix copy = m.copy();
             assertEquals(m.rowCount(), copy.rowCount());
             assertEquals(m.columnCount(), copy.columnCount());
@@ -5255,7 +5255,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_copyRows() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
             LongMatrix copy = m.copyRows(1, 3);
             assertEquals(2, copy.rowCount());
             assertEquals(2, copy.columnCount());
@@ -5265,7 +5265,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_copyRegion() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             LongMatrix copy = m.copyRegion(1, 3, 1, 3);
             assertEquals(2, copy.rowCount());
             assertEquals(2, copy.columnCount());
@@ -5275,13 +5275,13 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_copy_invalidRange() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             assertThrows(IndexOutOfBoundsException.class, () -> m.copyRows(0, 5));
         }
 
         @Test
-        public void test_extend_withDefaultValue() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+        public void test_pad_withDefaultValue() {
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             LongMatrix extended = m.resize(2, 3, 99L);
             assertEquals(2, extended.rowCount());
             assertEquals(3, extended.columnCount());
@@ -5291,17 +5291,17 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_extend_smaller() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+        public void test_pad_smaller() {
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             LongMatrix result = m.resize(1, 2);
             assertEquals(1, result.rowCount());
             assertEquals(2, result.columnCount());
         }
 
         @Test
-        public void test_extend_directional() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix extended = m.extend(1, 1, 1, 1);
+        public void test_pad_directional() {
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix extended = m.pad(1, 1, 1, 1);
             assertEquals(4, extended.rowCount());
             assertEquals(4, extended.columnCount());
             assertEquals(1L, extended.get(1, 1));
@@ -5309,9 +5309,9 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_extend_directional_withDefaultValue() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
-            LongMatrix extended = m.extend(1, 1, 1, 1, 99L);
+        public void test_pad_directional_withDefaultValue() {
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
+            LongMatrix extended = m.pad(1, 1, 1, 1, 99L);
             assertEquals(3, extended.rowCount());
             assertEquals(4, extended.columnCount());
             assertEquals(1L, extended.get(1, 1));
@@ -5322,7 +5322,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_flipHorizontallyInPlace() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             m.flipHorizontallyInPlace();
             assertEquals(3L, m.get(0, 0));
             assertEquals(2L, m.get(0, 1));
@@ -5331,7 +5331,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_flipVerticallyInPlace() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
             m.flipVerticallyInPlace();
             assertEquals(5L, m.get(0, 0));
             assertEquals(3L, m.get(1, 0));
@@ -5340,7 +5340,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_flipHorizontally() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             LongMatrix flipped = m.flipHorizontally();
             assertEquals(3L, flipped.get(0, 0));
             assertEquals(2L, flipped.get(0, 1));
@@ -5351,7 +5351,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_flipVertically() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
             LongMatrix flipped = m.flipVertically();
             assertEquals(5L, flipped.get(0, 0));
             assertEquals(3L, flipped.get(1, 0));
@@ -5362,7 +5362,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_rotate180() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix rotated = m.rotate180();
             assertEquals(4L, rotated.get(0, 0));
             assertEquals(3L, rotated.get(0, 1));
@@ -5372,7 +5372,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_rotate270() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix rotated = m.rotate270();
             assertEquals(2, rotated.rowCount());
             assertEquals(2, rotated.columnCount());
@@ -5386,7 +5386,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_transpose() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             LongMatrix transposed = m.transpose();
             assertEquals(3, transposed.rowCount());
             assertEquals(2, transposed.columnCount());
@@ -5398,7 +5398,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_transpose_square() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix transposed = m.transpose();
             assertEquals(2, transposed.rowCount());
             assertEquals(2, transposed.columnCount());
@@ -5410,7 +5410,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_reshape() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             LongMatrix reshaped = m.reshape(3, 2);
             assertEquals(3, reshaped.rowCount());
             assertEquals(2, reshaped.columnCount());
@@ -5424,8 +5424,8 @@ class LongMatrixTest extends TestBase {
         public void test_reshape_expandWithZeroFill() {
             // Test that reshape() can expand to larger dimensions, filling new cells with zeros
             // as documented in the javadoc
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix reshaped = m.reshape(3, 3); // Expand from 2x2 (4 elements) to 3x3 (9 elements)
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix reshaped = m.reshapeAndPad(3, 3); // Expand from 2x2 (4 elements) to 3x3 (9 elements)
             assertEquals(3, reshaped.rowCount());
             assertEquals(3, reshaped.columnCount());
             // Verify original elements are preserved
@@ -5445,7 +5445,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_repeatElements() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix result = m.repeatElements(2, 2);
             assertEquals(4, result.rowCount());
             assertEquals(4, result.columnCount());
@@ -5458,7 +5458,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_repeatElements_invalidRepeats() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(0, 1));
         }
 
@@ -5466,7 +5466,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_tile() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             LongMatrix result = m.tile(2, 2);
             assertEquals(2, result.rowCount());
             assertEquals(4, result.columnCount());
@@ -5478,7 +5478,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_tile_invalidRepeats() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
         }
 
@@ -5486,7 +5486,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_flatten() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongList flat = m.flatten();
             assertEquals(4, flat.size());
             assertEquals(1L, flat.get(0));
@@ -5499,7 +5499,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_mutateFlattened() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             AtomicInteger count = new AtomicInteger(0);
             m.mutateFlattened(row -> count.addAndGet(row.length));
             assertEquals(4, count.get());
@@ -5509,8 +5509,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_stackVertically() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 3L, 4L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 3L, 4L } });
             LongMatrix result = m1.stackVertically(m2);
             assertEquals(2, result.rowCount());
             assertEquals(2, result.columnCount());
@@ -5520,15 +5520,15 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_vstack_incompatibleCols() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 3L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 3L } });
             assertThrows(IllegalArgumentException.class, () -> m1.stackVertically(m2));
         }
 
         @Test
         public void test_stackHorizontally() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L }, { 2L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 3L }, { 4L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L }, { 2L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 3L }, { 4L } });
             LongMatrix result = m1.stackHorizontally(m2);
             assertEquals(2, result.rowCount());
             assertEquals(2, result.columnCount());
@@ -5538,8 +5538,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_hstack_incompatibleRows() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 3L }, { 4L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 3L }, { 4L } });
             assertThrows(IllegalArgumentException.class, () -> m1.stackHorizontally(m2));
         }
 
@@ -5547,8 +5547,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_add() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 5L, 6L }, { 7L, 8L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 5L, 6L }, { 7L, 8L } });
             LongMatrix result = m1.add(m2);
             assertEquals(6L, result.get(0, 0));
             assertEquals(8L, result.get(0, 1));
@@ -5558,15 +5558,15 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_add_incompatibleDimensions() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 3L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 3L } });
             assertThrows(IllegalArgumentException.class, () -> m1.add(m2));
         }
 
         @Test
         public void test_subtract() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 5L, 6L }, { 7L, 8L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 5L, 6L }, { 7L, 8L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             LongMatrix result = m1.subtract(m2);
             assertEquals(4L, result.get(0, 0));
             assertEquals(4L, result.get(0, 1));
@@ -5576,15 +5576,15 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_subtract_incompatibleDimensions() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 3L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 3L } });
             assertThrows(IllegalArgumentException.class, () -> m1.subtract(m2));
         }
 
         @Test
         public void test_matrixMultiply() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 2L, 0L }, { 1L, 2L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 2L, 0L }, { 1L, 2L } });
             LongMatrix result = m1.matrixMultiply(m2);
             assertEquals(4L, result.get(0, 0));
             assertEquals(4L, result.get(0, 1));
@@ -5594,8 +5594,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_matrixMultiply_incompatibleDimensions() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 3L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 3L } });
             assertThrows(IllegalArgumentException.class, () -> m1.matrixMultiply(m2));
         }
 
@@ -5603,7 +5603,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_boxed() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             Matrix<Long> boxed = m.boxed();
             assertEquals(2, boxed.rowCount());
             assertEquals(2, boxed.columnCount());
@@ -5615,7 +5615,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_toFloatMatrix() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             FloatMatrix result = m.toFloatMatrix();
             assertEquals(2, result.rowCount());
             assertEquals(2, result.columnCount());
@@ -5625,7 +5625,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_toDoubleMatrix() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             DoubleMatrix result = m.toDoubleMatrix();
             assertEquals(2, result.rowCount());
             assertEquals(2, result.columnCount());
@@ -5635,9 +5635,9 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_zipWith_ternary() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 3L, 4L } });
-            LongMatrix m3 = LongMatrix.of(new long[][] { { 5L, 6L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 3L, 4L } });
+            LongMatrix m3 = LongMatrix.wrap(new long[][] { { 5L, 6L } });
             LongMatrix result = m1.zipWith(m2, m3, (a, b, c) -> a + b + c);
             assertEquals(9L, result.get(0, 0));
             assertEquals(12L, result.get(0, 1));
@@ -5647,84 +5647,84 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_horizontalStream() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             long sum = m.rowMajorStream().sum();
             assertEquals(10L, sum);
         }
 
         @Test
         public void test_streamH_byRowIndex() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             long sum = m.rowMajorStream(0).sum();
             assertEquals(3L, sum);
         }
 
         @Test
         public void test_streamH_withRange() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
             long sum = m.rowMajorStream(1, 3).sum();
             assertEquals(18L, sum);
         }
 
         @Test
         public void test_verticalStream() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             long sum = m.columnMajorStream().sum();
             assertEquals(10L, sum);
         }
 
         @Test
         public void test_streamV_byColumnIndex() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             long sum = m.columnMajorStream(0).sum();
             assertEquals(4L, sum);
         }
 
         @Test
         public void test_streamV_withRange() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             long sum = m.columnMajorStream(1, 3).sum();
             assertEquals(16L, sum);
         }
 
         @Test
         public void test_mainDiagonalStream() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             long sum = m.mainDiagonalStream().sum();
             assertEquals(5L, sum);
         }
 
         @Test
         public void test_antiDiagonalStream() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             long sum = m.antiDiagonalStream().sum();
             assertEquals(5L, sum);
         }
 
         @Test
         public void test_rowStreams() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             long count = m.rowStreams().count();
             assertEquals(2, count);
         }
 
         @Test
         public void test_streamR_withRange() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
             long count = m.rowStreams(1, 3).count();
             assertEquals(2, count);
         }
 
         @Test
         public void test_columnStreams() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             long count = m.columnStreams().count();
             assertEquals(2, count);
         }
 
         @Test
         public void test_streamC_withRange() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L } });
             long count = m.columnStreams(1, 3).count();
             assertEquals(2, count);
         }
@@ -5733,7 +5733,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_forEach() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             AtomicInteger count = new AtomicInteger(0);
             m.forEach(x -> count.incrementAndGet());
             assertEquals(4, count.get());
@@ -5741,7 +5741,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_forEach_withRange() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             AtomicInteger count = new AtomicInteger(0);
             m.forEach(1, 3, 1, 3, x -> count.incrementAndGet());
             assertEquals(4, count.get());
@@ -5751,7 +5751,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_println() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             String result = m.toMultilineString();
             assertNotNull(result);
             assertTrue(result.length() > 0);
@@ -5759,21 +5759,21 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void test_equals_same() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             assertEquals(m1, m2);
         }
 
         @Test
         public void test_equals_different() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 5L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 5L } });
             assertNotEquals(m1, m2);
         }
 
         @Test
         public void test_equals_null() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1L, 2L } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             assertNotEquals(m1, null);
         }
     }
@@ -5782,7 +5782,7 @@ class LongMatrixTest extends TestBase {
     class MatrixZeroColumnRowStreamTest_LongMatrix extends TestBase {
         @Test
         public void testLongMatrixRowsForZeroColumnMatrix() {
-            final LongMatrix matrix = LongMatrix.of(new long[][] { {}, {}, {} });
+            final LongMatrix matrix = LongMatrix.wrap(new long[][] { {}, {}, {} });
             final List<long[]> rows = matrix.rowStreams().map(LongStream::toArray).toList();
 
             assertEquals(3, rows.size());
@@ -5796,8 +5796,8 @@ class LongMatrixTest extends TestBase {
     class PrimitiveMatrixUpdateAllNullValidationTest_LongMatrix extends TestBase {
         @Test
         public void testLongMatrixUpdateAllNullOperator() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
-            LongMatrix emptyLike = LongMatrix.of(new long[][] { {}, {} });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } });
+            LongMatrix emptyLike = LongMatrix.wrap(new long[][] { {}, {} });
             assertThrows(IllegalArgumentException.class, () -> matrix.updateAll((Throwables.LongUnaryOperator<RuntimeException>) null));
             assertThrows(IllegalArgumentException.class, () -> matrix.updateAll((Throwables.IntBiFunction<Long, RuntimeException>) null));
             assertThrows(IllegalArgumentException.class, () -> matrix.updateMainDiagonal((Throwables.LongUnaryOperator<RuntimeException>) null));
@@ -5813,7 +5813,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testLongMatrixBinaryOpsRejectNullMatrix() {
-            LongMatrix matrix = LongMatrix.of(new long[][] { { 1L } });
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1L } });
             assertThrows(IllegalArgumentException.class, () -> matrix.stackVertically(null));
             assertThrows(IllegalArgumentException.class, () -> matrix.stackHorizontally(null));
             assertThrows(IllegalArgumentException.class, () -> matrix.add(null));
@@ -5831,9 +5831,9 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testIsSameShape() {
-            LongMatrix m1 = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
-            LongMatrix m2 = LongMatrix.of(new long[][] { { 5, 6 }, { 7, 8 } });
-            LongMatrix m3 = LongMatrix.of(new long[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } });
+            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 5, 6 }, { 7, 8 } });
+            LongMatrix m3 = LongMatrix.wrap(new long[][] { { 1, 2, 3 }, { 4, 5, 6 } });
 
             assertTrue(m1.isSameShape(m2));
             assertFalse(m1.isSameShape(m3));
@@ -5841,13 +5841,13 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testIsSameShape_NullThrows() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L } });
             assertThrows(IllegalArgumentException.class, () -> m.isSameShape(null));
         }
 
         @Test
         public void testAdjacent4Points() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
 
             List<Sheet.Point> center = m.adjacent4Points(1, 1).toList();
             assertEquals(4, center.size());
@@ -5861,7 +5861,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testAdjacent8Points() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
 
             List<Sheet.Point> center = m.adjacent8Points(1, 1).toList();
             assertEquals(8, center.size());
@@ -5872,7 +5872,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testPointsMainDiagonal() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             List<Sheet.Point> points = m.mainDiagonalPoints().toList();
             assertEquals(3, points.size());
             assertEquals(0, points.get(0).rowIndex());
@@ -5881,13 +5881,13 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testPointsMainDiagonal_NonSquareThrows() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             assertThrows(IllegalStateException.class, () -> m.mainDiagonalPoints());
         }
 
         @Test
         public void testPointsAntiDiagonal() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             List<Sheet.Point> points = m.antiDiagonalPoints().toList();
             assertEquals(3, points.size());
             assertEquals(0, points.get(0).rowIndex());
@@ -5896,35 +5896,35 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testPointsHorizontal() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } });
             List<Sheet.Point> points = m.rowMajorPoints().toList();
             assertEquals(4, points.size());
         }
 
         @Test
         public void testPointsHorizontal_SingleRow() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } });
             List<Sheet.Point> points = m.rowMajorPoints(0).toList();
             assertEquals(2, points.size());
         }
 
         @Test
         public void testPointsVertical() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } });
             List<Sheet.Point> points = m.columnMajorPoints().toList();
             assertEquals(4, points.size());
         }
 
         @Test
         public void testPointsVertical_SingleColumn() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } });
             List<Sheet.Point> points = m.columnMajorPoints(1).toList();
             assertEquals(2, points.size());
         }
 
         @Test
         public void testPointsRows() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
             List<List<Sheet.Point>> rows = m.rowPoints().map(s -> s.toList()).toList();
             assertEquals(3, rows.size());
             assertEquals(2, rows.get(0).size());
@@ -5932,7 +5932,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testPointsColumns() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             List<List<Sheet.Point>> cols = m.columnPoints().map(s -> s.toList()).toList();
             assertEquals(3, cols.size());
             assertEquals(2, cols.get(0).size());
@@ -5940,7 +5940,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testAccept() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } });
             long[] sum = { 0 };
             m.accept(matrix -> {
                 LongList flat = matrix.flatten();
@@ -5952,26 +5952,26 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testAccept_NullThrows() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L } });
             assertThrows(IllegalArgumentException.class, () -> m.accept(null));
         }
 
         @Test
         public void testApply() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } });
             long count = m.apply(matrix -> matrix.elementCount());
             assertEquals(4, count);
         }
 
         @Test
         public void testApply_NullThrows() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L } });
             assertThrows(IllegalArgumentException.class, () -> m.apply(null));
         }
 
         @Test
         public void testForEachIndex() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } });
             List<String> indices = new ArrayList<>();
             m.forEachIndices((r, c) -> indices.add(r + "," + c));
             assertEquals(4, indices.size());
@@ -5981,9 +5981,9 @@ class LongMatrixTest extends TestBase {
     }
 
     @Test
-    public void testExtendRepeatFlattenAndForEach_SubRangeEdgeCase() {
-        LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
-        LongMatrix extended = matrix.extend(1, 0, 1, 0, 8L);
+    public void testPadRepeatFlattenAndForEach_SubRangeEdgeCase() {
+        LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
+        LongMatrix extended = matrix.pad(1, 0, 1, 0, 8L);
         LongMatrix repeatedElements = matrix.repeatElements(1, 2);
         LongMatrix repeatedMatrix = matrix.tile(2, 1);
         List<Long> visited = new ArrayList<>();
@@ -5999,7 +5999,7 @@ class LongMatrixTest extends TestBase {
 
     @Test
     public void testStreamHorizontalIteratorAdvanceAndExhaustion_EdgeCase() {
-        LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+        LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
         var iterator = matrix.rowMajorStream(0, 2).iterator();
 
         assertTrue(iterator instanceof com.landawn.abacus.util.stream.LongIteratorEx);
@@ -6038,7 +6038,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testRotate90_nonSquare_3x2() {
         // 3x2 rotated 90° CW must yield a 2x3 with first column = last row reading upward.
-        LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
+        LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
         LongMatrix rotated = m.rotate90();
         assertEquals(2, rotated.rowCount());
         assertEquals(3, rotated.columnCount());
@@ -6049,7 +6049,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testRotate270_nonSquare_3x2() {
         // 3x2 rotated 270° CW (= 90° CCW) must yield a 2x3 with first row = original column 1.
-        LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
+        LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
         LongMatrix rotated = m.rotate270();
         assertEquals(2, rotated.rowCount());
         assertEquals(3, rotated.columnCount());
@@ -6060,7 +6060,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testTranspose_nonSquare_3x2() {
         // Verify transpose for the rowCount > columnCount branch.
-        LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
+        LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
         LongMatrix t = m.transpose();
         assertEquals(2, t.rowCount());
         assertEquals(3, t.columnCount());
@@ -6071,8 +6071,8 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testReshape_growLargerThanInput_padsWithZeros() {
         // 2x3 reshaped to 2x4 should preserve order and pad the trailing slots with 0L.
-        LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
-        LongMatrix reshaped = m.reshape(2, 4);
+        LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+        LongMatrix reshaped = m.reshapeAndPad(2, 4);
         assertEquals(2, reshaped.rowCount());
         assertEquals(4, reshaped.columnCount());
         assertArrayEquals(new long[] { 1L, 2L, 3L, 4L }, reshaped.rowCopy(0));
@@ -6082,7 +6082,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testReshape_singleRowToMultiRow_preservesOrder() {
         // Exercise the `a.length == 1` branch of reshape.
-        LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L, 4L, 5L, 6L } });
+        LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L, 4L, 5L, 6L } });
         LongMatrix reshaped = m.reshape(3, 2);
         assertEquals(3, reshaped.rowCount());
         assertEquals(2, reshaped.columnCount());
@@ -6094,7 +6094,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testMainDiagonalStream_iteratorAdvanceAndCount() {
         // Exercise advance() boundary around the `a[cursor][cursor++]` access pattern.
-        LongMatrix m = LongMatrix.of(new long[][] { { 1L, 0L, 0L, 0L }, { 0L, 2L, 0L, 0L }, { 0L, 0L, 3L, 0L }, { 0L, 0L, 0L, 4L } });
+        LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 0L, 0L, 0L }, { 0L, 2L, 0L, 0L }, { 0L, 0L, 3L, 0L }, { 0L, 0L, 0L, 4L } });
 
         var it = (com.landawn.abacus.util.stream.LongIteratorEx) m.mainDiagonalStream().iterator();
         assertEquals(4L, it.count());
@@ -6108,7 +6108,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testAntiDiagonalStream_iteratorAdvanceAndCount() {
         // Anti-diagonal of 4x4: (0,3)=4, (1,2)=3, (2,1)=2, (3,0)=1.
-        LongMatrix m = LongMatrix.of(new long[][] { { 0L, 0L, 0L, 4L }, { 0L, 0L, 3L, 0L }, { 0L, 2L, 0L, 0L }, { 1L, 0L, 0L, 0L } });
+        LongMatrix m = LongMatrix.wrap(new long[][] { { 0L, 0L, 0L, 4L }, { 0L, 0L, 3L, 0L }, { 0L, 2L, 0L, 0L }, { 1L, 0L, 0L, 0L } });
 
         long[] anti = m.antiDiagonalStream().toArray();
         assertArrayEquals(new long[] { 4L, 3L, 2L, 1L }, anti);
@@ -6122,7 +6122,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testVerticalStream_advanceCrossesColumnBoundary() {
         // Verify advance crosses column boundaries for columnMajorStream.
-        LongMatrix m = LongMatrix.of(new long[][] { { 1L, 4L, 7L }, { 2L, 5L, 8L }, { 3L, 6L, 9L } });
+        LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 4L, 7L }, { 2L, 5L, 8L }, { 3L, 6L, 9L } });
 
         var it = (com.landawn.abacus.util.stream.LongIteratorEx) m.columnMajorStream().iterator();
         // columnMajorStream() → 1,2,3 (col 0) | 4,5,6 (col 1) | 7,8,9 (col 2)
@@ -6139,14 +6139,14 @@ class LongMatrixTest extends TestBase {
 
     @Test
     public void testFlipVerticallyInPlace_singleRow_isNoOp() {
-        LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L, 3L } });
+        LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L } });
         m.flipVerticallyInPlace();
         assertArrayEquals(new long[] { 1L, 2L, 3L }, m.rowCopy(0));
     }
 
     @Test
     public void testFlipHorizontallyInPlace_singleColumn_isNoOp() {
-        LongMatrix m = LongMatrix.of(new long[][] { { 1L }, { 2L }, { 3L } });
+        LongMatrix m = LongMatrix.wrap(new long[][] { { 1L }, { 2L }, { 3L } });
         m.flipHorizontallyInPlace();
         assertEquals(1L, m.get(0, 0));
         assertEquals(2L, m.get(1, 0));
@@ -6156,7 +6156,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testCopy_modificationsAreIndependent() {
         // Verify that copy() returns a fully independent matrix (no shared row arrays).
-        LongMatrix orig = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+        LongMatrix orig = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
         LongMatrix copy = orig.copy();
         copy.set(0, 0, 99L);
         assertEquals(1L, orig.get(0, 0));
@@ -6169,8 +6169,8 @@ class LongMatrixTest extends TestBase {
         // does not affect the stacked result.
         long[][] aData = { { 1L, 2L } };
         long[][] bData = { { 3L, 4L } };
-        LongMatrix a = LongMatrix.of(aData);
-        LongMatrix b = LongMatrix.of(bData);
+        LongMatrix a = LongMatrix.wrap(aData);
+        LongMatrix b = LongMatrix.wrap(bData);
         LongMatrix stacked = a.stackVertically(b);
 
         // Mutate source data after stacking; stacked should NOT change.
@@ -6183,7 +6183,7 @@ class LongMatrixTest extends TestBase {
     @Test
     public void testToFloatMatrix_preservesValuesWithinPrecision() {
         // Long values with absolute value <= 2^24 are exact in float.
-        LongMatrix lm = LongMatrix.of(new long[][] { { 0L, 1L, 16777216L }, { -16777216L, 100L, -100L } });
+        LongMatrix lm = LongMatrix.wrap(new long[][] { { 0L, 1L, 16777216L }, { -16777216L, 100L, -100L } });
         FloatMatrix fm = lm.toFloatMatrix();
         assertEquals(2, fm.rowCount());
         assertEquals(3, fm.columnCount());
@@ -6197,8 +6197,8 @@ class LongMatrixTest extends TestBase {
     public void testmatrixMultiply_largeLongValues_doesNotTruncateToInt() {
         // Verify matrix multiplication keeps values in long domain (no int truncation).
         long large = 1_000_000_000L;
-        LongMatrix a = LongMatrix.of(new long[][] { { large, large }, { 0L, 0L } });
-        LongMatrix b = LongMatrix.of(new long[][] { { 2L, 0L }, { 3L, 0L } });
+        LongMatrix a = LongMatrix.wrap(new long[][] { { large, large }, { 0L, 0L } });
+        LongMatrix b = LongMatrix.wrap(new long[][] { { 2L, 0L }, { 3L, 0L } });
         LongMatrix product = a.matrixMultiply(b);
         // (1e9 * 2) + (1e9 * 3) = 5e9, which exceeds Integer.MAX_VALUE.
         assertEquals(5_000_000_000L, product.get(0, 0));
@@ -6210,7 +6210,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testPrintlnNonEmptyReturnsNonNullFormattedString() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             String printed = m.toMultilineString();
             assertNotNull(printed);
             assertTrue(printed.contains("1"));
@@ -6227,7 +6227,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testPrintlnWithExtremeLongValues() {
-            LongMatrix m = LongMatrix.of(new long[][] { { Long.MIN_VALUE, 0L, Long.MAX_VALUE } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { Long.MIN_VALUE, 0L, Long.MAX_VALUE } });
             String printed = m.toMultilineString();
             assertNotNull(printed);
             assertTrue(printed.contains(String.valueOf(Long.MIN_VALUE)));
@@ -6242,7 +6242,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testDiagonalStream_Nx0MatrixThrowsBecauseNotSquare() {
-            LongMatrix m = LongMatrix.of(new long[3][0]);
+            LongMatrix m = LongMatrix.wrap(new long[3][0]);
             assertEquals(3, m.rowCount());
             assertEquals(0, m.columnCount());
             assertThrows(IllegalStateException.class, () -> m.mainDiagonalStream());
@@ -6255,14 +6255,14 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testTranspose_Nx0_collapsesToEmpty() {
-            LongMatrix t = LongMatrix.of(new long[3][0]).transpose();
+            LongMatrix t = LongMatrix.wrap(new long[3][0]).transpose();
             assertEquals(0, t.rowCount());
             assertEquals(0, t.columnCount());
         }
 
         @Test
         public void testRotate180_Nx0_preservesShape_whileRotate90TwiceCollapses() {
-            LongMatrix m = LongMatrix.of(new long[3][0]);
+            LongMatrix m = LongMatrix.wrap(new long[3][0]);
 
             LongMatrix via180 = m.rotate180();
             assertEquals(3, via180.rowCount());
@@ -6275,7 +6275,7 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testReshape_oversizedShapeThrowsIllegalArgumentException() {
-            LongMatrix m = LongMatrix.of(new long[][] { { 1L } });
+            LongMatrix m = LongMatrix.wrap(new long[][] { { 1L } });
             assertThrows(IllegalArgumentException.class, () -> m.reshape(46341, 46341));
         }
 
@@ -6288,16 +6288,16 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testAliasedArraySourcesAreSnapshotted() {
-            LongMatrix columnMatrix = LongMatrix.of(new long[][] { { 1L, 2L }, { 3L, 4L } });
+            LongMatrix columnMatrix = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             columnMatrix.setColumn(1, columnMatrix.rowView(0));
             assertArrayEquals(new long[] { 3L, 2L }, columnMatrix.rowCopy(1));
 
-            LongMatrix diagonalMatrix = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
+            LongMatrix diagonalMatrix = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             diagonalMatrix.setAntiDiagonal(diagonalMatrix.rowView(0));
             assertArrayEquals(new long[] { 1L, 2L, 3L }, diagonalMatrix.antiDiagonalCopy());
 
             long[][] backing = { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } };
-            LongMatrix fillMatrix = LongMatrix.of(backing);
+            LongMatrix fillMatrix = LongMatrix.wrap(backing);
             fillMatrix.fill(1, 0, backing);
             assertArrayEquals(new long[] { 3L, 4L }, fillMatrix.rowCopy(2));
         }
@@ -6305,7 +6305,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testFlipHorizontallyInPlace_reversesSharedBackingRowOnce() {
             long[] sharedRow = { 1L, 2L, 3L, 4L };
-            LongMatrix matrix = LongMatrix.of(sharedRow, sharedRow);
+            LongMatrix matrix = LongMatrix.wrap(sharedRow, sharedRow);
 
             matrix.flipHorizontallyInPlace();
 
@@ -6316,14 +6316,14 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testUnaryUpdates_transformSharedBackingCellsOnce() {
             long[] sharedColumnRow = { 1L, 2L };
-            LongMatrix columnMatrix = LongMatrix.of(sharedColumnRow, sharedColumnRow);
+            LongMatrix columnMatrix = LongMatrix.wrap(sharedColumnRow, sharedColumnRow);
 
             columnMatrix.updateColumn(0, value -> value + 1L);
 
             assertArrayEquals(new long[] { 2L, 2L }, sharedColumnRow);
 
             long[] sharedSequentialRow = { 1L, 2L };
-            LongMatrix sequentialMatrix = LongMatrix.of(sharedSequentialRow, sharedSequentialRow);
+            LongMatrix sequentialMatrix = LongMatrix.wrap(sharedSequentialRow, sharedSequentialRow);
             AtomicInteger sequentialCalls = new AtomicInteger();
 
             Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> sequentialMatrix.updateAll(value -> {
@@ -6335,7 +6335,7 @@ class LongMatrixTest extends TestBase {
             assertArrayEquals(new long[] { 2L, 3L }, sharedSequentialRow);
 
             long[] sharedParallelRow = { 1L, 2L };
-            LongMatrix parallelMatrix = LongMatrix.of(sharedParallelRow, sharedParallelRow);
+            LongMatrix parallelMatrix = LongMatrix.wrap(sharedParallelRow, sharedParallelRow);
             AtomicInteger parallelCalls = new AtomicInteger();
 
             Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> parallelMatrix.updateAll(value -> {
@@ -6347,7 +6347,7 @@ class LongMatrixTest extends TestBase {
             assertArrayEquals(new long[] { 2L, 3L }, sharedParallelRow);
 
             long[] sharedReplaceRow = { 1L, 2L };
-            LongMatrix replaceMatrix = LongMatrix.of(sharedReplaceRow, sharedReplaceRow);
+            LongMatrix replaceMatrix = LongMatrix.wrap(sharedReplaceRow, sharedReplaceRow);
             AtomicInteger replaceCalls = new AtomicInteger();
 
             Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> replaceMatrix.replaceIf(value -> {
@@ -6362,7 +6362,7 @@ class LongMatrixTest extends TestBase {
 
     @Test
     public void testStreamIterators_midStrideAdvanceThenToArray_EdgeCase() {
-        LongMatrix matrix = LongMatrix.of(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
+        LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
 
         var rowMajorIterator = matrix.rowMajorStream(0, 2).iterator();
         assertTrue(rowMajorIterator instanceof com.landawn.abacus.util.stream.LongIteratorEx);

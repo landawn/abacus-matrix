@@ -144,24 +144,6 @@ Shared implementation base for the matrix types in this package.
 - **Parameters:**
   - (none)
 - **Returns:** a new matrix that is the transpose of this matrix, with dimensions {@code columnCount × rowCount} ; a matrix with zero columns (an {@code N x 0} shape) transposes to the empty {@code 0 x 0} matrix, because the swapped shape {@code 0 x N} (zero rows with a non-zero column count) is not representable
-##### reshapeByColumnCount(...) -> M
-- **Signature:** `public M reshapeByColumnCount(final int newColumnCount)`
-- **Summary:** Returns a new matrix with the elements of this matrix rearranged into the specified number of columns.
-- **Contract:**
-  - If the total element count is not evenly divisible by the new column count, the last row will be padded with default values ( {@code 0} for numeric types, {@code false} for boolean, {@code null} for objects).
-- **Parameters:**
-  - `newColumnCount` (`int`) — the number of columns in the reshaped matrix (must be positive)
-- **Returns:** a new matrix with the specified number of columns
-##### reshape(...) -> M
-- **Signature:** `public abstract M reshape(int newRowCount, int newColumnCount)`
-- **Summary:** Returns a new matrix with the elements of this matrix rearranged into the specified dimensions.
-- **Contract:**
-  - The new shape must have at least as many total elements as the original ( {@code (long) newRowCount * newColumnCount >= elementCount()} ).
-  - If the new shape has more elements, the extra positions are filled with default values ( {@code 0} for numeric types, {@code false} for boolean, {@code null} for objects).
-- **Parameters:**
-  - `newRowCount` (`int`) — the number of rows in the reshaped matrix; must be non-negative
-  - `newColumnCount` (`int`) — the number of columns in the reshaped matrix; must be non-negative
-- **Returns:** a new matrix with the specified dimensions ( {@code newRowCount × newColumnCount} )
 ##### isSameShape(...) -> boolean
 - **Signature:** `public boolean isSameShape(final M other)`
 - **Summary:** Returns {@code true} if this matrix has the same shape (dimensions) as the specified matrix.
@@ -171,6 +153,34 @@ Shared implementation base for the matrix types in this package.
 - **Parameters:**
   - `other` (`M`) — the matrix to compare with
 - **Returns:** {@code true} if both matrices have the same dimensions, {@code false} otherwise
+##### reshape(...) -> M
+- **Signature:** `public M reshape(final int newRowCount, final int newColumnCount)`
+- **Summary:** Returns a new matrix with the same elements rearranged into the specified dimensions.
+- **Contract:**
+  - The requested shape must contain exactly the same number of cells as this matrix: {@code (long) newRowCount * newColumnCount == elementCount()} .
+- **Parameters:**
+  - `newRowCount` (`int`) — the number of rows in the reshaped matrix; must be non-negative
+  - `newColumnCount` (`int`) — the number of columns in the reshaped matrix; must be non-negative
+- **Returns:** a new matrix with the specified dimensions ( {@code newRowCount × newColumnCount} )
+- **See also:** #reshapeAndPad(int, int), #reshapeAndPadToColumnCount(int)
+##### reshapeAndPad(...) -> M
+- **Signature:** `public abstract M reshapeAndPad(int newRowCount, int newColumnCount)`
+- **Summary:** Returns a new matrix with the elements of this matrix rearranged into the specified dimensions, padding any additional cells with the element type's default value.
+- **Contract:**
+  - The new shape must have at least as many cells as this matrix: {@code (long) newRowCount * newColumnCount >= elementCount()} .
+- **Parameters:**
+  - `newRowCount` (`int`) — the number of rows in the reshaped matrix; must be non-negative
+  - `newColumnCount` (`int`) — the number of columns in the reshaped matrix; must be non-negative
+- **Returns:** a new matrix with the specified dimensions, padded with default values when necessary
+- **See also:** #reshape(int, int), #reshapeAndPadToColumnCount(int)
+##### reshapeAndPadToColumnCount(...) -> M
+- **Signature:** `public M reshapeAndPadToColumnCount(final int newColumnCount)`
+- **Summary:** Returns a new matrix with the elements of this matrix rearranged into the specified number of columns.
+- **Contract:**
+  - If the total element count is not evenly divisible by the new column count, the last row will be padded with default values ( {@code 0} for numeric types, {@code false} for boolean, {@code null} for objects).
+- **Parameters:**
+  - `newColumnCount` (`int`) — the number of columns in the reshaped matrix (must be positive)
+- **Returns:** a new matrix with the specified number of columns
 ##### repeatElements(...) -> M
 - **Signature:** `public abstract M repeatElements(int rowRepeats, int columnRepeats)`
 - **Summary:** Returns a new matrix with each element repeated the specified number of times in both dimensions.
@@ -187,8 +197,8 @@ Shared implementation base for the matrix types in this package.
   - `columnRepeats` (`int`) — number of times to repeat the matrix in the column direction (must be positive)
 - **Returns:** a new matrix with this matrix tiled, with dimensions {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}
 - **See also:** <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">,MATLAB repmat function,</a>
-##### extend(...) -> M
-- **Signature:** `public abstract M extend(int padTop, int padBottom, int padLeft, int padRight)`
+##### pad(...) -> M
+- **Signature:** `public abstract M pad(int padTop, int padBottom, int padLeft, int padRight)`
 - **Summary:** Returns a new matrix grown by the specified non-negative pad widths on each side.
 - **Parameters:**
   - `padTop` (`int`) — number of rows to add above the matrix (must be {@code >= 0} )
@@ -264,7 +274,7 @@ Shared implementation base for the matrix types in this package.
   - For large matrices the operation may be automatically parallelized, in which case the order in which positions are visited is unspecified and the supplied action must be thread-safe; every position is still visited exactly once.
   - When logical rows share a backing row array, the operation runs sequentially to avoid concurrent access to shared row storage and preserve deterministic row-major visitation.
   - <p> This method is useful when you need to access matrix positions without caring about the actual element values, or when the element access logic is handled inside the action.
-  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.of(new int\[\]\[\] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}); // Count every visited position AtomicInteger visited = new AtomicInteger(0); matrix.forEachIndices((i, j) -> visited.incrementAndGet()); visited.get(); // returns 9 (3 x 3 = 9 positions) // Count elements on the main diagonal AtomicInteger diagonalCount = new AtomicInteger(0); matrix.forEachIndices((i, j) -> { if (i == j) diagonalCount.incrementAndGet(); }); diagonalCount.get(); // returns 3 IntMatrix empty = IntMatrix.of(new int\[0\]\[0\]); empty.forEachIndices((i, j) -> visited.incrementAndGet()); // no positions; action never invoked matrix.forEachIndices((Throwables.IntBiConsumer<RuntimeException>) null); // throws IllegalArgumentException (null action) } </pre>
+  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.wrap(new int\[\]\[\] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}); // Count every visited position AtomicInteger visited = new AtomicInteger(0); matrix.forEachIndices((i, j) -> visited.incrementAndGet()); visited.get(); // returns 9 (3 x 3 = 9 positions) // Count elements on the main diagonal AtomicInteger diagonalCount = new AtomicInteger(0); matrix.forEachIndices((i, j) -> { if (i == j) diagonalCount.incrementAndGet(); }); diagonalCount.get(); // returns 3 IntMatrix empty = IntMatrix.wrap(new int\[0\]\[0\]); empty.forEachIndices((i, j) -> visited.incrementAndGet()); // no positions; action never invoked matrix.forEachIndices((Throwables.IntBiConsumer<RuntimeException>) null); // throws IllegalArgumentException (null action) } </pre>
 - **Parameters:**
   - `action` (`Throwables.IntBiConsumer<E>`) — the action to perform for each position, receives (rowIndex, columnIndex)
 - **Throws:**
@@ -291,7 +301,7 @@ Shared implementation base for the matrix types in this package.
   - For large matrices the operation may be automatically parallelized, in which case the order in which positions are visited is unspecified and the supplied action must be thread-safe; every position is still visited exactly once.
   - When logical rows share a backing row array, the operation runs sequentially to avoid concurrent access to shared row storage and preserve deterministic row-major visitation.
   - <p> This variant is useful when the action needs access to matrix elements or methods, allowing you to read/write values or use matrix operations within the action.
-  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.of(new int\[\]\[\] {{1, 2}, {3, 4}}); // Sum every element via the supplied matrix reference AtomicInteger sum = new AtomicInteger(0); matrix.forEachIndices((i, j, m) -> sum.addAndGet(m.get(i, j))); sum.get(); // returns 10 (1 + 2 + 3 + 4) // Force row-major execution for an in-place update whose order should be explicit Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.forEachIndices((i, j, m) -> m.set(i, j, i + j))); matrix.get(1, 1); // returns 2 (1 + 1) matrix.get(0, 0); // returns 0 matrix.forEachIndices((Throwables.BiIntObjConsumer<IntMatrix, RuntimeException>) null); // throws IllegalArgumentException (null action) } </pre>
+  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.wrap(new int\[\]\[\] {{1, 2}, {3, 4}}); // Sum every element via the supplied matrix reference AtomicInteger sum = new AtomicInteger(0); matrix.forEachIndices((i, j, m) -> sum.addAndGet(m.get(i, j))); sum.get(); // returns 10 (1 + 2 + 3 + 4) // Force row-major execution for an in-place update whose order should be explicit Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.forEachIndices((i, j, m) -> m.set(i, j, i + j))); matrix.get(1, 1); // returns 2 (1 + 1) matrix.get(0, 0); // returns 0 matrix.forEachIndices((Throwables.BiIntObjConsumer<IntMatrix, RuntimeException>) null); // throws IllegalArgumentException (null action) } </pre>
 - **Parameters:**
   - `action` (`Throwables.BiIntObjConsumer<M, E>`) — the action to perform, receiving (rowIndex, columnIndex, matrix)
 - **Throws:**
@@ -519,7 +529,7 @@ Shared implementation base for the matrix types in this package.
 - **Signature:** `public <E extends Exception> void accept(final Throwables.Consumer<? super M, E> action) throws E`
 - **Summary:** Executes the specified action with this matrix as the parameter.
 - **Contract:**
-  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.of(new int\[\]\[\] {{1, 2}, {3, 4}}); // Capture a value via side effect int\[\] holder = new int\[1\]; matrix.accept(m -> holder\[0\] = m.rowCount() * m.columnCount()); int elementCount = holder\[0\]; // 4 // Modify matrix elements in place matrix.accept(m -> { for (int i = 0; i < m.rowCount(); i++) m.set(i, 0, 0); }); // zero the first column matrix.get(0, 0); // returns 0 matrix.get(1, 0); // returns 0 // A non-empty matrix passes a validation guard without throwing matrix.accept(m -> { if (m.isEmpty()) throw new IllegalStateException(); }); // no exception matrix.accept((Throwables.Consumer<IntMatrix, RuntimeException>) null); // throws IllegalArgumentException (null action) } </pre>
+  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.wrap(new int\[\]\[\] {{1, 2}, {3, 4}}); // Capture a value via side effect int\[\] holder = new int\[1\]; matrix.accept(m -> holder\[0\] = m.rowCount() * m.columnCount()); int elementCount = holder\[0\]; // 4 // Modify matrix elements in place matrix.accept(m -> { for (int i = 0; i < m.rowCount(); i++) m.set(i, 0, 0); }); // zero the first column matrix.get(0, 0); // returns 0 matrix.get(1, 0); // returns 0 // A non-empty matrix passes a validation guard without throwing matrix.accept(m -> { if (m.isEmpty()) throw new IllegalStateException(); }); // no exception matrix.accept((Throwables.Consumer<IntMatrix, RuntimeException>) null); // throws IllegalArgumentException (null action) } </pre>
 - **Parameters:**
   - `action` (`Throwables.Consumer<? super M, E>`) — the consumer action to perform on this matrix
 - **Throws:**
@@ -561,9 +571,9 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** the shared empty {@code BooleanMatrix} singleton (zero rows, zero columns)
-##### of(...) -> BooleanMatrix
-- **Signature:** `public static BooleanMatrix of(final boolean[]... a)`
-- **Summary:** Creates a {@code BooleanMatrix} from a two-dimensional boolean array.
+##### wrap(...) -> BooleanMatrix
+- **Signature:** `public static BooleanMatrix wrap(final boolean[]... a)`
+- **Summary:** Wraps the supplied two-dimensional boolean array as {@code BooleanMatrix} .
 - **Contract:**
   - <p> <b> &#9888; &#65039; Shared backing: </b> When the input has at least one row, the provided array is used directly without defensive copying.
 - **Parameters:**
@@ -575,7 +585,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Parameters:**
   - `a` (`boolean[][]`) — the two-dimensional boolean array to copy, or empty for an empty matrix; must not be {@code null}
 - **Returns:** a new {@code BooleanMatrix} backed by a deep copy of {@code a} , or the shared empty matrix if {@code a} is empty
-- **See also:** #of(boolean\[\]\[\]), #copy()
+- **See also:** #wrap(boolean\[\]\[\]), #copy()
 ##### randomRow(...) -> BooleanMatrix
 - **Signature:** `public static BooleanMatrix randomRow(final int columnCount)`
 - **Summary:** Creates a new {@code 1 × length} matrix filled with pseudo-randomly generated boolean values.
@@ -960,20 +970,20 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Contract:**
   - <ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded (excess rows removed from the bottom, excess columns removed from the right).
   - </li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code false} .
-  - Use {@code extend} when the entire original content must be preserved.
+  - Use {@code pad} when the entire original content must be preserved.
 - **Parameters:**
   - `newRowCount` (`int`) — the row count of the returned matrix; must be {@code >= 0}
   - `newColumnCount` (`int`) — the column count of the returned matrix; must be {@code >= 0}
 - **Returns:** a new {@code BooleanMatrix} with the specified dimensions
-- **See also:** #resize(int, int, boolean), #extend(int, int, int, int)
+- **See also:** #resize(int, int, boolean), #pad(int, int, int, int)
 - **Signature:** `public BooleanMatrix resize(final int newRowCount, final int newColumnCount, final boolean defaultValue) throws IllegalArgumentException`
 - **Summary:** Returns a new matrix whose dimensions are exactly {@code newRowCount × newColumnCount} , anchored at the top-left corner of this matrix.
 - **Contract:**
   - <ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded.
   - If neither dimension grows, {@code defaultValue} is not used.
   - </li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code defaultValue} .
-  - Use {@code extend} when the entire original content must be preserved.
-  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code BooleanMatrix matrix = BooleanMatrix.of(new boolean\[\]\[\] { {true, false, true}, {false, true, false}, {true, false, true} }); // Grow: fill new cells with true BooleanMatrix grown = matrix.resize(4, 4, true); // Result: \[\[true, false, true, true\], // \[false, true, false, true\], // \[true, false, true, true\], // \[true, true, true, true\]\] grown.get(0, 3); // returns true (new cell filled with defaultValue) grown.get(3, 3); // returns true (new cell) grown.get(0, 0); // returns true (preserved cell) // Truncate: defaultValue is ignored when shrinking BooleanMatrix truncated = matrix.resize(2, 2, true); truncated.rowCount(); // returns 2 truncated.get(0, 1); // returns false (preserved, defaultValue not applied) matrix.resize(0, 0, true).isEmpty(); // returns true matrix.resize(2, -1, true); // throws IllegalArgumentException (negative dimension) } </pre>
+  - Use {@code pad} when the entire original content must be preserved.
+  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code BooleanMatrix matrix = BooleanMatrix.wrap(new boolean\[\]\[\] { {true, false, true}, {false, true, false}, {true, false, true} }); // Grow: fill new cells with true BooleanMatrix grown = matrix.resize(4, 4, true); // Result: \[\[true, false, true, true\], // \[false, true, false, true\], // \[true, false, true, true\], // \[true, true, true, true\]\] grown.get(0, 3); // returns true (new cell filled with defaultValue) grown.get(3, 3); // returns true (new cell) grown.get(0, 0); // returns true (preserved cell) // Truncate: defaultValue is ignored when shrinking BooleanMatrix truncated = matrix.resize(2, 2, true); truncated.rowCount(); // returns 2 truncated.get(0, 1); // returns false (preserved, defaultValue not applied) matrix.resize(0, 0, true).isEmpty(); // returns true matrix.resize(2, -1, true); // throws IllegalArgumentException (negative dimension) } </pre>
 - **Parameters:**
   - `newRowCount` (`int`) — the row count of the returned matrix; must be {@code >= 0}
   - `newColumnCount` (`int`) — the column count of the returned matrix; must be {@code >= 0}
@@ -981,9 +991,9 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Returns:** a new {@code BooleanMatrix} with the specified dimensions
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code newRowCount} or {@code newColumnCount} is negative, if the resulting shape is not representable (zero rows with a non-zero column count), or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
-- **See also:** #resize(int, int), #extend(int, int, int, int, boolean)
-##### extend(...) -> BooleanMatrix
-- **Signature:** `@Override public BooleanMatrix extend(final int padTop, final int padBottom, final int padLeft, final int padRight)`
+- **See also:** #resize(int, int), #pad(int, int, int, int, boolean)
+##### pad(...) -> BooleanMatrix
+- **Signature:** `@Override public BooleanMatrix pad(final int padTop, final int padBottom, final int padLeft, final int padRight)`
 - **Summary:** Returns a new matrix formed by surrounding this matrix with padding on all four edges.
 - **Parameters:**
   - `padTop` (`int`) — number of padding rows to add above the original matrix; must be {@code >= 0}
@@ -991,8 +1001,8 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
   - `padLeft` (`int`) — number of padding columns to add to the left of the original matrix; must be {@code >= 0}
   - `padRight` (`int`) — number of padding columns to add to the right of the original matrix; must be {@code >= 0}
 - **Returns:** a new {@code BooleanMatrix} with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
-- **See also:** #extend(int, int, int, int, boolean), #resize(int, int)
-- **Signature:** `public BooleanMatrix extend(final int padTop, final int padBottom, final int padLeft, final int padRight, final boolean defaultValue) throws IllegalArgumentException`
+- **See also:** #pad(int, int, int, int, boolean), #resize(int, int)
+- **Signature:** `public BooleanMatrix pad(final int padTop, final int padBottom, final int padLeft, final int padRight, final boolean defaultValue) throws IllegalArgumentException`
 - **Summary:** Returns a new matrix formed by surrounding this matrix with padding on all four edges.
 - **Parameters:**
   - `padTop` (`int`) — number of padding rows to add above the original matrix; must be {@code >= 0}
@@ -1003,7 +1013,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Returns:** a new {@code BooleanMatrix} with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if any padding parameter is negative, if the resulting dimensions would overflow {@code Integer.MAX_VALUE} , or if the resulting shape is not representable (zero rows with a non-zero column count)
-- **See also:** #extend(int, int, int, int), #resize(int, int, boolean)
+- **See also:** #pad(int, int, int, int), #resize(int, int, boolean)
 ##### flipHorizontallyInPlace(...) -> void
 - **Signature:** `@Override public void flipHorizontallyInPlace()`
 - **Summary:** Reverses the order of elements in each row in-place (horizontal flip).
@@ -1059,8 +1069,8 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new matrix that is the transpose of this matrix with dimensions {@code columnCount × rowCount} ; an {@code N x 0} matrix transposes to the empty {@code 0 x 0} matrix, because the swapped shape {@code 0 x N} (zero rows with a non-zero column count) is not representable
-##### reshape(...) -> BooleanMatrix
-- **Signature:** `@SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG") @Override public BooleanMatrix reshape(final int newRowCount, final int newColumnCount)`
+##### reshapeAndPad(...) -> BooleanMatrix
+- **Signature:** `@SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG") @Override public BooleanMatrix reshapeAndPad(final int newRowCount, final int newColumnCount)`
 - **Summary:** Reshapes this matrix to the specified dimensions.
 - **Contract:**
   - The new shape must have at least as many total elements as the original ( {@code (long) newRowCount * newColumnCount >= elementCount()} ).
@@ -1103,7 +1113,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
   - Its mutations are copied back only if the action returns normally; if the action throws, those mutations are discarded.
   - An action is not invoked when this matrix has zero rows, while an {@code n x 0} matrix with {@code n > 0} invokes it once with an empty array.
   - If logical rows share a backing array, write-back is row-major, so values for the last logical row using that array determine its final contents.
-  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code BooleanMatrix matrix = BooleanMatrix.of(new boolean\[\]\[\] {{true, false}, {false, true}}); matrix.mutateFlattened(arr -> java.util.Arrays.fill(arr, true)); // temporary row-major array, then copied back matrix.countTrue(); // returns 4 (all elements now true) matrix.get(0, 1); // returns true (was false) int\[\] seen = {0}; matrix.mutateFlattened(arr -> seen\[0\] = arr.length); // flattened length equals total element count // seen\[0\] is now 4 BooleanMatrix.empty().mutateFlattened(arr -> seen\[0\] = -1); // no-op: action is not invoked when the matrix has zero rows // seen\[0\] is still 4 } </pre>
+  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code BooleanMatrix matrix = BooleanMatrix.wrap(new boolean\[\]\[\] {{true, false}, {false, true}}); matrix.mutateFlattened(arr -> java.util.Arrays.fill(arr, true)); // temporary row-major array, then copied back matrix.countTrue(); // returns 4 (all elements now true) matrix.get(0, 1); // returns true (was false) int\[\] seen = {0}; matrix.mutateFlattened(arr -> seen\[0\] = arr.length); // flattened length equals total element count // seen\[0\] is now 4 BooleanMatrix.empty().mutateFlattened(arr -> seen\[0\] = -1); // no-op: action is not invoked when the matrix has zero rows // seen\[0\] is still 4 } </pre>
 - **Parameters:**
   - `action` (`Throwables.Consumer<? super boolean[], E>`) — the operation to apply to the temporary flattened array; must not be {@code null}
 - **Throws:**
@@ -1214,7 +1224,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Contract:**
   - All matrices must have the same dimensions.
   - If parallelized, the supplied function must be thread-safe.
-  - y : z); // if a then b else c conditional.get(0, 0); // returns true (a is true -> b) conditional.get(1, 0); // returns false (a is true -> b) a.zipWith(b, BooleanMatrix.of(new boolean\[\]\[\] {{true}}), (x, y, z) -> x); // throws IllegalArgumentException (shape mismatch) } </pre>
+  - y : z); // if a then b else c conditional.get(0, 0); // returns true (a is true -> b) conditional.get(1, 0); // returns false (a is true -> b) a.zipWith(b, BooleanMatrix.wrap(new boolean\[\]\[\] {{true}}), (x, y, z) -> x); // throws IllegalArgumentException (shape mismatch) } </pre>
 - **Parameters:**
   - `other` (`BooleanMatrix`) — the second matrix (must have the same dimensions as this matrix)
   - `third` (`BooleanMatrix`) — the third matrix (must have the same dimensions as this matrix)
@@ -1318,7 +1328,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
   - Elements are processed in row-major order (row by row, left to right) when executed sequentially.
   - If parallelized, the order of execution is not guaranteed, but all elements will be processed exactly once.
   - If parallelized, {@code action} must be thread-safe.
-  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code BooleanMatrix matrix = BooleanMatrix.of(new boolean\[\]\[\] {{true, false}, {false, true}}); java.util.concurrent.atomic.AtomicInteger trueCount = new java.util.concurrent.atomic.AtomicInteger(); matrix.forEach(value -> { if (value) trueCount.incrementAndGet(); }); // trueCount.get() is now 2 java.util.concurrent.atomic.AtomicInteger visited = new java.util.concurrent.atomic.AtomicInteger(); matrix.forEach(value -> visited.incrementAndGet()); // visited.get() is now 4 matrix.forEach((Throwables.BooleanConsumer<RuntimeException>) null); // throws IllegalArgumentException (null action) BooleanMatrix.empty().forEach(value -> trueCount.incrementAndGet()); // no-op on empty matrix } </pre>
+  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code BooleanMatrix matrix = BooleanMatrix.wrap(new boolean\[\]\[\] {{true, false}, {false, true}}); java.util.concurrent.atomic.AtomicInteger trueCount = new java.util.concurrent.atomic.AtomicInteger(); matrix.forEach(value -> { if (value) trueCount.incrementAndGet(); }); // trueCount.get() is now 2 java.util.concurrent.atomic.AtomicInteger visited = new java.util.concurrent.atomic.AtomicInteger(); matrix.forEach(value -> visited.incrementAndGet()); // visited.get() is now 4 matrix.forEach((Throwables.BooleanConsumer<RuntimeException>) null); // throws IllegalArgumentException (null action) BooleanMatrix.empty().forEach(value -> trueCount.incrementAndGet()); // no-op on empty matrix } </pre>
 - **Parameters:**
   - `action` (`Throwables.BooleanConsumer<E>`) — the action to be performed for each element; receives each element value
 - **Throws:**
@@ -1329,7 +1339,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Contract:**
   - Elements are processed in row-major order within the specified bounds when executed sequentially.
   - The operation may be parallelized internally if the sub-matrix is large enough to benefit from parallel processing; if parallelized, the order in which elements are visited is unspecified and the action must be thread-safe, but every element is still visited exactly once.
-  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code BooleanMatrix matrix = BooleanMatrix.of(new boolean\[\]\[\] { {true, false, true}, {false, true, false}, {true, true, true} }); List<Boolean> center = new ArrayList<>(); Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.forEach(0, 2, 0, 2, value -> center.add(value))); // center is now \[true, false, false, true\] (top-left 2x2, row-major) int\[\] bottomRowTrue = {0}; Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.forEach(2, 3, 0, 3, value -> { if (value) bottomRowTrue\[0\]++; })); // bottomRowTrue\[0\] is now 3 matrix.forEach(0, 9, 0, 3, value -> {}); // throws IndexOutOfBoundsException (toRowIndex > rowCount) matrix.forEach(0, 2, 0, 2, (Throwables.BooleanConsumer<RuntimeException>) null); // throws IllegalArgumentException (null action) } </pre>
+  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code BooleanMatrix matrix = BooleanMatrix.wrap(new boolean\[\]\[\] { {true, false, true}, {false, true, false}, {true, true, true} }); List<Boolean> center = new ArrayList<>(); Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.forEach(0, 2, 0, 2, value -> center.add(value))); // center is now \[true, false, false, true\] (top-left 2x2, row-major) int\[\] bottomRowTrue = {0}; Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.forEach(2, 3, 0, 3, value -> { if (value) bottomRowTrue\[0\]++; })); // bottomRowTrue\[0\] is now 3 matrix.forEach(0, 9, 0, 3, value -> {}); // throws IndexOutOfBoundsException (toRowIndex > rowCount) matrix.forEach(0, 2, 0, 2, (Throwables.BooleanConsumer<RuntimeException>) null); // throws IllegalArgumentException (null action) } </pre>
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
   - `toRowIndex` (`int`) — the ending row index (exclusive)
@@ -1377,9 +1387,9 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** the shared empty {@code ByteMatrix} singleton
-##### of(...) -> ByteMatrix
-- **Signature:** `public static ByteMatrix of(final byte[]... a)`
-- **Summary:** Creates a {@code ByteMatrix} from a two-dimensional byte array.
+##### wrap(...) -> ByteMatrix
+- **Signature:** `public static ByteMatrix wrap(final byte[]... a)`
+- **Summary:** Wraps the supplied two-dimensional byte array as {@code ByteMatrix} .
 - **Contract:**
   - <p> <b> &#9888; &#65039; Shared backing: </b> When {@code a} is non-empty, the provided array is used directly without defensive copying.
   - Call {@link #copy()} if you need an independently owned matrix.
@@ -1392,7 +1402,7 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Parameters:**
   - `a` (`byte[][]`) — the two-dimensional byte array to copy, or empty for an empty matrix; must not be {@code null}
 - **Returns:** a new {@code ByteMatrix} backed by a deep copy of {@code a} , or the shared empty matrix if {@code a} is empty
-- **See also:** #of(byte\[\]\[\]), #copy()
+- **See also:** #wrap(byte\[\]\[\]), #copy()
 ##### randomRow(...) -> ByteMatrix
 - **Signature:** `public static ByteMatrix randomRow(final int columnCount)`
 - **Summary:** Creates a new {@code 1 x columnCount} matrix filled with random byte values uniformly distributed across the full byte range {@code \[Byte.MIN_VALUE, Byte.MAX_VALUE\]} .
@@ -1814,20 +1824,20 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Contract:**
   - <ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded (excess rows removed from the bottom, excess columns removed from the right).
   - </li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code 0} .
-  - Use {@code extend} when the entire original content must be preserved.
+  - Use {@code pad} when the entire original content must be preserved.
 - **Parameters:**
   - `newRowCount` (`int`) — the row count of the returned matrix; must be {@code >= 0}
   - `newColumnCount` (`int`) — the column count of the returned matrix; must be {@code >= 0}
 - **Returns:** a new ByteMatrix with the specified dimensions
-- **See also:** #resize(int, int, byte), #extend(int, int, int, int)
+- **See also:** #resize(int, int, byte), #pad(int, int, int, int)
 - **Signature:** `public ByteMatrix resize(final int newRowCount, final int newColumnCount, final byte defaultValue) throws IllegalArgumentException`
 - **Summary:** Returns a new matrix whose dimensions are exactly {@code newRowCount × newColumnCount} , anchored at the top-left corner of this matrix.
 - **Contract:**
   - <ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded.
   - If neither dimension grows, {@code defaultValue} is not used.
   - </li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code defaultValue} .
-  - Use {@code extend} when the entire original content must be preserved.
-  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code ByteMatrix matrix = ByteMatrix.of(new byte\[\]\[\] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}); // Grow: fill new cells with 9 ByteMatrix grown = matrix.resize(4, 4, (byte) 9); grown.get(3, 3); // returns (byte) 9 (new cell uses defaultValue) grown.get(0, 0); // returns (byte) 1 (preserved) // Truncate: defaultValue is ignored when shrinking ByteMatrix truncated = matrix.resize(2, 2, (byte) 9); truncated.get(1, 1); // returns (byte) 5 (no new cells, default unused) matrix.resize(0, 0, (byte) 9).isEmpty(); // returns true matrix.resize(2, -1, (byte) 9); // throws IllegalArgumentException (negative dimension) } </pre>
+  - Use {@code pad} when the entire original content must be preserved.
+  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code ByteMatrix matrix = ByteMatrix.wrap(new byte\[\]\[\] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}); // Grow: fill new cells with 9 ByteMatrix grown = matrix.resize(4, 4, (byte) 9); grown.get(3, 3); // returns (byte) 9 (new cell uses defaultValue) grown.get(0, 0); // returns (byte) 1 (preserved) // Truncate: defaultValue is ignored when shrinking ByteMatrix truncated = matrix.resize(2, 2, (byte) 9); truncated.get(1, 1); // returns (byte) 5 (no new cells, default unused) matrix.resize(0, 0, (byte) 9).isEmpty(); // returns true matrix.resize(2, -1, (byte) 9); // throws IllegalArgumentException (negative dimension) } </pre>
 - **Parameters:**
   - `newRowCount` (`int`) — the row count of the returned matrix; must be {@code >= 0}
   - `newColumnCount` (`int`) — the column count of the returned matrix; must be {@code >= 0}
@@ -1835,9 +1845,9 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Returns:** a new ByteMatrix with the specified dimensions
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code newRowCount} or {@code newColumnCount} is negative, if the resulting shape is not representable (zero rows with a non-zero column count), or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
-- **See also:** #resize(int, int), #extend(int, int, int, int, byte)
-##### extend(...) -> ByteMatrix
-- **Signature:** `@Override public ByteMatrix extend(final int padTop, final int padBottom, final int padLeft, final int padRight)`
+- **See also:** #resize(int, int), #pad(int, int, int, int, byte)
+##### pad(...) -> ByteMatrix
+- **Signature:** `@Override public ByteMatrix pad(final int padTop, final int padBottom, final int padLeft, final int padRight)`
 - **Summary:** Returns a new matrix formed by surrounding this matrix with padding on all four edges.
 - **Parameters:**
   - `padTop` (`int`) — number of padding rows to add above the original matrix; must be {@code >= 0}
@@ -1845,8 +1855,8 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
   - `padLeft` (`int`) — number of padding columns to add to the left of the original matrix; must be {@code >= 0}
   - `padRight` (`int`) — number of padding columns to add to the right of the original matrix; must be {@code >= 0}
 - **Returns:** a new ByteMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
-- **See also:** #extend(int, int, int, int, byte), #resize(int, int)
-- **Signature:** `public ByteMatrix extend(final int padTop, final int padBottom, final int padLeft, final int padRight, final byte defaultValue) throws IllegalArgumentException`
+- **See also:** #pad(int, int, int, int, byte), #resize(int, int)
+- **Signature:** `public ByteMatrix pad(final int padTop, final int padBottom, final int padLeft, final int padRight, final byte defaultValue) throws IllegalArgumentException`
 - **Summary:** Returns a new matrix formed by surrounding this matrix with padding on all four edges.
 - **Parameters:**
   - `padTop` (`int`) — number of padding rows to add above the original matrix; must be {@code >= 0}
@@ -1857,7 +1867,7 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Returns:** a new ByteMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if any padding parameter is negative, if the resulting dimensions would overflow {@code Integer.MAX_VALUE} , or if the resulting shape is not representable (zero rows with a non-zero column count)
-- **See also:** #extend(int, int, int, int), #resize(int, int, byte)
+- **See also:** #pad(int, int, int, int), #resize(int, int, byte)
 ##### flipHorizontallyInPlace(...) -> void
 - **Signature:** `@Override public void flipHorizontallyInPlace()`
 - **Summary:** Reverses the order of elements in each row in-place (horizontal flip).
@@ -1913,9 +1923,9 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new {@code ByteMatrix} of shape {@code columnCount x rowCount} that is the transpose of this matrix; an {@code N x 0} matrix transposes to the empty {@code 0 x 0} matrix, because the swapped shape {@code 0 x N} (zero rows with a non-zero column count) is not representable
-##### reshape(...) -> ByteMatrix
-- **Signature:** `@SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG") @Override public ByteMatrix reshape(final int newRowCount, final int newColumnCount)`
-- **Summary:** Reshapes this matrix to have the specified dimensions.
+##### reshapeAndPad(...) -> ByteMatrix
+- **Signature:** `@SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG") @Override public ByteMatrix reshapeAndPad(final int newRowCount, final int newColumnCount)`
+- **Summary:** Reshapes this matrix to the specified dimensions and pads any extra trailing cells.
 - **Contract:**
   - The new shape must have at least as many total cells as the original ( {@code (long) newRowCount * newColumnCount >= elementCount()} ).
 - **Parameters:**
@@ -2231,9 +2241,9 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** the canonical empty {@code CharMatrix} (singleton)
-##### of(...) -> CharMatrix
-- **Signature:** `public static CharMatrix of(final char[]... a)`
-- **Summary:** Creates a {@code CharMatrix} from a two-dimensional char array.
+##### wrap(...) -> CharMatrix
+- **Signature:** `public static CharMatrix wrap(final char[]... a)`
+- **Summary:** Wraps the supplied two-dimensional char array as {@code CharMatrix} .
 - **Contract:**
   - <p> <b> &#9888; &#65039; Shared backing: </b> When the input has at least one row, the provided array is used directly without defensive copying.
 - **Parameters:**
@@ -2245,7 +2255,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Parameters:**
   - `a` (`char[][]`) — the two-dimensional char array to copy, or empty for an empty matrix; must not be {@code null}
 - **Returns:** a new {@code CharMatrix} backed by a deep copy of {@code a} , or the shared empty matrix if {@code a} is empty
-- **See also:** #of(char\[\]\[\]), #copy()
+- **See also:** #wrap(char\[\]\[\]), #copy()
 ##### randomRow(...) -> CharMatrix
 - **Signature:** `public static CharMatrix randomRow(final int columnCount)`
 - **Summary:** Creates a new {@code 1 x columnCount} matrix filled with random char values drawn uniformly from the full unsigned 16-bit range {@code \[0, 65535\]} .
@@ -2666,20 +2676,20 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Contract:**
   - <ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded (excess rows removed from the bottom, excess columns removed from the right).
   - </li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code (char) 0} .
-  - Use {@code extend} when the entire original content must be preserved.
+  - Use {@code pad} when the entire original content must be preserved.
 - **Parameters:**
   - `newRowCount` (`int`) — the row count of the returned matrix; must be {@code >= 0}
   - `newColumnCount` (`int`) — the column count of the returned matrix; must be {@code >= 0}
 - **Returns:** a new CharMatrix with the specified dimensions
-- **See also:** #resize(int, int, char), #extend(int, int, int, int)
+- **See also:** #resize(int, int, char), #pad(int, int, int, int)
 - **Signature:** `public CharMatrix resize(final int newRowCount, final int newColumnCount, final char defaultValue) throws IllegalArgumentException`
 - **Summary:** Returns a new matrix whose dimensions are exactly {@code newRowCount × newColumnCount} , anchored at the top-left corner of this matrix.
 - **Contract:**
   - <ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded.
   - If neither dimension grows, {@code defaultValue} is not used.
   - </li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code defaultValue} .
-  - Use {@code extend} when the entire original content must be preserved.
-  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code CharMatrix matrix = CharMatrix.of(new char\[\]\[\] {{'a', 'b', 'c'}, {'d', 'e', 'f'}, {'g', 'h', 'i'}}); // Grow: fill new cells with 'x' CharMatrix grown = matrix.resize(4, 4, 'x'); // Result: \[\['a', 'b', 'c', 'x'\], // \['d', 'e', 'f', 'x'\], // \['g', 'h', 'i', 'x'\], // \['x', 'x', 'x', 'x'\]\] // Truncate: defaultValue is ignored when shrinking CharMatrix truncated = matrix.resize(2, 2, 'x'); // Result: \[\['a', 'b'\], // \['d', 'e'\]\] matrix.resize(0, 0, 'x').isEmpty(); // returns true matrix.resize(3, -1, 'x'); // throws IllegalArgumentException (negative dimension) } </pre>
+  - Use {@code pad} when the entire original content must be preserved.
+  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code CharMatrix matrix = CharMatrix.wrap(new char\[\]\[\] {{'a', 'b', 'c'}, {'d', 'e', 'f'}, {'g', 'h', 'i'}}); // Grow: fill new cells with 'x' CharMatrix grown = matrix.resize(4, 4, 'x'); // Result: \[\['a', 'b', 'c', 'x'\], // \['d', 'e', 'f', 'x'\], // \['g', 'h', 'i', 'x'\], // \['x', 'x', 'x', 'x'\]\] // Truncate: defaultValue is ignored when shrinking CharMatrix truncated = matrix.resize(2, 2, 'x'); // Result: \[\['a', 'b'\], // \['d', 'e'\]\] matrix.resize(0, 0, 'x').isEmpty(); // returns true matrix.resize(3, -1, 'x'); // throws IllegalArgumentException (negative dimension) } </pre>
 - **Parameters:**
   - `newRowCount` (`int`) — the row count of the returned matrix; must be {@code >= 0}
   - `newColumnCount` (`int`) — the column count of the returned matrix; must be {@code >= 0}
@@ -2687,9 +2697,9 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Returns:** a new CharMatrix with the specified dimensions
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code newRowCount} or {@code newColumnCount} is negative, if the resulting shape is not representable (zero rows with a non-zero column count), or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
-- **See also:** #resize(int, int), #extend(int, int, int, int, char)
-##### extend(...) -> CharMatrix
-- **Signature:** `@Override public CharMatrix extend(final int padTop, final int padBottom, final int padLeft, final int padRight)`
+- **See also:** #resize(int, int), #pad(int, int, int, int, char)
+##### pad(...) -> CharMatrix
+- **Signature:** `@Override public CharMatrix pad(final int padTop, final int padBottom, final int padLeft, final int padRight)`
 - **Summary:** Returns a new matrix formed by surrounding this matrix with padding on all four edges.
 - **Parameters:**
   - `padTop` (`int`) — number of padding rows to add above the original matrix; must be {@code >= 0}
@@ -2697,8 +2707,8 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
   - `padLeft` (`int`) — number of padding columns to add to the left of the original matrix; must be {@code >= 0}
   - `padRight` (`int`) — number of padding columns to add to the right of the original matrix; must be {@code >= 0}
 - **Returns:** a new CharMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
-- **See also:** #extend(int, int, int, int, char), #resize(int, int)
-- **Signature:** `public CharMatrix extend(final int padTop, final int padBottom, final int padLeft, final int padRight, final char defaultValue) throws IllegalArgumentException`
+- **See also:** #pad(int, int, int, int, char), #resize(int, int)
+- **Signature:** `public CharMatrix pad(final int padTop, final int padBottom, final int padLeft, final int padRight, final char defaultValue) throws IllegalArgumentException`
 - **Summary:** Returns a new matrix formed by surrounding this matrix with padding on all four edges.
 - **Parameters:**
   - `padTop` (`int`) — number of padding rows to add above the original matrix; must be {@code >= 0}
@@ -2709,7 +2719,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Returns:** a new CharMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if any padding parameter is negative, if the resulting dimensions would overflow {@code Integer.MAX_VALUE} , or if the resulting shape is not representable (zero rows with a non-zero column count)
-- **See also:** #extend(int, int, int, int), #resize(int, int, char)
+- **See also:** #pad(int, int, int, int), #resize(int, int, char)
 ##### flipHorizontallyInPlace(...) -> void
 - **Signature:** `@Override public void flipHorizontallyInPlace()`
 - **Summary:** Reverses the order of elements in each row horizontally (in-place).
@@ -2765,9 +2775,9 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new matrix that is the transpose of this matrix with dimensions columnCount × rowCount; an {@code N x 0} matrix transposes to the empty {@code 0 x 0} matrix, because the swapped shape {@code 0 x N} (zero rows with a non-zero column count) is not representable
-##### reshape(...) -> CharMatrix
-- **Signature:** `@SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG") @Override public CharMatrix reshape(final int newRowCount, final int newColumnCount)`
-- **Summary:** Reshapes this matrix to have the specified dimensions.
+##### reshapeAndPad(...) -> CharMatrix
+- **Signature:** `@SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG") @Override public CharMatrix reshapeAndPad(final int newRowCount, final int newColumnCount)`
+- **Summary:** Reshapes this matrix to the specified dimensions and pads any extra trailing cells.
 - **Contract:**
   - The new shape must have at least as many total cells as the original ( {@code (long) newRowCount * newColumnCount >= elementCount()} ).
 - **Parameters:**
@@ -2778,7 +2788,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Signature:** `@Override public CharMatrix repeatElements(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException`
 - **Summary:** Repeats each element in both row and column directions.
 - **Contract:**
-  - <p> <b> Usage Examples: </b> </p> <pre> {@code CharMatrix matrix = CharMatrix.of(new char\[\]\[\] {{'a', 'b'}}); CharMatrix repeated = matrix.repeatElements(2, 3); repeated.rowView(0); // returns \['a', 'a', 'a', 'b', 'b', 'b'\] repeated.rowView(1); // returns \['a', 'a', 'a', 'b', 'b', 'b'\] matrix.repeatElements(1, 1).rowView(0); // returns \['a', 'b'\] (1x1 repeat is a copy) matrix.repeatElements(0, 1); // throws IllegalArgumentException (repeats must be positive) } </pre>
+  - <p> <b> Usage Examples: </b> </p> <pre> {@code CharMatrix matrix = CharMatrix.wrap(new char\[\]\[\] {{'a', 'b'}}); CharMatrix repeated = matrix.repeatElements(2, 3); repeated.rowView(0); // returns \['a', 'a', 'a', 'b', 'b', 'b'\] repeated.rowView(1); // returns \['a', 'a', 'a', 'b', 'b', 'b'\] matrix.repeatElements(1, 1).rowView(0); // returns \['a', 'b'\] (1x1 repeat is a copy) matrix.repeatElements(0, 1); // throws IllegalArgumentException (repeats must be positive) } </pre>
 - **Parameters:**
   - `rowRepeats` (`int`) — the number of times to repeat each element vertically (down the row axis); must be {@code > 0}
   - `columnRepeats` (`int`) — the number of times to repeat each element horizontally (across the column axis); must be {@code > 0}
@@ -2790,7 +2800,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Signature:** `@Override public CharMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException`
 - **Summary:** Repeats the entire matrix in both row and column directions.
 - **Contract:**
-  - <p> <b> Usage Examples: </b> </p> <pre> {@code CharMatrix matrix = CharMatrix.of(new char\[\]\[\] {{'a', 'b'}, {'c', 'd'}}); CharMatrix repeated = matrix.tile(2, 3); repeated.rowView(0); // returns \['a', 'b', 'a', 'b', 'a', 'b'\] repeated.rowView(1); // returns \['c', 'd', 'c', 'd', 'c', 'd'\] repeated.rowCount(); // returns 4 matrix.tile(1, 1).equals(matrix); // returns true (1x1 tiling is a copy) matrix.tile(0, 1); // throws IllegalArgumentException (repeats must be positive) } </pre>
+  - <p> <b> Usage Examples: </b> </p> <pre> {@code CharMatrix matrix = CharMatrix.wrap(new char\[\]\[\] {{'a', 'b'}, {'c', 'd'}}); CharMatrix repeated = matrix.tile(2, 3); repeated.rowView(0); // returns \['a', 'b', 'a', 'b', 'a', 'b'\] repeated.rowView(1); // returns \['c', 'd', 'c', 'd', 'c', 'd'\] repeated.rowCount(); // returns 4 matrix.tile(1, 1).equals(matrix); // returns true (1x1 tiling is a copy) matrix.tile(0, 1); // throws IllegalArgumentException (repeats must be positive) } </pre>
 - **Parameters:**
   - `rowRepeats` (`int`) — number of times to repeat the matrix vertically; must be {@code > 0}
   - `columnRepeats` (`int`) — number of times to repeat the matrix horizontally; must be {@code > 0}
@@ -3087,9 +3097,9 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** the shared empty {@code DoubleMatrix} singleton
-##### of(...) -> DoubleMatrix
-- **Signature:** `public static DoubleMatrix of(final double[]... a)`
-- **Summary:** Creates a {@code DoubleMatrix} from a two-dimensional double array.
+##### wrap(...) -> DoubleMatrix
+- **Signature:** `public static DoubleMatrix wrap(final double[]... a)`
+- **Summary:** Wraps the supplied two-dimensional double array as {@code DoubleMatrix} .
 - **Contract:**
   - <p> <b> &#9888; &#65039; Shared backing: </b> When the input has at least one row, the provided array is used directly without defensive copying.
 - **Parameters:**
@@ -3101,7 +3111,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Parameters:**
   - `a` (`double[][]`) — the two-dimensional double array to copy, or empty for an empty matrix; must not be {@code null}
 - **Returns:** a new {@code DoubleMatrix} backed by a deep copy of {@code a} , or the shared empty matrix if {@code a} is empty
-- **See also:** #of(double\[\]\[\]), #copy()
+- **See also:** #wrap(double\[\]\[\]), #copy()
 ##### from(...) -> DoubleMatrix
 - **Signature:** `public static DoubleMatrix from(final int[]... a)`
 - **Summary:** Creates a {@code DoubleMatrix} from a two-dimensional int array by converting int values to double.
@@ -3534,18 +3544,18 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Contract:**
   - <ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded (excess rows removed from the bottom, excess columns removed from the right).
   - </li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code 0.0} .
-  - Use {@code extend} when the entire original content must be preserved.
+  - Use {@code pad} when the entire original content must be preserved.
 - **Parameters:**
   - `newRowCount` (`int`) — the row count of the returned matrix; must be {@code >= 0}
   - `newColumnCount` (`int`) — the column count of the returned matrix; must be {@code >= 0}
 - **Returns:** a new {@code DoubleMatrix} with the specified dimensions
-- **See also:** #resize(int, int, double), #extend(int, int, int, int)
+- **See also:** #resize(int, int, double), #pad(int, int, int, int)
 - **Signature:** `public DoubleMatrix resize(final int newRowCount, final int newColumnCount, final double defaultValue) throws IllegalArgumentException`
 - **Summary:** Returns a new matrix whose dimensions are exactly {@code newRowCount × newColumnCount} , anchored at the top-left corner of this matrix.
 - **Contract:**
   - <ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded (excess rows removed from the bottom, excess columns removed from the right).
   - </li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code defaultValue} .
-  - Use {@code extend} when the entire original content must be preserved.
+  - Use {@code pad} when the entire original content must be preserved.
 - **Parameters:**
   - `newRowCount` (`int`) — the row count of the returned matrix; must be {@code >= 0}
   - `newColumnCount` (`int`) — the column count of the returned matrix; must be {@code >= 0}
@@ -3553,9 +3563,9 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Returns:** a new {@code DoubleMatrix} with the specified dimensions
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code newRowCount} or {@code newColumnCount} is negative, if the resulting shape is not representable (zero rows with a non-zero column count), or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
-- **See also:** #resize(int, int), #extend(int, int, int, int, double)
-##### extend(...) -> DoubleMatrix
-- **Signature:** `@Override public DoubleMatrix extend(final int padTop, final int padBottom, final int padLeft, final int padRight)`
+- **See also:** #resize(int, int), #pad(int, int, int, int, double)
+##### pad(...) -> DoubleMatrix
+- **Signature:** `@Override public DoubleMatrix pad(final int padTop, final int padBottom, final int padLeft, final int padRight)`
 - **Summary:** Returns a new matrix formed by adding {@code 0.0} -filled padding around every edge of this matrix.
 - **Contract:**
   - Use {@code resize} when you need exact output dimensions regardless of the original size.
@@ -3565,8 +3575,8 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
   - `padLeft` (`int`) — number of columns to add to the left; must be {@code >= 0}
   - `padRight` (`int`) — number of columns to add to the right; must be {@code >= 0}
 - **Returns:** a new {@code DoubleMatrix} with dimensions {@code (padTop+rowCount+padBottom) × (padLeft+columnCount+padRight)}
-- **See also:** #extend(int, int, int, int, double), #resize(int, int)
-- **Signature:** `public DoubleMatrix extend(final int padTop, final int padBottom, final int padLeft, final int padRight, final double defaultValue) throws IllegalArgumentException`
+- **See also:** #pad(int, int, int, int, double), #resize(int, int)
+- **Signature:** `public DoubleMatrix pad(final int padTop, final int padBottom, final int padLeft, final int padRight, final double defaultValue) throws IllegalArgumentException`
 - **Summary:** Returns a new matrix formed by adding {@code defaultValue} -filled padding around every edge of this matrix.
 - **Parameters:**
   - `padTop` (`int`) — number of rows to add above; must be {@code >= 0}
@@ -3577,7 +3587,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Returns:** a new {@code DoubleMatrix} with dimensions {@code (padTop+rowCount+padBottom) × (padLeft+columnCount+padRight)}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if any padding parameter is negative, if the resulting dimensions would overflow {@code Integer.MAX_VALUE} , or if the resulting shape is not representable (zero rows with a non-zero column count)
-- **See also:** #extend(int, int, int, int), #resize(int, int, double)
+- **See also:** #pad(int, int, int, int), #resize(int, int, double)
 ##### flipHorizontallyInPlace(...) -> void
 - **Signature:** `@Override public void flipHorizontallyInPlace()`
 - **Summary:** Reverses the order of elements in each row in-place (horizontal flip).
@@ -3633,9 +3643,9 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new {@code DoubleMatrix} that is the transpose of this matrix with dimensions {@code columnCount × rowCount} ; an {@code N x 0} matrix transposes to the empty {@code 0 x 0} matrix, because the swapped shape {@code 0 x N} (zero rows with a non-zero column count) is not representable
-##### reshape(...) -> DoubleMatrix
-- **Signature:** `@SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG") @Override public DoubleMatrix reshape(final int newRowCount, final int newColumnCount)`
-- **Summary:** Reshapes this matrix to have the specified dimensions.
+##### reshapeAndPad(...) -> DoubleMatrix
+- **Signature:** `@SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG") @Override public DoubleMatrix reshapeAndPad(final int newRowCount, final int newColumnCount)`
+- **Summary:** Reshapes this matrix to the specified dimensions and pads any extra trailing cells.
 - **Contract:**
   - The new shape must have at least as many total cells as the original ( {@code (long) newRowCount * newColumnCount >= elementCount()} ).
 - **Parameters:**
@@ -3646,7 +3656,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Signature:** `@Override public DoubleMatrix repeatElements(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException`
 - **Summary:** Repeats elements in both row and column directions.
 - **Contract:**
-  - <p> <b> Usage Examples: </b> </p> <pre> {@code DoubleMatrix matrix = DoubleMatrix.of(new double\[\]\[\] {{1.0, 2.0}}); DoubleMatrix repeated = matrix.repeatElements(2, 3); // Result: \[\[1.0, 1.0, 1.0, 2.0, 2.0, 2.0\], // \[1.0, 1.0, 1.0, 2.0, 2.0, 2.0\]\] repeated.rowCount(); // returns 2 repeated.columnCount(); // returns 6 repeated.get(1, 3); // returns 2.0 matrix.repeatElements(1, 1).equals(matrix); // returns true (no change) matrix.repeatElements(0, 2); // throws IllegalArgumentException (repeats must be positive) } </pre>
+  - <p> <b> Usage Examples: </b> </p> <pre> {@code DoubleMatrix matrix = DoubleMatrix.wrap(new double\[\]\[\] {{1.0, 2.0}}); DoubleMatrix repeated = matrix.repeatElements(2, 3); // Result: \[\[1.0, 1.0, 1.0, 2.0, 2.0, 2.0\], // \[1.0, 1.0, 1.0, 2.0, 2.0, 2.0\]\] repeated.rowCount(); // returns 2 repeated.columnCount(); // returns 6 repeated.get(1, 3); // returns 2.0 matrix.repeatElements(1, 1).equals(matrix); // returns true (no change) matrix.repeatElements(0, 2); // throws IllegalArgumentException (repeats must be positive) } </pre>
 - **Parameters:**
   - `rowRepeats` (`int`) — number of times to repeat each element in row direction; must be {@code > 0}
   - `columnRepeats` (`int`) — number of times to repeat each element in column direction; must be {@code > 0}
@@ -3658,7 +3668,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Signature:** `@Override public DoubleMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException`
 - **Summary:** Repeats the entire matrix in a tiled pattern.
 - **Contract:**
-  - <p> <b> Usage Examples: </b> </p> <pre> {@code DoubleMatrix matrix = DoubleMatrix.of(new double\[\]\[\] {{1.0, 2.0}, {3.0, 4.0}}); DoubleMatrix repeated = matrix.tile(2, 3); // Result: \[\[1.0, 2.0, 1.0, 2.0, 1.0, 2.0\], // \[3.0, 4.0, 3.0, 4.0, 3.0, 4.0\], // \[1.0, 2.0, 1.0, 2.0, 1.0, 2.0\], // \[3.0, 4.0, 3.0, 4.0, 3.0, 4.0\]\] repeated.rowCount(); // returns 4 repeated.columnCount(); // returns 6 repeated.get(2, 3); // returns 2.0 (tiled copy) matrix.tile(1, 1).equals(matrix); // returns true (single tile) matrix.tile(2, 0); // throws IllegalArgumentException (repeats must be positive) } </pre>
+  - <p> <b> Usage Examples: </b> </p> <pre> {@code DoubleMatrix matrix = DoubleMatrix.wrap(new double\[\]\[\] {{1.0, 2.0}, {3.0, 4.0}}); DoubleMatrix repeated = matrix.tile(2, 3); // Result: \[\[1.0, 2.0, 1.0, 2.0, 1.0, 2.0\], // \[3.0, 4.0, 3.0, 4.0, 3.0, 4.0\], // \[1.0, 2.0, 1.0, 2.0, 1.0, 2.0\], // \[3.0, 4.0, 3.0, 4.0, 3.0, 4.0\]\] repeated.rowCount(); // returns 4 repeated.columnCount(); // returns 6 repeated.get(2, 3); // returns 2.0 (tiled copy) matrix.tile(1, 1).equals(matrix); // returns true (single tile) matrix.tile(2, 0); // throws IllegalArgumentException (repeats must be positive) } </pre>
 - **Parameters:**
   - `rowRepeats` (`int`) — number of times to repeat the matrix vertically; must be {@code > 0}
   - `columnRepeats` (`int`) — number of times to repeat the matrix horizontally; must be {@code > 0}
@@ -3946,9 +3956,9 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** the shared empty {@code FloatMatrix} singleton
-##### of(...) -> FloatMatrix
-- **Signature:** `public static FloatMatrix of(final float[]... a)`
-- **Summary:** Creates a {@code FloatMatrix} from a two-dimensional float array.
+##### wrap(...) -> FloatMatrix
+- **Signature:** `public static FloatMatrix wrap(final float[]... a)`
+- **Summary:** Wraps the supplied two-dimensional float array as {@code FloatMatrix} .
 - **Contract:**
   - <p> <b> &#9888; &#65039; Shared backing: </b> When the input has at least one row, the provided array is used directly without defensive copying.
 - **Parameters:**
@@ -3960,7 +3970,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Parameters:**
   - `a` (`float[][]`) — the two-dimensional float array to copy, or empty for an empty matrix; must not be {@code null}
 - **Returns:** a new {@code FloatMatrix} backed by a deep copy of {@code a} , or the shared empty matrix if {@code a} is empty
-- **See also:** #of(float\[\]\[\]), #copy()
+- **See also:** #wrap(float\[\]\[\]), #copy()
 ##### from(...) -> FloatMatrix
 - **Signature:** `public static FloatMatrix from(final int[]... a)`
 - **Summary:** Creates a {@code FloatMatrix} from a two-dimensional int array by converting int values to float.
@@ -4388,18 +4398,18 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Contract:**
   - <ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded (excess rows removed from the bottom, excess columns removed from the right).
   - </li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code 0.0f} .
-  - Use {@code extend} when the entire original content must be preserved.
+  - Use {@code pad} when the entire original content must be preserved.
 - **Parameters:**
   - `newRowCount` (`int`) — the row count of the returned matrix; must be {@code >= 0}
   - `newColumnCount` (`int`) — the column count of the returned matrix; must be {@code >= 0}
 - **Returns:** a new {@code FloatMatrix} with the specified dimensions
-- **See also:** #resize(int, int, float), #extend(int, int, int, int)
+- **See also:** #resize(int, int, float), #pad(int, int, int, int)
 - **Signature:** `public FloatMatrix resize(final int newRowCount, final int newColumnCount, final float defaultValue) throws IllegalArgumentException`
 - **Summary:** Returns a new matrix whose dimensions are exactly {@code newRowCount × newColumnCount} , anchored at the top-left corner of this matrix.
 - **Contract:**
   - <ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded (excess rows removed from the bottom, excess columns removed from the right).
   - </li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code defaultValue} .
-  - Use {@code extend} when the entire original content must be preserved.
+  - Use {@code pad} when the entire original content must be preserved.
 - **Parameters:**
   - `newRowCount` (`int`) — the row count of the returned matrix; must be {@code >= 0}
   - `newColumnCount` (`int`) — the column count of the returned matrix; must be {@code >= 0}
@@ -4407,9 +4417,9 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Returns:** a new {@code FloatMatrix} with the specified dimensions
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code newRowCount} or {@code newColumnCount} is negative, if the resulting shape is not representable (zero rows with a non-zero column count), or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
-- **See also:** #resize(int, int), #extend(int, int, int, int, float)
-##### extend(...) -> FloatMatrix
-- **Signature:** `@Override public FloatMatrix extend(final int padTop, final int padBottom, final int padLeft, final int padRight)`
+- **See also:** #resize(int, int), #pad(int, int, int, int, float)
+##### pad(...) -> FloatMatrix
+- **Signature:** `@Override public FloatMatrix pad(final int padTop, final int padBottom, final int padLeft, final int padRight)`
 - **Summary:** Returns a new matrix formed by adding {@code 0.0f} -filled padding around every edge of this matrix.
 - **Contract:**
   - Use {@code resize} when you need exact output dimensions regardless of the original size.
@@ -4419,8 +4429,8 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
   - `padLeft` (`int`) — number of columns to add to the left; must be {@code >= 0}
   - `padRight` (`int`) — number of columns to add to the right; must be {@code >= 0}
 - **Returns:** a new {@code FloatMatrix} with dimensions {@code (padTop+rowCount+padBottom) × (padLeft+columnCount+padRight)}
-- **See also:** #extend(int, int, int, int, float), #resize(int, int)
-- **Signature:** `public FloatMatrix extend(final int padTop, final int padBottom, final int padLeft, final int padRight, final float defaultValue) throws IllegalArgumentException`
+- **See also:** #pad(int, int, int, int, float), #resize(int, int)
+- **Signature:** `public FloatMatrix pad(final int padTop, final int padBottom, final int padLeft, final int padRight, final float defaultValue) throws IllegalArgumentException`
 - **Summary:** Returns a new matrix formed by adding {@code defaultValue} -filled padding around every edge of this matrix.
 - **Parameters:**
   - `padTop` (`int`) — number of rows to add above; must be {@code >= 0}
@@ -4431,7 +4441,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Returns:** a new {@code FloatMatrix} with dimensions {@code (padTop+rowCount+padBottom) × (padLeft+columnCount+padRight)}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if any padding parameter is negative, if the resulting dimensions would overflow {@code Integer.MAX_VALUE} , or if the resulting shape is not representable (zero rows with a non-zero column count)
-- **See also:** #extend(int, int, int, int), #resize(int, int, float)
+- **See also:** #pad(int, int, int, int), #resize(int, int, float)
 ##### flipHorizontallyInPlace(...) -> void
 - **Signature:** `@Override public void flipHorizontallyInPlace()`
 - **Summary:** Reverses the order of elements in each row in-place (horizontal flip).
@@ -4487,9 +4497,9 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new {@code FloatMatrix} that is the transpose of this matrix with dimensions {@code columnCount × rowCount} ; an {@code N x 0} matrix transposes to the empty {@code 0 x 0} matrix, because the swapped shape {@code 0 x N} (zero rows with a non-zero column count) is not representable
-##### reshape(...) -> FloatMatrix
-- **Signature:** `@SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG") @Override public FloatMatrix reshape(final int newRowCount, final int newColumnCount)`
-- **Summary:** Reshapes this matrix to have the specified dimensions.
+##### reshapeAndPad(...) -> FloatMatrix
+- **Signature:** `@SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG") @Override public FloatMatrix reshapeAndPad(final int newRowCount, final int newColumnCount)`
+- **Summary:** Reshapes this matrix to the specified dimensions and pads any extra trailing cells.
 - **Contract:**
   - The new shape must have at least as many total cells as the original ( {@code (long) newRowCount * newColumnCount >= elementCount()} ).
 - **Parameters:**
@@ -4500,7 +4510,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Signature:** `@Override public FloatMatrix repeatElements(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException`
 - **Summary:** Repeats elements in both row and column directions.
 - **Contract:**
-  - <p> <b> Usage Examples: </b> </p> <pre> {@code FloatMatrix matrix = FloatMatrix.of(new float\[\]\[\] {{1.0f, 2.0f}}); FloatMatrix repeated = matrix.repeatElements(2, 3); // Result: \[\[1.0, 1.0, 1.0, 2.0, 2.0, 2.0\], // \[1.0, 1.0, 1.0, 2.0, 2.0, 2.0\]\] repeated.rowCount(); // returns 2 repeated.columnCount(); // returns 6 repeated.get(1, 3); // returns 2.0f matrix.repeatElements(1, 1).equals(matrix); // returns true (no change) matrix.repeatElements(0, 2); // throws IllegalArgumentException (repeats must be positive) } </pre>
+  - <p> <b> Usage Examples: </b> </p> <pre> {@code FloatMatrix matrix = FloatMatrix.wrap(new float\[\]\[\] {{1.0f, 2.0f}}); FloatMatrix repeated = matrix.repeatElements(2, 3); // Result: \[\[1.0, 1.0, 1.0, 2.0, 2.0, 2.0\], // \[1.0, 1.0, 1.0, 2.0, 2.0, 2.0\]\] repeated.rowCount(); // returns 2 repeated.columnCount(); // returns 6 repeated.get(1, 3); // returns 2.0f matrix.repeatElements(1, 1).equals(matrix); // returns true (no change) matrix.repeatElements(0, 2); // throws IllegalArgumentException (repeats must be positive) } </pre>
 - **Parameters:**
   - `rowRepeats` (`int`) — number of times to repeat each element in row direction; must be {@code > 0}
   - `columnRepeats` (`int`) — number of times to repeat each element in column direction; must be {@code > 0}
@@ -4512,7 +4522,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Signature:** `@Override public FloatMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException`
 - **Summary:** Repeats the entire matrix in a tiled pattern.
 - **Contract:**
-  - <p> <b> Usage Examples: </b> </p> <pre> {@code FloatMatrix matrix = FloatMatrix.of(new float\[\]\[\] {{1.0f, 2.0f}, {3.0f, 4.0f}}); FloatMatrix repeated = matrix.tile(2, 3); // Result: \[\[1.0, 2.0, 1.0, 2.0, 1.0, 2.0\], // \[3.0, 4.0, 3.0, 4.0, 3.0, 4.0\], // \[1.0, 2.0, 1.0, 2.0, 1.0, 2.0\], // \[3.0, 4.0, 3.0, 4.0, 3.0, 4.0\]\] repeated.rowCount(); // returns 4 repeated.columnCount(); // returns 6 repeated.get(2, 3); // returns 2.0f (tiled copy) matrix.tile(1, 1).equals(matrix); // returns true (single tile) matrix.tile(2, 0); // throws IllegalArgumentException (repeats must be positive) } </pre>
+  - <p> <b> Usage Examples: </b> </p> <pre> {@code FloatMatrix matrix = FloatMatrix.wrap(new float\[\]\[\] {{1.0f, 2.0f}, {3.0f, 4.0f}}); FloatMatrix repeated = matrix.tile(2, 3); // Result: \[\[1.0, 2.0, 1.0, 2.0, 1.0, 2.0\], // \[3.0, 4.0, 3.0, 4.0, 3.0, 4.0\], // \[1.0, 2.0, 1.0, 2.0, 1.0, 2.0\], // \[3.0, 4.0, 3.0, 4.0, 3.0, 4.0\]\] repeated.rowCount(); // returns 4 repeated.columnCount(); // returns 6 repeated.get(2, 3); // returns 2.0f (tiled copy) matrix.tile(1, 1).equals(matrix); // returns true (single tile) matrix.tile(2, 0); // throws IllegalArgumentException (repeats must be positive) } </pre>
 - **Parameters:**
   - `rowRepeats` (`int`) — number of times to repeat the matrix vertically; must be {@code > 0}
   - `columnRepeats` (`int`) — number of times to repeat the matrix horizontally; must be {@code > 0}
@@ -4802,9 +4812,9 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** the canonical empty {@code IntMatrix} (singleton)
-##### of(...) -> IntMatrix
-- **Signature:** `public static IntMatrix of(final int[]... a)`
-- **Summary:** Creates an {@code IntMatrix} from a two-dimensional int array.
+##### wrap(...) -> IntMatrix
+- **Signature:** `public static IntMatrix wrap(final int[]... a)`
+- **Summary:** Wraps the supplied two-dimensional int array as {@code IntMatrix} .
 - **Contract:**
   - <p> <b> &#9888; &#65039; Shared backing: </b> When the input has at least one row, the provided array is used directly without defensive copying.
 - **Parameters:**
@@ -4816,7 +4826,7 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Parameters:**
   - `a` (`int[][]`) — the two-dimensional int array to copy, or empty for an empty matrix; must not be {@code null}
 - **Returns:** a new {@code IntMatrix} backed by a deep copy of {@code a} when it is non-empty, or the shared empty matrix if {@code a} has no rows
-- **See also:** #of(int\[\]\[\]), #copy()
+- **See also:** #wrap(int\[\]\[\]), #copy()
 ##### from(...) -> IntMatrix
 - **Signature:** `public static IntMatrix from(final char[]... a)`
 - **Summary:** Creates an {@code IntMatrix} from a two-dimensional {@code char} array by widening each {@code char} to {@code int} using its unsigned 16-bit numeric value (for example {@code 'A'} becomes {@code 65} ).
@@ -5284,20 +5294,20 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Contract:**
   - <ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded (excess rows removed from the bottom, excess columns removed from the right).
   - </li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code 0} .
-  - Use {@code extend} when the entire original content must be preserved.
+  - Use {@code pad} when the entire original content must be preserved.
 - **Parameters:**
   - `newRowCount` (`int`) — the row count of the returned matrix; must be {@code >= 0}
   - `newColumnCount` (`int`) — the column count of the returned matrix; must be {@code >= 0}
 - **Returns:** a new IntMatrix with the specified dimensions
-- **See also:** #resize(int, int, int), #extend(int, int, int, int)
+- **See also:** #resize(int, int, int), #pad(int, int, int, int)
 - **Signature:** `public IntMatrix resize(final int newRowCount, final int newColumnCount, final int defaultValue) throws IllegalArgumentException`
 - **Summary:** Returns a new matrix whose dimensions are exactly {@code newRowCount x newColumnCount} , anchored at the top-left corner of this matrix.
 - **Contract:**
   - <ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded.
   - If neither dimension grows, {@code defaultValue} is not used.
   - </li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code defaultValue} .
-  - Use {@code extend} when the entire original content must be preserved.
-  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.of(new int\[\]\[\] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}); // Grow: fill new cells with 9 IntMatrix grown = matrix.resize(4, 4, 9); grown.get(3, 3); // returns 9 (new cell uses defaultValue) grown.get(0, 0); // returns 1 (preserved) // Truncate: defaultValue is ignored when shrinking IntMatrix truncated = matrix.resize(2, 2, 9); truncated.get(1, 1); // returns 5 (no new cells, default unused) matrix.resize(0, 0, 9).isEmpty(); // returns true matrix.resize(2, -1, 9); // throws IllegalArgumentException (negative dimension) } </pre>
+  - Use {@code pad} when the entire original content must be preserved.
+  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.wrap(new int\[\]\[\] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}); // Grow: fill new cells with 9 IntMatrix grown = matrix.resize(4, 4, 9); grown.get(3, 3); // returns 9 (new cell uses defaultValue) grown.get(0, 0); // returns 1 (preserved) // Truncate: defaultValue is ignored when shrinking IntMatrix truncated = matrix.resize(2, 2, 9); truncated.get(1, 1); // returns 5 (no new cells, default unused) matrix.resize(0, 0, 9).isEmpty(); // returns true matrix.resize(2, -1, 9); // throws IllegalArgumentException (negative dimension) } </pre>
 - **Parameters:**
   - `newRowCount` (`int`) — the row count of the returned matrix; must be {@code >= 0}
   - `newColumnCount` (`int`) — the column count of the returned matrix; must be {@code >= 0}
@@ -5305,9 +5315,9 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Returns:** a new IntMatrix with the specified dimensions
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code newRowCount} or {@code newColumnCount} is negative, if the resulting shape is not representable (zero rows with a non-zero column count), or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
-- **See also:** #resize(int, int), #extend(int, int, int, int, int)
-##### extend(...) -> IntMatrix
-- **Signature:** `@Override public IntMatrix extend(final int padTop, final int padBottom, final int padLeft, final int padRight)`
+- **See also:** #resize(int, int), #pad(int, int, int, int, int)
+##### pad(...) -> IntMatrix
+- **Signature:** `@Override public IntMatrix pad(final int padTop, final int padBottom, final int padLeft, final int padRight)`
 - **Summary:** Returns a new matrix formed by surrounding this matrix with padding on all four edges.
 - **Parameters:**
   - `padTop` (`int`) — number of padding rows to add above the original matrix; must be {@code >= 0}
@@ -5315,8 +5325,8 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
   - `padLeft` (`int`) — number of padding columns to add to the left of the original matrix; must be {@code >= 0}
   - `padRight` (`int`) — number of padding columns to add to the right of the original matrix; must be {@code >= 0}
 - **Returns:** a new IntMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
-- **See also:** #extend(int, int, int, int, int), #resize(int, int)
-- **Signature:** `public IntMatrix extend(final int padTop, final int padBottom, final int padLeft, final int padRight, final int defaultValue) throws IllegalArgumentException`
+- **See also:** #pad(int, int, int, int, int), #resize(int, int)
+- **Signature:** `public IntMatrix pad(final int padTop, final int padBottom, final int padLeft, final int padRight, final int defaultValue) throws IllegalArgumentException`
 - **Summary:** Returns a new matrix formed by surrounding this matrix with padding on all four edges.
 - **Parameters:**
   - `padTop` (`int`) — number of padding rows to add above the original matrix; must be {@code >= 0}
@@ -5327,7 +5337,7 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Returns:** a new IntMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if any padding parameter is negative, if the resulting dimensions would overflow {@code Integer.MAX_VALUE} , or if the resulting shape is not representable (zero rows with a non-zero column count)
-- **See also:** #extend(int, int, int, int), #resize(int, int, int)
+- **See also:** #pad(int, int, int, int), #resize(int, int, int)
 ##### flipHorizontallyInPlace(...) -> void
 - **Signature:** `@Override public void flipHorizontallyInPlace()`
 - **Summary:** Reverses the order of elements in each row in-place (horizontal flip).
@@ -5383,9 +5393,9 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new {@code IntMatrix} of shape {@code columnCount x rowCount} that is the transpose of this matrix; an {@code N x 0} matrix transposes to the empty {@code 0 x 0} matrix, because the swapped shape {@code 0 x N} (zero rows with a non-zero column count) is not representable
-##### reshape(...) -> IntMatrix
-- **Signature:** `@SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG") @Override public IntMatrix reshape(final int newRowCount, final int newColumnCount)`
-- **Summary:** Reshapes this matrix to have the specified dimensions.
+##### reshapeAndPad(...) -> IntMatrix
+- **Signature:** `@SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG") @Override public IntMatrix reshapeAndPad(final int newRowCount, final int newColumnCount)`
+- **Summary:** Reshapes this matrix to the specified dimensions and pads any extra trailing cells.
 - **Contract:**
   - The new shape must have at least as many total cells as the original ( {@code (long) newRowCount * newColumnCount >= elementCount()} ).
 - **Parameters:**
@@ -5693,9 +5703,9 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** the canonical empty {@code LongMatrix} (singleton)
-##### of(...) -> LongMatrix
-- **Signature:** `public static LongMatrix of(final long[]... a)`
-- **Summary:** Creates a {@code LongMatrix} from a two-dimensional long array.
+##### wrap(...) -> LongMatrix
+- **Signature:** `public static LongMatrix wrap(final long[]... a)`
+- **Summary:** Wraps the supplied two-dimensional long array as {@code LongMatrix} .
 - **Contract:**
   - <p> <b> &#9888; &#65039; Shared backing: </b> When the input has at least one row, the provided array is used directly without defensive copying.
 - **Parameters:**
@@ -5707,7 +5717,7 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Parameters:**
   - `a` (`long[][]`) — the two-dimensional long array to copy, or empty for an empty matrix; must not be {@code null}
 - **Returns:** a new {@code LongMatrix} backed by a deep copy of {@code a} when it is non-empty, or the shared empty matrix if {@code a} has no rows
-- **See also:** #of(long\[\]\[\]), #copy()
+- **See also:** #wrap(long\[\]\[\]), #copy()
 ##### from(...) -> LongMatrix
 - **Signature:** `public static LongMatrix from(final int[]... a)`
 - **Summary:** Creates a {@code LongMatrix} from a two-dimensional {@code int} array by widening each {@code int} to {@code long} (the conversion preserves the exact numeric value, with no data loss).
@@ -6159,20 +6169,20 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Contract:**
   - <ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded (excess rows removed from the bottom, excess columns removed from the right).
   - </li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code 0L} .
-  - Use {@code extend} when the entire original content must be preserved.
+  - Use {@code pad} when the entire original content must be preserved.
 - **Parameters:**
   - `newRowCount` (`int`) — the row count of the returned matrix; must be {@code >= 0}
   - `newColumnCount` (`int`) — the column count of the returned matrix; must be {@code >= 0}
 - **Returns:** a new LongMatrix with the specified dimensions
-- **See also:** #resize(int, int, long), #extend(int, int, int, int)
+- **See also:** #resize(int, int, long), #pad(int, int, int, int)
 - **Signature:** `public LongMatrix resize(final int newRowCount, final int newColumnCount, final long defaultValue) throws IllegalArgumentException`
 - **Summary:** Returns a new matrix whose dimensions are exactly {@code newRowCount × newColumnCount} , anchored at the top-left corner of this matrix.
 - **Contract:**
   - <ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded.
   - If neither dimension grows, {@code defaultValue} is not used.
   - </li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code defaultValue} .
-  - Use {@code extend} when the entire original content must be preserved.
-  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code LongMatrix matrix = LongMatrix.of(new long\[\]\[\] {{1L, 2L, 3L}, {4L, 5L, 6L}, {7L, 8L, 9L}}); // Grow: fill new cells with 9L LongMatrix grown = matrix.resize(4, 4, 9L); grown.get(3, 3); // returns 9L (new cell uses defaultValue) grown.get(0, 0); // returns 1L (preserved) // Truncate: defaultValue is ignored when shrinking LongMatrix truncated = matrix.resize(2, 2, 9L); truncated.get(1, 1); // returns 5L (no new cells, default unused) matrix.resize(0, 0, 9L).isEmpty(); // returns true matrix.resize(2, -1, 9L); // throws IllegalArgumentException (negative dimension) } </pre>
+  - Use {@code pad} when the entire original content must be preserved.
+  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code LongMatrix matrix = LongMatrix.wrap(new long\[\]\[\] {{1L, 2L, 3L}, {4L, 5L, 6L}, {7L, 8L, 9L}}); // Grow: fill new cells with 9L LongMatrix grown = matrix.resize(4, 4, 9L); grown.get(3, 3); // returns 9L (new cell uses defaultValue) grown.get(0, 0); // returns 1L (preserved) // Truncate: defaultValue is ignored when shrinking LongMatrix truncated = matrix.resize(2, 2, 9L); truncated.get(1, 1); // returns 5L (no new cells, default unused) matrix.resize(0, 0, 9L).isEmpty(); // returns true matrix.resize(2, -1, 9L); // throws IllegalArgumentException (negative dimension) } </pre>
 - **Parameters:**
   - `newRowCount` (`int`) — the row count of the returned matrix; must be {@code >= 0}
   - `newColumnCount` (`int`) — the column count of the returned matrix; must be {@code >= 0}
@@ -6180,9 +6190,9 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Returns:** a new LongMatrix with the specified dimensions
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code newRowCount} or {@code newColumnCount} is negative, if the resulting shape is not representable (zero rows with a non-zero column count), or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
-- **See also:** #resize(int, int), #extend(int, int, int, int, long)
-##### extend(...) -> LongMatrix
-- **Signature:** `@Override public LongMatrix extend(final int padTop, final int padBottom, final int padLeft, final int padRight)`
+- **See also:** #resize(int, int), #pad(int, int, int, int, long)
+##### pad(...) -> LongMatrix
+- **Signature:** `@Override public LongMatrix pad(final int padTop, final int padBottom, final int padLeft, final int padRight)`
 - **Summary:** Returns a new matrix formed by surrounding this matrix with padding on all four edges.
 - **Parameters:**
   - `padTop` (`int`) — number of padding rows to add above the original matrix; must be {@code >= 0}
@@ -6190,8 +6200,8 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
   - `padLeft` (`int`) — number of padding columns to add to the left of the original matrix; must be {@code >= 0}
   - `padRight` (`int`) — number of padding columns to add to the right of the original matrix; must be {@code >= 0}
 - **Returns:** a new LongMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
-- **See also:** #extend(int, int, int, int, long), #resize(int, int)
-- **Signature:** `public LongMatrix extend(final int padTop, final int padBottom, final int padLeft, final int padRight, final long defaultValue) throws IllegalArgumentException`
+- **See also:** #pad(int, int, int, int, long), #resize(int, int)
+- **Signature:** `public LongMatrix pad(final int padTop, final int padBottom, final int padLeft, final int padRight, final long defaultValue) throws IllegalArgumentException`
 - **Summary:** Returns a new matrix formed by surrounding this matrix with padding on all four edges.
 - **Parameters:**
   - `padTop` (`int`) — number of padding rows to add above the original matrix; must be {@code >= 0}
@@ -6202,7 +6212,7 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Returns:** a new LongMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if any padding parameter is negative, if the resulting dimensions would overflow {@code Integer.MAX_VALUE} , or if the resulting shape is not representable (zero rows with a non-zero column count)
-- **See also:** #extend(int, int, int, int), #resize(int, int, long)
+- **See also:** #pad(int, int, int, int), #resize(int, int, long)
 ##### flipHorizontallyInPlace(...) -> void
 - **Signature:** `@Override public void flipHorizontallyInPlace()`
 - **Summary:** Reverses the order of elements in each row in-place (horizontal flip).
@@ -6258,9 +6268,9 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new {@code LongMatrix} of shape {@code columnCount x rowCount} that is the transpose of this matrix; an {@code N x 0} matrix transposes to the empty {@code 0 x 0} matrix, because the swapped shape {@code 0 x N} (zero rows with a non-zero column count) is not representable
-##### reshape(...) -> LongMatrix
-- **Signature:** `@SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG") @Override public LongMatrix reshape(final int newRowCount, final int newColumnCount)`
-- **Summary:** Reshapes this matrix to have the specified dimensions.
+##### reshapeAndPad(...) -> LongMatrix
+- **Signature:** `@SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG") @Override public LongMatrix reshapeAndPad(final int newRowCount, final int newColumnCount)`
+- **Summary:** Reshapes this matrix to the specified dimensions and pads any extra trailing cells.
 - **Contract:**
   - The new shape must have at least as many total cells as the original ( {@code (long) newRowCount * newColumnCount >= elementCount()} ).
 - **Parameters:**
@@ -6588,7 +6598,7 @@ Utility and policy holder shared by the matrix implementations in this package.
   - Determines whether the given matrix should be processed using parallel execution.
   - <p> This method evaluates whether parallel processing should be used for operations on the specified matrix, using its total element count as the work estimate.
   - The decision considers: </p> <ul> <li> The current thread's {@link ParallelMode} setting </li> <li> Whether parallel stream support is available in the runtime environment </li> <li> The total number of elements in the matrix (rows × columns), consulted only under {@link ParallelMode#AUTO} </li> </ul> <p> This is a convenience method that delegates to {@link #shouldRunInParallel(AbstractMatrix, long)} using the matrix's total element count as the work-item count.
-  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix small = IntMatrix.of(new int\[\]\[\] {{1, 2}, {3, 4}}); // 4 elements IntMatrix large = IntMatrix.of(new int\[200\]\[200\]); // 40000 elements Matrices.setParallelMode(ParallelMode.FORCE_OFF); Matrices.shouldRunInParallel(small); // returns false (forced off) Matrices.shouldRunInParallel(large); // returns false (forced off) Matrices.setParallelMode(ParallelMode.AUTO); // restore default; under AUTO the // small matrix is never parallelized Matrices.shouldRunInParallel(small); // returns false (4 < 8192) Matrices.shouldRunInParallel((IntMatrix) null); // throws IllegalArgumentException } </pre>
+  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix small = IntMatrix.wrap(new int\[\]\[\] {{1, 2}, {3, 4}}); // 4 elements IntMatrix large = IntMatrix.wrap(new int\[200\]\[200\]); // 40000 elements Matrices.setParallelMode(ParallelMode.FORCE_OFF); Matrices.shouldRunInParallel(small); // returns false (forced off) Matrices.shouldRunInParallel(large); // returns false (forced off) Matrices.setParallelMode(ParallelMode.AUTO); // restore default; under AUTO the // small matrix is never parallelized Matrices.shouldRunInParallel(small); // returns false (4 < 8192) Matrices.shouldRunInParallel((IntMatrix) null); // throws IllegalArgumentException } </pre>
 - **Parameters:**
   - `m` (`AbstractMatrix<?, ?, ?, ?, ?>`) — the matrix to evaluate for parallelization, must not be {@code null}
 - **Returns:** {@code true} if parallel processing should be used for this matrix; {@code false} for sequential processing
@@ -6600,7 +6610,7 @@ Utility and policy holder shared by the matrix implementations in this package.
   - <p> This method makes the parallelization decision using a multifactor evaluation: </p> <ol> <li> <b> Runtime Support: </b> Parallel streams must be available in the runtime environment.
   - If not supported, always returns {@code false} .
   - </li> </ul> </li> <li> <b> Work Count: </b> When using {@code AUTO} setting, returns {@code true} only if {@code count >= 8192} .
-  - </li> </ol> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.of(new int\[\]\[\] {{1, 2}, {3, 4}}); Matrices.setParallelMode(ParallelMode.FORCE_OFF); Matrices.shouldRunInParallel(matrix, 100000L); // returns false (forced off, count ignored) Matrices.setParallelMode(ParallelMode.AUTO); // restore default Matrices.shouldRunInParallel(matrix, 5000L); // returns false (5000 < 8192) Matrices.shouldRunInParallel((IntMatrix) null, 100L); // throws IllegalArgumentException Matrices.shouldRunInParallel(matrix, -1L); // throws IllegalArgumentException } </pre>
+  - </li> </ol> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.wrap(new int\[\]\[\] {{1, 2}, {3, 4}}); Matrices.setParallelMode(ParallelMode.FORCE_OFF); Matrices.shouldRunInParallel(matrix, 100000L); // returns false (forced off, count ignored) Matrices.setParallelMode(ParallelMode.AUTO); // restore default Matrices.shouldRunInParallel(matrix, 5000L); // returns false (5000 < 8192) Matrices.shouldRunInParallel((IntMatrix) null, 100L); // throws IllegalArgumentException Matrices.shouldRunInParallel(matrix, -1L); // throws IllegalArgumentException } </pre>
 - **Parameters:**
   - `m` (`AbstractMatrix<?, ?, ?, ?, ?>`) — the matrix being evaluated; only checked for {@code null} , the matrix's own element count is not consulted (the supplied {@code count} drives the decision)
   - `count` (`long`) — the non-negative number of work items to process; typically the total element count or a subset being operated on
@@ -7382,14 +7392,14 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** an empty matrix
-##### of(...) -> Matrix<T>
-- **Signature:** `@SafeVarargs public static <T> Matrix<T> of(final T[]... a)`
-- **Summary:** Creates a {@code Matrix} from a two-dimensional array.
+##### wrap(...) -> Matrix<T>
+- **Signature:** `@SafeVarargs public static <T> Matrix<T> wrap(final T[]... a)`
+- **Summary:** Wraps the supplied two-dimensional array as a {@code Matrix} .
 - **Contract:**
   - </p> <p> All rows must have the same length as the first row (rectangular array required).
   - The array must not be {@code null} .
 - **Parameters:**
-  - `a` (`T[][]`) — the two-dimensional array to create the matrix from (must not be {@code null} )
+  - `a` (`T[][]`) — the two-dimensional array to wrap (must not be {@code null} )
 - **Returns:** a new {@code Matrix} backed by the provided array (not a copy)
 ##### copyOf(...) -> Matrix<T>
 - **Signature:** `@SafeVarargs public static <T> Matrix<T> copyOf(final T[]... a)`
@@ -7397,7 +7407,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Parameters:**
   - `a` (`T[][]`) — the two-dimensional array to copy (must not be {@code null} )
 - **Returns:** a new {@code Matrix} backed by a defensive copy of {@code a} 's array structure (outer array and each row cloned; element references shared)
-- **See also:** #of(Object\[\]\[\]), #copy()
+- **See also:** #wrap(Object\[\]\[\]), #copy()
 ##### filled(...) -> Matrix<T>
 - **Signature:** `public static <T> Matrix<T> filled(final int rowCount, final int columnCount, final T element) throws IllegalArgumentException`
 - **Summary:** Creates a new matrix of the specified dimensions where every element is the provided {@code element} .
@@ -7518,7 +7528,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Summary:** Returns the specified row as an array.
 - **Contract:**
   - If you need an independent copy, use {@link #rowCopy(int)} or call {@code .clone()} on the returned array.
-  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code Matrix<String> matrix = Matrix.of(new String\[\]\[\] {{"A", "B"}, {"C", "D"}}); String\[\] rowData = matrix.rowView(0); rowData\[0\] = "X"; // modifies the matrix directly (live view) matrix.get(0, 0); // returns "X" // Use clone() if you need an independent copy String\[\] rowCopy = matrix.rowView(1).clone(); rowCopy\[0\] = "Y"; // does NOT affect the matrix matrix.get(1, 0); // returns "C" matrix.rowView(5); // throws IndexOutOfBoundsException (row index out of bounds) matrix.rowView(-1); // throws IndexOutOfBoundsException (negative index) } </pre>
+  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code Matrix<String> matrix = Matrix.wrap(new String\[\]\[\] {{"A", "B"}, {"C", "D"}}); String\[\] rowData = matrix.rowView(0); rowData\[0\] = "X"; // modifies the matrix directly (live view) matrix.get(0, 0); // returns "X" // Use clone() if you need an independent copy String\[\] rowCopy = matrix.rowView(1).clone(); rowCopy\[0\] = "Y"; // does NOT affect the matrix matrix.get(1, 0); // returns "C" matrix.rowView(5); // throws IndexOutOfBoundsException (row index out of bounds) matrix.rowView(-1); // throws IndexOutOfBoundsException (negative index) } </pre>
 - **Parameters:**
   - `rowIndex` (`int`) — the index of the row to retrieve (0-based)
 - **Returns:** the live internal row array
@@ -7844,18 +7854,18 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Contract:**
   - <ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded (excess rows removed from the bottom, excess columns removed from the right).
   - </li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code null} .
-  - Use {@code extend} when the entire original content must be preserved.
+  - Use {@code pad} when the entire original content must be preserved.
 - **Parameters:**
   - `newRowCount` (`int`) — the row count of the returned matrix; must be {@code >= 0}
   - `newColumnCount` (`int`) — the column count of the returned matrix; must be {@code >= 0}
 - **Returns:** a new Matrix with the specified dimensions
-- **See also:** #resize(int, int, Object), #extend(int, int, int, int)
+- **See also:** #resize(int, int, Object), #pad(int, int, int, int)
 - **Signature:** `public Matrix<T> resize(final int newRowCount, final int newColumnCount, final T defaultValue) throws IllegalArgumentException`
 - **Summary:** Returns a new matrix whose dimensions are exactly {@code newRowCount × newColumnCount} , anchored at the top-left corner of this matrix.
 - **Contract:**
   - <ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded (excess rows removed from the bottom, excess columns removed from the right).
   - </li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code defaultValue} .
-  - Use {@code extend} when the entire original content must be preserved.
+  - Use {@code pad} when the entire original content must be preserved.
 - **Parameters:**
   - `newRowCount` (`int`) — the row count of the returned matrix; must be {@code >= 0}
   - `newColumnCount` (`int`) — the column count of the returned matrix; must be {@code >= 0}
@@ -7863,9 +7873,9 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Returns:** a new Matrix with the specified dimensions
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code newRowCount} or {@code newColumnCount} is negative, if the resulting shape is not representable (zero rows with a non-zero column count), or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
-- **See also:** #resize(int, int), #extend(int, int, int, int, Object)
-##### extend(...) -> Matrix<T>
-- **Signature:** `@Override public Matrix<T> extend(final int padTop, final int padBottom, final int padLeft, final int padRight)`
+- **See also:** #resize(int, int), #pad(int, int, int, int, Object)
+##### pad(...) -> Matrix<T>
+- **Signature:** `@Override public Matrix<T> pad(final int padTop, final int padBottom, final int padLeft, final int padRight)`
 - **Summary:** Returns a new matrix formed by adding {@code null} -filled padding around every edge of this matrix.
 - **Contract:**
   - Use {@code resize} when you need exact output dimensions regardless of the original size.
@@ -7875,8 +7885,8 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
   - `padLeft` (`int`) — number of columns to add to the left; must be {@code >= 0}
   - `padRight` (`int`) — number of columns to add to the right; must be {@code >= 0}
 - **Returns:** a new Matrix with dimensions {@code (padTop+rowCount+padBottom) × (padLeft+columnCount+padRight)}
-- **See also:** #extend(int, int, int, int, Object), #resize(int, int)
-- **Signature:** `public Matrix<T> extend(final int padTop, final int padBottom, final int padLeft, final int padRight, final T defaultValue) throws IllegalArgumentException`
+- **See also:** #pad(int, int, int, int, Object), #resize(int, int)
+- **Signature:** `public Matrix<T> pad(final int padTop, final int padBottom, final int padLeft, final int padRight, final T defaultValue) throws IllegalArgumentException`
 - **Summary:** Returns a new matrix formed by adding {@code defaultValue} -filled padding around every edge of this matrix.
 - **Parameters:**
   - `padTop` (`int`) — number of rows to add above; must be {@code >= 0}
@@ -7887,7 +7897,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Returns:** a new Matrix with dimensions {@code (padTop+rowCount+padBottom) × (padLeft+columnCount+padRight)}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if any padding parameter is negative, if the resulting dimensions would overflow {@code Integer.MAX_VALUE} , or if the resulting shape is not representable (zero rows with a non-zero column count)
-- **See also:** #extend(int, int, int, int), #resize(int, int, Object)
+- **See also:** #pad(int, int, int, int), #resize(int, int, Object)
 ##### flipHorizontallyInPlace(...) -> void
 - **Signature:** `@Override public void flipHorizontallyInPlace()`
 - **Summary:** Reverses the order of elements in each row (horizontal flip).
@@ -7945,9 +7955,9 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new matrix that is the transpose of this matrix, with dimensions {@code columnCount × rowCount} (an empty matrix with zero columns yields an empty {@code 0} -row matrix)
-##### reshape(...) -> Matrix<T>
-- **Signature:** `@SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG") @Override public Matrix<T> reshape(final int newRowCount, final int newColumnCount)`
-- **Summary:** Reshapes this matrix to have the specified dimensions.
+##### reshapeAndPad(...) -> Matrix<T>
+- **Signature:** `@SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG") @Override public Matrix<T> reshapeAndPad(final int newRowCount, final int newColumnCount)`
+- **Summary:** Reshapes this matrix to the specified dimensions and pads any extra trailing cells.
 - **Contract:**
   - The new shape must have at least as many total elements as the original ( {@code (long) newRowCount * newColumnCount >= elementCount()} ).
   - If the new shape has more elements, the extra positions are filled with {@code null} .
@@ -8172,7 +8182,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Contract:**
   - Elements are processed in row-major order within the specified bounds when executed sequentially.
   - The operation may be parallelized internally if the sub-matrix is large enough to benefit from parallel processing; if parallelized, the order in which elements are visited is unspecified and the action must be thread-safe, but every element is still visited exactly once.
-  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code Matrix<Integer> matrix = Matrix.of(new Integer\[\]\[\] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}); // Process only the center element List<Integer> center = java.util.Collections.synchronizedList(new ArrayList<>()); matrix.forEach(1, 2, 1, 2, value -> center.add(value)); // center is now \[5\] // Process a 2x2 sub-matrix List<Integer> subMatrix = java.util.Collections.synchronizedList(new ArrayList<>()); matrix.forEach(0, 2, 1, 3, value -> subMatrix.add(value)); subMatrix.containsAll(List.of(2, 3, 5, 6)); // returns true (order is unspecified if parallelized) subMatrix.size(); // returns 4 matrix.forEach(0, 5, 0, 2, value -> {}); // throws IndexOutOfBoundsException (toRowIndex out of range) } </pre>
+  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code Matrix<Integer> matrix = Matrix.wrap(new Integer\[\]\[\] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}); // Process only the center element List<Integer> center = java.util.Collections.synchronizedList(new ArrayList<>()); matrix.forEach(1, 2, 1, 2, value -> center.add(value)); // center is now \[5\] // Process a 2x2 sub-matrix List<Integer> subMatrix = java.util.Collections.synchronizedList(new ArrayList<>()); matrix.forEach(0, 2, 1, 3, value -> subMatrix.add(value)); subMatrix.containsAll(List.of(2, 3, 5, 6)); // returns true (order is unspecified if parallelized) subMatrix.size(); // returns 4 matrix.forEach(0, 5, 0, 2, value -> {}); // throws IndexOutOfBoundsException (toRowIndex out of range) } </pre>
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
   - `toRowIndex` (`int`) — the ending row index (exclusive)
@@ -8259,9 +8269,9 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** the shared empty {@code ShortMatrix} singleton
-##### of(...) -> ShortMatrix
-- **Signature:** `public static ShortMatrix of(final short[]... a)`
-- **Summary:** Creates a {@code ShortMatrix} from a two-dimensional short array.
+##### wrap(...) -> ShortMatrix
+- **Signature:** `public static ShortMatrix wrap(final short[]... a)`
+- **Summary:** Wraps the supplied two-dimensional short array as {@code ShortMatrix} .
 - **Contract:**
   - <p> <b> &#9888; &#65039; Shared backing: </b> When the input has at least one row, the provided array is used directly without defensive copying.
 - **Parameters:**
@@ -8273,7 +8283,7 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Parameters:**
   - `a` (`short[][]`) — the two-dimensional short array to copy, or empty for an empty matrix; must not be {@code null}
 - **Returns:** a new {@code ShortMatrix} backed by a deep copy of {@code a} when it is non-empty, or the shared empty matrix if {@code a} has no rows
-- **See also:** #of(short\[\]\[\]), #copy()
+- **See also:** #wrap(short\[\]\[\]), #copy()
 ##### randomRow(...) -> ShortMatrix
 - **Signature:** `public static ShortMatrix randomRow(final int columnCount)`
 - **Summary:** Creates a new {@code 1 x columnCount} matrix filled with pseudo-random {@code short} values drawn uniformly from the entire {@code short} range.
@@ -8694,20 +8704,20 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Contract:**
   - <ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded (excess rows removed from the bottom, excess columns removed from the right).
   - </li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code 0} .
-  - Use {@code extend} when the entire original content must be preserved.
+  - Use {@code pad} when the entire original content must be preserved.
 - **Parameters:**
   - `newRowCount` (`int`) — the row count of the returned matrix; must be {@code >= 0}
   - `newColumnCount` (`int`) — the column count of the returned matrix; must be {@code >= 0}
 - **Returns:** a new ShortMatrix with the specified dimensions
-- **See also:** #resize(int, int, short), #extend(int, int, int, int)
+- **See also:** #resize(int, int, short), #pad(int, int, int, int)
 - **Signature:** `public ShortMatrix resize(final int newRowCount, final int newColumnCount, final short defaultValue) throws IllegalArgumentException`
 - **Summary:** Returns a new matrix whose dimensions are exactly {@code newRowCount × newColumnCount} , anchored at the top-left corner of this matrix.
 - **Contract:**
   - <ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded.
   - If neither dimension grows, {@code defaultValue} is not used.
   - </li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with {@code defaultValue} .
-  - Use {@code extend} when the entire original content must be preserved.
-  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code ShortMatrix matrix = ShortMatrix.of(new short\[\]\[\] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}); // Grow: fill new cells with 9 ShortMatrix grown = matrix.resize(4, 4, (short) 9); grown.get(3, 3); // returns 9 (new cell uses defaultValue) grown.get(0, 0); // returns 1 (preserved) // Truncate: defaultValue is ignored when shrinking ShortMatrix truncated = matrix.resize(2, 2, (short) 9); truncated.get(1, 1); // returns 5 (no new cells, default unused) matrix.resize(0, 0, (short) 9).isEmpty(); // returns true matrix.resize(2, -1, (short) 9); // throws IllegalArgumentException (negative dimension) } </pre>
+  - Use {@code pad} when the entire original content must be preserved.
+  - </p> <p> <b> Usage Examples: </b> </p> <pre> {@code ShortMatrix matrix = ShortMatrix.wrap(new short\[\]\[\] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}); // Grow: fill new cells with 9 ShortMatrix grown = matrix.resize(4, 4, (short) 9); grown.get(3, 3); // returns 9 (new cell uses defaultValue) grown.get(0, 0); // returns 1 (preserved) // Truncate: defaultValue is ignored when shrinking ShortMatrix truncated = matrix.resize(2, 2, (short) 9); truncated.get(1, 1); // returns 5 (no new cells, default unused) matrix.resize(0, 0, (short) 9).isEmpty(); // returns true matrix.resize(2, -1, (short) 9); // throws IllegalArgumentException (negative dimension) } </pre>
 - **Parameters:**
   - `newRowCount` (`int`) — the row count of the returned matrix; must be {@code >= 0}
   - `newColumnCount` (`int`) — the column count of the returned matrix; must be {@code >= 0}
@@ -8715,9 +8725,9 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Returns:** a new ShortMatrix with the specified dimensions
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code newRowCount} or {@code newColumnCount} is negative, if the resulting shape is not representable (zero rows with a non-zero column count), or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
-- **See also:** #resize(int, int), #extend(int, int, int, int, short)
-##### extend(...) -> ShortMatrix
-- **Signature:** `@Override public ShortMatrix extend(final int padTop, final int padBottom, final int padLeft, final int padRight)`
+- **See also:** #resize(int, int), #pad(int, int, int, int, short)
+##### pad(...) -> ShortMatrix
+- **Signature:** `@Override public ShortMatrix pad(final int padTop, final int padBottom, final int padLeft, final int padRight)`
 - **Summary:** Returns a new matrix formed by surrounding this matrix with padding on all four edges.
 - **Parameters:**
   - `padTop` (`int`) — number of padding rows to add above the original matrix; must be {@code >= 0}
@@ -8725,8 +8735,8 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
   - `padLeft` (`int`) — number of padding columns to add to the left of the original matrix; must be {@code >= 0}
   - `padRight` (`int`) — number of padding columns to add to the right of the original matrix; must be {@code >= 0}
 - **Returns:** a new ShortMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
-- **See also:** #extend(int, int, int, int, short), #resize(int, int)
-- **Signature:** `public ShortMatrix extend(final int padTop, final int padBottom, final int padLeft, final int padRight, final short defaultValue) throws IllegalArgumentException`
+- **See also:** #pad(int, int, int, int, short), #resize(int, int)
+- **Signature:** `public ShortMatrix pad(final int padTop, final int padBottom, final int padLeft, final int padRight, final short defaultValue) throws IllegalArgumentException`
 - **Summary:** Returns a new matrix formed by surrounding this matrix with padding on all four edges.
 - **Parameters:**
   - `padTop` (`int`) — number of padding rows to add above the original matrix; must be {@code >= 0}
@@ -8737,7 +8747,7 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Returns:** a new ShortMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if any padding parameter is negative, if the resulting dimensions would overflow {@code Integer.MAX_VALUE} , or if the resulting shape is not representable (zero rows with a non-zero column count)
-- **See also:** #extend(int, int, int, int), #resize(int, int, short)
+- **See also:** #pad(int, int, int, int), #resize(int, int, short)
 ##### flipHorizontallyInPlace(...) -> void
 - **Signature:** `@Override public void flipHorizontallyInPlace()`
 - **Summary:** Reverses the order of elements in each row in-place (horizontal flip).
@@ -8793,9 +8803,9 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new {@code ShortMatrix} of shape {@code columnCount x rowCount} that is the transpose of this matrix; an {@code N x 0} matrix transposes to the empty {@code 0 x 0} matrix, because the swapped shape {@code 0 x N} (zero rows with a non-zero column count) is not representable
-##### reshape(...) -> ShortMatrix
-- **Signature:** `@SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG") @Override public ShortMatrix reshape(final int newRowCount, final int newColumnCount)`
-- **Summary:** Reshapes this matrix to have the specified dimensions.
+##### reshapeAndPad(...) -> ShortMatrix
+- **Signature:** `@SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG") @Override public ShortMatrix reshapeAndPad(final int newRowCount, final int newColumnCount)`
+- **Summary:** Reshapes this matrix to the specified dimensions and pads any extra trailing cells.
 - **Contract:**
   - The new shape must have at least as many total cells as the original ( {@code (long) newRowCount * newColumnCount >= elementCount()} ).
 - **Parameters:**

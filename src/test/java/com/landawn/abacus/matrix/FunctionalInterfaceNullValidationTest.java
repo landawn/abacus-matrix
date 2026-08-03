@@ -118,24 +118,24 @@ class FunctionalInterfaceNullValidationTest extends TestBase {
 
     private static Object newMatrix(final Class<?> type) {
         if (type == BooleanMatrix.class) {
-            return BooleanMatrix.of(new boolean[][] { { true, false }, { false, true } });
+            return BooleanMatrix.wrap(new boolean[][] { { true, false }, { false, true } });
         } else if (type == ByteMatrix.class) {
-            return ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
+            return ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
         } else if (type == CharMatrix.class) {
-            return CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
+            return CharMatrix.wrap(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
         } else if (type == ShortMatrix.class) {
-            return ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
+            return ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
         } else if (type == LongMatrix.class) {
-            return LongMatrix.of(new long[][] { { 1, 2 }, { 3, 4 } });
+            return LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } });
         } else if (type == FloatMatrix.class) {
-            return FloatMatrix.of(new float[][] { { 1, 2 }, { 3, 4 } });
+            return FloatMatrix.wrap(new float[][] { { 1, 2 }, { 3, 4 } });
         } else if (type == DoubleMatrix.class) {
-            return DoubleMatrix.of(new double[][] { { 1, 2 }, { 3, 4 } });
+            return DoubleMatrix.wrap(new double[][] { { 1, 2 }, { 3, 4 } });
         } else if (type == Matrix.class) {
-            return Matrix.of(new Object[][] { { 1, 2 }, { 3, 4 } });
+            return Matrix.wrap(new Object[][] { { 1, 2 }, { 3, 4 } });
         }
 
-        return IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
+        return IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
     }
 
     private static Object defaultValue(final Class<?> type) {

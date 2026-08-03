@@ -47,8 +47,8 @@
  * <h2>Storage ownership and mutation</h2>
  *
  * <p>Public constructors validate and then wrap the supplied array; they do not make a defensive copy.
- * {@link com.landawn.abacus.matrix.Matrix#of(Object[][])} does the same, as do the primitive
- * {@code of(...)} factories when the input has at least one row. A primitive {@code of(...)} factory
+ * {@link com.landawn.abacus.matrix.Matrix#wrap(Object[][])} does the same, as do the primitive
+ * {@code wrap(...)} factories when the input has at least one row. A primitive {@code wrap(...)} factory
  * canonicalizes a zero-row input to its shared {@code 0 x 0} singleton, so the caller's empty outer-array
  * identity is not retained. Primitive {@code copyOf(...)} factories do the same for zero-row inputs and copy
  * every row of non-empty inputs. {@link com.landawn.abacus.matrix.Matrix#copyOf(Object[][])} always clones the
@@ -99,14 +99,14 @@
  *     { 4, 5, 6 }
  * };
  *
- * IntMatrix wrapped = IntMatrix.of(source);      // shares source
+ * IntMatrix wrapped = IntMatrix.wrap(source);      // shares source
  * IntMatrix owned = IntMatrix.copyOf(source);    // owns its row arrays
  * source[0][0] = 10;
  *
  * wrapped.get(0, 0); // 10
  * owned.get(0, 0);   // 1
  *
- * IntMatrix right = IntMatrix.of(new int[][] {
+ * IntMatrix right = IntMatrix.wrap(new int[][] {
  *     { 7, 8 },
  *     { 9, 10 },
  *     { 11, 12 }

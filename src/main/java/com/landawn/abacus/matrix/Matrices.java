@@ -209,8 +209,8 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix small = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});  // 4 elements
-     * IntMatrix large = IntMatrix.of(new int[200][200]);             // 40000 elements
+     * IntMatrix small = IntMatrix.wrap(new int[][] {{1, 2}, {3, 4}});  // 4 elements
+     * IntMatrix large = IntMatrix.wrap(new int[200][200]);             // 40000 elements
      *
      * Matrices.setParallelMode(ParallelMode.FORCE_OFF);
      * Matrices.shouldRunInParallel(small);                    // returns false (forced off)
@@ -257,7 +257,7 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
+     * IntMatrix matrix = IntMatrix.wrap(new int[][] {{1, 2}, {3, 4}});
      *
      * Matrices.setParallelMode(ParallelMode.FORCE_OFF);
      * Matrices.shouldRunInParallel(matrix, 100000L);          // returns false (forced off, count ignored)
@@ -341,9 +341,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix m1 = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});         // 2x2 matrix
-     * IntMatrix m2 = IntMatrix.of(new int[][] {{5, 6}, {7, 8}});         // 2x2 matrix
-     * IntMatrix m3 = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});   // 2x3 matrix
+     * IntMatrix m1 = IntMatrix.wrap(new int[][] {{1, 2}, {3, 4}});         // 2x2 matrix
+     * IntMatrix m2 = IntMatrix.wrap(new int[][] {{5, 6}, {7, 8}});         // 2x2 matrix
+     * IntMatrix m3 = IntMatrix.wrap(new int[][] {{1, 2, 3}, {4, 5, 6}});   // 2x3 matrix
      *
      * Matrices.isSameShape(m1, m2);                        // returns true  (both 2x2)
      * Matrices.isSameShape(m1, m3);                        // returns false (2x2 vs 2x3)
@@ -372,10 +372,10 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix m1 = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});        // 2x2
-     * IntMatrix m2 = IntMatrix.of(new int[][] {{5, 6}, {7, 8}});        // 2x2
-     * IntMatrix m3 = IntMatrix.of(new int[][] {{9, 10}, {11, 12}});     // 2x2
-     * IntMatrix m4 = IntMatrix.of(new int[][] {{1, 2, 3}});             // 1x3
+     * IntMatrix m1 = IntMatrix.wrap(new int[][] {{1, 2}, {3, 4}});        // 2x2
+     * IntMatrix m2 = IntMatrix.wrap(new int[][] {{5, 6}, {7, 8}});        // 2x2
+     * IntMatrix m3 = IntMatrix.wrap(new int[][] {{9, 10}, {11, 12}});     // 2x2
+     * IntMatrix m4 = IntMatrix.wrap(new int[][] {{1, 2, 3}});             // 1x3
      *
      * Matrices.isSameShape(m1, m2, m3);                    // returns true  (all 2x2)
      * Matrices.isSameShape(m1, m2, m4);                    // returns false (2x2 vs 1x3)
@@ -415,9 +415,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix m1 = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});       // 2x2
-     * IntMatrix m2 = IntMatrix.of(new int[][] {{5, 6}, {7, 8}});       // 2x2
-     * IntMatrix m3 = IntMatrix.of(new int[][] {{1, 2, 3}});            // 1x3
+     * IntMatrix m1 = IntMatrix.wrap(new int[][] {{1, 2}, {3, 4}});       // 2x2
+     * IntMatrix m2 = IntMatrix.wrap(new int[][] {{5, 6}, {7, 8}});       // 2x2
+     * IntMatrix m3 = IntMatrix.wrap(new int[][] {{1, 2, 3}});            // 1x3
      *
      * Matrices.isSameShape(Arrays.asList(m1, m2));               // returns true  (both 2x2)
      * Matrices.isSameShape(Arrays.asList(m1, m3));               // returns false (2x2 vs 1x3)
@@ -1021,19 +1021,19 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix a = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});   // 2x2
-     * IntMatrix b = IntMatrix.of(new int[][] {{5, 6}, {7, 8}});   // 2x2
+     * IntMatrix a = IntMatrix.wrap(new int[][] {{1, 2}, {3, 4}});   // 2x2
+     * IntMatrix b = IntMatrix.wrap(new int[][] {{5, 6}, {7, 8}});   // 2x2
      * int[][] result = new int[2][2];
      * Matrices.forEachCartesianIndices(a, b, (i, j, k) -> result[i][j] += a.get(i, k) * b.get(k, j));
      * // result is the matrix product [[19, 22], [43, 50]]
      *
-     * IntMatrix p = IntMatrix.of(new int[][] {{1, 2, 3}});        // 1x3
-     * IntMatrix q = IntMatrix.of(new int[][] {{4}, {5}, {6}});    // 3x1
+     * IntMatrix p = IntMatrix.wrap(new int[][] {{1, 2, 3}});        // 1x3
+     * IntMatrix q = IntMatrix.wrap(new int[][] {{4}, {5}, {6}});    // 3x1
      * int[][] dot = new int[1][1];
      * Matrices.forEachCartesianIndices(p, q, (i, j, k) -> dot[i][j] += p.get(i, k) * q.get(k, j));
      * // dot[0][0] == 32  (1*4 + 2*5 + 3*6)
      *
-     * IntMatrix bad = IntMatrix.of(new int[][] {{1, 2, 3}});      // 1x3, b is 2x2
+     * IntMatrix bad = IntMatrix.wrap(new int[][] {{1, 2, 3}});      // 1x3, b is 2x2
      * Matrices.forEachCartesianIndices(bad, b, (i, j, k) -> {});  // throws IllegalArgumentException (3 != 2)
      * Matrices.forEachCartesianIndices(a, b, null);               // throws IllegalArgumentException (null action)
      * }</pre>
@@ -1081,13 +1081,13 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix a = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});   // 2x2
-     * IntMatrix b = IntMatrix.of(new int[][] {{5, 6}, {7, 8}});   // 2x2
+     * IntMatrix a = IntMatrix.wrap(new int[][] {{1, 2}, {3, 4}});   // 2x2
+     * IntMatrix b = IntMatrix.wrap(new int[][] {{5, 6}, {7, 8}});   // 2x2
      * int[][] result = new int[2][2];
      * Matrices.forEachCartesianIndices(a, b, (i, j, k) -> result[i][j] += a.get(i, k) * b.get(k, j), false);
      * // result is the matrix product [[19, 22], [43, 50]]  (same outcome whether parallel or not)
      *
-     * IntMatrix bad = IntMatrix.of(new int[][] {{1, 2, 3}});             // 1x3, b is 2x2
+     * IntMatrix bad = IntMatrix.wrap(new int[][] {{1, 2, 3}});             // 1x3, b is 2x2
      * Matrices.forEachCartesianIndices(bad, b, (i, j, k) -> {}, false);  // throws IllegalArgumentException (3 != 2)
      * Matrices.forEachCartesianIndices(a, b, null, false);               // throws IllegalArgumentException (null action)
      * }</pre>
@@ -1239,16 +1239,16 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix a = IntMatrix.of(new int[][] {{1, 2}});
-     * IntMatrix b = IntMatrix.of(new int[][] {{3, 4}});
-     * IntMatrix c = IntMatrix.of(new int[][] {{5, 6}});
+     * IntMatrix a = IntMatrix.wrap(new int[][] {{1, 2}});
+     * IntMatrix b = IntMatrix.wrap(new int[][] {{3, 4}});
+     * IntMatrix c = IntMatrix.wrap(new int[][] {{5, 6}});
      * IntMatrix stacked = Matrices.stackVertically(Arrays.asList(a, b, c));
      * // stacked is 3x2: [[1, 2], [3, 4], [5, 6]]  (stacked.get(2, 1) == 6)
      *
      * IntMatrix single = Matrices.stackVertically(Arrays.asList(a));
      * // single is a 1x2 copy of a: [[1, 2]]
      *
-     * IntMatrix wide = IntMatrix.of(new int[][] {{7, 8, 9}});           // 1x3, mismatched columns
+     * IntMatrix wide = IntMatrix.wrap(new int[][] {{7, 8, 9}});           // 1x3, mismatched columns
      * Matrices.stackVertically(Arrays.asList(a, wide));                 // throws IllegalArgumentException (2 cols vs 3 cols)
      * Matrices.stackVertically(Collections.<IntMatrix> emptyList());    // throws IllegalArgumentException (empty)
      * }</pre>
@@ -1286,16 +1286,16 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix a = IntMatrix.of(new int[][] {{1}, {2}});
-     * IntMatrix b = IntMatrix.of(new int[][] {{3}, {4}});
-     * IntMatrix c = IntMatrix.of(new int[][] {{5}, {6}});
+     * IntMatrix a = IntMatrix.wrap(new int[][] {{1}, {2}});
+     * IntMatrix b = IntMatrix.wrap(new int[][] {{3}, {4}});
+     * IntMatrix c = IntMatrix.wrap(new int[][] {{5}, {6}});
      * IntMatrix stacked = Matrices.stackHorizontally(Arrays.asList(a, b, c));
      * // stacked is 2x3: [[1, 3, 5], [2, 4, 6]]  (stacked.get(1, 2) == 6)
      *
      * IntMatrix single = Matrices.stackHorizontally(Arrays.asList(a));
      * // single is a 2x1 copy of a: [[1], [2]]
      *
-     * IntMatrix tall = IntMatrix.of(new int[][] {{7}, {8}, {9}});       // 3x1, mismatched rows
+     * IntMatrix tall = IntMatrix.wrap(new int[][] {{7}, {8}, {9}});       // 3x1, mismatched rows
      * Matrices.stackHorizontally(Arrays.asList(a, tall));               // throws IllegalArgumentException (2 rows vs 3 rows)
      * Matrices.stackHorizontally(Collections.<IntMatrix> emptyList());  // throws IllegalArgumentException (empty)
      * }</pre>
@@ -1398,8 +1398,8 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * ByteMatrix m1 = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
-     * ByteMatrix m2 = ByteMatrix.of(new byte[][] {{5, 6}, {7, 8}});
+     * ByteMatrix m1 = ByteMatrix.wrap(new byte[][] {{1, 2}, {3, 4}});
+     * ByteMatrix m2 = ByteMatrix.wrap(new byte[][] {{5, 6}, {7, 8}});
      *
      * ByteMatrix sum = Matrices.zip(m1, m2, (a, b) -> (byte) (a + b));
      * // sum is [[6, 8], [10, 12]]  (sum.get(1, 1) == 12)
@@ -1407,7 +1407,7 @@ public final class Matrices {
      * ByteMatrix max = Matrices.zip(m1, m2, (a, b) -> (byte) Math.max(a, b));
      * // max is [[5, 6], [7, 8]]  (max.get(0, 0) == 5)
      *
-     * ByteMatrix wrong = ByteMatrix.of(new byte[][] {{1, 2, 3}});      // 1x3, different shape
+     * ByteMatrix wrong = ByteMatrix.wrap(new byte[][] {{1, 2, 3}});      // 1x3, different shape
      * Matrices.zip(m1, wrong, (a, b) -> (byte) (a + b));               // throws IllegalArgumentException (shape mismatch)
      * Matrices.zip(m1, (ByteMatrix) null, (a, b) -> (byte) (a + b));   // throws IllegalArgumentException (null b)
      * }</pre>
@@ -1443,9 +1443,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * ByteMatrix m1 = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
-     * ByteMatrix m2 = ByteMatrix.of(new byte[][] {{5, 6}, {7, 8}});
-     * ByteMatrix m3 = ByteMatrix.of(new byte[][] {{10, 20}, {30, 40}});
+     * ByteMatrix m1 = ByteMatrix.wrap(new byte[][] {{1, 2}, {3, 4}});
+     * ByteMatrix m2 = ByteMatrix.wrap(new byte[][] {{5, 6}, {7, 8}});
+     * ByteMatrix m3 = ByteMatrix.wrap(new byte[][] {{10, 20}, {30, 40}});
      *
      * ByteMatrix result = Matrices.zip(m1, m2, m3, (a, b, c) -> (byte) (a + b + c));
      * // result is [[16, 28], [40, 52]]  (result.get(1, 1) == 52)
@@ -1453,7 +1453,7 @@ public final class Matrices {
      * ByteMatrix min = Matrices.zip(m1, m2, m3, (a, b, c) -> (byte) Math.min(a, Math.min(b, c)));
      * // min is [[1, 2], [3, 4]]  (min.get(0, 0) == 1)
      *
-     * ByteMatrix wrong = ByteMatrix.of(new byte[][] {{1, 2, 3}});       // 1x3, different shape
+     * ByteMatrix wrong = ByteMatrix.wrap(new byte[][] {{1, 2, 3}});       // 1x3, different shape
      * Matrices.zip(m1, m2, wrong, (a, b, c) -> (byte) (a + b + c));     // throws IllegalArgumentException (shape mismatch)
      * Matrices.zip(m1, m2, (ByteMatrix) null, (a, b, c) -> (byte) 0);   // throws IllegalArgumentException (null c)
      * }</pre>
@@ -1500,9 +1500,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * ByteMatrix m1 = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
-     * ByteMatrix m2 = ByteMatrix.of(new byte[][] {{5, 6}, {7, 8}});
-     * ByteMatrix m3 = ByteMatrix.of(new byte[][] {{9, 10}, {11, 12}});
+     * ByteMatrix m1 = ByteMatrix.wrap(new byte[][] {{1, 2}, {3, 4}});
+     * ByteMatrix m2 = ByteMatrix.wrap(new byte[][] {{5, 6}, {7, 8}});
+     * ByteMatrix m3 = ByteMatrix.wrap(new byte[][] {{9, 10}, {11, 12}});
      *
      * ByteMatrix sum = Matrices.zip(Arrays.asList(m1, m2, m3), (a, b) -> (byte) (a + b));
      * // sum is [[15, 18], [21, 24]]  (sum.get(0, 0) == 15)
@@ -1510,7 +1510,7 @@ public final class Matrices {
      * ByteMatrix copy = Matrices.zip(Arrays.asList(m1), (a, b) -> (byte) (a + b));
      * // copy is a copy of m1: [[1, 2], [3, 4]]  (binary op never invoked for a single matrix)
      *
-     * ByteMatrix wrong = ByteMatrix.of(new byte[][] {{1, 2, 3}});                   // different shape
+     * ByteMatrix wrong = ByteMatrix.wrap(new byte[][] {{1, 2, 3}});                   // different shape
      * Matrices.zip(Arrays.asList(m1, wrong), (a, b) -> (byte) (a + b));             // throws IllegalArgumentException (shape mismatch)
      * Matrices.zip(Collections.<ByteMatrix> emptyList(), (a, b) -> (byte) (a + b)); // throws IllegalArgumentException (empty)
      * }</pre>
@@ -1573,8 +1573,8 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * ByteMatrix m1 = ByteMatrix.of(new byte[][] {{100, 120}, {-50, 80}});
-     * ByteMatrix m2 = ByteMatrix.of(new byte[][] {{60, 40}, {-30, 90}});
+     * ByteMatrix m1 = ByteMatrix.wrap(new byte[][] {{100, 120}, {-50, 80}});
+     * ByteMatrix m2 = ByteMatrix.wrap(new byte[][] {{60, 40}, {-30, 90}});
      *
      * IntMatrix sum = Matrices.zipToInt(m1, m2, (a, b) -> a + b);
      * // sum is [[160, 160], [-80, 170]]  (sum.get(0, 0) == 160, no byte overflow)
@@ -1582,7 +1582,7 @@ public final class Matrices {
      * IntMatrix diff = Matrices.zipToInt(m1, m2, (a, b) -> a - b);
      * // diff is [[40, 80], [-20, -10]]  (diff.get(1, 1) == -10)
      *
-     * ByteMatrix wrong = ByteMatrix.of(new byte[][] {{1, 2, 3}});       // different shape
+     * ByteMatrix wrong = ByteMatrix.wrap(new byte[][] {{1, 2, 3}});       // different shape
      * Matrices.zipToInt(m1, wrong, (a, b) -> a + b);                    // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToInt(m1, (ByteMatrix) null, (a, b) -> a + b);        // throws IllegalArgumentException (null b)
      * }</pre>
@@ -1636,9 +1636,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * ByteMatrix m1 = ByteMatrix.of(new byte[][] {{10, 20}, {30, 40}});
-     * ByteMatrix m2 = ByteMatrix.of(new byte[][] {{5, 10}, {15, 20}});
-     * ByteMatrix m3 = ByteMatrix.of(new byte[][] {{2, 3}, {4, 5}});
+     * ByteMatrix m1 = ByteMatrix.wrap(new byte[][] {{10, 20}, {30, 40}});
+     * ByteMatrix m2 = ByteMatrix.wrap(new byte[][] {{5, 10}, {15, 20}});
+     * ByteMatrix m3 = ByteMatrix.wrap(new byte[][] {{2, 3}, {4, 5}});
      *
      * IntMatrix weighted = Matrices.zipToInt(m1, m2, m3, (a, b, c) -> a * 2 + b * 3 + c);
      * // weighted.get(0, 0) == 10*2 + 5*3 + 2 == 37
@@ -1646,7 +1646,7 @@ public final class Matrices {
      * IntMatrix total = Matrices.zipToInt(m1, m2, m3, (a, b, c) -> a + b + c);
      * // total is [[17, 33], [49, 65]]  (total.get(1, 1) == 65)
      *
-     * ByteMatrix wrong = ByteMatrix.of(new byte[][] {{1, 2, 3}});       // different shape
+     * ByteMatrix wrong = ByteMatrix.wrap(new byte[][] {{1, 2, 3}});       // different shape
      * Matrices.zipToInt(m1, m2, wrong, (a, b, c) -> a + b + c);         // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToInt(m1, m2, (ByteMatrix) null, (a, b, c) -> 0);     // throws IllegalArgumentException (null c)
      * }</pre>
@@ -1703,9 +1703,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * ByteMatrix m1 = ByteMatrix.of(new byte[][] {{100, 100}, {100, 100}});
-     * ByteMatrix m2 = ByteMatrix.of(new byte[][] {{100, 100}, {100, 100}});
-     * ByteMatrix m3 = ByteMatrix.of(new byte[][] {{100, 100}, {100, 100}});
+     * ByteMatrix m1 = ByteMatrix.wrap(new byte[][] {{100, 100}, {100, 100}});
+     * ByteMatrix m2 = ByteMatrix.wrap(new byte[][] {{100, 100}, {100, 100}});
+     * ByteMatrix m3 = ByteMatrix.wrap(new byte[][] {{100, 100}, {100, 100}});
      *
      * IntMatrix sum = Matrices.zipToInt(Arrays.asList(m1, m2, m3), arr -> {
      *     int total = 0;
@@ -1717,7 +1717,7 @@ public final class Matrices {
      * IntMatrix count = Matrices.zipToInt(Arrays.asList(m1, m2, m3), arr -> arr.length);
      * // count.get(0, 0) == 3
      *
-     * ByteMatrix wrong = ByteMatrix.of(new byte[][] {{1, 2, 3}});        // different shape
+     * ByteMatrix wrong = ByteMatrix.wrap(new byte[][] {{1, 2, 3}});        // different shape
      * Matrices.zipToInt(Arrays.asList(m1, wrong), arr -> 0);             // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToInt(Collections.<ByteMatrix> emptyList(), arr -> 0); // throws IllegalArgumentException (empty)
      * }</pre>
@@ -1760,9 +1760,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * ByteMatrix m1 = ByteMatrix.of(new byte[][] {{10, 20}, {30, 40}});
-     * ByteMatrix m2 = ByteMatrix.of(new byte[][] {{20, 40}, {60, 80}});
-     * ByteMatrix m3 = ByteMatrix.of(new byte[][] {{30, 60}, {90, 120}});
+     * ByteMatrix m1 = ByteMatrix.wrap(new byte[][] {{10, 20}, {30, 40}});
+     * ByteMatrix m2 = ByteMatrix.wrap(new byte[][] {{20, 40}, {60, 80}});
+     * ByteMatrix m3 = ByteMatrix.wrap(new byte[][] {{30, 60}, {90, 120}});
      *
      * IntMatrix avg = Matrices.zipToInt(Arrays.asList(m1, m2, m3), arr -> {
      *     int sum = 0;
@@ -1778,7 +1778,7 @@ public final class Matrices {
      * }, false);
      * // maxVal.get(1, 1) == 120
      *
-     * ByteMatrix wrong = ByteMatrix.of(new byte[][] {{1, 2, 3}});               // different shape
+     * ByteMatrix wrong = ByteMatrix.wrap(new byte[][] {{1, 2, 3}});               // different shape
      * Matrices.zipToInt(Arrays.asList(m1, wrong), arr -> 0, false);             // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToInt(Collections.<ByteMatrix> emptyList(), arr -> 0, false); // throws IllegalArgumentException (empty)
      * }</pre>
@@ -1843,9 +1843,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * ByteMatrix m1 = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
-     * ByteMatrix m2 = ByteMatrix.of(new byte[][] {{5, 6}, {7, 8}});
-     * ByteMatrix m3 = ByteMatrix.of(new byte[][] {{9, 10}, {11, 12}});
+     * ByteMatrix m1 = ByteMatrix.wrap(new byte[][] {{1, 2}, {3, 4}});
+     * ByteMatrix m2 = ByteMatrix.wrap(new byte[][] {{5, 6}, {7, 8}});
+     * ByteMatrix m3 = ByteMatrix.wrap(new byte[][] {{9, 10}, {11, 12}});
      *
      * Matrix<Integer> sum = Matrices.zipToObj(Arrays.asList(m1, m2, m3), arr -> {
      *     int s = 0;
@@ -1857,7 +1857,7 @@ public final class Matrices {
      * Matrix<Integer> count = Matrices.zipToObj(Arrays.asList(m1, m2, m3), arr -> arr.length, Integer.class);
      * // count is filled with 3 at every position (count.get(0, 0) == 3)
      *
-     * ByteMatrix wrong = ByteMatrix.of(new byte[][] {{1, 2, 3}});                       // different shape
+     * ByteMatrix wrong = ByteMatrix.wrap(new byte[][] {{1, 2, 3}});                       // different shape
      * Matrices.zipToObj(Arrays.asList(m1, wrong), arr -> 0, Integer.class);             // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToObj(Collections.<ByteMatrix> emptyList(), arr -> 0, Integer.class); // throws IllegalArgumentException (empty)
      * }</pre>
@@ -1904,9 +1904,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * ByteMatrix m1 = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
-     * ByteMatrix m2 = ByteMatrix.of(new byte[][] {{5, 6}, {7, 8}});
-     * ByteMatrix m3 = ByteMatrix.of(new byte[][] {{8, 8}, {8, 8}});
+     * ByteMatrix m1 = ByteMatrix.wrap(new byte[][] {{1, 2}, {3, 4}});
+     * ByteMatrix m2 = ByteMatrix.wrap(new byte[][] {{5, 6}, {7, 8}});
+     * ByteMatrix m3 = ByteMatrix.wrap(new byte[][] {{8, 8}, {8, 8}});
      *
      * Matrix<Integer> xor = Matrices.zipToObj(Arrays.asList(m1, m2, m3),
      *     arr -> arr[0] ^ arr[1] ^ arr[2], true, Integer.class);
@@ -1919,7 +1919,7 @@ public final class Matrices {
      * }, false, Integer.class);
      * // sum.get(0, 0) == 1 + 5 + 8 == 14
      *
-     * ByteMatrix wrong = ByteMatrix.of(new byte[][] {{1, 2, 3}});                    // different shape
+     * ByteMatrix wrong = ByteMatrix.wrap(new byte[][] {{1, 2, 3}});                    // different shape
      * Matrices.zipToObj(Arrays.asList(m1, wrong), arr -> 0, false, Integer.class);   // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToObj(Arrays.asList(m1, m2), arr -> 0, false, null);               // throws IllegalArgumentException (null type)
      * }</pre>
@@ -1983,8 +1983,8 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix m1 = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * IntMatrix m2 = IntMatrix.of(new int[][] {{5, 6}, {7, 8}});
+     * IntMatrix m1 = IntMatrix.wrap(new int[][] {{1, 2}, {3, 4}});
+     * IntMatrix m2 = IntMatrix.wrap(new int[][] {{5, 6}, {7, 8}});
      *
      * IntMatrix sum = Matrices.zip(m1, m2, (a, b) -> a + b);
      * // sum is [[6, 8], [10, 12]]  (sum.get(1, 1) == 12)
@@ -1992,7 +1992,7 @@ public final class Matrices {
      * IntMatrix max = Matrices.zip(m1, m2, Integer::max);
      * // max is [[5, 6], [7, 8]]  (max.get(0, 0) == 5)
      *
-     * IntMatrix wrong = IntMatrix.of(new int[][] {{1, 2, 3}}); // different shape
+     * IntMatrix wrong = IntMatrix.wrap(new int[][] {{1, 2, 3}}); // different shape
      * Matrices.zip(m1, wrong, (a, b) -> a + b);                // throws IllegalArgumentException (shape mismatch)
      * Matrices.zip(m1, (IntMatrix) null, (a, b) -> a + b);     // throws IllegalArgumentException (null b)
      * }</pre>
@@ -2028,9 +2028,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix m1 = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * IntMatrix m2 = IntMatrix.of(new int[][] {{5, 6}, {7, 8}});
-     * IntMatrix m3 = IntMatrix.of(new int[][] {{10, 20}, {30, 40}});
+     * IntMatrix m1 = IntMatrix.wrap(new int[][] {{1, 2}, {3, 4}});
+     * IntMatrix m2 = IntMatrix.wrap(new int[][] {{5, 6}, {7, 8}});
+     * IntMatrix m3 = IntMatrix.wrap(new int[][] {{10, 20}, {30, 40}});
      *
      * IntMatrix weighted = Matrices.zip(m1, m2, m3, (a, b, c) -> a * 2 + b * 3 + c);
      * // weighted.get(0, 0) == 1*2 + 5*3 + 10 == 27
@@ -2038,7 +2038,7 @@ public final class Matrices {
      * IntMatrix total = Matrices.zip(m1, m2, m3, (a, b, c) -> a + b + c);
      * // total is [[16, 28], [40, 52]]  (total.get(1, 1) == 52)
      *
-     * IntMatrix wrong = IntMatrix.of(new int[][] {{1, 2, 3}}); // different shape
+     * IntMatrix wrong = IntMatrix.wrap(new int[][] {{1, 2, 3}}); // different shape
      * Matrices.zip(m1, m2, wrong, (a, b, c) -> a + b + c);     // throws IllegalArgumentException (shape mismatch)
      * Matrices.zip(m1, m2, (IntMatrix) null, (a, b, c) -> 0);  // throws IllegalArgumentException (null c)
      * }</pre>
@@ -2085,9 +2085,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix m1 = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * IntMatrix m2 = IntMatrix.of(new int[][] {{5, 6}, {7, 8}});
-     * IntMatrix m3 = IntMatrix.of(new int[][] {{9, 10}, {11, 12}});
+     * IntMatrix m1 = IntMatrix.wrap(new int[][] {{1, 2}, {3, 4}});
+     * IntMatrix m2 = IntMatrix.wrap(new int[][] {{5, 6}, {7, 8}});
+     * IntMatrix m3 = IntMatrix.wrap(new int[][] {{9, 10}, {11, 12}});
      *
      * IntMatrix sum = Matrices.zip(Arrays.asList(m1, m2, m3), (a, b) -> a + b);
      * // sum is [[15, 18], [21, 24]]  (sum.get(0, 0) == 15)
@@ -2098,7 +2098,7 @@ public final class Matrices {
      * IntMatrix copy = Matrices.zip(Arrays.asList(m1), (a, b) -> a + b);
      * // copy is a copy of m1: [[1, 2], [3, 4]]  (binary op never invoked for a single matrix)
      *
-     * IntMatrix wrong = IntMatrix.of(new int[][] {{1, 2, 3}});            // different shape
+     * IntMatrix wrong = IntMatrix.wrap(new int[][] {{1, 2, 3}});            // different shape
      * Matrices.zip(Arrays.asList(m1, wrong), (a, b) -> a + b);            // throws IllegalArgumentException (shape mismatch)
      * Matrices.zip(Collections.<IntMatrix> emptyList(), (a, b) -> a + b); // throws IllegalArgumentException (empty)
      * }</pre>
@@ -2160,8 +2160,8 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix m1 = IntMatrix.of(new int[][] {{100000, 200000}});
-     * IntMatrix m2 = IntMatrix.of(new int[][] {{100000, 200000}});
+     * IntMatrix m1 = IntMatrix.wrap(new int[][] {{100000, 200000}});
+     * IntMatrix m2 = IntMatrix.wrap(new int[][] {{100000, 200000}});
      *
      * LongMatrix product = Matrices.zipToLong(m1, m2, (a, b) -> (long) a * b);
      * // product.get(0, 0) == 10000000000L  (would overflow an int, fits in long)
@@ -2169,7 +2169,7 @@ public final class Matrices {
      * LongMatrix sum = Matrices.zipToLong(m1, m2, (a, b) -> (long) a + b);
      * // sum.get(0, 1) == 400000L
      *
-     * IntMatrix wrong = IntMatrix.of(new int[][] {{1}, {2}});           // different shape
+     * IntMatrix wrong = IntMatrix.wrap(new int[][] {{1}, {2}});           // different shape
      * Matrices.zipToLong(m1, wrong, (a, b) -> (long) a + b);            // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToLong(m1, (IntMatrix) null, (a, b) -> (long) a + b); // throws IllegalArgumentException (null b)
      * }</pre>
@@ -2218,9 +2218,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix m1 = IntMatrix.of(new int[][] {{100000, 200000}});
-     * IntMatrix m2 = IntMatrix.of(new int[][] {{300000, 400000}});
-     * IntMatrix m3 = IntMatrix.of(new int[][] {{500000, 600000}});
+     * IntMatrix m1 = IntMatrix.wrap(new int[][] {{100000, 200000}});
+     * IntMatrix m2 = IntMatrix.wrap(new int[][] {{300000, 400000}});
+     * IntMatrix m3 = IntMatrix.wrap(new int[][] {{500000, 600000}});
      *
      * LongMatrix result = Matrices.zipToLong(m1, m2, m3, (a, b, c) -> (long) a * b + c);
      * // result.get(0, 0) == 100000L * 300000L + 500000L == 30000500000L  (overflows int, fits in long)
@@ -2228,7 +2228,7 @@ public final class Matrices {
      * LongMatrix sum = Matrices.zipToLong(m1, m2, m3, (a, b, c) -> (long) a + b + c);
      * // sum.get(0, 1) == 1200000L
      *
-     * IntMatrix wrong = IntMatrix.of(new int[][] {{1}, {2}});           // different shape
+     * IntMatrix wrong = IntMatrix.wrap(new int[][] {{1}, {2}});           // different shape
      * Matrices.zipToLong(m1, m2, wrong, (a, b, c) -> (long) a + b + c); // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToLong(m1, m2, (IntMatrix) null, (a, b, c) -> 0L);    // throws IllegalArgumentException (null c)
      * }</pre>
@@ -2282,9 +2282,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix m1 = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * IntMatrix m2 = IntMatrix.of(new int[][] {{5, 6}, {7, 8}});
-     * IntMatrix m3 = IntMatrix.of(new int[][] {{9, 10}, {11, 12}});
+     * IntMatrix m1 = IntMatrix.wrap(new int[][] {{1, 2}, {3, 4}});
+     * IntMatrix m2 = IntMatrix.wrap(new int[][] {{5, 6}, {7, 8}});
+     * IntMatrix m3 = IntMatrix.wrap(new int[][] {{9, 10}, {11, 12}});
      *
      * LongMatrix sum = Matrices.zipToLong(Arrays.asList(m1, m2, m3), arr -> {
      *     long total = 0;
@@ -2296,7 +2296,7 @@ public final class Matrices {
      * LongMatrix count = Matrices.zipToLong(Arrays.asList(m1, m2, m3), arr -> (long) arr.length);
      * // count.get(0, 0) == 3L
      *
-     * IntMatrix wrong = IntMatrix.of(new int[][] {{1, 2, 3}});            // different shape
+     * IntMatrix wrong = IntMatrix.wrap(new int[][] {{1, 2, 3}});            // different shape
      * Matrices.zipToLong(Arrays.asList(m1, wrong), arr -> 0L);            // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToLong(Collections.<IntMatrix> emptyList(), arr -> 0L); // throws IllegalArgumentException (empty)
      * }</pre>
@@ -2339,9 +2339,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix m1 = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * IntMatrix m2 = IntMatrix.of(new int[][] {{5, 6}, {7, 8}});
-     * IntMatrix m3 = IntMatrix.of(new int[][] {{9, 10}, {11, 12}});
+     * IntMatrix m1 = IntMatrix.wrap(new int[][] {{1, 2}, {3, 4}});
+     * IntMatrix m2 = IntMatrix.wrap(new int[][] {{5, 6}, {7, 8}});
+     * IntMatrix m3 = IntMatrix.wrap(new int[][] {{9, 10}, {11, 12}});
      *
      * LongMatrix product = Matrices.zipToLong(Arrays.asList(m1, m2, m3), arr -> {
      *     long result = 1L;
@@ -2357,7 +2357,7 @@ public final class Matrices {
      * }, false);
      * // sum.get(1, 1) == 4L + 8L + 12L == 24L
      *
-     * IntMatrix wrong = IntMatrix.of(new int[][] {{1, 2, 3}});                   // different shape
+     * IntMatrix wrong = IntMatrix.wrap(new int[][] {{1, 2, 3}});                   // different shape
      * Matrices.zipToLong(Arrays.asList(m1, wrong), arr -> 0L, false);            // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToLong(Collections.<IntMatrix> emptyList(), arr -> 0L, false); // throws IllegalArgumentException (empty)
      * }</pre>
@@ -2418,8 +2418,8 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix m1 = IntMatrix.of(new int[][] {{10, 20}, {30, 40}});
-     * IntMatrix m2 = IntMatrix.of(new int[][] {{4, 5}, {6, 8}});
+     * IntMatrix m1 = IntMatrix.wrap(new int[][] {{10, 20}, {30, 40}});
+     * IntMatrix m2 = IntMatrix.wrap(new int[][] {{4, 5}, {6, 8}});
      *
      * DoubleMatrix ratio = Matrices.zipToDouble(m1, m2, (a, b) -> (double) a / b);
      * // ratio.get(0, 0) == 2.5  (10.0 / 4)
@@ -2427,7 +2427,7 @@ public final class Matrices {
      * DoubleMatrix mid = Matrices.zipToDouble(m1, m2, (a, b) -> (a + b) / 2.0);
      * // mid.get(0, 0) == 7.0  ((10 + 4) / 2)
      *
-     * IntMatrix wrong = IntMatrix.of(new int[][] {{1, 2, 3}});          // different shape
+     * IntMatrix wrong = IntMatrix.wrap(new int[][] {{1, 2, 3}});          // different shape
      * Matrices.zipToDouble(m1, wrong, (a, b) -> (double) a / b);        // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToDouble(m1, (IntMatrix) null, (a, b) -> 0.0);        // throws IllegalArgumentException (null b)
      * }</pre>
@@ -2475,9 +2475,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix m1 = IntMatrix.of(new int[][] {{10, 20}});
-     * IntMatrix m2 = IntMatrix.of(new int[][] {{4, 4}});
-     * IntMatrix m3 = IntMatrix.of(new int[][] {{2, 6}});
+     * IntMatrix m1 = IntMatrix.wrap(new int[][] {{10, 20}});
+     * IntMatrix m2 = IntMatrix.wrap(new int[][] {{4, 4}});
+     * IntMatrix m3 = IntMatrix.wrap(new int[][] {{2, 6}});
      *
      * DoubleMatrix result = Matrices.zipToDouble(m1, m2, m3, (a, b, c) -> (double) (a + b) / c);
      * // result.get(0, 0) == 7.0  ((10 + 4) / 2)
@@ -2486,7 +2486,7 @@ public final class Matrices {
      * DoubleMatrix sum = Matrices.zipToDouble(m1, m2, m3, (a, b, c) -> (double) (a + b + c));
      * // sum.get(0, 0) == 16.0
      *
-     * IntMatrix wrong = IntMatrix.of(new int[][] {{1, 2, 3}});          // different shape
+     * IntMatrix wrong = IntMatrix.wrap(new int[][] {{1, 2, 3}});          // different shape
      * Matrices.zipToDouble(m1, m2, wrong, (a, b, c) -> 0.0);            // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToDouble(m1, m2, (IntMatrix) null, (a, b, c) -> 0.0); // throws IllegalArgumentException (null c)
      * }</pre>
@@ -2537,9 +2537,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix m1 = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * IntMatrix m2 = IntMatrix.of(new int[][] {{5, 6}, {7, 8}});
-     * IntMatrix m3 = IntMatrix.of(new int[][] {{9, 10}, {11, 12}});
+     * IntMatrix m1 = IntMatrix.wrap(new int[][] {{1, 2}, {3, 4}});
+     * IntMatrix m2 = IntMatrix.wrap(new int[][] {{5, 6}, {7, 8}});
+     * IntMatrix m3 = IntMatrix.wrap(new int[][] {{9, 10}, {11, 12}});
      *
      * DoubleMatrix avg = Matrices.zipToDouble(Arrays.asList(m1, m2, m3),
      *     arr -> java.util.Arrays.stream(arr).average().orElse(0.0));
@@ -2549,7 +2549,7 @@ public final class Matrices {
      *     arr -> (double) java.util.Arrays.stream(arr).sum());
      * // sum.get(1, 1) == 24.0
      *
-     * IntMatrix wrong = IntMatrix.of(new int[][] {{1, 2, 3}});               // different shape
+     * IntMatrix wrong = IntMatrix.wrap(new int[][] {{1, 2, 3}});               // different shape
      * Matrices.zipToDouble(Arrays.asList(m1, wrong), arr -> 0.0);            // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToDouble(Collections.<IntMatrix> emptyList(), arr -> 0.0); // throws IllegalArgumentException (empty)
      * }</pre>
@@ -2593,9 +2593,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix m1 = IntMatrix.of(new int[][] {{2, 2}});
-     * IntMatrix m2 = IntMatrix.of(new int[][] {{4, 4}});
-     * IntMatrix m3 = IntMatrix.of(new int[][] {{6, 6}});
+     * IntMatrix m1 = IntMatrix.wrap(new int[][] {{2, 2}});
+     * IntMatrix m2 = IntMatrix.wrap(new int[][] {{4, 4}});
+     * IntMatrix m3 = IntMatrix.wrap(new int[][] {{6, 6}});
      *
      * DoubleMatrix avg = Matrices.zipToDouble(Arrays.asList(m1, m2, m3),
      *     arr -> java.util.Arrays.stream(arr).average().orElse(0.0), true);
@@ -2608,7 +2608,7 @@ public final class Matrices {
      * }, false);
      * // range.get(0, 0) == 4.0  (6 - 2)
      *
-     * IntMatrix wrong = IntMatrix.of(new int[][] {{1, 2, 3}});                      // different shape
+     * IntMatrix wrong = IntMatrix.wrap(new int[][] {{1, 2, 3}});                      // different shape
      * Matrices.zipToDouble(Arrays.asList(m1, wrong), arr -> 0.0, false);            // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToDouble(Collections.<IntMatrix> emptyList(), arr -> 0.0, false); // throws IllegalArgumentException (empty)
      * }</pre>
@@ -2673,9 +2673,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix m1 = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * IntMatrix m2 = IntMatrix.of(new int[][] {{5, 6}, {7, 8}});
-     * IntMatrix m3 = IntMatrix.of(new int[][] {{9, 10}, {11, 12}});
+     * IntMatrix m1 = IntMatrix.wrap(new int[][] {{1, 2}, {3, 4}});
+     * IntMatrix m2 = IntMatrix.wrap(new int[][] {{5, 6}, {7, 8}});
+     * IntMatrix m3 = IntMatrix.wrap(new int[][] {{9, 10}, {11, 12}});
      *
      * Matrix<Integer> sum = Matrices.zipToObj(Arrays.asList(m1, m2, m3),
      *     arr -> java.util.Arrays.stream(arr).sum(), Integer.class);
@@ -2685,7 +2685,7 @@ public final class Matrices {
      *     arr -> arr[0] + "-" + arr[1] + "-" + arr[2], String.class);
      * // joined.get(0, 0) equals "1-5-9"
      *
-     * IntMatrix wrong = IntMatrix.of(new int[][] {{1, 2, 3}});                         // different shape
+     * IntMatrix wrong = IntMatrix.wrap(new int[][] {{1, 2, 3}});                         // different shape
      * Matrices.zipToObj(Arrays.asList(m1, wrong), arr -> 0, Integer.class);            // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToObj(Collections.<IntMatrix> emptyList(), arr -> 0, Integer.class); // throws IllegalArgumentException (empty)
      * }</pre>
@@ -2731,9 +2731,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix m1 = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * IntMatrix m2 = IntMatrix.of(new int[][] {{5, 6}, {7, 8}});
-     * IntMatrix m3 = IntMatrix.of(new int[][] {{9, 10}, {11, 12}});
+     * IntMatrix m1 = IntMatrix.wrap(new int[][] {{1, 2}, {3, 4}});
+     * IntMatrix m2 = IntMatrix.wrap(new int[][] {{5, 6}, {7, 8}});
+     * IntMatrix m3 = IntMatrix.wrap(new int[][] {{9, 10}, {11, 12}});
      *
      * Matrix<Double> median = Matrices.zipToObj(Arrays.asList(m1, m2, m3), arr -> {
      *     int[] sorted = java.util.Arrays.copyOf(arr, arr.length);
@@ -2746,7 +2746,7 @@ public final class Matrices {
      *     arr -> java.util.Arrays.stream(arr).sum(), true, Integer.class);
      * // sum.get(0, 0) == 15
      *
-     * IntMatrix wrong = IntMatrix.of(new int[][] {{1, 2, 3}});                       // different shape
+     * IntMatrix wrong = IntMatrix.wrap(new int[][] {{1, 2, 3}});                       // different shape
      * Matrices.zipToObj(Arrays.asList(m1, wrong), arr -> 0, false, Integer.class);   // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToObj(Arrays.asList(m1, m2), arr -> 0, false, null);               // throws IllegalArgumentException (null type)
      * }</pre>
@@ -2809,8 +2809,8 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * LongMatrix m1 = LongMatrix.of(new long[][] {{100L, 200L}, {300L, 400L}});
-     * LongMatrix m2 = LongMatrix.of(new long[][] {{50L, 60L}, {70L, 80L}});
+     * LongMatrix m1 = LongMatrix.wrap(new long[][] {{100L, 200L}, {300L, 400L}});
+     * LongMatrix m2 = LongMatrix.wrap(new long[][] {{50L, 60L}, {70L, 80L}});
      *
      * LongMatrix sum = Matrices.zip(m1, m2, (a, b) -> a + b);
      * // sum is [[150, 260], [370, 480]]  (sum.get(0, 0) == 150L)
@@ -2818,7 +2818,7 @@ public final class Matrices {
      * LongMatrix max = Matrices.zip(m1, m2, Long::max);
      * // max is [[100, 200], [300, 400]]  (max.get(1, 1) == 400L)
      *
-     * LongMatrix wrong = LongMatrix.of(new long[][] {{1L, 2L, 3L}}); // different shape
+     * LongMatrix wrong = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}}); // different shape
      * Matrices.zip(m1, wrong, (a, b) -> a + b);                      // throws IllegalArgumentException (shape mismatch)
      * Matrices.zip(m1, (LongMatrix) null, (a, b) -> a + b);          // throws IllegalArgumentException (null b)
      * }</pre>
@@ -2854,9 +2854,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * LongMatrix m1 = LongMatrix.of(new long[][] {{1L, 2L}});
-     * LongMatrix m2 = LongMatrix.of(new long[][] {{3L, 4L}});
-     * LongMatrix m3 = LongMatrix.of(new long[][] {{5L, 6L}});
+     * LongMatrix m1 = LongMatrix.wrap(new long[][] {{1L, 2L}});
+     * LongMatrix m2 = LongMatrix.wrap(new long[][] {{3L, 4L}});
+     * LongMatrix m3 = LongMatrix.wrap(new long[][] {{5L, 6L}});
      *
      * LongMatrix result = Matrices.zip(m1, m2, m3, (a, b, c) -> a * b + c);
      * // result is [[8, 14]]  (result.get(0, 0) == 1*3 + 5 == 8, result.get(0, 1) == 2*4 + 6 == 14)
@@ -2864,7 +2864,7 @@ public final class Matrices {
      * LongMatrix sum = Matrices.zip(m1, m2, m3, (a, b, c) -> a + b + c);
      * // sum.get(0, 0) == 9L
      *
-     * LongMatrix wrong = LongMatrix.of(new long[][] {{1L}, {2L}}); // different shape
+     * LongMatrix wrong = LongMatrix.wrap(new long[][] {{1L}, {2L}}); // different shape
      * Matrices.zip(m1, m2, wrong, (a, b, c) -> a + b + c);         // throws IllegalArgumentException (shape mismatch)
      * Matrices.zip(m1, m2, (LongMatrix) null, (a, b, c) -> 0L);    // throws IllegalArgumentException (null c)
      * }</pre>
@@ -2911,9 +2911,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * LongMatrix m1 = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
-     * LongMatrix m2 = LongMatrix.of(new long[][] {{5L, 6L}, {7L, 8L}});
-     * LongMatrix m3 = LongMatrix.of(new long[][] {{9L, 10L}, {11L, 12L}});
+     * LongMatrix m1 = LongMatrix.wrap(new long[][] {{1L, 2L}, {3L, 4L}});
+     * LongMatrix m2 = LongMatrix.wrap(new long[][] {{5L, 6L}, {7L, 8L}});
+     * LongMatrix m3 = LongMatrix.wrap(new long[][] {{9L, 10L}, {11L, 12L}});
      *
      * LongMatrix sum = Matrices.zip(Arrays.asList(m1, m2, m3), (a, b) -> a + b);
      * // sum is [[15, 18], [21, 24]]  (sum.get(0, 0) == 15L)
@@ -2924,7 +2924,7 @@ public final class Matrices {
      * LongMatrix copy = Matrices.zip(Arrays.asList(m1), (a, b) -> a + b);
      * // copy is a copy of m1: [[1, 2], [3, 4]]  (binary op never invoked for a single matrix)
      *
-     * LongMatrix wrong = LongMatrix.of(new long[][] {{1L, 2L, 3L}});       // different shape
+     * LongMatrix wrong = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}});       // different shape
      * Matrices.zip(Arrays.asList(m1, wrong), (a, b) -> a + b);             // throws IllegalArgumentException (shape mismatch)
      * Matrices.zip(Collections.<LongMatrix> emptyList(), (a, b) -> a + b); // throws IllegalArgumentException (empty)
      * }</pre>
@@ -2986,8 +2986,8 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * LongMatrix m1 = LongMatrix.of(new long[][] {{100L, 200L}, {300L, 400L}});
-     * LongMatrix m2 = LongMatrix.of(new long[][] {{4L, 5L}, {6L, 8L}});
+     * LongMatrix m1 = LongMatrix.wrap(new long[][] {{100L, 200L}, {300L, 400L}});
+     * LongMatrix m2 = LongMatrix.wrap(new long[][] {{4L, 5L}, {6L, 8L}});
      *
      * DoubleMatrix ratio = Matrices.zipToDouble(m1, m2, (a, b) -> (double) a / b);
      * // ratio.get(0, 0) == 25.0  (100.0 / 4)
@@ -2995,7 +2995,7 @@ public final class Matrices {
      * DoubleMatrix mid = Matrices.zipToDouble(m1, m2, (a, b) -> (a + b) / 2.0);
      * // mid.get(0, 0) == 52.0  ((100 + 4) / 2)
      *
-     * LongMatrix wrong = LongMatrix.of(new long[][] {{1L, 2L, 3L}});    // different shape
+     * LongMatrix wrong = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}});    // different shape
      * Matrices.zipToDouble(m1, wrong, (a, b) -> (double) a / b);        // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToDouble(m1, (LongMatrix) null, (a, b) -> 0.0);       // throws IllegalArgumentException (null b)
      * }</pre>
@@ -3043,9 +3043,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * LongMatrix m1 = LongMatrix.of(new long[][] {{100L, 200L}});
-     * LongMatrix m2 = LongMatrix.of(new long[][] {{10L, 40L}});
-     * LongMatrix m3 = LongMatrix.of(new long[][] {{2L, 6L}});
+     * LongMatrix m1 = LongMatrix.wrap(new long[][] {{100L, 200L}});
+     * LongMatrix m2 = LongMatrix.wrap(new long[][] {{10L, 40L}});
+     * LongMatrix m3 = LongMatrix.wrap(new long[][] {{2L, 6L}});
      *
      * DoubleMatrix result = Matrices.zipToDouble(m1, m2, m3, (a, b, c) -> (double) (a + b) / c);
      * // result.get(0, 0) == 55.0  ((100 + 10) / 2)
@@ -3054,7 +3054,7 @@ public final class Matrices {
      * DoubleMatrix sum = Matrices.zipToDouble(m1, m2, m3, (a, b, c) -> (double) (a + b + c));
      * // sum.get(0, 0) == 112.0
      *
-     * LongMatrix wrong = LongMatrix.of(new long[][] {{1L, 2L, 3L}});     // different shape
+     * LongMatrix wrong = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}});     // different shape
      * Matrices.zipToDouble(m1, m2, wrong, (a, b, c) -> 0.0);             // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToDouble(m1, m2, (LongMatrix) null, (a, b, c) -> 0.0); // throws IllegalArgumentException (null c)
      * }</pre>
@@ -3105,9 +3105,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * LongMatrix m1 = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
-     * LongMatrix m2 = LongMatrix.of(new long[][] {{5L, 6L}, {7L, 8L}});
-     * LongMatrix m3 = LongMatrix.of(new long[][] {{9L, 10L}, {11L, 12L}});
+     * LongMatrix m1 = LongMatrix.wrap(new long[][] {{1L, 2L}, {3L, 4L}});
+     * LongMatrix m2 = LongMatrix.wrap(new long[][] {{5L, 6L}, {7L, 8L}});
+     * LongMatrix m3 = LongMatrix.wrap(new long[][] {{9L, 10L}, {11L, 12L}});
      *
      * DoubleMatrix avg = Matrices.zipToDouble(Arrays.asList(m1, m2, m3),
      *     arr -> java.util.Arrays.stream(arr).average().orElse(0.0));
@@ -3117,7 +3117,7 @@ public final class Matrices {
      *     arr -> (double) java.util.Arrays.stream(arr).sum());
      * // sum.get(1, 1) == 24.0
      *
-     * LongMatrix wrong = LongMatrix.of(new long[][] {{1L, 2L, 3L}});          // different shape
+     * LongMatrix wrong = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}});          // different shape
      * Matrices.zipToDouble(Arrays.asList(m1, wrong), arr -> 0.0);             // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToDouble(Collections.<LongMatrix> emptyList(), arr -> 0.0); // throws IllegalArgumentException (empty)
      * }</pre>
@@ -3161,9 +3161,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * LongMatrix m1 = LongMatrix.of(new long[][] {{2L, 2L}});
-     * LongMatrix m2 = LongMatrix.of(new long[][] {{4L, 4L}});
-     * LongMatrix m3 = LongMatrix.of(new long[][] {{6L, 6L}});
+     * LongMatrix m1 = LongMatrix.wrap(new long[][] {{2L, 2L}});
+     * LongMatrix m2 = LongMatrix.wrap(new long[][] {{4L, 4L}});
+     * LongMatrix m3 = LongMatrix.wrap(new long[][] {{6L, 6L}});
      *
      * DoubleMatrix variance = Matrices.zipToDouble(Arrays.asList(m1, m2, m3), arr -> {
      *     double mean = java.util.Arrays.stream(arr).average().orElse(0);
@@ -3175,7 +3175,7 @@ public final class Matrices {
      *     arr -> java.util.Arrays.stream(arr).average().orElse(0.0), false);
      * // avg.get(0, 0) == 4.0
      *
-     * LongMatrix wrong = LongMatrix.of(new long[][] {{1L, 2L, 3L}});                 // different shape
+     * LongMatrix wrong = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}});                 // different shape
      * Matrices.zipToDouble(Arrays.asList(m1, wrong), arr -> 0.0, false);             // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToDouble(Collections.<LongMatrix> emptyList(), arr -> 0.0, false); // throws IllegalArgumentException (empty)
      * }</pre>
@@ -3236,9 +3236,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * LongMatrix m1 = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
-     * LongMatrix m2 = LongMatrix.of(new long[][] {{5L, 6L}, {7L, 8L}});
-     * LongMatrix m3 = LongMatrix.of(new long[][] {{9L, 10L}, {11L, 12L}});
+     * LongMatrix m1 = LongMatrix.wrap(new long[][] {{1L, 2L}, {3L, 4L}});
+     * LongMatrix m2 = LongMatrix.wrap(new long[][] {{5L, 6L}, {7L, 8L}});
+     * LongMatrix m3 = LongMatrix.wrap(new long[][] {{9L, 10L}, {11L, 12L}});
      *
      * Matrix<Long> range = Matrices.zipToObj(Arrays.asList(m1, m2, m3), arr -> {
      *     long max = java.util.Arrays.stream(arr).max().orElse(0L);
@@ -3251,7 +3251,7 @@ public final class Matrices {
      *     arr -> java.util.Arrays.stream(arr).sum(), Long.class);
      * // sum.get(0, 0) == 15L
      *
-     * LongMatrix wrong = LongMatrix.of(new long[][] {{1L, 2L, 3L}});                  // different shape
+     * LongMatrix wrong = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}});                  // different shape
      * Matrices.zipToObj(Arrays.asList(m1, wrong), arr -> 0L, Long.class);             // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToObj(Collections.<LongMatrix> emptyList(), arr -> 0L, Long.class); // throws IllegalArgumentException (empty)
      * }</pre>
@@ -3297,9 +3297,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * LongMatrix m1 = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
-     * LongMatrix m2 = LongMatrix.of(new long[][] {{5L, 6L}, {7L, 8L}});
-     * LongMatrix m3 = LongMatrix.of(new long[][] {{9L, 10L}, {11L, 12L}});
+     * LongMatrix m1 = LongMatrix.wrap(new long[][] {{1L, 2L}, {3L, 4L}});
+     * LongMatrix m2 = LongMatrix.wrap(new long[][] {{5L, 6L}, {7L, 8L}});
+     * LongMatrix m3 = LongMatrix.wrap(new long[][] {{9L, 10L}, {11L, 12L}});
      *
      * Matrix<java.math.BigInteger> sums = Matrices.zipToObj(Arrays.asList(m1, m2, m3),
      *     arr -> java.math.BigInteger.valueOf(java.util.Arrays.stream(arr).sum()), true, java.math.BigInteger.class);
@@ -3312,7 +3312,7 @@ public final class Matrices {
      * }, false, Long.class);
      * // product.get(0, 0) == 1L * 5L * 9L == 45L
      *
-     * LongMatrix wrong = LongMatrix.of(new long[][] {{1L, 2L, 3L}});                // different shape
+     * LongMatrix wrong = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}});                // different shape
      * Matrices.zipToObj(Arrays.asList(m1, wrong), arr -> 0L, false, Long.class);    // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToObj(Arrays.asList(m1, m2), arr -> 0L, false, null);             // throws IllegalArgumentException (null type)
      * }</pre>
@@ -3375,8 +3375,8 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * DoubleMatrix m1 = DoubleMatrix.of(new double[][] {{1.5, 2.5}, {3.5, 4.5}});
-     * DoubleMatrix m2 = DoubleMatrix.of(new double[][] {{0.5, 1.0}, {1.5, 2.0}});
+     * DoubleMatrix m1 = DoubleMatrix.wrap(new double[][] {{1.5, 2.5}, {3.5, 4.5}});
+     * DoubleMatrix m2 = DoubleMatrix.wrap(new double[][] {{0.5, 1.0}, {1.5, 2.0}});
      *
      * DoubleMatrix product = Matrices.zip(m1, m2, (a, b) -> a * b);
      * // product.get(0, 0) == 0.75  (1.5 * 0.5)
@@ -3384,7 +3384,7 @@ public final class Matrices {
      * DoubleMatrix sum = Matrices.zip(m1, m2, (a, b) -> a + b);
      * // sum is [[2.0, 3.5], [5.0, 6.5]]  (sum.get(0, 0) == 2.0)
      *
-     * DoubleMatrix wrong = DoubleMatrix.of(new double[][] {{1.0, 2.0, 3.0}}); // different shape
+     * DoubleMatrix wrong = DoubleMatrix.wrap(new double[][] {{1.0, 2.0, 3.0}}); // different shape
      * Matrices.zip(m1, wrong, (a, b) -> a + b);                               // throws IllegalArgumentException (shape mismatch)
      * Matrices.zip(m1, (DoubleMatrix) null, (a, b) -> a + b);                 // throws IllegalArgumentException (null b)
      * }</pre>
@@ -3421,9 +3421,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * DoubleMatrix m1 = DoubleMatrix.of(new double[][] {{1.0, 2.0}});
-     * DoubleMatrix m2 = DoubleMatrix.of(new double[][] {{3.0, 4.0}});
-     * DoubleMatrix m3 = DoubleMatrix.of(new double[][] {{0.5, 0.25}});
+     * DoubleMatrix m1 = DoubleMatrix.wrap(new double[][] {{1.0, 2.0}});
+     * DoubleMatrix m2 = DoubleMatrix.wrap(new double[][] {{3.0, 4.0}});
+     * DoubleMatrix m3 = DoubleMatrix.wrap(new double[][] {{0.5, 0.25}});
      *
      * DoubleMatrix result = Matrices.zip(m1, m2, m3, (a, b, c) -> (a + b) * c);
      * // result.get(0, 0) == 2.0   ((1.0 + 3.0) * 0.5)
@@ -3432,7 +3432,7 @@ public final class Matrices {
      * DoubleMatrix sum = Matrices.zip(m1, m2, m3, (a, b, c) -> a + b + c);
      * // sum.get(0, 0) == 4.5
      *
-     * DoubleMatrix wrong = DoubleMatrix.of(new double[][] {{1.0}, {2.0}}); // different shape
+     * DoubleMatrix wrong = DoubleMatrix.wrap(new double[][] {{1.0}, {2.0}}); // different shape
      * Matrices.zip(m1, m2, wrong, (a, b, c) -> a + b + c);                 // throws IllegalArgumentException (shape mismatch)
      * Matrices.zip(m1, m2, (DoubleMatrix) null, (a, b, c) -> 0.0);         // throws IllegalArgumentException (null c)
      * }</pre>
@@ -3479,9 +3479,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * DoubleMatrix m1 = DoubleMatrix.of(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
-     * DoubleMatrix m2 = DoubleMatrix.of(new double[][] {{5.0, 6.0}, {7.0, 8.0}});
-     * DoubleMatrix m3 = DoubleMatrix.of(new double[][] {{9.0, 10.0}, {11.0, 12.0}});
+     * DoubleMatrix m1 = DoubleMatrix.wrap(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
+     * DoubleMatrix m2 = DoubleMatrix.wrap(new double[][] {{5.0, 6.0}, {7.0, 8.0}});
+     * DoubleMatrix m3 = DoubleMatrix.wrap(new double[][] {{9.0, 10.0}, {11.0, 12.0}});
      *
      * DoubleMatrix sum = Matrices.zip(Arrays.asList(m1, m2, m3), (a, b) -> a + b);
      * // sum is [[15.0, 18.0], [21.0, 24.0]]  (sum.get(0, 0) == 15.0)
@@ -3492,7 +3492,7 @@ public final class Matrices {
      * DoubleMatrix copy = Matrices.zip(Arrays.asList(m1), (a, b) -> a + b);
      * // copy is a copy of m1: [[1.0, 2.0], [3.0, 4.0]]  (binary op never invoked for a single matrix)
      *
-     * DoubleMatrix wrong = DoubleMatrix.of(new double[][] {{1.0, 2.0, 3.0}}); // different shape
+     * DoubleMatrix wrong = DoubleMatrix.wrap(new double[][] {{1.0, 2.0, 3.0}}); // different shape
      * Matrices.zip(Arrays.asList(m1, wrong), (a, b) -> a + b);                // throws IllegalArgumentException (shape mismatch)
      * Matrices.zip(Collections.<DoubleMatrix> emptyList(), (a, b) -> a + b);  // throws IllegalArgumentException (empty)
      * }</pre>
@@ -3554,9 +3554,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * DoubleMatrix m1 = DoubleMatrix.of(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
-     * DoubleMatrix m2 = DoubleMatrix.of(new double[][] {{5.0, 6.0}, {7.0, 8.0}});
-     * DoubleMatrix m3 = DoubleMatrix.of(new double[][] {{9.0, 10.0}, {11.0, 12.0}});
+     * DoubleMatrix m1 = DoubleMatrix.wrap(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
+     * DoubleMatrix m2 = DoubleMatrix.wrap(new double[][] {{5.0, 6.0}, {7.0, 8.0}});
+     * DoubleMatrix m3 = DoubleMatrix.wrap(new double[][] {{9.0, 10.0}, {11.0, 12.0}});
      *
      * Matrix<Double> avg = Matrices.zipToObj(Arrays.asList(m1, m2, m3),
      *     arr -> java.util.Arrays.stream(arr).average().orElse(0.0), Double.class);
@@ -3566,7 +3566,7 @@ public final class Matrices {
      *     arr -> java.util.Arrays.stream(arr).sum(), Double.class);
      * // sum.get(1, 1) == 24.0
      *
-     * DoubleMatrix wrong = DoubleMatrix.of(new double[][] {{1.0, 2.0, 3.0}});              // different shape
+     * DoubleMatrix wrong = DoubleMatrix.wrap(new double[][] {{1.0, 2.0, 3.0}});              // different shape
      * Matrices.zipToObj(Arrays.asList(m1, wrong), arr -> 0.0, Double.class);               // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToObj(Collections.<DoubleMatrix> emptyList(), arr -> 0.0, Double.class); // throws IllegalArgumentException (empty)
      * }</pre>
@@ -3612,9 +3612,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * DoubleMatrix m1 = DoubleMatrix.of(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
-     * DoubleMatrix m2 = DoubleMatrix.of(new double[][] {{5.0, 6.0}, {7.0, 8.0}});
-     * DoubleMatrix m3 = DoubleMatrix.of(new double[][] {{9.0, 10.0}, {11.0, 12.0}});
+     * DoubleMatrix m1 = DoubleMatrix.wrap(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
+     * DoubleMatrix m2 = DoubleMatrix.wrap(new double[][] {{5.0, 6.0}, {7.0, 8.0}});
+     * DoubleMatrix m3 = DoubleMatrix.wrap(new double[][] {{9.0, 10.0}, {11.0, 12.0}});
      *
      * Matrix<Double> avg = Matrices.zipToObj(Arrays.asList(m1, m2, m3),
      *     arr -> java.util.Arrays.stream(arr).average().orElse(0.0), true, Double.class);
@@ -3624,7 +3624,7 @@ public final class Matrices {
      *     arr -> java.util.Arrays.stream(arr).max().orElse(0.0), false, Double.class);
      * // max.get(1, 1) == 12.0
      *
-     * DoubleMatrix wrong = DoubleMatrix.of(new double[][] {{1.0, 2.0, 3.0}});        // different shape
+     * DoubleMatrix wrong = DoubleMatrix.wrap(new double[][] {{1.0, 2.0, 3.0}});        // different shape
      * Matrices.zipToObj(Arrays.asList(m1, wrong), arr -> 0.0, false, Double.class);  // throws IllegalArgumentException (shape mismatch)
      * Matrices.zipToObj(Arrays.asList(m1, m2), arr -> 0.0, false, null);             // throws IllegalArgumentException (null type)
      * }</pre>
@@ -3688,8 +3688,8 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> names = Matrix.of(new String[][] {{"Alice", "Bob"}, {"Carol", "Dave"}});
-     * Matrix<String> tags = Matrix.of(new String[][] {{"x", "y"}, {"z", "w"}});
+     * Matrix<String> names = Matrix.wrap(new String[][] {{"Alice", "Bob"}, {"Carol", "Dave"}});
+     * Matrix<String> tags = Matrix.wrap(new String[][] {{"x", "y"}, {"z", "w"}});
      *
      * Matrix<String> result = Matrices.zip(names, tags, (name, tag) -> name + ":" + tag);
      * // result.get(0, 0) equals "Alice:x", result.get(1, 1) equals "Dave:w"
@@ -3697,7 +3697,7 @@ public final class Matrices {
      * Matrix<String> upper = Matrices.zip(names, tags, (name, tag) -> name.toUpperCase());
      * // upper.get(0, 0) equals "ALICE"
      *
-     * Matrix<String> wrong = Matrix.of(new String[][] {{"a", "b", "c"}}); // different shape
+     * Matrix<String> wrong = Matrix.wrap(new String[][] {{"a", "b", "c"}}); // different shape
      * Matrices.zip(names, wrong, (x, y) -> x + y);                        // throws IllegalArgumentException (shape mismatch)
      * Matrices.zip(names, (Matrix<String>) null, (x, y) -> x + y);        // throws IllegalArgumentException (null b)
      * }</pre>
@@ -3739,8 +3739,8 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> numbers = Matrix.of(new Integer[][] {{1, 2}, {3, 4}});
-     * Matrix<String> labels = Matrix.of(new String[][] {{"A", "B"}, {"C", "D"}});
+     * Matrix<Integer> numbers = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<String> labels = Matrix.wrap(new String[][] {{"A", "B"}, {"C", "D"}});
      *
      * Matrix<String> result = Matrices.zip(numbers, labels, (num, label) -> label + ":" + num, String.class);
      * // result.get(0, 0) equals "A:1", result.get(1, 1) equals "D:4"
@@ -3748,7 +3748,7 @@ public final class Matrices {
      * Matrix<Integer> sum = Matrices.zip(numbers, numbers, (x, y) -> x + y, Integer.class);
      * // sum.get(0, 0) == 2  (1 + 1)
      *
-     * Matrix<String> wrong = Matrix.of(new String[][] {{"a", "b", "c"}});  // different shape
+     * Matrix<String> wrong = Matrix.wrap(new String[][] {{"a", "b", "c"}});  // different shape
      * Matrices.zip(numbers, wrong, (n, s) -> n + s, String.class);         // throws IllegalArgumentException (shape mismatch)
      * Matrices.zip(numbers, labels, (n, s) -> s + n, null);                // throws IllegalArgumentException (null type)
      * }</pre>
@@ -3791,9 +3791,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> m1 = Matrix.of(new Integer[][] {{1, 2}});
-     * Matrix<Integer> m2 = Matrix.of(new Integer[][] {{3, 4}});
-     * Matrix<Integer> m3 = Matrix.of(new Integer[][] {{5, 6}});
+     * Matrix<Integer> m1 = Matrix.wrap(new Integer[][] {{1, 2}});
+     * Matrix<Integer> m2 = Matrix.wrap(new Integer[][] {{3, 4}});
+     * Matrix<Integer> m3 = Matrix.wrap(new Integer[][] {{5, 6}});
      *
      * Matrix<Integer> result = Matrices.zip(m1, m2, m3, (a, b, c) -> (a + b) * c);
      * // result.get(0, 0) == 20  ((1 + 3) * 5), result.get(0, 1) == 36  ((2 + 4) * 6)
@@ -3801,7 +3801,7 @@ public final class Matrices {
      * Matrix<Integer> sum = Matrices.zip(m1, m2, m3, (a, b, c) -> a + b + c);
      * // sum.get(0, 0) == 9
      *
-     * Matrix<Integer> wrong = Matrix.of(new Integer[][] {{1}, {2}}); // different shape
+     * Matrix<Integer> wrong = Matrix.wrap(new Integer[][] {{1}, {2}}); // different shape
      * Matrices.zip(m1, m2, wrong, (a, b, c) -> a + b + c);           // throws IllegalArgumentException (shape mismatch)
      * Matrices.zip(m1, m2, (Matrix<Integer>) null, (a, b, c) -> 0);  // throws IllegalArgumentException (null c)
      * }</pre>
@@ -3846,9 +3846,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> numbers = Matrix.of(new Integer[][] {{1, 2}});
-     * Matrix<String> units = Matrix.of(new String[][] {{"kg", "m"}});
-     * Matrix<Boolean> valid = Matrix.of(new Boolean[][] {{true, false}});
+     * Matrix<Integer> numbers = Matrix.wrap(new Integer[][] {{1, 2}});
+     * Matrix<String> units = Matrix.wrap(new String[][] {{"kg", "m"}});
+     * Matrix<Boolean> valid = Matrix.wrap(new Boolean[][] {{true, false}});
      *
      * Matrix<String> result = Matrices.zip(numbers, units, valid,
      *     (num, unit, isValid) -> isValid ? num + unit : "N/A", String.class);
@@ -3858,7 +3858,7 @@ public final class Matrices {
      *     (num, unit, isValid) -> num + unit.length(), Integer.class);
      * // lengths.get(0, 0) == 3  (1 + "kg".length())
      *
-     * Matrix<String> wrong = Matrix.of(new String[][] {{"a"}, {"b"}});        // different shape
+     * Matrix<String> wrong = Matrix.wrap(new String[][] {{"a"}, {"b"}});        // different shape
      * Matrices.zip(numbers, units, wrong, (n, u, w) -> "" + n, String.class); // throws IllegalArgumentException (shape mismatch)
      * Matrices.zip(numbers, units, valid, (n, u, v) -> "" + n, null);         // throws IllegalArgumentException (null type)
      * }</pre>
@@ -3911,9 +3911,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> m1 = Matrix.of(new String[][] {{"a", "b"}, {"c", "d"}});
-     * Matrix<String> m2 = Matrix.of(new String[][] {{"1", "2"}, {"3", "4"}});
-     * Matrix<String> m3 = Matrix.of(new String[][] {{"x", "y"}, {"z", "w"}});
+     * Matrix<String> m1 = Matrix.wrap(new String[][] {{"a", "b"}, {"c", "d"}});
+     * Matrix<String> m2 = Matrix.wrap(new String[][] {{"1", "2"}, {"3", "4"}});
+     * Matrix<String> m3 = Matrix.wrap(new String[][] {{"x", "y"}, {"z", "w"}});
      *
      * Matrix<String> joined = Matrices.zip(Arrays.asList(m1, m2, m3), (a, b) -> a + b);
      * // joined.get(0, 0) equals "a1x", joined.get(1, 1) equals "d4w"
@@ -3924,7 +3924,7 @@ public final class Matrices {
      * Matrix<String> copy = Matrices.zip(Arrays.asList(m1), (a, b) -> a + b);
      * // copy is a copy of m1: [["a", "b"], ["c", "d"]]  (binary op never invoked for a single matrix)
      *
-     * Matrix<String> wrong = Matrix.of(new String[][] {{"a", "b", "c"}});      // different shape
+     * Matrix<String> wrong = Matrix.wrap(new String[][] {{"a", "b", "c"}});      // different shape
      * Matrices.zip(Arrays.asList(m1, wrong), (a, b) -> a + b);                 // throws IllegalArgumentException (shape mismatch)
      * Matrices.zip(Collections.<Matrix<String>> emptyList(), (a, b) -> a + b); // throws IllegalArgumentException (empty)
      * }</pre>
@@ -3992,9 +3992,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> m1 = Matrix.of(new Integer[][] {{1, 2}, {3, 4}});
-     * Matrix<Integer> m2 = Matrix.of(new Integer[][] {{5, 6}, {7, 8}});
-     * Matrix<Integer> m3 = Matrix.of(new Integer[][] {{9, 10}, {11, 12}});
+     * Matrix<Integer> m1 = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> m2 = Matrix.wrap(new Integer[][] {{5, 6}, {7, 8}});
+     * Matrix<Integer> m3 = Matrix.wrap(new Integer[][] {{9, 10}, {11, 12}});
      *
      * Matrix<Integer> sum = Matrices.zip(Arrays.asList(m1, m2, m3),
      *     arr -> arr[0] + arr[1] + arr[2], Integer.class);
@@ -4004,7 +4004,7 @@ public final class Matrices {
      *     arr -> arr[0] + "-" + arr[1] + "-" + arr[2], String.class);
      * // joined.get(0, 0) equals "1-5-9"
      *
-     * Matrix<Integer> wrong = Matrix.of(new Integer[][] {{1, 2, 3}});                   // different shape
+     * Matrix<Integer> wrong = Matrix.wrap(new Integer[][] {{1, 2, 3}});                   // different shape
      * Matrices.zip(Arrays.asList(m1, wrong), arr -> 0, Integer.class);                  // throws IllegalArgumentException (shape mismatch)
      * Matrices.zip(Collections.<Matrix<Integer>> emptyList(), arr -> 0, Integer.class); // throws IllegalArgumentException (empty)
      * }</pre>
@@ -4058,9 +4058,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> m1 = Matrix.of(new Integer[][] {{1, 2}, {3, 4}});
-     * Matrix<Integer> m2 = Matrix.of(new Integer[][] {{5, 6}, {7, 8}});
-     * Matrix<Integer> m3 = Matrix.of(new Integer[][] {{9, 10}, {11, 12}});
+     * Matrix<Integer> m1 = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> m2 = Matrix.wrap(new Integer[][] {{5, 6}, {7, 8}});
+     * Matrix<Integer> m3 = Matrix.wrap(new Integer[][] {{9, 10}, {11, 12}});
      *
      * Matrix<Double> avg = Matrices.zip(Arrays.asList(m1, m2, m3),
      *     arr -> java.util.Arrays.stream(arr).mapToInt(i -> i).average().orElse(0.0), true, Double.class);
@@ -4070,7 +4070,7 @@ public final class Matrices {
      *     arr -> java.util.Arrays.stream(arr).max(Integer::compare).orElse(0), false, Integer.class);
      * // max.get(1, 1) == 12
      *
-     * Matrix<Integer> wrong = Matrix.of(new Integer[][] {{1, 2, 3}});           // different shape
+     * Matrix<Integer> wrong = Matrix.wrap(new Integer[][] {{1, 2, 3}});           // different shape
      * Matrices.zip(Arrays.asList(m1, wrong), arr -> 0, false, Integer.class);   // throws IllegalArgumentException (shape mismatch)
      * Matrices.zip(Arrays.asList(m1, m2), arr -> 0, false, null);               // throws IllegalArgumentException (null type)
      * }</pre>

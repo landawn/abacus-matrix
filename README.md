@@ -80,7 +80,7 @@ build:
 import com.landawn.abacus.matrix.IntMatrix;
 
 // Create a matrix from a 2D array (wraps the array directly — see "Array sharing" below)
-IntMatrix a = IntMatrix.of(new int[][] {
+IntMatrix a = IntMatrix.wrap(new int[][] {
     {1, 2, 3},
     {4, 5, 6}
 });
@@ -94,14 +94,15 @@ a.rowCount();             // 2
 a.columnCount();          // 3
 IntMatrix t = a.transpose();       // 3 x 2
 IntMatrix r = a.rotate90();        // rotate clockwise
-IntMatrix s = a.reshape(3, 2);     // same data, new shape
+IntMatrix s = a.reshape(3, 2);             // exact-size row-major reshape
+IntMatrix p = a.reshapeAndPad(2, 4);       // two trailing cells are padded with 0
 
 // Element-wise arithmetic (matrices must share shape)
 IntMatrix sum = a.add(a);
 IntMatrix diff = a.subtract(a);
 
 // Linear-algebra multiply (a is 2x3, b is 3x2 -> 2x2)
-IntMatrix b = IntMatrix.of(new int[][] {{7, 8}, {9, 10}, {11, 12}});
+IntMatrix b = IntMatrix.wrap(new int[][] {{7, 8}, {9, 10}, {11, 12}});
 IntMatrix product = a.matrixMultiply(b);
 
 // Transform every element
@@ -117,7 +118,7 @@ Working with objects is the same shape of API via `Matrix<T>`:
 import com.landawn.abacus.matrix.Matrix;
 import com.landawn.abacus.matrix.IntMatrix;
 
-Matrix<String> grid = Matrix.of(new String[][] {
+Matrix<String> grid = Matrix.wrap(new String[][] {
     {"a", "b"},
     {"c", "d"}
 });
@@ -131,7 +132,7 @@ IntMatrix lengths = grid.mapToInt(String::length);   // project to a primitive m
 - **Element access** — `get` / `set` by `(row, column)` or `Point`, plus row/column views and
   defensive copies (`rowView`, `rowCopy`, `columnCopy`, `setRow`, `setColumn`).
 - **Shape operations** — `transpose`, `rotate90` / `rotate180` / `rotate270`,
-  `flipHorizontally` / `flipVertically`, `reshape`, `resize`, `extend`, `repeatElements`,
+  `flipHorizontally` / `flipVertically`, `reshape` / `reshapeAndPad`, `resize`, `pad`, `repeatElements`,
   `tile`.
 - **Composition** — `stackVertically` / `stackHorizontally` on instances, and
   `Matrices.stackVertically` / `Matrices.stackHorizontally` over collections.
@@ -155,7 +156,7 @@ IntMatrix lengths = grid.mapToInt(String::length);   // project to a primitive m
 
 ## Array sharing and copying
 
-Constructors and the `of(...)` factories **wrap the supplied 2D array directly** (after a
+Constructors and the `wrap(...)` factories **wrap the supplied 2D array directly** (after a
 rectangular-shape check) — no defensive copy is made, so later changes to the array or the matrix
 are visible through the other. This is intentional and fast. When you need isolation from the
 original array, use a copy-producing API instead:
@@ -163,7 +164,7 @@ original array, use a copy-producing API instead:
 ```java
 int[][] data = {{1, 2}, {3, 4}};
 
-IntMatrix wrapped = IntMatrix.of(data);       // shares 'data'
+IntMatrix wrapped = IntMatrix.wrap(data);       // shares 'data'
 data[0][0] = 99;
 wrapped.get(0, 0);                            // 99
 

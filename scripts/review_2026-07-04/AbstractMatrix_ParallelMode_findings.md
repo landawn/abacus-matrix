@@ -21,7 +21,7 @@ Cross-references verified against `Matrices.java` (lines 119/156/198/244/504/556
 None.
 
 ## Javadoc / Comments / Logs
-None. (Verified: rotate90/180/270, transpose, repeatElements, repeatMatrix, reshape, columnMajorStream range average, columnStreams sums, rowStreams max, diagonal copies, adjacent4/8 corner counts — all examples recompute correctly. All documented `@throws` conditions are reachable and accurately described, including the reshape/reshapeByColumnCount overflow and non-representable-shape cases.)
+None. (Verified: rotate90/180/270, transpose, repeatElements, repeatMatrix, reshape, columnMajorStream range average, columnStreams sums, rowStreams max, diagonal copies, adjacent4/8 corner counts — all examples recompute correctly. All documented `@throws` conditions are reachable and accurately described, including the reshape/reshapeAndPadToColumnCount overflow and non-representable-shape cases.)
 
 ## Naming / Consistency / Design
 
