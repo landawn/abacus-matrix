@@ -32,7 +32,7 @@ Methods examined in detail for off-by-one / boundary / wrong-variable / overflow
 - **`flip*`, `rotate90/180/270`, `transpose`**: the `rowCount <= columnCount` cache-friendly branch pairs produce identical results; index maps (`a[rowCount-j-1][i]`, `a[j][columnCount-i-1]`, `a[j][i]`) verified against the documented example outputs.
 - **`reshape`**: single-row fast path and multi-row `cnt`-based source addressing (`a[cnt/columnCount][cnt%columnCount]`) correct; `columnCount == 0` / empty source short-circuits avoid any division by zero (rowLen becomes 0).
 - **`repeatElements`/`repeatMatrix`**: overflow guards + block/tile construction verified against examples.
-- **`flatten`/`mutateFlattened`**: overflow guard on flatten; mutateFlattened delegates to `Arrays.mutateFlattened`.
+- **`flatten`/`mutateViaFlatArray`**: overflow guard on flatten; mutateViaFlatArray delegates to `Arrays.mutateViaFlatArray`.
 - **`stackVertically/Horizontally`**: correct mismatch messages (`MSG_VSTACK_COLUMN_MISMATCH` vs `MSG_HSTACK_ROW_MISMATCH`) and `long` overflow guards.
 - **`add`/`subtract`/`matrixMultiply`/`zipWith(2)/zipWith(3)`**: shape checks, `checkRepresentableShape(rowCount, other.columnCount)` for the product, and the accumulate `result[i][j] += a[i][k]*other[k][j]` are correct.
 - **Streams** (`mainDiagonalStream`, `antiDiagonalStream`, `rowMajorStream(*)`, `columnMajorStream(*)`, `rowStreams(*)`, `columnStreams(*)`): `hasNext`/`nextInt`/`advance`/`count`/`toArray` were checked arithmetically. Notably:

@@ -119,8 +119,8 @@ class FloatMatrixTest extends TestBase {
     }
 
     @Test
-    public void testRepeat() {
-        FloatMatrix m = FloatMatrix.repeat(1, 5, 42.5f);
+    public void testFilled() {
+        FloatMatrix m = FloatMatrix.filled(1, 5, 42.5f);
         assertEquals(1, m.rowCount());
         assertEquals(5, m.columnCount());
         for (int i = 0; i < 5; i++) {
@@ -130,7 +130,7 @@ class FloatMatrixTest extends TestBase {
 
     @Test
     public void testDiagonalLU2RD() {
-        FloatMatrix m = FloatMatrix.mainDiagonal(new float[] { 1.0f, 2.0f, 3.0f });
+        FloatMatrix m = FloatMatrix.ofMainDiagonal(new float[] { 1.0f, 2.0f, 3.0f });
         assertEquals(3, m.rowCount());
         assertEquals(3, m.columnCount());
         assertEquals(1.0f, m.get(0, 0), DELTA);
@@ -142,7 +142,7 @@ class FloatMatrixTest extends TestBase {
 
     @Test
     public void testDiagonalRU2LD() {
-        FloatMatrix m = FloatMatrix.antiDiagonal(new float[] { 1.0f, 2.0f, 3.0f });
+        FloatMatrix m = FloatMatrix.ofAntiDiagonal(new float[] { 1.0f, 2.0f, 3.0f });
         assertEquals(3, m.rowCount());
         assertEquals(3, m.columnCount());
         assertEquals(1.0f, m.get(0, 2), DELTA);
@@ -155,7 +155,7 @@ class FloatMatrixTest extends TestBase {
     @Test
     public void testDiagonal() {
         // Test with both diagonals
-        FloatMatrix m = FloatMatrix.diagonals(new float[] { 1.0f, 2.0f, 3.0f }, new float[] { 4.0f, 5.0f, 6.0f });
+        FloatMatrix m = FloatMatrix.ofDiagonals(new float[] { 1.0f, 2.0f, 3.0f }, new float[] { 4.0f, 5.0f, 6.0f });
         assertEquals(3, m.rowCount());
         assertEquals(3, m.columnCount());
         assertEquals(1.0f, m.get(0, 0), DELTA);
@@ -166,22 +166,22 @@ class FloatMatrixTest extends TestBase {
         assertEquals(6.0f, m.get(2, 0), DELTA);
 
         // Test with only main diagonal
-        FloatMatrix m2 = FloatMatrix.diagonals(new float[] { 1.0f, 2.0f, 3.0f }, null);
+        FloatMatrix m2 = FloatMatrix.ofDiagonals(new float[] { 1.0f, 2.0f, 3.0f }, null);
         assertEquals(1.0f, m2.get(0, 0), DELTA);
         assertEquals(2.0f, m2.get(1, 1), DELTA);
         assertEquals(3.0f, m2.get(2, 2), DELTA);
 
         // Test with only anti-diagonal
-        FloatMatrix m3 = FloatMatrix.diagonals(null, new float[] { 4.0f, 5.0f, 6.0f });
+        FloatMatrix m3 = FloatMatrix.ofDiagonals(null, new float[] { 4.0f, 5.0f, 6.0f });
         assertEquals(4.0f, m3.get(0, 2), DELTA);
         assertEquals(5.0f, m3.get(1, 1), DELTA);
         assertEquals(6.0f, m3.get(2, 0), DELTA);
 
         // Test with both null
-        assertThrows(IllegalArgumentException.class, () -> FloatMatrix.diagonals(null, null));
+        assertThrows(IllegalArgumentException.class, () -> FloatMatrix.ofDiagonals(null, null));
 
         // Test illegal argument
-        assertThrows(IllegalArgumentException.class, () -> FloatMatrix.diagonals(new float[] { 1.0f, 2.0f }, new float[] { 3.0f, 4.0f, 5.0f }));
+        assertThrows(IllegalArgumentException.class, () -> FloatMatrix.ofDiagonals(new float[] { 1.0f, 2.0f }, new float[] { 3.0f, 4.0f, 5.0f }));
     }
 
     @Test
@@ -465,7 +465,7 @@ class FloatMatrixTest extends TestBase {
 
     @Test
     public void testUpdateAllUnarySequentialTallMatrixUsesRowMajorOrder() throws Exception {
-        final FloatMatrix tall = FloatMatrix.repeat(3, 2, 0.0f);
+        final FloatMatrix tall = FloatMatrix.filled(3, 2, 0.0f);
         final AtomicInteger next = new AtomicInteger();
 
         Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> tall.updateAll(x -> (float) next.incrementAndGet()));
@@ -584,22 +584,22 @@ class FloatMatrixTest extends TestBase {
     }
 
     @Test
-    public void testCopyRange() {
-        FloatMatrix subset = matrix.copy(1, 3);
+    public void testCopyRows() {
+        FloatMatrix subset = matrix.copyRows(1, 3);
         assertEquals(2, subset.rowCount());
         assertEquals(3, subset.columnCount());
         assertEquals(4.0f, subset.get(0, 0), DELTA);
         assertEquals(7.0f, subset.get(1, 0), DELTA);
 
         // Test bounds
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.copy(-1, 2));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.copy(0, 4));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.copy(2, 1));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyRows(-1, 2));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyRows(0, 4));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyRows(2, 1));
     }
 
     @Test
-    public void testCopySubMatrix() {
-        FloatMatrix submatrix = matrix.copy(0, 2, 1, 3);
+    public void testCopyRegion() {
+        FloatMatrix submatrix = matrix.copyRegion(0, 2, 1, 3);
         assertEquals(2, submatrix.rowCount());
         assertEquals(2, submatrix.columnCount());
         assertEquals(2.0f, submatrix.get(0, 0), DELTA);
@@ -608,22 +608,22 @@ class FloatMatrixTest extends TestBase {
         assertEquals(6.0f, submatrix.get(1, 1), DELTA);
 
         // Test bounds
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.copy(0, 2, -1, 2));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.copy(0, 2, 0, 4));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyRegion(0, 2, -1, 2));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyRegion(0, 2, 0, 4));
     }
 
     @Test
-    public void testCopyEmptyRange_returnsEmptyMatrix() {
-        // Regression: copy(from, from) on a matrix with columns > 0 must not throw.
-        FloatMatrix empty = matrix.copy(0, 0);
+    public void testCopyRangesEmpty_returnsEmptyMatrix() {
+        // Regression: copyRows(from, from) on a matrix with columns > 0 must not throw.
+        FloatMatrix empty = matrix.copyRows(0, 0);
         assertEquals(0, empty.rowCount());
         assertEquals(0, empty.columnCount());
 
-        FloatMatrix emptyRows = matrix.copy(1, 1, 0, 3);
+        FloatMatrix emptyRows = matrix.copyRegion(1, 1, 0, 3);
         assertEquals(0, emptyRows.rowCount());
         assertEquals(0, emptyRows.columnCount());
 
-        FloatMatrix emptyCols = matrix.copy(0, 3, 1, 1);
+        FloatMatrix emptyCols = matrix.copyRegion(0, 3, 1, 1);
         assertEquals(3, emptyCols.rowCount());
         assertEquals(0, emptyCols.columnCount());
     }
@@ -768,7 +768,7 @@ class FloatMatrixTest extends TestBase {
     }
 
     @Test
-    public void testRepelem() {
+    public void testRepeatElements() {
         FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f } });
         FloatMatrix repeated = m.repeatElements(2, 3);
         assertEquals(2, repeated.rowCount());
@@ -789,9 +789,9 @@ class FloatMatrixTest extends TestBase {
     }
 
     @Test
-    public void testRepmat() {
+    public void testTile() {
         FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-        FloatMatrix repeated = m.repeatMatrix(2, 3);
+        FloatMatrix repeated = m.tile(2, 3);
         assertEquals(4, repeated.rowCount());
         assertEquals(6, repeated.columnCount());
 
@@ -811,8 +811,8 @@ class FloatMatrixTest extends TestBase {
         assertEquals(2.0f, repeated.get(2, 1), DELTA);
 
         // Test invalid arguments
-        assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
-        assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
+        assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
+        assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
     }
 
     @Test
@@ -1307,8 +1307,8 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepeat() {
-            FloatMatrix m = FloatMatrix.repeat(1, 5, 3.14f);
+        public void testFilled() {
+            FloatMatrix m = FloatMatrix.filled(1, 5, 3.14f);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
             for (int i = 0; i < 5; i++) {
@@ -1317,8 +1317,8 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepeat_withRowsCols() {
-            FloatMatrix m = FloatMatrix.repeat(2, 3, 3.14f);
+        public void testFilled_withRowsCols() {
+            FloatMatrix m = FloatMatrix.filled(2, 3, 3.14f);
             assertEquals(2, m.rowCount());
             assertEquals(3, m.columnCount());
             for (int i = 0; i < 2; i++) {
@@ -1329,13 +1329,13 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepeat_withSpecialValues() {
-            FloatMatrix m = FloatMatrix.repeat(1, 3, Float.NaN);
+        public void testFilled_withSpecialValues() {
+            FloatMatrix m = FloatMatrix.filled(1, 3, Float.NaN);
             for (int i = 0; i < 3; i++) {
                 assertTrue(Float.isNaN(m.get(0, i)));
             }
 
-            FloatMatrix m2 = FloatMatrix.repeat(1, 2, Float.POSITIVE_INFINITY);
+            FloatMatrix m2 = FloatMatrix.filled(1, 2, Float.POSITIVE_INFINITY);
             for (int i = 0; i < 2; i++) {
                 assertEquals(Float.POSITIVE_INFINITY, m2.get(0, i), DELTA);
             }
@@ -1343,7 +1343,7 @@ class FloatMatrixTest extends TestBase {
 
         @Test
         public void testDiagonalLU2RD() {
-            FloatMatrix m = FloatMatrix.mainDiagonal(new float[] { 1.5f, 2.5f, 3.5f });
+            FloatMatrix m = FloatMatrix.ofMainDiagonal(new float[] { 1.5f, 2.5f, 3.5f });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1.5f, m.get(0, 0), DELTA);
@@ -1355,7 +1355,7 @@ class FloatMatrixTest extends TestBase {
 
         @Test
         public void testDiagonalRU2LD() {
-            FloatMatrix m = FloatMatrix.antiDiagonal(new float[] { 1.5f, 2.5f, 3.5f });
+            FloatMatrix m = FloatMatrix.ofAntiDiagonal(new float[] { 1.5f, 2.5f, 3.5f });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1.5f, m.get(0, 2), DELTA);
@@ -1367,7 +1367,7 @@ class FloatMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withBothDiagonals() {
-            FloatMatrix m = FloatMatrix.diagonals(new float[] { 1.0f, 2.0f, 3.0f }, new float[] { 4.0f, 5.0f, 6.0f });
+            FloatMatrix m = FloatMatrix.ofDiagonals(new float[] { 1.0f, 2.0f, 3.0f }, new float[] { 4.0f, 5.0f, 6.0f });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1.0f, m.get(0, 0), DELTA);
@@ -1379,7 +1379,7 @@ class FloatMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withOnlyMainDiagonal() {
-            FloatMatrix m = FloatMatrix.diagonals(new float[] { 1.0f, 2.0f, 3.0f }, null);
+            FloatMatrix m = FloatMatrix.ofDiagonals(new float[] { 1.0f, 2.0f, 3.0f }, null);
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1.0f, m.get(0, 0), DELTA);
@@ -1389,7 +1389,7 @@ class FloatMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withOnlyAntiDiagonal() {
-            FloatMatrix m = FloatMatrix.diagonals(null, new float[] { 4.0f, 5.0f, 6.0f });
+            FloatMatrix m = FloatMatrix.ofDiagonals(null, new float[] { 4.0f, 5.0f, 6.0f });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(4.0f, m.get(0, 2), DELTA);
@@ -1399,7 +1399,7 @@ class FloatMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withDifferentLengths() {
-            assertThrows(IllegalArgumentException.class, () -> FloatMatrix.diagonals(new float[] { 1.0f, 2.0f }, new float[] { 3.0f, 4.0f, 5.0f }));
+            assertThrows(IllegalArgumentException.class, () -> FloatMatrix.ofDiagonals(new float[] { 1.0f, 2.0f }, new float[] { 3.0f, 4.0f, 5.0f }));
         }
 
         @Test
@@ -1861,9 +1861,9 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withRowRange() {
+        public void testCopyRows() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
-            FloatMatrix subset = m.copy(1, 3);
+            FloatMatrix subset = m.copyRows(1, 3);
             assertEquals(2, subset.rowCount());
             assertEquals(3, subset.columnCount());
             assertEquals(4.0f, subset.get(0, 0), DELTA);
@@ -1871,17 +1871,17 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withRowRange_outOfBounds() {
+        public void testCopyRows_outOfBounds() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(-1, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 3));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(2, 1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRows(-1, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRows(0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRows(2, 1));
         }
 
         @Test
-        public void testCopy_withFullRange() {
+        public void testCopyRegion() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
-            FloatMatrix submatrix = m.copy(0, 2, 1, 3);
+            FloatMatrix submatrix = m.copyRegion(0, 2, 1, 3);
             assertEquals(2, submatrix.rowCount());
             assertEquals(2, submatrix.columnCount());
             assertEquals(2.0f, submatrix.get(0, 0), DELTA);
@@ -1889,10 +1889,10 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withFullRange_outOfBounds() {
+        public void testCopyRegion_outOfBounds() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 2, -1, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 2, 0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRegion(0, 2, -1, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRegion(0, 2, 0, 3));
         }
 
         // ============ Extend Tests ============
@@ -2219,17 +2219,17 @@ class FloatMatrixTest extends TestBase {
         // ============ Repeat Tests ============
 
         @Test
-        public void testRepelem_invalidArguments() {
+        public void testRepeatElements_invalidArguments() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(0, 1));
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(1, 0));
         }
 
         @Test
-        public void testRepmat_invalidArguments() {
+        public void testTile_invalidArguments() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f } });
-            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
+            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
         }
 
         // ============ Flatten Tests ============
@@ -3008,8 +3008,8 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepeat() {
-            FloatMatrix m = FloatMatrix.repeat(1, 5, 3.14f);
+        public void testFilled() {
+            FloatMatrix m = FloatMatrix.filled(1, 5, 3.14f);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
             for (int i = 0; i < 5; i++) {
@@ -3018,15 +3018,15 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepeat_withZeroLength() {
-            FloatMatrix m = FloatMatrix.repeat(1, 0, 1.0f);
+        public void testFilled_withZeroLength() {
+            FloatMatrix m = FloatMatrix.filled(1, 0, 1.0f);
             assertEquals(1, m.rowCount());
             assertEquals(0, m.columnCount());
         }
 
         @Test
         public void testDiagonalLU2RD() {
-            FloatMatrix m = FloatMatrix.mainDiagonal(new float[] { 1.0f, 2.0f, 3.0f });
+            FloatMatrix m = FloatMatrix.ofMainDiagonal(new float[] { 1.0f, 2.0f, 3.0f });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1.0f, m.get(0, 0));
@@ -3038,7 +3038,7 @@ class FloatMatrixTest extends TestBase {
 
         @Test
         public void testDiagonalRU2LD() {
-            FloatMatrix m = FloatMatrix.antiDiagonal(new float[] { 1.0f, 2.0f, 3.0f });
+            FloatMatrix m = FloatMatrix.ofAntiDiagonal(new float[] { 1.0f, 2.0f, 3.0f });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1.0f, m.get(0, 2));
@@ -3050,7 +3050,7 @@ class FloatMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withBothDiagonals() {
-            FloatMatrix m = FloatMatrix.diagonals(new float[] { 1.0f, 4.0f }, new float[] { 2.0f, 3.0f });
+            FloatMatrix m = FloatMatrix.ofDiagonals(new float[] { 1.0f, 4.0f }, new float[] { 2.0f, 3.0f });
             assertEquals(2, m.rowCount());
             assertEquals(2, m.columnCount());
             assertEquals(1.0f, m.get(0, 0));
@@ -3061,7 +3061,7 @@ class FloatMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withOnlyMainDiagonal() {
-            FloatMatrix m = FloatMatrix.diagonals(new float[] { 1.0f, 2.0f, 3.0f }, null);
+            FloatMatrix m = FloatMatrix.ofDiagonals(new float[] { 1.0f, 2.0f, 3.0f }, null);
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1.0f, m.get(0, 0));
@@ -3071,7 +3071,7 @@ class FloatMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withOnlyAntiDiagonal() {
-            FloatMatrix m = FloatMatrix.diagonals(null, new float[] { 1.0f, 2.0f, 3.0f });
+            FloatMatrix m = FloatMatrix.ofDiagonals(null, new float[] { 1.0f, 2.0f, 3.0f });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1.0f, m.get(0, 2));
@@ -3081,12 +3081,12 @@ class FloatMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withBothNull() {
-            assertThrows(IllegalArgumentException.class, () -> FloatMatrix.diagonals(null, null));
+            assertThrows(IllegalArgumentException.class, () -> FloatMatrix.ofDiagonals(null, null));
         }
 
         @Test
         public void testDiagonal_withDifferentLengths() {
-            assertThrows(IllegalArgumentException.class, () -> FloatMatrix.diagonals(new float[] { 1.0f, 2.0f }, new float[] { 1.0f, 2.0f, 3.0f }));
+            assertThrows(IllegalArgumentException.class, () -> FloatMatrix.ofDiagonals(new float[] { 1.0f, 2.0f }, new float[] { 1.0f, 2.0f, 3.0f }));
         }
 
         @Test
@@ -3401,9 +3401,9 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_rows() {
+        public void testCopyRows() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f }, { 5.0f, 6.0f } });
-            FloatMatrix copy = m.copy(1, 3);
+            FloatMatrix copy = m.copyRows(1, 3);
             assertEquals(2, copy.rowCount());
             assertEquals(2, copy.columnCount());
             assertEquals(3.0f, copy.get(0, 0));
@@ -3411,9 +3411,9 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_subMatrix() {
+        public void testCopyRegion() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
-            FloatMatrix copy = m.copy(1, 3, 1, 3);
+            FloatMatrix copy = m.copyRegion(1, 3, 1, 3);
             assertEquals(2, copy.rowCount());
             assertEquals(2, copy.columnCount());
             assertEquals(5.0f, copy.get(0, 0));
@@ -3575,7 +3575,7 @@ class FloatMatrixTest extends TestBase {
         // ============ Repelem Tests ============
 
         @Test
-        public void testRepelem() {
+        public void testRepeatElements() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             FloatMatrix result = m.repeatElements(2, 2);
             assertEquals(4, result.rowCount());
@@ -3591,9 +3591,9 @@ class FloatMatrixTest extends TestBase {
         // ============ Repmat Tests ============
 
         @Test
-        public void testRepmat() {
+        public void testTile() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            FloatMatrix result = m.repeatMatrix(2, 2);
+            FloatMatrix result = m.tile(2, 2);
             assertEquals(4, result.rowCount());
             assertEquals(4, result.columnCount());
             assertEquals(1.0f, result.get(0, 0));
@@ -4111,8 +4111,8 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepeat_withNegativeValue() {
-            FloatMatrix m = FloatMatrix.repeat(1, 3, -5.5f);
+        public void testFilled_withNegativeValue() {
+            FloatMatrix m = FloatMatrix.filled(1, 3, -5.5f);
             assertEquals(1, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(-5.5f, m.get(0, 0));
@@ -4120,13 +4120,13 @@ class FloatMatrixTest extends TestBase {
 
         @Test
         public void testDiagonalLU2RD_withEmptyArray() {
-            FloatMatrix m = FloatMatrix.mainDiagonal(new float[0]);
+            FloatMatrix m = FloatMatrix.ofMainDiagonal(new float[0]);
             assertTrue(m.isEmpty());
         }
 
         @Test
         public void testDiagonal_singleElement() {
-            FloatMatrix m = FloatMatrix.diagonals(new float[] { 5.0f }, new float[] { 7.0f });
+            FloatMatrix m = FloatMatrix.ofDiagonals(new float[] { 5.0f }, new float[] { 7.0f });
             assertEquals(1, m.rowCount());
             assertEquals(1, m.columnCount());
             assertEquals(5.0f, m.get(0, 0)); // Main diagonal takes precedence
@@ -4236,7 +4236,7 @@ class FloatMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> FloatMatrix.from(ints));
         }
 
-        // ============ Random and Repeat Tests ============
+        // ============ Random.and.Filled.Tests ============
 
         @Test
         public void test_random() {
@@ -4246,8 +4246,8 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_repeat() {
-            FloatMatrix m = FloatMatrix.repeat(1, 5, 3.14f);
+        public void test_filled() {
+            FloatMatrix m = FloatMatrix.filled(1, 5, 3.14f);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
             for (int i = 0; i < 5; i++) {
@@ -4256,8 +4256,8 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_repeat_zeroLength() {
-            FloatMatrix m = FloatMatrix.repeat(1, 0, 3.14f);
+        public void test_filled_zeroLength() {
+            FloatMatrix m = FloatMatrix.filled(1, 0, 3.14f);
             assertEquals(1, m.rowCount());
             assertEquals(0, m.columnCount());
         }
@@ -4265,9 +4265,9 @@ class FloatMatrixTest extends TestBase {
         // ============ Diagonal Tests ============
 
         @Test
-        public void test_mainDiagonal() {
+        public void test_ofMainDiagonal() {
             float[] diag = { 1.0f, 2.0f, 3.0f };
-            FloatMatrix m = FloatMatrix.mainDiagonal(diag);
+            FloatMatrix m = FloatMatrix.ofMainDiagonal(diag);
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1.0f, m.get(0, 0), 0.0f);
@@ -4278,14 +4278,14 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_mainDiagonal_null() {
-            assertThrows(IllegalArgumentException.class, () -> FloatMatrix.mainDiagonal(null));
+        public void test_ofMainDiagonal_null() {
+            assertThrows(IllegalArgumentException.class, () -> FloatMatrix.ofMainDiagonal(null));
         }
 
         @Test
-        public void test_antiDiagonal() {
+        public void test_ofAntiDiagonal() {
             float[] diag = { 1.0f, 2.0f, 3.0f };
-            FloatMatrix m = FloatMatrix.antiDiagonal(diag);
+            FloatMatrix m = FloatMatrix.ofAntiDiagonal(diag);
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1.0f, m.get(0, 2), 0.0f);
@@ -4295,15 +4295,15 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_antiDiagonal_null() {
-            assertThrows(IllegalArgumentException.class, () -> FloatMatrix.antiDiagonal(null));
+        public void test_ofAntiDiagonal_null() {
+            assertThrows(IllegalArgumentException.class, () -> FloatMatrix.ofAntiDiagonal(null));
         }
 
         @Test
         public void test_diagonal_both() {
             float[] lu2rd = { 1.0f, 2.0f, 3.0f };
             float[] ru2ld = { 4.0f, 5.0f, 6.0f };
-            FloatMatrix m = FloatMatrix.diagonals(lu2rd, ru2ld);
+            FloatMatrix m = FloatMatrix.ofDiagonals(lu2rd, ru2ld);
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1.0f, m.get(0, 0), 0.0f);
@@ -4317,7 +4317,7 @@ class FloatMatrixTest extends TestBase {
         public void test_diagonal_differentLengths() {
             float[] lu2rd = { 1.0f, 2.0f };
             float[] ru2ld = { 4.0f, 5.0f, 6.0f };
-            assertThrows(IllegalArgumentException.class, () -> FloatMatrix.diagonals(lu2rd, ru2ld));
+            assertThrows(IllegalArgumentException.class, () -> FloatMatrix.ofDiagonals(lu2rd, ru2ld));
         }
         // ============ Unbox Test ============
 
@@ -4755,9 +4755,9 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_copy_withRowRange() {
+        public void test_copyRows() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f }, { 5.0f, 6.0f } });
-            FloatMatrix copy = m.copy(1, 3);
+            FloatMatrix copy = m.copyRows(1, 3);
             assertEquals(2, copy.rowCount());
             assertEquals(2, copy.columnCount());
             assertEquals(3.0f, copy.get(0, 0), 0.0f);
@@ -4765,9 +4765,9 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_copy_withFullRange() {
+        public void test_copyRegion() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
-            FloatMatrix copy = m.copy(1, 3, 1, 3);
+            FloatMatrix copy = m.copyRegion(1, 3, 1, 3);
             assertEquals(2, copy.rowCount());
             assertEquals(2, copy.columnCount());
             assertEquals(5.0f, copy.get(0, 0), 0.0f);
@@ -4777,7 +4777,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void test_copy_invalidRange() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 5));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRows(0, 5));
         }
 
         // ============ Extend Tests ============
@@ -4991,9 +4991,9 @@ class FloatMatrixTest extends TestBase {
         // ============ Repmat Test ============
 
         @Test
-        public void test_repeatMatrix() {
+        public void test_tile() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f } });
-            FloatMatrix result = m.repeatMatrix(2, 2);
+            FloatMatrix result = m.tile(2, 2);
             assertEquals(2, result.rowCount());
             assertEquals(4, result.columnCount());
             assertEquals(1.0f, result.get(0, 0), 0.0f);
@@ -5003,9 +5003,9 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_repeatMatrix_invalidRepeats() {
+        public void test_tile_invalidRepeats() {
             FloatMatrix m = FloatMatrix.of(new float[][] { { 1.0f, 2.0f } });
-            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
         }
 
         // ============ Flatten Test ============
@@ -5340,16 +5340,16 @@ class FloatMatrixTest extends TestBase {
         // ==================== FloatMatrix ====================
 
         @Test
-        public void testFloatMatrix_repeat() {
-            FloatMatrix matrix = FloatMatrix.repeat(2, 3, 1.0f);
+        public void testFloatMatrix_filled() {
+            FloatMatrix matrix = FloatMatrix.filled(2, 3, 1.0f);
             assertEquals(2, matrix.rowCount());
             assertEquals(3, matrix.columnCount());
             assertEquals(1.0f, matrix.get(0, 0));
         }
 
         @Test
-        public void testFloatMatrix_diagonals() {
-            FloatMatrix matrix = FloatMatrix.diagonals(new float[] { 1.0f, 2.0f, 3.0f }, new float[] { 4.0f, 5.0f, 6.0f });
+        public void testFloatMatrix_ofDiagonals() {
+            FloatMatrix matrix = FloatMatrix.ofDiagonals(new float[] { 1.0f, 2.0f, 3.0f }, new float[] { 4.0f, 5.0f, 6.0f });
             assertEquals(1.0f, matrix.get(0, 0));
             assertEquals(0.0f, matrix.get(0, 1));
             assertEquals(4.0f, matrix.get(0, 2));
@@ -5503,9 +5503,9 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFloatMatrix_repeatMatrix() {
+        public void testFloatMatrix_tile() {
             FloatMatrix matrix = FloatMatrix.of(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            FloatMatrix repeated = matrix.repeatMatrix(2, 3);
+            FloatMatrix repeated = matrix.tile(2, 3);
             assertEquals(4, repeated.rowCount());
             assertEquals(6, repeated.columnCount());
             assertArrayEquals(new float[] { 1.0f, 2.0f, 1.0f, 2.0f, 1.0f, 2.0f }, repeated.rowView(0));
@@ -5594,12 +5594,12 @@ class FloatMatrixTest extends TestBase {
 
         @Test
         public void testFloatMatrixMainDiagonal() {
-            // FloatMatrix.java: FloatMatrix matrix = FloatMatrix.mainDiagonal(new float[] {1.0f, 2.0f, 3.0f});
+            // FloatMatrix.java: FloatMatrix matrix = FloatMatrix.ofMainDiagonal(new float[] {1.0f, 2.0f, 3.0f});
             // Creates 3x3 matrix:
             // [[1.0, 0.0, 0.0],
             //  [0.0, 2.0, 0.0],
             //  [0.0, 0.0, 3.0]]
-            FloatMatrix matrix = FloatMatrix.mainDiagonal(new float[] { 1.0f, 2.0f, 3.0f });
+            FloatMatrix matrix = FloatMatrix.ofMainDiagonal(new float[] { 1.0f, 2.0f, 3.0f });
             assertEquals(3, matrix.rowCount());
             assertEquals(3, matrix.columnCount());
             assertEquals(1.0f, matrix.get(0, 0));
@@ -5610,12 +5610,12 @@ class FloatMatrixTest extends TestBase {
 
         @Test
         public void testFloatMatrixAntiDiagonal() {
-            // FloatMatrix.java: FloatMatrix matrix = FloatMatrix.antiDiagonal(new float[] {1.0f, 2.0f, 3.0f});
+            // FloatMatrix.java: FloatMatrix matrix = FloatMatrix.ofAntiDiagonal(new float[] {1.0f, 2.0f, 3.0f});
             // Creates 3x3 matrix:
             // [[0.0, 0.0, 1.0],
             //  [0.0, 2.0, 0.0],
             //  [3.0, 0.0, 0.0]]
-            FloatMatrix matrix = FloatMatrix.antiDiagonal(new float[] { 1.0f, 2.0f, 3.0f });
+            FloatMatrix matrix = FloatMatrix.ofAntiDiagonal(new float[] { 1.0f, 2.0f, 3.0f });
             assertEquals(1.0f, matrix.get(0, 2));
             assertEquals(2.0f, matrix.get(1, 1));
             assertEquals(3.0f, matrix.get(2, 0));
@@ -5874,7 +5874,7 @@ class FloatMatrixTest extends TestBase {
         FloatMatrix matrix = FloatMatrix.of(new float[][] { { 1f, 2f }, { 3f, 4f } });
         FloatMatrix extended = matrix.extend(0, 1, 1, 0, 8f);
         FloatMatrix repeatedElements = matrix.repeatElements(2, 1);
-        FloatMatrix repeatedMatrix = matrix.repeatMatrix(1, 2);
+        FloatMatrix repeatedMatrix = matrix.tile(1, 2);
         List<Float> visited = new ArrayList<>();
 
         matrix.forEach(0, 2, 1, 2, visited::add);
@@ -6259,8 +6259,8 @@ class FloatMatrixTest extends TestBase {
         assertThrows(IllegalArgumentException.class, () -> FloatMatrix.randomRow(-1));
         assertThrows(IllegalArgumentException.class, () -> FloatMatrix.random(-1, 2));
         assertThrows(IllegalArgumentException.class, () -> FloatMatrix.random(2, -1));
-        assertThrows(IllegalArgumentException.class, () -> FloatMatrix.repeat(-1, 2, 7.0f));
-        assertThrows(IllegalArgumentException.class, () -> FloatMatrix.repeat(2, -1, 7.0f));
+        assertThrows(IllegalArgumentException.class, () -> FloatMatrix.filled(-1, 2, 7.0f));
+        assertThrows(IllegalArgumentException.class, () -> FloatMatrix.filled(2, -1, 7.0f));
     }
 
 }

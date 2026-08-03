@@ -252,7 +252,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Creates a new {@code 1 x length} matrix filled with random float values
+     * Creates a new {@code 1 x columnCount} matrix filled with random float values
      * uniformly distributed in {@code [0.0f, 1.0f)}.
      *
      * <p><b>Usage Examples:</b></p>
@@ -263,18 +263,18 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * boolean firstValueInUnitInterval = matrix.get(0, 0) >= 0.0f && matrix.get(0, 0) < 1.0f; // true
      *
      * FloatMatrix.randomRow(0).columnCount(); // returns 0 (empty row)
-     * FloatMatrix.randomRow(-1);              // throws IllegalArgumentException (negative length)
+     * FloatMatrix.randomRow(-1);              // throws IllegalArgumentException (negative columnCount)
      * }</pre>
      *
-     * @param length the number of columns in the new matrix
-     * @return a new {@code FloatMatrix} of dimensions {@code 1 x length} filled with random values in {@code [0.0f, 1.0f)}
-     * @throws IllegalArgumentException if {@code length} is negative
+     * @param columnCount the number of columns in the new matrix
+     * @return a new {@code FloatMatrix} of dimensions {@code 1 x columnCount} filled with random values in {@code [0.0f, 1.0f)}
+     * @throws IllegalArgumentException if {@code columnCount} is negative
      * @see #random(int, int)
      */
-    public static FloatMatrix randomRow(final int length) {
-        N.checkArgument(length >= 0, MSG_NEGATIVE_DIMENSION, "length", length);
+    public static FloatMatrix randomRow(final int columnCount) {
+        N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
 
-        return random(1, length);
+        return random(1, columnCount);
     }
 
     /**
@@ -319,14 +319,14 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * FloatMatrix matrix = FloatMatrix.repeat(2, 3, 1.0f);
+     * FloatMatrix matrix = FloatMatrix.filled(2, 3, 1.0f);
      * matrix.get(1, 2);                              // returns 1.0f
      * matrix.rowCount();                             // returns 2
      *
-     * FloatMatrix nans = FloatMatrix.repeat(1, 2, Float.NaN);
+     * FloatMatrix nans = FloatMatrix.filled(1, 2, Float.NaN);
      * Float.isNaN(nans.get(0, 0));                   // returns true
-     * FloatMatrix.repeat(0, 0, 5.0f).isEmpty();      // returns true
-     * FloatMatrix.repeat(-1, 3, 1.0f);               // throws IllegalArgumentException (negative rowCount)
+     * FloatMatrix.filled(0, 0, 5.0f).isEmpty();      // returns true
+     * FloatMatrix.filled(-1, 3, 1.0f);               // throws IllegalArgumentException (negative rowCount)
      * }</pre>
      *
      * @param rowCount the number of rows in the new matrix
@@ -336,7 +336,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
      *         or if the resulting shape is not representable
      */
-    public static FloatMatrix repeat(final int rowCount, final int columnCount, final float element) {
+    public static FloatMatrix filled(final int rowCount, final int columnCount, final float element) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
         checkRepresentableShape(rowCount, columnCount);
@@ -357,7 +357,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * FloatMatrix matrix = FloatMatrix.mainDiagonal(new float[] {1.0f, 2.0f, 3.0f});
+     * FloatMatrix matrix = FloatMatrix.ofMainDiagonal(new float[] {1.0f, 2.0f, 3.0f});
      * // Creates 3x3 matrix:
      * // [[1.0, 0.0, 0.0],
      * //  [0.0, 2.0, 0.0],
@@ -365,9 +365,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * matrix.get(1, 1);                                       // returns 2.0f
      * matrix.get(0, 1);                                       // returns 0.0f (off-diagonal)
      *
-     * FloatMatrix.mainDiagonal(new float[] {5.0f}).get(0, 0); // returns 5.0f (1x1 matrix)
-     * FloatMatrix.mainDiagonal(null);                         // throws IllegalArgumentException (null array)
-     * FloatMatrix.mainDiagonal(new float[0]).isEmpty();       // returns true
+     * FloatMatrix.ofMainDiagonal(new float[] {5.0f}).get(0, 0); // returns 5.0f (1x1 matrix)
+     * FloatMatrix.ofMainDiagonal(null);                         // throws IllegalArgumentException (null array)
+     * FloatMatrix.ofMainDiagonal(new float[0]).isEmpty();       // returns true
      * }</pre>
      *
      * @param mainDiagonal the array of main-diagonal elements; must not be {@code null}, but may be empty
@@ -375,13 +375,13 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *         the supplied values on the main diagonal and {@code 0} elsewhere; the shared empty
      *         matrix if {@code mainDiagonal} is empty
      * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null}
-     * @see #antiDiagonal(float[])
-     * @see #diagonals(float[], float[])
+     * @see #ofAntiDiagonal(float[])
+     * @see #ofDiagonals(float[], float[])
      */
-    public static FloatMatrix mainDiagonal(final float[] mainDiagonal) {
+    public static FloatMatrix ofMainDiagonal(final float[] mainDiagonal) {
         N.checkArgNotNull(mainDiagonal, "mainDiagonal");
 
-        return diagonals(mainDiagonal, null);
+        return ofDiagonals(mainDiagonal, null);
     }
 
     /**
@@ -391,7 +391,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * FloatMatrix matrix = FloatMatrix.antiDiagonal(new float[] {1.0f, 2.0f, 3.0f});
+     * FloatMatrix matrix = FloatMatrix.ofAntiDiagonal(new float[] {1.0f, 2.0f, 3.0f});
      * // Creates 3x3 matrix:
      * // [[0.0, 0.0, 1.0],
      * //  [0.0, 2.0, 0.0],
@@ -399,9 +399,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * matrix.get(0, 2);                                       // returns 1.0f
      * matrix.get(0, 0);                                       // returns 0.0f (off anti-diagonal)
      *
-     * FloatMatrix.antiDiagonal(new float[] {5.0f}).get(0, 0); // returns 5.0f (1x1 matrix)
-     * FloatMatrix.antiDiagonal(null);                         // throws IllegalArgumentException (null array)
-     * FloatMatrix.antiDiagonal(new float[0]).isEmpty();       // returns true
+     * FloatMatrix.ofAntiDiagonal(new float[] {5.0f}).get(0, 0); // returns 5.0f (1x1 matrix)
+     * FloatMatrix.ofAntiDiagonal(null);                         // throws IllegalArgumentException (null array)
+     * FloatMatrix.ofAntiDiagonal(new float[0]).isEmpty();       // returns true
      * }</pre>
      *
      * @param antiDiagonal the array of anti-diagonal elements; must not be {@code null}, but may be empty
@@ -409,13 +409,13 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *         the supplied values on the anti-diagonal and {@code 0} elsewhere; the shared empty
      *         matrix if {@code antiDiagonal} is empty
      * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null}
-     * @see #mainDiagonal(float[])
-     * @see #diagonals(float[], float[])
+     * @see #ofMainDiagonal(float[])
+     * @see #ofDiagonals(float[], float[])
      */
-    public static FloatMatrix antiDiagonal(final float[] antiDiagonal) {
+    public static FloatMatrix ofAntiDiagonal(final float[] antiDiagonal) {
         N.checkArgNotNull(antiDiagonal, "antiDiagonal");
 
-        return diagonals(null, antiDiagonal);
+        return ofDiagonals(null, antiDiagonal);
     }
 
     /**
@@ -427,7 +427,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * FloatMatrix matrix = FloatMatrix.diagonals(new float[] {1.0f, 2.0f, 3.0f}, new float[] {4.0f, 5.0f, 6.0f});
+     * FloatMatrix matrix = FloatMatrix.ofDiagonals(new float[] {1.0f, 2.0f, 3.0f}, new float[] {4.0f, 5.0f, 6.0f});
      * // Creates 3x3 matrix with both diagonals set:
      * //   {1.0, 0.0, 4.0},
      * //   {0.0, 2.0, 0.0},
@@ -436,9 +436,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * matrix.get(0, 2);    // returns 4.0f (anti-diagonal)
      *
      * // Odd-sized center: main diagonal wins over anti-diagonal at the shared cell (1,1)
-     * FloatMatrix.diagonals(new float[] {1.0f, 2.0f, 3.0f}, new float[] {7.0f, 8.0f, 9.0f}).get(1, 1); // returns 2.0f
-     * FloatMatrix.diagonals(null, null);                                                               // throws IllegalArgumentException (both null)
-     * FloatMatrix.diagonals(new float[] {1.0f}, new float[] {1.0f, 2.0f});                             // throws IllegalArgumentException (length mismatch)
+     * FloatMatrix.ofDiagonals(new float[] {1.0f, 2.0f, 3.0f}, new float[] {7.0f, 8.0f, 9.0f}).get(1, 1); // returns 2.0f
+     * FloatMatrix.ofDiagonals(null, null);                                                               // throws IllegalArgumentException (both null)
+     * FloatMatrix.ofDiagonals(new float[] {1.0f}, new float[] {1.0f, 2.0f});                             // throws IllegalArgumentException (length mismatch)
      * }</pre>
      *
      * @param mainDiagonal the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non-{@code null};
@@ -447,10 +447,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *        may be empty
      * @return a square matrix with the specified diagonals, or the shared empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
      * @throws IllegalArgumentException if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null}, or if both arrays are non-empty and have different lengths
-     * @see #mainDiagonal(float[])
-     * @see #antiDiagonal(float[])
+     * @see #ofMainDiagonal(float[])
+     * @see #ofAntiDiagonal(float[])
      */
-    public static FloatMatrix diagonals(final float[] mainDiagonal, final float[] antiDiagonal) throws IllegalArgumentException {
+    public static FloatMatrix ofDiagonals(final float[] mainDiagonal, final float[] antiDiagonal) throws IllegalArgumentException {
         N.checkArgument(mainDiagonal != null || antiDiagonal != null, "Both 'mainDiagonal' and 'antiDiagonal' can't be null");
 
         N.checkArgument(N.isEmpty(mainDiagonal) || N.isEmpty(antiDiagonal) || mainDiagonal.length == antiDiagonal.length,
@@ -1704,14 +1704,14 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}, {5.0f, 6.0f}});
-     * FloatMatrix subset = matrix.copy(1, 3);
+     * FloatMatrix subset = matrix.copyRows(1, 3);
      * subset.rowCount();                         // returns 2
      * subset.get(0, 0);                          // returns 3.0f -> {{3.0f, 4.0f}, {5.0f, 6.0f}}
      *
-     * matrix.copy(1, 1).rowCount();              // returns 0 (empty range)
+     * matrix.copyRows(1, 1).rowCount();              // returns 0 (empty range)
      *
-     * matrix.copy(-1, 2);                        // throws IndexOutOfBoundsException (fromRowIndex < 0)
-     * matrix.copy(0, 5);                         // throws IndexOutOfBoundsException (toRowIndex > rowCount)
+     * matrix.copyRows(-1, 2);                        // throws IndexOutOfBoundsException (fromRowIndex < 0)
+     * matrix.copyRows(0, 5);                         // throws IndexOutOfBoundsException (toRowIndex > rowCount)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -1721,7 +1721,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *         or {@code fromRowIndex > toRowIndex}
      */
     @Override
-    public FloatMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
+    public FloatMatrix copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
         final float[][] c = new float[toRowIndex - fromRowIndex][];
@@ -1739,14 +1739,14 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f, 3.0f}, {4.0f, 5.0f, 6.0f}, {7.0f, 8.0f, 9.0f}});
-     * FloatMatrix submatrix = matrix.copy(0, 2, 1, 3);
+     * FloatMatrix submatrix = matrix.copyRegion(0, 2, 1, 3);
      * submatrix.get(0, 0);                         // returns 2.0f
      * submatrix.get(1, 1);                         // returns 6.0f -> {{2.0f, 3.0f}, {5.0f, 6.0f}}
      *
-     * matrix.copy(0, 1, 0, 1).get(0, 0);           // returns 1.0f (single-cell submatrix)
+     * matrix.copyRegion(0, 1, 0, 1).get(0, 0);           // returns 1.0f (single-cell submatrix)
      *
-     * matrix.copy(0, 2, 1, 5);                     // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
-     * matrix.copy(-1, 2, 0, 2);                    // throws IndexOutOfBoundsException (fromRowIndex < 0)
+     * matrix.copyRegion(0, 2, 1, 5);                     // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
+     * matrix.copyRegion(-1, 2, 0, 2);                    // throws IndexOutOfBoundsException (fromRowIndex < 0)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -1759,7 +1759,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *         or {@code from > to} for either range)
      */
     @Override
-    public FloatMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
+    public FloatMatrix copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex)
+            throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
         final float[][] c = new float[toRowIndex - fromRowIndex][];
@@ -1901,7 +1902,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
         }
 
         if (newRowCount <= rowCount && newColumnCount <= columnCount) {
-            return copy(0, newRowCount, 0, newColumnCount);
+            return copyRegion(0, newRowCount, 0, newColumnCount);
         } else {
             final boolean fillDefaultValue = Float.floatToRawIntBits(defaultValue) != 0;
             final float[][] b = new float[newRowCount][];
@@ -2534,7 +2535,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
-     * FloatMatrix repeated = matrix.repeatMatrix(2, 3);
+     * FloatMatrix repeated = matrix.tile(2, 3);
      * // Result: [[1.0, 2.0, 1.0, 2.0, 1.0, 2.0],
      * //          [3.0, 4.0, 3.0, 4.0, 3.0, 4.0],
      * //          [1.0, 2.0, 1.0, 2.0, 1.0, 2.0],
@@ -2543,8 +2544,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * repeated.columnCount();            // returns 6
      * repeated.get(2, 3);                // returns 2.0f (tiled copy)
      *
-     * matrix.repeatMatrix(1, 1).equals(matrix); // returns true (single tile)
-     * matrix.repeatMatrix(2, 0);                // throws IllegalArgumentException (repeats must be positive)
+     * matrix.tile(1, 1).equals(matrix); // returns true (single tile)
+     * matrix.tile(2, 0);                // throws IllegalArgumentException (repeats must be positive)
      * }</pre>
      *
      * @param rowRepeats number of times to repeat the matrix vertically; must be {@code > 0}
@@ -2555,7 +2556,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
     @Override
-    public FloatMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
+    public FloatMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
 
         if (rowRepeats == 1 && columnRepeats == 1) {

@@ -1,8 +1,8 @@
 {
   "library": {
     "name": "abacus-matrix",
-    "version": "3.8.5",
-    "generated_at": "2026-08-01",
+    "version": "3.8.6",
+    "generated_at": "2026-08-02",
     "java_target": "17",
     "source": {
       "git_sha": "unknown"
@@ -267,13 +267,13 @@
               "see_also": []
             },
             {
-              "name": "copy",
+              "name": "copyRows",
               "kind": "instance",
               "modifiers": [
                 "public",
                 "abstract"
               ],
-              "signature": "public abstract M copy(int fromRowIndex, int toRowIndex)",
+              "signature": "public abstract M copyRows(int fromRowIndex, int toRowIndex)",
               "return_type": "M",
               "type_params": [],
               "params": [
@@ -294,16 +294,51 @@
               "javadoc_summary": "Returns a copy of a row range from this matrix.",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#copyColumns(int, int)",
+                "#copyRegion(int, int, int, int)"
+              ]
             },
             {
-              "name": "copy",
+              "name": "copyColumns",
+              "kind": "instance",
+              "modifiers": [
+                "public"
+              ],
+              "signature": "public M copyColumns(final int fromColumnIndex, final int toColumnIndex)",
+              "return_type": "M",
+              "type_params": [],
+              "params": [
+                {
+                  "name": "fromColumnIndex",
+                  "type": "int",
+                  "javadoc": "the starting column index (inclusive, 0-based)",
+                  "nullability": "unspecified"
+                },
+                {
+                  "name": "toColumnIndex",
+                  "type": "int",
+                  "javadoc": "the ending column index (exclusive)",
+                  "nullability": "unspecified"
+                }
+              ],
+              "throws": [],
+              "javadoc_summary": "Returns a copy of a column range from this matrix.",
+              "contract": [],
+              "examples": [],
+              "see_also": [
+                "#copyRows(int, int)",
+                "#copyRegion(int, int, int, int)"
+              ]
+            },
+            {
+              "name": "copyRegion",
               "kind": "instance",
               "modifiers": [
                 "public",
                 "abstract"
               ],
-              "signature": "public abstract M copy(int fromRowIndex, int toRowIndex, int fromColumnIndex, int toColumnIndex)",
+              "signature": "public abstract M copyRegion(int fromRowIndex, int toRowIndex, int fromColumnIndex, int toColumnIndex)",
               "return_type": "M",
               "type_params": [],
               "params": [
@@ -336,7 +371,10 @@
               "javadoc_summary": "Returns a copy of a rectangular region from this matrix.",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#copyRows(int, int)",
+                "#copyColumns(int, int)"
+              ]
             },
             {
               "name": "rotate90",
@@ -523,13 +561,13 @@
               ]
             },
             {
-              "name": "repeatMatrix",
+              "name": "tile",
               "kind": "instance",
               "modifiers": [
                 "public",
                 "abstract"
               ],
-              "signature": "public abstract M repeatMatrix(int rowRepeats, int columnRepeats)",
+              "signature": "public abstract M tile(int rowRepeats, int columnRepeats)",
               "return_type": "M",
               "type_params": [],
               "params": [
@@ -1956,12 +1994,12 @@
                 "public",
                 "static"
               ],
-              "signature": "public static BooleanMatrix randomRow(final int length)",
+              "signature": "public static BooleanMatrix randomRow(final int columnCount)",
               "return_type": "BooleanMatrix",
               "type_params": [],
               "params": [
                 {
-                  "name": "length",
+                  "name": "columnCount",
                   "type": "int",
                   "javadoc": "the number of columns in the new matrix; must be {@code >= 0}",
                   "nullability": "unspecified"
@@ -2006,13 +2044,13 @@
               "see_also": []
             },
             {
-              "name": "repeat",
+              "name": "filled",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static BooleanMatrix repeat(final int rowCount, final int columnCount, final boolean element)",
+              "signature": "public static BooleanMatrix filled(final int rowCount, final int columnCount, final boolean element)",
               "return_type": "BooleanMatrix",
               "type_params": [],
               "params": [
@@ -2042,13 +2080,13 @@
               "see_also": []
             },
             {
-              "name": "mainDiagonal",
+              "name": "ofMainDiagonal",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static BooleanMatrix mainDiagonal(final boolean[] mainDiagonal)",
+              "signature": "public static BooleanMatrix ofMainDiagonal(final boolean[] mainDiagonal)",
               "return_type": "BooleanMatrix",
               "type_params": [],
               "params": [
@@ -2064,18 +2102,18 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#antiDiagonal(boolean[])",
-                "#diagonals(boolean[], boolean[])"
+                "#ofAntiDiagonal(boolean[])",
+                "#ofDiagonals(boolean[], boolean[])"
               ]
             },
             {
-              "name": "antiDiagonal",
+              "name": "ofAntiDiagonal",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static BooleanMatrix antiDiagonal(final boolean[] antiDiagonal)",
+              "signature": "public static BooleanMatrix ofAntiDiagonal(final boolean[] antiDiagonal)",
               "return_type": "BooleanMatrix",
               "type_params": [],
               "params": [
@@ -2091,18 +2129,18 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#mainDiagonal(boolean[])",
-                "#diagonals(boolean[], boolean[])"
+                "#ofMainDiagonal(boolean[])",
+                "#ofDiagonals(boolean[], boolean[])"
               ]
             },
             {
-              "name": "diagonals",
+              "name": "ofDiagonals",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static BooleanMatrix diagonals(final boolean[] mainDiagonal, final boolean[] antiDiagonal) throws IllegalArgumentException",
+              "signature": "public static BooleanMatrix ofDiagonals(final boolean[] mainDiagonal, final boolean[] antiDiagonal) throws IllegalArgumentException",
               "return_type": "BooleanMatrix",
               "type_params": [],
               "params": [
@@ -2132,8 +2170,8 @@
               ],
               "examples": [],
               "see_also": [
-                "#mainDiagonal(boolean[])",
-                "#antiDiagonal(boolean[])"
+                "#ofMainDiagonal(boolean[])",
+                "#ofAntiDiagonal(boolean[])"
               ]
             },
             {
@@ -3260,12 +3298,12 @@
               "see_also": []
             },
             {
-              "name": "copy",
+              "name": "copyRows",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public BooleanMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public BooleanMatrix copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "BooleanMatrix",
               "type_params": [],
               "params": [
@@ -3294,12 +3332,12 @@
               "see_also": []
             },
             {
-              "name": "copy",
+              "name": "copyRegion",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public BooleanMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public BooleanMatrix copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "BooleanMatrix",
               "type_params": [],
               "params": [
@@ -3743,17 +3781,17 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#repeatMatrix(int, int)",
+                "#tile(int, int)",
                 "<a href=\"https://www.mathworks.com/help/matlab/ref/repelem.html\">,MATLAB repelem function,</a>"
               ]
             },
             {
-              "name": "repeatMatrix",
+              "name": "tile",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public BooleanMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException",
+              "signature": "@Override public BooleanMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException",
               "return_type": "BooleanMatrix",
               "type_params": [],
               "params": [
@@ -4767,19 +4805,19 @@
                 "public",
                 "static"
               ],
-              "signature": "public static ByteMatrix randomRow(final int length)",
+              "signature": "public static ByteMatrix randomRow(final int columnCount)",
               "return_type": "ByteMatrix",
               "type_params": [],
               "params": [
                 {
-                  "name": "length",
+                  "name": "columnCount",
                   "type": "int",
                   "javadoc": "the number of columns in the new matrix; must be {@code >= 0}",
                   "nullability": "unspecified"
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a new {@code 1 x length} matrix filled with random byte values uniformly distributed across the full byte range {@code [Byte.MIN_VALUE, Byte.MAX_VALUE]} .",
+              "javadoc_summary": "Creates a new {@code 1 x columnCount} matrix filled with random byte values uniformly distributed across the full byte range {@code [Byte.MIN_VALUE, Byte.MAX_VALUE]} .",
               "contract": [],
               "examples": [],
               "see_also": [
@@ -4817,13 +4855,13 @@
               "see_also": []
             },
             {
-              "name": "repeat",
+              "name": "filled",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static ByteMatrix repeat(final int rowCount, final int columnCount, final byte element)",
+              "signature": "public static ByteMatrix filled(final int rowCount, final int columnCount, final byte element)",
               "return_type": "ByteMatrix",
               "type_params": [],
               "params": [
@@ -4994,13 +5032,13 @@
               "see_also": []
             },
             {
-              "name": "mainDiagonal",
+              "name": "ofMainDiagonal",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static ByteMatrix mainDiagonal(final byte[] mainDiagonal)",
+              "signature": "public static ByteMatrix ofMainDiagonal(final byte[] mainDiagonal)",
               "return_type": "ByteMatrix",
               "type_params": [],
               "params": [
@@ -5016,18 +5054,18 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#antiDiagonal(byte[])",
-                "#diagonals(byte[], byte[])"
+                "#ofAntiDiagonal(byte[])",
+                "#ofDiagonals(byte[], byte[])"
               ]
             },
             {
-              "name": "antiDiagonal",
+              "name": "ofAntiDiagonal",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static ByteMatrix antiDiagonal(final byte[] antiDiagonal)",
+              "signature": "public static ByteMatrix ofAntiDiagonal(final byte[] antiDiagonal)",
               "return_type": "ByteMatrix",
               "type_params": [],
               "params": [
@@ -5043,18 +5081,18 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#mainDiagonal(byte[])",
-                "#diagonals(byte[], byte[])"
+                "#ofMainDiagonal(byte[])",
+                "#ofDiagonals(byte[], byte[])"
               ]
             },
             {
-              "name": "diagonals",
+              "name": "ofDiagonals",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static ByteMatrix diagonals(final byte[] mainDiagonal, final byte[] antiDiagonal) throws IllegalArgumentException",
+              "signature": "public static ByteMatrix ofDiagonals(final byte[] mainDiagonal, final byte[] antiDiagonal) throws IllegalArgumentException",
               "return_type": "ByteMatrix",
               "type_params": [],
               "params": [
@@ -5084,8 +5122,8 @@
               ],
               "examples": [],
               "see_also": [
-                "#mainDiagonal(byte[])",
-                "#antiDiagonal(byte[])"
+                "#ofMainDiagonal(byte[])",
+                "#ofAntiDiagonal(byte[])"
               ]
             },
             {
@@ -6212,12 +6250,12 @@
               "see_also": []
             },
             {
-              "name": "copy",
+              "name": "copyRows",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public ByteMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public ByteMatrix copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "ByteMatrix",
               "type_params": [],
               "params": [
@@ -6246,12 +6284,12 @@
               "see_also": []
             },
             {
-              "name": "copy",
+              "name": "copyRegion",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public ByteMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public ByteMatrix copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "ByteMatrix",
               "type_params": [],
               "params": [
@@ -6698,12 +6736,12 @@
               ]
             },
             {
-              "name": "repeatMatrix",
+              "name": "tile",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public ByteMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException",
+              "signature": "@Override public ByteMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException",
               "return_type": "ByteMatrix",
               "type_params": [],
               "params": [
@@ -7734,19 +7772,19 @@
                 "public",
                 "static"
               ],
-              "signature": "public static CharMatrix randomRow(final int length)",
+              "signature": "public static CharMatrix randomRow(final int columnCount)",
               "return_type": "CharMatrix",
               "type_params": [],
               "params": [
                 {
-                  "name": "length",
+                  "name": "columnCount",
                   "type": "int",
                   "javadoc": "the number of columns in the new matrix; must be {@code >= 0}",
                   "nullability": "unspecified"
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a new {@code 1 x length} matrix filled with random char values drawn uniformly from the full unsigned 16-bit range {@code [0, 65535]} .",
+              "javadoc_summary": "Creates a new {@code 1 x columnCount} matrix filled with random char values drawn uniformly from the full unsigned 16-bit range {@code [0, 65535]} .",
               "contract": [],
               "examples": [],
               "see_also": [
@@ -7784,13 +7822,13 @@
               "see_also": []
             },
             {
-              "name": "repeat",
+              "name": "filled",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static CharMatrix repeat(final int rowCount, final int columnCount, final char element)",
+              "signature": "public static CharMatrix filled(final int rowCount, final int columnCount, final char element)",
               "return_type": "CharMatrix",
               "type_params": [],
               "params": [
@@ -7960,13 +7998,13 @@
               "see_also": []
             },
             {
-              "name": "mainDiagonal",
+              "name": "ofMainDiagonal",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static CharMatrix mainDiagonal(final char[] mainDiagonal)",
+              "signature": "public static CharMatrix ofMainDiagonal(final char[] mainDiagonal)",
               "return_type": "CharMatrix",
               "type_params": [],
               "params": [
@@ -7982,18 +8020,18 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#antiDiagonal(char[])",
-                "#diagonals(char[], char[])"
+                "#ofAntiDiagonal(char[])",
+                "#ofDiagonals(char[], char[])"
               ]
             },
             {
-              "name": "antiDiagonal",
+              "name": "ofAntiDiagonal",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static CharMatrix antiDiagonal(final char[] antiDiagonal)",
+              "signature": "public static CharMatrix ofAntiDiagonal(final char[] antiDiagonal)",
               "return_type": "CharMatrix",
               "type_params": [],
               "params": [
@@ -8009,18 +8047,18 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#mainDiagonal(char[])",
-                "#diagonals(char[], char[])"
+                "#ofMainDiagonal(char[])",
+                "#ofDiagonals(char[], char[])"
               ]
             },
             {
-              "name": "diagonals",
+              "name": "ofDiagonals",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static CharMatrix diagonals(final char[] mainDiagonal, final char[] antiDiagonal) throws IllegalArgumentException",
+              "signature": "public static CharMatrix ofDiagonals(final char[] mainDiagonal, final char[] antiDiagonal) throws IllegalArgumentException",
               "return_type": "CharMatrix",
               "type_params": [],
               "params": [
@@ -8050,8 +8088,8 @@
               ],
               "examples": [],
               "see_also": [
-                "#mainDiagonal(char[])",
-                "#antiDiagonal(char[])"
+                "#ofMainDiagonal(char[])",
+                "#ofAntiDiagonal(char[])"
               ]
             },
             {
@@ -9178,12 +9216,12 @@
               "see_also": []
             },
             {
-              "name": "copy",
+              "name": "copyRows",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public CharMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public CharMatrix copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "CharMatrix",
               "type_params": [],
               "params": [
@@ -9212,12 +9250,12 @@
               "see_also": []
             },
             {
-              "name": "copy",
+              "name": "copyRegion",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public CharMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public CharMatrix copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "CharMatrix",
               "type_params": [],
               "params": [
@@ -9666,12 +9704,12 @@
               ]
             },
             {
-              "name": "repeatMatrix",
+              "name": "tile",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public CharMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException",
+              "signature": "@Override public CharMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException",
               "return_type": "CharMatrix",
               "type_params": [],
               "params": [
@@ -9696,7 +9734,7 @@
               ],
               "javadoc_summary": "Repeats the entire matrix in both row and column directions.",
               "contract": [
-                "<p> <b> Usage Examples: </b> </p> <pre> {@code CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}}); CharMatrix repeated = matrix.repeatMatrix(2, 3); repeated.rowView(0); // returns ['a', 'b', 'a', 'b', 'a', 'b'] repeated.rowView(1); // returns ['c', 'd', 'c', 'd', 'c', 'd'] repeated.rowCount(); // returns 4 matrix.repeatMatrix(1, 1).equals(matrix); // returns true (1x1 tiling is a copy) matrix.repeatMatrix(0, 1); // throws IllegalArgumentException (repeats must be positive) } </pre>"
+                "<p> <b> Usage Examples: </b> </p> <pre> {@code CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}}); CharMatrix repeated = matrix.tile(2, 3); repeated.rowView(0); // returns ['a', 'b', 'a', 'b', 'a', 'b'] repeated.rowView(1); // returns ['c', 'd', 'c', 'd', 'c', 'd'] repeated.rowCount(); // returns 4 matrix.tile(1, 1).equals(matrix); // returns true (1x1 tiling is a copy) matrix.tile(0, 1); // throws IllegalArgumentException (repeats must be positive) } </pre>"
               ],
               "examples": [],
               "see_also": [
@@ -10777,19 +10815,19 @@
                 "public",
                 "static"
               ],
-              "signature": "public static DoubleMatrix randomRow(final int length)",
+              "signature": "public static DoubleMatrix randomRow(final int columnCount)",
               "return_type": "DoubleMatrix",
               "type_params": [],
               "params": [
                 {
-                  "name": "length",
+                  "name": "columnCount",
                   "type": "int",
                   "javadoc": "the number of columns in the new matrix",
                   "nullability": "unspecified"
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a new {@code 1 x length} matrix filled with random double values uniformly distributed in {@code [0.0, 1.0)} .",
+              "javadoc_summary": "Creates a new {@code 1 x columnCount} matrix filled with random double values uniformly distributed in {@code [0.0, 1.0)} .",
               "contract": [],
               "examples": [],
               "see_also": [
@@ -10827,13 +10865,13 @@
               "see_also": []
             },
             {
-              "name": "repeat",
+              "name": "filled",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static DoubleMatrix repeat(final int rowCount, final int columnCount, final double element)",
+              "signature": "public static DoubleMatrix filled(final int rowCount, final int columnCount, final double element)",
               "return_type": "DoubleMatrix",
               "type_params": [],
               "params": [
@@ -10863,13 +10901,13 @@
               "see_also": []
             },
             {
-              "name": "mainDiagonal",
+              "name": "ofMainDiagonal",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static DoubleMatrix mainDiagonal(final double[] mainDiagonal)",
+              "signature": "public static DoubleMatrix ofMainDiagonal(final double[] mainDiagonal)",
               "return_type": "DoubleMatrix",
               "type_params": [],
               "params": [
@@ -10885,18 +10923,18 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#antiDiagonal(double[])",
-                "#diagonals(double[], double[])"
+                "#ofAntiDiagonal(double[])",
+                "#ofDiagonals(double[], double[])"
               ]
             },
             {
-              "name": "antiDiagonal",
+              "name": "ofAntiDiagonal",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static DoubleMatrix antiDiagonal(final double[] antiDiagonal)",
+              "signature": "public static DoubleMatrix ofAntiDiagonal(final double[] antiDiagonal)",
               "return_type": "DoubleMatrix",
               "type_params": [],
               "params": [
@@ -10912,18 +10950,18 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#mainDiagonal(double[])",
-                "#diagonals(double[], double[])"
+                "#ofMainDiagonal(double[])",
+                "#ofDiagonals(double[], double[])"
               ]
             },
             {
-              "name": "diagonals",
+              "name": "ofDiagonals",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static DoubleMatrix diagonals(final double[] mainDiagonal, final double[] antiDiagonal) throws IllegalArgumentException",
+              "signature": "public static DoubleMatrix ofDiagonals(final double[] mainDiagonal, final double[] antiDiagonal) throws IllegalArgumentException",
               "return_type": "DoubleMatrix",
               "type_params": [],
               "params": [
@@ -10953,8 +10991,8 @@
               ],
               "examples": [],
               "see_also": [
-                "#mainDiagonal(double[])",
-                "#antiDiagonal(double[])"
+                "#ofMainDiagonal(double[])",
+                "#ofAntiDiagonal(double[])"
               ]
             },
             {
@@ -12159,12 +12197,12 @@
               "see_also": []
             },
             {
-              "name": "copy",
+              "name": "copyRows",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public DoubleMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public DoubleMatrix copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "DoubleMatrix",
               "type_params": [],
               "params": [
@@ -12193,12 +12231,12 @@
               "see_also": []
             },
             {
-              "name": "copy",
+              "name": "copyRegion",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public DoubleMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public DoubleMatrix copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "DoubleMatrix",
               "type_params": [],
               "params": [
@@ -12647,12 +12685,12 @@
               ]
             },
             {
-              "name": "repeatMatrix",
+              "name": "tile",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public DoubleMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException",
+              "signature": "@Override public DoubleMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException",
               "return_type": "DoubleMatrix",
               "type_params": [],
               "params": [
@@ -12677,7 +12715,7 @@
               ],
               "javadoc_summary": "Repeats the entire matrix in a tiled pattern.",
               "contract": [
-                "<p> <b> Usage Examples: </b> </p> <pre> {@code DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0}, {3.0, 4.0}}); DoubleMatrix repeated = matrix.repeatMatrix(2, 3); // Result: [[1.0, 2.0, 1.0, 2.0, 1.0, 2.0], // [3.0, 4.0, 3.0, 4.0, 3.0, 4.0], // [1.0, 2.0, 1.0, 2.0, 1.0, 2.0], // [3.0, 4.0, 3.0, 4.0, 3.0, 4.0]] repeated.rowCount(); // returns 4 repeated.columnCount(); // returns 6 repeated.get(2, 3); // returns 2.0 (tiled copy) matrix.repeatMatrix(1, 1).equals(matrix); // returns true (single tile) matrix.repeatMatrix(2, 0); // throws IllegalArgumentException (repeats must be positive) } </pre>"
+                "<p> <b> Usage Examples: </b> </p> <pre> {@code DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0}, {3.0, 4.0}}); DoubleMatrix repeated = matrix.tile(2, 3); // Result: [[1.0, 2.0, 1.0, 2.0, 1.0, 2.0], // [3.0, 4.0, 3.0, 4.0, 3.0, 4.0], // [1.0, 2.0, 1.0, 2.0, 1.0, 2.0], // [3.0, 4.0, 3.0, 4.0, 3.0, 4.0]] repeated.rowCount(); // returns 4 repeated.columnCount(); // returns 6 repeated.get(2, 3); // returns 2.0 (tiled copy) matrix.tile(1, 1).equals(matrix); // returns true (single tile) matrix.tile(2, 0); // throws IllegalArgumentException (repeats must be positive) } </pre>"
               ],
               "examples": [],
               "see_also": [
@@ -13682,19 +13720,19 @@
                 "public",
                 "static"
               ],
-              "signature": "public static FloatMatrix randomRow(final int length)",
+              "signature": "public static FloatMatrix randomRow(final int columnCount)",
               "return_type": "FloatMatrix",
               "type_params": [],
               "params": [
                 {
-                  "name": "length",
+                  "name": "columnCount",
                   "type": "int",
                   "javadoc": "the number of columns in the new matrix",
                   "nullability": "unspecified"
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a new {@code 1 x length} matrix filled with random float values uniformly distributed in {@code [0.0f, 1.0f)} .",
+              "javadoc_summary": "Creates a new {@code 1 x columnCount} matrix filled with random float values uniformly distributed in {@code [0.0f, 1.0f)} .",
               "contract": [],
               "examples": [],
               "see_also": [
@@ -13732,13 +13770,13 @@
               "see_also": []
             },
             {
-              "name": "repeat",
+              "name": "filled",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static FloatMatrix repeat(final int rowCount, final int columnCount, final float element)",
+              "signature": "public static FloatMatrix filled(final int rowCount, final int columnCount, final float element)",
               "return_type": "FloatMatrix",
               "type_params": [],
               "params": [
@@ -13768,13 +13806,13 @@
               "see_also": []
             },
             {
-              "name": "mainDiagonal",
+              "name": "ofMainDiagonal",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static FloatMatrix mainDiagonal(final float[] mainDiagonal)",
+              "signature": "public static FloatMatrix ofMainDiagonal(final float[] mainDiagonal)",
               "return_type": "FloatMatrix",
               "type_params": [],
               "params": [
@@ -13790,18 +13828,18 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#antiDiagonal(float[])",
-                "#diagonals(float[], float[])"
+                "#ofAntiDiagonal(float[])",
+                "#ofDiagonals(float[], float[])"
               ]
             },
             {
-              "name": "antiDiagonal",
+              "name": "ofAntiDiagonal",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static FloatMatrix antiDiagonal(final float[] antiDiagonal)",
+              "signature": "public static FloatMatrix ofAntiDiagonal(final float[] antiDiagonal)",
               "return_type": "FloatMatrix",
               "type_params": [],
               "params": [
@@ -13817,18 +13855,18 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#mainDiagonal(float[])",
-                "#diagonals(float[], float[])"
+                "#ofMainDiagonal(float[])",
+                "#ofDiagonals(float[], float[])"
               ]
             },
             {
-              "name": "diagonals",
+              "name": "ofDiagonals",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static FloatMatrix diagonals(final float[] mainDiagonal, final float[] antiDiagonal) throws IllegalArgumentException",
+              "signature": "public static FloatMatrix ofDiagonals(final float[] mainDiagonal, final float[] antiDiagonal) throws IllegalArgumentException",
               "return_type": "FloatMatrix",
               "type_params": [],
               "params": [
@@ -13858,8 +13896,8 @@
               ],
               "examples": [],
               "see_also": [
-                "#mainDiagonal(float[])",
-                "#antiDiagonal(float[])"
+                "#ofMainDiagonal(float[])",
+                "#ofAntiDiagonal(float[])"
               ]
             },
             {
@@ -15103,12 +15141,12 @@
               "see_also": []
             },
             {
-              "name": "copy",
+              "name": "copyRows",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public FloatMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public FloatMatrix copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "FloatMatrix",
               "type_params": [],
               "params": [
@@ -15137,12 +15175,12 @@
               "see_also": []
             },
             {
-              "name": "copy",
+              "name": "copyRegion",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public FloatMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public FloatMatrix copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "FloatMatrix",
               "type_params": [],
               "params": [
@@ -15591,12 +15629,12 @@
               ]
             },
             {
-              "name": "repeatMatrix",
+              "name": "tile",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public FloatMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException",
+              "signature": "@Override public FloatMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException",
               "return_type": "FloatMatrix",
               "type_params": [],
               "params": [
@@ -15621,7 +15659,7 @@
               ],
               "javadoc_summary": "Repeats the entire matrix in a tiled pattern.",
               "contract": [
-                "<p> <b> Usage Examples: </b> </p> <pre> {@code FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}}); FloatMatrix repeated = matrix.repeatMatrix(2, 3); // Result: [[1.0, 2.0, 1.0, 2.0, 1.0, 2.0], // [3.0, 4.0, 3.0, 4.0, 3.0, 4.0], // [1.0, 2.0, 1.0, 2.0, 1.0, 2.0], // [3.0, 4.0, 3.0, 4.0, 3.0, 4.0]] repeated.rowCount(); // returns 4 repeated.columnCount(); // returns 6 repeated.get(2, 3); // returns 2.0f (tiled copy) matrix.repeatMatrix(1, 1).equals(matrix); // returns true (single tile) matrix.repeatMatrix(2, 0); // throws IllegalArgumentException (repeats must be positive) } </pre>"
+                "<p> <b> Usage Examples: </b> </p> <pre> {@code FloatMatrix matrix = FloatMatrix.of(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}}); FloatMatrix repeated = matrix.tile(2, 3); // Result: [[1.0, 2.0, 1.0, 2.0, 1.0, 2.0], // [3.0, 4.0, 3.0, 4.0, 3.0, 4.0], // [1.0, 2.0, 1.0, 2.0, 1.0, 2.0], // [3.0, 4.0, 3.0, 4.0, 3.0, 4.0]] repeated.rowCount(); // returns 4 repeated.columnCount(); // returns 6 repeated.get(2, 3); // returns 2.0f (tiled copy) matrix.tile(1, 1).equals(matrix); // returns true (single tile) matrix.tile(2, 0); // throws IllegalArgumentException (repeats must be positive) } </pre>"
               ],
               "examples": [],
               "see_also": [
@@ -16684,19 +16722,19 @@
                 "public",
                 "static"
               ],
-              "signature": "public static IntMatrix randomRow(final int length)",
+              "signature": "public static IntMatrix randomRow(final int columnCount)",
               "return_type": "IntMatrix",
               "type_params": [],
               "params": [
                 {
-                  "name": "length",
+                  "name": "columnCount",
                   "type": "int",
                   "javadoc": "the number of columns in the new matrix; must be {@code >= 0}",
                   "nullability": "unspecified"
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a new {@code 1 x length} matrix filled with pseudo-random {@code int} values drawn uniformly from the entire {@code int} range.",
+              "javadoc_summary": "Creates a new {@code 1 x columnCount} matrix filled with pseudo-random {@code int} values drawn uniformly from the entire {@code int} range.",
               "contract": [],
               "examples": [],
               "see_also": [
@@ -16734,13 +16772,13 @@
               "see_also": []
             },
             {
-              "name": "repeat",
+              "name": "filled",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static IntMatrix repeat(final int rowCount, final int columnCount, final int element)",
+              "signature": "public static IntMatrix filled(final int rowCount, final int columnCount, final int element)",
               "return_type": "IntMatrix",
               "type_params": [],
               "params": [
@@ -16911,13 +16949,13 @@
               "see_also": []
             },
             {
-              "name": "mainDiagonal",
+              "name": "ofMainDiagonal",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static IntMatrix mainDiagonal(final int[] mainDiagonal)",
+              "signature": "public static IntMatrix ofMainDiagonal(final int[] mainDiagonal)",
               "return_type": "IntMatrix",
               "type_params": [],
               "params": [
@@ -16933,18 +16971,18 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#antiDiagonal(int[])",
-                "#diagonals(int[], int[])"
+                "#ofAntiDiagonal(int[])",
+                "#ofDiagonals(int[], int[])"
               ]
             },
             {
-              "name": "antiDiagonal",
+              "name": "ofAntiDiagonal",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static IntMatrix antiDiagonal(final int[] antiDiagonal)",
+              "signature": "public static IntMatrix ofAntiDiagonal(final int[] antiDiagonal)",
               "return_type": "IntMatrix",
               "type_params": [],
               "params": [
@@ -16960,18 +16998,18 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#mainDiagonal(int[])",
-                "#diagonals(int[], int[])"
+                "#ofMainDiagonal(int[])",
+                "#ofDiagonals(int[], int[])"
               ]
             },
             {
-              "name": "diagonals",
+              "name": "ofDiagonals",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static IntMatrix diagonals(final int[] mainDiagonal, final int[] antiDiagonal) throws IllegalArgumentException",
+              "signature": "public static IntMatrix ofDiagonals(final int[] mainDiagonal, final int[] antiDiagonal) throws IllegalArgumentException",
               "return_type": "IntMatrix",
               "type_params": [],
               "params": [
@@ -17002,8 +17040,8 @@
               ],
               "examples": [],
               "see_also": [
-                "#mainDiagonal(int[])",
-                "#antiDiagonal(int[])"
+                "#ofMainDiagonal(int[])",
+                "#ofAntiDiagonal(int[])"
               ]
             },
             {
@@ -18206,12 +18244,12 @@
               "see_also": []
             },
             {
-              "name": "copy",
+              "name": "copyRows",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public IntMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public IntMatrix copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "IntMatrix",
               "type_params": [],
               "params": [
@@ -18240,12 +18278,12 @@
               "see_also": []
             },
             {
-              "name": "copy",
+              "name": "copyRegion",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public IntMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public IntMatrix copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "IntMatrix",
               "type_params": [],
               "params": [
@@ -18692,12 +18730,12 @@
               ]
             },
             {
-              "name": "repeatMatrix",
+              "name": "tile",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public IntMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException",
+              "signature": "@Override public IntMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException",
               "return_type": "IntMatrix",
               "type_params": [],
               "params": [
@@ -19730,19 +19768,19 @@
                 "public",
                 "static"
               ],
-              "signature": "public static LongMatrix randomRow(final int length)",
+              "signature": "public static LongMatrix randomRow(final int columnCount)",
               "return_type": "LongMatrix",
               "type_params": [],
               "params": [
                 {
-                  "name": "length",
+                  "name": "columnCount",
                   "type": "int",
                   "javadoc": "the number of columns in the new matrix; must be {@code >= 0}",
                   "nullability": "unspecified"
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a new {@code 1 x length} matrix filled with pseudo-random {@code long} values drawn uniformly from the entire {@code long} range.",
+              "javadoc_summary": "Creates a new {@code 1 x columnCount} matrix filled with pseudo-random {@code long} values drawn uniformly from the entire {@code long} range.",
               "contract": [],
               "examples": [],
               "see_also": [
@@ -19780,13 +19818,13 @@
               "see_also": []
             },
             {
-              "name": "repeat",
+              "name": "filled",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static LongMatrix repeat(final int rowCount, final int columnCount, final long element)",
+              "signature": "public static LongMatrix filled(final int rowCount, final int columnCount, final long element)",
               "return_type": "LongMatrix",
               "type_params": [],
               "params": [
@@ -19957,13 +19995,13 @@
               "see_also": []
             },
             {
-              "name": "mainDiagonal",
+              "name": "ofMainDiagonal",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static LongMatrix mainDiagonal(final long[] mainDiagonal)",
+              "signature": "public static LongMatrix ofMainDiagonal(final long[] mainDiagonal)",
               "return_type": "LongMatrix",
               "type_params": [],
               "params": [
@@ -19979,18 +20017,18 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#antiDiagonal(long[])",
-                "#diagonals(long[], long[])"
+                "#ofAntiDiagonal(long[])",
+                "#ofDiagonals(long[], long[])"
               ]
             },
             {
-              "name": "antiDiagonal",
+              "name": "ofAntiDiagonal",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static LongMatrix antiDiagonal(final long[] antiDiagonal)",
+              "signature": "public static LongMatrix ofAntiDiagonal(final long[] antiDiagonal)",
               "return_type": "LongMatrix",
               "type_params": [],
               "params": [
@@ -20006,18 +20044,18 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#mainDiagonal(long[])",
-                "#diagonals(long[], long[])"
+                "#ofMainDiagonal(long[])",
+                "#ofDiagonals(long[], long[])"
               ]
             },
             {
-              "name": "diagonals",
+              "name": "ofDiagonals",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static LongMatrix diagonals(final long[] mainDiagonal, final long[] antiDiagonal) throws IllegalArgumentException",
+              "signature": "public static LongMatrix ofDiagonals(final long[] mainDiagonal, final long[] antiDiagonal) throws IllegalArgumentException",
               "return_type": "LongMatrix",
               "type_params": [],
               "params": [
@@ -20048,8 +20086,8 @@
               ],
               "examples": [],
               "see_also": [
-                "#mainDiagonal(long[])",
-                "#antiDiagonal(long[])"
+                "#ofMainDiagonal(long[])",
+                "#ofAntiDiagonal(long[])"
               ]
             },
             {
@@ -21252,12 +21290,12 @@
               "see_also": []
             },
             {
-              "name": "copy",
+              "name": "copyRows",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public LongMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public LongMatrix copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "LongMatrix",
               "type_params": [],
               "params": [
@@ -21286,12 +21324,12 @@
               "see_also": []
             },
             {
-              "name": "copy",
+              "name": "copyRegion",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public LongMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public LongMatrix copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "LongMatrix",
               "type_params": [],
               "params": [
@@ -21738,12 +21776,12 @@
               ]
             },
             {
-              "name": "repeatMatrix",
+              "name": "tile",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public LongMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException",
+              "signature": "@Override public LongMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException",
               "return_type": "LongMatrix",
               "type_params": [],
               "params": [
@@ -26275,13 +26313,13 @@
               ]
             },
             {
-              "name": "repeat",
+              "name": "filled",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static <T> Matrix<T> repeat(final int rowCount, final int columnCount, final T element) throws IllegalArgumentException",
+              "signature": "public static <T> Matrix<T> filled(final int rowCount, final int columnCount, final T element) throws IllegalArgumentException",
               "return_type": "Matrix<T>",
               "type_params": [
                 {
@@ -26319,19 +26357,19 @@
               ],
               "javadoc_summary": "Creates a new matrix of the specified dimensions where every element is the provided {@code element} .",
               "contract": [
-                "Because {@code element} must be non- {@code null} , producing a typed empty matrix still requires a non- {@code null} sample element, such as {@code Matrix.repeat(0, 0, \"a\")} ."
+                "Because {@code element} must be non- {@code null} , producing a typed empty matrix still requires a non- {@code null} sample element, such as {@code Matrix.filled(0, 0, \"a\")} ."
               ],
               "examples": [],
               "see_also": []
             },
             {
-              "name": "mainDiagonal",
+              "name": "ofMainDiagonal",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static <T> Matrix<T> mainDiagonal(final T[] mainDiagonal)",
+              "signature": "public static <T> Matrix<T> ofMainDiagonal(final T[] mainDiagonal)",
               "return_type": "Matrix<T>",
               "type_params": [
                 {
@@ -26354,18 +26392,18 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#diagonals(Object[], Object[])",
-                "#antiDiagonal(Object[])"
+                "#ofDiagonals(Object[], Object[])",
+                "#ofAntiDiagonal(Object[])"
               ]
             },
             {
-              "name": "antiDiagonal",
+              "name": "ofAntiDiagonal",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static <T> Matrix<T> antiDiagonal(final T[] antiDiagonal)",
+              "signature": "public static <T> Matrix<T> ofAntiDiagonal(final T[] antiDiagonal)",
               "return_type": "Matrix<T>",
               "type_params": [
                 {
@@ -26388,18 +26426,18 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#diagonals(Object[], Object[])",
-                "#mainDiagonal(Object[])"
+                "#ofDiagonals(Object[], Object[])",
+                "#ofMainDiagonal(Object[])"
               ]
             },
             {
-              "name": "diagonals",
+              "name": "ofDiagonals",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "@SuppressWarnings(\"null\") public static <T> Matrix<T> diagonals(final T[] mainDiagonal, final T[] antiDiagonal) throws IllegalArgumentException",
+              "signature": "@SuppressWarnings(\"null\") public static <T> Matrix<T> ofDiagonals(final T[] mainDiagonal, final T[] antiDiagonal) throws IllegalArgumentException",
               "return_type": "Matrix<T>",
               "type_params": [
                 {
@@ -26436,8 +26474,8 @@
               ],
               "examples": [],
               "see_also": [
-                "#mainDiagonal(Object[])",
-                "#antiDiagonal(Object[])"
+                "#ofMainDiagonal(Object[])",
+                "#ofAntiDiagonal(Object[])"
               ]
             },
             {
@@ -27832,12 +27870,12 @@
               "see_also": []
             },
             {
-              "name": "copy",
+              "name": "copyRows",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public Matrix<T> copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public Matrix<T> copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "Matrix<T>",
               "type_params": [],
               "params": [
@@ -27866,12 +27904,12 @@
               "see_also": []
             },
             {
-              "name": "copy",
+              "name": "copyRegion",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public Matrix<T> copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public Matrix<T> copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "Matrix<T>",
               "type_params": [],
               "params": [
@@ -28321,12 +28359,12 @@
               ]
             },
             {
-              "name": "repeatMatrix",
+              "name": "tile",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public Matrix<T> repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException",
+              "signature": "@Override public Matrix<T> tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException",
               "return_type": "Matrix<T>",
               "type_params": [],
               "params": [
@@ -29431,19 +29469,19 @@
                 "public",
                 "static"
               ],
-              "signature": "public static ShortMatrix randomRow(final int length)",
+              "signature": "public static ShortMatrix randomRow(final int columnCount)",
               "return_type": "ShortMatrix",
               "type_params": [],
               "params": [
                 {
-                  "name": "length",
+                  "name": "columnCount",
                   "type": "int",
                   "javadoc": "the number of columns in the new matrix; must be {@code >= 0}",
                   "nullability": "unspecified"
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a new {@code 1 x length} matrix filled with pseudo-random {@code short} values drawn uniformly from the entire {@code short} range.",
+              "javadoc_summary": "Creates a new {@code 1 x columnCount} matrix filled with pseudo-random {@code short} values drawn uniformly from the entire {@code short} range.",
               "contract": [],
               "examples": [],
               "see_also": [
@@ -29481,13 +29519,13 @@
               "see_also": []
             },
             {
-              "name": "repeat",
+              "name": "filled",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static ShortMatrix repeat(final int rowCount, final int columnCount, final short element)",
+              "signature": "public static ShortMatrix filled(final int rowCount, final int columnCount, final short element)",
               "return_type": "ShortMatrix",
               "type_params": [],
               "params": [
@@ -29658,13 +29696,13 @@
               "see_also": []
             },
             {
-              "name": "mainDiagonal",
+              "name": "ofMainDiagonal",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static ShortMatrix mainDiagonal(final short[] mainDiagonal)",
+              "signature": "public static ShortMatrix ofMainDiagonal(final short[] mainDiagonal)",
               "return_type": "ShortMatrix",
               "type_params": [],
               "params": [
@@ -29680,18 +29718,18 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#antiDiagonal(short[])",
-                "#diagonals(short[], short[])"
+                "#ofAntiDiagonal(short[])",
+                "#ofDiagonals(short[], short[])"
               ]
             },
             {
-              "name": "antiDiagonal",
+              "name": "ofAntiDiagonal",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static ShortMatrix antiDiagonal(final short[] antiDiagonal)",
+              "signature": "public static ShortMatrix ofAntiDiagonal(final short[] antiDiagonal)",
               "return_type": "ShortMatrix",
               "type_params": [],
               "params": [
@@ -29707,18 +29745,18 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#mainDiagonal(short[])",
-                "#diagonals(short[], short[])"
+                "#ofMainDiagonal(short[])",
+                "#ofDiagonals(short[], short[])"
               ]
             },
             {
-              "name": "diagonals",
+              "name": "ofDiagonals",
               "kind": "static",
               "modifiers": [
                 "public",
                 "static"
               ],
-              "signature": "public static ShortMatrix diagonals(final short[] mainDiagonal, final short[] antiDiagonal) throws IllegalArgumentException",
+              "signature": "public static ShortMatrix ofDiagonals(final short[] mainDiagonal, final short[] antiDiagonal) throws IllegalArgumentException",
               "return_type": "ShortMatrix",
               "type_params": [],
               "params": [
@@ -29749,8 +29787,8 @@
               ],
               "examples": [],
               "see_also": [
-                "#mainDiagonal(short[])",
-                "#antiDiagonal(short[])"
+                "#ofMainDiagonal(short[])",
+                "#ofAntiDiagonal(short[])"
               ]
             },
             {
@@ -30875,12 +30913,12 @@
               "see_also": []
             },
             {
-              "name": "copy",
+              "name": "copyRows",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public ShortMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public ShortMatrix copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "ShortMatrix",
               "type_params": [],
               "params": [
@@ -30909,12 +30947,12 @@
               "see_also": []
             },
             {
-              "name": "copy",
+              "name": "copyRegion",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public ShortMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
+              "signature": "@Override public ShortMatrix copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "ShortMatrix",
               "type_params": [],
               "params": [
@@ -31361,12 +31399,12 @@
               ]
             },
             {
-              "name": "repeatMatrix",
+              "name": "tile",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public ShortMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException",
+              "signature": "@Override public ShortMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException",
               "return_type": "ShortMatrix",
               "type_params": [],
               "params": [

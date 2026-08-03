@@ -234,7 +234,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     }
 
     /**
-     * Creates a new {@code 1 x length} matrix filled with pseudo-random {@code long} values
+     * Creates a new {@code 1 x columnCount} matrix filled with pseudo-random {@code long} values
      * drawn uniformly from the entire {@code long} range.
      *
      * <p><b>Usage Examples:</b></p>
@@ -244,18 +244,18 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * matrix.columnCount();       // returns 5
      *
      * LongMatrix.randomRow(0).columnCount();   // returns 0 (1x0 matrix)
-     * LongMatrix.randomRow(-1);                // throws IllegalArgumentException (negative length)
+     * LongMatrix.randomRow(-1);                // throws IllegalArgumentException (negative columnCount)
      * }</pre>
      *
-     * @param length the number of columns in the new matrix; must be {@code >= 0}
-     * @return a new {@code LongMatrix} of dimensions {@code 1 x length} filled with random values
-     * @throws IllegalArgumentException if {@code length} is negative
+     * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
+     * @return a new {@code LongMatrix} of dimensions {@code 1 x columnCount} filled with random values
+     * @throws IllegalArgumentException if {@code columnCount} is negative
      * @see #random(int, int)
      */
-    public static LongMatrix randomRow(final int length) {
-        N.checkArgument(length >= 0, MSG_NEGATIVE_DIMENSION, "length", length);
+    public static LongMatrix randomRow(final int columnCount) {
+        N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
 
-        return random(1, length);
+        return random(1, columnCount);
     }
 
     /**
@@ -300,15 +300,15 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * LongMatrix matrix = LongMatrix.repeat(2, 3, 1L);
+     * LongMatrix matrix = LongMatrix.filled(2, 3, 1L);
      * matrix.get(0, 0);                    // returns 1L
      * matrix.get(1, 2);                    // returns 1L
      * // matrix is [[1, 1, 1], [1, 1, 1]]
      *
-     * LongMatrix.repeat(0, 0, 5L).isEmpty(); // returns true
-     * LongMatrix.repeat(-1, 3, 7L);          // throws IllegalArgumentException (negative rowCount)
-     * LongMatrix.repeat(2, -1, 7L);          // throws IllegalArgumentException (negative columnCount)
-     * LongMatrix.repeat(0, 3, 7L);           // throws IllegalArgumentException (0 rows with non-zero columns)
+     * LongMatrix.filled(0, 0, 5L).isEmpty(); // returns true
+     * LongMatrix.filled(-1, 3, 7L);          // throws IllegalArgumentException (negative rowCount)
+     * LongMatrix.filled(2, -1, 7L);          // throws IllegalArgumentException (negative columnCount)
+     * LongMatrix.filled(0, 3, 7L);           // throws IllegalArgumentException (0 rows with non-zero columns)
      * }</pre>
      *
      * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
@@ -318,7 +318,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
      *         or if the resulting shape cannot be represented (e.g. zero rows with non-zero columns)
      */
-    public static LongMatrix repeat(final int rowCount, final int columnCount, final long element) {
+    public static LongMatrix filled(final int rowCount, final int columnCount, final long element) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
         checkRepresentableShape(rowCount, columnCount);
@@ -438,14 +438,14 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * LongMatrix matrix = LongMatrix.mainDiagonal(new long[] {1L, 2L, 3L});
+     * LongMatrix matrix = LongMatrix.ofMainDiagonal(new long[] {1L, 2L, 3L});
      * matrix.get(0, 0);                       // returns 1L
      * matrix.get(1, 1);                       // returns 2L
      * matrix.get(0, 1);                       // returns 0L (off-diagonal)
      * // matrix is [[1, 0, 0], [0, 2, 0], [0, 0, 3]]
      *
-     * LongMatrix.mainDiagonal(null);                    // throws IllegalArgumentException (null array)
-     * LongMatrix.mainDiagonal(new long[0]).isEmpty();   // returns true
+     * LongMatrix.ofMainDiagonal(null);                    // throws IllegalArgumentException (null array)
+     * LongMatrix.ofMainDiagonal(new long[0]).isEmpty();   // returns true
      * }</pre>
      *
      * @param mainDiagonal the array of main-diagonal elements; must not be {@code null}, but may be empty
@@ -453,13 +453,13 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *         the supplied values on the main diagonal and {@code 0L} elsewhere; the shared empty
      *         matrix if {@code mainDiagonal} is empty
      * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null}
-     * @see #antiDiagonal(long[])
-     * @see #diagonals(long[], long[])
+     * @see #ofAntiDiagonal(long[])
+     * @see #ofDiagonals(long[], long[])
      */
-    public static LongMatrix mainDiagonal(final long[] mainDiagonal) {
+    public static LongMatrix ofMainDiagonal(final long[] mainDiagonal) {
         N.checkArgNotNull(mainDiagonal, "mainDiagonal");
 
-        return diagonals(mainDiagonal, null);
+        return ofDiagonals(mainDiagonal, null);
     }
 
     /**
@@ -468,14 +468,14 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * LongMatrix matrix = LongMatrix.antiDiagonal(new long[] {1L, 2L, 3L});
+     * LongMatrix matrix = LongMatrix.ofAntiDiagonal(new long[] {1L, 2L, 3L});
      * matrix.get(0, 2);                       // returns 1L
      * matrix.get(2, 0);                       // returns 3L
      * matrix.get(0, 0);                       // returns 0L (off anti-diagonal)
      * // matrix is [[0, 0, 1], [0, 2, 0], [3, 0, 0]]
      *
-     * LongMatrix.antiDiagonal(null);                    // throws IllegalArgumentException (null array)
-     * LongMatrix.antiDiagonal(new long[0]).isEmpty();   // returns true
+     * LongMatrix.ofAntiDiagonal(null);                    // throws IllegalArgumentException (null array)
+     * LongMatrix.ofAntiDiagonal(new long[0]).isEmpty();   // returns true
      * }</pre>
      *
      * @param antiDiagonal the array of anti-diagonal elements; must not be {@code null}, but may be empty
@@ -483,13 +483,13 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *         the supplied values on the anti-diagonal and {@code 0L} elsewhere; the shared empty
      *         matrix if {@code antiDiagonal} is empty
      * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null}
-     * @see #mainDiagonal(long[])
-     * @see #diagonals(long[], long[])
+     * @see #ofMainDiagonal(long[])
+     * @see #ofDiagonals(long[], long[])
      */
-    public static LongMatrix antiDiagonal(final long[] antiDiagonal) {
+    public static LongMatrix ofAntiDiagonal(final long[] antiDiagonal) {
         N.checkArgNotNull(antiDiagonal, "antiDiagonal");
 
-        return diagonals(null, antiDiagonal);
+        return ofDiagonals(null, antiDiagonal);
     }
 
     /**
@@ -503,14 +503,14 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * LongMatrix matrix = LongMatrix.diagonals(new long[] {1L, 2L, 3L}, new long[] {4L, 5L, 6L});
+     * LongMatrix matrix = LongMatrix.ofDiagonals(new long[] {1L, 2L, 3L}, new long[] {4L, 5L, 6L});
      * matrix.get(0, 0);                       // returns 1L (main diagonal)
      * matrix.get(0, 2);                       // returns 4L (anti-diagonal)
      * matrix.get(1, 1);                       // returns 2L (overlap: main takes precedence)
      * // matrix is [[1, 0, 4], [0, 2, 0], [6, 0, 3]]
      *
-     * LongMatrix.diagonals(null, null);                                   // throws IllegalArgumentException (both null)
-     * LongMatrix.diagonals(new long[] {1L, 2L}, new long[] {3L, 4L, 5L}); // throws IllegalArgumentException (length mismatch)
+     * LongMatrix.ofDiagonals(null, null);                                   // throws IllegalArgumentException (both null)
+     * LongMatrix.ofDiagonals(new long[] {1L, 2L}, new long[] {3L, 4L, 5L}); // throws IllegalArgumentException (length mismatch)
      * }</pre>
      *
      * @param mainDiagonal the array of main-diagonal elements; may be {@code null} if {@code antiDiagonal} is non-{@code null};
@@ -519,10 +519,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *        may be empty
      * @return a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
      * @throws IllegalArgumentException if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null}, or if both arrays are non-empty and have different lengths
-     * @see #mainDiagonal(long[])
-     * @see #antiDiagonal(long[])
+     * @see #ofMainDiagonal(long[])
+     * @see #ofAntiDiagonal(long[])
      */
-    public static LongMatrix diagonals(final long[] mainDiagonal, final long[] antiDiagonal) throws IllegalArgumentException {
+    public static LongMatrix ofDiagonals(final long[] mainDiagonal, final long[] antiDiagonal) throws IllegalArgumentException {
         N.checkArgument(mainDiagonal != null || antiDiagonal != null, "Both 'mainDiagonal' and 'antiDiagonal' can't be null");
 
         N.checkArgument(N.isEmpty(mainDiagonal) || N.isEmpty(antiDiagonal) || mainDiagonal.length == antiDiagonal.length,
@@ -1755,14 +1755,14 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}, {5L, 6L}});
-     * LongMatrix subset = matrix.copy(1, 3);
+     * LongMatrix subset = matrix.copyRows(1, 3);
      * subset.rowCount();                      // returns 2
      * subset.get(0, 0);                       // returns 3L -> {{3, 4}, {5, 6}}
      *
-     * matrix.copy(1, 1).rowCount();          // returns 0 (empty range)
+     * matrix.copyRows(1, 1).rowCount();          // returns 0 (empty range)
      *
-     * matrix.copy(-1, 2);                     // throws IndexOutOfBoundsException (fromRowIndex < 0)
-     * matrix.copy(0, 5);                      // throws IndexOutOfBoundsException (toRowIndex > rowCount)
+     * matrix.copyRows(-1, 2);                     // throws IndexOutOfBoundsException (fromRowIndex < 0)
+     * matrix.copyRows(0, 5);                      // throws IndexOutOfBoundsException (toRowIndex > rowCount)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -1772,7 +1772,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *         or {@code fromRowIndex > toRowIndex}
      */
     @Override
-    public LongMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
+    public LongMatrix copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
         final long[][] c = new long[toRowIndex - fromRowIndex][];
@@ -1790,14 +1790,14 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}, {7L, 8L, 9L}});
-     * LongMatrix submatrix = matrix.copy(0, 2, 1, 3);
+     * LongMatrix submatrix = matrix.copyRegion(0, 2, 1, 3);
      * submatrix.get(0, 0);                    // returns 2L
      * submatrix.get(1, 1);                    // returns 6L -> {{2, 3}, {5, 6}}
      *
-     * matrix.copy(0, 1, 0, 1).get(0, 0);     // returns 1L (single-cell submatrix)
+     * matrix.copyRegion(0, 1, 0, 1).get(0, 0);     // returns 1L (single-cell submatrix)
      *
-     * matrix.copy(0, 2, 1, 5);               // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
-     * matrix.copy(-1, 2, 0, 2);              // throws IndexOutOfBoundsException (fromRowIndex < 0)
+     * matrix.copyRegion(0, 2, 1, 5);               // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
+     * matrix.copyRegion(-1, 2, 0, 2);              // throws IndexOutOfBoundsException (fromRowIndex < 0)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -1810,7 +1810,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *         or {@code from > to} for either range)
      */
     @Override
-    public LongMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
+    public LongMatrix copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex)
+            throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
         final long[][] c = new long[toRowIndex - fromRowIndex][];
@@ -1931,7 +1932,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         }
 
         if (newRowCount <= rowCount && newColumnCount <= columnCount) {
-            return copy(0, newRowCount, 0, newColumnCount);
+            return copyRegion(0, newRowCount, 0, newColumnCount);
         } else {
             final boolean fillDefaultValue = defaultValue != 0;
             final long[][] b = new long[newRowCount][];
@@ -2558,14 +2559,14 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.of(new long[][] {{1L, 2L}, {3L, 4L}});
-     * LongMatrix repeated = matrix.repeatMatrix(2, 3);
+     * LongMatrix repeated = matrix.tile(2, 3);
      * repeated.rowCount();                    // returns 4
      * repeated.rowCopy(0);                    // returns [1, 2, 1, 2, 1, 2]
      *
-     * matrix.repeatMatrix(1, 2).rowCopy(0);  // returns [1, 2, 1, 2]
+     * matrix.tile(1, 2).rowCopy(0);  // returns [1, 2, 1, 2]
      *
-     * matrix.repeatMatrix(0, 3);             // throws IllegalArgumentException (not positive)
-     * matrix.repeatMatrix(2, -1);            // throws IllegalArgumentException (not positive)
+     * matrix.tile(0, 3);             // throws IllegalArgumentException (not positive)
+     * matrix.tile(2, -1);            // throws IllegalArgumentException (not positive)
      * }</pre>
      *
      * @param rowRepeats number of times to repeat the matrix vertically
@@ -2576,7 +2577,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
     @Override
-    public LongMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
+    public LongMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
 
         if (rowRepeats == 1 && columnRepeats == 1) {

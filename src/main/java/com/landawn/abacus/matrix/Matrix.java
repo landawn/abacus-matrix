@@ -236,20 +236,20 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * to their declaring enum class (even constants with constant-specific class bodies), so any
      * constant of the same enum can later be stored via {@link #set(int, int, Object)}. Because
      * {@code element} must be non-{@code null}, producing a typed empty matrix still requires a
-     * non-{@code null} sample element, such as {@code Matrix.repeat(0, 0, "a")}.</p>
+     * non-{@code null} sample element, such as {@code Matrix.filled(0, 0, "a")}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> matrix = Matrix.repeat(2, 3, "a");
+     * Matrix<String> matrix = Matrix.filled(2, 3, "a");
      * matrix.rowCount();             // returns 2
      * matrix.columnCount();          // returns 3
      * matrix.get(1, 2);              // returns "a"
      *
-     * Matrix.repeat(1, 1, 7).get(0, 0);   // returns 7
+     * Matrix.filled(1, 1, 7).get(0, 0);   // returns 7
      *
-     * Matrix.repeat(2, 3, (String) null); // throws IllegalArgumentException (element is null)
-     * Matrix.repeat(-1, 3, "a");          // throws IllegalArgumentException (negative dimension)
-     * Matrix.repeat(0, 3, "a");           // throws IllegalArgumentException (unrepresentable shape: 0 rows, 3 columns)
+     * Matrix.filled(2, 3, (String) null); // throws IllegalArgumentException (element is null)
+     * Matrix.filled(-1, 3, "a");          // throws IllegalArgumentException (negative dimension)
+     * Matrix.filled(0, 3, "a");           // throws IllegalArgumentException (unrepresentable shape: 0 rows, 3 columns)
      * }</pre>
      *
      * @param <T> the type of elements in the matrix
@@ -261,7 +261,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *         if {@code element} is {@code null}, or if the resulting shape is unrepresentable
      *         (i.e. {@code rowCount == 0} but {@code columnCount > 0})
      */
-    public static <T> Matrix<T> repeat(final int rowCount, final int columnCount, final T element) throws IllegalArgumentException {
+    public static <T> Matrix<T> filled(final int rowCount, final int columnCount, final T element) throws IllegalArgumentException {
         N.checkArgNotNull(element, "element");
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
@@ -287,7 +287,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * // Create a 3×3 diagonal matrix
-     * Matrix<Integer> diag = Matrix.mainDiagonal(new Integer[] {1, 2, 3});
+     * Matrix<Integer> diag = Matrix.ofMainDiagonal(new Integer[] {1, 2, 3});
      * // Creates: [[1, null, null],
      * //           [null, 2, null],
      * //           [null, null, 3]]
@@ -296,24 +296,24 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * diag.get(0, 1);   // returns null (off-diagonal)
      *
      * // Create a 2×2 diagonal matrix with strings
-     * Matrix<String> strDiag = Matrix.mainDiagonal(new String[] {"A", "B"});
+     * Matrix<String> strDiag = Matrix.ofMainDiagonal(new String[] {"A", "B"});
      * strDiag.get(0, 0);   // returns "A"
      * strDiag.get(0, 1);   // returns null (off-diagonal)
      *
-     * Matrix.mainDiagonal((Integer[]) null);   // throws IllegalArgumentException
+     * Matrix.ofMainDiagonal((Integer[]) null);   // throws IllegalArgumentException
      * }</pre>
      *
      * @param <T> the type of elements in the matrix
      * @param mainDiagonal the diagonal values (must not be {@code null})
      * @return a square matrix with the given diagonal values on the main diagonal
      * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null}
-     * @see #diagonals(Object[], Object[])
-     * @see #antiDiagonal(Object[])
+     * @see #ofDiagonals(Object[], Object[])
+     * @see #ofAntiDiagonal(Object[])
      */
-    public static <T> Matrix<T> mainDiagonal(final T[] mainDiagonal) {
+    public static <T> Matrix<T> ofMainDiagonal(final T[] mainDiagonal) {
         N.checkArgNotNull(mainDiagonal, "mainDiagonal");
 
-        return diagonals(mainDiagonal, null);
+        return ofDiagonals(mainDiagonal, null);
     }
 
     /**
@@ -325,7 +325,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * // Create a 3×3 anti-diagonal matrix
-     * Matrix<Integer> diag = Matrix.antiDiagonal(new Integer[] {1, 2, 3});
+     * Matrix<Integer> diag = Matrix.ofAntiDiagonal(new Integer[] {1, 2, 3});
      * // Creates: [[null, null, 1],
      * //           [null, 2, null],
      * //           [3, null, null]]
@@ -334,24 +334,24 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * diag.get(0, 0);   // returns null (off anti-diagonal)
      *
      * // Create a 2×2 anti-diagonal matrix with strings
-     * Matrix<String> strDiag = Matrix.antiDiagonal(new String[] {"X", "Y"});
+     * Matrix<String> strDiag = Matrix.ofAntiDiagonal(new String[] {"X", "Y"});
      * strDiag.get(0, 1);   // returns "X"
      * strDiag.get(1, 0);   // returns "Y"
      *
-     * Matrix.antiDiagonal((Integer[]) null);   // throws IllegalArgumentException
+     * Matrix.ofAntiDiagonal((Integer[]) null);   // throws IllegalArgumentException
      * }</pre>
      *
      * @param <T> the type of elements in the matrix
      * @param antiDiagonal the anti-diagonal values (must not be {@code null})
      * @return a square matrix with the given anti-diagonal values
      * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null}
-     * @see #diagonals(Object[], Object[])
-     * @see #mainDiagonal(Object[])
+     * @see #ofDiagonals(Object[], Object[])
+     * @see #ofMainDiagonal(Object[])
      */
-    public static <T> Matrix<T> antiDiagonal(final T[] antiDiagonal) {
+    public static <T> Matrix<T> ofAntiDiagonal(final T[] antiDiagonal) {
         N.checkArgNotNull(antiDiagonal, "antiDiagonal");
 
-        return diagonals(null, antiDiagonal);
+        return ofDiagonals(null, antiDiagonal);
     }
 
     /**
@@ -363,7 +363,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> diag = Matrix.diagonals(new String[] {"A", "B", "C"}, new String[] {"X", "Y", "Z"});
+     * Matrix<String> diag = Matrix.ofDiagonals(new String[] {"A", "B", "C"}, new String[] {"X", "Y", "Z"});
      * // Creates: [["A", null, "X"],
      * //           [null, "B", null],
      * //           ["Z", null, "C"]]
@@ -373,12 +373,12 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * diag.get(2, 0);   // returns "Z"
      *
      * // With intersection (odd dimension): main diagonal takes precedence
-     * Matrix<Integer> numbers = Matrix.diagonals(new Integer[] {1, 2, 3}, new Integer[] {7, 8, 9});
+     * Matrix<Integer> numbers = Matrix.ofDiagonals(new Integer[] {1, 2, 3}, new Integer[] {7, 8, 9});
      * numbers.get(1, 1);   // returns 2 (main diagonal wins over anti-diagonal 8)
      * numbers.get(0, 2);   // returns 7
      *
-     * Matrix.diagonals((Integer[]) null, (Integer[]) null);            // throws IllegalArgumentException (both null)
-     * Matrix.diagonals(new Integer[] {1, 2}, new Integer[] {1, 2, 3}); // throws IllegalArgumentException (length mismatch)
+     * Matrix.ofDiagonals((Integer[]) null, (Integer[]) null);            // throws IllegalArgumentException (both null)
+     * Matrix.ofDiagonals(new Integer[] {1, 2}, new Integer[] {1, 2, 3}); // throws IllegalArgumentException (length mismatch)
      * }</pre>
      *
      * @param <T> the type of elements in the matrix
@@ -390,11 +390,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *         are empty or one is {@code null} and the other is empty
      * @throws IllegalArgumentException if both arrays are {@code null}, or if both diagonals are non-empty
      *         and have different lengths
-     * @see #mainDiagonal(Object[])
-     * @see #antiDiagonal(Object[])
+     * @see #ofMainDiagonal(Object[])
+     * @see #ofAntiDiagonal(Object[])
      */
     @SuppressWarnings("null")
-    public static <T> Matrix<T> diagonals(final T[] mainDiagonal, final T[] antiDiagonal) throws IllegalArgumentException {
+    public static <T> Matrix<T> ofDiagonals(final T[] mainDiagonal, final T[] antiDiagonal) throws IllegalArgumentException {
         N.checkArgument(mainDiagonal != null || antiDiagonal != null, "Both 'mainDiagonal' and 'antiDiagonal' can't be null");
 
         N.checkArgument(N.isEmpty(mainDiagonal) || N.isEmpty(antiDiagonal) || mainDiagonal.length == antiDiagonal.length,
@@ -649,8 +649,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * or call {@code .clone()} on the returned array.</p>
      *
      * <p><b>&#9888;&#65039; Runtime component type:</b> the returned array is the row exactly as it is
-     * stored internally. For matrices created by factories such as {@link #repeat(int, int, Object)}
-     * or {@link #diagonals(Object[], Object[])} the backing row may have a more specific runtime
+     * stored internally. For matrices created by factories such as {@link #filled(int, int, Object)}
+     * or {@link #ofDiagonals(Object[], Object[])} the backing row may have a more specific runtime
      * component type than {@code Object[]} (it is allocated from the resolved element type), but no
      * conversion is performed by this method.</p>
      *
@@ -1820,13 +1820,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Integer> matrix = Matrix.of(new Integer[][] {{1, 2}, {3, 4}, {5, 6}});
-     * Matrix<Integer> subset = matrix.copy(1, 3);   // copies rows 1 and 2 (exclusive end)
+     * Matrix<Integer> subset = matrix.copyRows(1, 3);   // copies rows 1 and 2 (exclusive end)
      * subset.rowCount();                            // returns 2
      * subset.get(0, 0);                             // returns 3
      * subset.get(1, 1);                             // returns 6
      *
-     * matrix.copy(1, 5);    // throws IndexOutOfBoundsException (toRowIndex > rowCount)
-     * matrix.copy(2, 1);    // throws IndexOutOfBoundsException (fromRowIndex > toRowIndex)
+     * matrix.copyRows(1, 5);    // throws IndexOutOfBoundsException (toRowIndex > rowCount)
+     * matrix.copyRows(2, 1);    // throws IndexOutOfBoundsException (fromRowIndex > toRowIndex)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -1836,7 +1836,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *         ({@code fromRowIndex < 0 || toRowIndex > rowCount || fromRowIndex > toRowIndex})
      */
     @Override
-    public Matrix<T> copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
+    public Matrix<T> copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
         final T[][] c = N.newArray(arrayType, toRowIndex - fromRowIndex);
@@ -1856,13 +1856,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Integer> matrix = Matrix.of(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * Matrix<Integer> submatrix = matrix.copy(0, 2, 1, 3);   // rows 0-1, columns 1-2
+     * Matrix<Integer> submatrix = matrix.copyRegion(0, 2, 1, 3);   // rows 0-1, columns 1-2
      * submatrix.get(0, 0);                                   // returns 2
      * submatrix.get(0, 1);                                   // returns 3
      * submatrix.get(1, 1);                                   // returns 6
      *
-     * matrix.copy(0, 2, 1, 5);   // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
-     * matrix.copy(0, 5, 0, 2);   // throws IndexOutOfBoundsException (toRowIndex > rowCount)
+     * matrix.copyRegion(0, 2, 1, 5);   // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
+     * matrix.copyRegion(0, 5, 0, 2);   // throws IndexOutOfBoundsException (toRowIndex > rowCount)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -1875,7 +1875,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *         or the analogous conditions for the column range)
      */
     @Override
-    public Matrix<T> copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
+    public Matrix<T> copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex)
+            throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
         final T[][] c = N.newArray(arrayType, toRowIndex - fromRowIndex);
@@ -2005,7 +2006,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         }
 
         if (newRowCount <= rowCount && newColumnCount <= columnCount) {
-            return copy(0, newRowCount, 0, newColumnCount);
+            return copyRegion(0, newRowCount, 0, newColumnCount);
         } else {
             final boolean fillDefaultValue = defaultValue != null;
             final T[][] b = N.newArray(arrayType, newRowCount);
@@ -2667,15 +2668,15 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Integer> matrix = Matrix.of(new Integer[][] {{1, 2}, {3, 4}});
-     * Matrix<Integer> tiled = matrix.repeatMatrix(2, 3);
+     * Matrix<Integer> tiled = matrix.tile(2, 3);
      * // Result: {{1,2,1,2,1,2}, {3,4,3,4,3,4}, {1,2,1,2,1,2}, {3,4,3,4,3,4}}
      * tiled.rowCount();      // returns 4
      * tiled.columnCount();   // returns 6
      * tiled.rowCopy(0);      // returns [1, 2, 1, 2, 1, 2]
      * tiled.rowCopy(3);      // returns [3, 4, 3, 4, 3, 4]
      *
-     * matrix.repeatMatrix(0, 1);   // throws IllegalArgumentException (rowRepeats < 1)
-     * matrix.repeatMatrix(1, 0);   // throws IllegalArgumentException (columnRepeats < 1)
+     * matrix.tile(0, 1);   // throws IllegalArgumentException (rowRepeats < 1)
+     * matrix.tile(1, 0);   // throws IllegalArgumentException (columnRepeats < 1)
      * }</pre>
      *
      * @param rowRepeats number of times to repeat the matrix in the row direction (must be {@code >= 1})
@@ -2686,7 +2687,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
     @Override
-    public Matrix<T> repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
+    public Matrix<T> tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
 
         if ((long) rowCount * rowRepeats > Integer.MAX_VALUE) {

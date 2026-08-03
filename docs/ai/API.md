@@ -1,7 +1,7 @@
-# abacus-matrix API Index (v3.8.5)
+# abacus-matrix API Index (v3.8.6)
 - Build: unknown
 - Java: 17
-- Generated: 2026-08-01
+- Generated: 2026-08-02
 
 ## Packages
 - com.landawn.abacus.matrix — Mutable, rectangular, array-backed matrices for Java primitive and reference values.
@@ -94,13 +94,24 @@ Shared implementation base for the matrix types in this package.
 - **Parameters:**
   - (none)
 - **Returns:** a new matrix that is a copy of this matrix with the same dimensions and values
-- **Signature:** `public abstract M copy(int fromRowIndex, int toRowIndex)`
+##### copyRows(...) -> M
+- **Signature:** `public abstract M copyRows(int fromRowIndex, int toRowIndex)`
 - **Summary:** Returns a copy of a row range from this matrix.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
   - `toRowIndex` (`int`) — the ending row index (exclusive)
 - **Returns:** a new matrix containing the specified rows with dimensions {@code (toRowIndex - fromRowIndex) × columnCount} ; when the row range is empty ( {@code fromRowIndex == toRowIndex} ) the result is an empty {@code 0 x 0} matrix (the column count is not preserved)
-- **Signature:** `public abstract M copy(int fromRowIndex, int toRowIndex, int fromColumnIndex, int toColumnIndex)`
+- **See also:** #copyColumns(int, int), #copyRegion(int, int, int, int)
+##### copyColumns(...) -> M
+- **Signature:** `public M copyColumns(final int fromColumnIndex, final int toColumnIndex)`
+- **Summary:** Returns a copy of a column range from this matrix.
+- **Parameters:**
+  - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
+  - `toColumnIndex` (`int`) — the ending column index (exclusive)
+- **Returns:** a new matrix containing the specified columns with dimensions {@code rowCount × (toColumnIndex - fromColumnIndex)} ; an empty column range preserves the row count and yields a {@code rowCount x 0} matrix
+- **See also:** #copyRows(int, int), #copyRegion(int, int, int, int)
+##### copyRegion(...) -> M
+- **Signature:** `public abstract M copyRegion(int fromRowIndex, int toRowIndex, int fromColumnIndex, int toColumnIndex)`
 - **Summary:** Returns a copy of a rectangular region from this matrix.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -108,6 +119,7 @@ Shared implementation base for the matrix types in this package.
   - `fromColumnIndex` (`int`) — the starting column index (inclusive, 0-based)
   - `toColumnIndex` (`int`) — the ending column index (exclusive)
 - **Returns:** a new matrix containing the specified region with dimensions {@code (toRowIndex - fromRowIndex) × (toColumnIndex - fromColumnIndex)} ; when the row range is empty ( {@code fromRowIndex == toRowIndex} ) the result is an empty {@code 0 x 0} matrix (the column count is not preserved), whereas an empty column range with a non-empty row range correctly yields {@code (toRowIndex - fromRowIndex) x 0}
+- **See also:** #copyRows(int, int), #copyColumns(int, int)
 ##### rotate90(...) -> M
 - **Signature:** `public abstract M rotate90()`
 - **Summary:** Returns a new matrix that is this matrix rotated 90 degrees clockwise.
@@ -167,8 +179,8 @@ Shared implementation base for the matrix types in this package.
   - `columnRepeats` (`int`) — number of times to repeat each element in the column direction (must be positive)
 - **Returns:** a new matrix with repeated elements, with dimensions {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}
 - **See also:** <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">,MATLAB repelem function,</a>
-##### repeatMatrix(...) -> M
-- **Signature:** `public abstract M repeatMatrix(int rowRepeats, int columnRepeats)`
+##### tile(...) -> M
+- **Signature:** `public abstract M tile(int rowRepeats, int columnRepeats)`
 - **Summary:** Returns a new matrix formed by tiling this matrix the specified number of times in both dimensions.
 - **Parameters:**
   - `rowRepeats` (`int`) — number of times to repeat the matrix in the row direction (must be positive)
@@ -565,11 +577,11 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Returns:** a new {@code BooleanMatrix} backed by a deep copy of {@code a} , or the shared empty matrix if {@code a} is empty
 - **See also:** #of(boolean\[\]\[\]), #copy()
 ##### randomRow(...) -> BooleanMatrix
-- **Signature:** `public static BooleanMatrix randomRow(final int length)`
+- **Signature:** `public static BooleanMatrix randomRow(final int columnCount)`
 - **Summary:** Creates a new {@code 1 × length} matrix filled with pseudo-randomly generated boolean values.
 - **Parameters:**
-  - `length` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
-- **Returns:** a new {@code BooleanMatrix} of dimensions {@code 1 × length} filled with random values
+  - `columnCount` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
+- **Returns:** a new {@code BooleanMatrix} of dimensions {@code 1 × columnCount} filled with random values
 - **See also:** #random(int, int)
 ##### random(...) -> BooleanMatrix
 - **Signature:** `public static BooleanMatrix random(final int rowCount, final int columnCount)`
@@ -578,30 +590,30 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
   - `rowCount` (`int`) — the number of rows in the new matrix; must be {@code >= 0}
   - `columnCount` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
 - **Returns:** a new {@code BooleanMatrix} of dimensions {@code rowCount × columnCount} filled with random values
-##### repeat(...) -> BooleanMatrix
-- **Signature:** `public static BooleanMatrix repeat(final int rowCount, final int columnCount, final boolean element)`
+##### filled(...) -> BooleanMatrix
+- **Signature:** `public static BooleanMatrix filled(final int rowCount, final int columnCount, final boolean element)`
 - **Summary:** Creates a new matrix of the specified dimensions where every element is the provided {@code element} .
 - **Parameters:**
   - `rowCount` (`int`) — the number of rows in the new matrix; must be {@code >= 0}
   - `columnCount` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
   - `element` (`boolean`) — the boolean value to fill the matrix with
 - **Returns:** a new {@code BooleanMatrix} of dimensions {@code rowCount × columnCount} with every element set to {@code element}
-##### mainDiagonal(...) -> BooleanMatrix
-- **Signature:** `public static BooleanMatrix mainDiagonal(final boolean[] mainDiagonal)`
+##### ofMainDiagonal(...) -> BooleanMatrix
+- **Signature:** `public static BooleanMatrix ofMainDiagonal(final boolean[] mainDiagonal)`
 - **Summary:** Creates a square matrix from the specified main diagonal elements (upper-left to lower-right).
 - **Parameters:**
   - `mainDiagonal` (`boolean[]`) — the array of main diagonal elements; must not be {@code null} , but may be empty, in which case an empty matrix is returned
 - **Returns:** a square matrix with the specified main diagonal ( {@code n × n} where {@code n} is the diagonal length), or an empty matrix if {@code mainDiagonal} is empty
-- **See also:** #antiDiagonal(boolean\[\]), #diagonals(boolean\[\], boolean\[\])
-##### antiDiagonal(...) -> BooleanMatrix
-- **Signature:** `public static BooleanMatrix antiDiagonal(final boolean[] antiDiagonal)`
+- **See also:** #ofAntiDiagonal(boolean\[\]), #ofDiagonals(boolean\[\], boolean\[\])
+##### ofAntiDiagonal(...) -> BooleanMatrix
+- **Signature:** `public static BooleanMatrix ofAntiDiagonal(final boolean[] antiDiagonal)`
 - **Summary:** Creates a square matrix from the specified anti-diagonal elements (upper-right to lower-left).
 - **Parameters:**
   - `antiDiagonal` (`boolean[]`) — the array of anti-diagonal elements; must not be {@code null} , but may be empty, in which case an empty matrix is returned
 - **Returns:** a square matrix with the specified anti-diagonal ( {@code n × n} where {@code n} is the diagonal length), or an empty matrix if {@code antiDiagonal} is empty
-- **See also:** #mainDiagonal(boolean\[\]), #diagonals(boolean\[\], boolean\[\])
-##### diagonals(...) -> BooleanMatrix
-- **Signature:** `public static BooleanMatrix diagonals(final boolean[] mainDiagonal, final boolean[] antiDiagonal) throws IllegalArgumentException`
+- **See also:** #ofMainDiagonal(boolean\[\]), #ofDiagonals(boolean\[\], boolean\[\])
+##### ofDiagonals(...) -> BooleanMatrix
+- **Signature:** `public static BooleanMatrix ofDiagonals(final boolean[] mainDiagonal, final boolean[] antiDiagonal) throws IllegalArgumentException`
 - **Summary:** Creates a square matrix from the specified main diagonal and anti-diagonal elements.
 - **Contract:**
   - If both arrays are non-empty, they must have the same length.
@@ -612,7 +624,7 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Returns:** a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null} , or if both arrays are non-empty and have different lengths
-- **See also:** #mainDiagonal(boolean\[\]), #antiDiagonal(boolean\[\])
+- **See also:** #ofMainDiagonal(boolean\[\]), #ofAntiDiagonal(boolean\[\])
 ##### unbox(...) -> BooleanMatrix
 - **Signature:** `public static BooleanMatrix unbox(final Matrix<Boolean> x)`
 - **Summary:** Converts a boxed {@code Matrix<Boolean>} to a primitive {@code BooleanMatrix} .
@@ -922,7 +934,8 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new matrix that is a copy of this matrix with full independence guarantee
-- **Signature:** `@Override public BooleanMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
+##### copyRows(...) -> BooleanMatrix
+- **Signature:** `@Override public BooleanMatrix copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Creates a copy of a row range from this matrix.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -930,7 +943,8 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Returns:** a new {@code BooleanMatrix} containing the specified rows
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
-- **Signature:** `@Override public BooleanMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+##### copyRegion(...) -> BooleanMatrix
+- **Signature:** `@Override public BooleanMatrix copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Creates a copy of a rectangular region from this matrix.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -1064,9 +1078,9 @@ Matrix implementation backed by a rectangular {@code boolean\[\]\[\]} .
 - **Returns:** a new {@code BooleanMatrix} with dimensions {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code rowRepeats} or {@code columnRepeats} is not positive, or if either resulting dimension would overflow {@code Integer.MAX_VALUE}
-- **See also:** #repeatMatrix(int, int), <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">,MATLAB repelem function,</a>
-##### repeatMatrix(...) -> BooleanMatrix
-- **Signature:** `@Override public BooleanMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException`
+- **See also:** #tile(int, int), <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">,MATLAB repelem function,</a>
+##### tile(...) -> BooleanMatrix
+- **Signature:** `@Override public BooleanMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException`
 - **Summary:** Repeats the entire matrix the specified number of times in both dimensions.
 - **Parameters:**
   - `rowRepeats` (`int`) — number of times to repeat the matrix vertically; must be {@code > 0}
@@ -1380,11 +1394,11 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Returns:** a new {@code ByteMatrix} backed by a deep copy of {@code a} , or the shared empty matrix if {@code a} is empty
 - **See also:** #of(byte\[\]\[\]), #copy()
 ##### randomRow(...) -> ByteMatrix
-- **Signature:** `public static ByteMatrix randomRow(final int length)`
-- **Summary:** Creates a new {@code 1 x length} matrix filled with random byte values uniformly distributed across the full byte range {@code \[Byte.MIN_VALUE, Byte.MAX_VALUE\]} .
+- **Signature:** `public static ByteMatrix randomRow(final int columnCount)`
+- **Summary:** Creates a new {@code 1 x columnCount} matrix filled with random byte values uniformly distributed across the full byte range {@code \[Byte.MIN_VALUE, Byte.MAX_VALUE\]} .
 - **Parameters:**
-  - `length` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
-- **Returns:** a new {@code ByteMatrix} of dimensions {@code 1 x length} filled with random values
+  - `columnCount` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
+- **Returns:** a new {@code ByteMatrix} of dimensions {@code 1 x columnCount} filled with random values
 - **See also:** #random(int, int)
 ##### random(...) -> ByteMatrix
 - **Signature:** `public static ByteMatrix random(final int rowCount, final int columnCount)`
@@ -1393,8 +1407,8 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
   - `rowCount` (`int`) — the number of rows in the new matrix; must be {@code >= 0}
   - `columnCount` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
 - **Returns:** a new {@code ByteMatrix} of dimensions {@code rowCount x columnCount} filled with random values
-##### repeat(...) -> ByteMatrix
-- **Signature:** `public static ByteMatrix repeat(final int rowCount, final int columnCount, final byte element)`
+##### filled(...) -> ByteMatrix
+- **Signature:** `public static ByteMatrix filled(final int rowCount, final int columnCount, final byte element)`
 - **Summary:** Creates a new matrix of the specified dimensions where every element is the provided {@code element} .
 - **Parameters:**
   - `rowCount` (`int`) — the number of rows in the new matrix; must be {@code >= 0}
@@ -1438,22 +1452,22 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
   - `endInclusive` (`byte`) — the ending byte value (inclusive, if reachable by stepping)
   - `step` (`byte`) — the step size (must not be zero; can be positive or negative)
 - **Returns:** a new {@code 1 × n} {@code ByteMatrix} of values from {@code startInclusive} stepped by {@code step}
-##### mainDiagonal(...) -> ByteMatrix
-- **Signature:** `public static ByteMatrix mainDiagonal(final byte[] mainDiagonal)`
+##### ofMainDiagonal(...) -> ByteMatrix
+- **Signature:** `public static ByteMatrix ofMainDiagonal(final byte[] mainDiagonal)`
 - **Summary:** Creates a square matrix from the specified main diagonal elements (upper-left to lower-right).
 - **Parameters:**
   - `mainDiagonal` (`byte[]`) — the array of main-diagonal elements; must not be {@code null} , but may be empty
 - **Returns:** a new {@code n x n} {@code ByteMatrix} (where {@code n = mainDiagonal.length} ) with the supplied values on the main diagonal and {@code 0} elsewhere; the shared empty matrix if {@code mainDiagonal} is empty
-- **See also:** #antiDiagonal(byte\[\]), #diagonals(byte\[\], byte\[\])
-##### antiDiagonal(...) -> ByteMatrix
-- **Signature:** `public static ByteMatrix antiDiagonal(final byte[] antiDiagonal)`
+- **See also:** #ofAntiDiagonal(byte\[\]), #ofDiagonals(byte\[\], byte\[\])
+##### ofAntiDiagonal(...) -> ByteMatrix
+- **Signature:** `public static ByteMatrix ofAntiDiagonal(final byte[] antiDiagonal)`
 - **Summary:** Creates a square matrix from the specified anti-diagonal elements (upper-right to lower-left).
 - **Parameters:**
   - `antiDiagonal` (`byte[]`) — the array of anti-diagonal elements; must not be {@code null} , but may be empty
 - **Returns:** a new {@code n x n} {@code ByteMatrix} (where {@code n = antiDiagonal.length} ) with the supplied values on the anti-diagonal and {@code 0} elsewhere; the shared empty matrix if {@code antiDiagonal} is empty
-- **See also:** #mainDiagonal(byte\[\]), #diagonals(byte\[\], byte\[\])
-##### diagonals(...) -> ByteMatrix
-- **Signature:** `public static ByteMatrix diagonals(final byte[] mainDiagonal, final byte[] antiDiagonal) throws IllegalArgumentException`
+- **See also:** #ofMainDiagonal(byte\[\]), #ofDiagonals(byte\[\], byte\[\])
+##### ofDiagonals(...) -> ByteMatrix
+- **Signature:** `public static ByteMatrix ofDiagonals(final byte[] mainDiagonal, final byte[] antiDiagonal) throws IllegalArgumentException`
 - **Summary:** Creates a square matrix from the specified main diagonal and anti-diagonal elements.
 - **Contract:**
   - If both arrays are non-empty, they must have the same length.
@@ -1464,7 +1478,7 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Returns:** a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null} , or if both arrays are non-empty and have different lengths
-- **See also:** #mainDiagonal(byte\[\]), #antiDiagonal(byte\[\])
+- **See also:** #ofMainDiagonal(byte\[\]), #ofAntiDiagonal(byte\[\])
 ##### unbox(...) -> ByteMatrix
 - **Signature:** `public static ByteMatrix unbox(final Matrix<Byte> x)`
 - **Summary:** Converts a boxed {@code Matrix<Byte>} to a primitive {@code ByteMatrix} .
@@ -1774,7 +1788,8 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new matrix that is a copy of this matrix with full independence guarantee
-- **Signature:** `@Override public ByteMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
+##### copyRows(...) -> ByteMatrix
+- **Signature:** `@Override public ByteMatrix copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Creates a copy of a row range from this matrix.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -1782,7 +1797,8 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Returns:** a new {@code ByteMatrix} containing the specified rows
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
-- **Signature:** `@Override public ByteMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+##### copyRegion(...) -> ByteMatrix
+- **Signature:** `@Override public ByteMatrix copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Creates a copy of a submatrix defined by row and column ranges.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -1916,8 +1932,8 @@ Matrix implementation backed by a rectangular {@code byte\[\]\[\]} .
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if rowRepeats or columnRepeats is not positive, or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
 - **See also:** <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">,MATLAB repelem function,</a>
-##### repeatMatrix(...) -> ByteMatrix
-- **Signature:** `@Override public ByteMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException`
+##### tile(...) -> ByteMatrix
+- **Signature:** `@Override public ByteMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException`
 - **Summary:** Repeats the entire matrix in a tiled pattern.
 - **Parameters:**
   - `rowRepeats` (`int`) — number of times to repeat the matrix vertically
@@ -2231,11 +2247,11 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Returns:** a new {@code CharMatrix} backed by a deep copy of {@code a} , or the shared empty matrix if {@code a} is empty
 - **See also:** #of(char\[\]\[\]), #copy()
 ##### randomRow(...) -> CharMatrix
-- **Signature:** `public static CharMatrix randomRow(final int length)`
-- **Summary:** Creates a new {@code 1 x length} matrix filled with random char values drawn uniformly from the full unsigned 16-bit range {@code \[0, 65535\]} .
+- **Signature:** `public static CharMatrix randomRow(final int columnCount)`
+- **Summary:** Creates a new {@code 1 x columnCount} matrix filled with random char values drawn uniformly from the full unsigned 16-bit range {@code \[0, 65535\]} .
 - **Parameters:**
-  - `length` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
-- **Returns:** a new {@code CharMatrix} of dimensions {@code 1 x length} filled with random values
+  - `columnCount` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
+- **Returns:** a new {@code CharMatrix} of dimensions {@code 1 x columnCount} filled with random values
 - **See also:** #random(int, int)
 ##### random(...) -> CharMatrix
 - **Signature:** `public static CharMatrix random(final int rowCount, final int columnCount)`
@@ -2244,8 +2260,8 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
   - `rowCount` (`int`) — the number of rows in the new matrix; must be {@code >= 0}
   - `columnCount` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
 - **Returns:** a new {@code CharMatrix} of dimensions {@code rowCount x columnCount} filled with random values
-##### repeat(...) -> CharMatrix
-- **Signature:** `public static CharMatrix repeat(final int rowCount, final int columnCount, final char element)`
+##### filled(...) -> CharMatrix
+- **Signature:** `public static CharMatrix filled(final int rowCount, final int columnCount, final char element)`
 - **Summary:** Creates a new matrix of the specified dimensions where every element is the provided {@code element} .
 - **Parameters:**
   - `rowCount` (`int`) — the number of rows in the new matrix; must be {@code >= 0}
@@ -2288,22 +2304,22 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
   - `endInclusive` (`char`) — the ending char value (inclusive, if reachable by stepping)
   - `step` (`int`) — the step size (must not be zero; can be positive or negative)
 - **Returns:** a new {@code 1xn} {@code CharMatrix} of values from {@code startInclusive} stepped by {@code step}
-##### mainDiagonal(...) -> CharMatrix
-- **Signature:** `public static CharMatrix mainDiagonal(final char[] mainDiagonal)`
+##### ofMainDiagonal(...) -> CharMatrix
+- **Signature:** `public static CharMatrix ofMainDiagonal(final char[] mainDiagonal)`
 - **Summary:** Creates a square matrix from the specified main diagonal elements (upper-left to lower-right).
 - **Parameters:**
   - `mainDiagonal` (`char[]`) — the array of main diagonal elements; must not be {@code null} , but may be empty, in which case the empty matrix is returned
 - **Returns:** a square matrix with the specified main diagonal (n×n where n = diagonal length), or an empty matrix if {@code mainDiagonal} is empty
-- **See also:** #antiDiagonal(char\[\]), #diagonals(char\[\], char\[\])
-##### antiDiagonal(...) -> CharMatrix
-- **Signature:** `public static CharMatrix antiDiagonal(final char[] antiDiagonal)`
+- **See also:** #ofAntiDiagonal(char\[\]), #ofDiagonals(char\[\], char\[\])
+##### ofAntiDiagonal(...) -> CharMatrix
+- **Signature:** `public static CharMatrix ofAntiDiagonal(final char[] antiDiagonal)`
 - **Summary:** Creates a square matrix from the specified anti-diagonal elements (upper-right to lower-left).
 - **Parameters:**
   - `antiDiagonal` (`char[]`) — the array of anti-diagonal elements; must not be {@code null} , but may be empty, in which case the empty matrix is returned
 - **Returns:** a square matrix with the specified anti-diagonal (n×n where n = diagonal length), or an empty matrix if {@code antiDiagonal} is empty
-- **See also:** #mainDiagonal(char\[\]), #diagonals(char\[\], char\[\])
-##### diagonals(...) -> CharMatrix
-- **Signature:** `public static CharMatrix diagonals(final char[] mainDiagonal, final char[] antiDiagonal) throws IllegalArgumentException`
+- **See also:** #ofMainDiagonal(char\[\]), #ofDiagonals(char\[\], char\[\])
+##### ofDiagonals(...) -> CharMatrix
+- **Signature:** `public static CharMatrix ofDiagonals(final char[] mainDiagonal, final char[] antiDiagonal) throws IllegalArgumentException`
 - **Summary:** Creates a square matrix from the specified main diagonal and anti-diagonal elements.
 - **Contract:**
   - If both arrays are non-empty, they must have the same length.
@@ -2314,7 +2330,7 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Returns:** a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null} , or if both arrays are non-empty and have different lengths
-- **See also:** #mainDiagonal(char\[\]), #antiDiagonal(char\[\])
+- **See also:** #ofMainDiagonal(char\[\]), #ofAntiDiagonal(char\[\])
 ##### unbox(...) -> CharMatrix
 - **Signature:** `public static CharMatrix unbox(final Matrix<Character> x)`
 - **Summary:** Converts a boxed {@link Matrix Matrix&lt;Character&gt;} to a primitive {@code CharMatrix} .
@@ -2624,7 +2640,8 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new matrix that is a copy of this matrix with full independence guarantee
-- **Signature:** `@Override public CharMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
+##### copyRows(...) -> CharMatrix
+- **Signature:** `@Override public CharMatrix copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Creates a copy of a row range from this matrix.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -2632,7 +2649,8 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Returns:** a new {@code CharMatrix} containing the specified rows
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
-- **Signature:** `@Override public CharMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+##### copyRegion(...) -> CharMatrix
+- **Signature:** `@Override public CharMatrix copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Creates a copy of a submatrix defined by row and column ranges.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -2768,11 +2786,11 @@ Matrix implementation backed by a rectangular {@code char\[\]\[\]} .
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code rowRepeats} or {@code columnRepeats} is not positive, or the resulting dimensions would exceed {@link Integer#MAX_VALUE}
 - **See also:** <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">,MATLAB repelem function,</a>
-##### repeatMatrix(...) -> CharMatrix
-- **Signature:** `@Override public CharMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException`
+##### tile(...) -> CharMatrix
+- **Signature:** `@Override public CharMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException`
 - **Summary:** Repeats the entire matrix in both row and column directions.
 - **Contract:**
-  - <p> <b> Usage Examples: </b> </p> <pre> {@code CharMatrix matrix = CharMatrix.of(new char\[\]\[\] {{'a', 'b'}, {'c', 'd'}}); CharMatrix repeated = matrix.repeatMatrix(2, 3); repeated.rowView(0); // returns \['a', 'b', 'a', 'b', 'a', 'b'\] repeated.rowView(1); // returns \['c', 'd', 'c', 'd', 'c', 'd'\] repeated.rowCount(); // returns 4 matrix.repeatMatrix(1, 1).equals(matrix); // returns true (1x1 tiling is a copy) matrix.repeatMatrix(0, 1); // throws IllegalArgumentException (repeats must be positive) } </pre>
+  - <p> <b> Usage Examples: </b> </p> <pre> {@code CharMatrix matrix = CharMatrix.of(new char\[\]\[\] {{'a', 'b'}, {'c', 'd'}}); CharMatrix repeated = matrix.tile(2, 3); repeated.rowView(0); // returns \['a', 'b', 'a', 'b', 'a', 'b'\] repeated.rowView(1); // returns \['c', 'd', 'c', 'd', 'c', 'd'\] repeated.rowCount(); // returns 4 matrix.tile(1, 1).equals(matrix); // returns true (1x1 tiling is a copy) matrix.tile(0, 1); // throws IllegalArgumentException (repeats must be positive) } </pre>
 - **Parameters:**
   - `rowRepeats` (`int`) — number of times to repeat the matrix vertically; must be {@code > 0}
   - `columnRepeats` (`int`) — number of times to repeat the matrix horizontally; must be {@code > 0}
@@ -3111,11 +3129,11 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Returns:** a new {@code DoubleMatrix} with converted values, or the shared empty {@code DoubleMatrix} if {@code a} is empty
 - **See also:** FloatMatrix#toDoubleMatrix()
 ##### randomRow(...) -> DoubleMatrix
-- **Signature:** `public static DoubleMatrix randomRow(final int length)`
-- **Summary:** Creates a new {@code 1 x length} matrix filled with random double values uniformly distributed in {@code \[0.0, 1.0)} .
+- **Signature:** `public static DoubleMatrix randomRow(final int columnCount)`
+- **Summary:** Creates a new {@code 1 x columnCount} matrix filled with random double values uniformly distributed in {@code \[0.0, 1.0)} .
 - **Parameters:**
-  - `length` (`int`) — the number of columns in the new matrix
-- **Returns:** a new {@code DoubleMatrix} of dimensions {@code 1 x length} filled with random values in {@code \[0.0, 1.0)}
+  - `columnCount` (`int`) — the number of columns in the new matrix
+- **Returns:** a new {@code DoubleMatrix} of dimensions {@code 1 x columnCount} filled with random values in {@code \[0.0, 1.0)}
 - **See also:** #random(int, int)
 ##### random(...) -> DoubleMatrix
 - **Signature:** `public static DoubleMatrix random(final int rowCount, final int columnCount)`
@@ -3124,30 +3142,30 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
   - `rowCount` (`int`) — the number of rows in the new matrix
   - `columnCount` (`int`) — the number of columns in the new matrix
 - **Returns:** a new {@code DoubleMatrix} of dimensions {@code rowCount x columnCount} filled with random values in {@code \[0.0, 1.0)}
-##### repeat(...) -> DoubleMatrix
-- **Signature:** `public static DoubleMatrix repeat(final int rowCount, final int columnCount, final double element)`
+##### filled(...) -> DoubleMatrix
+- **Signature:** `public static DoubleMatrix filled(final int rowCount, final int columnCount, final double element)`
 - **Summary:** Creates a new matrix of the specified dimensions where every element is the provided {@code element} .
 - **Parameters:**
   - `rowCount` (`int`) — the number of rows in the new matrix
   - `columnCount` (`int`) — the number of columns in the new matrix
   - `element` (`double`) — the double value to fill the matrix with (may be {@code NaN} , {@code +/-Infinity} , or {@code -0.0} )
 - **Returns:** a new {@code DoubleMatrix} of dimensions {@code rowCount x columnCount} with every cell equal to {@code element}
-##### mainDiagonal(...) -> DoubleMatrix
-- **Signature:** `public static DoubleMatrix mainDiagonal(final double[] mainDiagonal)`
+##### ofMainDiagonal(...) -> DoubleMatrix
+- **Signature:** `public static DoubleMatrix ofMainDiagonal(final double[] mainDiagonal)`
 - **Summary:** Creates a square matrix from the specified main diagonal elements (upper-left to lower-right).
 - **Parameters:**
   - `mainDiagonal` (`double[]`) — the array of main-diagonal elements; must not be {@code null} , but may be empty
 - **Returns:** a new {@code n x n} {@code DoubleMatrix} (where {@code n = mainDiagonal.length} ) with the supplied values on the main diagonal and {@code 0} elsewhere; the shared empty matrix if {@code mainDiagonal} is empty
-- **See also:** #antiDiagonal(double\[\]), #diagonals(double\[\], double\[\])
-##### antiDiagonal(...) -> DoubleMatrix
-- **Signature:** `public static DoubleMatrix antiDiagonal(final double[] antiDiagonal)`
+- **See also:** #ofAntiDiagonal(double\[\]), #ofDiagonals(double\[\], double\[\])
+##### ofAntiDiagonal(...) -> DoubleMatrix
+- **Signature:** `public static DoubleMatrix ofAntiDiagonal(final double[] antiDiagonal)`
 - **Summary:** Creates a square matrix from the specified anti-diagonal elements (upper-right to lower-left).
 - **Parameters:**
   - `antiDiagonal` (`double[]`) — the array of anti-diagonal elements; must not be {@code null} , but may be empty
 - **Returns:** a new {@code n x n} {@code DoubleMatrix} (where {@code n = antiDiagonal.length} ) with the supplied values on the anti-diagonal and {@code 0} elsewhere; the shared empty matrix if {@code antiDiagonal} is empty
-- **See also:** #mainDiagonal(double\[\]), #diagonals(double\[\], double\[\])
-##### diagonals(...) -> DoubleMatrix
-- **Signature:** `public static DoubleMatrix diagonals(final double[] mainDiagonal, final double[] antiDiagonal) throws IllegalArgumentException`
+- **See also:** #ofMainDiagonal(double\[\]), #ofDiagonals(double\[\], double\[\])
+##### ofDiagonals(...) -> DoubleMatrix
+- **Signature:** `public static DoubleMatrix ofDiagonals(final double[] mainDiagonal, final double[] antiDiagonal) throws IllegalArgumentException`
 - **Summary:** Creates a square matrix from the specified main diagonal and anti-diagonal elements.
 - **Contract:**
   - If both arrays are non-empty, they must have the same length.
@@ -3158,7 +3176,7 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Returns:** a square matrix with the specified diagonals, or the shared empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null} , or if both arrays are non-empty and have different lengths
-- **See also:** #mainDiagonal(double\[\]), #antiDiagonal(double\[\])
+- **See also:** #ofMainDiagonal(double\[\]), #ofAntiDiagonal(double\[\])
 ##### unbox(...) -> DoubleMatrix
 - **Signature:** `public static DoubleMatrix unbox(final Matrix<Double> x)`
 - **Summary:** Converts a boxed {@code Matrix<Double>} to a primitive {@code DoubleMatrix} .
@@ -3490,7 +3508,8 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new matrix that is a copy of this matrix with full independence guarantee
-- **Signature:** `@Override public DoubleMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
+##### copyRows(...) -> DoubleMatrix
+- **Signature:** `@Override public DoubleMatrix copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Creates a copy of a row range from this matrix.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -3498,7 +3517,8 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Returns:** a new {@code DoubleMatrix} containing the specified rows
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
-- **Signature:** `@Override public DoubleMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+##### copyRegion(...) -> DoubleMatrix
+- **Signature:** `@Override public DoubleMatrix copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Creates a copy of a submatrix defined by row and column ranges.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -3634,11 +3654,11 @@ Matrix implementation backed by a rectangular {@code double\[\]\[\]} .
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code rowRepeats} or {@code columnRepeats} is not positive, or if either resulting dimension would overflow {@code Integer.MAX_VALUE}
 - **See also:** <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">,MATLAB repelem function,</a>
-##### repeatMatrix(...) -> DoubleMatrix
-- **Signature:** `@Override public DoubleMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException`
+##### tile(...) -> DoubleMatrix
+- **Signature:** `@Override public DoubleMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException`
 - **Summary:** Repeats the entire matrix in a tiled pattern.
 - **Contract:**
-  - <p> <b> Usage Examples: </b> </p> <pre> {@code DoubleMatrix matrix = DoubleMatrix.of(new double\[\]\[\] {{1.0, 2.0}, {3.0, 4.0}}); DoubleMatrix repeated = matrix.repeatMatrix(2, 3); // Result: \[\[1.0, 2.0, 1.0, 2.0, 1.0, 2.0\], // \[3.0, 4.0, 3.0, 4.0, 3.0, 4.0\], // \[1.0, 2.0, 1.0, 2.0, 1.0, 2.0\], // \[3.0, 4.0, 3.0, 4.0, 3.0, 4.0\]\] repeated.rowCount(); // returns 4 repeated.columnCount(); // returns 6 repeated.get(2, 3); // returns 2.0 (tiled copy) matrix.repeatMatrix(1, 1).equals(matrix); // returns true (single tile) matrix.repeatMatrix(2, 0); // throws IllegalArgumentException (repeats must be positive) } </pre>
+  - <p> <b> Usage Examples: </b> </p> <pre> {@code DoubleMatrix matrix = DoubleMatrix.of(new double\[\]\[\] {{1.0, 2.0}, {3.0, 4.0}}); DoubleMatrix repeated = matrix.tile(2, 3); // Result: \[\[1.0, 2.0, 1.0, 2.0, 1.0, 2.0\], // \[3.0, 4.0, 3.0, 4.0, 3.0, 4.0\], // \[1.0, 2.0, 1.0, 2.0, 1.0, 2.0\], // \[3.0, 4.0, 3.0, 4.0, 3.0, 4.0\]\] repeated.rowCount(); // returns 4 repeated.columnCount(); // returns 6 repeated.get(2, 3); // returns 2.0 (tiled copy) matrix.tile(1, 1).equals(matrix); // returns true (single tile) matrix.tile(2, 0); // throws IllegalArgumentException (repeats must be positive) } </pre>
 - **Parameters:**
   - `rowRepeats` (`int`) — number of times to repeat the matrix vertically; must be {@code > 0}
   - `columnRepeats` (`int`) — number of times to repeat the matrix horizontally; must be {@code > 0}
@@ -3952,11 +3972,11 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Returns:** a new {@code FloatMatrix} with converted values, or the shared empty {@code FloatMatrix} if input is empty
 - **See also:** IntMatrix#toFloatMatrix()
 ##### randomRow(...) -> FloatMatrix
-- **Signature:** `public static FloatMatrix randomRow(final int length)`
-- **Summary:** Creates a new {@code 1 x length} matrix filled with random float values uniformly distributed in {@code \[0.0f, 1.0f)} .
+- **Signature:** `public static FloatMatrix randomRow(final int columnCount)`
+- **Summary:** Creates a new {@code 1 x columnCount} matrix filled with random float values uniformly distributed in {@code \[0.0f, 1.0f)} .
 - **Parameters:**
-  - `length` (`int`) — the number of columns in the new matrix
-- **Returns:** a new {@code FloatMatrix} of dimensions {@code 1 x length} filled with random values in {@code \[0.0f, 1.0f)}
+  - `columnCount` (`int`) — the number of columns in the new matrix
+- **Returns:** a new {@code FloatMatrix} of dimensions {@code 1 x columnCount} filled with random values in {@code \[0.0f, 1.0f)}
 - **See also:** #random(int, int)
 ##### random(...) -> FloatMatrix
 - **Signature:** `public static FloatMatrix random(final int rowCount, final int columnCount)`
@@ -3965,30 +3985,30 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
   - `rowCount` (`int`) — the number of rows in the new matrix
   - `columnCount` (`int`) — the number of columns in the new matrix
 - **Returns:** a new {@code FloatMatrix} of dimensions {@code rowCount x columnCount} filled with random values in {@code \[0.0f, 1.0f)}
-##### repeat(...) -> FloatMatrix
-- **Signature:** `public static FloatMatrix repeat(final int rowCount, final int columnCount, final float element)`
+##### filled(...) -> FloatMatrix
+- **Signature:** `public static FloatMatrix filled(final int rowCount, final int columnCount, final float element)`
 - **Summary:** Creates a new matrix of the specified dimensions where every element is the provided {@code element} .
 - **Parameters:**
   - `rowCount` (`int`) — the number of rows in the new matrix
   - `columnCount` (`int`) — the number of columns in the new matrix
   - `element` (`float`) — the float value to fill the matrix with (may be {@code NaN} , {@code +/-Infinity} , or {@code -0.0f} )
 - **Returns:** a new {@code FloatMatrix} of dimensions {@code rowCount x columnCount} with every cell equal to {@code element}
-##### mainDiagonal(...) -> FloatMatrix
-- **Signature:** `public static FloatMatrix mainDiagonal(final float[] mainDiagonal)`
+##### ofMainDiagonal(...) -> FloatMatrix
+- **Signature:** `public static FloatMatrix ofMainDiagonal(final float[] mainDiagonal)`
 - **Summary:** Creates a square matrix from the specified main diagonal elements (upper-left to lower-right).
 - **Parameters:**
   - `mainDiagonal` (`float[]`) — the array of main-diagonal elements; must not be {@code null} , but may be empty
 - **Returns:** a new {@code n x n} {@code FloatMatrix} (where {@code n = mainDiagonal.length} ) with the supplied values on the main diagonal and {@code 0} elsewhere; the shared empty matrix if {@code mainDiagonal} is empty
-- **See also:** #antiDiagonal(float\[\]), #diagonals(float\[\], float\[\])
-##### antiDiagonal(...) -> FloatMatrix
-- **Signature:** `public static FloatMatrix antiDiagonal(final float[] antiDiagonal)`
+- **See also:** #ofAntiDiagonal(float\[\]), #ofDiagonals(float\[\], float\[\])
+##### ofAntiDiagonal(...) -> FloatMatrix
+- **Signature:** `public static FloatMatrix ofAntiDiagonal(final float[] antiDiagonal)`
 - **Summary:** Creates a square matrix from the specified anti-diagonal elements (upper-right to lower-left).
 - **Parameters:**
   - `antiDiagonal` (`float[]`) — the array of anti-diagonal elements; must not be {@code null} , but may be empty
 - **Returns:** a new {@code n x n} {@code FloatMatrix} (where {@code n = antiDiagonal.length} ) with the supplied values on the anti-diagonal and {@code 0} elsewhere; the shared empty matrix if {@code antiDiagonal} is empty
-- **See also:** #mainDiagonal(float\[\]), #diagonals(float\[\], float\[\])
-##### diagonals(...) -> FloatMatrix
-- **Signature:** `public static FloatMatrix diagonals(final float[] mainDiagonal, final float[] antiDiagonal) throws IllegalArgumentException`
+- **See also:** #ofMainDiagonal(float\[\]), #ofDiagonals(float\[\], float\[\])
+##### ofDiagonals(...) -> FloatMatrix
+- **Signature:** `public static FloatMatrix ofDiagonals(final float[] mainDiagonal, final float[] antiDiagonal) throws IllegalArgumentException`
 - **Summary:** Creates a square matrix from the specified main diagonal and anti-diagonal elements.
 - **Contract:**
   - If both arrays are non-empty, they must have the same length.
@@ -3999,7 +4019,7 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Returns:** a square matrix with the specified diagonals, or the shared empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null} , or if both arrays are non-empty and have different lengths
-- **See also:** #mainDiagonal(float\[\]), #antiDiagonal(float\[\])
+- **See also:** #ofMainDiagonal(float\[\]), #ofAntiDiagonal(float\[\])
 ##### unbox(...) -> FloatMatrix
 - **Signature:** `public static FloatMatrix unbox(final Matrix<Float> x)`
 - **Summary:** Converts a boxed {@code Matrix<Float>} to a primitive {@code FloatMatrix} .
@@ -4342,7 +4362,8 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new matrix that is a copy of this matrix with full independence guarantee
-- **Signature:** `@Override public FloatMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
+##### copyRows(...) -> FloatMatrix
+- **Signature:** `@Override public FloatMatrix copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Creates a copy of a row range from this matrix.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -4350,7 +4371,8 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Returns:** a new {@code FloatMatrix} containing the specified rows
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
-- **Signature:** `@Override public FloatMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+##### copyRegion(...) -> FloatMatrix
+- **Signature:** `@Override public FloatMatrix copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Creates a copy of a submatrix defined by row and column ranges.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -4486,11 +4508,11 @@ Matrix implementation backed by a rectangular {@code float\[\]\[\]} .
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code rowRepeats} or {@code columnRepeats} is not positive, or if either resulting dimension would overflow {@code Integer.MAX_VALUE}
 - **See also:** <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">,MATLAB repelem function,</a>
-##### repeatMatrix(...) -> FloatMatrix
-- **Signature:** `@Override public FloatMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException`
+##### tile(...) -> FloatMatrix
+- **Signature:** `@Override public FloatMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException`
 - **Summary:** Repeats the entire matrix in a tiled pattern.
 - **Contract:**
-  - <p> <b> Usage Examples: </b> </p> <pre> {@code FloatMatrix matrix = FloatMatrix.of(new float\[\]\[\] {{1.0f, 2.0f}, {3.0f, 4.0f}}); FloatMatrix repeated = matrix.repeatMatrix(2, 3); // Result: \[\[1.0, 2.0, 1.0, 2.0, 1.0, 2.0\], // \[3.0, 4.0, 3.0, 4.0, 3.0, 4.0\], // \[1.0, 2.0, 1.0, 2.0, 1.0, 2.0\], // \[3.0, 4.0, 3.0, 4.0, 3.0, 4.0\]\] repeated.rowCount(); // returns 4 repeated.columnCount(); // returns 6 repeated.get(2, 3); // returns 2.0f (tiled copy) matrix.repeatMatrix(1, 1).equals(matrix); // returns true (single tile) matrix.repeatMatrix(2, 0); // throws IllegalArgumentException (repeats must be positive) } </pre>
+  - <p> <b> Usage Examples: </b> </p> <pre> {@code FloatMatrix matrix = FloatMatrix.of(new float\[\]\[\] {{1.0f, 2.0f}, {3.0f, 4.0f}}); FloatMatrix repeated = matrix.tile(2, 3); // Result: \[\[1.0, 2.0, 1.0, 2.0, 1.0, 2.0\], // \[3.0, 4.0, 3.0, 4.0, 3.0, 4.0\], // \[1.0, 2.0, 1.0, 2.0, 1.0, 2.0\], // \[3.0, 4.0, 3.0, 4.0, 3.0, 4.0\]\] repeated.rowCount(); // returns 4 repeated.columnCount(); // returns 6 repeated.get(2, 3); // returns 2.0f (tiled copy) matrix.tile(1, 1).equals(matrix); // returns true (single tile) matrix.tile(2, 0); // throws IllegalArgumentException (repeats must be positive) } </pre>
 - **Parameters:**
   - `rowRepeats` (`int`) — number of times to repeat the matrix vertically; must be {@code > 0}
   - `columnRepeats` (`int`) — number of times to repeat the matrix horizontally; must be {@code > 0}
@@ -4821,11 +4843,11 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Returns:** a new {@code IntMatrix} with the widened values, or the shared empty matrix if {@code a} is empty
 - **See also:** ShortMatrix#toIntMatrix()
 ##### randomRow(...) -> IntMatrix
-- **Signature:** `public static IntMatrix randomRow(final int length)`
-- **Summary:** Creates a new {@code 1 x length} matrix filled with pseudo-random {@code int} values drawn uniformly from the entire {@code int} range.
+- **Signature:** `public static IntMatrix randomRow(final int columnCount)`
+- **Summary:** Creates a new {@code 1 x columnCount} matrix filled with pseudo-random {@code int} values drawn uniformly from the entire {@code int} range.
 - **Parameters:**
-  - `length` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
-- **Returns:** a new {@code IntMatrix} of dimensions {@code 1 x length} filled with random values
+  - `columnCount` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
+- **Returns:** a new {@code IntMatrix} of dimensions {@code 1 x columnCount} filled with random values
 - **See also:** #random(int, int)
 ##### random(...) -> IntMatrix
 - **Signature:** `public static IntMatrix random(final int rowCount, final int columnCount)`
@@ -4834,8 +4856,8 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
   - `rowCount` (`int`) — the number of rows in the new matrix; must be {@code >= 0}
   - `columnCount` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
 - **Returns:** a new {@code IntMatrix} of dimensions {@code rowCount x columnCount} filled with random values
-##### repeat(...) -> IntMatrix
-- **Signature:** `public static IntMatrix repeat(final int rowCount, final int columnCount, final int element)`
+##### filled(...) -> IntMatrix
+- **Signature:** `public static IntMatrix filled(final int rowCount, final int columnCount, final int element)`
 - **Summary:** Creates a new matrix of the specified dimensions where every cell holds {@code element} .
 - **Parameters:**
   - `rowCount` (`int`) — the number of rows in the new matrix; must be {@code >= 0}
@@ -4879,22 +4901,22 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
   - `endInclusive` (`int`) — the ending value (inclusive, if reachable by stepping)
   - `step` (`int`) — the step size (must not be zero; positive for ascending, negative for descending)
 - **Returns:** a new {@code 1xn} {@code IntMatrix} of values from {@code startInclusive} stepped by {@code step}
-##### mainDiagonal(...) -> IntMatrix
-- **Signature:** `public static IntMatrix mainDiagonal(final int[] mainDiagonal)`
+##### ofMainDiagonal(...) -> IntMatrix
+- **Signature:** `public static IntMatrix ofMainDiagonal(final int[] mainDiagonal)`
 - **Summary:** Creates a square matrix from the specified main diagonal elements (upper-left to lower-right).
 - **Parameters:**
   - `mainDiagonal` (`int[]`) — the array of main-diagonal elements; must not be {@code null} , but may be empty
 - **Returns:** a new {@code n x n} {@code IntMatrix} (where {@code n = mainDiagonal.length} ) with the supplied values on the main diagonal and {@code 0} elsewhere; the shared empty matrix if {@code mainDiagonal} is empty
-- **See also:** #antiDiagonal(int\[\]), #diagonals(int\[\], int\[\])
-##### antiDiagonal(...) -> IntMatrix
-- **Signature:** `public static IntMatrix antiDiagonal(final int[] antiDiagonal)`
+- **See also:** #ofAntiDiagonal(int\[\]), #ofDiagonals(int\[\], int\[\])
+##### ofAntiDiagonal(...) -> IntMatrix
+- **Signature:** `public static IntMatrix ofAntiDiagonal(final int[] antiDiagonal)`
 - **Summary:** Creates a square matrix from the specified anti-diagonal elements (upper-right to lower-left).
 - **Parameters:**
   - `antiDiagonal` (`int[]`) — the array of anti-diagonal elements; must not be {@code null} , but may be empty
 - **Returns:** a new {@code n x n} {@code IntMatrix} (where {@code n = antiDiagonal.length} ) with the supplied values on the anti-diagonal and {@code 0} elsewhere; the shared empty matrix if {@code antiDiagonal} is empty
-- **See also:** #mainDiagonal(int\[\]), #diagonals(int\[\], int\[\])
-##### diagonals(...) -> IntMatrix
-- **Signature:** `public static IntMatrix diagonals(final int[] mainDiagonal, final int[] antiDiagonal) throws IllegalArgumentException`
+- **See also:** #ofMainDiagonal(int\[\]), #ofDiagonals(int\[\], int\[\])
+##### ofDiagonals(...) -> IntMatrix
+- **Signature:** `public static IntMatrix ofDiagonals(final int[] mainDiagonal, final int[] antiDiagonal) throws IllegalArgumentException`
 - **Summary:** Creates a square matrix from the specified main diagonal and anti-diagonal elements.
 - **Contract:**
   - At least one array must be non- {@code null} ; if both arrays contain elements, they must have the same length.
@@ -4906,7 +4928,7 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Returns:** a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null} , or if both arrays are non-empty and have different lengths
-- **See also:** #mainDiagonal(int\[\]), #antiDiagonal(int\[\])
+- **See also:** #ofMainDiagonal(int\[\]), #ofAntiDiagonal(int\[\])
 ##### unbox(...) -> IntMatrix
 - **Signature:** `public static IntMatrix unbox(final Matrix<Integer> x)`
 - **Summary:** Converts a boxed {@link Matrix Matrix&lt;Integer&gt;} to a primitive {@code IntMatrix} .
@@ -5236,7 +5258,8 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new matrix that is a copy of this matrix with full independence guarantee
-- **Signature:** `@Override public IntMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
+##### copyRows(...) -> IntMatrix
+- **Signature:** `@Override public IntMatrix copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Creates a copy of a row range from this matrix.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -5244,7 +5267,8 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Returns:** a new {@code IntMatrix} containing the specified rows
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
-- **Signature:** `@Override public IntMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+##### copyRegion(...) -> IntMatrix
+- **Signature:** `@Override public IntMatrix copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Creates a copy of a submatrix defined by row and column ranges.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -5378,8 +5402,8 @@ Matrix implementation backed by a rectangular {@code int\[\]\[\]} .
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if rowRepeats or columnRepeats is not positive, or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
 - **See also:** <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">,MATLAB repelem function,</a>
-##### repeatMatrix(...) -> IntMatrix
-- **Signature:** `@Override public IntMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException`
+##### tile(...) -> IntMatrix
+- **Signature:** `@Override public IntMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException`
 - **Summary:** Repeats the entire matrix in a tiled pattern.
 - **Parameters:**
   - `rowRepeats` (`int`) — number of times to repeat the matrix vertically
@@ -5694,11 +5718,11 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Returns:** a new {@code LongMatrix} with the widened values, or the shared empty matrix if {@code a} is empty
 - **See also:** IntMatrix#toLongMatrix()
 ##### randomRow(...) -> LongMatrix
-- **Signature:** `public static LongMatrix randomRow(final int length)`
-- **Summary:** Creates a new {@code 1 x length} matrix filled with pseudo-random {@code long} values drawn uniformly from the entire {@code long} range.
+- **Signature:** `public static LongMatrix randomRow(final int columnCount)`
+- **Summary:** Creates a new {@code 1 x columnCount} matrix filled with pseudo-random {@code long} values drawn uniformly from the entire {@code long} range.
 - **Parameters:**
-  - `length` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
-- **Returns:** a new {@code LongMatrix} of dimensions {@code 1 x length} filled with random values
+  - `columnCount` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
+- **Returns:** a new {@code LongMatrix} of dimensions {@code 1 x columnCount} filled with random values
 - **See also:** #random(int, int)
 ##### random(...) -> LongMatrix
 - **Signature:** `public static LongMatrix random(final int rowCount, final int columnCount)`
@@ -5707,8 +5731,8 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
   - `rowCount` (`int`) — the number of rows in the new matrix; must be {@code >= 0}
   - `columnCount` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
 - **Returns:** a new {@code LongMatrix} of dimensions {@code rowCount x columnCount} filled with random values
-##### repeat(...) -> LongMatrix
-- **Signature:** `public static LongMatrix repeat(final int rowCount, final int columnCount, final long element)`
+##### filled(...) -> LongMatrix
+- **Signature:** `public static LongMatrix filled(final int rowCount, final int columnCount, final long element)`
 - **Summary:** Creates a new matrix of the specified dimensions where every cell holds {@code element} .
 - **Parameters:**
   - `rowCount` (`int`) — the number of rows in the new matrix; must be {@code >= 0}
@@ -5752,22 +5776,22 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
   - `endInclusive` (`long`) — the ending value (inclusive, if reachable by stepping)
   - `step` (`long`) — the step size (must not be zero; positive for ascending, negative for descending)
 - **Returns:** a new {@code 1xn} {@code LongMatrix} of values from {@code startInclusive} stepped by {@code step}
-##### mainDiagonal(...) -> LongMatrix
-- **Signature:** `public static LongMatrix mainDiagonal(final long[] mainDiagonal)`
+##### ofMainDiagonal(...) -> LongMatrix
+- **Signature:** `public static LongMatrix ofMainDiagonal(final long[] mainDiagonal)`
 - **Summary:** Creates a square matrix from the specified main diagonal elements (upper-left to lower-right).
 - **Parameters:**
   - `mainDiagonal` (`long[]`) — the array of main-diagonal elements; must not be {@code null} , but may be empty
 - **Returns:** a new {@code n x n} {@code LongMatrix} (where {@code n = mainDiagonal.length} ) with the supplied values on the main diagonal and {@code 0L} elsewhere; the shared empty matrix if {@code mainDiagonal} is empty
-- **See also:** #antiDiagonal(long\[\]), #diagonals(long\[\], long\[\])
-##### antiDiagonal(...) -> LongMatrix
-- **Signature:** `public static LongMatrix antiDiagonal(final long[] antiDiagonal)`
+- **See also:** #ofAntiDiagonal(long\[\]), #ofDiagonals(long\[\], long\[\])
+##### ofAntiDiagonal(...) -> LongMatrix
+- **Signature:** `public static LongMatrix ofAntiDiagonal(final long[] antiDiagonal)`
 - **Summary:** Creates a square matrix from the specified anti-diagonal elements (upper-right to lower-left).
 - **Parameters:**
   - `antiDiagonal` (`long[]`) — the array of anti-diagonal elements; must not be {@code null} , but may be empty
 - **Returns:** a new {@code n x n} {@code LongMatrix} (where {@code n = antiDiagonal.length} ) with the supplied values on the anti-diagonal and {@code 0L} elsewhere; the shared empty matrix if {@code antiDiagonal} is empty
-- **See also:** #mainDiagonal(long\[\]), #diagonals(long\[\], long\[\])
-##### diagonals(...) -> LongMatrix
-- **Signature:** `public static LongMatrix diagonals(final long[] mainDiagonal, final long[] antiDiagonal) throws IllegalArgumentException`
+- **See also:** #ofMainDiagonal(long\[\]), #ofDiagonals(long\[\], long\[\])
+##### ofDiagonals(...) -> LongMatrix
+- **Signature:** `public static LongMatrix ofDiagonals(final long[] mainDiagonal, final long[] antiDiagonal) throws IllegalArgumentException`
 - **Summary:** Creates a square matrix from the specified main diagonal and anti-diagonal elements.
 - **Contract:**
   - At least one array must be non- {@code null} ; if both arrays contain elements, they must have the same length.
@@ -5779,7 +5803,7 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Returns:** a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null} , or if both arrays are non-empty and have different lengths
-- **See also:** #mainDiagonal(long\[\]), #antiDiagonal(long\[\])
+- **See also:** #ofMainDiagonal(long\[\]), #ofAntiDiagonal(long\[\])
 ##### unbox(...) -> LongMatrix
 - **Signature:** `public static LongMatrix unbox(final Matrix<Long> x)`
 - **Summary:** Converts a boxed {@link Matrix Matrix&lt;Long&gt;} to a primitive {@code LongMatrix} .
@@ -6109,7 +6133,8 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new matrix that is a copy of this matrix with full independence guarantee
-- **Signature:** `@Override public LongMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
+##### copyRows(...) -> LongMatrix
+- **Signature:** `@Override public LongMatrix copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Creates a copy of a row range from this matrix.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -6117,7 +6142,8 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Returns:** a new {@code LongMatrix} containing the specified rows
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
-- **Signature:** `@Override public LongMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+##### copyRegion(...) -> LongMatrix
+- **Signature:** `@Override public LongMatrix copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Creates a copy of a submatrix defined by row and column ranges.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -6251,8 +6277,8 @@ Matrix implementation backed by a rectangular {@code long\[\]\[\]} .
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if rowRepeats or columnRepeats is not positive, or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
 - **See also:** <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">,MATLAB repelem function,</a>
-##### repeatMatrix(...) -> LongMatrix
-- **Signature:** `@Override public LongMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException`
+##### tile(...) -> LongMatrix
+- **Signature:** `@Override public LongMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException`
 - **Summary:** Repeats the entire matrix in a tiled pattern.
 - **Parameters:**
   - `rowRepeats` (`int`) — number of times to repeat the matrix vertically
@@ -7372,11 +7398,11 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
   - `a` (`T[][]`) — the two-dimensional array to copy (must not be {@code null} )
 - **Returns:** a new {@code Matrix} backed by a defensive copy of {@code a} 's array structure (outer array and each row cloned; element references shared)
 - **See also:** #of(Object\[\]\[\]), #copy()
-##### repeat(...) -> Matrix<T>
-- **Signature:** `public static <T> Matrix<T> repeat(final int rowCount, final int columnCount, final T element) throws IllegalArgumentException`
+##### filled(...) -> Matrix<T>
+- **Signature:** `public static <T> Matrix<T> filled(final int rowCount, final int columnCount, final T element) throws IllegalArgumentException`
 - **Summary:** Creates a new matrix of the specified dimensions where every element is the provided {@code element} .
 - **Contract:**
-  - Because {@code element} must be non- {@code null} , producing a typed empty matrix still requires a non- {@code null} sample element, such as {@code Matrix.repeat(0, 0, "a")} .
+  - Because {@code element} must be non- {@code null} , producing a typed empty matrix still requires a non- {@code null} sample element, such as {@code Matrix.filled(0, 0, "a")} .
 - **Parameters:**
   - `rowCount` (`int`) — the number of rows in the new matrix (must be {@code >= 0} )
   - `columnCount` (`int`) — the number of columns in the new matrix (must be {@code >= 0} )
@@ -7384,22 +7410,22 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Returns:** a new Matrix of dimensions {@code rowCount × columnCount} filled with the specified element
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code rowCount} or {@code columnCount} is negative, if {@code element} is {@code null} , or if the resulting shape is unrepresentable (i.e. {@code rowCount == 0} but {@code columnCount > 0} )
-##### mainDiagonal(...) -> Matrix<T>
-- **Signature:** `public static <T> Matrix<T> mainDiagonal(final T[] mainDiagonal)`
+##### ofMainDiagonal(...) -> Matrix<T>
+- **Signature:** `public static <T> Matrix<T> ofMainDiagonal(final T[] mainDiagonal)`
 - **Summary:** Creates a square diagonal matrix with the given values on the main diagonal (upper-left to lower-right).
 - **Parameters:**
   - `mainDiagonal` (`T[]`) — the diagonal values (must not be {@code null} )
 - **Returns:** a square matrix with the given diagonal values on the main diagonal
-- **See also:** #diagonals(Object\[\], Object\[\]), #antiDiagonal(Object\[\])
-##### antiDiagonal(...) -> Matrix<T>
-- **Signature:** `public static <T> Matrix<T> antiDiagonal(final T[] antiDiagonal)`
+- **See also:** #ofDiagonals(Object\[\], Object\[\]), #ofAntiDiagonal(Object\[\])
+##### ofAntiDiagonal(...) -> Matrix<T>
+- **Signature:** `public static <T> Matrix<T> ofAntiDiagonal(final T[] antiDiagonal)`
 - **Summary:** Creates a square diagonal matrix with the given values on the anti-diagonal (upper-right to lower-left).
 - **Parameters:**
   - `antiDiagonal` (`T[]`) — the anti-diagonal values (must not be {@code null} )
 - **Returns:** a square matrix with the given anti-diagonal values
-- **See also:** #diagonals(Object\[\], Object\[\]), #mainDiagonal(Object\[\])
-##### diagonals(...) -> Matrix<T>
-- **Signature:** `@SuppressWarnings("null") public static <T> Matrix<T> diagonals(final T[] mainDiagonal, final T[] antiDiagonal) throws IllegalArgumentException`
+- **See also:** #ofDiagonals(Object\[\], Object\[\]), #ofMainDiagonal(Object\[\])
+##### ofDiagonals(...) -> Matrix<T>
+- **Signature:** `@SuppressWarnings("null") public static <T> Matrix<T> ofDiagonals(final T[] mainDiagonal, final T[] antiDiagonal) throws IllegalArgumentException`
 - **Summary:** Creates a square matrix with values on both diagonals.
 - **Contract:**
   - If diagonals intersect (odd dimension), the main diagonal value takes precedence.
@@ -7410,7 +7436,7 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Returns:** a square matrix with the given diagonal values, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if both arrays are {@code null} , or if both diagonals are non-empty and have different lengths
-- **See also:** #mainDiagonal(Object\[\]), #antiDiagonal(Object\[\])
+- **See also:** #ofMainDiagonal(Object\[\]), #ofAntiDiagonal(Object\[\])
 
 #### Public Instance Methods
 ##### <init>(...) -> void
@@ -7792,7 +7818,8 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new matrix with independent row storage and the same element references
-- **Signature:** `@Override public Matrix<T> copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
+##### copyRows(...) -> Matrix<T>
+- **Signature:** `@Override public Matrix<T> copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Creates a structural copy of a row range from this matrix.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -7800,7 +7827,8 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Returns:** a new Matrix containing the specified rows
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex} or {@code toRowIndex} is out of range ( {@code fromRowIndex < 0 || toRowIndex > rowCount || fromRowIndex > toRowIndex} )
-- **Signature:** `@Override public Matrix<T> copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+##### copyRegion(...) -> Matrix<T>
+- **Signature:** `@Override public Matrix<T> copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Creates a structural copy of a submatrix defined by row and column ranges.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -7937,8 +7965,8 @@ Object matrix backed by a rectangular {@code T\[\]\[\]} .
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if {@code rowRepeats < 1} or {@code columnRepeats < 1} , or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
 - **See also:** <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">,MATLAB repelem function,</a>
-##### repeatMatrix(...) -> Matrix<T>
-- **Signature:** `@Override public Matrix<T> repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException`
+##### tile(...) -> Matrix<T>
+- **Signature:** `@Override public Matrix<T> tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException`
 - **Summary:** Repeats the entire matrix as a tile pattern by the specified number of times.
 - **Parameters:**
   - `rowRepeats` (`int`) — number of times to repeat the matrix in the row direction (must be {@code >= 1} )
@@ -8247,11 +8275,11 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Returns:** a new {@code ShortMatrix} backed by a deep copy of {@code a} when it is non-empty, or the shared empty matrix if {@code a} has no rows
 - **See also:** #of(short\[\]\[\]), #copy()
 ##### randomRow(...) -> ShortMatrix
-- **Signature:** `public static ShortMatrix randomRow(final int length)`
-- **Summary:** Creates a new {@code 1 x length} matrix filled with pseudo-random {@code short} values drawn uniformly from the entire {@code short} range.
+- **Signature:** `public static ShortMatrix randomRow(final int columnCount)`
+- **Summary:** Creates a new {@code 1 x columnCount} matrix filled with pseudo-random {@code short} values drawn uniformly from the entire {@code short} range.
 - **Parameters:**
-  - `length` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
-- **Returns:** a new {@code ShortMatrix} of dimensions {@code 1 x length} filled with random values
+  - `columnCount` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
+- **Returns:** a new {@code ShortMatrix} of dimensions {@code 1 x columnCount} filled with random values
 - **See also:** #random(int, int)
 ##### random(...) -> ShortMatrix
 - **Signature:** `public static ShortMatrix random(final int rowCount, final int columnCount)`
@@ -8260,8 +8288,8 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
   - `rowCount` (`int`) — the number of rows in the new matrix; must be {@code >= 0}
   - `columnCount` (`int`) — the number of columns in the new matrix; must be {@code >= 0}
 - **Returns:** a new {@code ShortMatrix} of dimensions {@code rowCount x columnCount} filled with random values
-##### repeat(...) -> ShortMatrix
-- **Signature:** `public static ShortMatrix repeat(final int rowCount, final int columnCount, final short element)`
+##### filled(...) -> ShortMatrix
+- **Signature:** `public static ShortMatrix filled(final int rowCount, final int columnCount, final short element)`
 - **Summary:** Creates a new matrix of the specified dimensions where every element is the provided {@code element} .
 - **Parameters:**
   - `rowCount` (`int`) — the number of rows in the new matrix; must be {@code >= 0}
@@ -8305,22 +8333,22 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
   - `endInclusive` (`short`) — the ending value (inclusive, if reachable by stepping)
   - `step` (`short`) — the step size (must not be zero; positive for ascending, negative for descending)
 - **Returns:** a new {@code 1xn} {@code ShortMatrix} of values from {@code startInclusive} stepped by {@code step}
-##### mainDiagonal(...) -> ShortMatrix
-- **Signature:** `public static ShortMatrix mainDiagonal(final short[] mainDiagonal)`
+##### ofMainDiagonal(...) -> ShortMatrix
+- **Signature:** `public static ShortMatrix ofMainDiagonal(final short[] mainDiagonal)`
 - **Summary:** Creates a square matrix from the specified main diagonal elements (upper-left to lower-right).
 - **Parameters:**
   - `mainDiagonal` (`short[]`) — the array of main-diagonal elements; must not be {@code null} , but may be empty
 - **Returns:** a new {@code n x n} {@code ShortMatrix} (where {@code n = mainDiagonal.length} ) with the supplied values on the main diagonal and {@code 0} elsewhere; the shared empty matrix if {@code mainDiagonal} is empty
-- **See also:** #antiDiagonal(short\[\]), #diagonals(short\[\], short\[\])
-##### antiDiagonal(...) -> ShortMatrix
-- **Signature:** `public static ShortMatrix antiDiagonal(final short[] antiDiagonal)`
+- **See also:** #ofAntiDiagonal(short\[\]), #ofDiagonals(short\[\], short\[\])
+##### ofAntiDiagonal(...) -> ShortMatrix
+- **Signature:** `public static ShortMatrix ofAntiDiagonal(final short[] antiDiagonal)`
 - **Summary:** Creates a square matrix from the specified anti-diagonal elements (upper-right to lower-left).
 - **Parameters:**
   - `antiDiagonal` (`short[]`) — the array of anti-diagonal elements; must not be {@code null} , but may be empty
 - **Returns:** a new {@code n x n} {@code ShortMatrix} (where {@code n = antiDiagonal.length} ) with the supplied values on the anti-diagonal and {@code 0} elsewhere; the shared empty matrix if {@code antiDiagonal} is empty
-- **See also:** #mainDiagonal(short\[\]), #diagonals(short\[\], short\[\])
-##### diagonals(...) -> ShortMatrix
-- **Signature:** `public static ShortMatrix diagonals(final short[] mainDiagonal, final short[] antiDiagonal) throws IllegalArgumentException`
+- **See also:** #ofMainDiagonal(short\[\]), #ofDiagonals(short\[\], short\[\])
+##### ofDiagonals(...) -> ShortMatrix
+- **Signature:** `public static ShortMatrix ofDiagonals(final short[] mainDiagonal, final short[] antiDiagonal) throws IllegalArgumentException`
 - **Summary:** Creates a square matrix from the specified main diagonal and anti-diagonal elements.
 - **Contract:**
   - At least one array must be non- {@code null} ; if both arrays contain elements, they must have the same length.
@@ -8332,7 +8360,7 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Returns:** a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null} , or if both arrays are non-empty and have different lengths
-- **See also:** #mainDiagonal(short\[\]), #antiDiagonal(short\[\])
+- **See also:** #ofMainDiagonal(short\[\]), #ofAntiDiagonal(short\[\])
 ##### unbox(...) -> ShortMatrix
 - **Signature:** `public static ShortMatrix unbox(final Matrix<Short> x)`
 - **Summary:** Converts a boxed {@link Matrix Matrix&lt;Short&gt;} to a primitive {@code ShortMatrix} .
@@ -8640,7 +8668,8 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Parameters:**
   - (none)
 - **Returns:** a new matrix that is a copy of this matrix with full independence guarantee
-- **Signature:** `@Override public ShortMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
+##### copyRows(...) -> ShortMatrix
+- **Signature:** `@Override public ShortMatrix copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException`
 - **Summary:** Creates a copy of a row range from this matrix.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -8648,7 +8677,8 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Returns:** a new {@code ShortMatrix} containing the specified rows
 - **Throws:**
   - `java.lang.IndexOutOfBoundsException` — if {@code fromRowIndex < 0} , {@code toRowIndex > rowCount} , or {@code fromRowIndex > toRowIndex}
-- **Signature:** `@Override public ShortMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
+##### copyRegion(...) -> ShortMatrix
+- **Signature:** `@Override public ShortMatrix copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException`
 - **Summary:** Creates a copy of a submatrix defined by row and column ranges.
 - **Parameters:**
   - `fromRowIndex` (`int`) — the starting row index (inclusive, 0-based)
@@ -8782,8 +8812,8 @@ Matrix implementation backed by a rectangular {@code short\[\]\[\]} .
 - **Throws:**
   - `java.lang.IllegalArgumentException` — if rowRepeats or columnRepeats is not positive, or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
 - **See also:** <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">,MATLAB repelem function,</a>
-##### repeatMatrix(...) -> ShortMatrix
-- **Signature:** `@Override public ShortMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException`
+##### tile(...) -> ShortMatrix
+- **Signature:** `@Override public ShortMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException`
 - **Summary:** Repeats the entire matrix in a tiled pattern.
 - **Parameters:**
   - `rowRepeats` (`int`) — number of times to repeat the matrix vertically

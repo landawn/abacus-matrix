@@ -7,7 +7,7 @@ A clean, faithful mirror of the IntMatrix baseline with correctly specialized fl
 Across the public surface the families are internally consistent: get/set raw access -> AIOOBE; value*
 -> OptionalDouble after checkRowColumnIndex (IOOBE); diagonal/row/column/update/transform/arithmetic/stream
 families match their counterparts in naming, parameter order, return types, and validation. NaN/Infinity/-0.0
-semantics are unusually well documented (equals, replaceIf, add/subtract/matmul, mutateFlattened sort ordering,
+semantics are unusually well documented (equals, replaceIf, add/subtract/matmul, mutateViaFlatArray sort ordering,
 from(float[]), the toXxxMatrix narrowers, and println all carry accurate notes; the doubleToRawLongBits!=0
 default-value fast-path in resize/extend is correct). Conversions are complete and consistent (toIntMatrix
 2909, toLongMatrix 2964, toFloatMatrix 3013 = the three main numeric types other than double; all narrowing,

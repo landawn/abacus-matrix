@@ -368,7 +368,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     }
 
     /**
-     * Creates a new {@code 1 x length} matrix filled with random double values
+     * Creates a new {@code 1 x columnCount} matrix filled with random double values
      * uniformly distributed in {@code [0.0, 1.0)}.
      *
      * <p><b>Usage Examples:</b></p>
@@ -379,18 +379,18 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * boolean firstValueInUnitInterval = matrix.get(0, 0) >= 0.0 && matrix.get(0, 0) < 1.0; // true
      *
      * DoubleMatrix.randomRow(0).columnCount(); // returns 0 (empty row)
-     * DoubleMatrix.randomRow(-1);              // throws IllegalArgumentException (negative length)
+     * DoubleMatrix.randomRow(-1);              // throws IllegalArgumentException (negative columnCount)
      * }</pre>
      *
-     * @param length the number of columns in the new matrix
-     * @return a new {@code DoubleMatrix} of dimensions {@code 1 x length} filled with random values in {@code [0.0, 1.0)}
-     * @throws IllegalArgumentException if {@code length} is negative
+     * @param columnCount the number of columns in the new matrix
+     * @return a new {@code DoubleMatrix} of dimensions {@code 1 x columnCount} filled with random values in {@code [0.0, 1.0)}
+     * @throws IllegalArgumentException if {@code columnCount} is negative
      * @see #random(int, int)
      */
-    public static DoubleMatrix randomRow(final int length) {
-        N.checkArgument(length >= 0, MSG_NEGATIVE_DIMENSION, "length", length);
+    public static DoubleMatrix randomRow(final int columnCount) {
+        N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
 
-        return random(1, length);
+        return random(1, columnCount);
     }
 
     /**
@@ -435,14 +435,14 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * DoubleMatrix matrix = DoubleMatrix.repeat(2, 3, 1.0);
+     * DoubleMatrix matrix = DoubleMatrix.filled(2, 3, 1.0);
      * matrix.get(1, 2);                              // returns 1.0
      * matrix.rowCount();                             // returns 2
      *
-     * DoubleMatrix nans = DoubleMatrix.repeat(1, 2, Double.NaN);
+     * DoubleMatrix nans = DoubleMatrix.filled(1, 2, Double.NaN);
      * Double.isNaN(nans.get(0, 0));                  // returns true
-     * DoubleMatrix.repeat(0, 0, 5.0).isEmpty();      // returns true
-     * DoubleMatrix.repeat(-1, 3, 1.0);               // throws IllegalArgumentException (negative rowCount)
+     * DoubleMatrix.filled(0, 0, 5.0).isEmpty();      // returns true
+     * DoubleMatrix.filled(-1, 3, 1.0);               // throws IllegalArgumentException (negative rowCount)
      * }</pre>
      *
      * @param rowCount the number of rows in the new matrix
@@ -452,7 +452,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
      *         or if the resulting shape is not representable
      */
-    public static DoubleMatrix repeat(final int rowCount, final int columnCount, final double element) {
+    public static DoubleMatrix filled(final int rowCount, final int columnCount, final double element) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
         checkRepresentableShape(rowCount, columnCount);
@@ -472,7 +472,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * DoubleMatrix matrix = DoubleMatrix.mainDiagonal(new double[] {1.0, 2.0, 3.0});
+     * DoubleMatrix matrix = DoubleMatrix.ofMainDiagonal(new double[] {1.0, 2.0, 3.0});
      * // Creates 3x3 matrix:
      * // [[1.0, 0.0, 0.0],
      * //  [0.0, 2.0, 0.0],
@@ -480,9 +480,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * matrix.get(1, 1);                                       // returns 2.0
      * matrix.get(0, 1);                                       // returns 0.0 (off-diagonal)
      *
-     * DoubleMatrix.mainDiagonal(new double[] {5.0}).get(0, 0); // returns 5.0 (1x1 matrix)
-     * DoubleMatrix.mainDiagonal(null);                         // throws IllegalArgumentException (null array)
-     * DoubleMatrix.mainDiagonal(new double[0]).isEmpty();      // returns true
+     * DoubleMatrix.ofMainDiagonal(new double[] {5.0}).get(0, 0); // returns 5.0 (1x1 matrix)
+     * DoubleMatrix.ofMainDiagonal(null);                         // throws IllegalArgumentException (null array)
+     * DoubleMatrix.ofMainDiagonal(new double[0]).isEmpty();      // returns true
      * }</pre>
      *
      * @param mainDiagonal the array of main-diagonal elements; must not be {@code null}, but may be empty
@@ -490,13 +490,13 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *         the supplied values on the main diagonal and {@code 0} elsewhere; the shared empty
      *         matrix if {@code mainDiagonal} is empty
      * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null}
-     * @see #antiDiagonal(double[])
-     * @see #diagonals(double[], double[])
+     * @see #ofAntiDiagonal(double[])
+     * @see #ofDiagonals(double[], double[])
      */
-    public static DoubleMatrix mainDiagonal(final double[] mainDiagonal) {
+    public static DoubleMatrix ofMainDiagonal(final double[] mainDiagonal) {
         N.checkArgNotNull(mainDiagonal, "mainDiagonal");
 
-        return diagonals(mainDiagonal, null);
+        return ofDiagonals(mainDiagonal, null);
     }
 
     /**
@@ -506,7 +506,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * DoubleMatrix matrix = DoubleMatrix.antiDiagonal(new double[] {1.0, 2.0, 3.0});
+     * DoubleMatrix matrix = DoubleMatrix.ofAntiDiagonal(new double[] {1.0, 2.0, 3.0});
      * // Creates 3x3 matrix:
      * // [[0.0, 0.0, 1.0],
      * //  [0.0, 2.0, 0.0],
@@ -514,9 +514,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * matrix.get(0, 2);                                       // returns 1.0
      * matrix.get(0, 0);                                       // returns 0.0 (off anti-diagonal)
      *
-     * DoubleMatrix.antiDiagonal(new double[] {5.0}).get(0, 0); // returns 5.0 (1x1 matrix)
-     * DoubleMatrix.antiDiagonal(null);                         // throws IllegalArgumentException (null array)
-     * DoubleMatrix.antiDiagonal(new double[0]).isEmpty();      // returns true
+     * DoubleMatrix.ofAntiDiagonal(new double[] {5.0}).get(0, 0); // returns 5.0 (1x1 matrix)
+     * DoubleMatrix.ofAntiDiagonal(null);                         // throws IllegalArgumentException (null array)
+     * DoubleMatrix.ofAntiDiagonal(new double[0]).isEmpty();      // returns true
      * }</pre>
      *
      * @param antiDiagonal the array of anti-diagonal elements; must not be {@code null}, but may be empty
@@ -524,13 +524,13 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *         the supplied values on the anti-diagonal and {@code 0} elsewhere; the shared empty
      *         matrix if {@code antiDiagonal} is empty
      * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null}
-     * @see #mainDiagonal(double[])
-     * @see #diagonals(double[], double[])
+     * @see #ofMainDiagonal(double[])
+     * @see #ofDiagonals(double[], double[])
      */
-    public static DoubleMatrix antiDiagonal(final double[] antiDiagonal) {
+    public static DoubleMatrix ofAntiDiagonal(final double[] antiDiagonal) {
         N.checkArgNotNull(antiDiagonal, "antiDiagonal");
 
-        return diagonals(null, antiDiagonal);
+        return ofDiagonals(null, antiDiagonal);
     }
 
     /**
@@ -542,7 +542,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * DoubleMatrix matrix = DoubleMatrix.diagonals(new double[] {1.0, 2.0, 3.0}, new double[] {4.0, 5.0, 6.0});
+     * DoubleMatrix matrix = DoubleMatrix.ofDiagonals(new double[] {1.0, 2.0, 3.0}, new double[] {4.0, 5.0, 6.0});
      * // Creates 3x3 matrix with both diagonals set:
      * //   {1.0, 0.0, 4.0},
      * //   {0.0, 2.0, 0.0},
@@ -551,9 +551,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * matrix.get(0, 2);    // returns 4.0 (anti-diagonal)
      *
      * // Odd-sized center: main diagonal wins over anti-diagonal at the shared cell (1,1)
-     * DoubleMatrix.diagonals(new double[] {1.0, 2.0, 3.0}, new double[] {7.0, 8.0, 9.0}).get(1, 1); // returns 2.0
-     * DoubleMatrix.diagonals(null, null);                                                           // throws IllegalArgumentException (both null)
-     * DoubleMatrix.diagonals(new double[] {1.0}, new double[] {1.0, 2.0});                          // throws IllegalArgumentException (length mismatch)
+     * DoubleMatrix.ofDiagonals(new double[] {1.0, 2.0, 3.0}, new double[] {7.0, 8.0, 9.0}).get(1, 1); // returns 2.0
+     * DoubleMatrix.ofDiagonals(null, null);                                                           // throws IllegalArgumentException (both null)
+     * DoubleMatrix.ofDiagonals(new double[] {1.0}, new double[] {1.0, 2.0});                          // throws IllegalArgumentException (length mismatch)
      * }</pre>
      *
      * @param mainDiagonal the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non-{@code null};
@@ -562,10 +562,10 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *        may be empty
      * @return a square matrix with the specified diagonals, or the shared empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
      * @throws IllegalArgumentException if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null}, or if both arrays are non-empty and have different lengths
-     * @see #mainDiagonal(double[])
-     * @see #antiDiagonal(double[])
+     * @see #ofMainDiagonal(double[])
+     * @see #ofAntiDiagonal(double[])
      */
-    public static DoubleMatrix diagonals(final double[] mainDiagonal, final double[] antiDiagonal) throws IllegalArgumentException {
+    public static DoubleMatrix ofDiagonals(final double[] mainDiagonal, final double[] antiDiagonal) throws IllegalArgumentException {
         N.checkArgument(mainDiagonal != null || antiDiagonal != null, "Both 'mainDiagonal' and 'antiDiagonal' can't be null");
 
         N.checkArgument(N.isEmpty(mainDiagonal) || N.isEmpty(antiDiagonal) || mainDiagonal.length == antiDiagonal.length,
@@ -1792,14 +1792,14 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0}, {3.0, 4.0}, {5.0, 6.0}});
-     * DoubleMatrix subset = matrix.copy(1, 3);
+     * DoubleMatrix subset = matrix.copyRows(1, 3);
      * subset.rowCount();                         // returns 2
      * subset.get(0, 0);                          // returns 3.0 -> {{3.0, 4.0}, {5.0, 6.0}}
      *
-     * matrix.copy(1, 1).rowCount();              // returns 0 (empty range)
+     * matrix.copyRows(1, 1).rowCount();              // returns 0 (empty range)
      *
-     * matrix.copy(-1, 2);                        // throws IndexOutOfBoundsException (fromRowIndex < 0)
-     * matrix.copy(0, 5);                         // throws IndexOutOfBoundsException (toRowIndex > rowCount)
+     * matrix.copyRows(-1, 2);                        // throws IndexOutOfBoundsException (fromRowIndex < 0)
+     * matrix.copyRows(0, 5);                         // throws IndexOutOfBoundsException (toRowIndex > rowCount)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -1809,7 +1809,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *         or {@code fromRowIndex > toRowIndex}
      */
     @Override
-    public DoubleMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
+    public DoubleMatrix copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
         final double[][] c = new double[toRowIndex - fromRowIndex][];
@@ -1827,14 +1827,14 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}, {7.0, 8.0, 9.0}});
-     * DoubleMatrix submatrix = matrix.copy(0, 2, 1, 3);
+     * DoubleMatrix submatrix = matrix.copyRegion(0, 2, 1, 3);
      * submatrix.get(0, 0);                         // returns 2.0
      * submatrix.get(1, 1);                         // returns 6.0 -> {{2.0, 3.0}, {5.0, 6.0}}
      *
-     * matrix.copy(0, 1, 0, 1).get(0, 0);           // returns 1.0 (single-cell submatrix)
+     * matrix.copyRegion(0, 1, 0, 1).get(0, 0);           // returns 1.0 (single-cell submatrix)
      *
-     * matrix.copy(0, 2, 1, 5);                     // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
-     * matrix.copy(-1, 2, 0, 2);                    // throws IndexOutOfBoundsException (fromRowIndex < 0)
+     * matrix.copyRegion(0, 2, 1, 5);                     // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
+     * matrix.copyRegion(-1, 2, 0, 2);                    // throws IndexOutOfBoundsException (fromRowIndex < 0)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -1847,7 +1847,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *         or {@code from > to} for either range)
      */
     @Override
-    public DoubleMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex)
+    public DoubleMatrix copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex)
             throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
@@ -1990,7 +1990,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
         }
 
         if (newRowCount <= rowCount && newColumnCount <= columnCount) {
-            return copy(0, newRowCount, 0, newColumnCount);
+            return copyRegion(0, newRowCount, 0, newColumnCount);
         } else {
             final boolean fillDefaultValue = Double.doubleToRawLongBits(defaultValue) != 0;
             final double[][] b = new double[newRowCount][];
@@ -2624,7 +2624,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.of(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
-     * DoubleMatrix repeated = matrix.repeatMatrix(2, 3);
+     * DoubleMatrix repeated = matrix.tile(2, 3);
      * // Result: [[1.0, 2.0, 1.0, 2.0, 1.0, 2.0],
      * //          [3.0, 4.0, 3.0, 4.0, 3.0, 4.0],
      * //          [1.0, 2.0, 1.0, 2.0, 1.0, 2.0],
@@ -2633,8 +2633,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * repeated.columnCount();            // returns 6
      * repeated.get(2, 3);                // returns 2.0 (tiled copy)
      *
-     * matrix.repeatMatrix(1, 1).equals(matrix); // returns true (single tile)
-     * matrix.repeatMatrix(2, 0);                // throws IllegalArgumentException (repeats must be positive)
+     * matrix.tile(1, 1).equals(matrix); // returns true (single tile)
+     * matrix.tile(2, 0);                // throws IllegalArgumentException (repeats must be positive)
      * }</pre>
      *
      * @param rowRepeats number of times to repeat the matrix vertically; must be {@code > 0}
@@ -2645,7 +2645,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
     @Override
-    public DoubleMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
+    public DoubleMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
 
         if (rowRepeats == 1 && columnRepeats == 1) {

@@ -71,8 +71,7 @@ class FunctionalInterfaceNullValidationTest extends TestBase {
 
     private static Object newArgument(final Class<?> type, final Type genericType) {
         if (isFunctionalInterface(type)) {
-            return Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[] { type },
-                    (proxy, method, args) -> defaultValue(method.getReturnType()));
+            return Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[] { type }, (proxy, method, args) -> defaultValue(method.getReturnType()));
         } else if (type == boolean.class) {
             return false;
         } else if (type == byte.class) {

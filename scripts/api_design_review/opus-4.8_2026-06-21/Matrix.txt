@@ -49,7 +49,7 @@ None unique to this class. (Matrix<T> is the reference for the complete mapTo* s
 primitive side — see SUMMARY and the FloatMatrix/Long/Double reports.)
 
 6. DEPRECATION/REMOVAL CANDIDATES
-None. No @Deprecated members. mutateFlattened (2664) is an intentionally-unsafe, documented escape hatch
+None. No @Deprecated members. mutateViaFlatArray (2664) is an intentionally-unsafe, documented escape hatch
 mirrored across the family — keep.
 
 CROSS-CLASS NOTES

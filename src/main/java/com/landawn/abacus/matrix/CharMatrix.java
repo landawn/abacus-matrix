@@ -184,7 +184,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     }
 
     /**
-     * Creates a new {@code 1 x length} matrix filled with random char values drawn uniformly from
+     * Creates a new {@code 1 x columnCount} matrix filled with random char values drawn uniformly from
      * the full unsigned 16-bit range {@code [0, 65535]}. Values are not constrained to printable
      * characters and may include surrogates and control codes.
      *
@@ -195,18 +195,18 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * matrix.columnCount();         // returns 5 (values are random)
      *
      * CharMatrix.randomRow(0).columnCount(); // returns 0 (empty single row)
-     * CharMatrix.randomRow(-1);              // throws IllegalArgumentException
+     * CharMatrix.randomRow(-1);              // throws IllegalArgumentException (negative columnCount)
      * }</pre>
      *
-     * @param length the number of columns in the new matrix; must be {@code >= 0}
-     * @return a new {@code CharMatrix} of dimensions {@code 1 x length} filled with random values
-     * @throws IllegalArgumentException if {@code length} is negative
+     * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
+     * @return a new {@code CharMatrix} of dimensions {@code 1 x columnCount} filled with random values
+     * @throws IllegalArgumentException if {@code columnCount} is negative
      * @see #random(int, int)
      */
-    public static CharMatrix randomRow(final int length) {
-        N.checkArgument(length >= 0, MSG_NEGATIVE_DIMENSION, "length", length);
+    public static CharMatrix randomRow(final int columnCount) {
+        N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
 
-        return random(1, length);
+        return random(1, columnCount);
     }
 
     /**
@@ -253,13 +253,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * CharMatrix matrix = CharMatrix.repeat(2, 3, 'a');
+     * CharMatrix matrix = CharMatrix.filled(2, 3, 'a');
      * matrix.get(0, 0);            // returns 'a'
      * matrix.get(1, 2);            // returns 'a'
      * matrix.rowCount();           // returns 2
      *
-     * CharMatrix.repeat(0, 0, 'a').isEmpty(); // returns true
-     * CharMatrix.repeat(-1, 3, 'a');          // throws IllegalArgumentException
+     * CharMatrix.filled(0, 0, 'a').isEmpty(); // returns true
+     * CharMatrix.filled(-1, 3, 'a');          // throws IllegalArgumentException
      * }</pre>
      *
      * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
@@ -270,7 +270,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *         if the resulting shape cannot be represented (for example {@code rowCount == 0} with
      *         {@code columnCount > 0})
      */
-    public static CharMatrix repeat(final int rowCount, final int columnCount, final char element) {
+    public static CharMatrix filled(final int rowCount, final int columnCount, final char element) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
         checkRepresentableShape(rowCount, columnCount);
@@ -388,12 +388,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * CharMatrix matrix = CharMatrix.mainDiagonal(new char[] {'a', 'b', 'c'});
+     * CharMatrix matrix = CharMatrix.ofMainDiagonal(new char[] {'a', 'b', 'c'});
      * matrix.get(0, 0);                                         // returns 'a'
      * matrix.get(2, 2);                                         // returns 'c'
      * boolean offDiagonalIsZero = matrix.get(0, 1) == (char) 0; // true (off-diagonal default)
-     * CharMatrix.mainDiagonal((char[]) null);                   // throws IllegalArgumentException (null array)
-     * CharMatrix.mainDiagonal(new char[0]).isEmpty();           // returns true
+     * CharMatrix.ofMainDiagonal((char[]) null);                   // throws IllegalArgumentException (null array)
+     * CharMatrix.ofMainDiagonal(new char[0]).isEmpty();           // returns true
      * // Resulting 3x3 matrix:
      * //   {'a', (char) 0, (char) 0},
      * //   {(char) 0, 'b', (char) 0},
@@ -405,13 +405,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @return a square matrix with the specified main diagonal (n×n where n = diagonal length),
      *         or an empty matrix if {@code mainDiagonal} is empty
      * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null}
-     * @see #antiDiagonal(char[])
-     * @see #diagonals(char[], char[])
+     * @see #ofAntiDiagonal(char[])
+     * @see #ofDiagonals(char[], char[])
      */
-    public static CharMatrix mainDiagonal(final char[] mainDiagonal) {
+    public static CharMatrix ofMainDiagonal(final char[] mainDiagonal) {
         N.checkArgNotNull(mainDiagonal, "mainDiagonal");
 
-        return diagonals(mainDiagonal, null);
+        return ofDiagonals(mainDiagonal, null);
     }
 
     /**
@@ -421,12 +421,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * CharMatrix matrix = CharMatrix.antiDiagonal(new char[] {'a', 'b', 'c'});
+     * CharMatrix matrix = CharMatrix.ofAntiDiagonal(new char[] {'a', 'b', 'c'});
      * matrix.get(0, 2);                                             // returns 'a'
      * matrix.get(2, 0);                                             // returns 'c'
      * boolean offAntiDiagonalIsZero = matrix.get(0, 0) == (char) 0; // true (off-anti-diagonal default)
-     * CharMatrix.antiDiagonal((char[]) null);                       // throws IllegalArgumentException (null array)
-     * CharMatrix.antiDiagonal(new char[0]).isEmpty();               // returns true
+     * CharMatrix.ofAntiDiagonal((char[]) null);                       // throws IllegalArgumentException (null array)
+     * CharMatrix.ofAntiDiagonal(new char[0]).isEmpty();               // returns true
      * // Resulting 3x3 matrix:
      * //   {(char) 0, (char) 0, 'a'},
      * //   {(char) 0, 'b', (char) 0},
@@ -438,13 +438,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @return a square matrix with the specified anti-diagonal (n×n where n = diagonal length),
      *         or an empty matrix if {@code antiDiagonal} is empty
      * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null}
-     * @see #mainDiagonal(char[])
-     * @see #diagonals(char[], char[])
+     * @see #ofMainDiagonal(char[])
+     * @see #ofDiagonals(char[], char[])
      */
-    public static CharMatrix antiDiagonal(final char[] antiDiagonal) {
+    public static CharMatrix ofAntiDiagonal(final char[] antiDiagonal) {
         N.checkArgNotNull(antiDiagonal, "antiDiagonal");
 
-        return diagonals(null, antiDiagonal);
+        return ofDiagonals(null, antiDiagonal);
     }
 
     /**
@@ -456,7 +456,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * CharMatrix matrix = CharMatrix.diagonals(new char[] {'a', 'b', 'c'}, new char[] {'x', 'y', 'z'});
+     * CharMatrix matrix = CharMatrix.ofDiagonals(new char[] {'a', 'b', 'c'}, new char[] {'x', 'y', 'z'});
      * matrix.get(0, 0);            // returns 'a' (main diagonal)
      * matrix.get(0, 2);            // returns 'x' (anti-diagonal)
      * matrix.get(1, 1);            // returns 'b' (overlap: main takes precedence)
@@ -466,8 +466,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * //   {(char) 0, 'b', (char) 0},
      * //   {'z', (char) 0, 'c'}
      *
-     * CharMatrix.diagonals((char[]) null, (char[]) null);                      // throws IllegalArgumentException (both null)
-     * CharMatrix.diagonals(new char[] {'a', 'b'}, new char[] {'x', 'y', 'z'}); // throws IllegalArgumentException (length mismatch)
+     * CharMatrix.ofDiagonals((char[]) null, (char[]) null);                      // throws IllegalArgumentException (both null)
+     * CharMatrix.ofDiagonals(new char[] {'a', 'b'}, new char[] {'x', 'y', 'z'}); // throws IllegalArgumentException (length mismatch)
      * }</pre>
      *
      * @param mainDiagonal the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non-{@code null};
@@ -476,10 +476,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *        may be empty
      * @return a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
      * @throws IllegalArgumentException if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null}, or if both arrays are non-empty and have different lengths
-     * @see #mainDiagonal(char[])
-     * @see #antiDiagonal(char[])
+     * @see #ofMainDiagonal(char[])
+     * @see #ofAntiDiagonal(char[])
      */
-    public static CharMatrix diagonals(final char[] mainDiagonal, final char[] antiDiagonal) throws IllegalArgumentException {
+    public static CharMatrix ofDiagonals(final char[] mainDiagonal, final char[] antiDiagonal) throws IllegalArgumentException {
         N.checkArgument(mainDiagonal != null || antiDiagonal != null, "Both 'mainDiagonal' and 'antiDiagonal' can't be null");
 
         N.checkArgument(N.isEmpty(mainDiagonal) || N.isEmpty(antiDiagonal) || mainDiagonal.length == antiDiagonal.length,
@@ -1659,14 +1659,14 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}, {'e', 'f'}});
-     * CharMatrix subset = matrix.copy(1, 3);
+     * CharMatrix subset = matrix.copyRows(1, 3);
      * subset.rowCount();          // returns 2
      * subset.rowView(0);          // returns ['c', 'd'] -> {{'c', 'd'}, {'e', 'f'}}
      *
-     * matrix.copy(1, 1).rowCount(); // returns 0 (empty range)
+     * matrix.copyRows(1, 1).rowCount(); // returns 0 (empty range)
      *
-     * matrix.copy(-1, 2);           // throws IndexOutOfBoundsException (fromRowIndex < 0)
-     * matrix.copy(0, 5);            // throws IndexOutOfBoundsException (toRowIndex > rowCount)
+     * matrix.copyRows(-1, 2);           // throws IndexOutOfBoundsException (fromRowIndex < 0)
+     * matrix.copyRows(0, 5);            // throws IndexOutOfBoundsException (toRowIndex > rowCount)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -1676,7 +1676,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *         or {@code fromRowIndex > toRowIndex}
      */
     @Override
-    public CharMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
+    public CharMatrix copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
         final char[][] c = new char[toRowIndex - fromRowIndex][];
@@ -1694,14 +1694,14 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}, {'g', 'h', 'i'}});
-     * CharMatrix submatrix = matrix.copy(0, 2, 1, 3);
+     * CharMatrix submatrix = matrix.copyRegion(0, 2, 1, 3);
      * submatrix.get(0, 0);                    // returns 'b'
      * submatrix.get(1, 1);                    // returns 'f' -> {{'b', 'c'}, {'e', 'f'}}
      *
-     * matrix.copy(0, 1, 0, 1).get(0, 0);     // returns 'a' (single-cell submatrix)
+     * matrix.copyRegion(0, 1, 0, 1).get(0, 0);     // returns 'a' (single-cell submatrix)
      *
-     * matrix.copy(0, 2, 1, 5);               // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
-     * matrix.copy(-1, 2, 0, 2);              // throws IndexOutOfBoundsException (fromRowIndex < 0)
+     * matrix.copyRegion(0, 2, 1, 5);               // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
+     * matrix.copyRegion(-1, 2, 0, 2);              // throws IndexOutOfBoundsException (fromRowIndex < 0)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -1714,7 +1714,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *         or {@code from > to} for either range)
      */
     @Override
-    public CharMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
+    public CharMatrix copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex)
+            throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
         final char[][] c = new char[toRowIndex - fromRowIndex][];
@@ -1845,7 +1846,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
         }
 
         if (newRowCount <= rowCount && newColumnCount <= columnCount) {
-            return copy(0, newRowCount, 0, newColumnCount);
+            return copyRegion(0, newRowCount, 0, newColumnCount);
         } else {
             final boolean fillDefaultValue = defaultValue != CHAR_0;
             final char[][] b = new char[newRowCount][];
@@ -2476,13 +2477,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.of(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * CharMatrix repeated = matrix.repeatMatrix(2, 3);
+     * CharMatrix repeated = matrix.tile(2, 3);
      * repeated.rowView(0);        // returns ['a', 'b', 'a', 'b', 'a', 'b']
      * repeated.rowView(1);        // returns ['c', 'd', 'c', 'd', 'c', 'd']
      * repeated.rowCount();        // returns 4
      *
-     * matrix.repeatMatrix(1, 1).equals(matrix); // returns true (1x1 tiling is a copy)
-     * matrix.repeatMatrix(0, 1);                // throws IllegalArgumentException (repeats must be positive)
+     * matrix.tile(1, 1).equals(matrix); // returns true (1x1 tiling is a copy)
+     * matrix.tile(0, 1);                // throws IllegalArgumentException (repeats must be positive)
      * }</pre>
      *
      * @param rowRepeats number of times to repeat the matrix vertically; must be {@code > 0}
@@ -2493,7 +2494,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
     @Override
-    public CharMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
+    public CharMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
 
         if (rowRepeats == 1 && columnRepeats == 1) {

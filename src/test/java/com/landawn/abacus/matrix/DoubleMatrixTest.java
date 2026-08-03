@@ -126,8 +126,8 @@ class DoubleMatrixTest extends TestBase {
     }
 
     @Test
-    public void testRepeat() {
-        DoubleMatrix matrix = DoubleMatrix.repeat(1, 5, 3.14);
+    public void testFilled() {
+        DoubleMatrix matrix = DoubleMatrix.filled(1, 5, 3.14);
         assertEquals(1, matrix.rowCount());
         assertEquals(5, matrix.columnCount());
         for (int i = 0; i < 5; i++) {
@@ -138,7 +138,7 @@ class DoubleMatrixTest extends TestBase {
     @Test
     public void testDiagonalLU2RD() {
         double[] diagonal = { 1.0, 2.0, 3.0 };
-        DoubleMatrix matrix = DoubleMatrix.mainDiagonal(diagonal);
+        DoubleMatrix matrix = DoubleMatrix.ofMainDiagonal(diagonal);
         assertEquals(3, matrix.rowCount());
         assertEquals(3, matrix.columnCount());
         assertEquals(1.0, matrix.get(0, 0));
@@ -150,7 +150,7 @@ class DoubleMatrixTest extends TestBase {
     @Test
     public void testDiagonalRU2LD() {
         double[] diagonal = { 1.0, 2.0, 3.0 };
-        DoubleMatrix matrix = DoubleMatrix.antiDiagonal(diagonal);
+        DoubleMatrix matrix = DoubleMatrix.ofAntiDiagonal(diagonal);
         assertEquals(3, matrix.rowCount());
         assertEquals(3, matrix.columnCount());
         assertEquals(1.0, matrix.get(0, 2));
@@ -162,14 +162,14 @@ class DoubleMatrixTest extends TestBase {
     public void testDiagonal() {
         double[] mainDiag = { 1.0, 2.0, 3.0 };
         double[] antiDiag = { 7.0, 8.0, 9.0 };
-        DoubleMatrix matrix = DoubleMatrix.diagonals(mainDiag, antiDiag);
+        DoubleMatrix matrix = DoubleMatrix.ofDiagonals(mainDiag, antiDiag);
         assertEquals(3, matrix.rowCount());
         assertEquals(3, matrix.columnCount());
         assertEquals(1.0, matrix.get(0, 0));
         assertEquals(7.0, matrix.get(0, 2));
 
         // Test with different lengths
-        assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.diagonals(new double[] { 1.0 }, new double[] { 2.0, 3.0 }));
+        assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.ofDiagonals(new double[] { 1.0 }, new double[] { 2.0, 3.0 }));
     }
 
     @Test
@@ -460,7 +460,7 @@ class DoubleMatrixTest extends TestBase {
 
     @Test
     public void testUpdateAllUnarySequentialTallMatrixUsesRowMajorOrder() throws Exception {
-        final DoubleMatrix tall = DoubleMatrix.repeat(3, 2, 0.0);
+        final DoubleMatrix tall = DoubleMatrix.filled(3, 2, 0.0);
         final AtomicInteger next = new AtomicInteger();
 
         Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> tall.updateAll(x -> (double) next.incrementAndGet()));
@@ -616,25 +616,25 @@ class DoubleMatrixTest extends TestBase {
     }
 
     @Test
-    public void testCopyWithRowRange() {
+    public void testCopyRows() {
         double[][] arr = { { 1.0, 2.0 }, { 3.0, 4.0 }, { 5.0, 6.0 } };
         DoubleMatrix matrix = DoubleMatrix.of(arr);
 
-        DoubleMatrix copy = matrix.copy(0, 2);
+        DoubleMatrix copy = matrix.copyRows(0, 2);
         assertEquals(2, copy.rowCount());
         assertEquals(2, copy.columnCount());
         assertEquals(1.0, copy.get(0, 0));
         assertEquals(3.0, copy.get(1, 0));
 
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.copy(-1, 2));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyRows(-1, 2));
     }
 
     @Test
-    public void testCopyWithFullRange() {
+    public void testCopyRegion() {
         double[][] arr = { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 } };
         DoubleMatrix matrix = DoubleMatrix.of(arr);
 
-        DoubleMatrix copy = matrix.copy(0, 2, 1, 3);
+        DoubleMatrix copy = matrix.copyRegion(0, 2, 1, 3);
         assertEquals(2, copy.rowCount());
         assertEquals(2, copy.columnCount());
         assertEquals(2.0, copy.get(0, 0));
@@ -642,19 +642,19 @@ class DoubleMatrixTest extends TestBase {
     }
 
     @Test
-    public void testCopyEmptyRange_returnsEmptyMatrix() {
-        // Regression: copy(from, from) on a matrix with columns > 0 must not throw.
+    public void testCopyRangesEmpty_returnsEmptyMatrix() {
+        // Regression: copyRows(from, from) on a matrix with columns > 0 must not throw.
         DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 } });
 
-        DoubleMatrix empty = m.copy(0, 0);
+        DoubleMatrix empty = m.copyRows(0, 0);
         assertEquals(0, empty.rowCount());
         assertEquals(0, empty.columnCount());
 
-        DoubleMatrix emptyRows = m.copy(1, 1, 0, 3);
+        DoubleMatrix emptyRows = m.copyRegion(1, 1, 0, 3);
         assertEquals(0, emptyRows.rowCount());
         assertEquals(0, emptyRows.columnCount());
 
-        DoubleMatrix emptyCols = m.copy(0, 2, 1, 1);
+        DoubleMatrix emptyCols = m.copyRegion(0, 2, 1, 1);
         assertEquals(2, emptyCols.rowCount());
         assertEquals(0, emptyCols.columnCount());
     }
@@ -820,7 +820,7 @@ class DoubleMatrixTest extends TestBase {
     }
 
     @Test
-    public void testRepelem() {
+    public void testRepeatElements() {
         double[][] arr = { { 1.0, 2.0 } };
         DoubleMatrix matrix = DoubleMatrix.of(arr);
 
@@ -836,18 +836,18 @@ class DoubleMatrixTest extends TestBase {
     }
 
     @Test
-    public void testRepmat() {
+    public void testTile() {
         double[][] arr = { { 1.0, 2.0 } };
         DoubleMatrix matrix = DoubleMatrix.of(arr);
 
-        DoubleMatrix tiled = matrix.repeatMatrix(2, 3);
+        DoubleMatrix tiled = matrix.tile(2, 3);
         assertEquals(2, tiled.rowCount());
         assertEquals(6, tiled.columnCount());
         assertEquals(1.0, tiled.get(0, 0));
         assertEquals(2.0, tiled.get(0, 1));
         assertEquals(1.0, tiled.get(0, 2));
 
-        assertThrows(IllegalArgumentException.class, () -> matrix.repeatMatrix(0, 1));
+        assertThrows(IllegalArgumentException.class, () -> matrix.tile(0, 1));
     }
 
     @Test
@@ -1630,8 +1630,8 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepeat() {
-            DoubleMatrix m = DoubleMatrix.repeat(1, 5, 3.14);
+        public void testFilled() {
+            DoubleMatrix m = DoubleMatrix.filled(1, 5, 3.14);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
             for (int i = 0; i < 5; i++) {
@@ -1640,8 +1640,8 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepeat_withRowsCols() {
-            DoubleMatrix m = DoubleMatrix.repeat(2, 3, 3.14);
+        public void testFilled_withRowsCols() {
+            DoubleMatrix m = DoubleMatrix.filled(2, 3, 3.14);
             assertEquals(2, m.rowCount());
             assertEquals(3, m.columnCount());
             for (int i = 0; i < 2; i++) {
@@ -1653,7 +1653,7 @@ class DoubleMatrixTest extends TestBase {
 
         @Test
         public void testDiagonalLU2RD() {
-            DoubleMatrix m = DoubleMatrix.mainDiagonal(new double[] { 1.5, 2.5, 3.5 });
+            DoubleMatrix m = DoubleMatrix.ofMainDiagonal(new double[] { 1.5, 2.5, 3.5 });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1.5, m.get(0, 0), DELTA);
@@ -1665,7 +1665,7 @@ class DoubleMatrixTest extends TestBase {
 
         @Test
         public void testDiagonalRU2LD() {
-            DoubleMatrix m = DoubleMatrix.antiDiagonal(new double[] { 1.5, 2.5, 3.5 });
+            DoubleMatrix m = DoubleMatrix.ofAntiDiagonal(new double[] { 1.5, 2.5, 3.5 });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1.5, m.get(0, 2), DELTA);
@@ -1677,7 +1677,7 @@ class DoubleMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withBothDiagonals() {
-            DoubleMatrix m = DoubleMatrix.diagonals(new double[] { 1.0, 2.0, 3.0 }, new double[] { 4.0, 5.0, 6.0 });
+            DoubleMatrix m = DoubleMatrix.ofDiagonals(new double[] { 1.0, 2.0, 3.0 }, new double[] { 4.0, 5.0, 6.0 });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1.0, m.get(0, 0), DELTA);
@@ -1689,7 +1689,7 @@ class DoubleMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withOnlyMainDiagonal() {
-            DoubleMatrix m = DoubleMatrix.diagonals(new double[] { 1.5, 2.5, 3.5 }, null);
+            DoubleMatrix m = DoubleMatrix.ofDiagonals(new double[] { 1.5, 2.5, 3.5 }, null);
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1.5, m.get(0, 0), DELTA);
@@ -1699,7 +1699,7 @@ class DoubleMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withOnlyAntiDiagonal() {
-            DoubleMatrix m = DoubleMatrix.diagonals(null, new double[] { 4.5, 5.5, 6.5 });
+            DoubleMatrix m = DoubleMatrix.ofDiagonals(null, new double[] { 4.5, 5.5, 6.5 });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(4.5, m.get(0, 2), DELTA);
@@ -1709,7 +1709,7 @@ class DoubleMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withDifferentLengths() {
-            assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.diagonals(new double[] { 1.0, 2.0 }, new double[] { 3.0, 4.0, 5.0 }));
+            assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.ofDiagonals(new double[] { 1.0, 2.0 }, new double[] { 3.0, 4.0, 5.0 }));
         }
 
         @Test
@@ -2168,9 +2168,9 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withRowRange() {
+        public void testCopyRows() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
-            DoubleMatrix subset = m.copy(1, 3);
+            DoubleMatrix subset = m.copyRows(1, 3);
             assertEquals(2, subset.rowCount());
             assertEquals(3, subset.columnCount());
             assertEquals(4.0, subset.get(0, 0), DELTA);
@@ -2178,17 +2178,17 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withRowRange_outOfBounds() {
+        public void testCopyRows_outOfBounds() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(-1, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 3));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(2, 1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRows(-1, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRows(0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRows(2, 1));
         }
 
         @Test
-        public void testCopy_withFullRange() {
+        public void testCopyRegion() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
-            DoubleMatrix submatrix = m.copy(0, 2, 1, 3);
+            DoubleMatrix submatrix = m.copyRegion(0, 2, 1, 3);
             assertEquals(2, submatrix.rowCount());
             assertEquals(2, submatrix.columnCount());
             assertEquals(2.0, submatrix.get(0, 0), DELTA);
@@ -2196,10 +2196,10 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withFullRange_outOfBounds() {
+        public void testCopyRegion_outOfBounds() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 2, -1, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 2, 0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRegion(0, 2, -1, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRegion(0, 2, 0, 3));
         }
 
         // ============ Extend Tests ============
@@ -2422,7 +2422,7 @@ class DoubleMatrixTest extends TestBase {
         // ============ Repeat Tests ============
 
         @Test
-        public void testRepelem() {
+        public void testRepeatElements() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.5, 2.5 } });
             DoubleMatrix repeated = m.repeatElements(2, 3);
             assertEquals(2, repeated.rowCount());
@@ -2439,16 +2439,16 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepelem_invalidArguments() {
+        public void testRepeatElements_invalidArguments() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(0, 1));
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(1, 0));
         }
 
         @Test
-        public void testRepmat() {
+        public void testTile() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.5, 2.5 }, { 3.5, 4.5 } });
-            DoubleMatrix repeated = m.repeatMatrix(2, 3);
+            DoubleMatrix repeated = m.tile(2, 3);
             assertEquals(4, repeated.rowCount());
             assertEquals(6, repeated.columnCount());
 
@@ -2467,10 +2467,10 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepmat_invalidArguments() {
+        public void testTile_invalidArguments() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 } });
-            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
+            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
         }
 
         // ============ Flatten Tests ============
@@ -3460,8 +3460,8 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepeat() {
-            DoubleMatrix m = DoubleMatrix.repeat(1, 5, 3.14);
+        public void testFilled() {
+            DoubleMatrix m = DoubleMatrix.filled(1, 5, 3.14);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
             for (int i = 0; i < 5; i++) {
@@ -3470,15 +3470,15 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepeat_withZeroLength() {
-            DoubleMatrix m = DoubleMatrix.repeat(1, 0, 1.0);
+        public void testFilled_withZeroLength() {
+            DoubleMatrix m = DoubleMatrix.filled(1, 0, 1.0);
             assertEquals(1, m.rowCount());
             assertEquals(0, m.columnCount());
         }
 
         @Test
         public void testDiagonalLU2RD() {
-            DoubleMatrix m = DoubleMatrix.mainDiagonal(new double[] { 1.0, 2.0, 3.0 });
+            DoubleMatrix m = DoubleMatrix.ofMainDiagonal(new double[] { 1.0, 2.0, 3.0 });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1.0, m.get(0, 0));
@@ -3490,7 +3490,7 @@ class DoubleMatrixTest extends TestBase {
 
         @Test
         public void testDiagonalRU2LD() {
-            DoubleMatrix m = DoubleMatrix.antiDiagonal(new double[] { 1.0, 2.0, 3.0 });
+            DoubleMatrix m = DoubleMatrix.ofAntiDiagonal(new double[] { 1.0, 2.0, 3.0 });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1.0, m.get(0, 2));
@@ -3502,7 +3502,7 @@ class DoubleMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withBothDiagonals() {
-            DoubleMatrix m = DoubleMatrix.diagonals(new double[] { 1.0, 4.0 }, new double[] { 2.0, 3.0 });
+            DoubleMatrix m = DoubleMatrix.ofDiagonals(new double[] { 1.0, 4.0 }, new double[] { 2.0, 3.0 });
             assertEquals(2, m.rowCount());
             assertEquals(2, m.columnCount());
             assertEquals(1.0, m.get(0, 0));
@@ -3513,7 +3513,7 @@ class DoubleMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withOnlyMainDiagonal() {
-            DoubleMatrix m = DoubleMatrix.diagonals(new double[] { 1.0, 2.0, 3.0 }, null);
+            DoubleMatrix m = DoubleMatrix.ofDiagonals(new double[] { 1.0, 2.0, 3.0 }, null);
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1.0, m.get(0, 0));
@@ -3523,7 +3523,7 @@ class DoubleMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withOnlyAntiDiagonal() {
-            DoubleMatrix m = DoubleMatrix.diagonals(null, new double[] { 1.0, 2.0, 3.0 });
+            DoubleMatrix m = DoubleMatrix.ofDiagonals(null, new double[] { 1.0, 2.0, 3.0 });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1.0, m.get(0, 2));
@@ -3533,12 +3533,12 @@ class DoubleMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withBothNull() {
-            assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.diagonals(null, null));
+            assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.ofDiagonals(null, null));
         }
 
         @Test
         public void testDiagonal_withDifferentLengths() {
-            assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.diagonals(new double[] { 1.0, 2.0 }, new double[] { 1.0, 2.0, 3.0 }));
+            assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.ofDiagonals(new double[] { 1.0, 2.0 }, new double[] { 1.0, 2.0, 3.0 }));
         }
 
         @Test
@@ -3869,9 +3869,9 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_rows() {
+        public void testCopyRows() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 }, { 5.0, 6.0 } });
-            DoubleMatrix copy = m.copy(1, 3);
+            DoubleMatrix copy = m.copyRows(1, 3);
             assertEquals(2, copy.rowCount());
             assertEquals(2, copy.columnCount());
             assertEquals(3.0, copy.get(0, 0));
@@ -3879,9 +3879,9 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_subMatrix() {
+        public void testCopyRegion() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
-            DoubleMatrix copy = m.copy(1, 3, 1, 3);
+            DoubleMatrix copy = m.copyRegion(1, 3, 1, 3);
             assertEquals(2, copy.rowCount());
             assertEquals(2, copy.columnCount());
             assertEquals(5.0, copy.get(0, 0));
@@ -4054,7 +4054,7 @@ class DoubleMatrixTest extends TestBase {
         // ============ Repelem Tests ============
 
         @Test
-        public void testRepelem() {
+        public void testRepeatElements() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             DoubleMatrix result = m.repeatElements(2, 2);
             assertEquals(4, result.rowCount());
@@ -4070,9 +4070,9 @@ class DoubleMatrixTest extends TestBase {
         // ============ Repmat Tests ============
 
         @Test
-        public void testRepmat() {
+        public void testTile() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            DoubleMatrix result = m.repeatMatrix(2, 2);
+            DoubleMatrix result = m.tile(2, 2);
             assertEquals(4, result.rowCount());
             assertEquals(4, result.columnCount());
             assertEquals(1.0, result.get(0, 0));
@@ -4580,8 +4580,8 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepeat_withNegativeValue() {
-            DoubleMatrix m = DoubleMatrix.repeat(1, 3, -5.5);
+        public void testFilled_withNegativeValue() {
+            DoubleMatrix m = DoubleMatrix.filled(1, 3, -5.5);
             assertEquals(1, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(-5.5, m.get(0, 0));
@@ -4589,13 +4589,13 @@ class DoubleMatrixTest extends TestBase {
 
         @Test
         public void testDiagonalLU2RD_withEmptyArray() {
-            DoubleMatrix m = DoubleMatrix.mainDiagonal(new double[0]);
+            DoubleMatrix m = DoubleMatrix.ofMainDiagonal(new double[0]);
             assertTrue(m.isEmpty());
         }
 
         @Test
         public void testDiagonal_singleElement() {
-            DoubleMatrix m = DoubleMatrix.diagonals(new double[] { 5.0 }, new double[] { 7.0 });
+            DoubleMatrix m = DoubleMatrix.ofDiagonals(new double[] { 5.0 }, new double[] { 7.0 });
             assertEquals(1, m.rowCount());
             assertEquals(1, m.columnCount());
             assertEquals(5.0, m.get(0, 0)); // Main diagonal takes precedence
@@ -4749,7 +4749,7 @@ class DoubleMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.from(floats));
         }
 
-        // ============ Random and Repeat Tests ============
+        // ============ Random.and.Filled.Tests ============
 
         @Test
         public void test_random() {
@@ -4759,8 +4759,8 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_repeat() {
-            DoubleMatrix m = DoubleMatrix.repeat(1, 5, 3.14);
+        public void test_filled() {
+            DoubleMatrix m = DoubleMatrix.filled(1, 5, 3.14);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
             for (int i = 0; i < 5; i++) {
@@ -4769,8 +4769,8 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_repeat_zeroLength() {
-            DoubleMatrix m = DoubleMatrix.repeat(1, 0, 3.14);
+        public void test_filled_zeroLength() {
+            DoubleMatrix m = DoubleMatrix.filled(1, 0, 3.14);
             assertEquals(1, m.rowCount());
             assertEquals(0, m.columnCount());
         }
@@ -4778,9 +4778,9 @@ class DoubleMatrixTest extends TestBase {
         // ============ Diagonal Tests ============
 
         @Test
-        public void test_mainDiagonal() {
+        public void test_ofMainDiagonal() {
             double[] diag = { 1.0, 2.0, 3.0 };
-            DoubleMatrix m = DoubleMatrix.mainDiagonal(diag);
+            DoubleMatrix m = DoubleMatrix.ofMainDiagonal(diag);
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1.0, m.get(0, 0), 0.0);
@@ -4791,14 +4791,14 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_mainDiagonal_null() {
-            assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.mainDiagonal(null));
+        public void test_ofMainDiagonal_null() {
+            assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.ofMainDiagonal(null));
         }
 
         @Test
-        public void test_antiDiagonal() {
+        public void test_ofAntiDiagonal() {
             double[] diag = { 1.0, 2.0, 3.0 };
-            DoubleMatrix m = DoubleMatrix.antiDiagonal(diag);
+            DoubleMatrix m = DoubleMatrix.ofAntiDiagonal(diag);
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1.0, m.get(0, 2), 0.0);
@@ -4808,15 +4808,15 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_antiDiagonal_null() {
-            assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.antiDiagonal(null));
+        public void test_ofAntiDiagonal_null() {
+            assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.ofAntiDiagonal(null));
         }
 
         @Test
         public void test_diagonal_both() {
             double[] lu2rd = { 1.0, 2.0, 3.0 };
             double[] ru2ld = { 4.0, 5.0, 6.0 };
-            DoubleMatrix m = DoubleMatrix.diagonals(lu2rd, ru2ld);
+            DoubleMatrix m = DoubleMatrix.ofDiagonals(lu2rd, ru2ld);
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1.0, m.get(0, 0), 0.0);
@@ -4830,7 +4830,7 @@ class DoubleMatrixTest extends TestBase {
         public void test_diagonal_differentLengths() {
             double[] lu2rd = { 1.0, 2.0 };
             double[] ru2ld = { 4.0, 5.0, 6.0 };
-            assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.diagonals(lu2rd, ru2ld));
+            assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.ofDiagonals(lu2rd, ru2ld));
         }
         // ============ Unbox Test ============
 
@@ -5243,9 +5243,9 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_copy_withRowRange() {
+        public void test_copyRows() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 }, { 5.0, 6.0 } });
-            DoubleMatrix copy = m.copy(1, 3);
+            DoubleMatrix copy = m.copyRows(1, 3);
             assertEquals(2, copy.rowCount());
             assertEquals(2, copy.columnCount());
             assertEquals(3.0, copy.get(0, 0), 0.0);
@@ -5253,9 +5253,9 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_copy_withFullRange() {
+        public void test_copyRegion() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
-            DoubleMatrix copy = m.copy(1, 3, 1, 3);
+            DoubleMatrix copy = m.copyRegion(1, 3, 1, 3);
             assertEquals(2, copy.rowCount());
             assertEquals(2, copy.columnCount());
             assertEquals(5.0, copy.get(0, 0), 0.0);
@@ -5265,7 +5265,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void test_copy_invalidRange() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 5));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRows(0, 5));
         }
 
         // ============ Extend Tests ============
@@ -5474,9 +5474,9 @@ class DoubleMatrixTest extends TestBase {
         // ============ Repmat Test ============
 
         @Test
-        public void test_repeatMatrix() {
+        public void test_tile() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 } });
-            DoubleMatrix result = m.repeatMatrix(2, 2);
+            DoubleMatrix result = m.tile(2, 2);
             assertEquals(2, result.rowCount());
             assertEquals(4, result.columnCount());
             assertEquals(1.0, result.get(0, 0), 0.0);
@@ -5486,9 +5486,9 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_repeatMatrix_invalidRepeats() {
+        public void test_tile_invalidRepeats() {
             DoubleMatrix m = DoubleMatrix.of(new double[][] { { 1.0, 2.0 } });
-            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
         }
 
         // ============ Flatten Test ============
@@ -5811,16 +5811,16 @@ class DoubleMatrixTest extends TestBase {
         // ==================== DoubleMatrix ====================
 
         @Test
-        public void testDoubleMatrix_repeat() {
-            DoubleMatrix matrix = DoubleMatrix.repeat(2, 3, 1.0);
+        public void testDoubleMatrix_filled() {
+            DoubleMatrix matrix = DoubleMatrix.filled(2, 3, 1.0);
             assertEquals(2, matrix.rowCount());
             assertEquals(3, matrix.columnCount());
             assertEquals(1.0, matrix.get(0, 0));
         }
 
         @Test
-        public void testDoubleMatrix_diagonals() {
-            DoubleMatrix matrix = DoubleMatrix.diagonals(new double[] { 1.0, 2.0, 3.0 }, new double[] { 4.0, 5.0, 6.0 });
+        public void testDoubleMatrix_ofDiagonals() {
+            DoubleMatrix matrix = DoubleMatrix.ofDiagonals(new double[] { 1.0, 2.0, 3.0 }, new double[] { 4.0, 5.0, 6.0 });
             assertEquals(1.0, matrix.get(0, 0));
             assertEquals(0.0, matrix.get(0, 1));
             assertEquals(4.0, matrix.get(0, 2));
@@ -6070,9 +6070,9 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testDoubleMatrix_repeatMatrix() {
+        public void testDoubleMatrix_tile() {
             DoubleMatrix matrix = DoubleMatrix.of(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            DoubleMatrix tiled = matrix.repeatMatrix(2, 3);
+            DoubleMatrix tiled = matrix.tile(2, 3);
             assertEquals(4, tiled.rowCount());
             assertEquals(6, tiled.columnCount());
             assertArrayEquals(new double[] { 1.0, 2.0, 1.0, 2.0, 1.0, 2.0 }, tiled.rowView(0));
@@ -6196,7 +6196,7 @@ class DoubleMatrixTest extends TestBase {
 
         @Test
         public void testDoubleMatrixMainDiagonal() {
-            DoubleMatrix matrix = DoubleMatrix.mainDiagonal(new double[] { 1.0, 2.0, 3.0 });
+            DoubleMatrix matrix = DoubleMatrix.ofMainDiagonal(new double[] { 1.0, 2.0, 3.0 });
             assertEquals(3, matrix.rowCount());
             assertEquals(3, matrix.columnCount());
             assertEquals(1.0, matrix.get(0, 0));
@@ -6264,7 +6264,7 @@ class DoubleMatrixTest extends TestBase {
 
         DoubleMatrix extended = matrix.extend(1, 0, 1, 0, 9.5d);
         DoubleMatrix repeatedElements = matrix.repeatElements(1, 2);
-        DoubleMatrix repeatedMatrix = matrix.repeatMatrix(2, 1);
+        DoubleMatrix repeatedMatrix = matrix.tile(2, 1);
 
         assertEquals(9.5d, extended.get(0, 0));
         assertArrayEquals(new double[] { 1.5d, 1.5d, 2.5d, 2.5d }, repeatedElements.flatten().toArray(), 0.0001d);
@@ -6524,8 +6524,8 @@ class DoubleMatrixTest extends TestBase {
         assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.randomRow(-1));
         assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.random(-1, 2));
         assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.random(2, -1));
-        assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.repeat(-1, 2, 7.0));
-        assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.repeat(2, -1, 7.0));
+        assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.filled(-1, 2, 7.0));
+        assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.filled(2, -1, 7.0));
     }
 
 }

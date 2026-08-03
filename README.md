@@ -132,7 +132,7 @@ IntMatrix lengths = grid.mapToInt(String::length);   // project to a primitive m
   defensive copies (`rowView`, `rowCopy`, `columnCopy`, `setRow`, `setColumn`).
 - **Shape operations** — `transpose`, `rotate90` / `rotate180` / `rotate270`,
   `flipHorizontally` / `flipVertically`, `reshape`, `resize`, `extend`, `repeatElements`,
-  `repeatMatrix`.
+  `tile`.
 - **Composition** — `stackVertically` / `stackHorizontally` on instances, and
   `Matrices.stackVertically` / `Matrices.stackHorizontally` over collections.
 - **Diagonals** — read and write the main and anti-diagonals (`mainDiagonalCopy`,

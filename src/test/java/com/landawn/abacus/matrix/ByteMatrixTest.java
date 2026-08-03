@@ -96,8 +96,8 @@ class ByteMatrixTest extends TestBase {
     }
 
     @Test
-    public void testRepeat() {
-        ByteMatrix matrix = ByteMatrix.repeat(1, 4, (byte) 7);
+    public void testFilled() {
+        ByteMatrix matrix = ByteMatrix.filled(1, 4, (byte) 7);
         Assertions.assertEquals(1, matrix.rowCount());
         Assertions.assertEquals(4, matrix.columnCount());
         for (int i = 0; i < 4; i++) {
@@ -154,7 +154,7 @@ class ByteMatrixTest extends TestBase {
     @Test
     public void testDiagonalLU2RD() {
         byte[] diagonal = { 1, 2, 3 };
-        ByteMatrix matrix = ByteMatrix.mainDiagonal(diagonal);
+        ByteMatrix matrix = ByteMatrix.ofMainDiagonal(diagonal);
         Assertions.assertEquals(3, matrix.rowCount());
         Assertions.assertEquals(3, matrix.columnCount());
         Assertions.assertEquals(1, matrix.get(0, 0));
@@ -166,7 +166,7 @@ class ByteMatrixTest extends TestBase {
     @Test
     public void testDiagonalRU2LD() {
         byte[] diagonal = { 1, 2, 3 };
-        ByteMatrix matrix = ByteMatrix.antiDiagonal(diagonal);
+        ByteMatrix matrix = ByteMatrix.ofAntiDiagonal(diagonal);
         Assertions.assertEquals(3, matrix.rowCount());
         Assertions.assertEquals(3, matrix.columnCount());
         Assertions.assertEquals(1, matrix.get(0, 2));
@@ -179,7 +179,7 @@ class ByteMatrixTest extends TestBase {
     public void testDiagonal() {
         byte[] main = { 1, 2, 3 };
         byte[] anti = { 4, 5, 6 };
-        ByteMatrix matrix = ByteMatrix.diagonals(main, anti);
+        ByteMatrix matrix = ByteMatrix.ofDiagonals(main, anti);
         Assertions.assertEquals(3, matrix.rowCount());
         Assertions.assertEquals(3, matrix.columnCount());
         Assertions.assertEquals(1, matrix.get(0, 0));
@@ -189,9 +189,9 @@ class ByteMatrixTest extends TestBase {
         Assertions.assertEquals(2, matrix.get(1, 1));
         Assertions.assertEquals(6, matrix.get(2, 0));
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> ByteMatrix.diagonals(null, null));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> ByteMatrix.ofDiagonals(null, null));
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> ByteMatrix.diagonals(new byte[] { 1 }, new byte[] { 2, 3 }));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> ByteMatrix.ofDiagonals(new byte[] { 1 }, new byte[] { 2, 3 }));
     }
 
     @Test
@@ -494,7 +494,7 @@ class ByteMatrixTest extends TestBase {
 
     @Test
     public void testUpdateAllUnarySequentialTallMatrixUsesRowMajorOrder() throws Exception {
-        final ByteMatrix matrix = ByteMatrix.repeat(3, 2, (byte) 0);
+        final ByteMatrix matrix = ByteMatrix.filled(3, 2, (byte) 0);
         final AtomicInteger next = new AtomicInteger();
 
         Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.updateAll(x -> (byte) next.incrementAndGet()));
@@ -628,26 +628,26 @@ class ByteMatrixTest extends TestBase {
     }
 
     @Test
-    public void testCopyWithRowRange() {
+    public void testCopyRows() {
         byte[][] a = { { 1, 2 }, { 3, 4 }, { 5, 6 } };
         ByteMatrix matrix = ByteMatrix.of(a);
-        ByteMatrix copy = matrix.copy(0, 2);
+        ByteMatrix copy = matrix.copyRows(0, 2);
 
         Assertions.assertEquals(2, copy.rowCount());
         Assertions.assertEquals(2, copy.columnCount());
         Assertions.assertEquals(1, copy.get(0, 0));
         Assertions.assertEquals(4, copy.get(1, 1));
 
-        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.copy(-1, 2));
-        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.copy(0, 4));
-        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.copy(2, 1));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyRows(-1, 2));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyRows(0, 4));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyRows(2, 1));
     }
 
     @Test
-    public void testCopyWithFullRange() {
+    public void testCopyRegion() {
         byte[][] a = { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } };
         ByteMatrix matrix = ByteMatrix.of(a);
-        ByteMatrix copy = matrix.copy(0, 2, 1, 3);
+        ByteMatrix copy = matrix.copyRegion(0, 2, 1, 3);
 
         Assertions.assertEquals(2, copy.rowCount());
         Assertions.assertEquals(2, copy.columnCount());
@@ -658,19 +658,19 @@ class ByteMatrixTest extends TestBase {
     }
 
     @Test
-    public void testCopyEmptyRange_returnsEmptyMatrix() {
-        // Regression: copy(from, from) on a matrix with columns > 0 must not throw.
+    public void testCopyRangesEmpty_returnsEmptyMatrix() {
+        // Regression: copyRows(from, from) on a matrix with columns > 0 must not throw.
         ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
 
-        ByteMatrix empty = m.copy(0, 0);
+        ByteMatrix empty = m.copyRows(0, 0);
         Assertions.assertEquals(0, empty.rowCount());
         Assertions.assertEquals(0, empty.columnCount());
 
-        ByteMatrix emptyRows = m.copy(1, 1, 0, 3);
+        ByteMatrix emptyRows = m.copyRegion(1, 1, 0, 3);
         Assertions.assertEquals(0, emptyRows.rowCount());
         Assertions.assertEquals(0, emptyRows.columnCount());
 
-        ByteMatrix emptyCols = m.copy(0, 3, 1, 1);
+        ByteMatrix emptyCols = m.copyRegion(0, 3, 1, 1);
         Assertions.assertEquals(3, emptyCols.rowCount());
         Assertions.assertEquals(0, emptyCols.columnCount());
     }
@@ -860,7 +860,7 @@ class ByteMatrixTest extends TestBase {
     }
 
     @Test
-    public void testRepelem() {
+    public void testRepeatElements() {
         byte[][] a = { { 1, 2 }, { 3, 4 } };
         ByteMatrix matrix = ByteMatrix.of(a);
 
@@ -878,11 +878,11 @@ class ByteMatrixTest extends TestBase {
     }
 
     @Test
-    public void testRepmat() {
+    public void testTile() {
         byte[][] a = { { 1, 2 }, { 3, 4 } };
         ByteMatrix matrix = ByteMatrix.of(a);
 
-        ByteMatrix repeated = matrix.repeatMatrix(2, 3);
+        ByteMatrix repeated = matrix.tile(2, 3);
         Assertions.assertEquals(4, repeated.rowCount());
         Assertions.assertEquals(6, repeated.columnCount());
         Assertions.assertEquals(1, repeated.get(0, 0));
@@ -891,8 +891,8 @@ class ByteMatrixTest extends TestBase {
         Assertions.assertEquals(1, repeated.get(2, 0));
         Assertions.assertEquals(4, repeated.get(3, 5));
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.repeatMatrix(0, 1));
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.repeatMatrix(1, 0));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.tile(0, 1));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.tile(1, 0));
     }
 
     @Test
@@ -1498,8 +1498,8 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepeat() {
-            ByteMatrix m = ByteMatrix.repeat(1, 5, (byte) 42);
+        public void testFilled() {
+            ByteMatrix m = ByteMatrix.filled(1, 5, (byte) 42);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
             for (int i = 0; i < 5; i++) {
@@ -1508,8 +1508,8 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepeat_withRowsCols() {
-            ByteMatrix m = ByteMatrix.repeat(2, 3, (byte) 42);
+        public void testFilled_withRowsCols() {
+            ByteMatrix m = ByteMatrix.filled(2, 3, (byte) 42);
             assertEquals(2, m.rowCount());
             assertEquals(3, m.columnCount());
             for (int i = 0; i < 2; i++) {
@@ -1561,7 +1561,7 @@ class ByteMatrixTest extends TestBase {
 
         @Test
         public void testDiagonalLU2RD() {
-            ByteMatrix m = ByteMatrix.mainDiagonal(new byte[] { 1, 2, 3 });
+            ByteMatrix m = ByteMatrix.ofMainDiagonal(new byte[] { 1, 2, 3 });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1, m.get(0, 0));
@@ -1573,7 +1573,7 @@ class ByteMatrixTest extends TestBase {
 
         @Test
         public void testDiagonalRU2LD() {
-            ByteMatrix m = ByteMatrix.antiDiagonal(new byte[] { 1, 2, 3 });
+            ByteMatrix m = ByteMatrix.ofAntiDiagonal(new byte[] { 1, 2, 3 });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1, m.get(0, 2));
@@ -1585,7 +1585,7 @@ class ByteMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withBothDiagonals() {
-            ByteMatrix m = ByteMatrix.diagonals(new byte[] { 1, 2, 3 }, new byte[] { 4, 5, 6 });
+            ByteMatrix m = ByteMatrix.ofDiagonals(new byte[] { 1, 2, 3 }, new byte[] { 4, 5, 6 });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1, m.get(0, 0));
@@ -1597,7 +1597,7 @@ class ByteMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withOnlyMainDiagonal() {
-            ByteMatrix m = ByteMatrix.diagonals(new byte[] { 1, 2, 3 }, null);
+            ByteMatrix m = ByteMatrix.ofDiagonals(new byte[] { 1, 2, 3 }, null);
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1, m.get(0, 0));
@@ -1607,7 +1607,7 @@ class ByteMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withOnlyAntiDiagonal() {
-            ByteMatrix m = ByteMatrix.diagonals(null, new byte[] { 4, 5, 6 });
+            ByteMatrix m = ByteMatrix.ofDiagonals(null, new byte[] { 4, 5, 6 });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(4, m.get(0, 2));
@@ -1617,12 +1617,12 @@ class ByteMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withBothNull() {
-            assertThrows(IllegalArgumentException.class, () -> ByteMatrix.diagonals(null, null));
+            assertThrows(IllegalArgumentException.class, () -> ByteMatrix.ofDiagonals(null, null));
         }
 
         @Test
         public void testDiagonal_withDifferentLengths() {
-            assertThrows(IllegalArgumentException.class, () -> ByteMatrix.diagonals(new byte[] { 1, 2 }, new byte[] { 3, 4, 5 }));
+            assertThrows(IllegalArgumentException.class, () -> ByteMatrix.ofDiagonals(new byte[] { 1, 2 }, new byte[] { 3, 4, 5 }));
         }
 
         @Test
@@ -2045,9 +2045,9 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withRowRange() {
+        public void testCopyRows() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            ByteMatrix subset = m.copy(1, 3);
+            ByteMatrix subset = m.copyRows(1, 3);
             assertEquals(2, subset.rowCount());
             assertEquals(3, subset.columnCount());
             assertEquals(4, subset.get(0, 0));
@@ -2055,17 +2055,17 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withRowRange_outOfBounds() {
+        public void testCopyRows_outOfBounds() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(-1, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 3));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(2, 1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRows(-1, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRows(0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRows(2, 1));
         }
 
         @Test
-        public void testCopy_withFullRange() {
+        public void testCopyRegion() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            ByteMatrix submatrix = m.copy(0, 2, 1, 3);
+            ByteMatrix submatrix = m.copyRegion(0, 2, 1, 3);
             assertEquals(2, submatrix.rowCount());
             assertEquals(2, submatrix.columnCount());
             assertEquals(2, submatrix.get(0, 0));
@@ -2073,10 +2073,10 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withFullRange_outOfBounds() {
+        public void testCopyRegion_outOfBounds() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 2, -1, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 2, 0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRegion(0, 2, -1, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRegion(0, 2, 0, 3));
         }
 
         // ============ Extend Tests ============
@@ -2299,7 +2299,7 @@ class ByteMatrixTest extends TestBase {
         // ============ Repeat Tests ============
 
         @Test
-        public void testRepelem() {
+        public void testRepeatElements() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 } });
             ByteMatrix repeated = m.repeatElements(2, 3);
             assertEquals(2, repeated.rowCount());
@@ -2316,16 +2316,16 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepelem_invalidArguments() {
+        public void testRepeatElements_invalidArguments() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(0, 1));
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(1, 0));
         }
 
         @Test
-        public void testRepmat() {
+        public void testTile() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-            ByteMatrix repeated = m.repeatMatrix(2, 3);
+            ByteMatrix repeated = m.tile(2, 3);
             assertEquals(4, repeated.rowCount());
             assertEquals(6, repeated.columnCount());
 
@@ -2344,10 +2344,10 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepmat_invalidArguments() {
+        public void testTile_invalidArguments() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 } });
-            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
+            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
         }
 
         // ============ Flatten Tests ============
@@ -2926,7 +2926,7 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepelemOverflow() {
+        public void testRepeatElementsOverflow() {
             int largeSize = 50000;
             ByteMatrix m = ByteMatrix.of(new byte[largeSize][2]);
 
@@ -2939,15 +2939,15 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepmatOverflow() {
+        public void testTileOverflow() {
             int largeSize = 50000;
             ByteMatrix m = ByteMatrix.of(new byte[largeSize][2]);
 
-            IllegalArgumentException ex1 = assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(50000, 1));
+            IllegalArgumentException ex1 = assertThrows(IllegalArgumentException.class, () -> m.tile(50000, 1));
             assertTrue(ex1.getMessage().contains("row count overflow"));
 
             ByteMatrix m2 = ByteMatrix.of(new byte[2][largeSize]);
-            IllegalArgumentException ex2 = assertThrows(IllegalArgumentException.class, () -> m2.repeatMatrix(1, 50000));
+            IllegalArgumentException ex2 = assertThrows(IllegalArgumentException.class, () -> m2.tile(1, 50000));
             assertTrue(ex2.getMessage().contains("column count overflow"));
         }
     }
@@ -2994,8 +2994,8 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepeat_withZero() {
-            ByteMatrix m = ByteMatrix.repeat(1, 3, (byte) 0);
+        public void testFilled_withZero() {
+            ByteMatrix m = ByteMatrix.filled(1, 3, (byte) 0);
             assertEquals(1, m.rowCount());
             assertEquals(3, m.columnCount());
             for (int i = 0; i < 3; i++) {
@@ -3063,7 +3063,7 @@ class ByteMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withDifferentLengths() {
-            assertThrows(IllegalArgumentException.class, () -> ByteMatrix.diagonals(new byte[] { 1, 2 }, new byte[] { 1, 2, 3 }));
+            assertThrows(IllegalArgumentException.class, () -> ByteMatrix.ofDiagonals(new byte[] { 1, 2 }, new byte[] { 1, 2, 3 }));
         }
 
         @Test
@@ -3384,9 +3384,9 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withRowRange() {
+        public void testCopyRows() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            ByteMatrix copy = m.copy(1, 3);
+            ByteMatrix copy = m.copyRows(1, 3);
             assertEquals(2, copy.rowCount());
             assertEquals(2, copy.columnCount());
             assertEquals(3, copy.get(0, 0));
@@ -3394,16 +3394,16 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withRowRange_invalidRange() {
+        public void testCopyRows_invalidRange() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(-1, 1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRows(-1, 1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRows(0, 2));
         }
 
         @Test
-        public void testCopy_withFullRange() {
+        public void testCopyRegion() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            ByteMatrix copy = m.copy(1, 3, 1, 3);
+            ByteMatrix copy = m.copyRegion(1, 3, 1, 3);
             assertEquals(2, copy.rowCount());
             assertEquals(2, copy.columnCount());
             assertEquals(5, copy.get(0, 0));
@@ -3413,10 +3413,10 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withFullRange_invalidRange() {
+        public void testCopyRegion_invalidRange() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 1, -1, 1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 1, 0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRegion(0, 1, -1, 1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRegion(0, 1, 0, 3));
         }
 
         // ============ Extend Tests ============
@@ -3530,7 +3530,7 @@ class ByteMatrixTest extends TestBase {
         // ============ Repelem/Repmat Tests ============
 
         @Test
-        public void testRepelem() {
+        public void testRepeatElements() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
             ByteMatrix result = m.repeatElements(2, 2);
             assertEquals(4, result.rowCount());
@@ -3543,16 +3543,16 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepelem_invalidRepeats() {
+        public void testRepeatElements_invalidRepeats() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1 } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(0, 1));
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(1, 0));
         }
 
         @Test
-        public void testRepmat() {
+        public void testTile() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-            ByteMatrix result = m.repeatMatrix(2, 2);
+            ByteMatrix result = m.tile(2, 2);
             assertEquals(4, result.rowCount());
             assertEquals(4, result.columnCount());
             assertEquals(1, result.get(0, 0));
@@ -3562,10 +3562,10 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepmat_invalidRepeats() {
+        public void testTile_invalidRepeats() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1 } });
-            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
+            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
         }
 
         @Test
@@ -4012,8 +4012,8 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepeat_withNegative() {
-            ByteMatrix m = ByteMatrix.repeat(1, 3, (byte) -10);
+        public void testFilled_withNegative() {
+            ByteMatrix m = ByteMatrix.filled(1, 3, (byte) -10);
             assertEquals(1, m.rowCount());
             assertEquals(3, m.columnCount());
             for (int i = 0; i < 3; i++) {
@@ -4032,7 +4032,7 @@ class ByteMatrixTest extends TestBase {
 
         @Test
         public void testDiagonalLU2RD_singleElement() {
-            ByteMatrix m = ByteMatrix.mainDiagonal(new byte[] { 42 });
+            ByteMatrix m = ByteMatrix.ofMainDiagonal(new byte[] { 42 });
             assertEquals(1, m.rowCount());
             assertEquals(1, m.columnCount());
             assertEquals(42, m.get(0, 0));
@@ -4040,13 +4040,13 @@ class ByteMatrixTest extends TestBase {
 
         @Test
         public void testDiagonalRU2LD_empty() {
-            ByteMatrix m = ByteMatrix.antiDiagonal(new byte[0]);
+            ByteMatrix m = ByteMatrix.ofAntiDiagonal(new byte[0]);
             assertTrue(m.isEmpty());
         }
 
         @Test
         public void testDiagonal_withBothDiagonalsOverlapping() {
-            ByteMatrix m = ByteMatrix.diagonals(new byte[] { 1, 2, 3 }, new byte[] { 4, 5, 6 });
+            ByteMatrix m = ByteMatrix.ofDiagonals(new byte[] { 1, 2, 3 }, new byte[] { 4, 5, 6 });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             // Center element should be from main diagonal (set second)
@@ -4346,9 +4346,9 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withRowRange_singleRow() {
+        public void testCopyRows_singleRow() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            ByteMatrix copy = m.copy(1, 2);
+            ByteMatrix copy = m.copyRows(1, 2);
             assertEquals(1, copy.rowCount());
             assertEquals(2, copy.columnCount());
             assertEquals(3, copy.get(0, 0));
@@ -4356,9 +4356,9 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withFullRange_singleCell() {
+        public void testCopyRegion_singleCell() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            ByteMatrix copy = m.copy(0, 1, 1, 2);
+            ByteMatrix copy = m.copyRegion(0, 1, 1, 2);
             assertEquals(1, copy.rowCount());
             assertEquals(1, copy.columnCount());
             assertEquals(2, copy.get(0, 0));
@@ -4476,7 +4476,7 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepelem() {
+        public void testRepeatElements() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
             ByteMatrix repeated = m.repeatElements(2, 2);
             assertEquals(4, repeated.rowCount());
@@ -4489,7 +4489,7 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepelem_singleRepeat() {
+        public void testRepeatElements_singleRepeat() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 } });
             ByteMatrix repeated = m.repeatElements(1, 1);
             assertEquals(1, repeated.rowCount());
@@ -4499,9 +4499,9 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepmat() {
+        public void testTile() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-            ByteMatrix repeated = m.repeatMatrix(2, 2);
+            ByteMatrix repeated = m.tile(2, 2);
             assertEquals(4, repeated.rowCount());
             assertEquals(4, repeated.columnCount());
             assertEquals(1, repeated.get(0, 0));
@@ -4510,9 +4510,9 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepmat_singleRepeat() {
+        public void testTile_singleRepeat() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 } });
-            ByteMatrix repeated = m.repeatMatrix(1, 1);
+            ByteMatrix repeated = m.tile(1, 1);
             assertEquals(1, repeated.rowCount());
             assertEquals(2, repeated.columnCount());
             assertEquals(1, repeated.get(0, 0));
@@ -4853,8 +4853,8 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_repeat() {
-            ByteMatrix m = ByteMatrix.repeat(1, 5, (byte) 7);
+        public void test_filled() {
+            ByteMatrix m = ByteMatrix.filled(1, 5, (byte) 7);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
             for (int i = 0; i < 5; i++) {
@@ -4899,8 +4899,8 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_mainDiagonal() {
-            ByteMatrix m = ByteMatrix.mainDiagonal(new byte[] { 1, 2, 3 });
+        public void test_ofMainDiagonal() {
+            ByteMatrix m = ByteMatrix.ofMainDiagonal(new byte[] { 1, 2, 3 });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1, m.get(0, 0));
@@ -4910,14 +4910,14 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_mainDiagonal_empty() {
-            ByteMatrix m = ByteMatrix.mainDiagonal(new byte[0]);
+        public void test_ofMainDiagonal_empty() {
+            ByteMatrix m = ByteMatrix.ofMainDiagonal(new byte[0]);
             assertTrue(m.isEmpty());
         }
 
         @Test
-        public void test_antiDiagonal() {
-            ByteMatrix m = ByteMatrix.antiDiagonal(new byte[] { 1, 2, 3 });
+        public void test_ofAntiDiagonal() {
+            ByteMatrix m = ByteMatrix.ofAntiDiagonal(new byte[] { 1, 2, 3 });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1, m.get(0, 2));
@@ -4927,7 +4927,7 @@ class ByteMatrixTest extends TestBase {
 
         @Test
         public void test_diagonal_both() {
-            ByteMatrix m = ByteMatrix.diagonals(new byte[] { 1, 2, 3 }, new byte[] { 4, 5, 6 });
+            ByteMatrix m = ByteMatrix.ofDiagonals(new byte[] { 1, 2, 3 }, new byte[] { 4, 5, 6 });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1, m.get(0, 0));
@@ -5262,9 +5262,9 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_copy_fullRange() {
+        public void test_copyRegion() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            ByteMatrix copy = m.copy(0, 2, 1, 3);
+            ByteMatrix copy = m.copyRegion(0, 2, 1, 3);
             assertEquals(2, copy.rowCount());
             assertEquals(2, copy.columnCount());
             assertEquals(2, copy.get(0, 0)); // From (0,1)
@@ -5372,9 +5372,9 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_repeatMatrix() {
+        public void test_tile() {
             ByteMatrix m = ByteMatrix.of(new byte[][] { { 1, 2 }, { 3, 4 } });
-            ByteMatrix tiled = m.repeatMatrix(2, 2);
+            ByteMatrix tiled = m.tile(2, 2);
             assertEquals(4, tiled.rowCount());
             assertEquals(4, tiled.columnCount());
             assertEquals(1, tiled.get(0, 0));
@@ -5677,8 +5677,8 @@ class ByteMatrixTest extends TestBase {
         // ==================== ByteMatrix ====================
 
         @Test
-        public void testByteMatrix_repeat() {
-            ByteMatrix matrix = ByteMatrix.repeat(2, 3, (byte) 1);
+        public void testByteMatrix_filled() {
+            ByteMatrix matrix = ByteMatrix.filled(2, 3, (byte) 1);
             // Result: [[1, 1, 1], [1, 1, 1]]
             assertEquals(2, matrix.rowCount());
             assertEquals(3, matrix.columnCount());
@@ -5945,9 +5945,9 @@ class ByteMatrixTest extends TestBase {
 
         @Test
         public void testByteMatrixMainDiagonal() {
-            // ByteMatrix.java: ByteMatrix matrix = ByteMatrix.mainDiagonal(new byte[] {1, 2, 3});
+            // ByteMatrix.java: ByteMatrix matrix = ByteMatrix.ofMainDiagonal(new byte[] {1, 2, 3});
             // Creates 3x3 matrix with diagonal [1, 2, 3] and zeros elsewhere
-            ByteMatrix matrix = ByteMatrix.mainDiagonal(new byte[] { 1, 2, 3 });
+            ByteMatrix matrix = ByteMatrix.ofMainDiagonal(new byte[] { 1, 2, 3 });
             assertEquals(3, matrix.rowCount());
             assertEquals(3, matrix.columnCount());
             assertEquals((byte) 1, matrix.get(0, 0));
@@ -5959,9 +5959,9 @@ class ByteMatrixTest extends TestBase {
 
         @Test
         public void testByteMatrixAntiDiagonal() {
-            // ByteMatrix.java: ByteMatrix matrix = ByteMatrix.antiDiagonal(new byte[] {1, 2, 3});
+            // ByteMatrix.java: ByteMatrix matrix = ByteMatrix.ofAntiDiagonal(new byte[] {1, 2, 3});
             // Creates 3x3 matrix with anti-diagonal [1, 2, 3] and zeros elsewhere
-            ByteMatrix matrix = ByteMatrix.antiDiagonal(new byte[] { 1, 2, 3 });
+            ByteMatrix matrix = ByteMatrix.ofAntiDiagonal(new byte[] { 1, 2, 3 });
             assertEquals(3, matrix.rowCount());
             assertEquals(3, matrix.columnCount());
             assertEquals((byte) 1, matrix.get(0, 2));
@@ -6376,8 +6376,8 @@ class ByteMatrixTest extends TestBase {
         assertThrows(IllegalArgumentException.class, () -> ByteMatrix.randomRow(-1));
         assertThrows(IllegalArgumentException.class, () -> ByteMatrix.random(-1, 2));
         assertThrows(IllegalArgumentException.class, () -> ByteMatrix.random(2, -1));
-        assertThrows(IllegalArgumentException.class, () -> ByteMatrix.repeat(-1, 2, (byte) 7));
-        assertThrows(IllegalArgumentException.class, () -> ByteMatrix.repeat(2, -1, (byte) 7));
+        assertThrows(IllegalArgumentException.class, () -> ByteMatrix.filled(-1, 2, (byte) 7));
+        assertThrows(IllegalArgumentException.class, () -> ByteMatrix.filled(2, -1, (byte) 7));
     }
 
 }

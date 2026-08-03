@@ -5,7 +5,7 @@ All findings verified against source.
 1. OVERALL ASSESSMENT
 A well-built, highly consistent member of the narrow-integer tier. Implementations were read across factories,
 accessors, diagonal ops, update/replace/map, fill/copy/resize/extend, flips/rotations/transpose/reshape,
-repeat ops, flatten/mutateFlattened, stacking, arithmetic, zipWith, all stream families, forEach, and
+repeat ops, flatten/mutateViaFlatArray, stacking, arithmetic, zipWith, all stream families, forEach, and
 equals/hashCode/toString/println. Element-wise arithmetic correctly documents and implements short->int
 promotion with narrowing back to short, with accurate overflow guidance (widen via toIntMatrix/toLongMatrix).
 Conversions are complete and correct (toInt 2699, toLong 2721, toFloat 2762, toDouble 2803). Validation

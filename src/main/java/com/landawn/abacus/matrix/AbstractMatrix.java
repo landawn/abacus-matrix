@@ -727,21 +727,21 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * The returned matrix contains only the specified rows (with all columns) and has its own row arrays.
      * For object matrices, element references are copied, not the referenced objects themselves.
      *
-     * <p>This is equivalent to calling {@code copy(fromRowIndex, toRowIndex, 0, columnCount)}.</p>
+     * <p>This is equivalent to calling {@code copyRegion(fromRowIndex, toRowIndex, 0, columnCount)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}, {5, 6}});
-     * IntMatrix sub = matrix.copy(0, 2);                       // returns {{1, 2}, {3, 4}}
+     * IntMatrix sub = matrix.copyRows(0, 2);                       // returns {{1, 2}, {3, 4}}
      * sub.rowCount();                                          // returns 2
      *
-     * IntMatrix lastRow = matrix.copy(2, 3);                   // returns {{5, 6}}
+     * IntMatrix lastRow = matrix.copyRows(2, 3);                   // returns {{5, 6}}
      *
-     * IntMatrix none = matrix.copy(1, 1);                      // returns an empty 0 x 0 matrix
+     * IntMatrix none = matrix.copyRows(1, 1);                      // returns an empty 0 x 0 matrix
      * none.rowCount();                                         // returns 0
      *
-     * matrix.copy(0, 4);                                       // throws IndexOutOfBoundsException (toRowIndex > rowCount)
-     * matrix.copy(2, 1);                                       // throws IndexOutOfBoundsException (fromRowIndex > toRowIndex)
+     * matrix.copyRows(0, 4);                                       // throws IndexOutOfBoundsException (toRowIndex > rowCount)
+     * matrix.copyRows(2, 1);                                       // throws IndexOutOfBoundsException (fromRowIndex > toRowIndex)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -752,8 +752,50 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *         (the column count is not preserved)
      * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount},
      *         or {@code fromRowIndex > toRowIndex}
+     * @see #copyColumns(int, int)
+     * @see #copyRegion(int, int, int, int)
      */
-    public abstract M copy(int fromRowIndex, int toRowIndex);
+    public abstract M copyRows(int fromRowIndex, int toRowIndex);
+
+    /**
+     * Returns a copy of a column range from this matrix.
+     * The returned matrix contains all rows and only the specified columns, with independent row arrays.
+     * For object matrices, element references are copied, not the referenced objects themselves.
+     *
+     * <p>This is equivalent to calling {@code copyRegion(0, rowCount, fromColumnIndex, toColumnIndex)}.</p>
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}});
+     * IntMatrix sub = matrix.copyColumns(1, 3);                // returns {{2, 3}, {5, 6}}
+     * sub.rowCount();                                         // returns 2
+     * sub.columnCount();                                      // returns 2
+     *
+     * IntMatrix lastColumn = matrix.copyColumns(2, 3);        // returns {{3}, {6}}
+     *
+     * IntMatrix noColumns = matrix.copyColumns(1, 1);         // returns a 2 x 0 matrix
+     * noColumns.rowCount();                                   // returns 2
+     * noColumns.columnCount();                                // returns 0
+     *
+     * matrix.copyColumns(0, 4);                               // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
+     * matrix.copyColumns(2, 1);                               // throws IndexOutOfBoundsException (fromColumnIndex > toColumnIndex)
+     * }</pre>
+     *
+     * @param fromColumnIndex the starting column index (inclusive, 0-based)
+     * @param toColumnIndex the ending column index (exclusive)
+     * @return a new matrix containing the specified columns with dimensions
+     *         {@code rowCount × (toColumnIndex - fromColumnIndex)}; an empty column range preserves
+     *         the row count and yields a {@code rowCount x 0} matrix
+     * @throws IndexOutOfBoundsException if {@code fromColumnIndex < 0}, {@code toColumnIndex > columnCount},
+     *         or {@code fromColumnIndex > toColumnIndex}
+     * @see #copyRows(int, int)
+     * @see #copyRegion(int, int, int, int)
+     */
+    public M copyColumns(final int fromColumnIndex, final int toColumnIndex) {
+        N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
+
+        return copyRegion(0, rowCount, fromColumnIndex, toColumnIndex);
+    }
 
     /**
      * Returns a copy of a rectangular region from this matrix.
@@ -763,15 +805,15 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * IntMatrix sub = matrix.copy(0, 2, 1, 3);                 // returns {{2, 3}, {5, 6}} (rows 0-1, cols 1-2)
-     * IntMatrix center = matrix.copy(1, 2, 1, 2);              // returns {{5}} (just the center element)
+     * IntMatrix sub = matrix.copyRegion(0, 2, 1, 3);                 // returns {{2, 3}, {5, 6}} (rows 0-1, cols 1-2)
+     * IntMatrix center = matrix.copyRegion(1, 2, 1, 2);              // returns {{5}} (just the center element)
      *
-     * IntMatrix emptyCols = matrix.copy(0, 2, 1, 1);           // returns a 2 x 0 matrix (empty column range)
+     * IntMatrix emptyCols = matrix.copyRegion(0, 2, 1, 1);           // returns a 2 x 0 matrix (empty column range)
      * emptyCols.rowCount();                                    // returns 2
      * emptyCols.columnCount();                                 // returns 0
      *
-     * matrix.copy(0, 2, 0, 4);                                 // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
-     * matrix.copy(2, 0, 0, 2);                                 // throws IndexOutOfBoundsException (fromRowIndex > toRowIndex)
+     * matrix.copyRegion(0, 2, 0, 4);                                 // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
+     * matrix.copyRegion(2, 0, 0, 2);                                 // throws IndexOutOfBoundsException (fromRowIndex > toRowIndex)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -786,8 +828,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount},
      *         {@code fromRowIndex > toRowIndex}, {@code fromColumnIndex < 0},
      *         {@code toColumnIndex > columnCount}, or {@code fromColumnIndex > toColumnIndex}
+     * @see #copyRows(int, int)
+     * @see #copyColumns(int, int)
      */
-    public abstract M copy(int fromRowIndex, int toRowIndex, int fromColumnIndex, int toColumnIndex);
+    public abstract M copyRegion(int fromRowIndex, int toRowIndex, int fromColumnIndex, int toColumnIndex);
 
     /**
      * Returns a new matrix that is this matrix rotated 90 degrees clockwise.
@@ -1078,16 +1122,16 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * IntMatrix tiled = matrix.repeatMatrix(2, 2);           // returns {{1,2,1,2},{3,4,3,4},{1,2,1,2},{3,4,3,4}}
+     * IntMatrix tiled = matrix.tile(2, 2);           // returns {{1,2,1,2},{3,4,3,4},{1,2,1,2},{3,4,3,4}}
      * tiled.rowCount();                                      // returns 4 (2 * 2)
      * tiled.columnCount();                                   // returns 4 (2 * 2)
      * tiled.get(0, 2);                                       // returns 1 (pattern tiled, not element repeated)
      *
-     * IntMatrix sameMatrix = matrix.repeatMatrix(1, 1);     // returns a copy with identical values
+     * IntMatrix sameMatrix = matrix.tile(1, 1);     // returns a copy with identical values
      * sameMatrix.get(1, 0);                                 // returns 3
      *
-     * matrix.repeatMatrix(0, 2);                            // throws IllegalArgumentException (rowRepeats < 1)
-     * matrix.repeatMatrix(2, 0);                            // throws IllegalArgumentException (columnRepeats < 1)
+     * matrix.tile(0, 2);                            // throws IllegalArgumentException (rowRepeats < 1)
+     * matrix.tile(2, 0);                            // throws IllegalArgumentException (columnRepeats < 1)
      * }</pre>
      *
      * @param rowRepeats number of times to repeat the matrix in the row direction (must be positive)
@@ -1098,7 +1142,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *         or if either resulting dimension would overflow {@code Integer.MAX_VALUE}
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
-    public abstract M repeatMatrix(int rowRepeats, int columnRepeats);
+    public abstract M tile(int rowRepeats, int columnRepeats);
 
     /**
      * Returns a new matrix grown by the specified non-negative pad widths on each side.

@@ -138,7 +138,7 @@ class ShortMatrixTest extends TestBase {
 
     @Test
     public void testDiagonalRU2LD() {
-        ShortMatrix m = ShortMatrix.antiDiagonal(new short[] { 1, 2, 3 });
+        ShortMatrix m = ShortMatrix.ofAntiDiagonal(new short[] { 1, 2, 3 });
         assertEquals(3, m.rowCount());
         assertEquals(3, m.columnCount());
         assertEquals((short) 1, m.get(0, 2));
@@ -151,7 +151,7 @@ class ShortMatrixTest extends TestBase {
     @Test
     public void testDiagonal() {
         // Test with both diagonals
-        ShortMatrix m = ShortMatrix.diagonals(new short[] { 1, 2, 3 }, new short[] { 4, 5, 6 });
+        ShortMatrix m = ShortMatrix.ofDiagonals(new short[] { 1, 2, 3 }, new short[] { 4, 5, 6 });
         assertEquals(3, m.rowCount());
         assertEquals(3, m.columnCount());
         assertEquals((short) 1, m.get(0, 0));
@@ -162,22 +162,22 @@ class ShortMatrixTest extends TestBase {
         assertEquals((short) 6, m.get(2, 0));
 
         // Test with only main diagonal
-        ShortMatrix m2 = ShortMatrix.diagonals(new short[] { 1, 2, 3 }, null);
+        ShortMatrix m2 = ShortMatrix.ofDiagonals(new short[] { 1, 2, 3 }, null);
         assertEquals((short) 1, m2.get(0, 0));
         assertEquals((short) 2, m2.get(1, 1));
         assertEquals((short) 3, m2.get(2, 2));
 
         // Test with only anti-diagonal
-        ShortMatrix m3 = ShortMatrix.diagonals(null, new short[] { 4, 5, 6 });
+        ShortMatrix m3 = ShortMatrix.ofDiagonals(null, new short[] { 4, 5, 6 });
         assertEquals((short) 4, m3.get(0, 2));
         assertEquals((short) 5, m3.get(1, 1));
         assertEquals((short) 6, m3.get(2, 0));
 
         // Test with both null
-        assertThrows(IllegalArgumentException.class, () -> ShortMatrix.diagonals(null, null));
+        assertThrows(IllegalArgumentException.class, () -> ShortMatrix.ofDiagonals(null, null));
 
         // Test illegal argument
-        assertThrows(IllegalArgumentException.class, () -> ShortMatrix.diagonals(new short[] { 1, 2 }, new short[] { 3, 4, 5 }));
+        assertThrows(IllegalArgumentException.class, () -> ShortMatrix.ofDiagonals(new short[] { 1, 2 }, new short[] { 3, 4, 5 }));
     }
 
     @Test
@@ -467,7 +467,7 @@ class ShortMatrixTest extends TestBase {
 
     @Test
     public void testUpdateAllUnarySequentialTallMatrixUsesRowMajorOrder() throws Exception {
-        final ShortMatrix m = ShortMatrix.repeat(3, 2, (short) 0);
+        final ShortMatrix m = ShortMatrix.filled(3, 2, (short) 0);
         final AtomicInteger next = new AtomicInteger();
 
         Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> m.updateAll(x -> (short) next.incrementAndGet()));
@@ -586,22 +586,22 @@ class ShortMatrixTest extends TestBase {
     }
 
     @Test
-    public void testCopyRange() {
-        ShortMatrix subset = matrix.copy(1, 3);
+    public void testCopyRows() {
+        ShortMatrix subset = matrix.copyRows(1, 3);
         assertEquals(2, subset.rowCount());
         assertEquals(3, subset.columnCount());
         assertEquals((short) 4, subset.get(0, 0));
         assertEquals((short) 7, subset.get(1, 0));
 
         // Test bounds
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.copy(-1, 2));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.copy(0, 4));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.copy(2, 1));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyRows(-1, 2));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyRows(0, 4));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyRows(2, 1));
     }
 
     @Test
-    public void testCopySubMatrix() {
-        ShortMatrix submatrix = matrix.copy(0, 2, 1, 3);
+    public void testCopyRegion() {
+        ShortMatrix submatrix = matrix.copyRegion(0, 2, 1, 3);
         assertEquals(2, submatrix.rowCount());
         assertEquals(2, submatrix.columnCount());
         assertEquals((short) 2, submatrix.get(0, 0));
@@ -610,22 +610,22 @@ class ShortMatrixTest extends TestBase {
         assertEquals((short) 6, submatrix.get(1, 1));
 
         // Test bounds
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.copy(0, 2, -1, 2));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.copy(0, 2, 0, 4));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyRegion(0, 2, -1, 2));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyRegion(0, 2, 0, 4));
     }
 
     @Test
-    public void testCopyEmptyRange_returnsEmptyMatrix() {
-        // Regression: copy(from, from) on a matrix with columns > 0 must not throw.
-        ShortMatrix empty = matrix.copy(0, 0);
+    public void testCopyRangesEmpty_returnsEmptyMatrix() {
+        // Regression: copyRows(from, from) on a matrix with columns > 0 must not throw.
+        ShortMatrix empty = matrix.copyRows(0, 0);
         assertEquals(0, empty.rowCount());
         assertEquals(0, empty.columnCount());
 
-        ShortMatrix emptyRows = matrix.copy(1, 1, 0, 3);
+        ShortMatrix emptyRows = matrix.copyRegion(1, 1, 0, 3);
         assertEquals(0, emptyRows.rowCount());
         assertEquals(0, emptyRows.columnCount());
 
-        ShortMatrix emptyCols = matrix.copy(0, 3, 1, 1);
+        ShortMatrix emptyCols = matrix.copyRegion(0, 3, 1, 1);
         assertEquals(3, emptyCols.rowCount());
         assertEquals(0, emptyCols.columnCount());
     }
@@ -806,7 +806,7 @@ class ShortMatrixTest extends TestBase {
     }
 
     @Test
-    public void testRepelem() {
+    public void testRepeatElements() {
         ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 } });
         ShortMatrix repeated = m.repeatElements(2, 3);
         assertEquals(2, repeated.rowCount());
@@ -827,9 +827,9 @@ class ShortMatrixTest extends TestBase {
     }
 
     @Test
-    public void testRepmat() {
+    public void testTile() {
         ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-        ShortMatrix repeated = m.repeatMatrix(2, 3);
+        ShortMatrix repeated = m.tile(2, 3);
         assertEquals(4, repeated.rowCount());
         assertEquals(6, repeated.columnCount());
 
@@ -849,8 +849,8 @@ class ShortMatrixTest extends TestBase {
         assertEquals((short) 2, repeated.get(2, 1));
 
         // Test invalid arguments
-        assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
-        assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
+        assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
+        assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
     }
 
     @Test
@@ -1222,8 +1222,8 @@ class ShortMatrixTest extends TestBase {
         // ==================== ShortMatrix ====================
 
         @Test
-        public void testShortMatrix_repeat() {
-            ShortMatrix matrix = ShortMatrix.repeat(2, 3, (short) 1);
+        public void testShortMatrix_filled() {
+            ShortMatrix matrix = ShortMatrix.filled(2, 3, (short) 1);
             assertEquals(2, matrix.rowCount());
             assertEquals(3, matrix.columnCount());
             for (int i = 0; i < 2; i++) {
@@ -1325,7 +1325,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testShortMatrix_copy_rows() {
             ShortMatrix matrix = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            ShortMatrix subset = matrix.copy(1, 3);
+            ShortMatrix subset = matrix.copyRows(1, 3);
             // Returns [[3, 4], [5, 6]]
             assertEquals(2, subset.rowCount());
             assertEquals((short) 3, subset.get(0, 0));
@@ -1337,7 +1337,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testShortMatrix_copy_region() {
             ShortMatrix matrix = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            ShortMatrix region = matrix.copy(0, 2, 1, 3);
+            ShortMatrix region = matrix.copyRegion(0, 2, 1, 3);
             // Returns [[2, 3], [5, 6]]
             assertEquals((short) 2, region.get(0, 0));
             assertEquals((short) 3, region.get(0, 1));
@@ -1485,9 +1485,9 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testShortMatrix_repeatMatrix() {
+        public void testShortMatrix_tile() {
             ShortMatrix matrix = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            ShortMatrix tiled = matrix.repeatMatrix(2, 3);
+            ShortMatrix tiled = matrix.tile(2, 3);
             // Result: [[1, 2, 1, 2, 1, 2], [3, 4, 3, 4, 3, 4], [1, 2, 1, 2, 1, 2], [3, 4, 3, 4, 3, 4]]
             assertEquals(4, tiled.rowCount());
             assertEquals(6, tiled.columnCount());
@@ -1798,8 +1798,8 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepeat() {
-            ShortMatrix m = ShortMatrix.repeat(1, 5, (short) 42);
+        public void testFilled() {
+            ShortMatrix m = ShortMatrix.filled(1, 5, (short) 42);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
             for (int i = 0; i < 5; i++) {
@@ -1808,8 +1808,8 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepeat_withRowsCols() {
-            ShortMatrix m = ShortMatrix.repeat(2, 3, (short) 42);
+        public void testFilled_withRowsCols() {
+            ShortMatrix m = ShortMatrix.filled(2, 3, (short) 42);
             assertEquals(2, m.rowCount());
             assertEquals(3, m.columnCount());
             for (int i = 0; i < 2; i++) {
@@ -1861,7 +1861,7 @@ class ShortMatrixTest extends TestBase {
 
         @Test
         public void testDiagonalLU2RD() {
-            ShortMatrix m = ShortMatrix.mainDiagonal(new short[] { 1, 2, 3 });
+            ShortMatrix m = ShortMatrix.ofMainDiagonal(new short[] { 1, 2, 3 });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1, m.get(0, 0));
@@ -1873,7 +1873,7 @@ class ShortMatrixTest extends TestBase {
 
         @Test
         public void testDiagonalRU2LD() {
-            ShortMatrix m = ShortMatrix.antiDiagonal(new short[] { 1, 2, 3 });
+            ShortMatrix m = ShortMatrix.ofAntiDiagonal(new short[] { 1, 2, 3 });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1, m.get(0, 2));
@@ -1885,7 +1885,7 @@ class ShortMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withBothDiagonals() {
-            ShortMatrix m = ShortMatrix.diagonals(new short[] { 1, 2, 3 }, new short[] { 4, 5, 6 });
+            ShortMatrix m = ShortMatrix.ofDiagonals(new short[] { 1, 2, 3 }, new short[] { 4, 5, 6 });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1, m.get(0, 0));
@@ -1897,7 +1897,7 @@ class ShortMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withOnlyMainDiagonal() {
-            ShortMatrix m = ShortMatrix.diagonals(new short[] { 1, 2, 3 }, null);
+            ShortMatrix m = ShortMatrix.ofDiagonals(new short[] { 1, 2, 3 }, null);
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1, m.get(0, 0));
@@ -1907,7 +1907,7 @@ class ShortMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withOnlyAntiDiagonal() {
-            ShortMatrix m = ShortMatrix.diagonals(null, new short[] { 4, 5, 6 });
+            ShortMatrix m = ShortMatrix.ofDiagonals(null, new short[] { 4, 5, 6 });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(4, m.get(0, 2));
@@ -1917,12 +1917,12 @@ class ShortMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withBothNull() {
-            assertThrows(IllegalArgumentException.class, () -> ShortMatrix.diagonals(null, null));
+            assertThrows(IllegalArgumentException.class, () -> ShortMatrix.ofDiagonals(null, null));
         }
 
         @Test
         public void testDiagonal_withDifferentLengths() {
-            assertThrows(IllegalArgumentException.class, () -> ShortMatrix.diagonals(new short[] { 1, 2 }, new short[] { 3, 4, 5 }));
+            assertThrows(IllegalArgumentException.class, () -> ShortMatrix.ofDiagonals(new short[] { 1, 2 }, new short[] { 3, 4, 5 }));
         }
 
         @Test
@@ -2354,9 +2354,9 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withRowRange() {
+        public void testCopyRows() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            ShortMatrix subset = m.copy(1, 3);
+            ShortMatrix subset = m.copyRows(1, 3);
             assertEquals(2, subset.rowCount());
             assertEquals(3, subset.columnCount());
             assertEquals(4, subset.get(0, 0));
@@ -2364,17 +2364,17 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withRowRange_outOfBounds() {
+        public void testCopyRows_outOfBounds() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(-1, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 3));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(2, 1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRows(-1, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRows(0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRows(2, 1));
         }
 
         @Test
-        public void testCopy_withFullRange() {
+        public void testCopyRegion() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            ShortMatrix submatrix = m.copy(0, 2, 1, 3);
+            ShortMatrix submatrix = m.copyRegion(0, 2, 1, 3);
             assertEquals(2, submatrix.rowCount());
             assertEquals(2, submatrix.columnCount());
             assertEquals(2, submatrix.get(0, 0));
@@ -2382,10 +2382,10 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withFullRange_outOfBounds() {
+        public void testCopyRegion_outOfBounds() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 2, -1, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 2, 0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRegion(0, 2, -1, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRegion(0, 2, 0, 3));
         }
 
         // ============ Extend Tests ============
@@ -2608,17 +2608,17 @@ class ShortMatrixTest extends TestBase {
         // ============ Repeat Tests ============
 
         @Test
-        public void testRepelem_invalidArguments() {
+        public void testRepeatElements_invalidArguments() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(0, 1));
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(1, 0));
         }
 
         @Test
-        public void testRepmat_invalidArguments() {
+        public void testTile_invalidArguments() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 } });
-            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
+            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
         }
 
         // ============ Flatten Tests ============
@@ -3159,8 +3159,8 @@ class ShortMatrixTest extends TestBase {
         // ============ Additional Edge Case Tests ============
 
         @Test
-        public void testRepeat_zeroLength() {
-            ShortMatrix m = ShortMatrix.repeat(1, 0, (short) 5);
+        public void testFilled_zeroLength() {
+            ShortMatrix m = ShortMatrix.filled(1, 0, (short) 5);
             assertEquals(1, m.rowCount());
             assertEquals(0, m.columnCount());
         }
@@ -3216,7 +3216,7 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepelem_oneDimension() {
+        public void testRepeatElements_oneDimension() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 } });
             ShortMatrix repeated = m.repeatElements(1, 2);
             assertEquals(1, repeated.rowCount());
@@ -3228,9 +3228,9 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepmat_oneDimension() {
+        public void testTile_oneDimension() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 } });
-            ShortMatrix repeated = m.repeatMatrix(1, 2);
+            ShortMatrix repeated = m.tile(1, 2);
             assertEquals(1, repeated.rowCount());
             assertEquals(4, repeated.columnCount());
             assertEquals(1, repeated.get(0, 0));
@@ -3242,7 +3242,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testCopy_entireMatrix() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            ShortMatrix copy = m.copy(0, 2);
+            ShortMatrix copy = m.copyRows(0, 2);
             assertEquals(2, copy.rowCount());
             assertEquals(3, copy.columnCount());
             assertEquals(1, copy.get(0, 0));
@@ -3250,9 +3250,9 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_entireMatrixWithColumnRange() {
+        public void testCopyRegion_entireMatrixWithColumnRange() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            ShortMatrix copy = m.copy(0, 2, 0, 3);
+            ShortMatrix copy = m.copyRegion(0, 2, 0, 3);
             assertEquals(2, copy.rowCount());
             assertEquals(3, copy.columnCount());
             assertEquals(1, copy.get(0, 0));
@@ -3499,7 +3499,7 @@ class ShortMatrixTest extends TestBase {
 
         @Test
         public void testDiagonalLU2RD_singleElement() {
-            ShortMatrix m = ShortMatrix.mainDiagonal(new short[] { 5 });
+            ShortMatrix m = ShortMatrix.ofMainDiagonal(new short[] { 5 });
             assertEquals(1, m.rowCount());
             assertEquals(1, m.columnCount());
             assertEquals(5, m.get(0, 0));
@@ -3507,7 +3507,7 @@ class ShortMatrixTest extends TestBase {
 
         @Test
         public void testDiagonalRU2LD_singleElement() {
-            ShortMatrix m = ShortMatrix.antiDiagonal(new short[] { 5 });
+            ShortMatrix m = ShortMatrix.ofAntiDiagonal(new short[] { 5 });
             assertEquals(1, m.rowCount());
             assertEquals(1, m.columnCount());
             assertEquals(5, m.get(0, 0));
@@ -4086,8 +4086,8 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepeat() {
-            ShortMatrix m = ShortMatrix.repeat(1, 5, (short) 42);
+        public void testFilled() {
+            ShortMatrix m = ShortMatrix.filled(1, 5, (short) 42);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
             for (int i = 0; i < 5; i++) {
@@ -4096,15 +4096,15 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepeat_zeroLength() {
-            ShortMatrix m = ShortMatrix.repeat(1, 0, (short) 42);
+        public void testFilled_zeroLength() {
+            ShortMatrix m = ShortMatrix.filled(1, 0, (short) 42);
             assertEquals(1, m.rowCount());
             assertEquals(0, m.columnCount());
         }
 
         @Test
         public void testDiagonalLU2RD() {
-            ShortMatrix m = ShortMatrix.mainDiagonal(new short[] { 1, 2, 3 });
+            ShortMatrix m = ShortMatrix.ofMainDiagonal(new short[] { 1, 2, 3 });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals((short) 1, m.get(0, 0));
@@ -4116,7 +4116,7 @@ class ShortMatrixTest extends TestBase {
 
         @Test
         public void testDiagonalRU2LD() {
-            ShortMatrix m = ShortMatrix.antiDiagonal(new short[] { 1, 2, 3 });
+            ShortMatrix m = ShortMatrix.ofAntiDiagonal(new short[] { 1, 2, 3 });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals((short) 1, m.get(0, 2));
@@ -4127,7 +4127,7 @@ class ShortMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_bothDiagonals() {
-            ShortMatrix m = ShortMatrix.diagonals(new short[] { 1, 2, 3 }, new short[] { 4, 5, 6 });
+            ShortMatrix m = ShortMatrix.ofDiagonals(new short[] { 1, 2, 3 }, new short[] { 4, 5, 6 });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals((short) 1, m.get(0, 0));
@@ -4140,7 +4140,7 @@ class ShortMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_differentLengths() {
-            assertThrows(IllegalArgumentException.class, () -> ShortMatrix.diagonals(new short[] { 1, 2 }, new short[] { 1, 2, 3 }));
+            assertThrows(IllegalArgumentException.class, () -> ShortMatrix.ofDiagonals(new short[] { 1, 2 }, new short[] { 1, 2, 3 }));
         }
 
         @Test
@@ -4453,9 +4453,9 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_rowRange() {
+        public void testCopyRows() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            ShortMatrix copy = m.copy(1, 3);
+            ShortMatrix copy = m.copyRows(1, 3);
             assertEquals(2, copy.rowCount());
             assertEquals(2, copy.columnCount());
             assertEquals((short) 3, copy.get(0, 0));
@@ -4463,9 +4463,9 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_fullRange() {
+        public void testCopyRegion() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            ShortMatrix copy = m.copy(1, 2, 1, 3);
+            ShortMatrix copy = m.copyRegion(1, 2, 1, 3);
             assertEquals(1, copy.rowCount());
             assertEquals(2, copy.columnCount());
             assertEquals((short) 5, copy.get(0, 0));
@@ -4605,7 +4605,7 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepelem() {
+        public void testRepeatElements() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 }, { 3, 4 } });
             ShortMatrix result = m.repeatElements(2, 2);
             assertEquals(4, result.rowCount());
@@ -4617,9 +4617,9 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepmat() {
+        public void testTile() {
             ShortMatrix m = ShortMatrix.of(new short[][] { { 1, 2 } });
-            ShortMatrix result = m.repeatMatrix(2, 2);
+            ShortMatrix result = m.tile(2, 2);
             assertEquals(2, result.rowCount());
             assertEquals(4, result.columnCount());
             assertEquals((short) 1, result.get(0, 0));
@@ -4976,8 +4976,8 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_repeat_createsRepeatedValues() {
-            ShortMatrix m = ShortMatrix.repeat(1, 4, (short) 7);
+        public void test_filled_createsRepeatedValues() {
+            ShortMatrix m = ShortMatrix.filled(1, 4, (short) 7);
             assertEquals(1, m.rowCount());
             assertEquals(4, m.columnCount());
             for (int i = 0; i < 4; i++) {
@@ -5022,9 +5022,9 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_mainDiagonal_createsMainDiagonal() {
+        public void test_ofMainDiagonal_createsMainDiagonal() {
             short[] diag = { 1, 2, 3 };
-            ShortMatrix m = ShortMatrix.mainDiagonal(diag);
+            ShortMatrix m = ShortMatrix.ofMainDiagonal(diag);
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1, m.get(0, 0));
@@ -5034,9 +5034,9 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_antiDiagonal_createsAntiDiagonal() {
+        public void test_ofAntiDiagonal_createsAntiDiagonal() {
             short[] diag = { 1, 2, 3 };
-            ShortMatrix m = ShortMatrix.antiDiagonal(diag);
+            ShortMatrix m = ShortMatrix.ofAntiDiagonal(diag);
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1, m.get(0, 2));
@@ -5048,7 +5048,7 @@ class ShortMatrixTest extends TestBase {
         public void test_diagonal_withBothDiagonals() {
             short[] lu = { 1, 2, 3 };
             short[] ru = { 4, 5, 6 };
-            ShortMatrix m = ShortMatrix.diagonals(lu, ru);
+            ShortMatrix m = ShortMatrix.ofDiagonals(lu, ru);
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals(1, m.get(0, 0));
@@ -5062,12 +5062,12 @@ class ShortMatrixTest extends TestBase {
         public void test_diagonal_withDifferentLengths_throwsException() {
             short[] lu = { 1, 2 };
             short[] ru = { 3, 4, 5 };
-            assertThrows(IllegalArgumentException.class, () -> ShortMatrix.diagonals(lu, ru));
+            assertThrows(IllegalArgumentException.class, () -> ShortMatrix.ofDiagonals(lu, ru));
         }
 
         @Test
         public void test_diagonal_withBothNull_throws() {
-            assertThrows(IllegalArgumentException.class, () -> ShortMatrix.diagonals(null, null));
+            assertThrows(IllegalArgumentException.class, () -> ShortMatrix.ofDiagonals(null, null));
         }
 
         @Test
@@ -5463,10 +5463,10 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_copy_withRowRange() {
+        public void test_copyRows() {
             short[][] arr = { { 1, 2 }, { 3, 4 }, { 5, 6 } };
             ShortMatrix m = new ShortMatrix(arr);
-            ShortMatrix copy = m.copy(1, 3);
+            ShortMatrix copy = m.copyRows(1, 3);
             assertEquals(2, copy.rowCount());
             assertEquals(2, copy.columnCount());
             assertEquals(3, copy.get(0, 0));
@@ -5474,10 +5474,10 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_copy_withFullRange() {
+        public void test_copyRegion() {
             short[][] arr = { { 1, 2, 3 }, { 4, 5, 6 } };
             ShortMatrix m = new ShortMatrix(arr);
-            ShortMatrix copy = m.copy(0, 2, 1, 3);
+            ShortMatrix copy = m.copyRegion(0, 2, 1, 3);
             assertEquals(2, copy.rowCount());
             assertEquals(2, copy.columnCount());
             assertEquals(2, copy.get(0, 0));
@@ -5661,10 +5661,10 @@ class ShortMatrixTest extends TestBase {
         // ============ Repmat Test ============
 
         @Test
-        public void test_repeatMatrix_repeatsMatrix() {
+        public void test_tile_repeatsMatrix() {
             short[][] arr = { { 1, 2 }, { 3, 4 } };
             ShortMatrix m = new ShortMatrix(arr);
-            ShortMatrix repeated = m.repeatMatrix(2, 2);
+            ShortMatrix repeated = m.tile(2, 2);
             assertEquals(4, repeated.rowCount());
             assertEquals(4, repeated.columnCount());
             assertEquals(1, repeated.get(0, 0));
@@ -6447,7 +6447,7 @@ class ShortMatrixTest extends TestBase {
     @Test
     public void testCopyRegion_independentOfOriginal() {
         ShortMatrix src = ShortMatrix.of(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-        ShortMatrix region = src.copy(0, 2, 1, 3);
+        ShortMatrix region = src.copyRegion(0, 2, 1, 3);
         region.set(0, 0, (short) 999);
         assertEquals((short) 2, src.get(0, 1));
         src.set(0, 1, (short) 888);
@@ -6654,8 +6654,8 @@ class ShortMatrixTest extends TestBase {
         assertThrows(IllegalArgumentException.class, () -> ShortMatrix.randomRow(-1));
         assertThrows(IllegalArgumentException.class, () -> ShortMatrix.random(-1, 2));
         assertThrows(IllegalArgumentException.class, () -> ShortMatrix.random(2, -1));
-        assertThrows(IllegalArgumentException.class, () -> ShortMatrix.repeat(-1, 2, (short) 7));
-        assertThrows(IllegalArgumentException.class, () -> ShortMatrix.repeat(2, -1, (short) 7));
+        assertThrows(IllegalArgumentException.class, () -> ShortMatrix.filled(-1, 2, (short) 7));
+        assertThrows(IllegalArgumentException.class, () -> ShortMatrix.filled(2, -1, (short) 7));
     }
 
     @Test

@@ -93,8 +93,8 @@ class CharMatrixTest extends TestBase {
     }
 
     @Test
-    public void testRepeat() {
-        CharMatrix matrix = CharMatrix.repeat(1, 4, 'x');
+    public void testFilled() {
+        CharMatrix matrix = CharMatrix.filled(1, 4, 'x');
         Assertions.assertEquals(1, matrix.rowCount());
         Assertions.assertEquals(4, matrix.columnCount());
         for (int i = 0; i < 4; i++) {
@@ -143,7 +143,7 @@ class CharMatrixTest extends TestBase {
     @Test
     public void testDiagonalLU2RD() {
         char[] diagonal = { 'a', 'b', 'c' };
-        CharMatrix matrix = CharMatrix.mainDiagonal(diagonal);
+        CharMatrix matrix = CharMatrix.ofMainDiagonal(diagonal);
         Assertions.assertEquals(3, matrix.rowCount());
         Assertions.assertEquals(3, matrix.columnCount());
         Assertions.assertEquals('a', matrix.get(0, 0));
@@ -155,7 +155,7 @@ class CharMatrixTest extends TestBase {
     @Test
     public void testDiagonalRU2LD() {
         char[] diagonal = { 'a', 'b', 'c' };
-        CharMatrix matrix = CharMatrix.antiDiagonal(diagonal);
+        CharMatrix matrix = CharMatrix.ofAntiDiagonal(diagonal);
         Assertions.assertEquals(3, matrix.rowCount());
         Assertions.assertEquals(3, matrix.columnCount());
         Assertions.assertEquals('a', matrix.get(0, 2));
@@ -168,7 +168,7 @@ class CharMatrixTest extends TestBase {
     public void testDiagonal() {
         char[] main = { 'a', 'b', 'c' };
         char[] anti = { 'x', 'y', 'z' };
-        CharMatrix matrix = CharMatrix.diagonals(main, anti);
+        CharMatrix matrix = CharMatrix.ofDiagonals(main, anti);
         Assertions.assertEquals(3, matrix.rowCount());
         Assertions.assertEquals(3, matrix.columnCount());
         Assertions.assertEquals('a', matrix.get(0, 0));
@@ -178,9 +178,9 @@ class CharMatrixTest extends TestBase {
         Assertions.assertEquals('b', matrix.get(1, 1));
         Assertions.assertEquals('z', matrix.get(2, 0));
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> CharMatrix.diagonals(null, null));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> CharMatrix.ofDiagonals(null, null));
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> CharMatrix.diagonals(new char[] { 'a' }, new char[] { 'x', 'y' }));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> CharMatrix.ofDiagonals(new char[] { 'a' }, new char[] { 'x', 'y' }));
     }
 
     @Test
@@ -483,7 +483,7 @@ class CharMatrixTest extends TestBase {
 
     @Test
     public void testUpdateAllUnarySequentialTallMatrixUsesRowMajorOrder() throws Exception {
-        final CharMatrix matrix = CharMatrix.repeat(3, 2, (char) 0);
+        final CharMatrix matrix = CharMatrix.filled(3, 2, (char) 0);
         final AtomicInteger next = new AtomicInteger();
 
         Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.updateAll(x -> (char) next.incrementAndGet()));
@@ -617,26 +617,26 @@ class CharMatrixTest extends TestBase {
     }
 
     @Test
-    public void testCopyWithRowRange() {
+    public void testCopyRows() {
         char[][] a = { { 'a', 'b' }, { 'c', 'd' }, { 'e', 'f' } };
         CharMatrix matrix = CharMatrix.of(a);
-        CharMatrix copy = matrix.copy(0, 2);
+        CharMatrix copy = matrix.copyRows(0, 2);
 
         Assertions.assertEquals(2, copy.rowCount());
         Assertions.assertEquals(2, copy.columnCount());
         Assertions.assertEquals('a', copy.get(0, 0));
         Assertions.assertEquals('d', copy.get(1, 1));
 
-        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.copy(-1, 2));
-        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.copy(0, 4));
-        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.copy(2, 1));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyRows(-1, 2));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyRows(0, 4));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyRows(2, 1));
     }
 
     @Test
-    public void testCopyWithFullRange() {
+    public void testCopyRegion() {
         char[][] a = { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } };
         CharMatrix matrix = CharMatrix.of(a);
-        CharMatrix copy = matrix.copy(0, 2, 1, 3);
+        CharMatrix copy = matrix.copyRegion(0, 2, 1, 3);
 
         Assertions.assertEquals(2, copy.rowCount());
         Assertions.assertEquals(2, copy.columnCount());
@@ -647,19 +647,19 @@ class CharMatrixTest extends TestBase {
     }
 
     @Test
-    public void testCopyEmptyRange_returnsEmptyMatrix() {
-        // Regression: copy(from, from) on a matrix with columns > 0 must not throw.
+    public void testCopyRangesEmpty_returnsEmptyMatrix() {
+        // Regression: copyRows(from, from) on a matrix with columns > 0 must not throw.
         CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } });
 
-        CharMatrix empty = m.copy(0, 0);
+        CharMatrix empty = m.copyRows(0, 0);
         Assertions.assertEquals(0, empty.rowCount());
         Assertions.assertEquals(0, empty.columnCount());
 
-        CharMatrix emptyRows = m.copy(1, 1, 0, 3);
+        CharMatrix emptyRows = m.copyRegion(1, 1, 0, 3);
         Assertions.assertEquals(0, emptyRows.rowCount());
         Assertions.assertEquals(0, emptyRows.columnCount());
 
-        CharMatrix emptyCols = m.copy(0, 3, 1, 1);
+        CharMatrix emptyCols = m.copyRegion(0, 3, 1, 1);
         Assertions.assertEquals(3, emptyCols.rowCount());
         Assertions.assertEquals(0, emptyCols.columnCount());
     }
@@ -849,7 +849,7 @@ class CharMatrixTest extends TestBase {
     }
 
     @Test
-    public void testRepelem() {
+    public void testRepeatElements() {
         char[][] a = { { 'a', 'b' }, { 'c', 'd' } };
         CharMatrix matrix = CharMatrix.of(a);
 
@@ -867,11 +867,11 @@ class CharMatrixTest extends TestBase {
     }
 
     @Test
-    public void testRepmat() {
+    public void testTile() {
         char[][] a = { { 'a', 'b' }, { 'c', 'd' } };
         CharMatrix matrix = CharMatrix.of(a);
 
-        CharMatrix repeated = matrix.repeatMatrix(2, 3);
+        CharMatrix repeated = matrix.tile(2, 3);
         Assertions.assertEquals(4, repeated.rowCount());
         Assertions.assertEquals(6, repeated.columnCount());
         Assertions.assertEquals('a', repeated.get(0, 0));
@@ -880,8 +880,8 @@ class CharMatrixTest extends TestBase {
         Assertions.assertEquals('a', repeated.get(2, 0));
         Assertions.assertEquals('d', repeated.get(3, 5));
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.repeatMatrix(0, 1));
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.repeatMatrix(1, 0));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.tile(0, 1));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.tile(1, 0));
     }
 
     @Test
@@ -1421,8 +1421,8 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepeat() {
-            CharMatrix m = CharMatrix.repeat(1, 5, 'Z');
+        public void testFilled() {
+            CharMatrix m = CharMatrix.filled(1, 5, 'Z');
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
             for (int i = 0; i < 5; i++) {
@@ -1431,8 +1431,8 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepeat_withRowsCols() {
-            CharMatrix m = CharMatrix.repeat(2, 3, 'Z');
+        public void testFilled_withRowsCols() {
+            CharMatrix m = CharMatrix.filled(2, 3, 'Z');
             assertEquals(2, m.rowCount());
             assertEquals(3, m.columnCount());
             for (int i = 0; i < 2; i++) {
@@ -1484,7 +1484,7 @@ class CharMatrixTest extends TestBase {
 
         @Test
         public void testDiagonalLU2RD() {
-            CharMatrix m = CharMatrix.mainDiagonal(new char[] { 'A', 'B', 'C' });
+            CharMatrix m = CharMatrix.ofMainDiagonal(new char[] { 'A', 'B', 'C' });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals('A', m.get(0, 0));
@@ -1496,7 +1496,7 @@ class CharMatrixTest extends TestBase {
 
         @Test
         public void testDiagonalRU2LD() {
-            CharMatrix m = CharMatrix.antiDiagonal(new char[] { 'X', 'Y', 'Z' });
+            CharMatrix m = CharMatrix.ofAntiDiagonal(new char[] { 'X', 'Y', 'Z' });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals('X', m.get(0, 2));
@@ -1508,7 +1508,7 @@ class CharMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withBothDiagonals() {
-            CharMatrix m = CharMatrix.diagonals(new char[] { 'A', 'B', 'C' }, new char[] { 'X', 'Y', 'Z' });
+            CharMatrix m = CharMatrix.ofDiagonals(new char[] { 'A', 'B', 'C' }, new char[] { 'X', 'Y', 'Z' });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals('A', m.get(0, 0));
@@ -1520,7 +1520,7 @@ class CharMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withOnlyMainDiagonal() {
-            CharMatrix m = CharMatrix.diagonals(new char[] { 'P', 'Q', 'R' }, null);
+            CharMatrix m = CharMatrix.ofDiagonals(new char[] { 'P', 'Q', 'R' }, null);
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals('P', m.get(0, 0));
@@ -1530,7 +1530,7 @@ class CharMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withOnlyAntiDiagonal() {
-            CharMatrix m = CharMatrix.diagonals(null, new char[] { 'X', 'Y', 'Z' });
+            CharMatrix m = CharMatrix.ofDiagonals(null, new char[] { 'X', 'Y', 'Z' });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals('X', m.get(0, 2));
@@ -1540,12 +1540,12 @@ class CharMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withBothNull() {
-            assertThrows(IllegalArgumentException.class, () -> CharMatrix.diagonals(null, null));
+            assertThrows(IllegalArgumentException.class, () -> CharMatrix.ofDiagonals(null, null));
         }
 
         @Test
         public void testDiagonal_withDifferentLengths() {
-            assertThrows(IllegalArgumentException.class, () -> CharMatrix.diagonals(new char[] { 'A', 'B' }, new char[] { 'X', 'Y', 'Z' }));
+            assertThrows(IllegalArgumentException.class, () -> CharMatrix.ofDiagonals(new char[] { 'A', 'B' }, new char[] { 'X', 'Y', 'Z' }));
         }
 
         @Test
@@ -1986,9 +1986,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withRowRange() {
+        public void testCopyRows() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B', 'C' }, { 'D', 'E', 'F' }, { 'G', 'H', 'I' } });
-            CharMatrix subset = m.copy(1, 3);
+            CharMatrix subset = m.copyRows(1, 3);
             assertEquals(2, subset.rowCount());
             assertEquals(3, subset.columnCount());
             assertEquals('D', subset.get(0, 0));
@@ -1996,17 +1996,17 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withRowRange_outOfBounds() {
+        public void testCopyRows_outOfBounds() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B' }, { 'C', 'D' } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(-1, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 3));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(2, 1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRows(-1, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRows(0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRows(2, 1));
         }
 
         @Test
-        public void testCopy_withFullRange() {
+        public void testCopyRegion() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B', 'C' }, { 'D', 'E', 'F' }, { 'G', 'H', 'I' } });
-            CharMatrix submatrix = m.copy(0, 2, 1, 3);
+            CharMatrix submatrix = m.copyRegion(0, 2, 1, 3);
             assertEquals(2, submatrix.rowCount());
             assertEquals(2, submatrix.columnCount());
             assertEquals('B', submatrix.get(0, 0));
@@ -2014,10 +2014,10 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withFullRange_outOfBounds() {
+        public void testCopyRegion_outOfBounds() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B' }, { 'C', 'D' } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 2, -1, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 2, 0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRegion(0, 2, -1, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRegion(0, 2, 0, 3));
         }
 
         // ============ Extend Tests ============
@@ -2238,7 +2238,7 @@ class CharMatrixTest extends TestBase {
         // ============ Repeat Tests ============
 
         @Test
-        public void testRepelem() {
+        public void testRepeatElements() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B' } });
             CharMatrix repeated = m.repeatElements(2, 3);
             assertEquals(2, repeated.rowCount());
@@ -2255,16 +2255,16 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepelem_invalidArguments() {
+        public void testRepeatElements_invalidArguments() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B' } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(0, 1));
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(1, 0));
         }
 
         @Test
-        public void testRepmat() {
+        public void testTile() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B' }, { 'C', 'D' } });
-            CharMatrix repeated = m.repeatMatrix(2, 3);
+            CharMatrix repeated = m.tile(2, 3);
             assertEquals(4, repeated.rowCount());
             assertEquals(6, repeated.columnCount());
 
@@ -2283,10 +2283,10 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepmat_invalidArguments() {
+        public void testTile_invalidArguments() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'A', 'B' } });
-            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
+            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
         }
 
         // ============ Flatten Tests ============
@@ -2858,7 +2858,7 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepelemOverflow() {
+        public void testRepeatElementsOverflow() {
             int largeSize = 50000;
             CharMatrix m = CharMatrix.of(new char[largeSize][2]);
 
@@ -2871,15 +2871,15 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepmatOverflow() {
+        public void testTileOverflow() {
             int largeSize = 50000;
             CharMatrix m = CharMatrix.of(new char[largeSize][2]);
 
-            IllegalArgumentException ex1 = assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(50000, 1));
+            IllegalArgumentException ex1 = assertThrows(IllegalArgumentException.class, () -> m.tile(50000, 1));
             assertTrue(ex1.getMessage().contains("row count overflow"));
 
             CharMatrix m2 = CharMatrix.of(new char[2][largeSize]);
-            IllegalArgumentException ex2 = assertThrows(IllegalArgumentException.class, () -> m2.repeatMatrix(1, 50000));
+            IllegalArgumentException ex2 = assertThrows(IllegalArgumentException.class, () -> m2.tile(1, 50000));
             assertTrue(ex2.getMessage().contains("column count overflow"));
         }
     }
@@ -2943,8 +2943,8 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepeat_withZero() {
-            CharMatrix m = CharMatrix.repeat(1, 3, '\0');
+        public void testFilled_withZero() {
+            CharMatrix m = CharMatrix.filled(1, 3, '\0');
             assertEquals(1, m.rowCount());
             assertEquals(3, m.columnCount());
             for (int i = 0; i < 3; i++) {
@@ -3012,7 +3012,7 @@ class CharMatrixTest extends TestBase {
 
         @Test
         public void testDiagonalLU2RD() {
-            CharMatrix m = CharMatrix.mainDiagonal(new char[] { 'a', 'b', 'c' });
+            CharMatrix m = CharMatrix.ofMainDiagonal(new char[] { 'a', 'b', 'c' });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals('a', m.get(0, 0));
@@ -3024,7 +3024,7 @@ class CharMatrixTest extends TestBase {
 
         @Test
         public void testDiagonalRU2LD() {
-            CharMatrix m = CharMatrix.antiDiagonal(new char[] { 'a', 'b', 'c' });
+            CharMatrix m = CharMatrix.ofAntiDiagonal(new char[] { 'a', 'b', 'c' });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals('a', m.get(0, 2));
@@ -3036,7 +3036,7 @@ class CharMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withBothDiagonals() {
-            CharMatrix m = CharMatrix.diagonals(new char[] { 'a', 'b', 'c' }, new char[] { 'x', 'y', 'z' });
+            CharMatrix m = CharMatrix.ofDiagonals(new char[] { 'a', 'b', 'c' }, new char[] { 'x', 'y', 'z' });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals('a', m.get(0, 0));
@@ -3048,7 +3048,7 @@ class CharMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withOnlyMainDiagonal() {
-            CharMatrix m = CharMatrix.diagonals(new char[] { 'a', 'b', 'c' }, null);
+            CharMatrix m = CharMatrix.ofDiagonals(new char[] { 'a', 'b', 'c' }, null);
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals('a', m.get(0, 0));
@@ -3058,7 +3058,7 @@ class CharMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withOnlyAntiDiagonal() {
-            CharMatrix m = CharMatrix.diagonals(null, new char[] { 'x', 'y', 'z' });
+            CharMatrix m = CharMatrix.ofDiagonals(null, new char[] { 'x', 'y', 'z' });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals('x', m.get(0, 2));
@@ -3068,7 +3068,7 @@ class CharMatrixTest extends TestBase {
 
         @Test
         public void testDiagonal_withDifferentLengths() {
-            assertThrows(IllegalArgumentException.class, () -> CharMatrix.diagonals(new char[] { 'a', 'b' }, new char[] { 'x', 'y', 'z' }));
+            assertThrows(IllegalArgumentException.class, () -> CharMatrix.ofDiagonals(new char[] { 'a', 'b' }, new char[] { 'x', 'y', 'z' }));
         }
 
         @Test
@@ -3398,9 +3398,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withRowRange() {
+        public void testCopyRows() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' }, { 'e', 'f' } });
-            CharMatrix copy = m.copy(1, 3);
+            CharMatrix copy = m.copyRows(1, 3);
             assertEquals(2, copy.rowCount());
             assertEquals(2, copy.columnCount());
             assertEquals('c', copy.get(0, 0));
@@ -3408,16 +3408,16 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withRowRange_invalidRange() {
+        public void testCopyRows_invalidRange() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(-1, 1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRows(-1, 1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRows(0, 2));
         }
 
         @Test
-        public void testCopy_withFullRange() {
+        public void testCopyRegion() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } });
-            CharMatrix copy = m.copy(1, 3, 1, 3);
+            CharMatrix copy = m.copyRegion(1, 3, 1, 3);
             assertEquals(2, copy.rowCount());
             assertEquals(2, copy.columnCount());
             assertEquals('e', copy.get(0, 0));
@@ -3427,10 +3427,10 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withFullRange_invalidRange() {
+        public void testCopyRegion_invalidRange() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 1, -1, 1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 1, 0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRegion(0, 1, -1, 1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRegion(0, 1, 0, 3));
         }
 
         // ============ Extend Tests ============
@@ -3603,7 +3603,7 @@ class CharMatrixTest extends TestBase {
         // ============ Repelem/Repmat Tests ============
 
         @Test
-        public void testRepelem() {
+        public void testRepeatElements() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
             CharMatrix result = m.repeatElements(2, 2);
             assertEquals(4, result.rowCount());
@@ -3616,16 +3616,16 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepelem_invalidRepeats() {
+        public void testRepeatElements_invalidRepeats() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a' } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(0, 1));
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(1, 0));
         }
 
         @Test
-        public void testRepmat() {
+        public void testTile() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            CharMatrix result = m.repeatMatrix(2, 2);
+            CharMatrix result = m.tile(2, 2);
             assertEquals(4, result.rowCount());
             assertEquals(4, result.columnCount());
             assertEquals('a', result.get(0, 0));
@@ -3635,10 +3635,10 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepmat_invalidRepeats() {
+        public void testTile_invalidRepeats() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a' } });
-            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
+            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
         }
 
         @Test
@@ -4083,8 +4083,8 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepeat_withZero() {
-            CharMatrix m = CharMatrix.repeat(1, 3, '\u0000');
+        public void testFilled_withZero() {
+            CharMatrix m = CharMatrix.filled(1, 3, '\u0000');
             assertEquals(1, m.rowCount());
             assertEquals(3, m.columnCount());
             for (int i = 0; i < 3; i++) {
@@ -4093,8 +4093,8 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepeat_withZeroLength() {
-            CharMatrix m = CharMatrix.repeat(1, 0, 'a');
+        public void testFilled_withZeroLength() {
+            CharMatrix m = CharMatrix.filled(1, 0, 'a');
             assertEquals(1, m.rowCount());
             assertEquals(0, m.columnCount());
         }
@@ -4147,7 +4147,7 @@ class CharMatrixTest extends TestBase {
 
         @Test
         public void testDiagonalLU2RD() {
-            CharMatrix m = CharMatrix.mainDiagonal(new char[] { 'a', 'b', 'c' });
+            CharMatrix m = CharMatrix.ofMainDiagonal(new char[] { 'a', 'b', 'c' });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals('a', m.get(0, 0));
@@ -4159,7 +4159,7 @@ class CharMatrixTest extends TestBase {
 
         @Test
         public void testDiagonalLU2RD_singleElement() {
-            CharMatrix m = CharMatrix.mainDiagonal(new char[] { 'x' });
+            CharMatrix m = CharMatrix.ofMainDiagonal(new char[] { 'x' });
             assertEquals(1, m.rowCount());
             assertEquals(1, m.columnCount());
             assertEquals('x', m.get(0, 0));
@@ -4167,7 +4167,7 @@ class CharMatrixTest extends TestBase {
 
         @Test
         public void testDiagonalRU2LD() {
-            CharMatrix m = CharMatrix.antiDiagonal(new char[] { 'a', 'b', 'c' });
+            CharMatrix m = CharMatrix.ofAntiDiagonal(new char[] { 'a', 'b', 'c' });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals('a', m.get(0, 2));
@@ -4179,13 +4179,13 @@ class CharMatrixTest extends TestBase {
 
         @Test
         public void testDiagonalRU2LD_empty() {
-            CharMatrix m = CharMatrix.antiDiagonal(new char[0]);
+            CharMatrix m = CharMatrix.ofAntiDiagonal(new char[0]);
             assertTrue(m.isEmpty());
         }
 
         @Test
         public void testDiagonal_withBothDiagonalsOverlapping() {
-            CharMatrix m = CharMatrix.diagonals(new char[] { 'a', 'b', 'c' }, new char[] { 'x', 'y', 'z' });
+            CharMatrix m = CharMatrix.ofDiagonals(new char[] { 'a', 'b', 'c' }, new char[] { 'x', 'y', 'z' });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             // Center element should be from main diagonal (set second)
@@ -4612,9 +4612,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withRowRange_singleRow() {
+        public void testCopyRows_singleRow() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' }, { 'e', 'f' } });
-            CharMatrix copy = m.copy(1, 2);
+            CharMatrix copy = m.copyRows(1, 2);
             assertEquals(1, copy.rowCount());
             assertEquals(2, copy.columnCount());
             assertEquals('c', copy.get(0, 0));
@@ -4622,9 +4622,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withFullRange_singleCell() {
+        public void testCopyRegion_singleCell() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } });
-            CharMatrix copy = m.copy(0, 1, 1, 2);
+            CharMatrix copy = m.copyRegion(0, 1, 1, 2);
             assertEquals(1, copy.rowCount());
             assertEquals(1, copy.columnCount());
             assertEquals('b', copy.get(0, 0));
@@ -4788,7 +4788,7 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepelem() {
+        public void testRepeatElements() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
             CharMatrix repeated = m.repeatElements(2, 2);
             assertEquals(4, repeated.rowCount());
@@ -4801,7 +4801,7 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepelem_singleRepeat() {
+        public void testRepeatElements_singleRepeat() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' } });
             CharMatrix repeated = m.repeatElements(1, 1);
             assertEquals(1, repeated.rowCount());
@@ -4811,9 +4811,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepmat() {
+        public void testTile() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            CharMatrix repeated = m.repeatMatrix(2, 2);
+            CharMatrix repeated = m.tile(2, 2);
             assertEquals(4, repeated.rowCount());
             assertEquals(4, repeated.columnCount());
             assertEquals('a', repeated.get(0, 0));
@@ -4822,9 +4822,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepmat_singleRepeat() {
+        public void testTile_singleRepeat() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' } });
-            CharMatrix repeated = m.repeatMatrix(1, 1);
+            CharMatrix repeated = m.tile(1, 1);
             assertEquals(1, repeated.rowCount());
             assertEquals(2, repeated.columnCount());
             assertEquals('a', repeated.get(0, 0));
@@ -5169,8 +5169,8 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_repeat() {
-            CharMatrix m = CharMatrix.repeat(1, 5, 'x');
+        public void test_filled() {
+            CharMatrix m = CharMatrix.filled(1, 5, 'x');
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
             for (int i = 0; i < 5; i++) {
@@ -5215,8 +5215,8 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_mainDiagonal() {
-            CharMatrix m = CharMatrix.mainDiagonal(new char[] { 'a', 'b', 'c' });
+        public void test_ofMainDiagonal() {
+            CharMatrix m = CharMatrix.ofMainDiagonal(new char[] { 'a', 'b', 'c' });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals('a', m.get(0, 0));
@@ -5226,14 +5226,14 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_mainDiagonal_empty() {
-            CharMatrix m = CharMatrix.mainDiagonal(new char[0]);
+        public void test_ofMainDiagonal_empty() {
+            CharMatrix m = CharMatrix.ofMainDiagonal(new char[0]);
             assertTrue(m.isEmpty());
         }
 
         @Test
-        public void test_antiDiagonal() {
-            CharMatrix m = CharMatrix.antiDiagonal(new char[] { 'a', 'b', 'c' });
+        public void test_ofAntiDiagonal() {
+            CharMatrix m = CharMatrix.ofAntiDiagonal(new char[] { 'a', 'b', 'c' });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals('a', m.get(0, 2));
@@ -5243,7 +5243,7 @@ class CharMatrixTest extends TestBase {
 
         @Test
         public void test_diagonal_both() {
-            CharMatrix m = CharMatrix.diagonals(new char[] { 'a', 'b', 'c' }, new char[] { 'x', 'y', 'z' });
+            CharMatrix m = CharMatrix.ofDiagonals(new char[] { 'a', 'b', 'c' }, new char[] { 'x', 'y', 'z' });
             assertEquals(3, m.rowCount());
             assertEquals(3, m.columnCount());
             assertEquals('a', m.get(0, 0));
@@ -5584,9 +5584,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_copy_fullRange() {
+        public void test_copyRegion() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } });
-            CharMatrix copy = m.copy(0, 2, 1, 3);
+            CharMatrix copy = m.copyRegion(0, 2, 1, 3);
             assertEquals(2, copy.rowCount());
             assertEquals(2, copy.columnCount());
             assertEquals('b', copy.get(0, 0)); // From (0,1)
@@ -5694,9 +5694,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_repeatMatrix() {
+        public void test_tile() {
             CharMatrix m = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            CharMatrix tiled = m.repeatMatrix(2, 2);
+            CharMatrix tiled = m.tile(2, 2);
             assertEquals(4, tiled.rowCount());
             assertEquals(4, tiled.columnCount());
             assertEquals('a', tiled.get(0, 0));
@@ -5999,8 +5999,8 @@ class CharMatrixTest extends TestBase {
         // ==================== CharMatrix ====================
 
         @Test
-        public void testCharMatrix_repeat() {
-            CharMatrix matrix = CharMatrix.repeat(2, 3, 'a');
+        public void testCharMatrix_filled() {
+            CharMatrix matrix = CharMatrix.filled(2, 3, 'a');
             assertEquals(2, matrix.rowCount());
             assertEquals(3, matrix.columnCount());
             for (int i = 0; i < 2; i++) {
@@ -6087,7 +6087,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testCharMatrix_copy_rows() {
             CharMatrix matrix = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' }, { 'e', 'f' } });
-            CharMatrix copy = matrix.copy(1, 3);
+            CharMatrix copy = matrix.copyRows(1, 3);
             // Returns [['c', 'd'], ['e', 'f']]
             assertEquals(2, copy.rowCount());
             assertEquals('c', copy.get(0, 0));
@@ -6099,7 +6099,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testCharMatrix_copy_region() {
             CharMatrix matrix = CharMatrix.of(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } });
-            CharMatrix sub = matrix.copy(0, 2, 1, 3);
+            CharMatrix sub = matrix.copyRegion(0, 2, 1, 3);
             // Result: [['b', 'c'], ['e', 'f']]
             assertEquals(2, sub.rowCount());
             assertEquals(2, sub.columnCount());
@@ -6222,9 +6222,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCharMatrix_repeatMatrix() {
+        public void testCharMatrix_tile() {
             CharMatrix matrix = CharMatrix.of(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            CharMatrix repeated = matrix.repeatMatrix(2, 3);
+            CharMatrix repeated = matrix.tile(2, 3);
             // Result: [['a', 'b', 'a', 'b', 'a', 'b'], ['c', 'd', 'c', 'd', 'c', 'd'],
             //          ['a', 'b', 'a', 'b', 'a', 'b'], ['c', 'd', 'c', 'd', 'c', 'd']]
             assertEquals(4, repeated.rowCount());
@@ -6810,8 +6810,8 @@ class CharMatrixTest extends TestBase {
         assertThrows(IllegalArgumentException.class, () -> CharMatrix.randomRow(-1));
         assertThrows(IllegalArgumentException.class, () -> CharMatrix.random(-1, 2));
         assertThrows(IllegalArgumentException.class, () -> CharMatrix.random(2, -1));
-        assertThrows(IllegalArgumentException.class, () -> CharMatrix.repeat(-1, 2, 'x'));
-        assertThrows(IllegalArgumentException.class, () -> CharMatrix.repeat(2, -1, 'x'));
+        assertThrows(IllegalArgumentException.class, () -> CharMatrix.filled(-1, 2, 'x'));
+        assertThrows(IllegalArgumentException.class, () -> CharMatrix.filled(2, -1, 'x'));
     }
 
 }

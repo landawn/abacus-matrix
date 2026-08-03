@@ -6,7 +6,7 @@ All findings verified against source. FloatMatrix is the primitive class with th
 The instance-level surface (get/set, value*, diagonals, update*/replaceIf/map, transforms, arithmetic,
 streams, boxed/unbox, equals/hashCode) faithfully mirrors the family, and IEEE-754 semantics are handled
 responsibly: equals/hashCode use floatToIntBits/deepEquals (NaN==NaN, +0.0f != -0.0f) with clear docs;
-replaceIf, add/subtract/matmul, mutateFlattened and println carry accurate NaN/Infinity notes; the narrowing
+replaceIf, add/subtract/matmul, mutateViaFlatArray and println carry accurate NaN/Infinity notes; the narrowing
 toIntMatrix/toLongMatrix document saturation and NaN->0; and the -0.0f default-value fast-path in
 resize/extend (Float.floatToRawIntBits(defaultValue) != 0) is correct. Conversions are complete and
 consistent (toDouble 2711, toInt 2748, toLong 2804 = the three main numeric types other than float). The

@@ -194,7 +194,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     }
 
     /**
-     * Creates a new {@code 1 x length} matrix filled with random byte values uniformly distributed
+     * Creates a new {@code 1 x columnCount} matrix filled with random byte values uniformly distributed
      * across the full byte range {@code [Byte.MIN_VALUE, Byte.MAX_VALUE]}.
      *
      * <p><b>Usage Examples:</b></p>
@@ -206,18 +206,18 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * ByteMatrix none = ByteMatrix.randomRow(0);
      * none.columnCount();            // returns 0 (1x0 matrix)
      *
-     * ByteMatrix.randomRow(-1);      // throws IllegalArgumentException (negative length)
+     * ByteMatrix.randomRow(-1);      // throws IllegalArgumentException (negative columnCount)
      * }</pre>
      *
-     * @param length the number of columns in the new matrix; must be {@code >= 0}
-     * @return a new {@code ByteMatrix} of dimensions {@code 1 x length} filled with random values
-     * @throws IllegalArgumentException if {@code length} is negative
+     * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
+     * @return a new {@code ByteMatrix} of dimensions {@code 1 x columnCount} filled with random values
+     * @throws IllegalArgumentException if {@code columnCount} is negative
      * @see #random(int, int)
      */
-    public static ByteMatrix randomRow(final int length) {
-        N.checkArgument(length >= 0, MSG_NEGATIVE_DIMENSION, "length", length);
+    public static ByteMatrix randomRow(final int columnCount) {
+        N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
 
-        return random(1, length);
+        return random(1, columnCount);
     }
 
     /**
@@ -264,15 +264,15 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * ByteMatrix matrix = ByteMatrix.repeat(2, 3, (byte) 1);
+     * ByteMatrix matrix = ByteMatrix.filled(2, 3, (byte) 1);
      * matrix.get(1, 2);                  // returns (byte) 1
      * matrix.elementCount();             // returns 6L ([[1, 1, 1], [1, 1, 1]])
      *
-     * ByteMatrix none = ByteMatrix.repeat(0, 0, (byte) 9);
+     * ByteMatrix none = ByteMatrix.filled(0, 0, (byte) 9);
      * none.isEmpty();                    // returns true
      *
-     * ByteMatrix.repeat(-1, 3, (byte) 1);   // throws IllegalArgumentException (negative rowCount)
-     * ByteMatrix.repeat(0, 3, (byte) 1);    // throws IllegalArgumentException (0 rows but 3 columns)
+     * ByteMatrix.filled(-1, 3, (byte) 1);   // throws IllegalArgumentException (negative rowCount)
+     * ByteMatrix.filled(0, 3, (byte) 1);    // throws IllegalArgumentException (0 rows but 3 columns)
      * }</pre>
      *
      * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
@@ -282,7 +282,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
      *         or if {@code rowCount} is {@code 0} while {@code columnCount} is positive (an unrepresentable shape)
      */
-    public static ByteMatrix repeat(final int rowCount, final int columnCount, final byte element) {
+    public static ByteMatrix filled(final int rowCount, final int columnCount, final byte element) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
         checkRepresentableShape(rowCount, columnCount);
@@ -420,14 +420,14 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * ByteMatrix matrix = ByteMatrix.mainDiagonal(new byte[] {1, 2, 3});
+     * ByteMatrix matrix = ByteMatrix.ofMainDiagonal(new byte[] {1, 2, 3});
      * matrix.get(0, 0);                       // returns (byte) 1
      * matrix.get(1, 1);                       // returns (byte) 2
      * matrix.get(0, 1);                       // returns (byte) 0 (off-diagonal)
      * // matrix is [[1, 0, 0], [0, 2, 0], [0, 0, 3]]
      *
-     * ByteMatrix.mainDiagonal(null);                    // throws IllegalArgumentException (null array)
-     * ByteMatrix.mainDiagonal(new byte[0]).isEmpty();   // returns true
+     * ByteMatrix.ofMainDiagonal(null);                    // throws IllegalArgumentException (null array)
+     * ByteMatrix.ofMainDiagonal(new byte[0]).isEmpty();   // returns true
      * }</pre>
      *
      * @param mainDiagonal the array of main-diagonal elements; must not be {@code null}, but may be empty
@@ -435,13 +435,13 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *         the supplied values on the main diagonal and {@code 0} elsewhere; the shared empty
      *         matrix if {@code mainDiagonal} is empty
      * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null}
-     * @see #antiDiagonal(byte[])
-     * @see #diagonals(byte[], byte[])
+     * @see #ofAntiDiagonal(byte[])
+     * @see #ofDiagonals(byte[], byte[])
      */
-    public static ByteMatrix mainDiagonal(final byte[] mainDiagonal) {
+    public static ByteMatrix ofMainDiagonal(final byte[] mainDiagonal) {
         N.checkArgNotNull(mainDiagonal, "mainDiagonal");
 
-        return diagonals(mainDiagonal, null);
+        return ofDiagonals(mainDiagonal, null);
     }
 
     /**
@@ -450,14 +450,14 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * ByteMatrix matrix = ByteMatrix.antiDiagonal(new byte[] {1, 2, 3});
+     * ByteMatrix matrix = ByteMatrix.ofAntiDiagonal(new byte[] {1, 2, 3});
      * matrix.get(0, 2);                       // returns (byte) 1
      * matrix.get(2, 0);                       // returns (byte) 3
      * matrix.get(0, 0);                       // returns (byte) 0 (off anti-diagonal)
      * // matrix is [[0, 0, 1], [0, 2, 0], [3, 0, 0]]
      *
-     * ByteMatrix.antiDiagonal(null);                    // throws IllegalArgumentException (null array)
-     * ByteMatrix.antiDiagonal(new byte[0]).isEmpty();   // returns true
+     * ByteMatrix.ofAntiDiagonal(null);                    // throws IllegalArgumentException (null array)
+     * ByteMatrix.ofAntiDiagonal(new byte[0]).isEmpty();   // returns true
      * }</pre>
      *
      * @param antiDiagonal the array of anti-diagonal elements; must not be {@code null}, but may be empty
@@ -465,13 +465,13 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *         the supplied values on the anti-diagonal and {@code 0} elsewhere; the shared empty
      *         matrix if {@code antiDiagonal} is empty
      * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null}
-     * @see #mainDiagonal(byte[])
-     * @see #diagonals(byte[], byte[])
+     * @see #ofMainDiagonal(byte[])
+     * @see #ofDiagonals(byte[], byte[])
      */
-    public static ByteMatrix antiDiagonal(final byte[] antiDiagonal) {
+    public static ByteMatrix ofAntiDiagonal(final byte[] antiDiagonal) {
         N.checkArgNotNull(antiDiagonal, "antiDiagonal");
 
-        return diagonals(null, antiDiagonal);
+        return ofDiagonals(null, antiDiagonal);
     }
 
     /**
@@ -483,14 +483,14 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * ByteMatrix matrix = ByteMatrix.diagonals(new byte[] {1, 2, 3}, new byte[] {4, 5, 6});
+     * ByteMatrix matrix = ByteMatrix.ofDiagonals(new byte[] {1, 2, 3}, new byte[] {4, 5, 6});
      * matrix.get(0, 0);                       // returns (byte) 1 (main diagonal)
      * matrix.get(0, 2);                       // returns (byte) 4 (anti-diagonal)
      * matrix.get(1, 1);                       // returns (byte) 2 (overlap: main takes precedence)
      * // matrix is [[1, 0, 4], [0, 2, 0], [6, 0, 3]]
      *
-     * ByteMatrix.diagonals(null, null);                              // throws IllegalArgumentException (both null)
-     * ByteMatrix.diagonals(new byte[] {1, 2}, new byte[] {3, 4, 5}); // throws IllegalArgumentException (length mismatch)
+     * ByteMatrix.ofDiagonals(null, null);                              // throws IllegalArgumentException (both null)
+     * ByteMatrix.ofDiagonals(new byte[] {1, 2}, new byte[] {3, 4, 5}); // throws IllegalArgumentException (length mismatch)
      * }</pre>
      *
      * @param mainDiagonal the array of main diagonal elements; may be {@code null} if {@code antiDiagonal} is non-{@code null};
@@ -499,10 +499,10 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *        may be empty
      * @return a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
      * @throws IllegalArgumentException if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null}, or if both arrays are non-empty and have different lengths
-     * @see #mainDiagonal(byte[])
-     * @see #antiDiagonal(byte[])
+     * @see #ofMainDiagonal(byte[])
+     * @see #ofAntiDiagonal(byte[])
      */
-    public static ByteMatrix diagonals(final byte[] mainDiagonal, final byte[] antiDiagonal) throws IllegalArgumentException {
+    public static ByteMatrix ofDiagonals(final byte[] mainDiagonal, final byte[] antiDiagonal) throws IllegalArgumentException {
         N.checkArgument(mainDiagonal != null || antiDiagonal != null, "Both 'mainDiagonal' and 'antiDiagonal' can't be null");
 
         N.checkArgument(N.isEmpty(mainDiagonal) || N.isEmpty(antiDiagonal) || mainDiagonal.length == antiDiagonal.length,
@@ -1671,14 +1671,14 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}, {5, 6}});
-     * ByteMatrix subset = matrix.copy(1, 3);
+     * ByteMatrix subset = matrix.copyRows(1, 3);
      * subset.rowCount();                      // returns 2
      * subset.get(0, 0);                       // returns (byte) 3 -> {{3, 4}, {5, 6}}
      *
-     * matrix.copy(1, 1).rowCount();          // returns 0 (empty range)
+     * matrix.copyRows(1, 1).rowCount();          // returns 0 (empty range)
      *
-     * matrix.copy(-1, 2);                     // throws IndexOutOfBoundsException (fromRowIndex < 0)
-     * matrix.copy(0, 5);                      // throws IndexOutOfBoundsException (toRowIndex > rowCount)
+     * matrix.copyRows(-1, 2);                     // throws IndexOutOfBoundsException (fromRowIndex < 0)
+     * matrix.copyRows(0, 5);                      // throws IndexOutOfBoundsException (toRowIndex > rowCount)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -1688,7 +1688,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *         or {@code fromRowIndex > toRowIndex}
      */
     @Override
-    public ByteMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
+    public ByteMatrix copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
         final byte[][] c = new byte[toRowIndex - fromRowIndex][];
@@ -1706,14 +1706,14 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * ByteMatrix submatrix = matrix.copy(0, 2, 1, 3);
+     * ByteMatrix submatrix = matrix.copyRegion(0, 2, 1, 3);
      * submatrix.get(0, 0);                    // returns (byte) 2
      * submatrix.get(1, 1);                    // returns (byte) 6 -> {{2, 3}, {5, 6}}
      *
-     * matrix.copy(0, 1, 0, 1).get(0, 0);     // returns (byte) 1 (single-cell submatrix)
+     * matrix.copyRegion(0, 1, 0, 1).get(0, 0);     // returns (byte) 1 (single-cell submatrix)
      *
-     * matrix.copy(0, 2, 1, 5);               // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
-     * matrix.copy(-1, 2, 0, 2);              // throws IndexOutOfBoundsException (fromRowIndex < 0)
+     * matrix.copyRegion(0, 2, 1, 5);               // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
+     * matrix.copyRegion(-1, 2, 0, 2);              // throws IndexOutOfBoundsException (fromRowIndex < 0)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -1726,7 +1726,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *         or {@code from > to} for either range)
      */
     @Override
-    public ByteMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
+    public ByteMatrix copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex)
+            throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
         final byte[][] c = new byte[toRowIndex - fromRowIndex][];
@@ -1847,7 +1848,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         }
 
         if (newRowCount <= rowCount && newColumnCount <= columnCount) {
-            return copy(0, newRowCount, 0, newColumnCount);
+            return copyRegion(0, newRowCount, 0, newColumnCount);
         } else {
             final boolean fillDefaultValue = defaultValue != BYTE_0;
             final byte[][] b = new byte[newRowCount][];
@@ -2474,14 +2475,14 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.of(new byte[][] {{1, 2}, {3, 4}});
-     * ByteMatrix repeated = matrix.repeatMatrix(2, 3);
+     * ByteMatrix repeated = matrix.tile(2, 3);
      * repeated.rowCount();                    // returns 4
      * repeated.rowView(0);                    // returns [1, 2, 1, 2, 1, 2]
      *
-     * matrix.repeatMatrix(1, 2).rowView(0);  // returns [1, 2, 1, 2]
+     * matrix.tile(1, 2).rowView(0);  // returns [1, 2, 1, 2]
      *
-     * matrix.repeatMatrix(0, 3);             // throws IllegalArgumentException (not positive)
-     * matrix.repeatMatrix(2, -1);            // throws IllegalArgumentException (not positive)
+     * matrix.tile(0, 3);             // throws IllegalArgumentException (not positive)
+     * matrix.tile(2, -1);            // throws IllegalArgumentException (not positive)
      * }</pre>
      *
      * @param rowRepeats number of times to repeat the matrix vertically
@@ -2492,7 +2493,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
     @Override
-    public ByteMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
+    public ByteMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
 
         if (rowRepeats == 1 && columnRepeats == 1) {

@@ -349,7 +349,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     }
 
     /**
-     * Creates a new {@code 1 x length} matrix filled with pseudo-random {@code int} values
+     * Creates a new {@code 1 x columnCount} matrix filled with pseudo-random {@code int} values
      * drawn uniformly from the entire {@code int} range.
      *
      * <p><b>Usage Examples:</b></p>
@@ -359,18 +359,18 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * matrix.columnCount();       // returns 5
      *
      * IntMatrix.randomRow(0).columnCount();   // returns 0 (1x0 matrix)
-     * IntMatrix.randomRow(-1);                // throws IllegalArgumentException (negative length)
+     * IntMatrix.randomRow(-1);                // throws IllegalArgumentException (negative columnCount)
      * }</pre>
      *
-     * @param length the number of columns in the new matrix; must be {@code >= 0}
-     * @return a new {@code IntMatrix} of dimensions {@code 1 x length} filled with random values
-     * @throws IllegalArgumentException if {@code length} is negative
+     * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
+     * @return a new {@code IntMatrix} of dimensions {@code 1 x columnCount} filled with random values
+     * @throws IllegalArgumentException if {@code columnCount} is negative
      * @see #random(int, int)
      */
-    public static IntMatrix randomRow(final int length) {
-        N.checkArgument(length >= 0, MSG_NEGATIVE_DIMENSION, "length", length);
+    public static IntMatrix randomRow(final int columnCount) {
+        N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
 
-        return random(1, length);
+        return random(1, columnCount);
     }
 
     /**
@@ -415,15 +415,15 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix matrix = IntMatrix.repeat(2, 3, 1);
+     * IntMatrix matrix = IntMatrix.filled(2, 3, 1);
      * matrix.get(0, 0);                    // returns 1
      * matrix.get(1, 2);                    // returns 1
      * // matrix is [[1, 1, 1], [1, 1, 1]]
      *
-     * IntMatrix.repeat(0, 0, 5).isEmpty(); // returns true
-     * IntMatrix.repeat(-1, 3, 7);          // throws IllegalArgumentException (negative rowCount)
-     * IntMatrix.repeat(2, -1, 7);          // throws IllegalArgumentException (negative columnCount)
-     * IntMatrix.repeat(0, 3, 7);           // throws IllegalArgumentException (0 rows with non-zero columns)
+     * IntMatrix.filled(0, 0, 5).isEmpty(); // returns true
+     * IntMatrix.filled(-1, 3, 7);          // throws IllegalArgumentException (negative rowCount)
+     * IntMatrix.filled(2, -1, 7);          // throws IllegalArgumentException (negative columnCount)
+     * IntMatrix.filled(0, 3, 7);           // throws IllegalArgumentException (0 rows with non-zero columns)
      * }</pre>
      *
      * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
@@ -433,7 +433,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
      *         or if the resulting shape cannot be represented (e.g. zero rows with non-zero columns)
      */
-    public static IntMatrix repeat(final int rowCount, final int columnCount, final int element) {
+    public static IntMatrix filled(final int rowCount, final int columnCount, final int element) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
         checkRepresentableShape(rowCount, columnCount);
@@ -553,14 +553,14 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix matrix = IntMatrix.mainDiagonal(new int[] {1, 2, 3});
+     * IntMatrix matrix = IntMatrix.ofMainDiagonal(new int[] {1, 2, 3});
      * matrix.get(0, 0);                       // returns 1
      * matrix.get(1, 1);                       // returns 2
      * matrix.get(0, 1);                       // returns 0 (off-diagonal)
      * // matrix is [[1, 0, 0], [0, 2, 0], [0, 0, 3]]
      *
-     * IntMatrix.mainDiagonal(null);                    // throws IllegalArgumentException (null array)
-     * IntMatrix.mainDiagonal(new int[0]).isEmpty();    // returns true
+     * IntMatrix.ofMainDiagonal(null);                    // throws IllegalArgumentException (null array)
+     * IntMatrix.ofMainDiagonal(new int[0]).isEmpty();    // returns true
      * }</pre>
      *
      * @param mainDiagonal the array of main-diagonal elements; must not be {@code null}, but may be empty
@@ -568,13 +568,13 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *         the supplied values on the main diagonal and {@code 0} elsewhere; the shared empty
      *         matrix if {@code mainDiagonal} is empty
      * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null}
-     * @see #antiDiagonal(int[])
-     * @see #diagonals(int[], int[])
+     * @see #ofAntiDiagonal(int[])
+     * @see #ofDiagonals(int[], int[])
      */
-    public static IntMatrix mainDiagonal(final int[] mainDiagonal) {
+    public static IntMatrix ofMainDiagonal(final int[] mainDiagonal) {
         N.checkArgNotNull(mainDiagonal, "mainDiagonal");
 
-        return diagonals(mainDiagonal, null);
+        return ofDiagonals(mainDiagonal, null);
     }
 
     /**
@@ -583,14 +583,14 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix matrix = IntMatrix.antiDiagonal(new int[] {1, 2, 3});
+     * IntMatrix matrix = IntMatrix.ofAntiDiagonal(new int[] {1, 2, 3});
      * matrix.get(0, 2);                       // returns 1
      * matrix.get(2, 0);                       // returns 3
      * matrix.get(0, 0);                       // returns 0 (off anti-diagonal)
      * // matrix is [[0, 0, 1], [0, 2, 0], [3, 0, 0]]
      *
-     * IntMatrix.antiDiagonal(null);                    // throws IllegalArgumentException (null array)
-     * IntMatrix.antiDiagonal(new int[0]).isEmpty();    // returns true
+     * IntMatrix.ofAntiDiagonal(null);                    // throws IllegalArgumentException (null array)
+     * IntMatrix.ofAntiDiagonal(new int[0]).isEmpty();    // returns true
      * }</pre>
      *
      * @param antiDiagonal the array of anti-diagonal elements; must not be {@code null}, but may be empty
@@ -598,13 +598,13 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *         the supplied values on the anti-diagonal and {@code 0} elsewhere; the shared empty
      *         matrix if {@code antiDiagonal} is empty
      * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null}
-     * @see #mainDiagonal(int[])
-     * @see #diagonals(int[], int[])
+     * @see #ofMainDiagonal(int[])
+     * @see #ofDiagonals(int[], int[])
      */
-    public static IntMatrix antiDiagonal(final int[] antiDiagonal) {
+    public static IntMatrix ofAntiDiagonal(final int[] antiDiagonal) {
         N.checkArgNotNull(antiDiagonal, "antiDiagonal");
 
-        return diagonals(null, antiDiagonal);
+        return ofDiagonals(null, antiDiagonal);
     }
 
     /**
@@ -618,14 +618,14 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * IntMatrix matrix = IntMatrix.diagonals(new int[] {1, 2, 3}, new int[] {4, 5, 6});
+     * IntMatrix matrix = IntMatrix.ofDiagonals(new int[] {1, 2, 3}, new int[] {4, 5, 6});
      * matrix.get(0, 0);                       // returns 1 (main diagonal)
      * matrix.get(0, 2);                       // returns 4 (anti-diagonal)
      * matrix.get(1, 1);                       // returns 2 (overlap: main takes precedence)
      * // matrix is [[1, 0, 4], [0, 2, 0], [6, 0, 3]]
      *
-     * IntMatrix.diagonals(null, null);                            // throws IllegalArgumentException (both null)
-     * IntMatrix.diagonals(new int[] {1, 2}, new int[] {3, 4, 5}); // throws IllegalArgumentException (length mismatch)
+     * IntMatrix.ofDiagonals(null, null);                            // throws IllegalArgumentException (both null)
+     * IntMatrix.ofDiagonals(new int[] {1, 2}, new int[] {3, 4, 5}); // throws IllegalArgumentException (length mismatch)
      * }</pre>
      *
      * @param mainDiagonal the array of main-diagonal elements; may be {@code null} if {@code antiDiagonal} is non-{@code null};
@@ -634,10 +634,10 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *        may be empty
      * @return a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
      * @throws IllegalArgumentException if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null}, or if both arrays are non-empty and have different lengths
-     * @see #mainDiagonal(int[])
-     * @see #antiDiagonal(int[])
+     * @see #ofMainDiagonal(int[])
+     * @see #ofAntiDiagonal(int[])
      */
-    public static IntMatrix diagonals(final int[] mainDiagonal, final int[] antiDiagonal) throws IllegalArgumentException {
+    public static IntMatrix ofDiagonals(final int[] mainDiagonal, final int[] antiDiagonal) throws IllegalArgumentException {
         N.checkArgument(mainDiagonal != null || antiDiagonal != null, "Both 'mainDiagonal' and 'antiDiagonal' can't be null");
 
         N.checkArgument(N.isEmpty(mainDiagonal) || N.isEmpty(antiDiagonal) || mainDiagonal.length == antiDiagonal.length,
@@ -1870,14 +1870,14 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}, {5, 6}});
-     * IntMatrix subset = matrix.copy(1, 3);
+     * IntMatrix subset = matrix.copyRows(1, 3);
      * subset.rowCount();                      // returns 2
      * subset.get(0, 0);                       // returns 3 -> {{3, 4}, {5, 6}}
      *
-     * matrix.copy(1, 1).rowCount();          // returns 0 (empty range)
+     * matrix.copyRows(1, 1).rowCount();          // returns 0 (empty range)
      *
-     * matrix.copy(-1, 2);                     // throws IndexOutOfBoundsException (fromRowIndex < 0)
-     * matrix.copy(0, 5);                      // throws IndexOutOfBoundsException (toRowIndex > rowCount)
+     * matrix.copyRows(-1, 2);                     // throws IndexOutOfBoundsException (fromRowIndex < 0)
+     * matrix.copyRows(0, 5);                      // throws IndexOutOfBoundsException (toRowIndex > rowCount)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -1887,7 +1887,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *         or {@code fromRowIndex > toRowIndex}
      */
     @Override
-    public IntMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
+    public IntMatrix copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
         final int[][] c = new int[toRowIndex - fromRowIndex][];
@@ -1905,14 +1905,14 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * IntMatrix submatrix = matrix.copy(0, 2, 1, 3);
+     * IntMatrix submatrix = matrix.copyRegion(0, 2, 1, 3);
      * submatrix.get(0, 0);                    // returns 2
      * submatrix.get(1, 1);                    // returns 6 -> {{2, 3}, {5, 6}}
      *
-     * matrix.copy(0, 1, 0, 1).get(0, 0);     // returns 1 (single-cell submatrix)
+     * matrix.copyRegion(0, 1, 0, 1).get(0, 0);     // returns 1 (single-cell submatrix)
      *
-     * matrix.copy(0, 2, 1, 5);               // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
-     * matrix.copy(-1, 2, 0, 2);              // throws IndexOutOfBoundsException (fromRowIndex < 0)
+     * matrix.copyRegion(0, 2, 1, 5);               // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
+     * matrix.copyRegion(-1, 2, 0, 2);              // throws IndexOutOfBoundsException (fromRowIndex < 0)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -1925,7 +1925,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *         or {@code from > to} for either range)
      */
     @Override
-    public IntMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
+    public IntMatrix copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex)
+            throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
         final int[][] c = new int[toRowIndex - fromRowIndex][];
@@ -2046,7 +2047,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
         }
 
         if (newRowCount <= rowCount && newColumnCount <= columnCount) {
-            return copy(0, newRowCount, 0, newColumnCount);
+            return copyRegion(0, newRowCount, 0, newColumnCount);
         } else {
             final boolean fillDefaultValue = defaultValue != 0;
             final int[][] extendedData = new int[newRowCount][];
@@ -2673,14 +2674,14 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.of(new int[][] {{1, 2}, {3, 4}});
-     * IntMatrix repeated = matrix.repeatMatrix(2, 3);
+     * IntMatrix repeated = matrix.tile(2, 3);
      * repeated.rowCount();                    // returns 4
      * repeated.rowCopy(0);                    // returns [1, 2, 1, 2, 1, 2]
      *
-     * matrix.repeatMatrix(1, 2).rowCopy(0);  // returns [1, 2, 1, 2]
+     * matrix.tile(1, 2).rowCopy(0);  // returns [1, 2, 1, 2]
      *
-     * matrix.repeatMatrix(0, 3);             // throws IllegalArgumentException (not positive)
-     * matrix.repeatMatrix(2, -1);            // throws IllegalArgumentException (not positive)
+     * matrix.tile(0, 3);             // throws IllegalArgumentException (not positive)
+     * matrix.tile(2, -1);            // throws IllegalArgumentException (not positive)
      * }</pre>
      *
      * @param rowRepeats number of times to repeat the matrix vertically
@@ -2691,7 +2692,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
     @Override
-    public IntMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
+    public IntMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
 
         if (rowRepeats == 1 && columnRepeats == 1) {

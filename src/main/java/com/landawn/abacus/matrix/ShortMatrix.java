@@ -189,7 +189,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     }
 
     /**
-     * Creates a new {@code 1 x length} matrix filled with pseudo-random {@code short} values
+     * Creates a new {@code 1 x columnCount} matrix filled with pseudo-random {@code short} values
      * drawn uniformly from the entire {@code short} range.
      *
      * <p><b>Usage Examples:</b></p>
@@ -199,18 +199,18 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * matrix.columnCount();       // returns 5
      *
      * ShortMatrix.randomRow(0).columnCount();   // returns 0 (1x0 matrix)
-     * ShortMatrix.randomRow(-1);                // throws IllegalArgumentException (negative length)
+     * ShortMatrix.randomRow(-1);                // throws IllegalArgumentException (negative columnCount)
      * }</pre>
      *
-     * @param length the number of columns in the new matrix; must be {@code >= 0}
-     * @return a new {@code ShortMatrix} of dimensions {@code 1 x length} filled with random values
-     * @throws IllegalArgumentException if {@code length} is negative
+     * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
+     * @return a new {@code ShortMatrix} of dimensions {@code 1 x columnCount} filled with random values
+     * @throws IllegalArgumentException if {@code columnCount} is negative
      * @see #random(int, int)
      */
-    public static ShortMatrix randomRow(final int length) {
-        N.checkArgument(length >= 0, MSG_NEGATIVE_DIMENSION, "length", length);
+    public static ShortMatrix randomRow(final int columnCount) {
+        N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
 
-        return random(1, length);
+        return random(1, columnCount);
     }
 
     /**
@@ -255,13 +255,13 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * ShortMatrix matrix = ShortMatrix.repeat(2, 3, (short) 1);
+     * ShortMatrix matrix = ShortMatrix.filled(2, 3, (short) 1);
      * matrix.get(0, 0);                         // returns (short) 1
      * matrix.elementCount();                    // returns 6L (matrix is [[1, 1, 1], [1, 1, 1]])
      *
-     * ShortMatrix.repeat(0, 0, (short) 7).isEmpty();   // returns true
-     * ShortMatrix.repeat(-1, 3, (short) 7);            // throws IllegalArgumentException (negative rowCount)
-     * ShortMatrix.repeat(0, 3, (short) 7);             // throws IllegalArgumentException (0 rows with non-zero columns)
+     * ShortMatrix.filled(0, 0, (short) 7).isEmpty();   // returns true
+     * ShortMatrix.filled(-1, 3, (short) 7);            // throws IllegalArgumentException (negative rowCount)
+     * ShortMatrix.filled(0, 3, (short) 7);             // throws IllegalArgumentException (0 rows with non-zero columns)
      * }</pre>
      *
      * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
@@ -271,7 +271,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
      *         or if the resulting shape cannot be represented (e.g. zero rows with non-zero columns)
      */
-    public static ShortMatrix repeat(final int rowCount, final int columnCount, final short element) {
+    public static ShortMatrix filled(final int rowCount, final int columnCount, final short element) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
         checkRepresentableShape(rowCount, columnCount);
@@ -391,14 +391,14 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * ShortMatrix matrix = ShortMatrix.mainDiagonal(new short[] {1, 2, 3});
+     * ShortMatrix matrix = ShortMatrix.ofMainDiagonal(new short[] {1, 2, 3});
      * matrix.get(0, 0);                       // returns (short) 1
      * matrix.get(1, 1);                       // returns (short) 2
      * matrix.get(0, 1);                       // returns (short) 0 (off-diagonal)
      * // matrix is [[1, 0, 0], [0, 2, 0], [0, 0, 3]]
      *
-     * ShortMatrix.mainDiagonal((short[]) null);             // throws IllegalArgumentException (null array)
-     * ShortMatrix.mainDiagonal(new short[0]).isEmpty();     // returns true
+     * ShortMatrix.ofMainDiagonal((short[]) null);             // throws IllegalArgumentException (null array)
+     * ShortMatrix.ofMainDiagonal(new short[0]).isEmpty();     // returns true
      * }</pre>
      *
      * @param mainDiagonal the array of main-diagonal elements; must not be {@code null}, but may be empty
@@ -406,13 +406,13 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *         the supplied values on the main diagonal and {@code 0} elsewhere; the shared empty
      *         matrix if {@code mainDiagonal} is empty
      * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null}
-     * @see #antiDiagonal(short[])
-     * @see #diagonals(short[], short[])
+     * @see #ofAntiDiagonal(short[])
+     * @see #ofDiagonals(short[], short[])
      */
-    public static ShortMatrix mainDiagonal(final short[] mainDiagonal) {
+    public static ShortMatrix ofMainDiagonal(final short[] mainDiagonal) {
         N.checkArgNotNull(mainDiagonal, "mainDiagonal");
 
-        return diagonals(mainDiagonal, null);
+        return ofDiagonals(mainDiagonal, null);
     }
 
     /**
@@ -421,14 +421,14 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * ShortMatrix matrix = ShortMatrix.antiDiagonal(new short[] {1, 2, 3});
+     * ShortMatrix matrix = ShortMatrix.ofAntiDiagonal(new short[] {1, 2, 3});
      * matrix.get(0, 2);                       // returns (short) 1
      * matrix.get(2, 0);                       // returns (short) 3
      * matrix.get(0, 0);                       // returns (short) 0 (off anti-diagonal)
      * // matrix is [[0, 0, 1], [0, 2, 0], [3, 0, 0]]
      *
-     * ShortMatrix.antiDiagonal((short[]) null);             // throws IllegalArgumentException (null array)
-     * ShortMatrix.antiDiagonal(new short[0]).isEmpty();     // returns true
+     * ShortMatrix.ofAntiDiagonal((short[]) null);             // throws IllegalArgumentException (null array)
+     * ShortMatrix.ofAntiDiagonal(new short[0]).isEmpty();     // returns true
      * }</pre>
      *
      * @param antiDiagonal the array of anti-diagonal elements; must not be {@code null}, but may be empty
@@ -436,13 +436,13 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *         the supplied values on the anti-diagonal and {@code 0} elsewhere; the shared empty
      *         matrix if {@code antiDiagonal} is empty
      * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null}
-     * @see #mainDiagonal(short[])
-     * @see #diagonals(short[], short[])
+     * @see #ofMainDiagonal(short[])
+     * @see #ofDiagonals(short[], short[])
      */
-    public static ShortMatrix antiDiagonal(final short[] antiDiagonal) {
+    public static ShortMatrix ofAntiDiagonal(final short[] antiDiagonal) {
         N.checkArgNotNull(antiDiagonal, "antiDiagonal");
 
-        return diagonals(null, antiDiagonal);
+        return ofDiagonals(null, antiDiagonal);
     }
 
     /**
@@ -456,14 +456,14 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * ShortMatrix matrix = ShortMatrix.diagonals(new short[] {1, 2, 3}, new short[] {4, 5, 6});
+     * ShortMatrix matrix = ShortMatrix.ofDiagonals(new short[] {1, 2, 3}, new short[] {4, 5, 6});
      * matrix.get(0, 0);                       // returns (short) 1 (main diagonal)
      * matrix.get(0, 2);                       // returns (short) 4 (anti-diagonal)
      * matrix.get(1, 1);                       // returns (short) 2 (overlap: main takes precedence)
      * // matrix is [[1, 0, 4], [0, 2, 0], [6, 0, 3]]
      *
-     * ShortMatrix.diagonals((short[]) null, (short[]) null);             // throws IllegalArgumentException (both null)
-     * ShortMatrix.diagonals(new short[] {1, 2}, new short[] {3, 4, 5});  // throws IllegalArgumentException (length mismatch)
+     * ShortMatrix.ofDiagonals((short[]) null, (short[]) null);             // throws IllegalArgumentException (both null)
+     * ShortMatrix.ofDiagonals(new short[] {1, 2}, new short[] {3, 4, 5});  // throws IllegalArgumentException (length mismatch)
      * }</pre>
      *
      * @param mainDiagonal the array of main-diagonal elements; may be {@code null} if {@code antiDiagonal} is non-{@code null};
@@ -472,10 +472,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *        may be empty
      * @return a square matrix with the specified diagonals, or an empty matrix when both supplied diagonals are empty or one is {@code null} and the other is empty
      * @throws IllegalArgumentException if both {@code mainDiagonal} and {@code antiDiagonal} are {@code null}, or if both arrays are non-empty and have different lengths
-     * @see #mainDiagonal(short[])
-     * @see #antiDiagonal(short[])
+     * @see #ofMainDiagonal(short[])
+     * @see #ofAntiDiagonal(short[])
      */
-    public static ShortMatrix diagonals(final short[] mainDiagonal, final short[] antiDiagonal) throws IllegalArgumentException {
+    public static ShortMatrix ofDiagonals(final short[] mainDiagonal, final short[] antiDiagonal) throws IllegalArgumentException {
         N.checkArgument(mainDiagonal != null || antiDiagonal != null, "Both 'mainDiagonal' and 'antiDiagonal' can't be null");
 
         N.checkArgument(N.isEmpty(mainDiagonal) || N.isEmpty(antiDiagonal) || mainDiagonal.length == antiDiagonal.length,
@@ -1633,14 +1633,14 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2}, {3, 4}, {5, 6}});
-     * ShortMatrix subset = matrix.copy(1, 3);
+     * ShortMatrix subset = matrix.copyRows(1, 3);
      * subset.rowCount();                      // returns 2
      * subset.get(0, 0);                       // returns 3 -> {{3, 4}, {5, 6}}
      *
-     * matrix.copy(1, 1).rowCount();          // returns 0 (empty range)
+     * matrix.copyRows(1, 1).rowCount();          // returns 0 (empty range)
      *
-     * matrix.copy(-1, 2);                     // throws IndexOutOfBoundsException (fromRowIndex < 0)
-     * matrix.copy(0, 5);                      // throws IndexOutOfBoundsException (toRowIndex > rowCount)
+     * matrix.copyRows(-1, 2);                     // throws IndexOutOfBoundsException (fromRowIndex < 0)
+     * matrix.copyRows(0, 5);                      // throws IndexOutOfBoundsException (toRowIndex > rowCount)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -1650,7 +1650,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *         or {@code fromRowIndex > toRowIndex}
      */
     @Override
-    public ShortMatrix copy(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
+    public ShortMatrix copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
         final short[][] c = new short[toRowIndex - fromRowIndex][];
@@ -1668,14 +1668,14 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * ShortMatrix submatrix = matrix.copy(0, 2, 1, 3);
+     * ShortMatrix submatrix = matrix.copyRegion(0, 2, 1, 3);
      * submatrix.get(0, 0);                    // returns 2
      * submatrix.get(1, 1);                    // returns 6 -> {{2, 3}, {5, 6}}
      *
-     * matrix.copy(0, 1, 0, 1).get(0, 0);     // returns 1 (single-cell submatrix)
+     * matrix.copyRegion(0, 1, 0, 1).get(0, 0);     // returns 1 (single-cell submatrix)
      *
-     * matrix.copy(0, 2, 1, 5);               // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
-     * matrix.copy(-1, 2, 0, 2);              // throws IndexOutOfBoundsException (fromRowIndex < 0)
+     * matrix.copyRegion(0, 2, 1, 5);               // throws IndexOutOfBoundsException (toColumnIndex > columnCount)
+     * matrix.copyRegion(-1, 2, 0, 2);              // throws IndexOutOfBoundsException (fromRowIndex < 0)
      * }</pre>
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
@@ -1688,7 +1688,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *         or {@code from > to} for either range)
      */
     @Override
-    public ShortMatrix copy(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
+    public ShortMatrix copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex)
+            throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
         final short[][] c = new short[toRowIndex - fromRowIndex][];
@@ -1809,7 +1810,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
         }
 
         if (newRowCount <= rowCount && newColumnCount <= columnCount) {
-            return copy(0, newRowCount, 0, newColumnCount);
+            return copyRegion(0, newRowCount, 0, newColumnCount);
         } else {
             final boolean fillDefaultValue = defaultValue != SHORT_0;
             final short[][] result = new short[newRowCount][];
@@ -2436,14 +2437,14 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.of(new short[][] {{1, 2}, {3, 4}});
-     * ShortMatrix repeated = matrix.repeatMatrix(2, 3);
+     * ShortMatrix repeated = matrix.tile(2, 3);
      * repeated.rowCount();                    // returns 4
      * repeated.rowCopy(0);                    // returns [1, 2, 1, 2, 1, 2]
      *
-     * matrix.repeatMatrix(1, 2).rowCopy(0);  // returns [1, 2, 1, 2]
+     * matrix.tile(1, 2).rowCopy(0);  // returns [1, 2, 1, 2]
      *
-     * matrix.repeatMatrix(0, 3);             // throws IllegalArgumentException (not positive)
-     * matrix.repeatMatrix(2, -1);            // throws IllegalArgumentException (not positive)
+     * matrix.tile(0, 3);             // throws IllegalArgumentException (not positive)
+     * matrix.tile(2, -1);            // throws IllegalArgumentException (not positive)
      * }</pre>
      *
      * @param rowRepeats number of times to repeat the matrix vertically
@@ -2454,7 +2455,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
     @Override
-    public ShortMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
+    public ShortMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
 
         if (rowRepeats == 1 && columnRepeats == 1) {

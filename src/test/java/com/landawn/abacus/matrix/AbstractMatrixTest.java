@@ -96,9 +96,9 @@ class AbstractMatrixTest extends TestBase {
     }
 
     @Test
-    public void testCopyRowRange() {
+    public void testCopyRows() {
         IntMatrix matrix = createTestMatrix();
-        IntMatrix copy = matrix.copy(0, 2);
+        IntMatrix copy = matrix.copyRows(0, 2);
 
         Assertions.assertEquals(2, copy.rowCount());
         Assertions.assertEquals(3, copy.columnCount());
@@ -107,26 +107,60 @@ class AbstractMatrixTest extends TestBase {
     }
 
     @Test
-    public void testCopyRowRangeInvalidIndices() {
+    public void testCopyRowsInvalidIndices() {
         IntMatrix matrix = createTestMatrix();
 
         Assertions.assertThrows(IndexOutOfBoundsException.class, () -> {
-            matrix.copy(-1, 2);
+            matrix.copyRows(-1, 2);
         });
 
         Assertions.assertThrows(IndexOutOfBoundsException.class, () -> {
-            matrix.copy(0, 4);
+            matrix.copyRows(0, 4);
         });
 
         Assertions.assertThrows(IndexOutOfBoundsException.class, () -> {
-            matrix.copy(2, 1);
+            matrix.copyRows(2, 1);
         });
+    }
+
+    @Test
+    public void testCopyColumns() {
+        IntMatrix matrix = createTestMatrix();
+        IntMatrix copy = matrix.copyColumns(1, 3);
+
+        Assertions.assertEquals(3, copy.rowCount());
+        Assertions.assertEquals(2, copy.columnCount());
+        Assertions.assertArrayEquals(new int[] { 2, 3 }, copy.rowView(0));
+        Assertions.assertArrayEquals(new int[] { 5, 6 }, copy.rowView(1));
+        Assertions.assertArrayEquals(new int[] { 8, 9 }, copy.rowView(2));
+
+        // A range copy owns its storage independently of the source matrix.
+        copy.set(0, 0, 100);
+        Assertions.assertEquals(2, matrix.get(0, 1));
+    }
+
+    @Test
+    public void testCopyColumnsEmptyRange() {
+        IntMatrix matrix = createTestMatrix();
+        IntMatrix copy = matrix.copyColumns(1, 1);
+
+        Assertions.assertEquals(3, copy.rowCount());
+        Assertions.assertEquals(0, copy.columnCount());
+    }
+
+    @Test
+    public void testCopyColumnsInvalidIndices() {
+        IntMatrix matrix = createTestMatrix();
+
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyColumns(-1, 2));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyColumns(0, 4));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyColumns(2, 1));
     }
 
     @Test
     public void testCopyRegion() {
         IntMatrix matrix = createTestMatrix();
-        IntMatrix copy = matrix.copy(1, 3, 1, 3);
+        IntMatrix copy = matrix.copyRegion(1, 3, 1, 3);
 
         Assertions.assertEquals(2, copy.rowCount());
         Assertions.assertEquals(2, copy.columnCount());
@@ -141,11 +175,11 @@ class AbstractMatrixTest extends TestBase {
         IntMatrix matrix = createTestMatrix();
 
         Assertions.assertThrows(IndexOutOfBoundsException.class, () -> {
-            matrix.copy(0, 2, -1, 2);
+            matrix.copyRegion(0, 2, -1, 2);
         });
 
         Assertions.assertThrows(IndexOutOfBoundsException.class, () -> {
-            matrix.copy(0, 2, 0, 4);
+            matrix.copyRegion(0, 2, 0, 4);
         });
     }
 
@@ -268,7 +302,7 @@ class AbstractMatrixTest extends TestBase {
     }
 
     @Test
-    public void testRepelem() {
+    public void testRepeatElements() {
         IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
         IntMatrix repeated = matrix.repeatElements(2, 3);
 
@@ -281,7 +315,7 @@ class AbstractMatrixTest extends TestBase {
     }
 
     @Test
-    public void testRepelemInvalidArgs() {
+    public void testRepeatElementsInvalidArgs() {
         IntMatrix matrix = createTestMatrix();
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
@@ -294,9 +328,9 @@ class AbstractMatrixTest extends TestBase {
     }
 
     @Test
-    public void testRepmat() {
+    public void testTile() {
         IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-        IntMatrix tiled = matrix.repeatMatrix(2, 3);
+        IntMatrix tiled = matrix.tile(2, 3);
 
         tiled.println();
 
@@ -309,15 +343,15 @@ class AbstractMatrixTest extends TestBase {
     }
 
     @Test
-    public void testRepmatInvalidArgs() {
+    public void testTileInvalidArgs() {
         IntMatrix matrix = createTestMatrix();
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            matrix.repeatMatrix(0, 1);
+            matrix.tile(0, 1);
         });
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            matrix.repeatMatrix(1, -1);
+            matrix.tile(1, -1);
         });
     }
 
@@ -867,7 +901,7 @@ class AbstractMatrixTest extends TestBase {
         IntMatrix transposed = matrix.transpose();
         Assertions.assertEquals(matrix.get(10, 20), transposed.get(20, 10));
 
-        IntMatrix copy = matrix.copy(0, 10, 0, 10);
+        IntMatrix copy = matrix.copyRegion(0, 10, 0, 10);
         Assertions.assertEquals(10, copy.rowCount());
         Assertions.assertEquals(10, copy.columnCount());
     }
@@ -982,9 +1016,9 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withRowRange_singleRow() {
+        public void testCopyRows_singleRow() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            IntMatrix subset = m.copy(1, 2);
+            IntMatrix subset = m.copyRows(1, 2);
 
             assertEquals(1, subset.rowCount());
             assertEquals(3, subset.columnCount());
@@ -992,20 +1026,20 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withFullRange_entireMatrix() {
+        public void testCopyRegion_entireMatrix() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix copy = m.copy(0, 2, 0, 2);
+            IntMatrix copy = m.copyRegion(0, 2, 0, 2);
 
             assertEquals(m, copy);
         }
 
         @Test
-        public void testCopy_withFullRange_outOfBounds() {
+        public void testCopyRegion_outOfBounds() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 2, -1, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 2, 0, 3));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(-1, 2, 0, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 3, 0, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRegion(0, 2, -1, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRegion(0, 2, 0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRegion(-1, 2, 0, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRegion(0, 3, 0, 2));
         }
 
         @Test
@@ -1130,7 +1164,7 @@ class AbstractMatrixTest extends TestBase {
         // ============ Repelem and Repmat Tests ============
 
         @Test
-        public void testRepelem() {
+        public void testRepeatElements() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 } });
             IntMatrix repeated = m.repeatElements(2, 3);
 
@@ -1145,7 +1179,7 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepelem_invalidArguments() {
+        public void testRepeatElements_invalidArguments() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(0, 1));
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(1, 0));
@@ -1153,9 +1187,9 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepmat() {
+        public void testTile() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix repeated = m.repeatMatrix(2, 3);
+            IntMatrix repeated = m.tile(2, 3);
 
             assertEquals(4, repeated.rowCount());
             assertEquals(6, repeated.columnCount());
@@ -1166,11 +1200,11 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepmat_invalidArguments() {
+        public void testTile_invalidArguments() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 } });
-            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
-            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(-1, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
+            assertThrows(IllegalArgumentException.class, () -> m.tile(-1, 1));
         }
 
         // ============ Flatten Tests ============
@@ -1780,19 +1814,19 @@ class AbstractMatrixTest extends TestBase {
         // ============ Additional Edge Cases ============
 
         @Test
-        public void testCopy_emptyRowRange() {
+        public void testCopyRows_emptyRange() {
             // copy with from == to is a valid empty slice and must return an empty matrix.
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            IntMatrix empty = m.copy(1, 1);
+            IntMatrix empty = m.copyRows(1, 1);
             assertEquals(0, empty.rowCount());
             assertEquals(0, empty.columnCount());
         }
 
         @Test
-        public void testCopy_emptyRegion() {
+        public void testCopyRegion_emptyRange() {
             // copy with an empty row sub-range is a valid empty slice and must return an empty matrix.
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            IntMatrix empty = m.copy(1, 1, 0, 2);
+            IntMatrix empty = m.copyRegion(1, 1, 0, 2);
             assertEquals(0, empty.rowCount());
             assertEquals(0, empty.columnCount());
         }
@@ -1991,9 +2025,9 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withRowRange_allRows() {
+        public void testCopyRows_allRows() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix copy = m.copy(0, 2);
+            IntMatrix copy = m.copyRows(0, 2);
 
             assertEquals(2, copy.rowCount());
             assertEquals(2, copy.columnCount());
@@ -2002,9 +2036,9 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withFullRange_entireMatrix() {
+        public void testCopyRegion_entireMatrix() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix copy = m.copy(0, 2, 0, 2);
+            IntMatrix copy = m.copyRegion(0, 2, 0, 2);
 
             assertEquals(2, copy.rowCount());
             assertEquals(2, copy.columnCount());
@@ -2013,9 +2047,9 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withFullRange_singleElement() {
+        public void testCopyRegion_singleElement() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            IntMatrix single = m.copy(1, 2, 1, 2);
+            IntMatrix single = m.copyRegion(1, 2, 1, 2);
 
             assertEquals(1, single.rowCount());
             assertEquals(1, single.columnCount());
@@ -2023,14 +2057,14 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopy_withFullRange_outOfBounds() {
+        public void testCopyRegion_outOfBounds() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 2, -1, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 2, 0, 3));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(-1, 2, 0, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 3, 0, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(2, 1, 0, 2));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.copy(0, 2, 2, 1));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRegion(0, 2, -1, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRegion(0, 2, 0, 3));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRegion(-1, 2, 0, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRegion(0, 3, 0, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRegion(2, 1, 0, 2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyRegion(0, 2, 2, 1));
         }
 
         // ============ Rotation Tests ============
@@ -2231,7 +2265,7 @@ class AbstractMatrixTest extends TestBase {
         // ============ Repeat Tests ============
 
         @Test
-        public void testRepelem() {
+        public void testRepeatElements() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
             IntMatrix repeated = m.repeatElements(2, 2);
 
@@ -2246,7 +2280,7 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepelem_asymmetric() {
+        public void testRepeatElements_asymmetric() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 } });
             IntMatrix repeated = m.repeatElements(3, 2);
 
@@ -2260,7 +2294,7 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepelem_invalidArgs() {
+        public void testRepeatElements_invalidArgs() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1 } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(0, 1));
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(1, 0));
@@ -2268,9 +2302,9 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepmat() {
+        public void testTile() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix repeated = m.repeatMatrix(2, 2);
+            IntMatrix repeated = m.tile(2, 2);
 
             assertEquals(4, repeated.rowCount());
             assertEquals(4, repeated.columnCount());
@@ -2282,9 +2316,9 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepmat_asymmetric() {
+        public void testTile_asymmetric() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1, 2 } });
-            IntMatrix repeated = m.repeatMatrix(3, 2);
+            IntMatrix repeated = m.tile(3, 2);
 
             assertEquals(3, repeated.rowCount());
             assertEquals(4, repeated.columnCount());
@@ -2295,11 +2329,11 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRepmat_invalidArgs() {
+        public void testTile_invalidArgs() {
             IntMatrix m = IntMatrix.of(new int[][] { { 1 } });
-            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
-            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(-1, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
+            assertThrows(IllegalArgumentException.class, () -> m.tile(-1, 1));
         }
 
         // ============ Flatten Tests ============
@@ -3469,16 +3503,16 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testAbstractMatrix_copyRowRange() {
-            // From copy(fromRowIndex, toRowIndex) Javadoc
+        public void testAbstractMatrix_copyRows() {
+            // From copyRows(fromRowIndex, toRowIndex) Javadoc
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            IntMatrix subMatrix = matrix.copy(0, 2); // Contains rows 0 and 1
+            IntMatrix subMatrix = matrix.copyRows(0, 2); // Contains rows 0 and 1
             assertEquals(2, subMatrix.rowCount());
             assertEquals(2, subMatrix.columnCount());
             assertEquals(1, subMatrix.get(0, 0));
             assertEquals(4, subMatrix.get(1, 1));
 
-            IntMatrix lastRow = matrix.copy(2, 3); // Contains only row 2
+            IntMatrix lastRow = matrix.copyRows(2, 3); // Contains only row 2
             assertEquals(1, lastRow.rowCount());
             assertEquals(5, lastRow.get(0, 0));
             assertEquals(6, lastRow.get(0, 1));
@@ -3486,9 +3520,9 @@ class AbstractMatrixTest extends TestBase {
 
         @Test
         public void testAbstractMatrix_copyRegion() {
-            // From copy(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex) Javadoc
+            // From copyRegion(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex) Javadoc
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            IntMatrix subMatrix = matrix.copy(0, 2, 1, 3);
+            IntMatrix subMatrix = matrix.copyRegion(0, 2, 1, 3);
             // subMatrix: {{2, 3}, {5, 6}} (rows 0-1, columns 1-2)
             assertEquals(2, subMatrix.rowCount());
             assertEquals(2, subMatrix.columnCount());
@@ -3497,7 +3531,7 @@ class AbstractMatrixTest extends TestBase {
             assertEquals(5, subMatrix.get(1, 0));
             assertEquals(6, subMatrix.get(1, 1));
 
-            IntMatrix centerElement = matrix.copy(1, 2, 1, 2);
+            IntMatrix centerElement = matrix.copyRegion(1, 2, 1, 2);
             // centerElement: {{5}} (just the center element)
             assertEquals(1, centerElement.rowCount());
             assertEquals(1, centerElement.columnCount());
@@ -3677,15 +3711,15 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testAbstractMatrix_repeatMatrix() {
-            // From repeatMatrix Javadoc
-            // Original:    repeatMatrix(2, 2):
+        public void testAbstractMatrix_tile() {
+            // From tile Javadoc
+            // Original:    tile(2, 2):
             // 1 2          1 2 1 2
             // 3 4     =>   3 4 3 4
             //              1 2 1 2
             //              3 4 3 4
             IntMatrix matrix = IntMatrix.of(new int[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix tiled = matrix.repeatMatrix(2, 2);
+            IntMatrix tiled = matrix.tile(2, 2);
             assertEquals(4, tiled.rowCount());
             assertEquals(4, tiled.columnCount());
             assertEquals(1, tiled.get(0, 0));
@@ -3888,22 +3922,22 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRowFromRepeatAndDiagonalIsTypeSafe() {
-            Matrix<String> repeated = Matrix.repeat(1, 2, "a");
+        public void testRowFromFilledAndDiagonalIsTypeSafe() {
+            Matrix<String> repeated = Matrix.filled(1, 2, "a");
             String[] repeatRow = repeated.rowView(0);
             assertTrue(repeatRow.getClass().getComponentType() == String.class);
             repeatRow[0] = "x";
             assertTrue("x".equals(repeated.get(0, 0)));
 
-            Matrix<String> diagonal = Matrix.mainDiagonal(new String[] { "p", "q" });
+            Matrix<String> diagonal = Matrix.ofMainDiagonal(new String[] { "p", "q" });
             String[] diagonalRow = diagonal.rowView(0);
             assertTrue(diagonalRow.getClass().getComponentType() == String.class);
             assertTrue("p".equals(diagonalRow[0]));
         }
 
         @Test
-        public void testRepeatStillSupportsWiderGenericAssignments() {
-            Matrix<Number> matrix = Matrix.repeat(1, 1, 1D);
+        public void testFilledStillSupportsWiderGenericAssignments() {
+            Matrix<Number> matrix = Matrix.filled(1, 1, 1D);
             matrix.set(0, 0, 2.5d);
             Number[] row = matrix.rowView(0);
 
@@ -3979,7 +4013,7 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCopyEmptyRangeReturnsEmptyMatrix() {
+        public void testCopyRangesEmptyReturnsEmptyMatrix() {
             // copy with an empty row range is a valid empty slice across every matrix type.
             // It must return an empty (0x0) matrix rather than throw, even when columnCount > 0.
             Matrix<Integer> matrix = Matrix.of(new Integer[][] { { 1, 2 } });
@@ -3992,46 +4026,65 @@ class AbstractMatrixTest extends TestBase {
             FloatMatrix floatMatrix = FloatMatrix.of(new float[][] { { 1F, 2F } });
             DoubleMatrix doubleMatrix = DoubleMatrix.of(new double[][] { { 1D, 2D } });
 
-            assertEquals(0, matrix.copy(0, 0).rowCount());
-            assertEquals(0, booleanMatrix.copy(0, 0).rowCount());
-            assertEquals(0, byteMatrix.copy(0, 0).rowCount());
-            assertEquals(0, charMatrix.copy(0, 0).rowCount());
-            assertEquals(0, shortMatrix.copy(0, 0).rowCount());
-            assertEquals(0, intMatrix.copy(0, 0).rowCount());
-            assertEquals(0, longMatrix.copy(0, 0).rowCount());
-            assertEquals(0, floatMatrix.copy(0, 0).rowCount());
-            assertEquals(0, doubleMatrix.copy(0, 0).rowCount());
+            assertEquals(0, matrix.copyRows(0, 0).rowCount());
+            assertEquals(0, booleanMatrix.copyRows(0, 0).rowCount());
+            assertEquals(0, byteMatrix.copyRows(0, 0).rowCount());
+            assertEquals(0, charMatrix.copyRows(0, 0).rowCount());
+            assertEquals(0, shortMatrix.copyRows(0, 0).rowCount());
+            assertEquals(0, intMatrix.copyRows(0, 0).rowCount());
+            assertEquals(0, longMatrix.copyRows(0, 0).rowCount());
+            assertEquals(0, floatMatrix.copyRows(0, 0).rowCount());
+            assertEquals(0, doubleMatrix.copyRows(0, 0).rowCount());
 
-            assertEquals(0, matrix.copy(0, 0, 0, 1).rowCount());
-            assertEquals(0, booleanMatrix.copy(0, 0, 0, 1).rowCount());
-            assertEquals(0, byteMatrix.copy(0, 0, 0, 1).rowCount());
-            assertEquals(0, charMatrix.copy(0, 0, 0, 1).rowCount());
-            assertEquals(0, shortMatrix.copy(0, 0, 0, 1).rowCount());
-            assertEquals(0, intMatrix.copy(0, 0, 0, 1).rowCount());
-            assertEquals(0, longMatrix.copy(0, 0, 0, 1).rowCount());
-            assertEquals(0, floatMatrix.copy(0, 0, 0, 1).rowCount());
-            assertEquals(0, doubleMatrix.copy(0, 0, 0, 1).rowCount());
+            assertEquals(0, matrix.copyRegion(0, 0, 0, 1).rowCount());
+            assertEquals(0, booleanMatrix.copyRegion(0, 0, 0, 1).rowCount());
+            assertEquals(0, byteMatrix.copyRegion(0, 0, 0, 1).rowCount());
+            assertEquals(0, charMatrix.copyRegion(0, 0, 0, 1).rowCount());
+            assertEquals(0, shortMatrix.copyRegion(0, 0, 0, 1).rowCount());
+            assertEquals(0, intMatrix.copyRegion(0, 0, 0, 1).rowCount());
+            assertEquals(0, longMatrix.copyRegion(0, 0, 0, 1).rowCount());
+            assertEquals(0, floatMatrix.copyRegion(0, 0, 0, 1).rowCount());
+            assertEquals(0, doubleMatrix.copyRegion(0, 0, 0, 1).rowCount());
+
+            assertEquals(1, matrix.copyColumns(1, 1).rowCount());
+            assertEquals(0, matrix.copyColumns(1, 1).columnCount());
+            assertEquals(1, booleanMatrix.copyColumns(1, 1).rowCount());
+            assertEquals(0, booleanMatrix.copyColumns(1, 1).columnCount());
+            assertEquals(1, byteMatrix.copyColumns(1, 1).rowCount());
+            assertEquals(0, byteMatrix.copyColumns(1, 1).columnCount());
+            assertEquals(1, charMatrix.copyColumns(1, 1).rowCount());
+            assertEquals(0, charMatrix.copyColumns(1, 1).columnCount());
+            assertEquals(1, shortMatrix.copyColumns(1, 1).rowCount());
+            assertEquals(0, shortMatrix.copyColumns(1, 1).columnCount());
+            assertEquals(1, intMatrix.copyColumns(1, 1).rowCount());
+            assertEquals(0, intMatrix.copyColumns(1, 1).columnCount());
+            assertEquals(1, longMatrix.copyColumns(1, 1).rowCount());
+            assertEquals(0, longMatrix.copyColumns(1, 1).columnCount());
+            assertEquals(1, floatMatrix.copyColumns(1, 1).rowCount());
+            assertEquals(0, floatMatrix.copyColumns(1, 1).columnCount());
+            assertEquals(1, doubleMatrix.copyColumns(1, 1).rowCount());
+            assertEquals(0, doubleMatrix.copyColumns(1, 1).columnCount());
         }
 
         @Test
-        public void testRandomAndRepeatRejectUnrepresentableShape() {
-            assertThrows(IllegalArgumentException.class, () -> Matrix.repeat(0, 1, "x"));
+        public void testRandomAndFilledRejectUnrepresentableShape() {
+            assertThrows(IllegalArgumentException.class, () -> Matrix.filled(0, 1, "x"));
             assertThrows(IllegalArgumentException.class, () -> BooleanMatrix.random(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> BooleanMatrix.repeat(0, 1, true));
+            assertThrows(IllegalArgumentException.class, () -> BooleanMatrix.filled(0, 1, true));
             assertThrows(IllegalArgumentException.class, () -> ByteMatrix.random(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> ByteMatrix.repeat(0, 1, (byte) 1));
+            assertThrows(IllegalArgumentException.class, () -> ByteMatrix.filled(0, 1, (byte) 1));
             assertThrows(IllegalArgumentException.class, () -> CharMatrix.random(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> CharMatrix.repeat(0, 1, 'a'));
+            assertThrows(IllegalArgumentException.class, () -> CharMatrix.filled(0, 1, 'a'));
             assertThrows(IllegalArgumentException.class, () -> ShortMatrix.random(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> ShortMatrix.repeat(0, 1, (short) 1));
+            assertThrows(IllegalArgumentException.class, () -> ShortMatrix.filled(0, 1, (short) 1));
             assertThrows(IllegalArgumentException.class, () -> IntMatrix.random(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> IntMatrix.repeat(0, 1, 1));
+            assertThrows(IllegalArgumentException.class, () -> IntMatrix.filled(0, 1, 1));
             assertThrows(IllegalArgumentException.class, () -> LongMatrix.random(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> LongMatrix.repeat(0, 1, 1L));
+            assertThrows(IllegalArgumentException.class, () -> LongMatrix.filled(0, 1, 1L));
             assertThrows(IllegalArgumentException.class, () -> FloatMatrix.random(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> FloatMatrix.repeat(0, 1, 1F));
+            assertThrows(IllegalArgumentException.class, () -> FloatMatrix.filled(0, 1, 1F));
             assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.random(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.repeat(0, 1, 1D));
+            assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.filled(0, 1, 1D));
         }
 
         @Test
@@ -4042,12 +4095,12 @@ class AbstractMatrixTest extends TestBase {
 
         @Test
         public void testColumnAndDiagonalReadsAreTypeSafeForObjectBackedMatrices() {
-            Matrix<String> repeated = Matrix.repeat(2, 2, "a");
+            Matrix<String> repeated = Matrix.filled(2, 2, "a");
             String[] col = repeated.columnCopy(0);
             assertEquals(String.class, col.getClass().getComponentType());
             assertEquals("a", col[0]);
 
-            Matrix<String> diagonal = Matrix.mainDiagonal(new String[] { "x", "y" });
+            Matrix<String> diagonal = Matrix.ofMainDiagonal(new String[] { "x", "y" });
             String[] main = diagonal.mainDiagonalCopy();
             String[] anti = diagonal.antiDiagonalCopy();
             assertEquals(String.class, main.getClass().getComponentType());
@@ -4058,7 +4111,7 @@ class AbstractMatrixTest extends TestBase {
 
         @Test
         public void testMapValidatesTargetElementType() {
-            Matrix<String> matrix = Matrix.repeat(1, 1, "x");
+            Matrix<String> matrix = Matrix.filled(1, 1, "x");
 
             assertThrows(IllegalArgumentException.class, () -> matrix.map(v -> v, null));
         }
