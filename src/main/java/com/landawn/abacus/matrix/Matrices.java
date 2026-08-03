@@ -102,6 +102,7 @@ public final class Matrices {
         IS_PARALLEL_STREAM_SUPPORTED = tmp;
     }
 
+    /** Prevents instantiation of this static utility class. */
     private Matrices() {
         // Utility class; not instantiable.
     }
@@ -289,6 +290,15 @@ public final class Matrices {
         return mode == ParallelMode.FORCE_ON || (mode == ParallelMode.AUTO && count >= MIN_COUNT_FOR_PARALLEL);
     }
 
+    /**
+     * Returns the product of two {@code long} values, clamped to the nearest {@code long} endpoint
+     * when the mathematical result is outside the representable range.
+     *
+     * @param left the first factor
+     * @param right the second factor
+     * @return {@code left * right}, {@link Long#MIN_VALUE} on negative underflow, or
+     *         {@link Long#MAX_VALUE} on positive overflow
+     */
     private static long saturatedMultiply(final long left, final long right) {
         if (left == 0 || right == 0) {
             return 0;
@@ -672,6 +682,10 @@ public final class Matrices {
         final int rowCount = toRowIndex - fromRowIndex;
         final int columnCount = toColumnIndex - fromColumnIndex;
 
+        if (rowCount == 0 || columnCount == 0) {
+            return;
+        }
+
         if (inParallel && IS_PARALLEL_STREAM_SUPPORTED) {
             // Parallelize the larger dimension so the work splits into as many independent
             // units as possible (a 1xN or Nx1 region would otherwise get no parallelism).
@@ -815,6 +829,11 @@ public final class Matrices {
 
         final int rowCount = toRowIndex - fromRowIndex;
         final int columnCount = toColumnIndex - fromColumnIndex;
+
+        if (rowCount == 0 || columnCount == 0) {
+            return Stream.empty();
+        }
+
         final boolean parallel = inParallel && IS_PARALLEL_STREAM_SUPPORTED;
 
         // Sequential execution keeps the smaller dimension on the outside (the documented encounter
@@ -957,6 +976,11 @@ public final class Matrices {
 
         final int rowCount = toRowIndex - fromRowIndex;
         final int columnCount = toColumnIndex - fromColumnIndex;
+
+        if (rowCount == 0 || columnCount == 0) {
+            return IntStream.empty();
+        }
+
         final boolean parallel = inParallel && IS_PARALLEL_STREAM_SUPPORTED;
 
         // Sequential execution keeps the smaller dimension on the outside (the documented encounter
@@ -1114,6 +1138,10 @@ public final class Matrices {
         final int rowCountA = a.rowCount;
         final int columnCountA = a.columnCount;
         final int columnCountB = b.columnCount;
+
+        if (rowCountA == 0 || columnCountA == 0 || columnCountB == 0) {
+            return;
+        }
 
         if (inParallel && IS_PARALLEL_STREAM_SUPPORTED) {
             // Parallelize over the larger of i (rowCountA) and j (columnCountB) so the work splits
@@ -1315,6 +1343,17 @@ public final class Matrices {
         return stack(matrices, false);
     }
 
+    /**
+     * Stacks a validated, non-empty collection of matrices in encounter order. A single input is
+     * copied, except that the type-neutral shared {@link Matrix#empty()} instance is returned as-is.
+     *
+     * @param <M> the concrete matrix type
+     * @param matrices the matrices to stack; must be non-{@code null}, non-empty, contain no
+     *                 {@code null} elements, and have dimensions compatible with the selected direction
+     * @param vertically {@code true} to append rows; {@code false} to append columns
+     * @return the vertically or horizontally stacked matrix
+     * @throws IllegalArgumentException if the matrices have incompatible dimensions
+     */
     private static <M extends AbstractMatrix<?, ?, ?, ?, M>> M stack(final Collection<? extends M> matrices, final boolean vertically) {
         if (matrices.size() == 1) {
             final M only = matrices.iterator().next();
@@ -1493,7 +1532,8 @@ public final class Matrices {
      * <p>All matrices in the collection must have identical dimensions. The operation is optimized
      * for single and two-element collections:</p>
      * <ul>
-     * <li>One matrix: Returns a copy of that matrix</li>
+     * <li>One matrix: Returns a copy of that matrix, except that the shared type-neutral
+     *     {@link Matrix#empty()} instance is retained</li>
      * <li>Two matrices: Directly applies the binary operator</li>
      * <li>Three or more: Applies the operator sequentially, accumulating results</li>
      * </ul>
@@ -3903,7 +3943,10 @@ public final class Matrices {
      *
      * <p>All matrices in the collection must have identical dimensions. Their element types need not
      * be identical; the result matrix uses the most specific element type assignable from every input
-     * matrix's element type. The operation is optimized for single-element collections:</p>
+     * matrix's element type. The shared {@link Matrix#empty()} instance is treated as a type-neutral
+     * placeholder when at least one input has a reified runtime element type, so it does not unnecessarily
+     * widen an otherwise typed empty result to {@link Object}. The operation is optimized for
+     * single-element collections:</p>
      * <ul>
      * <li>One matrix: Returns a copy of that matrix</li>
      * <li>Two or more: Applies the operator sequentially per cell, accumulating results (left fold)</li>
@@ -3933,7 +3976,9 @@ public final class Matrices {
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
      * @param zipFunction the binary operator to combine elements sequentially, must not be {@code null} and must be thread-safe if execution is parallelized
-     * @return a new {@link Matrix} of type T containing the combined results, never {@code null}
+     * @return a {@link Matrix} of type T containing the combined results, never {@code null}; normally
+     *         a new instance, except that inputs consisting only of shared {@link Matrix#empty()}
+     *         instances retain that shared instance
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different shapes; or if {@code zipFunction} is {@code null}
      * @throws ArrayStoreException if {@code zipFunction} returns a value that is not assignable to the resolved common element type of the inputs
      *         (there is no binary-fold overload accepting an explicit target type; to control the result element type, use
@@ -3953,7 +3998,20 @@ public final class Matrices {
         final Matrix<T>[] matrices = coll.toArray(new Matrix[size]);
 
         if (size == 1) {
-            return matrices[0].copy();
+            return matrices[0].isSharedEmptyMatrix() ? matrices[0] : matrices[0].copy();
+        }
+
+        boolean allSharedEmpty = true;
+
+        for (final Matrix<T> matrix : matrices) {
+            if (!matrix.isSharedEmptyMatrix()) {
+                allSharedEmpty = false;
+                break;
+            }
+        }
+
+        if (allSharedEmpty) {
+            return Matrix.empty();
         }
 
         final int rowCount = matrices[0].rowCount;
@@ -4194,10 +4252,11 @@ public final class Matrices {
      *
      * <p>This method ranks the types that are assignable from every original matrix element
      * type. Considering all inputs together keeps the result independent of matrix order. If no
-     * more specific common type can be identified, {@link Object} is returned. When every input
-     * element type is a reference-array type, component types are resolved recursively and the
-     * common component is wrapped back into an array type, preserving the element-array
-     * dimensionality.</p>
+     * more specific common type can be identified, {@link Object} is returned. The shared
+     * type-neutral {@link Matrix#empty()} placeholder is ignored when at least one input has a
+     * reified runtime element type. When every retained input element type is a reference-array
+     * type, component types are resolved recursively and the common component is wrapped back into
+     * an array type, preserving the element-array dimensionality.</p>
      *
      * @param <T> the static element type of the matrices
      * @param matrices the matrices whose element types are reconciled; must be non-empty
@@ -4206,15 +4265,37 @@ public final class Matrices {
      */
     @SuppressWarnings("unchecked")
     static <T> Class<T> resolveCommonElementType(final Matrix<T>[] matrices) {
-        final Class<?>[] elementTypes = new Class<?>[matrices.length];
+        int reifiedTypeCount = 0;
 
-        for (int i = 0; i < matrices.length; i++) {
-            elementTypes[i] = matrices[i].elementType;
+        for (final Matrix<T> matrix : matrices) {
+            if (!matrix.isSharedEmptyMatrix()) {
+                reifiedTypeCount++;
+            }
+        }
+
+        if (reifiedTypeCount == 0) {
+            return (Class<T>) Object.class;
+        }
+
+        final Class<?>[] elementTypes = new Class<?>[reifiedTypeCount];
+        int typeIndex = 0;
+
+        for (final Matrix<T> matrix : matrices) {
+            if (!matrix.isSharedEmptyMatrix()) {
+                elementTypes[typeIndex++] = matrix.elementType;
+            }
         }
 
         return (Class<T>) resolveCommonType(elementTypes);
     }
 
+    /**
+     * Selects a deterministic common reference type assignable from every supplied type. Reference
+     * array dimensions are preserved when all inputs are reference-array types.
+     *
+     * @param types the non-empty array of non-{@code null} reference types to reconcile
+     * @return a common assignable type, or {@link Object} when no more specific type is selected
+     */
     private static Class<?> resolveCommonType(final Class<?>[] types) {
         boolean allReferenceArrays = types.length > 0;
 
@@ -4284,6 +4365,15 @@ public final class Matrices {
         return best;
     }
 
+    /**
+     * Returns each class or interface reachable from {@code startType} through superclass and
+     * superinterface relationships, together with its minimum edge distance from {@code startType}.
+     * The returned map includes {@code startType} at distance zero.
+     *
+     * @param startType the non-{@code null} type from which distances are measured
+     * @return the reachable types and their minimum non-negative distances
+     * @throws NullPointerException if {@code startType} is {@code null}
+     */
     private static Map<Class<?>, Integer> collectTypeDistances(final Class<?> startType) {
         final Map<Class<?>, Integer> distances = new LinkedHashMap<>();
         final Deque<Class<?>> queue = new ArrayDeque<>();
@@ -4310,6 +4400,15 @@ public final class Matrices {
         return distances;
     }
 
+    /**
+     * Returns the preference penalty used when equally distant common types are compared. Concrete
+     * types are preferred to behavioral interfaces, which are preferred to marker interfaces and
+     * {@link Object}.
+     *
+     * @param type the non-{@code null} candidate type
+     * @return the candidate's non-negative preference penalty; lower values are preferred
+     * @throws NullPointerException if {@code type} is {@code null}
+     */
     private static int commonTypePenalty(final Class<?> type) {
         if (type == Object.class) {
             return 3;
@@ -4322,11 +4421,26 @@ public final class Matrices {
         return 0;
     }
 
+    /**
+     * Verifies that two matrices are non-{@code null} and have identical dimensions.
+     *
+     * @param a the first matrix; must not be {@code null}
+     * @param b the second matrix; must not be {@code null}
+     * @throws IllegalArgumentException if either matrix is {@code null} or their dimensions differ
+     */
     private static void checkShapeForZip(final AbstractMatrix<?, ?, ?, ?, ?> a, final AbstractMatrix<?, ?, ?, ?, ?> b) {
         N.checkArgument(isSameShape(a, b), "Cannot zip matrices with different shapes: first is {}x{} but second is {}x{}", a.rowCount, a.columnCount,
                 b.rowCount, b.columnCount);
     }
 
+    /**
+     * Verifies that three matrices are non-{@code null} and have identical dimensions.
+     *
+     * @param a the first matrix; must not be {@code null}
+     * @param b the second matrix; must not be {@code null}
+     * @param c the third matrix; must not be {@code null}
+     * @throws IllegalArgumentException if any matrix is {@code null} or their dimensions differ
+     */
     private static void checkShapeForZip(final AbstractMatrix<?, ?, ?, ?, ?> a, final AbstractMatrix<?, ?, ?, ?, ?> b, final AbstractMatrix<?, ?, ?, ?, ?> c) {
         checkShapeForZip(a, b);
 
@@ -4334,6 +4448,14 @@ public final class Matrices {
                 c.rowCount, c.columnCount);
     }
 
+    /**
+     * Verifies that a collection is non-empty, contains no {@code null} matrices, and that every
+     * matrix has the same dimensions as the first.
+     *
+     * @param coll the matrix collection to validate; must not be {@code null}
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, contains a
+     *                                  {@code null} element, or contains matrices of different shapes
+     */
     private static void checkShapeForZip(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> coll) {
         checkMatricesNotEmptyAndNoNullElements(coll);
 
@@ -4350,6 +4472,13 @@ public final class Matrices {
         }
     }
 
+    /**
+     * Verifies that a matrix collection is non-empty and contains no {@code null} elements.
+     *
+     * @param matrices the collection to validate; must not be {@code null}
+     * @throws IllegalArgumentException if {@code matrices} is {@code null}, empty, or contains a
+     *                                  {@code null} element
+     */
     private static void checkMatricesNotEmptyAndNoNullElements(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> matrices) {
         N.checkArgNotEmpty(matrices, "matrices");
 

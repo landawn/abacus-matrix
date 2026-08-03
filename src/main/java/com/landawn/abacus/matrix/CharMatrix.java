@@ -67,6 +67,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * {@code char} range ({@code Character.MAX_VALUE + 1}, i.e. {@code 65536}).
      */
     static final int BOUND = Character.MAX_VALUE + 1;
+    /** The shared {@code 0 x 0} char matrix returned by {@link #empty()} and zero-row factories. */
     private static final CharMatrix EMPTY_CHAR_MATRIX = new CharMatrix(new char[0][0]);
 
     /**

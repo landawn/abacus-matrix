@@ -238,7 +238,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         elementCount = (long) columnCount * rowCount;
     }
 
-    /** Returns {@code source}, or a snapshot when it is one of this matrix's live backing rows. */
+    /**
+     * Returns {@code source} unchanged unless it is one of this matrix's live backing rows, in which
+     * case an independent snapshot of that row is returned. This matrix and {@code source} are not modified.
+     *
+     * @param source the candidate row; may be {@code null}
+     * @return {@code source}, or an independent copy when {@code source} is a live backing row
+     */
     final A snapshotIfBackingRow(final A source) {
         for (final A row : a) {
             if (row == source) {
@@ -249,7 +255,16 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         return source;
     }
 
-    /** Returns {@code source}, or a copy in which rows aliasing this matrix's live backing rows are replaced by snapshots. */
+    /**
+     * Returns an array whose rows can be read safely while this matrix is being modified. Rows that
+     * are also live backing rows of this matrix are replaced with independent snapshots; all other
+     * row references, including {@code null}, are preserved. The supplied array and this matrix are
+     * not modified.
+     *
+     * @param source the source row array; must not be {@code null}, but may contain {@code null} rows
+     * @return {@code source} if none of its rows aliases this matrix, otherwise a copy with each
+     *         aliased row replaced by an independent snapshot
+     */
     final A[] snapshotRowsIfBackingRows(final A[] source) {
         if (a.length == 0) {
             return source;
@@ -288,7 +303,11 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         return snapshot;
     }
 
-    /** Returns whether two or more logical rows share the same backing array. */
+    /**
+     * Returns whether two or more logical rows share the same backing array.
+     *
+     * @return {@code true} if at least two rows are the same array object; otherwise {@code false}
+     */
     final boolean hasAliasedRows() {
         if (aliasedRowsState == 0) {
             aliasedRowsState = computeHasAliasedRows() ? (byte) 1 : (byte) 2;
@@ -297,6 +316,12 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         return aliasedRowsState == 1;
     }
 
+    /**
+     * Determines whether the current backing storage contains the same row array at more than one
+     * logical row position.
+     *
+     * @return {@code true} if a row array occurs more than once; otherwise {@code false}
+     */
     private boolean computeHasAliasedRows() {
         if (a.length < 2) {
             return false;
@@ -342,6 +367,16 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         }
     }
 
+    /**
+     * Returns a new array of the same runtime type and length as {@code source}, containing the same
+     * primitive values or element references. The supplied array is not modified.
+     *
+     * @param <R> the array type
+     * @param source the non-{@code null} array to copy
+     * @return an independent array with the same contents as {@code source}
+     * @throws NullPointerException if {@code source} is {@code null}
+     * @throws IllegalArgumentException if {@code source} is not an array
+     */
     @SuppressWarnings("unchecked")
     private static <R> R cloneArray(final R source) {
         final int length = java.lang.reflect.Array.getLength(source);

@@ -71,6 +71,7 @@ import com.landawn.abacus.util.stream.Stream;
  */
 public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatStream, Stream<FloatStream>, FloatMatrix> {
 
+    /** The shared {@code 0 x 0} float matrix returned by {@link #empty()} and zero-row factories. */
     private static final FloatMatrix EMPTY_FLOAT_MATRIX = new FloatMatrix(new float[0][0]);
 
     /**

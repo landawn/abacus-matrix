@@ -59,6 +59,7 @@ import com.landawn.abacus.util.stream.Stream;
  */
 public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, Stream<Boolean>, Stream<Stream<Boolean>>, BooleanMatrix> {
 
+    /** The shared {@code 0 x 0} boolean matrix returned by {@link #empty()} and zero-row factories. */
     private static final BooleanMatrix EMPTY_BOOLEAN_MATRIX = new BooleanMatrix(new boolean[0][0]);
 
     /**

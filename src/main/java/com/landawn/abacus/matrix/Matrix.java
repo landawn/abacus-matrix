@@ -71,10 +71,13 @@ import com.landawn.abacus.util.stream.Stream;
  */
 public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Stream<Stream<T>>, Matrix<T>> {
 
+    /** The shared type-neutral {@code 0 x 0} matrix returned by {@link #empty()}. */
     private static final Matrix<Object> EMPTY_MATRIX = new Matrix<>(new Object[0][0]);
 
+    /** The runtime type of each row array, used for type-compatible result allocation. */
     final Class<T[]> arrayType;
 
+    /** The runtime component type accepted by the backing row arrays. */
     final Class<T> elementType;
 
     /**
@@ -108,6 +111,18 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         this(a, null);
     }
 
+    /**
+     * Constructs a matrix that retains the supplied array and exposes {@code explicitElementType}
+     * through {@link #elementType()} when it is non-{@code null}. The array must be rectangular;
+     * neither the outer array nor its rows are copied.
+     *
+     * @param a the two-dimensional backing array; must not be {@code null}, contain {@code null}
+     *          rows, or be non-rectangular
+     * @param explicitElementType the element type to report, or {@code null} to derive it from
+     *                            the runtime array type
+     * @throws IllegalArgumentException if {@code a} is {@code null}, contains a {@code null} row,
+     *                                  or is non-rectangular
+     */
     @SuppressWarnings("unchecked")
     private Matrix(final T[][] a, final Class<T> explicitElementType) {
         super(N.checkArgNotNull(a, "Matrix array cannot be null"),
@@ -116,7 +131,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         this.elementType = (Class<T>) arrayType.getComponentType();
     }
 
-    /** Returns whether this is the type-neutral shared empty instance. */
+    /**
+     * Returns whether this object is the type-neutral shared empty instance.
+     *
+     * @return {@code true} only for the instance returned by {@link #empty()}
+     */
     boolean isSharedEmptyMatrix() {
         return (Object) this == EMPTY_MATRIX;
     }

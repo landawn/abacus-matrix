@@ -61,6 +61,7 @@ import com.landawn.abacus.util.stream.Stream;
  */
 public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStream, Stream<LongStream>, LongMatrix> {
 
+    /** The shared {@code 0 x 0} long matrix returned by {@link #empty()} and zero-row factories. */
     private static final LongMatrix EMPTY_LONG_MATRIX = new LongMatrix(new long[0][0]);
 
     /**

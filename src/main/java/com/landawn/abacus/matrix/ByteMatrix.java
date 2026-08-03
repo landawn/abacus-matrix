@@ -68,7 +68,10 @@ import com.landawn.abacus.util.stream.Stream;
  */
 public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStream, Stream<ByteStream>, ByteMatrix> {
 
+    /** The number of distinct {@code byte} values, used as the bound for full-range random generation. */
     static final int BOUND = Byte.MAX_VALUE - Byte.MIN_VALUE + 1;
+
+    /** The shared {@code 0 x 0} byte matrix returned by {@link #empty()} and zero-row factories. */
     private static final ByteMatrix EMPTY_BYTE_MATRIX = new ByteMatrix(new byte[0][0]);
 
     /**

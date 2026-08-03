@@ -69,7 +69,10 @@ import com.landawn.abacus.util.stream.Stream;
  */
 public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortStream, Stream<ShortStream>, ShortMatrix> {
 
+    /** The number of distinct {@code short} values, used as the bound for full-range random generation. */
     static final int BOUND = Short.MAX_VALUE - Short.MIN_VALUE + 1;
+
+    /** The shared {@code 0 x 0} short matrix returned by {@link #empty()} and zero-row factories. */
     private static final ShortMatrix EMPTY_SHORT_MATRIX = new ShortMatrix(new short[0][0]);
 
     /**

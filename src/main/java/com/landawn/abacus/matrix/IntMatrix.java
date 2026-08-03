@@ -61,6 +61,7 @@ import com.landawn.abacus.util.stream.Stream;
  */
 public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, Stream<IntStream>, IntMatrix> {
 
+    /** The shared {@code 0 x 0} int matrix returned by {@link #empty()} and zero-row factories. */
     private static final IntMatrix EMPTY_INT_MATRIX = new IntMatrix(new int[0][0]);
 
     /**

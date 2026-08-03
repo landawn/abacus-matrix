@@ -21,10 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -410,6 +412,35 @@ class MatricesTest extends TestBase {
         int[] columnSequential = Matrices.mapIndicesToInt(0, 50, 0, 1, (i, j) -> i * 100 + j, false).sorted().toArray();
         int[] columnParallel = Matrices.mapIndicesToInt(0, 50, 0, 1, (i, j) -> i * 100 + j, true).sorted().toArray();
         assertArrayEquals(columnSequential, columnParallel);
+    }
+
+    @Test
+    public void testParallelIndexTraversalWithZeroDimensionReturnsImmediately() {
+        final Duration timeout = Duration.ofSeconds(2);
+        final int hugeDimension = Integer.MAX_VALUE;
+
+        assertTimeoutPreemptively(timeout, () -> Matrices.forEachIndices(hugeDimension, 0, (i, j) -> {
+            throw new AssertionError("zero-column traversal must not invoke the action");
+        }, true));
+        assertTimeoutPreemptively(timeout, () -> Matrices.forEachIndices(0, hugeDimension, (i, j) -> {
+            throw new AssertionError("zero-row traversal must not invoke the action");
+        }, true));
+
+        assertTimeoutPreemptively(timeout, () -> assertEquals(0L, Matrices.mapIndices(hugeDimension, 0, (i, j) -> i + j, true).count()));
+        assertTimeoutPreemptively(timeout, () -> assertEquals(0L, Matrices.mapIndices(0, hugeDimension, (i, j) -> i + j, true).count()));
+        assertTimeoutPreemptively(timeout, () -> assertEquals(0L, Matrices.mapIndicesToInt(hugeDimension, 0, (i, j) -> i + j, true).count()));
+        assertTimeoutPreemptively(timeout, () -> assertEquals(0L, Matrices.mapIndicesToInt(0, hugeDimension, (i, j) -> i + j, true).count()));
+    }
+
+    @Test
+    public void testParallelCartesianTraversalWithZeroWorkReturnsImmediately() {
+        final IntMatrix left = IntMatrix.wrap(new int[64][0]);
+        final IntMatrix right = IntMatrix.empty();
+        final AtomicInteger invocationCount = new AtomicInteger();
+
+        assertTimeoutPreemptively(Duration.ofSeconds(2),
+                () -> Matrices.forEachCartesianIndices(left, right, (i, j, k) -> invocationCount.incrementAndGet(), true));
+        assertEquals(0, invocationCount.get());
     }
 
     @Test
@@ -5139,6 +5170,27 @@ class MatricesTest extends TestBase {
         final Object[][] row = zipped.rowCopy(0);
         assertArrayEquals(new Object[] { "a" }, row[0]);
         assertTrue(zipped.elementType().isArray());
+    }
+
+    @Test
+    public void testBinaryCollectionZipIgnoresSharedEmptyPlaceholderType() {
+        final Matrix<String> sharedEmpty = Matrix.empty();
+        final Matrix<String> typedEmpty = Matrix.wrap(new String[0][0]);
+        final Matrix<String> singletonShared = Matrices.zip(List.of(sharedEmpty), (left, right) -> left);
+        final Matrix<String> onlyShared = Matrices.zip(List.of(sharedEmpty, sharedEmpty), (left, right) -> left);
+
+        final Matrix<String> sharedFirst = Matrices.zip(List.of(sharedEmpty, typedEmpty, sharedEmpty), (left, right) -> left).resize(1, 1);
+        final Matrix<String> typedFirst = Matrices.zip(List.of(typedEmpty, sharedEmpty), (left, right) -> left).resize(1, 1);
+        final Matrix<String> chained = Matrices.zip(List.of(onlyShared, typedEmpty), (left, right) -> left).resize(1, 1);
+
+        final String[] sharedFirstRow = sharedFirst.rowView(0);
+        final String[] typedFirstRow = typedFirst.rowView(0);
+        final String[] chainedRow = chained.rowView(0);
+        assertSame(sharedEmpty, singletonShared);
+        assertSame(sharedEmpty, onlyShared);
+        assertEquals(String.class, sharedFirstRow.getClass().getComponentType());
+        assertEquals(String.class, typedFirstRow.getClass().getComponentType());
+        assertEquals(String.class, chainedRow.getClass().getComponentType());
     }
 
     @Test

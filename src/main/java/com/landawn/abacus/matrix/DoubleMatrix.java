@@ -72,6 +72,7 @@ import com.landawn.abacus.util.stream.Stream;
  */
 public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, DoubleStream, Stream<DoubleStream>, DoubleMatrix> {
 
+    /** The shared {@code 0 x 0} double matrix returned by {@link #empty()} and zero-row factories. */
     private static final DoubleMatrix EMPTY_DOUBLE_MATRIX = new DoubleMatrix(new double[0][0]);
 
     /**
