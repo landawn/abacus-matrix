@@ -40,7 +40,7 @@ import com.landawn.abacus.util.stream.Stream;
  *
  * <p>Several APIs intentionally cross the usual defensive-copy boundary for performance-sensitive code:
  * {@link #unsafeBackingArray()} and {@link #rowView(int)} expose live storage, while
- * {@link #mutateFlattened(Throwables.Consumer)} lets callers mutate the matrix through a temporary
+ * {@link #mutateViaFlatArray(Throwables.Consumer)} lets callers mutate the matrix through a temporary
  * flattened array that is copied back afterward.
  * Callers that need isolation should prefer
  * copy-producing operations such as {@link #copy()}, {@link #flatten()}, and {@link #rowCopy(int)}.</p>
@@ -611,7 +611,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * aliased directly. A column is interleaved across rows
      * and cannot be returned as a live, single-array view without either copying or
      * synthesizing a wrapper. {@code columnCopy} is the supported accessor; for
-     * element-by-element iteration over a column use {@link #columnMajorStream(int)}.</p>
+     * element-by-element iteration over a column use {@link #columnMajorStream(int, int) columnMajorStream(columnIndex, columnIndex + 1)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1486,25 +1486,25 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.wrap(new int[][] {{3, 1, 4}, {1, 5, 9}});
-     * matrix.mutateFlattened(flat -> java.util.Arrays.sort(flat));   // sorts all elements in row-major order
+     * matrix.mutateViaFlatArray(flat -> java.util.Arrays.sort(flat));   // sorts all elements in row-major order
      * matrix.get(0, 0);                                              // returns 1 (matrix becomes {{1, 1, 3}, {4, 5, 9}})
      * matrix.get(1, 2);                                              // returns 9
      *
-     * matrix.mutateFlattened(flat -> { for (int i = 0; i < flat.length; i++) flat[i] *= 2; });   // doubles all elements
+     * matrix.mutateViaFlatArray(flat -> { for (int i = 0; i < flat.length; i++) flat[i] *= 2; });   // doubles all elements
      * matrix.get(0, 0);                                                                          // returns 2
      *
      * IntMatrix empty = IntMatrix.wrap(new int[0][0]);
      * int[] zeroRowCalls = {0};
-     * empty.mutateFlattened(flat -> zeroRowCalls[0]++);              // action is not invoked
+     * empty.mutateViaFlatArray(flat -> zeroRowCalls[0]++);              // action is not invoked
      * int callbackCount = zeroRowCalls[0];                           // 0
      *
      * int[] shared = {1, 2};
      * IntMatrix aliased = IntMatrix.wrap(new int[][] {shared, shared});
-     * aliased.mutateFlattened(flat -> { flat[0] = 10; flat[1] = 20; flat[2] = 30; flat[3] = 40; });
+     * aliased.mutateViaFlatArray(flat -> { flat[0] = 10; flat[1] = 20; flat[2] = 30; flat[3] = 40; });
      * aliased.rowCopy(0);                                            // returns [30, 40] (later aliased row wins)
      *
      * // Checked exceptions propagate to the caller (do not wrap in try/catch inside the block)
-     * matrix.mutateFlattened(flat -> { throw new java.io.IOException(); });   // throws IOException
+     * matrix.mutateViaFlatArray(flat -> { throw new java.io.IOException(); });   // throws IOException
      * }</pre>
      *
      * @param <E> the type of exception that the operation might throw
@@ -1514,7 +1514,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *         cannot be represented by one Java array
      * @throws E if the operation throws an exception
      */
-    public abstract <E extends Exception> void mutateFlattened(Throwables.Consumer<? super A, E> action) throws E;
+    public abstract <E extends Exception> void mutateViaFlatArray(Throwables.Consumer<? super A, E> action) throws E;
 
     /**
      * Performs the specified action for each element position in the matrix.
@@ -1533,12 +1533,12 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * IntMatrix matrix = IntMatrix.wrap(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      *
      * // Count every visited position
-     * AtomicInteger visited = new AtomicInteger(0);
+     * java.util.concurrent.atomic.AtomicInteger visited = new java.util.concurrent.atomic.AtomicInteger(0);
      * matrix.forEachIndices((i, j) -> visited.incrementAndGet());
      * visited.get();                                          // returns 9 (3 x 3 = 9 positions)
      *
      * // Count elements on the main diagonal
-     * AtomicInteger diagonalCount = new AtomicInteger(0);
+     * java.util.concurrent.atomic.AtomicInteger diagonalCount = new java.util.concurrent.atomic.AtomicInteger(0);
      * matrix.forEachIndices((i, j) -> { if (i == j) diagonalCount.incrementAndGet(); });
      * diagonalCount.get();                                    // returns 3
      *
@@ -1583,12 +1583,12 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * IntMatrix matrix = IntMatrix.wrap(new int[][] {{1, 2, 3, 4, 5}, {6, 7, 8, 9, 10}, {11, 12, 13, 14, 15}});
      *
      * // Process only a 2x2 subregion starting at (1,1)
-     * AtomicInteger visited = new AtomicInteger(0);
+     * java.util.concurrent.atomic.AtomicInteger visited = new java.util.concurrent.atomic.AtomicInteger(0);
      * matrix.forEachIndices(1, 3, 1, 3, (i, j) -> visited.incrementAndGet());
      * visited.get();                                          // returns 4 (2 rows x 2 cols)
      *
      * // Process only the first column
-     * AtomicInteger colCount = new AtomicInteger(0);
+     * java.util.concurrent.atomic.AtomicInteger colCount = new java.util.concurrent.atomic.AtomicInteger(0);
      * matrix.forEachIndices(0, matrix.rowCount(), 0, 1, (i, j) -> colCount.incrementAndGet());
      * colCount.get();                                         // returns 3 (one per row)
      *
@@ -1644,7 +1644,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * IntMatrix matrix = IntMatrix.wrap(new int[][] {{1, 2}, {3, 4}});
      *
      * // Sum every element via the supplied matrix reference
-     * AtomicInteger sum = new AtomicInteger(0);
+     * java.util.concurrent.atomic.AtomicInteger sum = new java.util.concurrent.atomic.AtomicInteger(0);
      * matrix.forEachIndices((i, j, m) -> sum.addAndGet(m.get(i, j)));
      * sum.get();                                              // returns 10 (1 + 2 + 3 + 4)
      *
@@ -1696,7 +1696,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * IntMatrix matrix = IntMatrix.wrap(new int[][] {{1, 2, 3, 4, 5}, {6, 7, 8, 9, 10}, {11, 12, 13, 14, 15}});
      *
      * // Sum the 2x2 subregion (rows 1-2, cols 1-2): 7 + 8 + 12 + 13
-     * AtomicInteger regionSum = new AtomicInteger(0);
+     * java.util.concurrent.atomic.AtomicInteger regionSum = new java.util.concurrent.atomic.AtomicInteger(0);
      * matrix.forEachIndices(1, 3, 1, 3, (i, j, m) -> regionSum.addAndGet(m.get(i, j)));
      * regionSum.get();                                        // returns 40
      *
@@ -2376,32 +2376,6 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     public abstract ES rowMajorStream();
 
     /**
-     * Returns a stream of elements from a specific row.
-     * Elements are streamed from left to right within the row.
-     *
-     * <p>This streams the elements of the single specified row, flattened into one stream. To
-     * instead obtain every row as its own stream (a stream of streams), use {@link #rowStreams()}.</p>
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * IntMatrix matrix = IntMatrix.wrap(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * matrix.rowMajorStream(1).toArray();                  // returns [4, 5, 6]
-     * matrix.rowMajorStream(1).max().orElse(0);            // returns 6
-     *
-     * matrix.rowMajorStream(0).sum();                       // returns 6 (1 + 2 + 3)
-     *
-     * matrix.rowMajorStream(2);                             // throws IndexOutOfBoundsException (rowIndex >= rowCount)
-     * matrix.rowMajorStream(-1);                            // throws IndexOutOfBoundsException (negative index)
-     * }</pre>
-     *
-     * @param rowIndex the row index (0-based)
-     * @return a stream of elements in the specified row
-     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
-     * @see #rowStreams()
-     */
-    public abstract ES rowMajorStream(final int rowIndex);
-
-    /**
      * Returns a stream of elements from a range of rows in row-major order.
      * Elements are streamed row by row from left to right for the specified row range.
      *
@@ -2448,32 +2422,6 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     public abstract ES columnMajorStream();
 
     /**
-     * Returns a stream of elements from a specific column.
-     * Elements are streamed from top to bottom within the column.
-     *
-     * <p>This streams the elements of the single specified column, flattened into one stream. To
-     * instead obtain every column as its own stream (a stream of streams), use {@link #columnStreams()}.</p>
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * IntMatrix matrix = IntMatrix.wrap(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * matrix.columnMajorStream(1).toArray();                    // returns [2, 5]
-     * matrix.columnMajorStream(1).min().orElse(0);              // returns 2
-     *
-     * matrix.columnMajorStream(0).sum();                         // returns 5 (1 + 4)
-     *
-     * matrix.columnMajorStream(3);                               // throws IndexOutOfBoundsException (columnIndex >= columnCount)
-     * matrix.columnMajorStream(-1);                              // throws IndexOutOfBoundsException (negative index)
-     * }</pre>
-     *
-     * @param columnIndex the column index (0-based)
-     * @return a stream of elements in the specified column
-     * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
-     * @see #columnStreams()
-     */
-    public abstract ES columnMajorStream(final int columnIndex);
-
-    /**
      * Returns a stream of elements from a range of columns in column-major order.
      * Elements are streamed column by column from top to bottom for the specified column range.
      *
@@ -2504,7 +2452,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p>This is equivalent to calling {@code rowStreams(0, rowCount)}.</p>
      *
      * <p>This yields one stream per row. To instead stream the elements of a single row as one
-     * flat stream, use {@link #rowMajorStream(int)}.</p>
+     * flat stream, use {@link #rowMajorStream(int, int) rowMajorStream(rowIndex, rowIndex + 1)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2521,7 +2469,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * }</pre>
      *
      * @return a stream of row streams
-     * @see #rowMajorStream(int)
+     * @see #rowMajorStream(int, int)
      */
     public abstract RS rowStreams();
 
@@ -2559,7 +2507,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p>This is equivalent to calling {@code columnStreams(0, columnCount)}.</p>
      *
      * <p>This yields one stream per column. To instead stream the elements of a single column as one
-     * flat stream, use {@link #columnMajorStream(int)}.</p>
+     * flat stream, use {@link #columnMajorStream(int, int) columnMajorStream(columnIndex, columnIndex + 1)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2576,7 +2524,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * }</pre>
      *
      * @return a stream of column streams
-     * @see #columnMajorStream(int)
+     * @see #columnMajorStream(int, int)
      */
     public abstract RS columnStreams();
 

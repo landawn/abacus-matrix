@@ -37,7 +37,7 @@ import com.landawn.abacus.util.stream.Stream;
  * <p>This type specializes {@link AbstractMatrix} for {@code long} values while keeping the data in a
  * validated backing array. The constructor and {@link #wrap(long[]...)} wrap the supplied storage
  * directly. {@link #copyOf(long[]...)}, conversions, and mapping operations do not share mutable cell
- * storage with a non-empty source; operations producing an empty matrix may return the canonical empty
+ * storage with a non-empty source; operations producing an empty matrix may return the shared empty
  * singleton.</p>
  *
  * <p>Cells introduced by growth or reshaping default to {@code 0L} unless an overload accepts an
@@ -103,7 +103,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * boolean sameSingleton = LongMatrix.empty() == LongMatrix.empty(); // true (shared singleton)
      * }</pre>
      *
-     * @return the canonical empty {@code LongMatrix} (singleton)
+     * @return the shared empty {@code LongMatrix} singleton
      */
     public static LongMatrix empty() {
         return EMPTY_LONG_MATRIX;
@@ -291,43 +291,6 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
             for (int i = 0; i < columnCount; i++) {
                 ea[i] = RAND.nextLong();
             }
-        }
-
-        return new LongMatrix(a);
-    }
-
-    /**
-     * Creates a new matrix of the specified dimensions where every cell holds {@code element}.
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * LongMatrix matrix = LongMatrix.filled(2, 3, 1L);
-     * matrix.get(0, 0);                    // returns 1L
-     * matrix.get(1, 2);                    // returns 1L
-     * // matrix is [[1, 1, 1], [1, 1, 1]]
-     *
-     * LongMatrix.filled(0, 0, 5L).isEmpty(); // returns true
-     * LongMatrix.filled(-1, 3, 7L);          // throws IllegalArgumentException (negative rowCount)
-     * LongMatrix.filled(2, -1, 7L);          // throws IllegalArgumentException (negative columnCount)
-     * LongMatrix.filled(0, 3, 7L);           // throws IllegalArgumentException (0 rows with non-zero columns)
-     * }</pre>
-     *
-     * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
-     * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
-     * @param element the long value to fill every cell with
-     * @return a new {@code LongMatrix} of dimensions {@code rowCount x columnCount} filled with {@code element}
-     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
-     *         or if the resulting shape cannot be represented (e.g. zero rows with non-zero columns)
-     */
-    public static LongMatrix filled(final int rowCount, final int columnCount, final long element) {
-        N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
-        N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
-        checkRepresentableShape(rowCount, columnCount);
-
-        final long[][] a = new long[rowCount][columnCount];
-
-        for (long[] ea : a) {
-            N.fill(ea, element);
         }
 
         return new LongMatrix(a);
@@ -969,7 +932,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * This modifies the matrix directly.
      *
      * <p>The operator is applied to each element in the specified row sequentially
-     * from left to right (column 0 to column columnCount-1).</p>
+     * from left to right (column {@code 0} to column {@code columnCount - 1}).</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1640,8 +1603,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     }
 
     /**
-     * Fills this matrix with values from another two-dimensional array, starting at position {@code (0, 0)}.
-     * Equivalent to {@code fill(0, 0, source)}.
+     * Copies values into this matrix from another two-dimensional array, starting at position {@code (0, 0)}.
+     * Equivalent to {@code copyFrom(0, 0, source)}.
      * The source array can be smaller than this matrix; only the overlapping region is copied.
      * If the source array is larger, only the portion that fits is copied. {@code null} rows in
      * {@code source} are skipped (the corresponding row of this matrix is left unchanged).
@@ -1650,28 +1613,28 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.wrap(new long[][] {{0L, 0L, 0L}, {0L, 0L, 0L}});
-     * matrix.fill(new long[][] {{1L, 2L}, {3L, 4L}});
+     * matrix.copyFrom(new long[][] {{1L, 2L}, {3L, 4L}});
      * matrix.get(0, 0);                       // returns 1L
      * matrix.get(0, 2);                       // returns 0L (source row is narrower, so this column is not overwritten)
      * // matrix is [[1, 2, 0], [3, 4, 0]]
      *
      * LongMatrix big = LongMatrix.wrap(new long[][] {{0L, 0L}, {0L, 0L}});
-     * big.fill(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}, {7L, 8L, 9L}});
+     * big.copyFrom(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}, {7L, 8L, 9L}});
      * big.get(1, 1);                          // returns 5L (only overlapping region copied)
      *
-     * matrix.fill((long[][]) null);          // throws IllegalArgumentException (source is null)
+     * matrix.copyFrom((long[][]) null);          // throws IllegalArgumentException (source is null)
      * }</pre>
      *
      * @param source the two-dimensional array to copy values from; must not be {@code null}
      * @throws IllegalArgumentException if {@code source} is {@code null}
-     * @see #fill(int, int, long[][])
+     * @see #copyFrom(int, int, long[][])
      */
-    public void fill(final long[][] source) {
-        fill(0, 0, source);
+    public void copyFrom(final long[][] source) {
+        copyFrom(0, 0, source);
     }
 
     /**
-     * Fills a region of this matrix with values from another two-dimensional array, starting at the
+     * Copies values into a region of this matrix from another two-dimensional array, starting at the
      * specified destination position.
      * The source array can extend beyond this matrix's bounds; only the overlapping region is copied.
      * The matrix is modified in-place. {@code null} rows in {@code source} are skipped (the
@@ -1682,15 +1645,15 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.wrap(new long[][] {{0L, 0L, 0L}, {0L, 0L, 0L}, {0L, 0L, 0L}});
-     * matrix.fill(1, 1, new long[][] {{1L, 2L}, {3L, 4L}});
+     * matrix.copyFrom(1, 1, new long[][] {{1L, 2L}, {3L, 4L}});
      * matrix.get(1, 1);                       // returns 1L
      * matrix.get(2, 2);                       // returns 4L
-     * matrix.get(0, 0);                       // returns 0L (outside filled region)
+     * matrix.get(0, 0);                       // returns 0L (outside the copied region)
      * // matrix is [[0, 0, 0], [0, 1, 2], [0, 3, 4]]
      *
-     * matrix.fill(0, 0, (long[][]) null);                // throws IllegalArgumentException (source is null)
-     * matrix.fill(-1, 0, new long[][] {{1L}});           // throws IndexOutOfBoundsException (destRowIndex < 0)
-     * matrix.fill(0, 5, new long[][] {{1L}});            // throws IndexOutOfBoundsException (destColumnIndex > columnCount)
+     * matrix.copyFrom(0, 0, (long[][]) null);                // throws IllegalArgumentException (source is null)
+     * matrix.copyFrom(-1, 0, new long[][] {{1L}});           // throws IndexOutOfBoundsException (destRowIndex < 0)
+     * matrix.copyFrom(0, 5, new long[][] {{1L}});            // throws IndexOutOfBoundsException (destColumnIndex > columnCount)
      * }</pre>
      *
      * @param destRowIndex the target row index in this matrix (0-based, must satisfy {@code 0 <= destRowIndex <= rowCount})
@@ -1700,7 +1663,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *         or if {@code destColumnIndex < 0} or {@code destColumnIndex > columnCount}
      * @throws IllegalArgumentException if {@code source} is {@code null}
      */
-    public void fill(final int destRowIndex, final int destColumnIndex, final long[][] source) throws IndexOutOfBoundsException, IllegalArgumentException {
+    public void copyFrom(final int destRowIndex, final int destColumnIndex, final long[][] source) throws IndexOutOfBoundsException, IllegalArgumentException {
         N.checkArgNotNull(source, "source");
         if (destRowIndex < 0 || destRowIndex > rowCount) {
             throw new IndexOutOfBoundsException(formatMsg("destRowIndex({}) must be in [0, rowCount({})]", destRowIndex, rowCount));
@@ -2513,11 +2476,12 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * matrix.repeatElements(2, -1);          // throws IllegalArgumentException (not positive)
      * }</pre>
      *
-     * @param rowRepeats number of times to repeat each element in row direction
-     * @param columnRepeats number of times to repeat each element in column direction
-     * @return a new LongMatrix with repeated elements
+     * @param rowRepeats number of times to repeat each element in row direction; must be {@code > 0}
+     * @param columnRepeats number of times to repeat each element in column direction; must be {@code > 0}
+     * @return a new {@code LongMatrix} with dimensions {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}
      * @throws IllegalArgumentException if rowRepeats or columnRepeats is not positive,
      *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
+     * @see #tile(int, int)
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">MATLAB repelem function</a>
      */
     @Override
@@ -2571,11 +2535,12 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * matrix.tile(2, -1);            // throws IllegalArgumentException (not positive)
      * }</pre>
      *
-     * @param rowRepeats number of times to repeat the matrix vertically
-     * @param columnRepeats number of times to repeat the matrix horizontally
-     * @return a new LongMatrix with the tiled pattern
+     * @param rowRepeats number of times to repeat the matrix vertically; must be {@code > 0}
+     * @param columnRepeats number of times to repeat the matrix horizontally; must be {@code > 0}
+     * @return a new {@code LongMatrix} with dimensions {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}
      * @throws IllegalArgumentException if rowRepeats or columnRepeats is not positive,
      *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
+     * @see #repeatElements(int, int)
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
     @Override
@@ -2661,21 +2626,21 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * <p>For a matrix with no rows, the action is not invoked. For a matrix with one or more
      * zero-length rows, the action is invoked once with an empty array. See
-     * {@link Arrays#mutateFlattened(long[][], Throwables.Consumer)} for the exact semantics of the
+     * {@link Arrays#mutateViaFlatArray(long[][], Throwables.Consumer)} for the exact semantics of the
      * underlying operation.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.wrap(new long[][] {{5L, 3L}, {4L, 1L}});
-     * matrix.mutateFlattened(arr -> java.util.Arrays.sort(arr));
+     * matrix.mutateViaFlatArray(arr -> java.util.Arrays.sort(arr));
      * matrix.rowCopy(0);                      // returns [1, 3]
      * matrix.rowCopy(1);                      // returns [4, 5] (sorted globally, placed back row-major)
      *
      * int[] captured = new int[1];
-     * matrix.mutateFlattened(arr -> captured[0] = arr.length);
+     * matrix.mutateViaFlatArray(arr -> captured[0] = arr.length);
      * int flattenedLength = captured[0];      // 4 (temporary array length)
      *
-     * LongMatrix.empty().mutateFlattened(arr -> { });  // no-op on empty matrix
+     * LongMatrix.empty().mutateViaFlatArray(arr -> { });  // no-op on empty matrix
      * }</pre>
      *
      * @param <E> the type of exception that the operation may throw
@@ -2683,13 +2648,13 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws ArithmeticException if the number of matrix elements exceeds {@link Integer#MAX_VALUE}
      * @throws E if the operation throws an exception
-     * @see Arrays#mutateFlattened(long[][], Throwables.Consumer)
+     * @see Arrays#mutateViaFlatArray(long[][], Throwables.Consumer)
      */
     @Override
-    public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super long[], E> action) throws E {
+    public <E extends Exception> void mutateViaFlatArray(final Throwables.Consumer<? super long[], E> action) throws E {
         N.checkArgNotNull(action, cs.action);
 
-        Arrays.mutateFlattened(a, action);
+        Arrays.mutateViaFlatArray(a, action);
     }
 
     /**
@@ -3368,39 +3333,6 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     }
 
     /**
-     * Returns a stream of elements from a single row.
-     * The elements are streamed from left to right within the specified row.
-     *
-     * <p>This method is particularly useful when you need to process or analyze
-     * a specific row of the matrix independently. The returned stream can be
-     * used with all standard LongStream operations.</p>
-     *
-     * <p>This streams the elements of the single specified row, flattened into one stream. To
-     * instead obtain every row as its own stream (a stream of streams), use {@link #rowStreams()}.</p>
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * LongMatrix matrix = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
-     * matrix.rowMajorStream(0).toArray();   // returns [1, 2, 3]
-     * matrix.rowMajorStream(1).sum();       // returns 15L (sum of second row)
-     *
-     * matrix.rowMajorStream(-1);            // throws IndexOutOfBoundsException
-     * matrix.rowMajorStream(2);             // throws IndexOutOfBoundsException (rowIndex >= rowCount)
-     * }</pre>
-     *
-     * @param rowIndex the index of the row to stream (0-based)
-     * @return a {@link LongStream} of elements from the specified row
-     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
-     * @see #rowStreams()
-     */
-    @Override
-    public LongStream rowMajorStream(final int rowIndex) {
-        checkRowIndex(rowIndex);
-
-        return rowMajorStream(rowIndex, rowIndex + 1);
-    }
-
-    /**
      * Returns a stream of elements from a range of rows in row-major order.
      * Elements are streamed row by row from the starting row (inclusive) to
      * the ending row (exclusive), with each row streamed from left to right.
@@ -3525,38 +3457,6 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     }
 
     /**
-     * Returns a stream of elements from a single column.
-     * The elements are streamed from top to bottom within the specified column.
-     *
-     * <p>This method is useful for column-wise operations such as calculating
-     * column sums, finding column maximums, or filtering column values.</p>
-     *
-     * <p>This streams the elements of the single specified column, flattened into one stream. To
-     * instead obtain every column as its own stream (a stream of streams), use {@link #columnStreams()}.</p>
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * LongMatrix matrix = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
-     * matrix.columnMajorStream(1).toArray();     // returns [2, 5]
-     * matrix.columnMajorStream(0).sum();         // returns 5L (sum of first column)
-     *
-     * matrix.columnMajorStream(-1);              // throws IndexOutOfBoundsException
-     * matrix.columnMajorStream(3);               // throws IndexOutOfBoundsException (columnIndex >= columnCount)
-     * }</pre>
-     *
-     * @param columnIndex the index of the column to stream (0-based)
-     * @return a {@link LongStream} of elements from the specified column
-     * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
-     * @see #columnStreams()
-     */
-    @Override
-    public LongStream columnMajorStream(final int columnIndex) {
-        checkColumnIndex(columnIndex);
-
-        return columnMajorStream(columnIndex, columnIndex + 1);
-    }
-
-    /**
      * Returns a stream of elements from a range of columns in column-major order.
      * Elements are streamed column by column from the starting column (inclusive)
      * to the ending column (exclusive), with each column streamed from top to bottom.
@@ -3663,7 +3563,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * rows to other values.</p>
      *
      * <p>This yields one stream per row. To instead stream the elements of a single row as one
-     * flat stream, use {@link #rowMajorStream(int)}.</p>
+     * flat stream, use {@link #rowMajorStream(int, int) rowMajorStream(rowIndex, rowIndex + 1)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3677,8 +3577,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * LongMatrix.wrap(new long[][] {{7L, 8L}}).rowStreams().count(); // returns 1 (single row)
      * }</pre>
      *
-     * @return a Stream of LongStream objects, one for each row in the matrix
-     * @see #rowMajorStream(int)
+     * @return a Stream of LongStream objects, one for each row in the matrix,
+     *         or an empty stream if the matrix is empty
+     * @see #rowMajorStream(int, int)
      */
     @Override
     public Stream<LongStream> rowStreams() {
@@ -3755,6 +3656,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p>This method is useful for operations that need to process
      * entire columns as units, such as column-wise statistics, transformations, or filtering
      * columns based on conditions.</p>
+     *
+     * <p>This yields one stream per column. To instead stream the elements of a single column as one
+     * flat stream, use {@link #columnMajorStream(int, int) columnMajorStream(columnIndex, columnIndex + 1)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

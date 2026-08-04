@@ -34,8 +34,9 @@ import com.landawn.abacus.util.stream.Stream;
  *
  * <p>This type specializes {@link AbstractMatrix} for {@code boolean} values while keeping the data in
  * a validated backing array. The constructor and {@link #wrap(boolean[]...)} wrap the supplied storage
- * directly. Copy-producing factories and operations such as conversions and mappings use separate
- * storage for non-empty results; {@link #empty()} returns a shared zero-cell singleton.</p>
+ * directly. {@link #copyOf(boolean[]...)}, conversions, and mapping operations do not share mutable cell
+ * storage with a non-empty source; operations producing an empty matrix may return the shared empty
+ * singleton.</p>
  *
  * <p>Cells introduced by growth or reshaping default to {@code false} unless an overload accepts an
  * explicit fill value. Optional return values use {@link OptionalBoolean}.</p>
@@ -92,7 +93,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Returns a shared empty {@code 0 × 0} matrix instance.
+     * Returns the shared empty {@code 0x0} matrix instance.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -106,7 +107,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * matrix.get(0, 0);                                                       // throws ArrayIndexOutOfBoundsException (no elements)
      * }</pre>
      *
-     * @return the shared empty {@code BooleanMatrix} singleton (zero rows, zero columns)
+     * @return the shared empty {@code BooleanMatrix} singleton
      */
     public static BooleanMatrix empty() {
         return EMPTY_BOOLEAN_MATRIX;
@@ -131,8 +132,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * BooleanMatrix.wrap(new boolean[][] {{true}, {true, false}}); // throws IllegalArgumentException (jagged rows)
      * }</pre>
      *
-     * @param a the two-dimensional boolean array to wrap; must not be {@code null}; may be empty, in which case the empty matrix singleton is returned
-     * @return a new {@code BooleanMatrix} backed by {@code a}, or the empty {@code BooleanMatrix} if {@code a} is empty
+     * @param a the two-dimensional boolean array to wrap, or empty for an empty matrix; must not be {@code null}
+     * @return a new {@code BooleanMatrix} backed by {@code a}, or the shared empty matrix if {@code a} is empty
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
@@ -184,7 +185,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Creates a new {@code 1 × length} matrix filled with pseudo-randomly generated boolean values.
+     * Creates a new {@code 1 x columnCount} matrix filled with pseudo-randomly generated boolean values.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -198,7 +199,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * }</pre>
      *
      * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
-     * @return a new {@code BooleanMatrix} of dimensions {@code 1 × columnCount} filled with random values
+     * @return a new {@code BooleanMatrix} of dimensions {@code 1 x columnCount} filled with random values
      * @throws IllegalArgumentException if {@code columnCount} is negative
      * @see #random(int, int)
      */
@@ -240,41 +241,6 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
             for (int i = 0; i < columnCount; i++) {
                 ea[i] = RAND.nextBoolean();
             }
-        }
-
-        return new BooleanMatrix(a);
-    }
-
-    /**
-     * Creates a new matrix of the specified dimensions where every element is the provided {@code element}.
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * BooleanMatrix matrix = BooleanMatrix.filled(2, 3, true);
-     * matrix.get(0, 0);                          // returns true
-     * matrix.countTrue();                        // returns 6 (all 2x3 cells are true)
-     *
-     * BooleanMatrix.filled(2, 2, false).anyTrue();   // returns false (all cells false)
-     * BooleanMatrix.filled(0, 0, true).isEmpty();    // returns true
-     * BooleanMatrix.filled(-1, 3, true);             // throws IllegalArgumentException (negative rowCount)
-     * }</pre>
-     *
-     * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
-     * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
-     * @param element the boolean value to fill the matrix with
-     * @return a new {@code BooleanMatrix} of dimensions {@code rowCount × columnCount} with every element set to {@code element}
-     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
-     *         or if {@code rowCount} is {@code 0} while {@code columnCount} is positive (an unrepresentable shape)
-     */
-    public static BooleanMatrix filled(final int rowCount, final int columnCount, final boolean element) {
-        N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
-        N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
-        checkRepresentableShape(rowCount, columnCount);
-
-        final boolean[][] a = new boolean[rowCount][columnCount];
-
-        for (boolean[] ea : a) {
-            N.fill(ea, element);
         }
 
         return new BooleanMatrix(a);
@@ -1448,8 +1414,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Fills this matrix with values from another two-dimensional array, starting at position {@code (0, 0)}.
-     * Equivalent to {@code fill(0, 0, source)}.
+     * Copies values into this matrix from another two-dimensional array, starting at position {@code (0, 0)}.
+     * Equivalent to {@code copyFrom(0, 0, source)}.
      * The source array can be smaller than this matrix; only the overlapping region is copied.
      * If the source array is larger, only the portion that fits is copied. {@code null} rows in
      * {@code source} are skipped (the corresponding row of this matrix is left unchanged).
@@ -1458,25 +1424,25 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.wrap(new boolean[3][3]);   // 3x3 of false
-     * matrix.fill(new boolean[][] {{true, true}, {true, true}});    // overwrite top-left 2x2
+     * matrix.copyFrom(new boolean[][] {{true, true}, {true, true}});    // overwrite top-left 2x2
      * matrix.get(0, 0);                                             // returns true
      * matrix.get(1, 1);                                             // returns true
      * matrix.get(2, 2);                                             // returns false (outside the copied region)
      *
-     * matrix.fill((boolean[][]) null);   // throws IllegalArgumentException (null source)
-     * matrix.fill(new boolean[0][0]);    // no-op (empty source copies nothing)
+     * matrix.copyFrom((boolean[][]) null);   // throws IllegalArgumentException (null source)
+     * matrix.copyFrom(new boolean[0][0]);    // no-op (empty source copies nothing)
      * }</pre>
      *
      * @param source the two-dimensional boolean array to copy values from; must not be {@code null}
      * @throws IllegalArgumentException if {@code source} is {@code null}
-     * @see #fill(int, int, boolean[][])
+     * @see #copyFrom(int, int, boolean[][])
      */
-    public void fill(final boolean[][] source) {
-        fill(0, 0, source);
+    public void copyFrom(final boolean[][] source) {
+        copyFrom(0, 0, source);
     }
 
     /**
-     * Fills a region of this matrix with values from another two-dimensional array, starting at the
+     * Copies values into a region of this matrix from another two-dimensional array, starting at the
      * specified destination position.
      * The source array can extend beyond this matrix's bounds; only the overlapping region is copied.
      * The matrix is modified in-place. {@code null} rows in {@code source} are skipped (the
@@ -1487,14 +1453,14 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.wrap(new boolean[4][4]);        // 4x4 of false
-     * matrix.fill(1, 1, new boolean[][] {{true, true}, {true, true}});   // 2x2 block at (1,1)
+     * matrix.copyFrom(1, 1, new boolean[][] {{true, true}, {true, true}});   // 2x2 block at (1,1)
      * matrix.get(1, 1);                                                  // returns true
      * matrix.get(2, 2);                                                  // returns true
      * matrix.get(0, 0);                                                  // returns false (outside the copied region)
      *
-     * matrix.fill(1, 2, new boolean[][] {{true, true, true}});   // only columns 2-3 fit; the third value is clipped
-     * matrix.fill(-1, 0, new boolean[][] {{true}});              // throws IndexOutOfBoundsException (negative index)
-     * matrix.fill(0, 0, (boolean[][]) null);                     // throws IllegalArgumentException (null source)
+     * matrix.copyFrom(1, 2, new boolean[][] {{true, true, true}});   // only columns 2-3 fit; the third value is clipped
+     * matrix.copyFrom(-1, 0, new boolean[][] {{true}});              // throws IndexOutOfBoundsException (negative index)
+     * matrix.copyFrom(0, 0, (boolean[][]) null);                     // throws IllegalArgumentException (null source)
      * }</pre>
      *
      * @param destRowIndex the target row index in this matrix (0-based, must satisfy {@code 0 <= destRowIndex <= rowCount})
@@ -1504,7 +1470,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *         or if {@code destColumnIndex < 0} or {@code destColumnIndex > columnCount}
      * @throws IllegalArgumentException if {@code source} is {@code null}
      */
-    public void fill(final int destRowIndex, final int destColumnIndex, final boolean[][] source) throws IndexOutOfBoundsException, IllegalArgumentException {
+    public void copyFrom(final int destRowIndex, final int destColumnIndex, final boolean[][] source)
+            throws IndexOutOfBoundsException, IllegalArgumentException {
         N.checkArgNotNull(source, "source");
         if (destRowIndex < 0 || destRowIndex > rowCount) {
             throw new IndexOutOfBoundsException(formatMsg("destRowIndex({}) must be in [0, rowCount({})]", destRowIndex, rowCount));
@@ -2232,11 +2199,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Creates the transpose of this matrix by swapping rows and columns.
-     * The transpose operation converts each row into a column, so element at position (i, j)
-     * in the original matrix appears at position (j, i) in the transposed matrix. The resulting
-     * matrix has dimensions swapped (rowCount x columnCount becomes columnCount x rowCount).
-     * Creates a new matrix; the original matrix is not modified.
+     * Returns a new matrix that is the transpose of this matrix.
+     * The element at position {@code (i, j)} in this matrix appears at position {@code (j, i)}
+     * in the result. The resulting matrix has dimensions swapped: {@code columnCount x rowCount}.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2530,7 +2495,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * <p>This enables operations that need all matrix elements together (e.g., sorting all
      * elements across the entire matrix). The shape of this matrix is preserved; only element
-     * values change. See {@link Arrays#mutateFlattened(boolean[][], Throwables.Consumer)} for the exact
+     * values change. See {@link Arrays#mutateViaFlatArray(boolean[][], Throwables.Consumer)} for the exact
      * semantics of the underlying operation.</p>
      *
      * <p>The action receives a temporary array. Its mutations are copied back only if the action
@@ -2542,15 +2507,15 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.wrap(new boolean[][] {{true, false}, {false, true}});
-     * matrix.mutateFlattened(arr -> java.util.Arrays.fill(arr, true));   // temporary row-major array, then copied back
+     * matrix.mutateViaFlatArray(arr -> java.util.Arrays.fill(arr, true));   // temporary row-major array, then copied back
      * matrix.countTrue();                                                // returns 4 (all elements now true)
      * matrix.get(0, 1);                                                  // returns true (was false)
      *
      * int[] seen = {0};
-     * matrix.mutateFlattened(arr -> seen[0] = arr.length);   // flattened length equals total element count
+     * matrix.mutateViaFlatArray(arr -> seen[0] = arr.length);   // flattened length equals total element count
      * // seen[0] is now 4
      *
-     * BooleanMatrix.empty().mutateFlattened(arr -> seen[0] = -1);   // no-op: action is not invoked when the matrix has zero rows
+     * BooleanMatrix.empty().mutateViaFlatArray(arr -> seen[0] = -1);   // no-op: action is not invoked when the matrix has zero rows
      * // seen[0] is still 4
      * }</pre>
      *
@@ -2559,13 +2524,13 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws ArithmeticException if the element count exceeds {@link Integer#MAX_VALUE}
      * @throws E if the operation throws an exception
-     * @see Arrays#mutateFlattened(boolean[][], Throwables.Consumer)
+     * @see Arrays#mutateViaFlatArray(boolean[][], Throwables.Consumer)
      */
     @Override
-    public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super boolean[], E> action) throws E {
+    public <E extends Exception> void mutateViaFlatArray(final Throwables.Consumer<? super boolean[], E> action) throws E {
         N.checkArgNotNull(action, cs.action);
 
-        Arrays.mutateFlattened(a, action);
+        Arrays.mutateViaFlatArray(a, action);
     }
 
     /**
@@ -2924,7 +2889,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Converts this primitive {@code boolean} matrix to a boxed {@code Matrix<Boolean>}.
+     * Converts this primitive boolean matrix to a boxed {@link Matrix Matrix&lt;Boolean&gt;}.
      * Each {@code boolean} value is converted to its corresponding {@code Boolean} wrapper object.
      *
      * <p>This conversion is useful when you need to work with APIs that require
@@ -3244,42 +3209,6 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Returns a stream of elements from a single row.
-     * The elements are streamed from left to right within the specified row.
-     *
-     * <p>This method is particularly useful when you need to process or analyze
-     * a specific row of the matrix independently.</p>
-     *
-     * <p>This streams the elements of the single specified row, flattened into one stream. To
-     * instead obtain every row as its own stream (a stream of streams), use {@link #rowStreams()}.</p>
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * BooleanMatrix matrix = BooleanMatrix.wrap(new boolean[][] {
-     *     {true,  false, true},
-     *     {false, true,  false}
-     * });
-     * matrix.rowMajorStream(0).toList();                 // returns [true, false, true]
-     * matrix.rowMajorStream(1).anyMatch(b -> b);         // returns true
-     * matrix.rowMajorStream(0).filter(b -> b).count();   // returns 2
-     *
-     * matrix.rowMajorStream(5);   // throws IndexOutOfBoundsException (row >= rowCount)
-     * matrix.rowMajorStream(-1);  // throws IndexOutOfBoundsException (negative row)
-     * }</pre>
-     *
-     * @param rowIndex the index of the row to stream (0-based)
-     * @return a {@code Stream<Boolean>} of elements from the specified row
-     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
-     * @see #rowStreams()
-     */
-    @Override
-    public Stream<Boolean> rowMajorStream(final int rowIndex) {
-        checkRowIndex(rowIndex);
-
-        return rowMajorStream(rowIndex, rowIndex + 1);
-    }
-
-    /**
      * Returns a stream of elements from a range of rows in row-major order.
      * Elements are streamed row by row from the starting row (inclusive) to
      * the ending row (exclusive), with each row streamed from left to right.
@@ -3415,42 +3344,6 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     /**
-     * Returns a stream of elements from a single column.
-     * The elements are streamed from top to bottom within the specified column.
-     *
-     * <p>This method is useful for column-wise operations such as checking
-     * column properties or extracting column data.</p>
-     *
-     * <p>This streams the elements of the single specified column, flattened into one stream. To
-     * instead obtain every column as its own stream (a stream of streams), use {@link #columnStreams()}.</p>
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * BooleanMatrix matrix = BooleanMatrix.wrap(new boolean[][] {
-     *     {true, false, true},
-     *     {true, true,  false}
-     * });
-     * matrix.columnMajorStream(0).toList();                 // returns [true, true]
-     * matrix.columnMajorStream(0).allMatch(b -> b);         // returns true
-     * matrix.columnMajorStream(1).filter(b -> b).count();   // returns 1
-     *
-     * matrix.columnMajorStream(5);    // throws IndexOutOfBoundsException (column >= columnCount)
-     * matrix.columnMajorStream(-1);   // throws IndexOutOfBoundsException (negative column)
-     * }</pre>
-     *
-     * @param columnIndex the index of the column to stream (0-based)
-     * @return a {@code Stream<Boolean>} of elements from the specified column
-     * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
-     * @see #columnStreams()
-     */
-    @Override
-    public Stream<Boolean> columnMajorStream(final int columnIndex) {
-        checkColumnIndex(columnIndex);
-
-        return columnMajorStream(columnIndex, columnIndex + 1);
-    }
-
-    /**
      * Returns a stream of elements from a range of columns in column-major order.
      * Elements are streamed column by column from the starting column (inclusive)
      * to the ending column (exclusive), with each column streamed from top to bottom.
@@ -3569,7 +3462,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * stream is a {@code Stream<Boolean>} with boxed values.</p>
      *
      * <p>This yields one stream per row. To instead stream the elements of a single row as one
-     * flat stream, use {@link #rowMajorStream(int)}.</p>
+     * flat stream, use {@link #rowMajorStream(int, int) rowMajorStream(rowIndex, rowIndex + 1)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3591,7 +3484,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * }</pre>
      *
      * @return a {@code Stream<Stream<Boolean>>}, one inner stream per row in the matrix
-     * @see #rowMajorStream(int)
+     * @see #rowMajorStream(int, int)
      */
     @Override
     public Stream<Stream<Boolean>> rowStreams() {
@@ -3676,6 +3569,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * columns based on conditions. Because there is no primitive {@code BooleanStream}, each inner
      * stream is a {@code Stream<Boolean>} with boxed values.</p>
      *
+     * <p>This yields one stream per column. To instead stream the elements of a single column as one
+     * flat stream, use {@link #columnMajorStream(int, int) columnMajorStream(columnIndex, columnIndex + 1)}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.wrap(new boolean[][] {
@@ -3684,7 +3580,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * });
      * matrix.columnStreams().count();   // returns 3 (one inner stream per column)
      *
-     * List<Boolean> allTrueColumns = matrix.columnStreams()
+     * java.util.List<Boolean> allTrueColumns = matrix.columnStreams()
      *     .map(col -> col.allMatch(b -> b))
      *     .toList();   // [true, false, false]
      *
@@ -3880,7 +3776,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *     {true,  true,  true}
      * });
      *
-     * List<Boolean> center = new ArrayList<>();
+     * java.util.List<Boolean> center = new java.util.ArrayList<>();
      * Matrices.runWithParallelMode(ParallelMode.FORCE_OFF,
      *         () -> matrix.forEach(0, 2, 0, 2, value -> center.add(value)));
      * // center is now [true, false, false, true] (top-left 2x2, row-major)

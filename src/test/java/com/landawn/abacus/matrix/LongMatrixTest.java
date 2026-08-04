@@ -105,16 +105,6 @@ class LongMatrixTest extends TestBase {
     }
 
     @Test
-    public void testFilled() {
-        LongMatrix matrix = LongMatrix.filled(1, 10, 5L);
-        Assertions.assertEquals(1, matrix.rowCount());
-        Assertions.assertEquals(10, matrix.columnCount());
-        for (int i = 0; i < 10; i++) {
-            Assertions.assertEquals(5L, matrix.get(0, i));
-        }
-    }
-
-    @Test
     public void testRange() {
         LongMatrix matrix = LongMatrix.range(0L, 5L);
         Assertions.assertEquals(1, matrix.rowCount());
@@ -499,7 +489,7 @@ class LongMatrixTest extends TestBase {
 
     @Test
     public void testUpdateAllUnarySequentialTallMatrixUsesRowMajorOrder() throws Exception {
-        final LongMatrix matrix = LongMatrix.filled(3, 2, 0L);
+        final LongMatrix matrix = LongMatrix.wrap(new long[3][2]);
         final AtomicInteger next = new AtomicInteger();
 
         Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.updateAll(x -> next.incrementAndGet()));
@@ -609,12 +599,12 @@ class LongMatrixTest extends TestBase {
     }
 
     @Test
-    public void testFillWithArray() {
+    public void testCopyFrom() {
         long[][] a = { { 0L, 0L, 0L }, { 0L, 0L, 0L }, { 0L, 0L, 0L } };
         LongMatrix matrix = LongMatrix.wrap(a);
 
         long[][] b = { { 1L, 2L }, { 3L, 4L } };
-        matrix.fill(b);
+        matrix.copyFrom(b);
         Assertions.assertEquals(1L, matrix.get(0, 0));
         Assertions.assertEquals(2L, matrix.get(0, 1));
         Assertions.assertEquals(3L, matrix.get(1, 0));
@@ -623,18 +613,18 @@ class LongMatrixTest extends TestBase {
     }
 
     @Test
-    public void testFillWithIndices() {
+    public void testCopyFromWithIndices() {
         long[][] a = { { 0L, 0L, 0L }, { 0L, 0L, 0L }, { 0L, 0L, 0L } };
         LongMatrix matrix = LongMatrix.wrap(a);
 
         long[][] b = { { 1L, 2L } };
-        matrix.fill(1, 1, b);
+        matrix.copyFrom(1, 1, b);
         Assertions.assertEquals(0L, matrix.get(0, 0)); // unchanged
         Assertions.assertEquals(1L, matrix.get(1, 1));
         Assertions.assertEquals(2L, matrix.get(1, 2));
 
-        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.fill(-1, 0, b));
-        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.fill(0, -1, b));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyFrom(-1, 0, b));
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyFrom(0, -1, b));
     }
 
     @Test
@@ -941,7 +931,7 @@ class LongMatrixTest extends TestBase {
         LongMatrix matrix = LongMatrix.wrap(a);
 
         List<Long> collected = new ArrayList<>();
-        matrix.mutateFlattened(row -> {
+        matrix.mutateViaFlatArray(row -> {
             for (long val : row) {
                 collected.add(val);
             }
@@ -1159,11 +1149,11 @@ class LongMatrixTest extends TestBase {
     }
 
     @Test
-    public void testStreamHRow() {
+    public void testStreamHSingleRowRange() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
         LongMatrix matrix = LongMatrix.wrap(a);
 
-        long[] row1 = matrix.rowMajorStream(1).toArray();
+        long[] row1 = matrix.rowMajorStream(1, 2).toArray();
         Assertions.assertArrayEquals(new long[] { 4L, 5L, 6L }, row1);
     }
 
@@ -1189,11 +1179,11 @@ class LongMatrixTest extends TestBase {
     }
 
     @Test
-    public void testStreamVColumn() {
+    public void testStreamVSingleColumnRange() {
         long[][] a = { { 1L, 2L, 3L }, { 4L, 5L, 6L } };
         LongMatrix matrix = LongMatrix.wrap(a);
 
-        long[] col1 = matrix.columnMajorStream(1).toArray();
+        long[] col1 = matrix.columnMajorStream(1, 2).toArray();
         Assertions.assertArrayEquals(new long[] { 2L, 5L }, col1);
     }
 
@@ -1350,14 +1340,6 @@ class LongMatrixTest extends TestBase {
     @Nested
     class JavadocExampleMatrixGroup2Test_LongMatrix extends TestBase {
         // ==================== LongMatrix ====================
-
-        @Test
-        public void testLongMatrix_filled() {
-            LongMatrix matrix = LongMatrix.filled(2, 3, 1L);
-            assertEquals(2, matrix.rowCount());
-            assertEquals(3, matrix.columnCount());
-            assertEquals(1L, matrix.get(0, 0));
-        }
 
         @Test
         public void testLongMatrix_ofDiagonals() {
@@ -1582,9 +1564,9 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testLongMatrix_mutateFlattened() {
+        public void testLongMatrix_mutateViaFlatArray() {
             LongMatrix matrix = LongMatrix.wrap(new long[][] { { 5, 3 }, { 4, 1 } });
-            matrix.mutateFlattened(arr -> java.util.Arrays.sort(arr));
+            matrix.mutateViaFlatArray(arr -> java.util.Arrays.sort(arr));
             assertEquals(1L, matrix.get(0, 0));
             assertEquals(3L, matrix.get(0, 1));
             assertEquals(4L, matrix.get(1, 0));
@@ -1654,9 +1636,9 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testLongMatrix_horizontalStreamRow() {
+        public void testLongMatrix_horizontalStreamSingleRowRange() {
             LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            long rowSum = matrix.rowMajorStream(1).sum();
+            long rowSum = matrix.rowMajorStream(1, 2).sum();
             assertEquals(15L, rowSum);
         }
 
@@ -1839,28 +1821,6 @@ class LongMatrixTest extends TestBase {
                 for (int j = 0; j < 3; j++) {
                     assertNotNull(m.get(i, j));
                 }
-            }
-        }
-
-        @Test
-        public void testFilled_withRowsCols() {
-            LongMatrix m = LongMatrix.filled(2, 3, 42L);
-            assertEquals(2, m.rowCount());
-            assertEquals(3, m.columnCount());
-            for (int i = 0; i < 2; i++) {
-                for (int j = 0; j < 3; j++) {
-                    assertEquals(42L, m.get(i, j));
-                }
-            }
-        }
-
-        @Test
-        public void testFilled_withLargeValue() {
-            LongMatrix m = LongMatrix.filled(1, 3, Long.MAX_VALUE);
-            assertEquals(1, m.rowCount());
-            assertEquals(3, m.columnCount());
-            for (int i = 0; i < 3; i++) {
-                assertEquals(Long.MAX_VALUE, m.get(0, i));
             }
         }
 
@@ -2362,10 +2322,10 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_withArray() {
+        public void testCopyFrom() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 0L, 0L, 0L }, { 0L, 0L, 0L }, { 0L, 0L, 0L } });
             long[][] patch = { { 1L, 2L }, { 3L, 4L } };
-            m.fill(patch);
+            m.copyFrom(patch);
             assertEquals(1L, m.get(0, 0));
             assertEquals(2L, m.get(0, 1));
             assertEquals(3L, m.get(1, 0));
@@ -2374,10 +2334,10 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_withArrayAtPosition() {
+        public void testCopyFromAtPosition() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 0L, 0L, 0L }, { 0L, 0L, 0L }, { 0L, 0L, 0L } });
             long[][] patch = { { 1L, 2L }, { 3L, 4L } };
-            m.fill(1, 1, patch);
+            m.copyFrom(1, 1, patch);
             assertEquals(0L, m.get(0, 0)); // unchanged
             assertEquals(1L, m.get(1, 1));
             assertEquals(2L, m.get(1, 2));
@@ -2386,10 +2346,10 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_outOfBounds() {
+        public void testCopyFrom_outOfBounds() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             long[][] patch = { { 1L, 2L }, { 3L, 4L } };
-            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(-1, 0, patch));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(-1, 0, patch));
         }
 
         // ============ Copy Tests ============
@@ -2732,7 +2692,7 @@ class LongMatrixTest extends TestBase {
         public void testFlatOp() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             List<Long> sums = new ArrayList<>();
-            m.mutateFlattened(row -> {
+            m.mutateViaFlatArray(row -> {
                 long sum = 0;
                 for (long val : row) {
                     sum += val;
@@ -3078,10 +3038,10 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamH_withRow_outOfBounds() {
+        public void testStreamH_withSingleRowRange_outOfBounds() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(-1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(-1, 0));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(2, 3));
         }
 
         @Test
@@ -3106,10 +3066,10 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamV_withColumn_outOfBounds() {
+        public void testStreamV_withSingleColumnRange_outOfBounds() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(-1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(-1, 0));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(2, 3));
         }
 
         @Test
@@ -3284,11 +3244,11 @@ class LongMatrixTest extends TestBase {
             assertEquals(45L, totalSum); // 1+2+3+4+5+6+7+8+9 = 45
 
             // Test sum of specific row
-            long row1Sum = m.rowMajorStream(1).sum();
+            long row1Sum = m.rowMajorStream(1, 2).sum();
             assertEquals(15L, row1Sum); // 4+5+6 = 15
 
             // Test sum of specific column
-            long col0Sum = m.columnMajorStream(0).sum();
+            long col0Sum = m.columnMajorStream(0, 1).sum();
             assertEquals(12L, col0Sum); // 1+4+7 = 12
 
             // Test min/max
@@ -3561,7 +3521,7 @@ class LongMatrixTest extends TestBase {
         public void testFlatOp() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             final int[] count = { 0 };
-            m.mutateFlattened(row -> count[0] += row.length);
+            m.mutateViaFlatArray(row -> count[0] += row.length);
             assertEquals(4, count[0]);
         }
 
@@ -3718,14 +3678,14 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamH_withRowIndex() {
+        public void testStreamH_withSingleRowRange() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
-            long[] row1 = m.rowMajorStream(1).toArray();
+            long[] row1 = m.rowMajorStream(1, 2).toArray();
             assertArrayEquals(new long[] { 4L, 5L, 6L }, row1);
         }
 
         @Test
-        public void testStreamH_withRowRange() {
+        public void testStreamH_withSingleRowRangeRange() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
             long[] rows = m.rowMajorStream(1, 3).toArray();
             assertArrayEquals(new long[] { 4L, 5L, 6L, 7L, 8L, 9L }, rows);
@@ -3739,14 +3699,14 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamV_withColumnIndex() {
+        public void testStreamV_withSingleColumnRange() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
-            long[] col1 = m.columnMajorStream(1).toArray();
+            long[] col1 = m.columnMajorStream(1, 2).toArray();
             assertArrayEquals(new long[] { 2L, 5L }, col1);
         }
 
         @Test
-        public void testStreamV_withColumnRange() {
+        public void testStreamV_withSingleColumnRangeRange() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L } });
             long[] columnCount = m.columnMajorStream(1, 3).toArray();
             assertArrayEquals(new long[] { 2L, 5L, 3L, 6L }, columnCount);
@@ -4149,9 +4109,9 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_array() {
+        public void testCopyFrom() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            m.fill(new long[][] { { 10L, 20L }, { 30L, 40L } });
+            m.copyFrom(new long[][] { { 10L, 20L }, { 30L, 40L } });
             assertEquals(10L, m.get(0, 0));
             assertEquals(20L, m.get(0, 1));
             assertEquals(30L, m.get(1, 0));
@@ -4159,9 +4119,9 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_arrayWithOffset() {
+        public void testCopyFromWithOffset() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
-            m.fill(1, 1, new long[][] { { 99L, 88L } });
+            m.copyFrom(1, 1, new long[][] { { 99L, 88L } });
             assertEquals(1L, m.get(0, 0));
             assertEquals(99L, m.get(1, 1));
             assertEquals(88L, m.get(1, 2));
@@ -4365,7 +4325,7 @@ class LongMatrixTest extends TestBase {
         public void testFlatOp() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             final long[] sum = { 0L };
-            m.mutateFlattened(row -> {
+            m.mutateViaFlatArray(row -> {
                 for (long val : row) {
                     sum[0] += val;
                 }
@@ -4702,7 +4662,7 @@ class LongMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> LongMatrix.from(ints));
         }
 
-        // ============ Random.and.Filled.Tests ============
+        // ============ Random Tests ============
 
         @Test
         public void test_random() {
@@ -4714,23 +4674,6 @@ class LongMatrixTest extends TestBase {
         @Test
         public void test_random_zeroLength() {
             LongMatrix m = LongMatrix.randomRow(0);
-            assertEquals(1, m.rowCount());
-            assertEquals(0, m.columnCount());
-        }
-
-        @Test
-        public void test_filled() {
-            LongMatrix m = LongMatrix.filled(1, 5, 42L);
-            assertEquals(1, m.rowCount());
-            assertEquals(5, m.columnCount());
-            for (int i = 0; i < 5; i++) {
-                assertEquals(42L, m.get(0, i));
-            }
-        }
-
-        @Test
-        public void test_filled_zeroLength() {
-            LongMatrix m = LongMatrix.filled(1, 0, 42L);
             assertEquals(1, m.rowCount());
             assertEquals(0, m.columnCount());
         }
@@ -5211,9 +5154,9 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_fill_array() {
+        public void testCopyFrom() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            m.fill(new long[][] { { 9L, 8L }, { 7L, 6L } });
+            m.copyFrom(new long[][] { { 9L, 8L }, { 7L, 6L } });
             assertEquals(9L, m.get(0, 0));
             assertEquals(8L, m.get(0, 1));
             assertEquals(7L, m.get(1, 0));
@@ -5221,20 +5164,20 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_fill_withOffset() {
+        public void testCopyFrom_withOffset() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
-            m.fill(1, 1, new long[][] { { 99L } });
+            m.copyFrom(1, 1, new long[][] { { 99L } });
             assertEquals(1L, m.get(0, 0));
             assertEquals(99L, m.get(1, 1));
             assertEquals(9L, m.get(2, 2));
         }
 
         @Test
-        public void test_fill_withOffset_arrayLargerThanMatrix() {
+        public void testCopyFrom_withOffset_arrayLargerThanMatrix() {
             // Test that fill() gracefully handles source arrays larger than the target matrix
             // by copying only what fits (as documented in the javadoc)
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
-            m.fill(0, 0, new long[][] { { 9L, 8L, 7L } }); // Source array has 3 elements, matrix has 2
+            m.copyFrom(0, 0, new long[][] { { 9L, 8L, 7L } }); // Source array has 3 elements, matrix has 2
             // Should copy only the first 2 elements that fit
             assertEquals(9L, m.get(0, 0));
             assertEquals(8L, m.get(0, 1));
@@ -5498,10 +5441,10 @@ class LongMatrixTest extends TestBase {
         // ============ FlatOp Test ============
 
         @Test
-        public void test_mutateFlattened() {
+        public void test_mutateViaFlatArray() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
             AtomicInteger count = new AtomicInteger(0);
-            m.mutateFlattened(row -> count.addAndGet(row.length));
+            m.mutateViaFlatArray(row -> count.addAndGet(row.length));
             assertEquals(4, count.get());
         }
 
@@ -5653,9 +5596,9 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_streamH_byRowIndex() {
+        public void test_streamH_bySingleRowRange() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            long sum = m.rowMajorStream(0).sum();
+            long sum = m.rowMajorStream(0, 1).sum();
             assertEquals(3L, sum);
         }
 
@@ -5674,9 +5617,9 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_streamV_byColumnIndex() {
+        public void test_streamV_bySingleColumnRange() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            long sum = m.columnMajorStream(0).sum();
+            long sum = m.columnMajorStream(0, 1).sum();
             assertEquals(4L, sum);
         }
 
@@ -6298,7 +6241,7 @@ class LongMatrixTest extends TestBase {
 
             long[][] backing = { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } };
             LongMatrix fillMatrix = LongMatrix.wrap(backing);
-            fillMatrix.fill(1, 0, backing);
+            fillMatrix.copyFrom(1, 0, backing);
             assertArrayEquals(new long[] { 3L, 4L }, fillMatrix.rowCopy(2));
         }
 
@@ -6392,8 +6335,6 @@ class LongMatrixTest extends TestBase {
         assertThrows(IllegalArgumentException.class, () -> LongMatrix.randomRow(-1));
         assertThrows(IllegalArgumentException.class, () -> LongMatrix.random(-1, 2));
         assertThrows(IllegalArgumentException.class, () -> LongMatrix.random(2, -1));
-        assertThrows(IllegalArgumentException.class, () -> LongMatrix.filled(-1, 2, 7L));
-        assertThrows(IllegalArgumentException.class, () -> LongMatrix.filled(2, -1, 7L));
     }
 
 }

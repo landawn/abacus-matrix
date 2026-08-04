@@ -92,16 +92,6 @@ class BooleanMatrixTest extends TestBase {
     }
 
     @Test
-    public void testFilled() {
-        BooleanMatrix matrix = BooleanMatrix.filled(1, 5, true);
-        assertEquals(1, matrix.rowCount());
-        assertEquals(5, matrix.columnCount());
-        for (int i = 0; i < 5; i++) {
-            assertTrue(matrix.get(0, i));
-        }
-    }
-
-    @Test
     public void testDiagonalLU2RD() {
         boolean[] diagonal = { true, false, true };
         BooleanMatrix matrix = BooleanMatrix.ofMainDiagonal(diagonal);
@@ -411,7 +401,7 @@ class BooleanMatrixTest extends TestBase {
 
     @Test
     public void testUpdateAllUnarySequentialTallMatrixUsesRowMajorOrder() throws Exception {
-        final BooleanMatrix matrix = BooleanMatrix.filled(3, 2, false);
+        final BooleanMatrix matrix = BooleanMatrix.wrap(new boolean[3][2]);
         final AtomicInteger next = new AtomicInteger();
 
         Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.updateAll(x -> next.incrementAndGet() % 2 == 1));
@@ -501,12 +491,12 @@ class BooleanMatrixTest extends TestBase {
     }
 
     @Test
-    public void testFillWithArray() {
+    public void testCopyFrom() {
         boolean[][] arr = { { true, false }, { false, true } };
         BooleanMatrix matrix = BooleanMatrix.wrap(arr);
 
         boolean[][] fillArr = { { false, false }, { false, false } };
-        matrix.fill(fillArr);
+        matrix.copyFrom(fillArr);
         assertFalse(matrix.get(0, 0));
         assertFalse(matrix.get(0, 1));
         assertFalse(matrix.get(1, 0));
@@ -514,24 +504,24 @@ class BooleanMatrixTest extends TestBase {
     }
 
     @Test
-    public void testFillWithIndices() {
+    public void testCopyFromWithIndices() {
         boolean[][] arr = { { true, false, true }, { false, true, false } };
         BooleanMatrix matrix = BooleanMatrix.wrap(arr);
 
         boolean[][] fillArr = { { false, false } };
-        matrix.fill(0, 1, fillArr);
+        matrix.copyFrom(0, 1, fillArr);
         assertFalse(matrix.get(0, 1));
         assertFalse(matrix.get(0, 2));
 
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.fill(-1, 0, fillArr));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyFrom(-1, 0, fillArr));
     }
 
     @Test
-    public void testFillWithIndices_sourceWiderThanRemainingColumnsIsClipped() {
+    public void testCopyFromWithIndices_sourceWiderThanRemainingColumnsIsClipped() {
         // Pins the fill(int, int, boolean[][]) javadoc example: a source row extending past the
         // matrix bounds is clipped, not an error.
         BooleanMatrix matrix = BooleanMatrix.wrap(new boolean[4][4]);
-        matrix.fill(1, 2, new boolean[][] { { true, true, true } });
+        matrix.copyFrom(1, 2, new boolean[][] { { true, true, true } });
         assertTrue(matrix.get(1, 2));
         assertTrue(matrix.get(1, 3));
         // Row 2 untouched, and nothing written outside the matrix.
@@ -804,7 +794,7 @@ class BooleanMatrixTest extends TestBase {
         BooleanMatrix matrix = BooleanMatrix.wrap(arr);
 
         int[] count = { 0 };
-        matrix.mutateFlattened(array -> count[0] += array.length);
+        matrix.mutateViaFlatArray(array -> count[0] += array.length);
         assertEquals(4, count[0]);
     }
 
@@ -983,7 +973,7 @@ class BooleanMatrixTest extends TestBase {
         boolean[][] arr = { { true, false }, { false, true } };
         BooleanMatrix matrix = BooleanMatrix.wrap(arr);
 
-        List<Boolean> row = matrix.rowMajorStream(0).toList();
+        List<Boolean> row = matrix.rowMajorStream(0, 1).toList();
         assertEquals(2, row.size());
         assertTrue(row.get(0));
         assertFalse(row.get(1));
@@ -1020,7 +1010,7 @@ class BooleanMatrixTest extends TestBase {
         boolean[][] arr = { { true, false }, { false, true } };
         BooleanMatrix matrix = BooleanMatrix.wrap(arr);
 
-        List<Boolean> col = matrix.columnMajorStream(0).toList();
+        List<Boolean> col = matrix.columnMajorStream(0, 1).toList();
         assertEquals(2, col.size());
         assertTrue(col.get(0));
         assertFalse(col.get(1));
@@ -1257,28 +1247,6 @@ class BooleanMatrixTest extends TestBase {
                 for (int j = 0; j < 3; j++) {
                     assertNotNull(m.get(i, j));
                 }
-            }
-        }
-
-        @Test
-        public void testFilled_withRowsCols() {
-            BooleanMatrix m = BooleanMatrix.filled(2, 3, true);
-            assertEquals(2, m.rowCount());
-            assertEquals(3, m.columnCount());
-            for (int i = 0; i < 2; i++) {
-                for (int j = 0; j < 3; j++) {
-                    assertTrue(m.get(i, j));
-                }
-            }
-        }
-
-        @Test
-        public void testFilled_withFalse() {
-            BooleanMatrix m = BooleanMatrix.filled(1, 3, false);
-            assertEquals(1, m.rowCount());
-            assertEquals(3, m.columnCount());
-            for (int i = 0; i < 3; i++) {
-                assertFalse(m.get(0, i));
             }
         }
 
@@ -1732,10 +1700,10 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_withArray() {
+        public void testCopyFrom() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { false, false, false }, { false, false, false }, { false, false, false } });
             boolean[][] patch = { { true, false }, { false, true } };
-            m.fill(patch);
+            m.copyFrom(patch);
             assertTrue(m.get(0, 0));
             assertFalse(m.get(0, 1));
             assertFalse(m.get(1, 0));
@@ -1744,10 +1712,10 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_withArrayAtPosition() {
+        public void testCopyFromAtPosition() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { false, false, false }, { false, false, false }, { false, false, false } });
             boolean[][] patch = { { true, false }, { false, true } };
-            m.fill(1, 1, patch);
+            m.copyFrom(1, 1, patch);
             assertFalse(m.get(0, 0)); // unchanged
             assertTrue(m.get(1, 1));
             assertFalse(m.get(1, 2));
@@ -1756,10 +1724,10 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_outOfBounds() {
+        public void testCopyFrom_outOfBounds() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false }, { false, true } });
             boolean[][] patch = { { true, false }, { false, true } };
-            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(-1, 0, patch));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(-1, 0, patch));
         }
 
         // ============ Copy Tests ============
@@ -2109,7 +2077,7 @@ class BooleanMatrixTest extends TestBase {
         public void testFlatOp() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false, true }, { false, true, false }, { true, false, true } });
             List<Integer> trueCounts = new ArrayList<>();
-            m.mutateFlattened(row -> {
+            m.mutateViaFlatArray(row -> {
                 int count = 0;
                 for (boolean val : row) {
                     if (val) {
@@ -2282,9 +2250,9 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamH_withRow() {
+        public void testStreamH_withSingleRowRange() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false, true }, { false, true, false } });
-            List<Boolean> row1 = m.rowMajorStream(1).toList();
+            List<Boolean> row1 = m.rowMajorStream(1, 2).toList();
             assertEquals(3, row1.size());
             assertFalse(row1.get(0));
             assertTrue(row1.get(1));
@@ -2292,10 +2260,10 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamH_withRow_outOfBounds() {
+        public void testStreamH_withSingleRowRange_outOfBounds() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false }, { false, true } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(-1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(-1, 0));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(2, 3));
         }
 
         @Test
@@ -2330,19 +2298,19 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamV_withColumn() {
+        public void testStreamV_withSingleColumnRange() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false, true }, { false, true, false } });
-            List<Boolean> col1 = m.columnMajorStream(1).toList();
+            List<Boolean> col1 = m.columnMajorStream(1, 2).toList();
             assertEquals(2, col1.size());
             assertFalse(col1.get(0));
             assertTrue(col1.get(1));
         }
 
         @Test
-        public void testStreamV_withColumn_outOfBounds() {
+        public void testStreamV_withSingleColumnRange_outOfBounds() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false }, { false, true } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(-1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(-1, 0));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(2, 3));
         }
 
         @Test
@@ -2471,7 +2439,7 @@ class BooleanMatrixTest extends TestBase {
 
         @Test
         public void testAllTrueMatrix() {
-            BooleanMatrix m = BooleanMatrix.filled(1, 3, true);
+            BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, true, true } });
             m = m.reshape(3, 1);
             m = m.tile(1, 3);
 
@@ -2580,10 +2548,10 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_partialOverlap() {
+        public void testCopyFrom_partialOverlap() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { false, false, false }, { false, false, false }, { false, false, false } });
             boolean[][] patch = { { true, true }, { true, true } };
-            m.fill(2, 2, patch); // Only partial overlap
+            m.copyFrom(2, 2, patch); // Only partial overlap
             assertFalse(m.get(0, 0));
             assertFalse(m.get(1, 1));
             assertTrue(m.get(2, 2)); // Only this one should be set
@@ -3215,26 +3183,26 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_withArray() {
+        public void testCopyFrom() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { false, false }, { false, false } });
-            m.fill(new boolean[][] { { true, true }, { true, true } });
+            m.copyFrom(new boolean[][] { { true, true }, { true, true } });
             assertTrue(m.get(0, 0));
             assertTrue(m.get(1, 1));
         }
 
         @Test
-        public void testFill_withOffset() {
+        public void testCopyFrom_withOffset() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { false, false, false }, { false, false, false }, { false, false, false } });
-            m.fill(1, 1, new boolean[][] { { true, true }, { true, true } });
+            m.copyFrom(1, 1, new boolean[][] { { true, true }, { true, true } });
             assertFalse(m.get(0, 0));
             assertTrue(m.get(1, 1));
             assertTrue(m.get(2, 2));
         }
 
         @Test
-        public void testFill_withOffset_invalidPosition() {
+        public void testCopyFrom_withOffset_invalidPosition() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[2][2]);
-            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(3, 3, new boolean[][] { { true, true }, { true, true } }));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(3, 3, new boolean[][] { { true, true }, { true, true } }));
         }
 
         // ============ Copy Tests ============
@@ -3460,7 +3428,7 @@ class BooleanMatrixTest extends TestBase {
         public void testFlatOp() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false }, { false, true } });
             AtomicInteger count = new AtomicInteger(0);
-            m.mutateFlattened(row -> count.addAndGet(row.length));
+            m.mutateViaFlatArray(row -> count.addAndGet(row.length));
             assertEquals(4, count.get());
         }
 
@@ -3550,9 +3518,9 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamH_singleRow() {
+        public void testStreamH_singleRowRange() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false, true }, { false, true, false } });
-            List<Boolean> row = m.rowMajorStream(0).toList();
+            List<Boolean> row = m.rowMajorStream(0, 1).toList();
             assertEquals(3, row.size());
             assertTrue(row.get(0));
             assertFalse(row.get(1));
@@ -3578,9 +3546,9 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamV_singleColumn() {
+        public void testStreamV_singleColumnRange() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false }, { false, true }, { true, false } });
-            List<Boolean> col = m.columnMajorStream(0).toList();
+            List<Boolean> col = m.columnMajorStream(0, 1).toList();
             assertEquals(3, col.size());
             assertTrue(col.get(0));
             assertFalse(col.get(1));
@@ -3877,13 +3845,6 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFilled_withZeroLength() {
-            BooleanMatrix m = BooleanMatrix.filled(1, 0, true);
-            assertEquals(1, m.rowCount());
-            assertEquals(0, m.columnCount());
-        }
-
-        @Test
         public void testDiagonalLU2RD_singleElement() {
             BooleanMatrix m = BooleanMatrix.ofMainDiagonal(new boolean[] { true });
             assertEquals(1, m.rowCount());
@@ -4097,9 +4058,9 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_withPartialArray() {
+        public void testCopyFrom_withPartialArray() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { false, false, false }, { false, false, false }, { false, false, false } });
-            m.fill(0, 0, new boolean[][] { { true, true } });
+            m.copyFrom(0, 0, new boolean[][] { { true, true } });
             assertTrue(m.get(0, 0));
             assertTrue(m.get(0, 1));
             assertFalse(m.get(0, 2));
@@ -4353,9 +4314,9 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamH_withRowIndex() {
+        public void testStreamH_withSingleRowRange() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false }, { false, true } });
-            List<Boolean> row = m.rowMajorStream(1).toList();
+            List<Boolean> row = m.rowMajorStream(1, 2).toList();
             assertEquals(2, row.size());
             assertFalse(row.get(0));
             assertTrue(row.get(1));
@@ -4371,9 +4332,9 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamV_withColumnIndex() {
+        public void testStreamV_withSingleColumnRange() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false }, { false, true } });
-            List<Boolean> col = m.columnMajorStream(1).toList();
+            List<Boolean> col = m.columnMajorStream(1, 2).toList();
             assertEquals(2, col.size());
             assertFalse(col.get(0));
             assertTrue(col.get(1));
@@ -4586,24 +4547,6 @@ class BooleanMatrixTest extends TestBase {
             BooleanMatrix m = BooleanMatrix.randomRow(5);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
-        }
-
-        @Test
-        public void test_filled() {
-            BooleanMatrix m = BooleanMatrix.filled(1, 5, true);
-            assertEquals(1, m.rowCount());
-            assertEquals(5, m.columnCount());
-            for (int i = 0; i < 5; i++) {
-                assertTrue(m.get(0, i));
-            }
-        }
-
-        @Test
-        public void test_filled_false() {
-            BooleanMatrix m = BooleanMatrix.filled(1, 3, false);
-            for (int i = 0; i < 3; i++) {
-                assertFalse(m.get(0, i));
-            }
         }
 
         @Test
@@ -4930,9 +4873,9 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_fill_array() {
+        public void testCopyFrom() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[3][3]);
-            m.fill(new boolean[][] { { true, true }, { true, true } });
+            m.copyFrom(new boolean[][] { { true, true }, { true, true } });
             assertTrue(m.get(0, 0));
             assertTrue(m.get(0, 1));
             assertTrue(m.get(1, 0));
@@ -4941,9 +4884,9 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_fill_arrayWithPosition() {
+        public void testCopyFromWithPosition() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[4][4]);
-            m.fill(1, 1, new boolean[][] { { true, true }, { true, true } });
+            m.copyFrom(1, 1, new boolean[][] { { true, true }, { true, true } });
             assertFalse(m.get(0, 0));
             assertTrue(m.get(1, 1));
             assertTrue(m.get(1, 2));
@@ -5100,9 +5043,9 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_mutateFlattened() {
+        public void test_mutateViaFlatArray() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false }, { false, true } });
-            m.mutateFlattened(arr -> {
+            m.mutateViaFlatArray(arr -> {
                 for (int i = 0; i < arr.length; i++) {
                     arr[i] = !arr[i];
                 }
@@ -5219,9 +5162,9 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_streamV_singleColumn() {
+        public void test_streamV_singleColumnRange() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false }, { false, true } });
-            List<Boolean> col = m.columnMajorStream(0).toList();
+            List<Boolean> col = m.columnMajorStream(0, 1).toList();
             assertEquals(2, col.size());
             assertTrue(col.get(0));
             assertFalse(col.get(1));
@@ -5308,19 +5251,6 @@ class BooleanMatrixTest extends TestBase {
     @Nested
     class JavadocExampleMatrixGroup1Test_BooleanMatrix extends TestBase {
         // ==================== BooleanMatrix ====================
-
-        @Test
-        public void testBooleanMatrix_filled() {
-            BooleanMatrix matrix = BooleanMatrix.filled(2, 3, true);
-            // Result: [[true, true, true], [true, true, true]]
-            assertEquals(2, matrix.rowCount());
-            assertEquals(3, matrix.columnCount());
-            for (int i = 0; i < 2; i++) {
-                for (int j = 0; j < 3; j++) {
-                    assertTrue(matrix.get(i, j));
-                }
-            }
-        }
 
         @Test
         public void testBooleanMatrix_rowView() {
@@ -5609,9 +5539,9 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testBooleanMatrix_mutateFlattened() {
+        public void testBooleanMatrix_mutateViaFlatArray() {
             BooleanMatrix matrix = BooleanMatrix.wrap(new boolean[][] { { true, false }, { false, true } });
-            matrix.mutateFlattened(arr -> java.util.Arrays.fill(arr, true));
+            matrix.mutateViaFlatArray(arr -> java.util.Arrays.fill(arr, true));
             // matrix is now [[true, true], [true, true]]
             assertTrue(matrix.get(0, 0));
             assertTrue(matrix.get(0, 1));
@@ -5766,7 +5696,7 @@ class BooleanMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_fullOverwrite() {
         BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { false, false }, { false, false } });
-        m.fill(new boolean[][] { { true, true }, { true, true } });
+        m.copyFrom(new boolean[][] { { true, true }, { true, true } });
         assertTrue(m.get(0, 0));
         assertTrue(m.get(0, 1));
         assertTrue(m.get(1, 0));
@@ -5776,7 +5706,7 @@ class BooleanMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_partialOverwrite() {
         BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { false, false, false }, { false, false, false }, { false, false, false } });
-        m.fill(new boolean[][] { { true, true }, { true, true } });
+        m.copyFrom(new boolean[][] { { true, true }, { true, true } });
         assertTrue(m.get(0, 0));
         assertTrue(m.get(0, 1));
         assertFalse(m.get(0, 2));
@@ -5789,7 +5719,7 @@ class BooleanMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_withOffset() {
         BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { false, false, false }, { false, false, false }, { false, false, false } });
-        m.fill(1, 1, new boolean[][] { { true, true }, { true, true } });
+        m.copyFrom(1, 1, new boolean[][] { { true, true }, { true, true } });
         assertFalse(m.get(0, 0));
         assertFalse(m.get(0, 1));
         assertFalse(m.get(1, 0));
@@ -5802,7 +5732,7 @@ class BooleanMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_emptySource() {
         BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false }, { false, true } });
-        m.fill(new boolean[0][0]);
+        m.copyFrom(new boolean[0][0]);
         assertTrue(m.get(0, 0));
         assertFalse(m.get(0, 1));
     }
@@ -5810,8 +5740,8 @@ class BooleanMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_negativeIndexThrows() {
         BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true } });
-        assertThrows(IndexOutOfBoundsException.class, () -> m.fill(-1, 0, new boolean[][] { { true } }));
-        assertThrows(IndexOutOfBoundsException.class, () -> m.fill(0, -1, new boolean[][] { { true } }));
+        assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(-1, 0, new boolean[][] { { true } }));
+        assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(0, -1, new boolean[][] { { true } }));
     }
 
     @Test
@@ -6092,8 +6022,6 @@ class BooleanMatrixTest extends TestBase {
         assertThrows(IllegalArgumentException.class, () -> BooleanMatrix.randomRow(-1));
         assertThrows(IllegalArgumentException.class, () -> BooleanMatrix.random(-1, 2));
         assertThrows(IllegalArgumentException.class, () -> BooleanMatrix.random(2, -1));
-        assertThrows(IllegalArgumentException.class, () -> BooleanMatrix.filled(-1, 2, true));
-        assertThrows(IllegalArgumentException.class, () -> BooleanMatrix.filled(2, -1, true));
     }
 
     @Nested
@@ -6237,7 +6165,7 @@ class BooleanMatrixTest extends TestBase {
 
             boolean[][] backing = { { true, false }, { false, true }, { false, false } };
             BooleanMatrix fillMatrix = BooleanMatrix.wrap(backing);
-            fillMatrix.fill(1, 0, backing);
+            fillMatrix.copyFrom(1, 0, backing);
             assertArrayEquals(new boolean[] { false, true }, fillMatrix.rowCopy(2));
         }
 

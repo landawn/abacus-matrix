@@ -4842,6 +4842,22 @@ class MatricesTest extends TestBase {
                 () -> Matrices.zip(List.of(arrayListMatrix, vectorMatrix, interfaceMatrix), (left, right) -> "not RandomAccess"));
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @Test
+    public void testCommonTypeSubtypeTieIsOrderIndependent() {
+        assertEquals(BOther.class, Matrices.resolveCommonAssignableType(First.class, Second.class));
+        assertEquals(BOther.class, Matrices.resolveCommonAssignableType(Second.class, First.class));
+
+        final Matrix<Object> first = (Matrix) Matrix.wrap(new First[][] { { new First() } });
+        final Matrix<Object> second = (Matrix) Matrix.wrap(new Second[][] { { new Second() } });
+
+        final Matrix<Object> firstOrder = Matrices.zip(List.of(first, second), (left, right) -> left);
+        final Matrix<Object> reverseOrder = Matrices.zip(List.of(second, first), (left, right) -> left);
+
+        assertEquals(BOther.class, firstOrder.elementType());
+        assertEquals(BOther.class, reverseOrder.elementType());
+    }
+
     @Test
     public void testStackVertically_manyMatricesPreservesOrder() {
         List<IntMatrix> matrices = List.of(IntMatrix.wrap(new int[][] { { 1, 2 } }), IntMatrix.wrap(new int[][] { { 3, 4 } }),
@@ -5212,6 +5228,26 @@ class MatricesTest extends TestBase {
             assertEquals(2, observedArguments.size());
             assertEquals(shareIntermediateArray, observedArguments.get(0) == observedArguments.get(1));
         }
+    }
+
+    private interface ABase {
+        // Marker interface for common-type tie-break regression coverage.
+    }
+
+    private interface BOther {
+        // Marker interface for common-type tie-break regression coverage.
+    }
+
+    private interface ZNarrow extends ABase {
+        // More-specific candidate that must eliminate ABase before lexical comparison.
+    }
+
+    private static final class First implements ZNarrow, ABase, BOther {
+        // Interface declaration order is intentionally different from Second.
+    }
+
+    private static final class Second implements BOther, ZNarrow, ABase {
+        // Interface declaration order is intentionally different from First.
     }
 
 }

@@ -248,57 +248,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     }
 
     /**
-     * Creates a new matrix of the specified dimensions where every element is the provided {@code element}.
-     *
-     * <p>The matrix's element type is resolved from {@code element.getClass()}, so the result
-     * may have a more specific component type than the static {@code T}. Enum constants resolve
-     * to their declaring enum class (even constants with constant-specific class bodies), so any
-     * constant of the same enum can later be stored via {@link #set(int, int, Object)}. Because
-     * {@code element} must be non-{@code null}, producing a typed empty matrix still requires a
-     * non-{@code null} sample element, such as {@code Matrix.filled(0, 0, "a")}.</p>
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * Matrix<String> matrix = Matrix.filled(2, 3, "a");
-     * matrix.rowCount();             // returns 2
-     * matrix.columnCount();          // returns 3
-     * matrix.get(1, 2);              // returns "a"
-     *
-     * Matrix.filled(1, 1, 7).get(0, 0);   // returns 7
-     *
-     * Matrix.filled(2, 3, (String) null); // throws IllegalArgumentException (element is null)
-     * Matrix.filled(-1, 3, "a");          // throws IllegalArgumentException (negative dimension)
-     * Matrix.filled(0, 3, "a");           // throws IllegalArgumentException (unrepresentable shape: 0 rows, 3 columns)
-     * }</pre>
-     *
-     * @param <T> the type of elements in the matrix
-     * @param rowCount the number of rows in the new matrix (must be {@code >= 0})
-     * @param columnCount the number of columns in the new matrix (must be {@code >= 0})
-     * @param element the value to fill the matrix with (must not be {@code null})
-     * @return a new Matrix of dimensions {@code rowCount × columnCount} filled with the specified element
-     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
-     *         if {@code element} is {@code null}, or if the resulting shape is unrepresentable
-     *         (i.e. {@code rowCount == 0} but {@code columnCount > 0})
-     */
-    public static <T> Matrix<T> filled(final int rowCount, final int columnCount, final T element) throws IllegalArgumentException {
-        N.checkArgNotNull(element, "element");
-        N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
-        N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
-        checkRepresentableShape(rowCount, columnCount);
-
-        @SuppressWarnings("unchecked")
-        final Class<T> resolvedElementType = (Class<T>) (element instanceof Enum ? ((Enum<?>) element).getDeclaringClass() : element.getClass());
-
-        final T[][] a = Array.newInstance(resolvedElementType, rowCount, columnCount);
-
-        for (T[] ea : a) {
-            N.fill(ea, element);
-        }
-
-        return new Matrix<>(a, resolvedElementType);
-    }
-
-    /**
      * Creates a square diagonal matrix with the given values on the main diagonal (upper-left to lower-right).
      * All other elements are {@code null}. The resulting matrix is always square with size {@code n×n},
      * where {@code n} is the length of the diagonal array.
@@ -668,8 +617,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * or call {@code .clone()} on the returned array.</p>
      *
      * <p><b>&#9888;&#65039; Runtime component type:</b> the returned array is the row exactly as it is
-     * stored internally. For matrices created by factories such as {@link #filled(int, int, Object)}
-     * or {@link #ofDiagonals(Object[], Object[])} the backing row may have a more specific runtime
+     * stored internally. For matrices created from typed arrays or factories such as
+     * {@link #ofDiagonals(Object[], Object[])} the backing row may have a more specific runtime
      * component type than {@code Object[]} (it is allocated from the resolved element type), but no
      * conversion is performed by this method.</p>
      *
@@ -1704,7 +1653,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * matrix.get(0, 0);          // returns ""
      * matrix.fill("default");
      * matrix.get(1, 1);          // returns "default"
-     * matrix.fill((String) null);
+     * matrix.fill(null);
      * matrix.get(0, 0);          // returns null (null values are permitted)
      * }</pre>
      *
@@ -1730,26 +1679,26 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<String> matrix = Matrix.wrap(new String[][] {{"a", "b"}, {"c", "d"}});
-     * matrix.fill(new String[][] {{"A", "B"}, {"C", "D"}});   // copy from top-left
+     * matrix.copyFrom(new String[][] {{"A", "B"}, {"C", "D"}});   // copy from top-left
      * matrix.get(0, 0);                                       // returns "A"
      * matrix.get(1, 1);                                       // returns "D"
      *
      * Matrix<String> partial = Matrix.wrap(new String[][] {{"a", "b"}, {"c", "d"}});
-     * partial.fill(new String[][] {{"Z"}});   // smaller source: only (0,0) overwritten
+     * partial.copyFrom(new String[][] {{"Z"}});   // smaller source: only (0,0) overwritten
      * partial.get(0, 0);                      // returns "Z"
      * partial.get(0, 1);                      // returns "b" (unchanged)
      *
-     * matrix.fill((String[][]) null);   // throws IllegalArgumentException
+     * matrix.copyFrom((String[][]) null);   // throws IllegalArgumentException
      * }</pre>
      *
      * @param source the source two-dimensional array to copy values from (must not be {@code null})
      * @throws IllegalArgumentException if {@code source} is {@code null}
      * @throws ArrayStoreException if any copied element of {@code source} is not assignable to the
      *         corresponding row's runtime storage component type
-     * @see #fill(int, int, Object[][])
+     * @see #copyFrom(int, int, Object[][])
      */
-    public void fill(final T[][] source) {
-        fill(0, 0, source);
+    public void copyFrom(final T[][] source) {
+        copyFrom(0, 0, source);
     }
 
     /**
@@ -1765,13 +1714,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<String> matrix = Matrix.wrap(new String[][] {{"A", "B", "C"}, {"D", "E", "F"}, {"G", "H", "I"}});
-     * matrix.fill(1, 2, new String[][] {{"X", "Y"}, {"Z", "W"}});   // start at row 1, column 2 (truncated at edges)
+     * matrix.copyFrom(1, 2, new String[][] {{"X", "Y"}, {"Z", "W"}});   // start at row 1, column 2 (truncated at edges)
      * matrix.get(1, 2);                                             // returns "X"
      * matrix.get(2, 2);                                             // returns "Z"
      * matrix.get(1, 1);                                             // returns "E" (unchanged)
      *
-     * matrix.fill(0, 0, (String[][]) null);            // throws IllegalArgumentException (null source)
-     * matrix.fill(5, 0, new String[][] {{"X"}});       // throws IndexOutOfBoundsException (destRowIndex out of range)
+     * matrix.copyFrom(0, 0, (String[][]) null);            // throws IllegalArgumentException (null source)
+     * matrix.copyFrom(5, 0, new String[][] {{"X"}});       // throws IndexOutOfBoundsException (destRowIndex out of range)
      * }</pre>
      *
      * @param destRowIndex the target row index (0-based, must be between 0 and rowCount inclusive)
@@ -1783,7 +1732,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws ArrayStoreException if any copied element of {@code source} is not assignable to the
      *         corresponding row's runtime storage component type
      */
-    public void fill(final int destRowIndex, final int destColumnIndex, final T[][] source) throws IndexOutOfBoundsException, IllegalArgumentException {
+    public void copyFrom(final int destRowIndex, final int destColumnIndex, final T[][] source) throws IndexOutOfBoundsException, IllegalArgumentException {
         N.checkArgNotNull(source, "source");
         if (destRowIndex < 0 || destRowIndex > rowCount) {
             throw new IndexOutOfBoundsException(formatMsg("destRowIndex({}) must be in [0, rowCount({})]", destRowIndex, rowCount));
@@ -2483,10 +2432,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
     /**
      * Returns a new matrix that is the transpose of this matrix.
-     * The transpose operation converts each row into a column, so the element at position
-     * {@code (i, j)} in the original matrix appears at position {@code (j, i)} in the
-     * transposed matrix. The resulting matrix has dimensions {@code columnCount × rowCount}.
-     * The original matrix is not modified.
+     * The element at position {@code (i, j)} in this matrix appears at position {@code (j, i)}
+     * in the result. The resulting matrix has dimensions swapped: {@code columnCount x rowCount}.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2644,6 +2591,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @return a new matrix with repeated elements, with dimensions {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}
      * @throws IllegalArgumentException if {@code rowRepeats < 1} or {@code columnRepeats < 1}, or if the resulting
      *         dimensions would overflow {@code Integer.MAX_VALUE}
+     * @see #tile(int, int)
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">MATLAB repelem function</a>
      */
     @Override
@@ -2703,6 +2651,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @return a new matrix with the original matrix repeated, with dimensions {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}
      * @throws IllegalArgumentException if {@code rowRepeats < 1} or {@code columnRepeats < 1}, or if the resulting
      *         dimensions would overflow {@code Integer.MAX_VALUE}
+     * @see #repeatElements(int, int)
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
     @Override
@@ -2793,17 +2742,17 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{3, 1, 2}, {6, 4, 5}});
-     * matrix.mutateFlattened(arr -> java.util.Arrays.sort(arr));   // sort across the whole matrix
+     * matrix.mutateViaFlatArray(arr -> java.util.Arrays.sort(arr));   // sort across the whole matrix
      * matrix.rowCopy(0);                                           // returns [1, 2, 3]
      * matrix.rowCopy(1);                                           // returns [4, 5, 6]
      *
      * Matrix<Integer> reversible = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
-     * reversible.mutateFlattened(arr -> { for (int i = 0; i < arr.length / 2; i++) { Integer t = arr[i]; arr[i] = arr[arr.length - 1 - i]; arr[arr.length - 1 - i] = t; } });
+     * reversible.mutateViaFlatArray(arr -> { for (int i = 0; i < arr.length / 2; i++) { Integer t = arr[i]; arr[i] = arr[arr.length - 1 - i]; arr[arr.length - 1 - i] = t; } });
      * reversible.rowCopy(0);   // returns [4, 3]
      *
      * Integer[] shared = {1, 2};
      * Matrix<Integer> aliased = Matrix.wrap(new Integer[][] {shared, shared});
-     * aliased.mutateFlattened(arr -> { arr[0] = 10; arr[1] = 20; arr[2] = 30; arr[3] = 40; });
+     * aliased.mutateViaFlatArray(arr -> { arr[0] = 10; arr[1] = 20; arr[2] = 30; arr[3] = 40; });
      * aliased.rowCopy(0);      // returns [30, 40] (later aliased row wins)
      * }</pre>
      *
@@ -2816,13 +2765,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *         component type; rows copied before the failing row remain modified, as do the elements stored before
      *         the offending element inside that row
      * @throws E if the operation throws an exception
-     * @see Arrays.ff#mutateFlattened(Object[][], Throwables.Consumer)
+     * @see Arrays.ff#mutateViaFlatArray(Object[][], Throwables.Consumer)
      */
     @Override
-    public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super T[], E> action) throws E {
+    public <E extends Exception> void mutateViaFlatArray(final Throwables.Consumer<? super T[], E> action) throws E {
         N.checkArgNotNull(action, cs.action);
 
-        ff.mutateFlattened(a, action);
+        ff.mutateViaFlatArray(a, action);
     }
 
     /**
@@ -3312,33 +3261,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     }
 
     /**
-     * Returns a stream of elements from a single row.
-     * The elements are streamed from left to right within the specified row.
-     *
-     * <p>This streams the elements of the single specified row, flattened into one stream. To
-     * instead obtain every row as its own stream (a stream of streams), use {@link #rowStreams()}.</p>
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * matrix.rowMajorStream(1).toArray();   // returns [4, 5, 6]
-     * matrix.rowMajorStream(0).toArray();   // returns [1, 2, 3]
-     * matrix.rowMajorStream(5);             // throws IndexOutOfBoundsException
-     * }</pre>
-     *
-     * @param rowIndex the index of the row to stream (0-based)
-     * @return a {@link Stream} of elements from the specified row
-     * @throws IndexOutOfBoundsException if {@code rowIndex} is negative or greater than or equal to {@code rowCount}
-     * @see #rowStreams()
-     */
-    @Override
-    public Stream<T> rowMajorStream(final int rowIndex) {
-        checkRowIndex(rowIndex);
-
-        return rowMajorStream(rowIndex, rowIndex + 1);
-    }
-
-    /**
      * Returns a stream of elements from a range of rows in row-major order.
      * Elements are streamed row by row from left to right within the specified row range.
      *
@@ -3456,33 +3378,6 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     }
 
     /**
-     * Returns a stream of elements from a single column.
-     * The elements are streamed from top to bottom within the specified column.
-     *
-     * <p>This streams the elements of the single specified column, flattened into one stream. To
-     * instead obtain every column as its own stream (a stream of streams), use {@link #columnStreams()}.</p>
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-     * matrix.columnMajorStream(1).toArray();   // returns [2, 5, 8]
-     * matrix.columnMajorStream(0).toArray();   // returns [1, 4, 7]
-     * matrix.columnMajorStream(5);             // throws IndexOutOfBoundsException
-     * }</pre>
-     *
-     * @param columnIndex the index of the column to stream (0-based)
-     * @return a {@link Stream} of elements from the specified column
-     * @throws IndexOutOfBoundsException if {@code columnIndex} is negative or greater than or equal to {@code columnCount}
-     * @see #columnStreams()
-     */
-    @Override
-    public Stream<T> columnMajorStream(final int columnIndex) {
-        checkColumnIndex(columnIndex);
-
-        return columnMajorStream(columnIndex, columnIndex + 1);
-    }
-
-    /**
      * Returns a stream of elements from a range of columns in column-major order.
      * Elements are streamed column by column from top to bottom within the specified column range.
      *
@@ -3585,7 +3480,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * provides the elements of that row from left to right.
      *
      * <p>This yields one stream per row. To instead stream the elements of a single row as one
-     * flat stream, use {@link #rowMajorStream(int)}.</p>
+     * flat stream, use {@link #rowMajorStream(int, int) rowMajorStream(rowIndex, rowIndex + 1)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3597,8 +3492,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * empty.rowStreams().count();                              // returns 0
      * }</pre>
      *
-     * @return a {@link Stream} of row streams, with one inner stream per row in the matrix
-     * @see #rowMajorStream(int)
+     * @return a {@link Stream} of row streams, with one inner stream per row in the matrix, or an empty stream if the matrix is empty
+     * @see #rowMajorStream(int, int)
      */
     @Override
     public Stream<Stream<T>> rowStreams() {
@@ -3666,6 +3561,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * The outer stream iterates over columns from left to right, and each inner stream
      * provides the elements of that column from top to bottom.
      *
+     * <p>This yields one stream per column. To instead stream the elements of a single column as one
+     * flat stream, use {@link #columnMajorStream(int, int) columnMajorStream(columnIndex, columnIndex + 1)}.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
@@ -3676,7 +3574,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * empty.columnStreams().count();                              // returns 0 (empty stream)
      * }</pre>
      *
-     * @return a {@link Stream} of column streams, or an empty stream if the matrix is empty
+     * @return a {@link Stream} of column streams, with one inner stream per column in the matrix, or an empty stream if the matrix is empty
      */
     @Override
     public Stream<Stream<T>> columnStreams() {

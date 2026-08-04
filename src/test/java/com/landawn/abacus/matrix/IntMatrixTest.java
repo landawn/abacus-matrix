@@ -488,7 +488,7 @@ class IntMatrixTest extends TestBase {
 
     @Test
     public void testUpdateAllUnarySequentialTallMatrixUsesRowMajorOrder() throws Exception {
-        final IntMatrix m = IntMatrix.filled(3, 2, 0);
+        final IntMatrix m = IntMatrix.wrap(new int[3][2]);
         final AtomicInteger next = new AtomicInteger();
 
         Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> m.updateAll(x -> next.incrementAndGet()));
@@ -845,7 +845,7 @@ class IntMatrixTest extends TestBase {
     @Test
     public void testFlatOp() {
         List<Integer> sums = new ArrayList<>();
-        matrix.mutateFlattened(row -> {
+        matrix.mutateViaFlatArray(row -> {
             int sum = 0;
             for (int val : row) {
                 sum += val;
@@ -1017,13 +1017,13 @@ class IntMatrixTest extends TestBase {
     }
 
     @Test
-    public void testStreamHRow() {
-        int[] row1 = matrix.rowMajorStream(1).toArray();
+    public void testStreamHSingleRowRange() {
+        int[] row1 = matrix.rowMajorStream(1, 2).toArray();
         assertArrayEquals(new int[] { 4, 5, 6 }, row1);
 
         // Test bounds
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowMajorStream(-1));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowMajorStream(3));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowMajorStream(-1, 0));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.rowMajorStream(3, 4));
     }
 
     @Test
@@ -1047,13 +1047,13 @@ class IntMatrixTest extends TestBase {
     }
 
     @Test
-    public void testStreamVColumn() {
-        int[] col1 = matrix.columnMajorStream(1).toArray();
+    public void testStreamVSingleColumnRange() {
+        int[] col1 = matrix.columnMajorStream(1, 2).toArray();
         assertArrayEquals(new int[] { 2, 5, 8 }, col1);
 
         // Test bounds
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.columnMajorStream(-1));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.columnMajorStream(3));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.columnMajorStream(-1, 0));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.columnMajorStream(3, 4));
     }
 
     @Test
@@ -1215,11 +1215,11 @@ class IntMatrixTest extends TestBase {
         assertEquals(45, totalSum); // 1+2+3+4+5+6+7+8+9 = 45
 
         // Test sum of specific row
-        int row1Sum = matrix.rowMajorStream(1).sum();
+        int row1Sum = matrix.rowMajorStream(1, 2).sum();
         assertEquals(15, row1Sum); // 4+5+6 = 15
 
         // Test sum of specific column
-        int col0Sum = matrix.columnMajorStream(0).sum();
+        int col0Sum = matrix.columnMajorStream(0, 1).sum();
         assertEquals(12, col0Sum); // 1+4+7 = 12
 
         // Test min/max on streams
@@ -1459,18 +1459,6 @@ class IntMatrixTest extends TestBase {
             for (int i = 0; i < 2; i++) {
                 for (int j = 0; j < 3; j++) {
                     assertNotNull(m.get(i, j));
-                }
-            }
-        }
-
-        @Test
-        public void testFilled_withRowsCols() {
-            IntMatrix m = IntMatrix.filled(2, 3, 42);
-            assertEquals(2, m.rowCount());
-            assertEquals(3, m.columnCount());
-            for (int i = 0; i < 2; i++) {
-                for (int j = 0; j < 3; j++) {
-                    assertEquals(42, m.get(i, j));
                 }
             }
         }
@@ -1923,10 +1911,10 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_withArray() {
+        public void testCopyFrom() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } });
             int[][] patch = { { 1, 2 }, { 3, 4 } };
-            m.fill(patch);
+            m.copyFrom(patch);
             assertEquals(1, m.get(0, 0));
             assertEquals(2, m.get(0, 1));
             assertEquals(3, m.get(1, 0));
@@ -1935,10 +1923,10 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_withArrayAtPosition() {
+        public void testCopyFromAtPosition() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } });
             int[][] patch = { { 1, 2 }, { 3, 4 } };
-            m.fill(1, 1, patch);
+            m.copyFrom(1, 1, patch);
             assertEquals(0, m.get(0, 0)); // unchanged
             assertEquals(1, m.get(1, 1));
             assertEquals(2, m.get(1, 2));
@@ -1947,10 +1935,10 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_outOfBounds() {
+        public void testCopyFrom_outOfBounds() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
             int[][] patch = { { 1, 2 }, { 3, 4 } };
-            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(-1, 0, patch));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(-1, 0, patch));
         }
 
         // ============ Copy Tests ============
@@ -2210,7 +2198,7 @@ class IntMatrixTest extends TestBase {
         public void testFlatOp() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             List<Integer> sums = new ArrayList<>();
-            m.mutateFlattened(row -> {
+            m.mutateViaFlatArray(row -> {
                 int sum = 0;
                 for (int val : row) {
                     sum += val;
@@ -2445,10 +2433,10 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamH_withRow_outOfBounds() {
+        public void testStreamH_withSingleRowRange_outOfBounds() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(-1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(-1, 0));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(2, 3));
         }
 
         @Test
@@ -2473,10 +2461,10 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamV_withColumn_outOfBounds() {
+        public void testStreamV_withSingleColumnRange_outOfBounds() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(-1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(-1, 0));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(2, 3));
         }
 
         @Test
@@ -2651,11 +2639,11 @@ class IntMatrixTest extends TestBase {
             assertEquals(45, totalSum); // 1+2+3+4+5+6+7+8+9 = 45
 
             // Test sum of specific row
-            int row1Sum = m.rowMajorStream(1).sum();
+            int row1Sum = m.rowMajorStream(1, 2).sum();
             assertEquals(15, row1Sum); // 4+5+6 = 15
 
             // Test sum of specific column
-            int col0Sum = m.columnMajorStream(0).sum();
+            int col0Sum = m.columnMajorStream(0, 1).sum();
             assertEquals(12, col0Sum); // 1+4+7 = 12
 
             // Test min/max
@@ -2811,11 +2799,11 @@ class IntMatrixTest extends TestBase {
 
         @Test
         public void testFlatOpWithMultipleRows() {
-            // Test mutateFlattened to ensure it processes the flattened array correctly
+            // Test mutateViaFlatArray to ensure it processes the flattened array correctly
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
             List<Integer> maxValues = new ArrayList<>();
 
-            m.mutateFlattened(flatArray -> {
+            m.mutateViaFlatArray(flatArray -> {
                 int max = Integer.MIN_VALUE;
                 for (int val : flatArray) {
                     if (val > max)
@@ -2824,7 +2812,7 @@ class IntMatrixTest extends TestBase {
                 maxValues.add(max);
             });
 
-            // mutateFlattened flattens all rows into one array, so there's only 1 result
+            // mutateViaFlatArray flattens all rows into one array, so there's only 1 result
             assertEquals(1, maxValues.size());
             assertEquals(6, maxValues.get(0).intValue()); // max of [1,2,3,4,5,6] is 6
         }
@@ -2874,7 +2862,7 @@ class IntMatrixTest extends TestBase {
         public void testFlatOp() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
             final int[] count = { 0 };
-            m.mutateFlattened(row -> count[0] += row.length);
+            m.mutateViaFlatArray(row -> count[0] += row.length);
             assertEquals(4, count[0]);
         }
 
@@ -3415,9 +3403,9 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_array() {
+        public void testCopyFrom() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            m.fill(new int[][] { { 10, 20 }, { 30, 40 } });
+            m.copyFrom(new int[][] { { 10, 20 }, { 30, 40 } });
             assertEquals(10, m.get(0, 0));
             assertEquals(20, m.get(0, 1));
             assertEquals(30, m.get(1, 0));
@@ -3425,9 +3413,9 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_arrayWithOffset() {
+        public void testCopyFromWithOffset() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            m.fill(1, 1, new int[][] { { 99, 88 } });
+            m.copyFrom(1, 1, new int[][] { { 99, 88 } });
             assertEquals(1, m.get(0, 0));
             assertEquals(99, m.get(1, 1));
             assertEquals(88, m.get(1, 2));
@@ -3631,7 +3619,7 @@ class IntMatrixTest extends TestBase {
         public void testFlatOp() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
             final int[] sum = { 0 };
-            m.mutateFlattened(row -> {
+            m.mutateViaFlatArray(row -> {
                 for (int val : row) {
                     sum[0] += val;
                 }
@@ -3774,9 +3762,9 @@ class IntMatrixTest extends TestBase {
         // ============ Stream Methods ============
 
         @Test
-        public void testStreamH_singleRow() {
+        public void testStreamH_singleRowRange() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            int[] row1 = m.rowMajorStream(1).toArray();
+            int[] row1 = m.rowMajorStream(1, 2).toArray();
             assertArrayEquals(new int[] { 4, 5, 6 }, row1);
         }
 
@@ -3788,9 +3776,9 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamV_singleColumn() {
+        public void testStreamV_singleColumnRange() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            int[] col1 = m.columnMajorStream(1).toArray();
+            int[] col1 = m.columnMajorStream(1, 2).toArray();
             assertArrayEquals(new int[] { 2, 5 }, col1);
         }
 
@@ -4026,7 +4014,7 @@ class IntMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> IntMatrix.from(shorts));
         }
 
-        // ============ Random.and.Filled.Tests ============
+        // ============ Random Tests ============
 
         @Test
         public void test_random() {
@@ -4038,23 +4026,6 @@ class IntMatrixTest extends TestBase {
         @Test
         public void test_random_zeroLength() {
             IntMatrix m = IntMatrix.randomRow(0);
-            assertEquals(1, m.rowCount());
-            assertEquals(0, m.columnCount());
-        }
-
-        @Test
-        public void test_filled() {
-            IntMatrix m = IntMatrix.filled(1, 5, 42);
-            assertEquals(1, m.rowCount());
-            assertEquals(5, m.columnCount());
-            for (int i = 0; i < 5; i++) {
-                assertEquals(42, m.get(0, i));
-            }
-        }
-
-        @Test
-        public void test_filled_zeroLength() {
-            IntMatrix m = IntMatrix.filled(1, 0, 42);
             assertEquals(1, m.rowCount());
             assertEquals(0, m.columnCount());
         }
@@ -4535,9 +4506,9 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_fill_array() {
+        public void testCopyFrom() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            m.fill(new int[][] { { 9, 8 }, { 7, 6 } });
+            m.copyFrom(new int[][] { { 9, 8 }, { 7, 6 } });
             assertEquals(9, m.get(0, 0));
             assertEquals(8, m.get(0, 1));
             assertEquals(7, m.get(1, 0));
@@ -4545,19 +4516,19 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_fill_withOffset() {
+        public void testCopyFrom_withOffset() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            m.fill(1, 1, new int[][] { { 99 } });
+            m.copyFrom(1, 1, new int[][] { { 99 } });
             assertEquals(1, m.get(0, 0));
             assertEquals(99, m.get(1, 1));
             assertEquals(9, m.get(2, 2));
         }
 
         @Test
-        public void test_fill_withOffset_partialFill() {
+        public void testCopyFrom_withOffset_partialFill() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 } });
             // When source array is larger than destination, only what fits is copied
-            m.fill(0, 0, new int[][] { { 9, 8, 7 } });
+            m.copyFrom(0, 0, new int[][] { { 9, 8, 7 } });
             assertEquals(9, m.get(0, 0));
             assertEquals(8, m.get(0, 1));
         }
@@ -4781,10 +4752,10 @@ class IntMatrixTest extends TestBase {
         // ============ FlatOp Test ============
 
         @Test
-        public void test_mutateFlattened() {
+        public void test_mutateViaFlatArray() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
             AtomicInteger count = new AtomicInteger(0);
-            m.mutateFlattened(row -> count.addAndGet(row.length));
+            m.mutateViaFlatArray(row -> count.addAndGet(row.length));
             assertEquals(4, count.get());
         }
 
@@ -4946,9 +4917,9 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_streamH_byRowIndex() {
+        public void test_streamH_bySingleRowRange() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            long sum = m.rowMajorStream(0).sum();
+            long sum = m.rowMajorStream(0, 1).sum();
             assertEquals(3L, sum);
         }
 
@@ -4967,9 +4938,9 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_streamV_byColumnIndex() {
+        public void test_streamV_bySingleColumnRange() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            long sum = m.columnMajorStream(0).sum();
+            long sum = m.columnMajorStream(0, 1).sum();
             assertEquals(4L, sum);
         }
 
@@ -5074,15 +5045,6 @@ class IntMatrixTest extends TestBase {
     @Nested
     class JavadocExampleMatrixGroup2Test_IntMatrix extends TestBase {
         // ==================== IntMatrix ====================
-
-        @Test
-        public void testIntMatrix_filled() {
-            IntMatrix matrix = IntMatrix.filled(2, 3, 1);
-            assertEquals(2, matrix.rowCount());
-            assertEquals(3, matrix.columnCount());
-            assertEquals(1, matrix.get(0, 0));
-            assertEquals(1, matrix.get(1, 2));
-        }
 
         @Test
         public void testIntMatrix_ofDiagonals() {
@@ -5287,9 +5249,9 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void testIntMatrix_fill_02() {
+        public void testIntMatrix_copyFrom() {
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 0, 0, 0 }, { 0, 0, 0 } });
-            matrix.fill(new int[][] { { 1, 2 }, { 3, 4 } });
+            matrix.copyFrom(new int[][] { { 1, 2 }, { 3, 4 } });
             assertEquals(1, matrix.get(0, 0));
             assertEquals(2, matrix.get(0, 1));
             assertEquals(0, matrix.get(0, 2));
@@ -5299,9 +5261,9 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void testIntMatrix_fillWithOffset() {
+        public void testIntMatrix_copyFromWithOffset() {
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } });
-            matrix.fill(1, 1, new int[][] { { 1, 2 }, { 3, 4 } });
+            matrix.copyFrom(1, 1, new int[][] { { 1, 2 }, { 3, 4 } });
             assertEquals(0, matrix.get(0, 0));
             assertEquals(0, matrix.get(0, 1));
             assertEquals(0, matrix.get(0, 2));
@@ -5427,9 +5389,9 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void testIntMatrix_mutateFlattened() {
+        public void testIntMatrix_mutateViaFlatArray() {
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 5, 3 }, { 4, 1 } });
-            matrix.mutateFlattened(arr -> java.util.Arrays.sort(arr));
+            matrix.mutateViaFlatArray(arr -> java.util.Arrays.sort(arr));
             assertEquals(1, matrix.get(0, 0));
             assertEquals(3, matrix.get(0, 1));
             assertEquals(4, matrix.get(1, 0));
@@ -5503,11 +5465,11 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void testIntMatrix_horizontalStreamRow() {
+        public void testIntMatrix_horizontalStreamSingleRowRange() {
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            int rowSum = matrix.rowMajorStream(1).sum();
+            int rowSum = matrix.rowMajorStream(1, 2).sum();
             assertEquals(15, rowSum);
-            int[] firstRow = matrix.rowMajorStream(0).toArray();
+            int[] firstRow = matrix.rowMajorStream(0, 1).toArray();
             assertArrayEquals(new int[] { 1, 2, 3 }, firstRow);
         }
 
@@ -5526,11 +5488,11 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void testIntMatrix_verticalStreamColumn() {
+        public void testIntMatrix_verticalStreamSingleColumnRange() {
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            int colSum = matrix.columnMajorStream(0).sum();
+            int colSum = matrix.columnMajorStream(0, 1).sum();
             assertEquals(5, colSum);
-            int[] secondCol = matrix.columnMajorStream(1).toArray();
+            int[] secondCol = matrix.columnMajorStream(1, 2).toArray();
             assertArrayEquals(new int[] { 2, 5 }, secondCol);
         }
 
@@ -5635,14 +5597,6 @@ class IntMatrixTest extends TestBase {
             // IntMatrix.java: IntMatrix desc = IntMatrix.range(10, 0, -2);    // Creates [[10, 8, 6, 4, 2]]
             IntMatrix desc = IntMatrix.range(10, 0, -2);
             assertEquals("[[10, 8, 6, 4, 2]]", desc.toString());
-        }
-
-        @Test
-        public void testIntMatrixFilled() {
-            // IntMatrix.java: IntMatrix matrix = IntMatrix.filled(2, 3, 1);
-            // Result: [[1, 1, 1], [1, 1, 1]]
-            IntMatrix matrix = IntMatrix.filled(2, 3, 1);
-            assertEquals("[[1, 1, 1], [1, 1, 1]]", matrix.toString());
         }
 
         // ==================== IntMatrix additional examples ====================
@@ -6518,7 +6472,7 @@ class IntMatrixTest extends TestBase {
 
             int[][] backing = { { 1, 2 }, { 3, 4 }, { 5, 6 } };
             IntMatrix fillMatrix = IntMatrix.wrap(backing);
-            fillMatrix.fill(1, 0, backing);
+            fillMatrix.copyFrom(1, 0, backing);
             assertArrayEquals(new int[] { 3, 4 }, fillMatrix.rowCopy(2));
         }
 
@@ -6612,10 +6566,6 @@ class IntMatrixTest extends TestBase {
         assertThrows(IllegalArgumentException.class, () -> IntMatrix.randomRow(-1));
         assertThrows(IllegalArgumentException.class, () -> IntMatrix.random(-1, 2));
         assertThrows(IllegalArgumentException.class, () -> IntMatrix.random(2, -1));
-        assertThrows(IllegalArgumentException.class, () -> IntMatrix.filled(-1, 2, 7));
-        assertThrows(IllegalArgumentException.class, () -> IntMatrix.filled(2, -1, 7));
-        // 0x0 is a representable shape, so filled(0, 0, ...) is the documented empty result.
-        assertTrue(IntMatrix.filled(0, 0, 7).isEmpty());
     }
 
 }

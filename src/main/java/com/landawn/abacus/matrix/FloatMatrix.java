@@ -36,8 +36,9 @@ import com.landawn.abacus.util.stream.Stream;
  *
  * <p>This type specializes {@link AbstractMatrix} for {@code float} values while keeping the data in
  * a validated backing array. The constructor and {@link #wrap(float[]...)} wrap the supplied storage
- * directly. Copy-producing factories and operations such as conversions and mappings use separate
- * storage for non-empty results; {@link #empty()} returns a shared zero-cell singleton.</p>
+ * directly. {@link #copyOf(float[]...)}, conversions, and mapping operations do not share mutable
+ * cell storage with a non-empty source; operations producing an empty matrix may return the shared
+ * empty singleton.</p>
  *
  * <p>Cells introduced by growth or reshaping default to {@code 0.0f} unless an overload accepts an
  * explicit fill value.</p>
@@ -138,8 +139,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix.wrap(new float[][] {{1.0f}, {2.0f, 3.0f}}); // throws IllegalArgumentException (not rectangular)
      * }</pre>
      *
-     * @param a the two-dimensional float array to create the matrix from, or empty for an empty matrix; must not be {@code null}
-     * @return a new {@code FloatMatrix} wrapping the provided data, or the shared empty {@code FloatMatrix} if input is empty
+     * @param a the two-dimensional float array to wrap, or empty for an empty matrix; must not be {@code null}
+     * @return a new {@code FloatMatrix} backed by {@code a}, or the shared empty matrix if {@code a} is empty
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular)
      */
@@ -310,42 +311,6 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
             for (int i = 0; i < columnCount; i++) {
                 ea[i] = RAND.nextFloat();
             }
-        }
-
-        return new FloatMatrix(a);
-    }
-
-    /**
-     * Creates a new matrix of the specified dimensions where every element is the provided {@code element}.
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * FloatMatrix matrix = FloatMatrix.filled(2, 3, 1.0f);
-     * matrix.get(1, 2);                              // returns 1.0f
-     * matrix.rowCount();                             // returns 2
-     *
-     * FloatMatrix nans = FloatMatrix.filled(1, 2, Float.NaN);
-     * Float.isNaN(nans.get(0, 0));                   // returns true
-     * FloatMatrix.filled(0, 0, 5.0f).isEmpty();      // returns true
-     * FloatMatrix.filled(-1, 3, 1.0f);               // throws IllegalArgumentException (negative rowCount)
-     * }</pre>
-     *
-     * @param rowCount the number of rows in the new matrix
-     * @param columnCount the number of columns in the new matrix
-     * @param element the float value to fill the matrix with (may be {@code NaN}, {@code +/-Infinity}, or {@code -0.0f})
-     * @return a new {@code FloatMatrix} of dimensions {@code rowCount x columnCount} with every cell equal to {@code element}
-     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
-     *         or if the resulting shape is not representable
-     */
-    public static FloatMatrix filled(final int rowCount, final int columnCount, final float element) {
-        N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
-        N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
-        checkRepresentableShape(rowCount, columnCount);
-
-        final float[][] a = new float[rowCount][columnCount];
-
-        for (float[] ea : a) {
-            N.fill(ea, element);
         }
 
         return new FloatMatrix(a);
@@ -893,7 +858,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * This modifies the matrix directly.
      *
      * <p>The operator is applied to each element in the specified row sequentially
-     * from left to right (column 0 to column columnCount-1).</p>
+     * from left to right (column {@code 0} to column {@code columnCount - 1}).</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -934,7 +899,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * This modifies the matrix directly.
      *
      * <p>The operator is applied to each element in the specified column sequentially
-     * from top to bottom (row 0 to row rowCount-1).</p>
+     * from top to bottom (row {@code 0} to row {@code rowCount - 1}).</p>
      *
      * <p>If multiple logical rows share one backing array, that backing value is transformed only once.</p>
      *
@@ -1590,8 +1555,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Fills this matrix with values from another two-dimensional array, starting at position {@code (0, 0)}.
-     * Equivalent to {@code fill(0, 0, source)}.
+     * Copies values into this matrix from another two-dimensional array, starting at position {@code (0, 0)}.
+     * Equivalent to {@code copyFrom(0, 0, source)}.
      * The source array can be smaller than this matrix; only the overlapping region is copied.
      * If the source array is larger, only the portion that fits is copied. {@code null} rows in
      * {@code source} are skipped (the corresponding row of this matrix is left unchanged).
@@ -1600,28 +1565,28 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.wrap(new float[3][3]);
-     * matrix.fill(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
+     * matrix.copyFrom(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
      * matrix.get(0, 0);                              // returns 1.0f
      * matrix.get(1, 1);                              // returns 4.0f
      * matrix.get(2, 2);                              // returns 0.0f (outside the copied region)
      *
      * // Source larger than matrix: only the portion that fits is copied
      * FloatMatrix small = FloatMatrix.wrap(new float[1][1]);
-     * small.fill(new float[][] {{7.0f, 8.0f}, {9.0f, 10.0f}});
+     * small.copyFrom(new float[][] {{7.0f, 8.0f}, {9.0f, 10.0f}});
      * small.get(0, 0);                               // returns 7.0f
-     * matrix.fill((float[][]) null);                 // throws IllegalArgumentException (null source)
+     * matrix.copyFrom((float[][]) null);                 // throws IllegalArgumentException (null source)
      * }</pre>
      *
      * @param source the two-dimensional array to copy values from; must not be {@code null}
      * @throws IllegalArgumentException if {@code source} is {@code null}
-     * @see #fill(int, int, float[][])
+     * @see #copyFrom(int, int, float[][])
      */
-    public void fill(final float[][] source) {
-        fill(0, 0, source);
+    public void copyFrom(final float[][] source) {
+        copyFrom(0, 0, source);
     }
 
     /**
-     * Fills a region of this matrix with values from another two-dimensional array, starting at the
+     * Copies values into a region of this matrix from another two-dimensional array, starting at the
      * specified destination position.
      * The source array can extend beyond this matrix's bounds; only the overlapping region is copied.
      * The matrix is modified in-place. {@code null} rows in {@code source} are skipped (the
@@ -1632,14 +1597,14 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.wrap(new float[3][3]);
-     * matrix.fill(1, 1, new float[][] {{9.0f, 8.0f}, {7.0f, 6.0f}});
+     * matrix.copyFrom(1, 1, new float[][] {{9.0f, 8.0f}, {7.0f, 6.0f}});
      * matrix.get(1, 1);                              // returns 9.0f
      * matrix.get(2, 2);                              // returns 6.0f
-     * matrix.get(0, 0);                              // returns 0.0f (outside the filled region)
+     * matrix.get(0, 0);                              // returns 0.0f (outside the copied region)
      *
-     * matrix.fill(3, 0, new float[][] {{1.0f}});    // destRowIndex == rowCount: nothing copied (no exception)
-     * matrix.fill(-1, 0, new float[][] {{1.0f}});   // throws IndexOutOfBoundsException (negative destRowIndex)
-     * matrix.fill(0, 0, (float[][]) null);          // throws IllegalArgumentException (null source)
+     * matrix.copyFrom(3, 0, new float[][] {{1.0f}});    // destRowIndex == rowCount: nothing copied (no exception)
+     * matrix.copyFrom(-1, 0, new float[][] {{1.0f}});   // throws IndexOutOfBoundsException (negative destRowIndex)
+     * matrix.copyFrom(0, 0, (float[][]) null);          // throws IllegalArgumentException (null source)
      * }</pre>
      *
      * @param destRowIndex the target row index in this matrix (0-based, must satisfy {@code 0 <= destRowIndex <= rowCount})
@@ -1649,7 +1614,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *         or if {@code destColumnIndex < 0} or {@code destColumnIndex > columnCount}
      * @throws IllegalArgumentException if {@code source} is {@code null}
      */
-    public void fill(final int destRowIndex, final int destColumnIndex, final float[][] source) throws IndexOutOfBoundsException, IllegalArgumentException {
+    public void copyFrom(final int destRowIndex, final int destColumnIndex, final float[][] source) throws IndexOutOfBoundsException, IllegalArgumentException {
         N.checkArgNotNull(source, "source");
         if (destRowIndex < 0 || destRowIndex > rowCount) {
             throw new IndexOutOfBoundsException(formatMsg("destRowIndex({}) must be in [0, rowCount({})]", destRowIndex, rowCount));
@@ -2341,11 +2306,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Creates the transpose of this matrix by swapping rows and columns.
-     * The transpose operation converts each row into a column, so the element at position {@code (i, j)}
-     * in the original matrix appears at position {@code (j, i)} in the transposed matrix. The resulting
-     * matrix has dimensions swapped ({@code rowCount × columnCount} becomes {@code columnCount × rowCount}).
-     * Creates a new matrix; the original matrix is not modified.
+     * Returns a new matrix that is the transpose of this matrix.
+     * The element at position {@code (i, j)} in this matrix appears at position {@code (j, i)}
+     * in the result. The resulting matrix has dimensions swapped: {@code columnCount x rowCount}.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2491,9 +2454,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @param rowRepeats number of times to repeat each element in row direction; must be {@code > 0}
      * @param columnRepeats number of times to repeat each element in column direction; must be {@code > 0}
-     * @return a new {@code FloatMatrix} of dimensions {@code (rowCount*rowRepeats) x (columnCount*columnRepeats)} with repeated elements
+     * @return a new {@code FloatMatrix} with dimensions {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}
      * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is not positive,
      *         or if either resulting dimension would overflow {@code Integer.MAX_VALUE}
+     * @see #tile(int, int)
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">MATLAB repelem function</a>
      */
     @Override
@@ -2552,9 +2516,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @param rowRepeats number of times to repeat the matrix vertically; must be {@code > 0}
      * @param columnRepeats number of times to repeat the matrix horizontally; must be {@code > 0}
-     * @return a new {@code FloatMatrix} of dimensions {@code (rowCount*rowRepeats) x (columnCount*columnRepeats)} with the tiled pattern
+     * @return a new {@code FloatMatrix} with dimensions {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}
      * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is not positive,
      *         or if either resulting dimension would overflow {@code Integer.MAX_VALUE}
+     * @see #repeatElements(int, int)
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
     @Override
@@ -2644,14 +2609,14 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.wrap(new float[][] {{5.0f, 3.0f}, {4.0f, 1.0f}});
-     * matrix.mutateFlattened(arr -> java.util.Arrays.sort(arr)); // sort temporary array, then copy back row-major
+     * matrix.mutateViaFlatArray(arr -> java.util.Arrays.sort(arr)); // sort temporary array, then copy back row-major
      * matrix.get(0, 0);                                          // returns 1.0f
      * matrix.get(1, 1);                                          // returns 5.0f
      *
      * FloatMatrix counts = FloatMatrix.wrap(new float[][] {{0.0f, 0.0f}});
-     * counts.mutateFlattened(arr -> { for (int k = 0; k < arr.length; k++) arr[k] = k; });
+     * counts.mutateViaFlatArray(arr -> { for (int k = 0; k < arr.length; k++) arr[k] = k; });
      * counts.get(0, 1);                                                       // returns 1.0f
-     * FloatMatrix.empty().mutateFlattened(arr -> java.util.Arrays.sort(arr)); // zero rows: action is not invoked
+     * FloatMatrix.empty().mutateViaFlatArray(arr -> java.util.Arrays.sort(arr)); // zero rows: action is not invoked
      * }</pre>
      *
      * @param <E> the type of exception that the action may throw
@@ -2659,13 +2624,13 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws ArithmeticException if the element count exceeds {@link Integer#MAX_VALUE}
      * @throws E if the operation throws an exception
-     * @see Arrays#mutateFlattened(float[][], Throwables.Consumer)
+     * @see Arrays#mutateViaFlatArray(float[][], Throwables.Consumer)
      */
     @Override
-    public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super float[], E> action) throws E {
+    public <E extends Exception> void mutateViaFlatArray(final Throwables.Consumer<? super float[], E> action) throws E {
         N.checkArgNotNull(action, cs.action);
 
-        Arrays.mutateFlattened(a, action);
+        Arrays.mutateViaFlatArray(a, action);
     }
 
     /**
@@ -2953,7 +2918,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Converts this primitive {@code FloatMatrix} to a boxed {@code Matrix<Float>}.
+     * Converts this primitive float matrix to a boxed {@link Matrix Matrix&lt;Float&gt;}.
      * Each primitive {@code float} element is autoboxed to a non-{@code null} {@link Float}, so the
      * returned matrix has the same dimensions and values as this matrix.
      *
@@ -3369,39 +3334,6 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns a stream of elements from a single row.
-     * The elements are streamed from left to right within the specified row.
-     *
-     * <p>This method is particularly useful when you need to process or analyze
-     * a specific row of the matrix independently. The returned stream can be
-     * used with all standard FloatStream operations.</p>
-     *
-     * <p>This streams the elements of the single specified row, flattened into one stream. To
-     * instead obtain every row as its own stream (a stream of streams), use {@link #rowStreams()}.</p>
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * FloatMatrix matrix = FloatMatrix.wrap(new float[][] {{1.0f, 2.0f, 3.0f}, {4.0f, 5.0f, 6.0f}});
-     * matrix.rowMajorStream(0).toArray();   // returns [1.0f, 2.0f, 3.0f]
-     * matrix.rowMajorStream(1).sum();       // returns 15.0 (sum of second row)
-     *
-     * matrix.rowMajorStream(-1);            // throws IndexOutOfBoundsException
-     * matrix.rowMajorStream(2);             // throws IndexOutOfBoundsException (rowIndex >= rowCount)
-     * }</pre>
-     *
-     * @param rowIndex the index of the row to stream (0-based)
-     * @return a {@link FloatStream} of elements from the specified row
-     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
-     * @see #rowStreams()
-     */
-    @Override
-    public FloatStream rowMajorStream(final int rowIndex) {
-        checkRowIndex(rowIndex);
-
-        return rowMajorStream(rowIndex, rowIndex + 1);
-    }
-
-    /**
      * Returns a stream of elements from a range of rows in row-major order.
      * Elements are streamed row by row from the starting row (inclusive) to
      * the ending row (exclusive), with each row streamed from left to right.
@@ -3526,38 +3458,6 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     }
 
     /**
-     * Returns a stream of elements from a single column.
-     * The elements are streamed from top to bottom within the specified column.
-     *
-     * <p>This method is useful for column-wise operations such as calculating
-     * column sums, finding column maximums, or filtering column values.</p>
-     *
-     * <p>This streams the elements of the single specified column, flattened into one stream. To
-     * instead obtain every column as its own stream (a stream of streams), use {@link #columnStreams()}.</p>
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * FloatMatrix matrix = FloatMatrix.wrap(new float[][] {{1.0f, 2.0f, 3.0f}, {4.0f, 5.0f, 6.0f}});
-     * matrix.columnMajorStream(1).toArray();   // returns [2.0f, 5.0f]
-     * matrix.columnMajorStream(0).sum();       // returns 5.0 (sum of first column)
-     *
-     * matrix.columnMajorStream(-1);            // throws IndexOutOfBoundsException
-     * matrix.columnMajorStream(3);             // throws IndexOutOfBoundsException (columnIndex >= columnCount)
-     * }</pre>
-     *
-     * @param columnIndex the index of the column to stream (0-based)
-     * @return a {@link FloatStream} of elements from the specified column
-     * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
-     * @see #columnStreams()
-     */
-    @Override
-    public FloatStream columnMajorStream(final int columnIndex) {
-        checkColumnIndex(columnIndex);
-
-        return columnMajorStream(columnIndex, columnIndex + 1);
-    }
-
-    /**
      * Returns a stream of elements from a range of columns in column-major order.
      * Elements are streamed column by column from the starting column (inclusive)
      * to the ending column (exclusive), with each column streamed from top to bottom.
@@ -3664,7 +3564,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * rows to other values.</p>
      *
      * <p>This yields one stream per row. To instead stream the elements of a single row as one
-     * flat stream, use {@link #rowMajorStream(int)}.</p>
+     * flat stream, use {@link #rowMajorStream(int, int) rowMajorStream(rowIndex, rowIndex + 1)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3676,8 +3576,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix.empty().rowStreams().count();     // returns 0 (no rows)
      * }</pre>
      *
-     * @return a Stream of FloatStream objects, one for each row in the matrix
-     * @see #rowMajorStream(int)
+     * @return a Stream of FloatStream objects, one for each row in the matrix,
+     *         or an empty stream if the matrix is empty
+     * @see #rowMajorStream(int, int)
      */
     @Override
     public Stream<FloatStream> rowStreams() {
@@ -3752,6 +3653,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p>This method is useful for operations that need to process
      * entire columns as units, such as column-wise statistics, transformations, or filtering
      * columns based on conditions.</p>
+     *
+     * <p>This yields one stream per column. To instead stream the elements of a single column as one
+     * flat stream, use {@link #columnMajorStream(int, int) columnMajorStream(columnIndex, columnIndex + 1)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

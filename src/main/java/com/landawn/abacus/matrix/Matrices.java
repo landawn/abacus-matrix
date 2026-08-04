@@ -814,8 +814,8 @@ public final class Matrices {
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
      *        (if parallel streams are unavailable in the runtime, execution falls back to sequential)
      * @return a {@link Stream} of results from applying the function at each position, never {@code null}
-     * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws IndexOutOfBoundsException if any index is negative, if {@code toRowIndex} is less than {@code fromRowIndex}, or if {@code toColumnIndex} is less than {@code fromColumnIndex}
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws RuntimeException if {@code mapper} throws a checked exception while the returned stream is consumed
      *         (runtime exceptions from {@code mapper} are rethrown as-is)
      */
@@ -961,8 +961,8 @@ public final class Matrices {
      * @param inParallel {@code true} to execute in parallel; {@code false} for sequential execution
      *        (if parallel streams are unavailable in the runtime, execution falls back to sequential)
      * @return an {@link IntStream} of results from applying the function at each position, never {@code null}
-     * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws IndexOutOfBoundsException if any index is negative, if {@code toRowIndex} is less than {@code fromRowIndex}, or if {@code toColumnIndex} is less than {@code fromColumnIndex}
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws RuntimeException if {@code mapper} throws a checked exception while the returned stream is consumed
      *         (runtime exceptions from {@code mapper} are rethrown as-is)
      */
@@ -1532,8 +1532,7 @@ public final class Matrices {
      * <p>All matrices in the collection must have identical dimensions. The operation is optimized
      * for single and two-element collections:</p>
      * <ul>
-     * <li>One matrix: Returns a copy of that matrix, except that the shared type-neutral
-     *     {@link Matrix#empty()} instance is retained</li>
+     * <li>One matrix: Returns a copy of that matrix</li>
      * <li>Two matrices: Directly applies the binary operator</li>
      * <li>Three or more: Applies the operator sequentially, accumulating results</li>
      * </ul>
@@ -3948,7 +3947,7 @@ public final class Matrices {
      * widen an otherwise typed empty result to {@link Object}. The operation is optimized for
      * single-element collections:</p>
      * <ul>
-     * <li>One matrix: Returns a copy of that matrix</li>
+     * <li>One matrix: Returns a copy of that matrix, except that inputs consisting only of shared {@link Matrix#empty()} instances retain that shared instance</li>
      * <li>Two or more: Applies the operator sequentially per cell, accumulating results (left fold)</li>
      * </ul>
      *
@@ -4215,7 +4214,7 @@ public final class Matrices {
 
         final Map<Class<?>, Integer> leftDistances = collectTypeDistances(left);
         final Map<Class<?>, Integer> rightDistances = collectTypeDistances(right);
-        Class<?> best = Object.class;
+        final List<Class<?>> bestCandidates = new ArrayList<>();
         int bestDistance = Integer.MAX_VALUE;
         int bestPenalty = Integer.MAX_VALUE;
         int bestMethodCount = Integer.MIN_VALUE;
@@ -4231,20 +4230,21 @@ public final class Matrices {
             final int totalDistance = entry.getValue() + rightDistance;
             final int typePenalty = commonTypePenalty(candidate);
             final int methodCount = candidate.getMethods().length;
-            final boolean betterTieBreak = best.isAssignableFrom(candidate)
-                    || (!candidate.isAssignableFrom(best) && candidate.getName().compareTo(best.getName()) < 0);
+            final boolean betterRank = totalDistance < bestDistance || (totalDistance == bestDistance && typePenalty < bestPenalty)
+                    || (totalDistance == bestDistance && typePenalty == bestPenalty && methodCount > bestMethodCount);
 
-            if (totalDistance < bestDistance || (totalDistance == bestDistance && typePenalty < bestPenalty)
-                    || (totalDistance == bestDistance && typePenalty == bestPenalty && methodCount > bestMethodCount)
-                    || (totalDistance == bestDistance && typePenalty == bestPenalty && methodCount == bestMethodCount && betterTieBreak)) {
-                best = candidate;
+            if (betterRank) {
+                bestCandidates.clear();
+                bestCandidates.add(candidate);
                 bestDistance = totalDistance;
                 bestPenalty = typePenalty;
                 bestMethodCount = methodCount;
+            } else if (totalDistance == bestDistance && typePenalty == bestPenalty && methodCount == bestMethodCount) {
+                bestCandidates.add(candidate);
             }
         }
 
-        return best;
+        return selectMostSpecificCommonType(bestCandidates);
     }
 
     /**
@@ -4323,7 +4323,7 @@ public final class Matrices {
         }
 
         final Map<Class<?>, Integer> candidates = distancesByType.get(types[0]);
-        Class<?> best = Object.class;
+        final List<Class<?>> bestCandidates = new ArrayList<>();
         long bestDistance = Long.MAX_VALUE;
         int bestPenalty = Integer.MAX_VALUE;
         int bestMethodCount = Integer.MIN_VALUE;
@@ -4349,20 +4349,47 @@ public final class Matrices {
 
             final int typePenalty = commonTypePenalty(candidate);
             final int methodCount = candidate.getMethods().length;
-            final boolean betterTieBreak = best.isAssignableFrom(candidate)
-                    || (!candidate.isAssignableFrom(best) && candidate.getName().compareTo(best.getName()) < 0);
+            final boolean betterRank = totalDistance < bestDistance || (totalDistance == bestDistance && typePenalty < bestPenalty)
+                    || (totalDistance == bestDistance && typePenalty == bestPenalty && methodCount > bestMethodCount);
 
-            if (totalDistance < bestDistance || (totalDistance == bestDistance && typePenalty < bestPenalty)
-                    || (totalDistance == bestDistance && typePenalty == bestPenalty && methodCount > bestMethodCount)
-                    || (totalDistance == bestDistance && typePenalty == bestPenalty && methodCount == bestMethodCount && betterTieBreak)) {
-                best = candidate;
+            if (betterRank) {
+                bestCandidates.clear();
+                bestCandidates.add(candidate);
                 bestDistance = totalDistance;
                 bestPenalty = typePenalty;
                 bestMethodCount = methodCount;
+            } else if (totalDistance == bestDistance && typePenalty == bestPenalty && methodCount == bestMethodCount) {
+                bestCandidates.add(candidate);
             }
         }
 
-        return best;
+        return selectMostSpecificCommonType(bestCandidates);
+    }
+
+    /**
+     * Selects a stable most-specific type from candidates that have the same primary rank.
+     * Strict supertypes are discarded before lexicographic comparison so the result cannot
+     * depend on the order in which a type graph was traversed.
+     *
+     * @param candidates the equally ranked common types
+     * @return the selected common type, or {@link Object} when the list is empty
+     */
+    private static Class<?> selectMostSpecificCommonType(final List<Class<?>> candidates) {
+        Class<?> best = null;
+
+        outer: for (final Class<?> candidate : candidates) {
+            for (final Class<?> other : candidates) {
+                if (candidate != other && candidate.isAssignableFrom(other) && !other.isAssignableFrom(candidate)) {
+                    continue outer;
+                }
+            }
+
+            if (best == null || candidate.getName().compareTo(best.getName()) < 0) {
+                best = candidate;
+            }
+        }
+
+        return best == null ? Object.class : best;
     }
 
     /**

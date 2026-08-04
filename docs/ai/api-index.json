@@ -2,7 +2,7 @@
   "library": {
     "name": "abacus-matrix",
     "version": "3.8.6",
-    "generated_at": "2026-08-02",
+    "generated_at": "2026-08-03",
     "java_target": "17",
     "source": {
       "git_sha": "unknown"
@@ -565,6 +565,43 @@
               "see_also": []
             },
             {
+              "name": "resize",
+              "kind": "instance",
+              "modifiers": [
+                "public",
+                "abstract"
+              ],
+              "signature": "public abstract M resize(int newRowCount, int newColumnCount)",
+              "return_type": "M",
+              "type_params": [],
+              "params": [
+                {
+                  "name": "newRowCount",
+                  "type": "int",
+                  "javadoc": "the row count of the returned matrix; must be {@code >= 0}",
+                  "nullability": "unspecified"
+                },
+                {
+                  "name": "newColumnCount",
+                  "type": "int",
+                  "javadoc": "the column count of the returned matrix; must be {@code >= 0}",
+                  "nullability": "unspecified"
+                }
+              ],
+              "throws": [],
+              "javadoc_summary": "Returns a new matrix whose dimensions are exactly {@code newRowCount × newColumnCount} , anchored at the top-left corner of this matrix.",
+              "contract": [
+                "<ul> <li> <b> If a dimension shrinks </b> \\u2014 elements beyond the new boundary are discarded (excess rows removed from the bottom, excess columns removed from the right).",
+                "</li> <li> <b> If a dimension grows </b> \\u2014 new cells are filled with the type's default value.",
+                "Use {@code pad} when the entire original content must be preserved."
+              ],
+              "examples": [],
+              "see_also": [
+                "#pad(int, int, int, int)",
+                "#reshape(int, int)"
+              ]
+            },
+            {
               "name": "repeatElements",
               "kind": "instance",
               "modifiers": [
@@ -824,13 +861,13 @@
               "see_also": []
             },
             {
-              "name": "mutateFlattened",
+              "name": "mutateViaFlatArray",
               "kind": "instance",
               "modifiers": [
                 "public",
                 "abstract"
               ],
-              "signature": "public abstract <E extends Exception> void mutateFlattened(Throwables.Consumer<? super A, E> action) throws E",
+              "signature": "public abstract <E extends Exception> void mutateViaFlatArray(Throwables.Consumer<? super A, E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -898,7 +935,7 @@
                 "For large matrices the operation may be automatically parallelized, in which case the order in which positions are visited is unspecified and the supplied action must be thread-safe; every position is still visited exactly once.",
                 "When logical rows share a backing row array, the operation runs sequentially to avoid concurrent access to shared row storage and preserve deterministic row-major visitation.",
                 "<p> This method is useful when you need to access matrix positions without caring about the actual element values, or when the element access logic is handled inside the action.",
-                "</p> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.wrap(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}); // Count every visited position AtomicInteger visited = new AtomicInteger(0); matrix.forEachIndices((i, j) -> visited.incrementAndGet()); visited.get(); // returns 9 (3 x 3 = 9 positions) // Count elements on the main diagonal AtomicInteger diagonalCount = new AtomicInteger(0); matrix.forEachIndices((i, j) -> { if (i == j) diagonalCount.incrementAndGet(); }); diagonalCount.get(); // returns 3 IntMatrix empty = IntMatrix.wrap(new int[0][0]); empty.forEachIndices((i, j) -> visited.incrementAndGet()); // no positions; action never invoked matrix.forEachIndices((Throwables.IntBiConsumer<RuntimeException>) null); // throws IllegalArgumentException (null action) } </pre>"
+                "</p> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.wrap(new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}); // Count every visited position java.util.concurrent.atomic.AtomicInteger visited = new java.util.concurrent.atomic.AtomicInteger(0); matrix.forEachIndices((i, j) -> visited.incrementAndGet()); visited.get(); // returns 9 (3 x 3 = 9 positions) // Count elements on the main diagonal java.util.concurrent.atomic.AtomicInteger diagonalCount = new java.util.concurrent.atomic.AtomicInteger(0); matrix.forEachIndices((i, j) -> { if (i == j) diagonalCount.incrementAndGet(); }); diagonalCount.get(); // returns 3 IntMatrix empty = IntMatrix.wrap(new int[0][0]); empty.forEachIndices((i, j) -> visited.incrementAndGet()); // no positions; action never invoked matrix.forEachIndices((Throwables.IntBiConsumer<RuntimeException>) null); // throws IllegalArgumentException (null action) } </pre>"
               ],
               "examples": [],
               "see_also": []
@@ -1006,7 +1043,7 @@
                 "For large matrices the operation may be automatically parallelized, in which case the order in which positions are visited is unspecified and the supplied action must be thread-safe; every position is still visited exactly once.",
                 "When logical rows share a backing row array, the operation runs sequentially to avoid concurrent access to shared row storage and preserve deterministic row-major visitation.",
                 "<p> This variant is useful when the action needs access to matrix elements or methods, allowing you to read/write values or use matrix operations within the action.",
-                "</p> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.wrap(new int[][] {{1, 2}, {3, 4}}); // Sum every element via the supplied matrix reference AtomicInteger sum = new AtomicInteger(0); matrix.forEachIndices((i, j, m) -> sum.addAndGet(m.get(i, j))); sum.get(); // returns 10 (1 + 2 + 3 + 4) // Force row-major execution for an in-place update whose order should be explicit Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.forEachIndices((i, j, m) -> m.set(i, j, i + j))); matrix.get(1, 1); // returns 2 (1 + 1) matrix.get(0, 0); // returns 0 matrix.forEachIndices((Throwables.BiIntObjConsumer<IntMatrix, RuntimeException>) null); // throws IllegalArgumentException (null action) } </pre>"
+                "</p> <p> <b> Usage Examples: </b> </p> <pre> {@code IntMatrix matrix = IntMatrix.wrap(new int[][] {{1, 2}, {3, 4}}); // Sum every element via the supplied matrix reference java.util.concurrent.atomic.AtomicInteger sum = new java.util.concurrent.atomic.AtomicInteger(0); matrix.forEachIndices((i, j, m) -> sum.addAndGet(m.get(i, j))); sum.get(); // returns 10 (1 + 2 + 3 + 4) // Force row-major execution for an in-place update whose order should be explicit Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.forEachIndices((i, j, m) -> m.set(i, j, i + j))); matrix.get(1, 1); // returns 2 (1 + 1) matrix.get(0, 0); // returns 0 matrix.forEachIndices((Throwables.BiIntObjConsumer<IntMatrix, RuntimeException>) null); // throws IllegalArgumentException (null action) } </pre>"
               ],
               "examples": [],
               "see_also": []
@@ -1570,32 +1607,6 @@
                 "public",
                 "abstract"
               ],
-              "signature": "public abstract ES rowMajorStream(final int rowIndex)",
-              "return_type": "ES",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "rowIndex",
-                  "type": "int",
-                  "javadoc": "the row index (0-based)",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Returns a stream of elements from a specific row.",
-              "contract": [],
-              "examples": [],
-              "see_also": [
-                "#rowStreams()"
-              ]
-            },
-            {
-              "name": "rowMajorStream",
-              "kind": "instance",
-              "modifiers": [
-                "public",
-                "abstract"
-              ],
               "signature": "public abstract ES rowMajorStream(final int fromRowIndex, final int toRowIndex)",
               "return_type": "ES",
               "type_params": [],
@@ -1643,32 +1654,6 @@
                 "public",
                 "abstract"
               ],
-              "signature": "public abstract ES columnMajorStream(final int columnIndex)",
-              "return_type": "ES",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "columnIndex",
-                  "type": "int",
-                  "javadoc": "the column index (0-based)",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Returns a stream of elements from a specific column.",
-              "contract": [],
-              "examples": [],
-              "see_also": [
-                "#columnStreams()"
-              ]
-            },
-            {
-              "name": "columnMajorStream",
-              "kind": "instance",
-              "modifiers": [
-                "public",
-                "abstract"
-              ],
               "signature": "public abstract ES columnMajorStream(final int fromColumnIndex, final int toColumnIndex)",
               "return_type": "ES",
               "type_params": [],
@@ -1708,7 +1693,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#rowMajorStream(int)"
+                "#rowMajorStream(int, int)"
               ]
             },
             {
@@ -1757,7 +1742,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#columnMajorStream(int)"
+                "#columnMajorStream(int, int)"
               ]
             },
             {
@@ -1965,7 +1950,7 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns a shared empty {@code 0 × 0} matrix instance.",
+              "javadoc_summary": "Returns the shared empty {@code 0x0} matrix instance.",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -1984,7 +1969,7 @@
                 {
                   "name": "a",
                   "type": "boolean[][]",
-                  "javadoc": "the two-dimensional boolean array to wrap; must not be {@code null} ; may be empty, in which case the empty matrix singleton is returned",
+                  "javadoc": "the two-dimensional boolean array to wrap, or empty for an empty matrix; must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
@@ -2042,7 +2027,7 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Creates a new {@code 1 × length} matrix filled with pseudo-randomly generated boolean values.",
+              "javadoc_summary": "Creates a new {@code 1 x columnCount} matrix filled with pseudo-randomly generated boolean values.",
               "contract": [],
               "examples": [],
               "see_also": [
@@ -2075,42 +2060,6 @@
               ],
               "throws": [],
               "javadoc_summary": "Creates a new matrix of the specified dimensions filled with pseudo-randomly generated boolean values.",
-              "contract": [],
-              "examples": [],
-              "see_also": []
-            },
-            {
-              "name": "filled",
-              "kind": "static",
-              "modifiers": [
-                "public",
-                "static"
-              ],
-              "signature": "public static BooleanMatrix filled(final int rowCount, final int columnCount, final boolean element)",
-              "return_type": "BooleanMatrix",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "rowCount",
-                  "type": "int",
-                  "javadoc": "the number of rows in the new matrix; must be {@code >= 0}",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "columnCount",
-                  "type": "int",
-                  "javadoc": "the number of columns in the new matrix; must be {@code >= 0}",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "element",
-                  "type": "boolean",
-                  "javadoc": "the boolean value to fill the matrix with",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Creates a new matrix of the specified dimensions where every element is the provided {@code element} .",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -3245,12 +3194,12 @@
               "see_also": []
             },
             {
-              "name": "fill",
+              "name": "copyFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void fill(final boolean[][] source)",
+              "signature": "public void copyFrom(final boolean[][] source)",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -3262,22 +3211,22 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Fills this matrix with values from another two-dimensional array, starting at position {@code (0, 0)} .",
+              "javadoc_summary": "Copies values into this matrix from another two-dimensional array, starting at position {@code (0, 0)} .",
               "contract": [
                 "If the source array is larger, only the portion that fits is copied."
               ],
               "examples": [],
               "see_also": [
-                "#fill(int, int, boolean[][])"
+                "#copyFrom(int, int, boolean[][])"
               ]
             },
             {
-              "name": "fill",
+              "name": "copyFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void fill(final int destRowIndex, final int destColumnIndex, final boolean[][] source) throws IndexOutOfBoundsException, IllegalArgumentException",
+              "signature": "public void copyFrom(final int destRowIndex, final int destColumnIndex, final boolean[][] source) throws IndexOutOfBoundsException, IllegalArgumentException",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -3310,7 +3259,7 @@
                   "condition": "if {@code source} is {@code null}"
                 }
               ],
-              "javadoc_summary": "Fills a region of this matrix with values from another two-dimensional array, starting at the specified destination position.",
+              "javadoc_summary": "Copies values into a region of this matrix from another two-dimensional array, starting at the specified destination position.",
               "contract": [
                 "Any source row that aliases this matrix's backing storage is snapshotted before copying, so overlapping copies read the source values as they were when this method was called."
               ],
@@ -3419,7 +3368,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "public BooleanMatrix resize(final int newRowCount, final int newColumnCount)",
+              "signature": "@Override public BooleanMatrix resize(final int newRowCount, final int newColumnCount)",
               "return_type": "BooleanMatrix",
               "type_params": [],
               "params": [
@@ -3747,7 +3696,7 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Creates the transpose of this matrix by swapping rows and columns.",
+              "javadoc_summary": "Returns a new matrix that is the transpose of this matrix.",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -3877,12 +3826,12 @@
               ]
             },
             {
-              "name": "mutateFlattened",
+              "name": "mutateViaFlatArray",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super boolean[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateViaFlatArray(final Throwables.Consumer<? super boolean[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -3911,11 +3860,11 @@
                 "Its mutations are copied back only if the action returns normally; if the action throws, those mutations are discarded.",
                 "An action is not invoked when this matrix has zero rows, while an {@code n x 0} matrix with {@code n > 0} invokes it once with an empty array.",
                 "If logical rows share a backing array, write-back is row-major, so values for the last logical row using that array determine its final contents.",
-                "</p> <p> <b> Usage Examples: </b> </p> <pre> {@code BooleanMatrix matrix = BooleanMatrix.wrap(new boolean[][] {{true, false}, {false, true}}); matrix.mutateFlattened(arr -> java.util.Arrays.fill(arr, true)); // temporary row-major array, then copied back matrix.countTrue(); // returns 4 (all elements now true) matrix.get(0, 1); // returns true (was false) int[] seen = {0}; matrix.mutateFlattened(arr -> seen[0] = arr.length); // flattened length equals total element count // seen[0] is now 4 BooleanMatrix.empty().mutateFlattened(arr -> seen[0] = -1); // no-op: action is not invoked when the matrix has zero rows // seen[0] is still 4 } </pre>"
+                "</p> <p> <b> Usage Examples: </b> </p> <pre> {@code BooleanMatrix matrix = BooleanMatrix.wrap(new boolean[][] {{true, false}, {false, true}}); matrix.mutateViaFlatArray(arr -> java.util.Arrays.fill(arr, true)); // temporary row-major array, then copied back matrix.countTrue(); // returns 4 (all elements now true) matrix.get(0, 1); // returns true (was false) int[] seen = {0}; matrix.mutateViaFlatArray(arr -> seen[0] = arr.length); // flattened length equals total element count // seen[0] is now 4 BooleanMatrix.empty().mutateViaFlatArray(arr -> seen[0] = -1); // no-op: action is not invoked when the matrix has zero rows // seen[0] is still 4 } </pre>"
               ],
               "examples": [],
               "see_also": [
-                "Arrays#mutateFlattened(boolean[][], Throwables.Consumer)"
+                "Arrays#mutateViaFlatArray(boolean[][], Throwables.Consumer)"
               ]
             },
             {
@@ -4147,7 +4096,7 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Converts this primitive {@code boolean} matrix to a boxed {@code Matrix<Boolean>} .",
+              "javadoc_summary": "Converts this primitive boolean matrix to a boxed {@link Matrix Matrix&lt;Boolean&gt;} .",
               "contract": [
                 "<p> This conversion is useful when you need to work with APIs that require object types rather than primitives, or when you need {@code null} values in the matrix."
               ],
@@ -4321,33 +4270,6 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public Stream<Boolean> rowMajorStream(final int rowIndex)",
-              "return_type": "Stream<Boolean>",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "rowIndex",
-                  "type": "int",
-                  "javadoc": "the index of the row to stream (0-based)",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Returns a stream of elements from a single row.",
-              "contract": [
-                "<p> This method is particularly useful when you need to process or analyze a specific row of the matrix independently."
-              ],
-              "examples": [],
-              "see_also": [
-                "#rowStreams()"
-              ]
-            },
-            {
-              "name": "rowMajorStream",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
               "signature": "@Override public Stream<Boolean> rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "Stream<Boolean>",
               "type_params": [],
@@ -4398,31 +4320,6 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public Stream<Boolean> columnMajorStream(final int columnIndex)",
-              "return_type": "Stream<Boolean>",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "columnIndex",
-                  "type": "int",
-                  "javadoc": "the index of the column to stream (0-based)",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Returns a stream of elements from a single column.",
-              "contract": [],
-              "examples": [],
-              "see_also": [
-                "#columnStreams()"
-              ]
-            },
-            {
-              "name": "columnMajorStream",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
               "signature": "@Override public Stream<Boolean> columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "Stream<Boolean>",
               "type_params": [],
@@ -4466,7 +4363,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#rowMajorStream(int)"
+                "#rowMajorStream(int, int)"
               ]
             },
             {
@@ -4657,7 +4554,7 @@
               "contract": [
                 "Elements are processed in row-major order within the specified bounds when executed sequentially.",
                 "The operation may be parallelized internally if the sub-matrix is large enough to benefit from parallel processing; if parallelized, the order in which elements are visited is unspecified and the action must be thread-safe, but every element is still visited exactly once.",
-                "</p> <p> <b> Usage Examples: </b> </p> <pre> {@code BooleanMatrix matrix = BooleanMatrix.wrap(new boolean[][] { {true, false, true}, {false, true, false}, {true, true, true} }); List<Boolean> center = new ArrayList<>(); Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.forEach(0, 2, 0, 2, value -> center.add(value))); // center is now [true, false, false, true] (top-left 2x2, row-major) int[] bottomRowTrue = {0}; Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.forEach(2, 3, 0, 3, value -> { if (value) bottomRowTrue[0]++; })); // bottomRowTrue[0] is now 3 matrix.forEach(0, 9, 0, 3, value -> {}); // throws IndexOutOfBoundsException (toRowIndex > rowCount) matrix.forEach(0, 2, 0, 2, (Throwables.BooleanConsumer<RuntimeException>) null); // throws IllegalArgumentException (null action) } </pre>"
+                "</p> <p> <b> Usage Examples: </b> </p> <pre> {@code BooleanMatrix matrix = BooleanMatrix.wrap(new boolean[][] { {true, false, true}, {false, true, false}, {true, true, true} }); java.util.List<Boolean> center = new java.util.ArrayList<>(); Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.forEach(0, 2, 0, 2, value -> center.add(value))); // center is now [true, false, false, true] (top-left 2x2, row-major) int[] bottomRowTrue = {0}; Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.forEach(2, 3, 0, 3, value -> { if (value) bottomRowTrue[0]++; })); // bottomRowTrue[0] is now 3 matrix.forEach(0, 9, 0, 3, value -> {}); // throws IndexOutOfBoundsException (toRowIndex > rowCount) matrix.forEach(0, 2, 0, 2, (Throwables.BooleanConsumer<RuntimeException>) null); // throws IllegalArgumentException (null action) } </pre>"
               ],
               "examples": [],
               "see_also": []
@@ -4775,7 +4672,7 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns the shared empty matrix with zero rows and zero columns.",
+              "javadoc_summary": "Returns the shared empty {@code 0x0} matrix instance.",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -4794,7 +4691,7 @@
                 {
                   "name": "a",
                   "type": "byte[][]",
-                  "javadoc": "the two-dimensional byte array to wrap; must not be {@code null} ; may be empty",
+                  "javadoc": "the two-dimensional byte array to wrap, or empty for an empty matrix; must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
@@ -4886,42 +4783,6 @@
               ],
               "throws": [],
               "javadoc_summary": "Creates a new matrix of the specified dimensions filled with random byte values uniformly distributed across the full byte range {@code [Byte.MIN_VALUE, Byte.MAX_VALUE]} .",
-              "contract": [],
-              "examples": [],
-              "see_also": []
-            },
-            {
-              "name": "filled",
-              "kind": "static",
-              "modifiers": [
-                "public",
-                "static"
-              ],
-              "signature": "public static ByteMatrix filled(final int rowCount, final int columnCount, final byte element)",
-              "return_type": "ByteMatrix",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "rowCount",
-                  "type": "int",
-                  "javadoc": "the number of rows in the new matrix; must be {@code >= 0}",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "columnCount",
-                  "type": "int",
-                  "javadoc": "the number of columns in the new matrix; must be {@code >= 0}",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "element",
-                  "type": "byte",
-                  "javadoc": "the byte value to fill the matrix with",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Creates a new matrix of the specified dimensions where every element is the provided {@code element} .",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -6197,12 +6058,12 @@
               "see_also": []
             },
             {
-              "name": "fill",
+              "name": "copyFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void fill(final byte[][] source)",
+              "signature": "public void copyFrom(final byte[][] source)",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -6214,22 +6075,22 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Fills this matrix with values from another two-dimensional array, starting at position {@code (0, 0)} .",
+              "javadoc_summary": "Copies values into this matrix from another two-dimensional array, starting at position {@code (0, 0)} .",
               "contract": [
                 "If the source array is larger, only the portion that fits is copied."
               ],
               "examples": [],
               "see_also": [
-                "#fill(int, int, byte[][])"
+                "#copyFrom(int, int, byte[][])"
               ]
             },
             {
-              "name": "fill",
+              "name": "copyFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void fill(final int destRowIndex, final int destColumnIndex, final byte[][] source) throws IndexOutOfBoundsException, IllegalArgumentException",
+              "signature": "public void copyFrom(final int destRowIndex, final int destColumnIndex, final byte[][] source) throws IndexOutOfBoundsException, IllegalArgumentException",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -6262,7 +6123,7 @@
                   "condition": "if {@code source} is {@code null}"
                 }
               ],
-              "javadoc_summary": "Fills a region of this matrix with values from another two-dimensional array, starting at the specified destination position.",
+              "javadoc_summary": "Copies values into a region of this matrix from another two-dimensional array, starting at the specified destination position.",
               "contract": [
                 "Any source row that aliases this matrix's backing storage is snapshotted before copying, so overlapping copies read the source values as they were when this method was called."
               ],
@@ -6371,7 +6232,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "public ByteMatrix resize(final int newRowCount, final int newColumnCount)",
+              "signature": "@Override public ByteMatrix resize(final int newRowCount, final int newColumnCount)",
               "return_type": "ByteMatrix",
               "type_params": [],
               "params": [
@@ -6748,13 +6609,13 @@
                 {
                   "name": "rowRepeats",
                   "type": "int",
-                  "javadoc": "number of times to repeat each element in row direction",
+                  "javadoc": "number of times to repeat each element in row direction; must be {@code > 0}",
                   "nullability": "unspecified"
                 },
                 {
                   "name": "columnRepeats",
                   "type": "int",
-                  "javadoc": "number of times to repeat each element in column direction",
+                  "javadoc": "number of times to repeat each element in column direction; must be {@code > 0}",
                   "nullability": "unspecified"
                 }
               ],
@@ -6768,6 +6629,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
+                "#tile(int, int)",
                 "<a href=\"https://www.mathworks.com/help/matlab/ref/repelem.html\">,MATLAB repelem function,</a>"
               ]
             },
@@ -6784,13 +6646,13 @@
                 {
                   "name": "rowRepeats",
                   "type": "int",
-                  "javadoc": "number of times to repeat the matrix vertically",
+                  "javadoc": "number of times to repeat the matrix vertically; must be {@code > 0}",
                   "nullability": "unspecified"
                 },
                 {
                   "name": "columnRepeats",
                   "type": "int",
-                  "javadoc": "number of times to repeat the matrix horizontally",
+                  "javadoc": "number of times to repeat the matrix horizontally; must be {@code > 0}",
                   "nullability": "unspecified"
                 }
               ],
@@ -6804,6 +6666,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
+                "#repeatElements(int, int)",
                 "<a href=\"https://www.mathworks.com/help/matlab/ref/repmat.html\">,MATLAB repmat function,</a>"
               ]
             },
@@ -6826,12 +6689,12 @@
               ]
             },
             {
-              "name": "mutateFlattened",
+              "name": "mutateViaFlatArray",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super byte[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateViaFlatArray(final Throwables.Consumer<? super byte[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -6863,7 +6726,7 @@
               ],
               "examples": [],
               "see_also": [
-                "Arrays#mutateFlattened(byte[][], Throwables.Consumer)"
+                "Arrays#mutateViaFlatArray(byte[][], Throwables.Consumer)"
               ]
             },
             {
@@ -7037,7 +6900,7 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Converts this primitive byte matrix to a boxed Byte Matrix.",
+              "javadoc_summary": "Converts this primitive byte matrix to a boxed {@link Matrix Matrix&lt;Byte&gt;} .",
               "contract": [
                 "<p> This conversion is useful when you need to work with APIs that require object types rather than primitives, or when you need {@code null} values in the matrix."
               ],
@@ -7291,33 +7154,6 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public ByteStream rowMajorStream(final int rowIndex)",
-              "return_type": "ByteStream",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "rowIndex",
-                  "type": "int",
-                  "javadoc": "the index of the row to stream (0-based)",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Returns a stream of elements from a single row.",
-              "contract": [
-                "<p> This method is particularly useful when you need to process or analyze a specific row of the matrix independently."
-              ],
-              "examples": [],
-              "see_also": [
-                "#rowStreams()"
-              ]
-            },
-            {
-              "name": "rowMajorStream",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
               "signature": "@Override public ByteStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "ByteStream",
               "type_params": [],
@@ -7368,31 +7204,6 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public ByteStream columnMajorStream(final int columnIndex)",
-              "return_type": "ByteStream",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "columnIndex",
-                  "type": "int",
-                  "javadoc": "the index of the column to stream (0-based)",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Returns a stream of elements from a single column.",
-              "contract": [],
-              "examples": [],
-              "see_also": [
-                "#columnStreams()"
-              ]
-            },
-            {
-              "name": "columnMajorStream",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
               "signature": "@Override public ByteStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "ByteStream",
               "type_params": [],
@@ -7436,7 +7247,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#rowMajorStream(int)"
+                "#rowMajorStream(int, int)"
               ]
             },
             {
@@ -7853,42 +7664,6 @@
               ],
               "throws": [],
               "javadoc_summary": "Creates a new matrix of the specified dimensions filled with random char values drawn uniformly from the full unsigned 16-bit range {@code [0, 65535]} .",
-              "contract": [],
-              "examples": [],
-              "see_also": []
-            },
-            {
-              "name": "filled",
-              "kind": "static",
-              "modifiers": [
-                "public",
-                "static"
-              ],
-              "signature": "public static CharMatrix filled(final int rowCount, final int columnCount, final char element)",
-              "return_type": "CharMatrix",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "rowCount",
-                  "type": "int",
-                  "javadoc": "the number of rows in the new matrix; must be {@code >= 0}",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "columnCount",
-                  "type": "int",
-                  "javadoc": "the number of columns in the new matrix; must be {@code >= 0}",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "element",
-                  "type": "char",
-                  "javadoc": "the char value to fill the matrix with",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Creates a new matrix of the specified dimensions where every element is the provided {@code element} .",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -8669,7 +8444,7 @@
               ],
               "javadoc_summary": "Updates all elements in a column in-place by applying the specified operator to each element.",
               "contract": [
-                "</p> <p> If multiple logical rows share the same backing array, the shared cell at {@code columnIndex} is transformed exactly once, when that backing row is first encountered."
+                "</p> <p> If multiple logical rows share the same backing array, the operator is applied to that backing row only once, at its first occurrence."
               ],
               "examples": [],
               "see_also": []
@@ -9163,12 +8938,12 @@
               "see_also": []
             },
             {
-              "name": "fill",
+              "name": "copyFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void fill(final char[][] source)",
+              "signature": "public void copyFrom(final char[][] source)",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -9180,22 +8955,22 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Fills this matrix with values from another two-dimensional array, starting at position {@code (0, 0)} .",
+              "javadoc_summary": "Copies values into this matrix from another two-dimensional array, starting at position {@code (0, 0)} .",
               "contract": [
                 "If the source array is larger, only the portion that fits is copied."
               ],
               "examples": [],
               "see_also": [
-                "#fill(int, int, char[][])"
+                "#copyFrom(int, int, char[][])"
               ]
             },
             {
-              "name": "fill",
+              "name": "copyFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void fill(final int destRowIndex, final int destColumnIndex, final char[][] source) throws IndexOutOfBoundsException, IllegalArgumentException",
+              "signature": "public void copyFrom(final int destRowIndex, final int destColumnIndex, final char[][] source) throws IndexOutOfBoundsException, IllegalArgumentException",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -9228,7 +9003,7 @@
                   "condition": "if {@code source} is {@code null}"
                 }
               ],
-              "javadoc_summary": "Fills a region of this matrix with values from another two-dimensional array, starting at the specified destination position.",
+              "javadoc_summary": "Copies values into a region of this matrix from another two-dimensional array, starting at the specified destination position.",
               "contract": [
                 "Any source row that aliases this matrix's backing storage is snapshotted before copying, so overlapping copies read the source values as they were when this method was called."
               ],
@@ -9337,7 +9112,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "public CharMatrix resize(final int newRowCount, final int newColumnCount)",
+              "signature": "@Override public CharMatrix resize(final int newRowCount, final int newColumnCount)",
               "return_type": "CharMatrix",
               "type_params": [],
               "params": [
@@ -9665,7 +9440,7 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Creates the transpose of this matrix by swapping rows and columns.",
+              "javadoc_summary": "Returns a new matrix that is the transpose of this matrix.",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -9736,6 +9511,7 @@
               ],
               "examples": [],
               "see_also": [
+                "#tile(int, int)",
                 "<a href=\"https://www.mathworks.com/help/matlab/ref/repelem.html\">,MATLAB repelem function,</a>"
               ]
             },
@@ -9774,6 +9550,7 @@
               ],
               "examples": [],
               "see_also": [
+                "#repeatElements(int, int)",
                 "<a href=\"https://www.mathworks.com/help/matlab/ref/repmat.html\">,MATLAB repmat function,</a>"
               ]
             },
@@ -9796,12 +9573,12 @@
               ]
             },
             {
-              "name": "mutateFlattened",
+              "name": "mutateViaFlatArray",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super char[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateViaFlatArray(final Throwables.Consumer<? super char[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -9833,7 +9610,7 @@
               ],
               "examples": [],
               "see_also": [
-                "Arrays#mutateFlattened(char[][], Throwables.Consumer)"
+                "Arrays#mutateViaFlatArray(char[][], Throwables.Consumer)"
               ]
             },
             {
@@ -10034,6 +9811,9 @@
               "contract": [],
               "examples": [],
               "see_also": [
+                "#toLongMatrix()",
+                "#toFloatMatrix()",
+                "#toDoubleMatrix()",
                 "IntMatrix#from(char[][])"
               ]
             },
@@ -10051,7 +9831,11 @@
               "javadoc_summary": "Converts this CharMatrix to a LongMatrix.",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#toIntMatrix()",
+                "#toFloatMatrix()",
+                "#toDoubleMatrix()"
+              ]
             },
             {
               "name": "toFloatMatrix",
@@ -10067,7 +9851,11 @@
               "javadoc_summary": "Converts this CharMatrix to a FloatMatrix.",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#toIntMatrix()",
+                "#toLongMatrix()",
+                "#toDoubleMatrix()"
+              ]
             },
             {
               "name": "toDoubleMatrix",
@@ -10083,7 +9871,11 @@
               "javadoc_summary": "Converts this CharMatrix to a DoubleMatrix.",
               "contract": [],
               "examples": [],
-              "see_also": []
+              "see_also": [
+                "#toIntMatrix()",
+                "#toLongMatrix()",
+                "#toFloatMatrix()"
+              ]
             },
             {
               "name": "zipWith",
@@ -10249,33 +10041,6 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public CharStream rowMajorStream(final int rowIndex)",
-              "return_type": "CharStream",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "rowIndex",
-                  "type": "int",
-                  "javadoc": "the index of the row to stream (0-based)",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Returns a stream of elements from a single row.",
-              "contract": [
-                "<p> This method is particularly useful when you need to process or analyze a specific row of the matrix independently."
-              ],
-              "examples": [],
-              "see_also": [
-                "#rowStreams()"
-              ]
-            },
-            {
-              "name": "rowMajorStream",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
               "signature": "@Override public CharStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "CharStream",
               "type_params": [],
@@ -10326,31 +10091,6 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public CharStream columnMajorStream(final int columnIndex)",
-              "return_type": "CharStream",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "columnIndex",
-                  "type": "int",
-                  "javadoc": "the index of the column to stream (0-based)",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Returns a stream of elements from a single column.",
-              "contract": [],
-              "examples": [],
-              "see_also": [
-                "#columnStreams()"
-              ]
-            },
-            {
-              "name": "columnMajorStream",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
               "signature": "@Override public CharStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "CharStream",
               "type_params": [],
@@ -10394,7 +10134,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#rowMajorStream(int)"
+                "#rowMajorStream(int, int)"
               ]
             },
             {
@@ -10701,7 +10441,7 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns the shared empty matrix with zero rows and zero columns.",
+              "javadoc_summary": "Returns the shared empty {@code 0x0} matrix instance.",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -10896,42 +10636,6 @@
               ],
               "throws": [],
               "javadoc_summary": "Creates a new matrix of the specified dimensions filled with random double values uniformly distributed in {@code [0.0, 1.0)} .",
-              "contract": [],
-              "examples": [],
-              "see_also": []
-            },
-            {
-              "name": "filled",
-              "kind": "static",
-              "modifiers": [
-                "public",
-                "static"
-              ],
-              "signature": "public static DoubleMatrix filled(final int rowCount, final int columnCount, final double element)",
-              "return_type": "DoubleMatrix",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "rowCount",
-                  "type": "int",
-                  "javadoc": "the number of rows in the new matrix",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "columnCount",
-                  "type": "int",
-                  "javadoc": "the number of columns in the new matrix",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "element",
-                  "type": "double",
-                  "javadoc": "the double value to fill the matrix with (may be {@code NaN} , {@code +/-Infinity} , or {@code -0.0} )",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Creates a new matrix of the specified dimensions where every element is the provided {@code element} .",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -12144,12 +11848,12 @@
               "see_also": []
             },
             {
-              "name": "fill",
+              "name": "copyFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void fill(final double[][] source)",
+              "signature": "public void copyFrom(final double[][] source)",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -12161,22 +11865,22 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Fills this matrix with values from another two-dimensional array, starting at position {@code (0, 0)} .",
+              "javadoc_summary": "Copies values into this matrix from another two-dimensional array, starting at position {@code (0, 0)} .",
               "contract": [
                 "If the source array is larger, only the portion that fits is copied."
               ],
               "examples": [],
               "see_also": [
-                "#fill(int, int, double[][])"
+                "#copyFrom(int, int, double[][])"
               ]
             },
             {
-              "name": "fill",
+              "name": "copyFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void fill(final int destRowIndex, final int destColumnIndex, final double[][] source) throws IndexOutOfBoundsException, IllegalArgumentException",
+              "signature": "public void copyFrom(final int destRowIndex, final int destColumnIndex, final double[][] source) throws IndexOutOfBoundsException, IllegalArgumentException",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -12209,7 +11913,7 @@
                   "condition": "if {@code source} is {@code null}"
                 }
               ],
-              "javadoc_summary": "Fills a region of this matrix with values from another two-dimensional array, starting at the specified destination position.",
+              "javadoc_summary": "Copies values into a region of this matrix from another two-dimensional array, starting at the specified destination position.",
               "contract": [
                 "Any source row that aliases this matrix's backing storage is snapshotted before copying, so overlapping copies read the source values as they were when this method was called."
               ],
@@ -12318,7 +12022,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "public DoubleMatrix resize(final int newRowCount, final int newColumnCount)",
+              "signature": "@Override public DoubleMatrix resize(final int newRowCount, final int newColumnCount)",
               "return_type": "DoubleMatrix",
               "type_params": [],
               "params": [
@@ -12646,7 +12350,7 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Creates the transpose of this matrix by swapping rows and columns.",
+              "javadoc_summary": "Returns a new matrix that is the transpose of this matrix.",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -12717,6 +12421,7 @@
               ],
               "examples": [],
               "see_also": [
+                "#tile(int, int)",
                 "<a href=\"https://www.mathworks.com/help/matlab/ref/repelem.html\">,MATLAB repelem function,</a>"
               ]
             },
@@ -12755,6 +12460,7 @@
               ],
               "examples": [],
               "see_also": [
+                "#repeatElements(int, int)",
                 "<a href=\"https://www.mathworks.com/help/matlab/ref/repmat.html\">,MATLAB repmat function,</a>"
               ]
             },
@@ -12777,12 +12483,12 @@
               ]
             },
             {
-              "name": "mutateFlattened",
+              "name": "mutateViaFlatArray",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super double[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateViaFlatArray(final Throwables.Consumer<? super double[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -12815,7 +12521,7 @@
               ],
               "examples": [],
               "see_also": [
-                "Arrays#mutateFlattened(double[][], Throwables.Consumer)"
+                "Arrays#mutateViaFlatArray(double[][], Throwables.Consumer)"
               ]
             },
             {
@@ -12991,7 +12697,7 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Converts this primitive {@code DoubleMatrix} to a boxed {@code Matrix<Double>} .",
+              "javadoc_summary": "Converts this primitive double matrix to a boxed {@link Matrix Matrix&lt;Double&gt;} .",
               "contract": [],
               "examples": [],
               "see_also": [
@@ -13210,33 +12916,6 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public DoubleStream rowMajorStream(final int rowIndex)",
-              "return_type": "DoubleStream",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "rowIndex",
-                  "type": "int",
-                  "javadoc": "the index of the row to stream (0-based)",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Returns a stream of elements from a single row.",
-              "contract": [
-                "<p> This method is particularly useful when you need to process or analyze a specific row of the matrix independently."
-              ],
-              "examples": [],
-              "see_also": [
-                "#rowStreams()"
-              ]
-            },
-            {
-              "name": "rowMajorStream",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
               "signature": "@Override public DoubleStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "DoubleStream",
               "type_params": [],
@@ -13287,31 +12966,6 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public DoubleStream columnMajorStream(final int columnIndex)",
-              "return_type": "DoubleStream",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "columnIndex",
-                  "type": "int",
-                  "javadoc": "the index of the column to stream (0-based)",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Returns a stream of elements from a single column.",
-              "contract": [],
-              "examples": [],
-              "see_also": [
-                "#columnStreams()"
-              ]
-            },
-            {
-              "name": "columnMajorStream",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
               "signature": "@Override public DoubleStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "DoubleStream",
               "type_params": [],
@@ -13355,7 +13009,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#rowMajorStream(int)"
+                "#rowMajorStream(int, int)"
               ]
             },
             {
@@ -13681,7 +13335,7 @@
                 {
                   "name": "a",
                   "type": "float[][]",
-                  "javadoc": "the two-dimensional float array to create the matrix from, or empty for an empty matrix; must not be {@code null}",
+                  "javadoc": "the two-dimensional float array to wrap, or empty for an empty matrix; must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
@@ -13801,42 +13455,6 @@
               ],
               "throws": [],
               "javadoc_summary": "Creates a new matrix of the specified dimensions filled with random float values uniformly distributed in {@code [0.0f, 1.0f)} .",
-              "contract": [],
-              "examples": [],
-              "see_also": []
-            },
-            {
-              "name": "filled",
-              "kind": "static",
-              "modifiers": [
-                "public",
-                "static"
-              ],
-              "signature": "public static FloatMatrix filled(final int rowCount, final int columnCount, final float element)",
-              "return_type": "FloatMatrix",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "rowCount",
-                  "type": "int",
-                  "javadoc": "the number of rows in the new matrix",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "columnCount",
-                  "type": "int",
-                  "javadoc": "the number of columns in the new matrix",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "element",
-                  "type": "float",
-                  "javadoc": "the float value to fill the matrix with (may be {@code NaN} , {@code +/-Infinity} , or {@code -0.0f} )",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Creates a new matrix of the specified dimensions where every element is the provided {@code element} .",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -15088,12 +14706,12 @@
               "see_also": []
             },
             {
-              "name": "fill",
+              "name": "copyFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void fill(final float[][] source)",
+              "signature": "public void copyFrom(final float[][] source)",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -15105,22 +14723,22 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Fills this matrix with values from another two-dimensional array, starting at position {@code (0, 0)} .",
+              "javadoc_summary": "Copies values into this matrix from another two-dimensional array, starting at position {@code (0, 0)} .",
               "contract": [
                 "If the source array is larger, only the portion that fits is copied."
               ],
               "examples": [],
               "see_also": [
-                "#fill(int, int, float[][])"
+                "#copyFrom(int, int, float[][])"
               ]
             },
             {
-              "name": "fill",
+              "name": "copyFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void fill(final int destRowIndex, final int destColumnIndex, final float[][] source) throws IndexOutOfBoundsException, IllegalArgumentException",
+              "signature": "public void copyFrom(final int destRowIndex, final int destColumnIndex, final float[][] source) throws IndexOutOfBoundsException, IllegalArgumentException",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -15153,7 +14771,7 @@
                   "condition": "if {@code source} is {@code null}"
                 }
               ],
-              "javadoc_summary": "Fills a region of this matrix with values from another two-dimensional array, starting at the specified destination position.",
+              "javadoc_summary": "Copies values into a region of this matrix from another two-dimensional array, starting at the specified destination position.",
               "contract": [
                 "Any source row that aliases this matrix's backing storage is snapshotted before copying, so overlapping copies read the source values as they were when this method was called."
               ],
@@ -15262,7 +14880,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "public FloatMatrix resize(final int newRowCount, final int newColumnCount)",
+              "signature": "@Override public FloatMatrix resize(final int newRowCount, final int newColumnCount)",
               "return_type": "FloatMatrix",
               "type_params": [],
               "params": [
@@ -15590,7 +15208,7 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Creates the transpose of this matrix by swapping rows and columns.",
+              "javadoc_summary": "Returns a new matrix that is the transpose of this matrix.",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -15661,6 +15279,7 @@
               ],
               "examples": [],
               "see_also": [
+                "#tile(int, int)",
                 "<a href=\"https://www.mathworks.com/help/matlab/ref/repelem.html\">,MATLAB repelem function,</a>"
               ]
             },
@@ -15699,6 +15318,7 @@
               ],
               "examples": [],
               "see_also": [
+                "#repeatElements(int, int)",
                 "<a href=\"https://www.mathworks.com/help/matlab/ref/repmat.html\">,MATLAB repmat function,</a>"
               ]
             },
@@ -15721,12 +15341,12 @@
               ]
             },
             {
-              "name": "mutateFlattened",
+              "name": "mutateViaFlatArray",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super float[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateViaFlatArray(final Throwables.Consumer<? super float[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -15759,7 +15379,7 @@
               ],
               "examples": [],
               "see_also": [
-                "Arrays#mutateFlattened(float[][], Throwables.Consumer)"
+                "Arrays#mutateViaFlatArray(float[][], Throwables.Consumer)"
               ]
             },
             {
@@ -15936,7 +15556,7 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Converts this primitive {@code FloatMatrix} to a boxed {@code Matrix<Float>} .",
+              "javadoc_summary": "Converts this primitive float matrix to a boxed {@link Matrix Matrix&lt;Float&gt;} .",
               "contract": [],
               "examples": [],
               "see_also": [
@@ -16157,33 +15777,6 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public FloatStream rowMajorStream(final int rowIndex)",
-              "return_type": "FloatStream",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "rowIndex",
-                  "type": "int",
-                  "javadoc": "the index of the row to stream (0-based)",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Returns a stream of elements from a single row.",
-              "contract": [
-                "<p> This method is particularly useful when you need to process or analyze a specific row of the matrix independently."
-              ],
-              "examples": [],
-              "see_also": [
-                "#rowStreams()"
-              ]
-            },
-            {
-              "name": "rowMajorStream",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
               "signature": "@Override public FloatStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "FloatStream",
               "type_params": [],
@@ -16234,31 +15827,6 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public FloatStream columnMajorStream(final int columnIndex)",
-              "return_type": "FloatStream",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "columnIndex",
-                  "type": "int",
-                  "javadoc": "the index of the column to stream (0-based)",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Returns a stream of elements from a single column.",
-              "contract": [],
-              "examples": [],
-              "see_also": [
-                "#columnStreams()"
-              ]
-            },
-            {
-              "name": "columnMajorStream",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
               "signature": "@Override public FloatStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "FloatStream",
               "type_params": [],
@@ -16302,7 +15870,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#rowMajorStream(int)"
+                "#rowMajorStream(int, int)"
               ]
             },
             {
@@ -16803,42 +16371,6 @@
               ],
               "throws": [],
               "javadoc_summary": "Creates a new matrix of the specified dimensions filled with pseudo-random {@code int} values drawn uniformly from the entire {@code int} range.",
-              "contract": [],
-              "examples": [],
-              "see_also": []
-            },
-            {
-              "name": "filled",
-              "kind": "static",
-              "modifiers": [
-                "public",
-                "static"
-              ],
-              "signature": "public static IntMatrix filled(final int rowCount, final int columnCount, final int element)",
-              "return_type": "IntMatrix",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "rowCount",
-                  "type": "int",
-                  "javadoc": "the number of rows in the new matrix; must be {@code >= 0}",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "columnCount",
-                  "type": "int",
-                  "javadoc": "the number of columns in the new matrix; must be {@code >= 0}",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "element",
-                  "type": "int",
-                  "javadoc": "the int value to fill every cell with",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Creates a new matrix of the specified dimensions where every cell holds {@code element} .",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -18191,12 +17723,12 @@
               "see_also": []
             },
             {
-              "name": "fill",
+              "name": "copyFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void fill(final int[][] source)",
+              "signature": "public void copyFrom(final int[][] source)",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -18208,22 +17740,22 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Fills this matrix with values from another two-dimensional array, starting at position {@code (0, 0)} .",
+              "javadoc_summary": "Copies values into this matrix from another two-dimensional array, starting at position {@code (0, 0)} .",
               "contract": [
                 "If the source array is larger, only the portion that fits is copied."
               ],
               "examples": [],
               "see_also": [
-                "#fill(int, int, int[][])"
+                "#copyFrom(int, int, int[][])"
               ]
             },
             {
-              "name": "fill",
+              "name": "copyFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void fill(final int destRowIndex, final int destColumnIndex, final int[][] source) throws IndexOutOfBoundsException, IllegalArgumentException",
+              "signature": "public void copyFrom(final int destRowIndex, final int destColumnIndex, final int[][] source) throws IndexOutOfBoundsException, IllegalArgumentException",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -18256,7 +17788,7 @@
                   "condition": "if {@code source} is {@code null}"
                 }
               ],
-              "javadoc_summary": "Fills a region of this matrix with values from another two-dimensional array, starting at the specified destination position.",
+              "javadoc_summary": "Copies values into a region of this matrix from another two-dimensional array, starting at the specified destination position.",
               "contract": [
                 "Any source row that aliases this matrix's backing storage is snapshotted before copying, so overlapping copies read the source values as they were when this method was called."
               ],
@@ -18365,7 +17897,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "public IntMatrix resize(final int newRowCount, final int newColumnCount)",
+              "signature": "@Override public IntMatrix resize(final int newRowCount, final int newColumnCount)",
               "return_type": "IntMatrix",
               "type_params": [],
               "params": [
@@ -18742,13 +18274,13 @@
                 {
                   "name": "rowRepeats",
                   "type": "int",
-                  "javadoc": "number of times to repeat each element in row direction",
+                  "javadoc": "number of times to repeat each element in row direction; must be {@code > 0}",
                   "nullability": "unspecified"
                 },
                 {
                   "name": "columnRepeats",
                   "type": "int",
-                  "javadoc": "number of times to repeat each element in column direction",
+                  "javadoc": "number of times to repeat each element in column direction; must be {@code > 0}",
                   "nullability": "unspecified"
                 }
               ],
@@ -18762,6 +18294,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
+                "#tile(int, int)",
                 "<a href=\"https://www.mathworks.com/help/matlab/ref/repelem.html\">,MATLAB repelem function,</a>"
               ]
             },
@@ -18778,13 +18311,13 @@
                 {
                   "name": "rowRepeats",
                   "type": "int",
-                  "javadoc": "number of times to repeat the matrix vertically",
+                  "javadoc": "number of times to repeat the matrix vertically; must be {@code > 0}",
                   "nullability": "unspecified"
                 },
                 {
                   "name": "columnRepeats",
                   "type": "int",
-                  "javadoc": "number of times to repeat the matrix horizontally",
+                  "javadoc": "number of times to repeat the matrix horizontally; must be {@code > 0}",
                   "nullability": "unspecified"
                 }
               ],
@@ -18798,6 +18331,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
+                "#repeatElements(int, int)",
                 "<a href=\"https://www.mathworks.com/help/matlab/ref/repmat.html\">,MATLAB repmat function,</a>"
               ]
             },
@@ -18820,12 +18354,12 @@
               ]
             },
             {
-              "name": "mutateFlattened",
+              "name": "mutateViaFlatArray",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super int[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateViaFlatArray(final Throwables.Consumer<? super int[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -18857,7 +18391,7 @@
               ],
               "examples": [],
               "see_also": [
-                "Arrays#mutateFlattened(int[][], Throwables.Consumer)"
+                "Arrays#mutateViaFlatArray(int[][], Throwables.Consumer)"
               ]
             },
             {
@@ -19259,33 +18793,6 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public IntStream rowMajorStream(final int rowIndex)",
-              "return_type": "IntStream",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "rowIndex",
-                  "type": "int",
-                  "javadoc": "the index of the row to stream (0-based)",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Returns a stream of elements from a single row.",
-              "contract": [
-                "<p> This method is particularly useful when you need to process or analyze a specific row of the matrix independently."
-              ],
-              "examples": [],
-              "see_also": [
-                "#rowStreams()"
-              ]
-            },
-            {
-              "name": "rowMajorStream",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
               "signature": "@Override public IntStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "IntStream",
               "type_params": [],
@@ -19336,31 +18843,6 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public IntStream columnMajorStream(final int columnIndex)",
-              "return_type": "IntStream",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "columnIndex",
-                  "type": "int",
-                  "javadoc": "the index of the column to stream (0-based)",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Returns a stream of elements from a single column.",
-              "contract": [],
-              "examples": [],
-              "see_also": [
-                "#columnStreams()"
-              ]
-            },
-            {
-              "name": "columnMajorStream",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
               "signature": "@Override public IntStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "IntStream",
               "type_params": [],
@@ -19404,7 +18886,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#rowMajorStream(int)"
+                "#rowMajorStream(int, int)"
               ]
             },
             {
@@ -19849,42 +19331,6 @@
               ],
               "throws": [],
               "javadoc_summary": "Creates a new matrix of the specified dimensions filled with pseudo-random {@code long} values drawn uniformly from the entire {@code long} range.",
-              "contract": [],
-              "examples": [],
-              "see_also": []
-            },
-            {
-              "name": "filled",
-              "kind": "static",
-              "modifiers": [
-                "public",
-                "static"
-              ],
-              "signature": "public static LongMatrix filled(final int rowCount, final int columnCount, final long element)",
-              "return_type": "LongMatrix",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "rowCount",
-                  "type": "int",
-                  "javadoc": "the number of rows in the new matrix; must be {@code >= 0}",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "columnCount",
-                  "type": "int",
-                  "javadoc": "the number of columns in the new matrix; must be {@code >= 0}",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "element",
-                  "type": "long",
-                  "javadoc": "the long value to fill every cell with",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Creates a new matrix of the specified dimensions where every cell holds {@code element} .",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -21237,12 +20683,12 @@
               "see_also": []
             },
             {
-              "name": "fill",
+              "name": "copyFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void fill(final long[][] source)",
+              "signature": "public void copyFrom(final long[][] source)",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -21254,22 +20700,22 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Fills this matrix with values from another two-dimensional array, starting at position {@code (0, 0)} .",
+              "javadoc_summary": "Copies values into this matrix from another two-dimensional array, starting at position {@code (0, 0)} .",
               "contract": [
                 "If the source array is larger, only the portion that fits is copied."
               ],
               "examples": [],
               "see_also": [
-                "#fill(int, int, long[][])"
+                "#copyFrom(int, int, long[][])"
               ]
             },
             {
-              "name": "fill",
+              "name": "copyFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void fill(final int destRowIndex, final int destColumnIndex, final long[][] source) throws IndexOutOfBoundsException, IllegalArgumentException",
+              "signature": "public void copyFrom(final int destRowIndex, final int destColumnIndex, final long[][] source) throws IndexOutOfBoundsException, IllegalArgumentException",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -21302,7 +20748,7 @@
                   "condition": "if {@code source} is {@code null}"
                 }
               ],
-              "javadoc_summary": "Fills a region of this matrix with values from another two-dimensional array, starting at the specified destination position.",
+              "javadoc_summary": "Copies values into a region of this matrix from another two-dimensional array, starting at the specified destination position.",
               "contract": [
                 "Any source row that aliases this matrix's backing storage is snapshotted before copying, so overlapping copies read the source values as they were when this method was called."
               ],
@@ -21411,7 +20857,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "public LongMatrix resize(final int newRowCount, final int newColumnCount)",
+              "signature": "@Override public LongMatrix resize(final int newRowCount, final int newColumnCount)",
               "return_type": "LongMatrix",
               "type_params": [],
               "params": [
@@ -21788,13 +21234,13 @@
                 {
                   "name": "rowRepeats",
                   "type": "int",
-                  "javadoc": "number of times to repeat each element in row direction",
+                  "javadoc": "number of times to repeat each element in row direction; must be {@code > 0}",
                   "nullability": "unspecified"
                 },
                 {
                   "name": "columnRepeats",
                   "type": "int",
-                  "javadoc": "number of times to repeat each element in column direction",
+                  "javadoc": "number of times to repeat each element in column direction; must be {@code > 0}",
                   "nullability": "unspecified"
                 }
               ],
@@ -21808,6 +21254,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
+                "#tile(int, int)",
                 "<a href=\"https://www.mathworks.com/help/matlab/ref/repelem.html\">,MATLAB repelem function,</a>"
               ]
             },
@@ -21824,13 +21271,13 @@
                 {
                   "name": "rowRepeats",
                   "type": "int",
-                  "javadoc": "number of times to repeat the matrix vertically",
+                  "javadoc": "number of times to repeat the matrix vertically; must be {@code > 0}",
                   "nullability": "unspecified"
                 },
                 {
                   "name": "columnRepeats",
                   "type": "int",
-                  "javadoc": "number of times to repeat the matrix horizontally",
+                  "javadoc": "number of times to repeat the matrix horizontally; must be {@code > 0}",
                   "nullability": "unspecified"
                 }
               ],
@@ -21844,6 +21291,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
+                "#repeatElements(int, int)",
                 "<a href=\"https://www.mathworks.com/help/matlab/ref/repmat.html\">,MATLAB repmat function,</a>"
               ]
             },
@@ -21866,12 +21314,12 @@
               ]
             },
             {
-              "name": "mutateFlattened",
+              "name": "mutateViaFlatArray",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super long[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateViaFlatArray(final Throwables.Consumer<? super long[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -21903,7 +21351,7 @@
               ],
               "examples": [],
               "see_also": [
-                "Arrays#mutateFlattened(long[][], Throwables.Consumer)"
+                "Arrays#mutateViaFlatArray(long[][], Throwables.Consumer)"
               ]
             },
             {
@@ -22301,33 +21749,6 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public LongStream rowMajorStream(final int rowIndex)",
-              "return_type": "LongStream",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "rowIndex",
-                  "type": "int",
-                  "javadoc": "the index of the row to stream (0-based)",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Returns a stream of elements from a single row.",
-              "contract": [
-                "<p> This method is particularly useful when you need to process or analyze a specific row of the matrix independently."
-              ],
-              "examples": [],
-              "see_also": [
-                "#rowStreams()"
-              ]
-            },
-            {
-              "name": "rowMajorStream",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
               "signature": "@Override public LongStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "LongStream",
               "type_params": [],
@@ -22378,31 +21799,6 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public LongStream columnMajorStream(final int columnIndex)",
-              "return_type": "LongStream",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "columnIndex",
-                  "type": "int",
-                  "javadoc": "the index of the column to stream (0-based)",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Returns a stream of elements from a single column.",
-              "contract": [],
-              "examples": [],
-              "see_also": [
-                "#columnStreams()"
-              ]
-            },
-            {
-              "name": "columnMajorStream",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
               "signature": "@Override public LongStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "LongStream",
               "type_params": [],
@@ -22446,7 +21842,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#rowMajorStream(int)"
+                "#rowMajorStream(int, int)"
               ]
             },
             {
@@ -26053,7 +25449,8 @@
               ],
               "javadoc_summary": "Combines multiple generic {@link Matrix} objects element-wise using a binary operator applied sequentially.",
               "contract": [
-                "} </pre> <p> All matrices in the collection must have identical dimensions."
+                "} </pre> <p> All matrices in the collection must have identical dimensions.",
+                "The shared {@link Matrix#empty()} instance is treated as a type-neutral placeholder when at least one input has a reified runtime element type, so it does not unnecessarily widen an otherwise typed empty result to {@link Object} ."
               ],
               "examples": [],
               "see_also": [
@@ -26347,56 +25744,6 @@
                 "#wrap(Object[][])",
                 "#copy()"
               ]
-            },
-            {
-              "name": "filled",
-              "kind": "static",
-              "modifiers": [
-                "public",
-                "static"
-              ],
-              "signature": "public static <T> Matrix<T> filled(final int rowCount, final int columnCount, final T element) throws IllegalArgumentException",
-              "return_type": "Matrix<T>",
-              "type_params": [
-                {
-                  "name": "T",
-                  "bounds": [
-                    "java.lang.Object"
-                  ]
-                }
-              ],
-              "params": [
-                {
-                  "name": "rowCount",
-                  "type": "int",
-                  "javadoc": "the number of rows in the new matrix (must be {@code >= 0} )",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "columnCount",
-                  "type": "int",
-                  "javadoc": "the number of columns in the new matrix (must be {@code >= 0} )",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "element",
-                  "type": "T",
-                  "javadoc": "the value to fill the matrix with (must not be {@code null} )",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [
-                {
-                  "type": "java.lang.IllegalArgumentException",
-                  "condition": "if {@code rowCount} or {@code columnCount} is negative, if {@code element} is {@code null} , or if the resulting shape is unrepresentable (i.e. {@code rowCount == 0} but {@code columnCount > 0} )"
-                }
-              ],
-              "javadoc_summary": "Creates a new matrix of the specified dimensions where every element is the provided {@code element} .",
-              "contract": [
-                "Because {@code element} must be non- {@code null} , producing a typed empty matrix still requires a non- {@code null} sample element, such as {@code Matrix.filled(0, 0, \"a\")} ."
-              ],
-              "examples": [],
-              "see_also": []
             },
             {
               "name": "ofMainDiagonal",
@@ -27815,12 +27162,12 @@
               "see_also": []
             },
             {
-              "name": "fill",
+              "name": "copyFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void fill(final T[][] source)",
+              "signature": "public void copyFrom(final T[][] source)",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -27839,16 +27186,16 @@
               ],
               "examples": [],
               "see_also": [
-                "#fill(int, int, Object[][])"
+                "#copyFrom(int, int, Object[][])"
               ]
             },
             {
-              "name": "fill",
+              "name": "copyFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void fill(final int destRowIndex, final int destColumnIndex, final T[][] source) throws IndexOutOfBoundsException, IllegalArgumentException",
+              "signature": "public void copyFrom(final int destRowIndex, final int destColumnIndex, final T[][] source) throws IndexOutOfBoundsException, IllegalArgumentException",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -27991,7 +27338,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "public Matrix<T> resize(final int newRowCount, final int newColumnCount)",
+              "signature": "@Override public Matrix<T> resize(final int newRowCount, final int newColumnCount)",
               "return_type": "Matrix<T>",
               "type_params": [],
               "params": [
@@ -28391,6 +27738,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
+                "#tile(int, int)",
                 "<a href=\"https://www.mathworks.com/help/matlab/ref/repelem.html\">,MATLAB repelem function,</a>"
               ]
             },
@@ -28427,6 +27775,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
+                "#repeatElements(int, int)",
                 "<a href=\"https://www.mathworks.com/help/matlab/ref/repmat.html\">,MATLAB repmat function,</a>"
               ]
             },
@@ -28449,12 +27798,12 @@
               ]
             },
             {
-              "name": "mutateFlattened",
+              "name": "mutateViaFlatArray",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super T[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateViaFlatArray(final Throwables.Consumer<? super T[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -28486,7 +27835,7 @@
               ],
               "examples": [],
               "see_also": [
-                "Arrays.ff#mutateFlattened(Object[][], Throwables.Consumer)"
+                "Arrays.ff#mutateViaFlatArray(Object[][], Throwables.Consumer)"
               ]
             },
             {
@@ -28872,31 +28221,6 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public Stream<T> rowMajorStream(final int rowIndex)",
-              "return_type": "Stream<T>",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "rowIndex",
-                  "type": "int",
-                  "javadoc": "the index of the row to stream (0-based)",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Returns a stream of elements from a single row.",
-              "contract": [],
-              "examples": [],
-              "see_also": [
-                "#rowStreams()"
-              ]
-            },
-            {
-              "name": "rowMajorStream",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
               "signature": "@Override public Stream<T> rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "Stream<T>",
               "type_params": [],
@@ -28947,31 +28271,6 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public Stream<T> columnMajorStream(final int columnIndex)",
-              "return_type": "Stream<T>",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "columnIndex",
-                  "type": "int",
-                  "javadoc": "the index of the column to stream (0-based)",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Returns a stream of elements from a single column.",
-              "contract": [],
-              "examples": [],
-              "see_also": [
-                "#columnStreams()"
-              ]
-            },
-            {
-              "name": "columnMajorStream",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
               "signature": "@Override public Stream<T> columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "Stream<T>",
               "type_params": [],
@@ -29015,7 +28314,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#rowMajorStream(int)"
+                "#rowMajorStream(int, int)"
               ]
             },
             {
@@ -29440,7 +28739,7 @@
               "type_params": [],
               "params": [],
               "throws": [],
-              "javadoc_summary": "Returns the shared empty matrix with zero rows and zero columns.",
+              "javadoc_summary": "Returns the shared empty {@code 0x0} matrix instance.",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -29459,7 +28758,7 @@
                 {
                   "name": "a",
                   "type": "short[][]",
-                  "javadoc": "the two-dimensional short array to create the matrix from, or empty for an empty matrix; must not be {@code null}",
+                  "javadoc": "the two-dimensional short array to wrap, or empty for an empty matrix; must not be {@code null}",
                   "nullability": "unspecified"
                 }
               ],
@@ -29550,42 +28849,6 @@
               ],
               "throws": [],
               "javadoc_summary": "Creates a new matrix of the specified dimensions filled with pseudo-random {@code short} values drawn uniformly from the entire {@code short} range.",
-              "contract": [],
-              "examples": [],
-              "see_also": []
-            },
-            {
-              "name": "filled",
-              "kind": "static",
-              "modifiers": [
-                "public",
-                "static"
-              ],
-              "signature": "public static ShortMatrix filled(final int rowCount, final int columnCount, final short element)",
-              "return_type": "ShortMatrix",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "rowCount",
-                  "type": "int",
-                  "javadoc": "the number of rows in the new matrix; must be {@code >= 0}",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "columnCount",
-                  "type": "int",
-                  "javadoc": "the number of columns in the new matrix; must be {@code >= 0}",
-                  "nullability": "unspecified"
-                },
-                {
-                  "name": "element",
-                  "type": "short",
-                  "javadoc": "the short value to fill the matrix with",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Creates a new matrix of the specified dimensions where every element is the provided {@code element} .",
               "contract": [],
               "examples": [],
               "see_also": []
@@ -30860,12 +30123,12 @@
               "see_also": []
             },
             {
-              "name": "fill",
+              "name": "copyFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void fill(final short[][] source)",
+              "signature": "public void copyFrom(final short[][] source)",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -30877,22 +30140,22 @@
                 }
               ],
               "throws": [],
-              "javadoc_summary": "Fills this matrix with values from another two-dimensional array, starting at position {@code (0, 0)} .",
+              "javadoc_summary": "Copies values into this matrix from another two-dimensional array, starting at position {@code (0, 0)} .",
               "contract": [
                 "If the source array is larger, only the portion that fits is copied."
               ],
               "examples": [],
               "see_also": [
-                "#fill(int, int, short[][])"
+                "#copyFrom(int, int, short[][])"
               ]
             },
             {
-              "name": "fill",
+              "name": "copyFrom",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "public void fill(final int destRowIndex, final int destColumnIndex, final short[][] source) throws IndexOutOfBoundsException, IllegalArgumentException",
+              "signature": "public void copyFrom(final int destRowIndex, final int destColumnIndex, final short[][] source) throws IndexOutOfBoundsException, IllegalArgumentException",
               "return_type": "void",
               "type_params": [],
               "params": [
@@ -30925,7 +30188,7 @@
                   "condition": "if {@code source} is {@code null}"
                 }
               ],
-              "javadoc_summary": "Fills a region of this matrix with values from another two-dimensional array, starting at the specified destination position.",
+              "javadoc_summary": "Copies values into a region of this matrix from another two-dimensional array, starting at the specified destination position.",
               "contract": [
                 "Any source row that aliases this matrix's backing storage is snapshotted before copying, so overlapping copies read the source values as they were when this method was called."
               ],
@@ -31034,7 +30297,7 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "public ShortMatrix resize(final int newRowCount, final int newColumnCount)",
+              "signature": "@Override public ShortMatrix resize(final int newRowCount, final int newColumnCount)",
               "return_type": "ShortMatrix",
               "type_params": [],
               "params": [
@@ -31411,13 +30674,13 @@
                 {
                   "name": "rowRepeats",
                   "type": "int",
-                  "javadoc": "number of times to repeat each element in row direction",
+                  "javadoc": "number of times to repeat each element in row direction; must be {@code > 0}",
                   "nullability": "unspecified"
                 },
                 {
                   "name": "columnRepeats",
                   "type": "int",
-                  "javadoc": "number of times to repeat each element in column direction",
+                  "javadoc": "number of times to repeat each element in column direction; must be {@code > 0}",
                   "nullability": "unspecified"
                 }
               ],
@@ -31431,6 +30694,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
+                "#tile(int, int)",
                 "<a href=\"https://www.mathworks.com/help/matlab/ref/repelem.html\">,MATLAB repelem function,</a>"
               ]
             },
@@ -31447,13 +30711,13 @@
                 {
                   "name": "rowRepeats",
                   "type": "int",
-                  "javadoc": "number of times to repeat the matrix vertically",
+                  "javadoc": "number of times to repeat the matrix vertically; must be {@code > 0}",
                   "nullability": "unspecified"
                 },
                 {
                   "name": "columnRepeats",
                   "type": "int",
-                  "javadoc": "number of times to repeat the matrix horizontally",
+                  "javadoc": "number of times to repeat the matrix horizontally; must be {@code > 0}",
                   "nullability": "unspecified"
                 }
               ],
@@ -31467,6 +30731,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
+                "#repeatElements(int, int)",
                 "<a href=\"https://www.mathworks.com/help/matlab/ref/repmat.html\">,MATLAB repmat function,</a>"
               ]
             },
@@ -31489,12 +30754,12 @@
               ]
             },
             {
-              "name": "mutateFlattened",
+              "name": "mutateViaFlatArray",
               "kind": "instance",
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super short[], E> action) throws E",
+              "signature": "@Override public <E extends Exception> void mutateViaFlatArray(final Throwables.Consumer<? super short[], E> action) throws E",
               "return_type": "void",
               "type_params": [
                 {
@@ -31526,7 +30791,7 @@
               ],
               "examples": [],
               "see_also": [
-                "Arrays#mutateFlattened(short[][], Throwables.Consumer)"
+                "Arrays#mutateViaFlatArray(short[][], Throwables.Consumer)"
               ]
             },
             {
@@ -31939,33 +31204,6 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public ShortStream rowMajorStream(final int rowIndex)",
-              "return_type": "ShortStream",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "rowIndex",
-                  "type": "int",
-                  "javadoc": "the index of the row to stream (0-based)",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Returns a stream of elements from a single row.",
-              "contract": [
-                "<p> This method is particularly useful when you need to process or analyze a specific row of the matrix independently."
-              ],
-              "examples": [],
-              "see_also": [
-                "#rowStreams()"
-              ]
-            },
-            {
-              "name": "rowMajorStream",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
               "signature": "@Override public ShortStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException",
               "return_type": "ShortStream",
               "type_params": [],
@@ -32016,31 +31254,6 @@
               "modifiers": [
                 "public"
               ],
-              "signature": "@Override public ShortStream columnMajorStream(final int columnIndex)",
-              "return_type": "ShortStream",
-              "type_params": [],
-              "params": [
-                {
-                  "name": "columnIndex",
-                  "type": "int",
-                  "javadoc": "the index of the column to stream (0-based)",
-                  "nullability": "unspecified"
-                }
-              ],
-              "throws": [],
-              "javadoc_summary": "Returns a stream of elements from a single column.",
-              "contract": [],
-              "examples": [],
-              "see_also": [
-                "#columnStreams()"
-              ]
-            },
-            {
-              "name": "columnMajorStream",
-              "kind": "instance",
-              "modifiers": [
-                "public"
-              ],
               "signature": "@Override public ShortStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException",
               "return_type": "ShortStream",
               "type_params": [],
@@ -32084,7 +31297,7 @@
               "contract": [],
               "examples": [],
               "see_also": [
-                "#rowMajorStream(int)"
+                "#rowMajorStream(int, int)"
               ]
             },
             {

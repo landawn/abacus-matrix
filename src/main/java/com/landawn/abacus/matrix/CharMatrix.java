@@ -37,7 +37,7 @@ import com.landawn.abacus.util.stream.Stream;
  * <p>This type specializes {@link AbstractMatrix} for {@code char} values while keeping the data in a
  * validated backing array. The constructor and {@link #wrap(char[]...)} wrap the supplied storage
  * directly. {@link #copyOf(char[]...)}, conversions, and mapping operations do not share mutable cell
- * storage with a non-empty source; operations producing an empty matrix may return the canonical empty
+ * storage with a non-empty source; operations producing an empty matrix may return the shared empty
  * singleton.</p>
  *
  * <p>Cells introduced by growth or reshaping default to {@code (char) 0} (the NUL character) unless an overload accepts an
@@ -109,7 +109,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * boolean sameSingleton = CharMatrix.empty() == CharMatrix.empty(); // true (shared singleton)
      * }</pre>
      *
-     * @return the canonical empty {@code CharMatrix} (singleton)
+     * @return the shared empty {@code CharMatrix} singleton
      */
     public static CharMatrix empty() {
         return EMPTY_CHAR_MATRIX;
@@ -244,42 +244,6 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
             for (int i = 0; i < columnCount; i++) {
                 ea[i] = (char) RAND.nextInt(BOUND);
             }
-        }
-
-        return new CharMatrix(a);
-    }
-
-    /**
-     * Creates a new matrix of the specified dimensions where every element is the provided {@code element}.
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * CharMatrix matrix = CharMatrix.filled(2, 3, 'a');
-     * matrix.get(0, 0);            // returns 'a'
-     * matrix.get(1, 2);            // returns 'a'
-     * matrix.rowCount();           // returns 2
-     *
-     * CharMatrix.filled(0, 0, 'a').isEmpty(); // returns true
-     * CharMatrix.filled(-1, 3, 'a');          // throws IllegalArgumentException
-     * }</pre>
-     *
-     * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
-     * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
-     * @param element the char value to fill the matrix with
-     * @return a new {@code CharMatrix} of dimensions {@code rowCount x columnCount} filled with the specified element
-     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative, or
-     *         if the resulting shape cannot be represented (for example {@code rowCount == 0} with
-     *         {@code columnCount > 0})
-     */
-    public static CharMatrix filled(final int rowCount, final int columnCount, final char element) {
-        N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
-        N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
-        checkRepresentableShape(rowCount, columnCount);
-
-        final char[][] a = new char[rowCount][columnCount];
-
-        for (char[] ea : a) {
-            N.fill(ea, element);
         }
 
         return new CharMatrix(a);
@@ -926,7 +890,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * This modifies the matrix directly.
      *
      * <p>The operator is applied to each element in the specified row sequentially
-     * from left to right (column 0 to column columnCount-1).</p>
+     * from left to right (column {@code 0} to column {@code columnCount - 1}).</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -966,10 +930,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * This modifies the matrix directly.
      *
      * <p>The operator is applied to each element in the specified column sequentially
-     * from top to bottom (row 0 to row rowCount-1).</p>
+     * from top to bottom (row {@code 0} to row {@code rowCount - 1}).</p>
      *
-     * <p>If multiple logical rows share the same backing array, the shared cell at
-     * {@code columnIndex} is transformed exactly once, when that backing row is first encountered.</p>
+     * <p>If multiple logical rows share the same backing array, the operator is applied to that
+     * backing row only once, at its first occurrence.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1541,8 +1505,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     }
 
     /**
-     * Fills this matrix with values from another two-dimensional array, starting at position {@code (0, 0)}.
-     * Equivalent to {@code fill(0, 0, source)}.
+     * Copies values into this matrix from another two-dimensional array, starting at position {@code (0, 0)}.
+     * Equivalent to {@code copyFrom(0, 0, source)}.
      * The source array can be smaller than this matrix; only the overlapping region is copied.
      * If the source array is larger, only the portion that fits is copied. {@code null} rows in
      * {@code source} are skipped (the corresponding row of this matrix is left unchanged).
@@ -1551,30 +1515,30 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.wrap(new char[3][3]);
-     * matrix.fill(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * // Top-left 2x2 region is filled; the rest keeps the null character (char) 0:
+     * matrix.copyFrom(new char[][] {{'a', 'b'}, {'c', 'd'}});
+     * // Top-left 2x2 region is copied; the rest keeps the null character (char) 0:
      * //   [['a', 'b', (char) 0], ['c', 'd', (char) 0], [(char) 0, (char) 0, (char) 0]]
      * matrix.get(0, 0);           // returns 'a'
      * matrix.get(1, 1);           // returns 'd'
      *
      * // A source larger than the matrix is silently truncated to fit.
      * CharMatrix small = CharMatrix.wrap(new char[1][1]);
-     * small.fill(new char[][] {{'x', 'y'}, {'z', 'w'}});
+     * small.copyFrom(new char[][] {{'x', 'y'}, {'z', 'w'}});
      * small.get(0, 0);            // returns 'x' (only the top-left cell that fits is copied)
      *
-     * matrix.fill((char[][]) null); // throws IllegalArgumentException (null source)
+     * matrix.copyFrom((char[][]) null); // throws IllegalArgumentException (null source)
      * }</pre>
      *
      * @param source the two-dimensional array to copy values from; must not be {@code null}
      * @throws IllegalArgumentException if {@code source} is {@code null}
-     * @see #fill(int, int, char[][])
+     * @see #copyFrom(int, int, char[][])
      */
-    public void fill(final char[][] source) {
-        fill(0, 0, source);
+    public void copyFrom(final char[][] source) {
+        copyFrom(0, 0, source);
     }
 
     /**
-     * Fills a region of this matrix with values from another two-dimensional array, starting at the
+     * Copies values into a region of this matrix from another two-dimensional array, starting at the
      * specified destination position.
      * The source array can extend beyond this matrix's bounds; only the overlapping region is copied.
      * The matrix is modified in-place. {@code null} rows in {@code source} are skipped (the
@@ -1585,7 +1549,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.wrap(new char[3][3]);
-     * matrix.fill(1, 1, new char[][] {{'a', 'b'}, {'c', 'd'}});
+     * matrix.copyFrom(1, 1, new char[][] {{'a', 'b'}, {'c', 'd'}});
      * // Result; cells outside the copied region keep the null character (char) 0:
      * //   [[(char) 0, (char) 0, (char) 0], [(char) 0, 'a', 'b'], [(char) 0, 'c', 'd']]
      * matrix.get(1, 1);           // returns 'a'
@@ -1593,10 +1557,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * // A source that overruns the bounds from the start position is clipped.
      * CharMatrix clip = CharMatrix.wrap(new char[2][2]);
-     * clip.fill(1, 1, new char[][] {{'x', 'y'}, {'z', 'w'}});
+     * clip.copyFrom(1, 1, new char[][] {{'x', 'y'}, {'z', 'w'}});
      * clip.get(1, 1);             // returns 'x' (only the in-bounds top-left cell is copied)
      *
-     * matrix.fill(0, 0, (char[][]) null); // throws IllegalArgumentException (null source)
+     * matrix.copyFrom(0, 0, (char[][]) null); // throws IllegalArgumentException (null source)
      * }</pre>
      *
      * @param destRowIndex the target row index in this matrix (0-based, must satisfy {@code 0 <= destRowIndex <= rowCount})
@@ -1606,7 +1570,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *         or if {@code destColumnIndex < 0} or {@code destColumnIndex > columnCount}
      * @throws IllegalArgumentException if {@code source} is {@code null}
      */
-    public void fill(final int destRowIndex, final int destColumnIndex, final char[][] source) throws IndexOutOfBoundsException, IllegalArgumentException {
+    public void copyFrom(final int destRowIndex, final int destColumnIndex, final char[][] source) throws IndexOutOfBoundsException, IllegalArgumentException {
         N.checkArgNotNull(source, "source");
         if (destRowIndex < 0 || destRowIndex > rowCount) {
             throw new IndexOutOfBoundsException(formatMsg("destRowIndex({}) must be in [0, rowCount({})]", destRowIndex, rowCount));
@@ -2280,10 +2244,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     }
 
     /**
-     * Creates the transpose of this matrix by swapping rows and columns.
-     * The transpose operation converts each row into a column, so element at position (i, j)
-     * in the original matrix appears at position (j, i) in the transposed matrix. The resulting
-     * matrix has dimensions swapped (rowCount × columnCount becomes columnCount × rowCount).
+     * Returns a new matrix that is the transpose of this matrix.
+     * The element at position {@code (i, j)} in this matrix appears at position {@code (j, i)}
+     * in the result. The resulting matrix has dimensions swapped: {@code columnCount x rowCount}.
      * Creates a new matrix; the original matrix is not modified.
      *
      * <p><b>Usage Examples:</b></p>
@@ -2432,10 +2395,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *        must be {@code > 0}
      * @param columnRepeats the number of times to repeat each element horizontally (across the column axis);
      *        must be {@code > 0}
-     * @return a new {@code CharMatrix} with repeated elements and dimensions
-     *         {@code (rowCount * rowRepeats) x (columnCount * columnRepeats)}
+     * @return a new {@code CharMatrix} with dimensions {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}
      * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is not positive,
      *         or the resulting dimensions would exceed {@link Integer#MAX_VALUE}
+     * @see #tile(int, int)
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">MATLAB repelem function</a>
      */
     @Override
@@ -2490,9 +2453,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * @param rowRepeats number of times to repeat the matrix vertically; must be {@code > 0}
      * @param columnRepeats number of times to repeat the matrix horizontally; must be {@code > 0}
-     * @return a new CharMatrix with the repeated pattern
+     * @return a new {@code CharMatrix} with dimensions {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}
      * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is not positive,
      *         or the resulting dimensions would exceed {@link Integer#MAX_VALUE}
+     * @see #repeatElements(int, int)
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
     @Override
@@ -2577,21 +2541,21 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * <p>For a matrix with no rows, the action is not invoked. For a matrix with one or more
      * zero-length rows, the action is invoked once with an empty array. See
-     * {@link Arrays#mutateFlattened(char[][], Throwables.Consumer)} for the exact semantics of the
+     * {@link Arrays#mutateViaFlatArray(char[][], Throwables.Consumer)} for the exact semantics of the
      * underlying operation.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.wrap(new char[][] {{'d', 'b'}, {'c', 'a'}});
-     * matrix.mutateFlattened(arr -> java.util.Arrays.sort(arr));
+     * matrix.mutateViaFlatArray(arr -> java.util.Arrays.sort(arr));
      * matrix.rowView(0);          // returns ['a', 'b']
      * matrix.rowView(1);          // returns ['c', 'd']
      *
      * CharMatrix m = CharMatrix.wrap(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * m.mutateFlattened(arr -> { for (int i = 0; i < arr.length; i++) arr[i] = Character.toUpperCase(arr[i]); });
+     * m.mutateViaFlatArray(arr -> { for (int i = 0; i < arr.length; i++) arr[i] = Character.toUpperCase(arr[i]); });
      * m.rowView(0);               // returns ['A', 'B']
      *
-     * CharMatrix.empty().mutateFlattened(arr -> java.util.Arrays.sort(arr)); // no-op on an empty matrix
+     * CharMatrix.empty().mutateViaFlatArray(arr -> java.util.Arrays.sort(arr)); // no-op on an empty matrix
      * }</pre>
      *
      * @param <E> the exception type that the operation may throw
@@ -2599,13 +2563,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws ArithmeticException if the number of matrix elements exceeds {@link Integer#MAX_VALUE}
      * @throws E if the operation throws an exception
-     * @see Arrays#mutateFlattened(char[][], Throwables.Consumer)
+     * @see Arrays#mutateViaFlatArray(char[][], Throwables.Consumer)
      */
     @Override
-    public <E extends Exception> void mutateFlattened(final Throwables.Consumer<? super char[], E> action) throws E {
+    public <E extends Exception> void mutateViaFlatArray(final Throwables.Consumer<? super char[], E> action) throws E {
         N.checkArgNotNull(action, cs.action);
 
-        Arrays.mutateFlattened(a, action);
+        Arrays.mutateViaFlatArray(a, action);
     }
 
     /**
@@ -2941,6 +2905,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * }</pre>
      *
      * @return a new IntMatrix with the same dimensions containing the int values of the characters
+     * @see #toLongMatrix()
+     * @see #toFloatMatrix()
+     * @see #toDoubleMatrix()
      * @see IntMatrix#from(char[][])
      */
     public IntMatrix toIntMatrix() {
@@ -2963,6 +2930,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * }</pre>
      *
      * @return a new LongMatrix with the same dimensions containing the long values of the characters
+     * @see #toIntMatrix()
+     * @see #toFloatMatrix()
+     * @see #toDoubleMatrix()
      */
     public LongMatrix toLongMatrix() {
         final long[][] c = new long[rowCount][columnCount];
@@ -2995,6 +2965,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * }</pre>
      *
      * @return a new FloatMatrix with the same dimensions containing the float values of the characters
+     * @see #toIntMatrix()
+     * @see #toLongMatrix()
+     * @see #toDoubleMatrix()
      */
     public FloatMatrix toFloatMatrix() {
         final float[][] c = new float[rowCount][columnCount];
@@ -3027,6 +3000,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * }</pre>
      *
      * @return a new DoubleMatrix with the same dimensions containing the double values of the characters
+     * @see #toIntMatrix()
+     * @see #toLongMatrix()
+     * @see #toFloatMatrix()
      */
     public DoubleMatrix toDoubleMatrix() {
         final double[][] c = new double[rowCount][columnCount];
@@ -3299,39 +3275,6 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     }
 
     /**
-     * Returns a stream of elements from a single row.
-     * The elements are streamed from left to right within the specified row.
-     *
-     * <p>This method is particularly useful when you need to process or analyze
-     * a specific row of the matrix independently. The returned stream can be
-     * used with all standard CharStream operations.</p>
-     *
-     * <p>This streams the elements of the single specified row, flattened into one stream. To
-     * instead obtain every row as its own stream (a stream of streams), use {@link #rowStreams()}.</p>
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * CharMatrix matrix = CharMatrix.wrap(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
-     * matrix.rowMajorStream(0).toArray();   // returns ['a', 'b', 'c']
-     * matrix.rowMajorStream(1).sum();       // returns 303 (sum of second row)
-     *
-     * matrix.rowMajorStream(-1);            // throws IndexOutOfBoundsException
-     * matrix.rowMajorStream(2);             // throws IndexOutOfBoundsException (rowIndex >= rowCount)
-     * }</pre>
-     *
-     * @param rowIndex the index of the row to stream (0-based)
-     * @return a {@link CharStream} of elements from the specified row
-     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
-     * @see #rowStreams()
-     */
-    @Override
-    public CharStream rowMajorStream(final int rowIndex) {
-        checkRowIndex(rowIndex);
-
-        return rowMajorStream(rowIndex, rowIndex + 1);
-    }
-
-    /**
      * Returns a stream of elements from a range of rows in row-major order.
      * Elements are streamed row by row from the starting row (inclusive) to
      * the ending row (exclusive), with each row streamed from left to right.
@@ -3456,38 +3399,6 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     }
 
     /**
-     * Returns a stream of elements from a single column.
-     * The elements are streamed from top to bottom within the specified column.
-     *
-     * <p>This method is useful for column-wise operations such as calculating
-     * column sums, finding column maximums, or filtering column values.</p>
-     *
-     * <p>This streams the elements of the single specified column, flattened into one stream. To
-     * instead obtain every column as its own stream (a stream of streams), use {@link #columnStreams()}.</p>
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * CharMatrix matrix = CharMatrix.wrap(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
-     * matrix.columnMajorStream(1).toArray();     // returns ['b', 'e']
-     * matrix.columnMajorStream(0).sum();         // returns 197 (sum of first column)
-     *
-     * matrix.columnMajorStream(-1);              // throws IndexOutOfBoundsException
-     * matrix.columnMajorStream(3);               // throws IndexOutOfBoundsException (columnIndex >= columnCount)
-     * }</pre>
-     *
-     * @param columnIndex the index of the column to stream (0-based)
-     * @return a {@link CharStream} of elements from the specified column
-     * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
-     * @see #columnStreams()
-     */
-    @Override
-    public CharStream columnMajorStream(final int columnIndex) {
-        checkColumnIndex(columnIndex);
-
-        return columnMajorStream(columnIndex, columnIndex + 1);
-    }
-
-    /**
      * Returns a stream of elements from a range of columns in column-major order.
      * Elements are streamed column by column from the starting column (inclusive)
      * to the ending column (exclusive), with each column streamed from top to bottom.
@@ -3594,7 +3505,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * rows to other values.</p>
      *
      * <p>This yields one stream per row. To instead stream the elements of a single row as one
-     * flat stream, use {@link #rowMajorStream(int)}.</p>
+     * flat stream, use {@link #rowMajorStream(int, int) rowMajorStream(rowIndex, rowIndex + 1)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3608,8 +3519,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * CharMatrix.wrap(new char[][] {{'a', 'b'}}).rowStreams().count(); // returns 1 (single row)
      * }</pre>
      *
-     * @return a Stream of CharStream objects, one for each row in the matrix
-     * @see #rowMajorStream(int)
+     * @return a Stream of CharStream objects, one for each row in the matrix,
+     *         or an empty stream if the matrix is empty
+     * @see #rowMajorStream(int, int)
      */
     @Override
     public Stream<CharStream> rowStreams() {
@@ -3686,6 +3598,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p>This method is useful for operations that need to process
      * entire columns as units, such as column-wise statistics, transformations, or filtering
      * columns based on conditions.</p>
+     *
+     * <p>This yields one stream per column. To instead stream the elements of a single column as one
+     * flat stream, use {@link #columnMajorStream(int, int) columnMajorStream(columnIndex, columnIndex + 1)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

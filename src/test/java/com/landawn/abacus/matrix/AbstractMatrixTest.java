@@ -393,7 +393,7 @@ class AbstractMatrixTest extends TestBase {
     public void testFlatOp() throws Exception {
         IntMatrix matrix = IntMatrix.wrap(new int[][] { { 3, 1, 4 }, { 1, 5, 9 } });
 
-        matrix.mutateFlattened(arrays -> java.util.Arrays.sort(arrays));
+        matrix.mutateViaFlatArray(arrays -> java.util.Arrays.sort(arrays));
 
         Assertions.assertEquals(1, matrix.get(0, 0));
         Assertions.assertEquals(1, matrix.get(0, 1));
@@ -706,9 +706,9 @@ class AbstractMatrixTest extends TestBase {
     }
 
     @Test
-    public void testStreamHRow() {
+    public void testStreamHSingleRowRange() {
         IntMatrix matrix = createTestMatrix();
-        List<Integer> row = matrix.rowMajorStream(1).boxed().collect(Collectors.toList());
+        List<Integer> row = matrix.rowMajorStream(1, 2).boxed().collect(Collectors.toList());
 
         Assertions.assertEquals(3, row.size());
         Assertions.assertEquals(4, row.get(0));
@@ -738,9 +738,9 @@ class AbstractMatrixTest extends TestBase {
     }
 
     @Test
-    public void testStreamVColumn() {
+    public void testStreamVSingleColumnRange() {
         IntMatrix matrix = createTestMatrix();
-        List<Integer> col = matrix.columnMajorStream(1).boxed().collect(Collectors.toList());
+        List<Integer> col = matrix.columnMajorStream(1, 2).boxed().collect(Collectors.toList());
 
         Assertions.assertEquals(3, col.size());
         Assertions.assertEquals(2, col.get(0));
@@ -1256,7 +1256,7 @@ class AbstractMatrixTest extends TestBase {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             List<Integer> values = new ArrayList<>();
 
-            m.mutateFlattened(arr -> {
+            m.mutateViaFlatArray(arr -> {
                 for (int val : arr) {
                     values.add(val);
                 }
@@ -2406,7 +2406,7 @@ class AbstractMatrixTest extends TestBase {
         public void testFlatOp_intMatrix() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 3, 1 }, { 4, 2 } });
             AtomicInteger sum = new AtomicInteger(0);
-            m.mutateFlattened(arr -> {
+            m.mutateViaFlatArray(arr -> {
                 for (int val : arr) {
                     sum.addAndGet(val);
                 }
@@ -2418,7 +2418,7 @@ class AbstractMatrixTest extends TestBase {
         public void testFlatOp_doubleMatrix() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.5, 2.5 }, { 3.5, 4.5 } });
             final double[] sum = { 0.0 };
-            m.mutateFlattened(arr -> {
+            m.mutateViaFlatArray(arr -> {
                 for (double val : arr) {
                     sum[0] += val;
                 }
@@ -2430,7 +2430,7 @@ class AbstractMatrixTest extends TestBase {
         public void testFlatOp_objectMatrix() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" }, { "C", "D" } });
             StringBuilder sb = new StringBuilder();
-            m.mutateFlattened(arr -> {
+            m.mutateViaFlatArray(arr -> {
                 for (String val : arr) {
                     sb.append(val);
                 }
@@ -2792,9 +2792,9 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamH_singleRow_intMatrix() {
+        public void testStreamH_singleRowRange_intMatrix() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            int[] row = m.rowMajorStream(1).toArray();
+            int[] row = m.rowMajorStream(1, 2).toArray();
 
             assertEquals(3, row.length);
             assertEquals(4, row[0]);
@@ -2827,9 +2827,9 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamV_singleColumn_intMatrix() {
+        public void testStreamV_singleColumnRange_intMatrix() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            int[] col = m.columnMajorStream(1).toArray();
+            int[] col = m.columnMajorStream(1, 2).toArray();
 
             assertEquals(2, col.length);
             assertEquals(2, col[0]);
@@ -3773,10 +3773,10 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testAbstractMatrix_mutateFlattened() {
-            // From mutateFlattened Javadoc
+        public void testAbstractMatrix_mutateViaFlatArray() {
+            // From mutateViaFlatArray Javadoc
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 3, 1, 4 }, { 1, 5, 9 } });
-            matrix.mutateFlattened(a -> java.util.Arrays.sort(a)); // Sorts all elements
+            matrix.mutateViaFlatArray(a -> java.util.Arrays.sort(a)); // Sorts all elements
             // Matrix becomes [[1, 1, 3], [4, 5, 9]] (elements sorted in row-major order)
             assertEquals(1, matrix.get(0, 0));
             assertEquals(1, matrix.get(0, 1));
@@ -3786,24 +3786,24 @@ class AbstractMatrixTest extends TestBase {
             assertEquals(9, matrix.get(1, 2));
 
             IntMatrix temporary = IntMatrix.wrap(new int[][] { { 1, 2 } });
-            temporary.mutateFlattened(flattened -> {
+            temporary.mutateViaFlatArray(flattened -> {
                 flattened[0] = 9;
                 assertEquals(1, temporary.get(0, 0));
             });
             assertArrayEquals(new int[] { 9, 2 }, temporary.rowCopy(0));
 
-            assertThrows(IllegalStateException.class, () -> temporary.mutateFlattened(flattened -> {
+            assertThrows(IllegalStateException.class, () -> temporary.mutateViaFlatArray(flattened -> {
                 flattened[1] = 8;
                 throw new IllegalStateException("abort");
             }));
             assertArrayEquals(new int[] { 9, 2 }, temporary.rowCopy(0));
 
             AtomicInteger zeroRowCalls = new AtomicInteger();
-            IntMatrix.empty().mutateFlattened(flattened -> zeroRowCalls.incrementAndGet());
+            IntMatrix.empty().mutateViaFlatArray(flattened -> zeroRowCalls.incrementAndGet());
             assertEquals(0, zeroRowCalls.get());
 
             AtomicInteger zeroColumnCalls = new AtomicInteger();
-            IntMatrix.wrap(new int[2][0]).mutateFlattened(flattened -> {
+            IntMatrix.wrap(new int[2][0]).mutateViaFlatArray(flattened -> {
                 zeroColumnCalls.incrementAndGet();
                 assertEquals(0, flattened.length);
             });
@@ -3811,7 +3811,7 @@ class AbstractMatrixTest extends TestBase {
 
             int[] shared = { 1, 2 };
             IntMatrix aliased = IntMatrix.wrap(new int[][] { shared, shared });
-            aliased.mutateFlattened(flattened -> {
+            aliased.mutateViaFlatArray(flattened -> {
                 flattened[0] = 10;
                 flattened[1] = 20;
                 flattened[2] = 30;
@@ -3942,30 +3942,6 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRowFromFilledAndDiagonalIsTypeSafe() {
-            Matrix<String> repeated = Matrix.filled(1, 2, "a");
-            String[] repeatRow = repeated.rowView(0);
-            assertTrue(repeatRow.getClass().getComponentType() == String.class);
-            repeatRow[0] = "x";
-            assertTrue("x".equals(repeated.get(0, 0)));
-
-            Matrix<String> diagonal = Matrix.ofMainDiagonal(new String[] { "p", "q" });
-            String[] diagonalRow = diagonal.rowView(0);
-            assertTrue(diagonalRow.getClass().getComponentType() == String.class);
-            assertTrue("p".equals(diagonalRow[0]));
-        }
-
-        @Test
-        public void testFilledStillSupportsWiderGenericAssignments() {
-            Matrix<Number> matrix = Matrix.filled(1, 1, 1D);
-            matrix.set(0, 0, 2.5d);
-            Number[] row = matrix.rowView(0);
-
-            assertTrue(Math.abs(matrix.get(0, 0).doubleValue() - 2.5d) < 1e-9d);
-            assertTrue(Math.abs(row[0].doubleValue() - 2.5d) < 1e-9d);
-        }
-
-        @Test
         public void testFailedSetDoesNotCorruptElementTypeForLaterAllocations() {
             Serializable[][] backing = new String[][] { { "a" } };
             Matrix<Serializable> matrix = new Matrix<>(backing);
@@ -4087,24 +4063,15 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRandomAndFilledRejectUnrepresentableShape() {
-            assertThrows(IllegalArgumentException.class, () -> Matrix.filled(0, 1, "x"));
+        public void testRandomRejectsUnrepresentableShape() {
             assertThrows(IllegalArgumentException.class, () -> BooleanMatrix.random(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> BooleanMatrix.filled(0, 1, true));
             assertThrows(IllegalArgumentException.class, () -> ByteMatrix.random(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> ByteMatrix.filled(0, 1, (byte) 1));
             assertThrows(IllegalArgumentException.class, () -> CharMatrix.random(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> CharMatrix.filled(0, 1, 'a'));
             assertThrows(IllegalArgumentException.class, () -> ShortMatrix.random(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> ShortMatrix.filled(0, 1, (short) 1));
             assertThrows(IllegalArgumentException.class, () -> IntMatrix.random(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> IntMatrix.filled(0, 1, 1));
             assertThrows(IllegalArgumentException.class, () -> LongMatrix.random(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> LongMatrix.filled(0, 1, 1L));
             assertThrows(IllegalArgumentException.class, () -> FloatMatrix.random(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> FloatMatrix.filled(0, 1, 1F));
             assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.random(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.filled(0, 1, 1D));
         }
 
         @Test
@@ -4115,7 +4082,7 @@ class AbstractMatrixTest extends TestBase {
 
         @Test
         public void testColumnAndDiagonalReadsAreTypeSafeForObjectBackedMatrices() {
-            Matrix<String> repeated = Matrix.filled(2, 2, "a");
+            Matrix<String> repeated = Matrix.wrap(new String[][] { { "a", "a" }, { "a", "a" } });
             String[] col = repeated.columnCopy(0);
             assertEquals(String.class, col.getClass().getComponentType());
             assertEquals("a", col[0]);
@@ -4131,7 +4098,7 @@ class AbstractMatrixTest extends TestBase {
 
         @Test
         public void testMapValidatesTargetElementType() {
-            Matrix<String> matrix = Matrix.filled(1, 1, "x");
+            Matrix<String> matrix = Matrix.wrap(new String[][] { { "x" } });
 
             assertThrows(IllegalArgumentException.class, () -> matrix.map(v -> v, null));
         }

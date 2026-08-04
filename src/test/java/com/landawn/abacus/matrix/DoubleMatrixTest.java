@@ -126,16 +126,6 @@ class DoubleMatrixTest extends TestBase {
     }
 
     @Test
-    public void testFilled() {
-        DoubleMatrix matrix = DoubleMatrix.filled(1, 5, 3.14);
-        assertEquals(1, matrix.rowCount());
-        assertEquals(5, matrix.columnCount());
-        for (int i = 0; i < 5; i++) {
-            assertEquals(3.14, matrix.get(0, i));
-        }
-    }
-
-    @Test
     public void testDiagonalLU2RD() {
         double[] diagonal = { 1.0, 2.0, 3.0 };
         DoubleMatrix matrix = DoubleMatrix.ofMainDiagonal(diagonal);
@@ -460,7 +450,7 @@ class DoubleMatrixTest extends TestBase {
 
     @Test
     public void testUpdateAllUnarySequentialTallMatrixUsesRowMajorOrder() throws Exception {
-        final DoubleMatrix tall = DoubleMatrix.filled(3, 2, 0.0);
+        final DoubleMatrix tall = DoubleMatrix.wrap(new double[3][2]);
         final AtomicInteger next = new AtomicInteger();
 
         Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> tall.updateAll(x -> (double) next.incrementAndGet()));
@@ -576,12 +566,12 @@ class DoubleMatrixTest extends TestBase {
     }
 
     @Test
-    public void testFillWithArray() {
+    public void testCopyFrom() {
         double[][] arr = { { 1.0, 2.0 }, { 3.0, 4.0 } };
         DoubleMatrix matrix = DoubleMatrix.wrap(arr);
 
         double[][] fillArr = { { 5.0, 6.0 }, { 7.0, 8.0 } };
-        matrix.fill(fillArr);
+        matrix.copyFrom(fillArr);
         assertEquals(5.0, matrix.get(0, 0));
         assertEquals(6.0, matrix.get(0, 1));
         assertEquals(7.0, matrix.get(1, 0));
@@ -589,15 +579,15 @@ class DoubleMatrixTest extends TestBase {
     }
 
     @Test
-    public void testFillWithIndices() {
+    public void testCopyFromWithIndices() {
         double[][] arr = { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 } };
         DoubleMatrix matrix = DoubleMatrix.wrap(arr);
         double[][] fillArr = { { 7.0, 8.0 } };
-        matrix.fill(0, 1, fillArr);
+        matrix.copyFrom(0, 1, fillArr);
         assertEquals(7.0, matrix.get(0, 1));
         assertEquals(8.0, matrix.get(0, 2));
 
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.fill(-1, 0, fillArr));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyFrom(-1, 0, fillArr));
     }
 
     @Test
@@ -869,7 +859,7 @@ class DoubleMatrixTest extends TestBase {
         DoubleMatrix matrix = DoubleMatrix.wrap(arr);
 
         int[] count = { 0 };
-        matrix.mutateFlattened(array -> count[0] += array.length);
+        matrix.mutateViaFlatArray(array -> count[0] += array.length);
         assertEquals(4, count[0]);
     }
 
@@ -1032,7 +1022,7 @@ class DoubleMatrixTest extends TestBase {
         double[][] arr = { { 1.0, 2.0 }, { 3.0, 4.0 } };
         DoubleMatrix matrix = DoubleMatrix.wrap(arr);
 
-        double[] row = matrix.rowMajorStream(1).toArray();
+        double[] row = matrix.rowMajorStream(1, 2).toArray();
         assertEquals(2, row.length);
         assertEquals(3.0, row[0]);
         assertEquals(4.0, row[1]);
@@ -1069,7 +1059,7 @@ class DoubleMatrixTest extends TestBase {
         double[][] arr = { { 1.0, 2.0 }, { 3.0, 4.0 } };
         DoubleMatrix matrix = DoubleMatrix.wrap(arr);
 
-        double[] col = matrix.columnMajorStream(1).toArray();
+        double[] col = matrix.columnMajorStream(1, 2).toArray();
         assertEquals(2, col.length);
         assertEquals(2.0, col[0]);
         assertEquals(4.0, col[1]);
@@ -1220,11 +1210,11 @@ class DoubleMatrixTest extends TestBase {
         assertEquals(45.0, totalSum, 0.0001); // 1+2+3+4+5+6+7+8+9 = 45
 
         // Test sum of specific row
-        double row1Sum = matrix.rowMajorStream(1).sum();
+        double row1Sum = matrix.rowMajorStream(1, 2).sum();
         assertEquals(15.0, row1Sum, 0.0001); // 4+5+6 = 15
 
         // Test sum of specific column
-        double col0Sum = matrix.columnMajorStream(0).sum();
+        double col0Sum = matrix.columnMajorStream(0, 1).sum();
         assertEquals(12.0, col0Sum, 0.0001); // 1+4+7 = 12
 
         // Test min/max on streams
@@ -1625,28 +1615,6 @@ class DoubleMatrixTest extends TestBase {
                 for (int j = 0; j < 3; j++) {
                     double val = m.get(i, j);
                     assertTrue(val >= 0.0 && val < 1.0);
-                }
-            }
-        }
-
-        @Test
-        public void testFilled() {
-            DoubleMatrix m = DoubleMatrix.filled(1, 5, 3.14);
-            assertEquals(1, m.rowCount());
-            assertEquals(5, m.columnCount());
-            for (int i = 0; i < 5; i++) {
-                assertEquals(3.14, m.get(0, i), DELTA);
-            }
-        }
-
-        @Test
-        public void testFilled_withRowsCols() {
-            DoubleMatrix m = DoubleMatrix.filled(2, 3, 3.14);
-            assertEquals(2, m.rowCount());
-            assertEquals(3, m.columnCount());
-            for (int i = 0; i < 2; i++) {
-                for (int j = 0; j < 3; j++) {
-                    assertEquals(3.14, m.get(i, j), DELTA);
                 }
             }
         }
@@ -2121,10 +2089,10 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_withArray() {
+        public void testCopyFrom() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } });
             double[][] patch = { { 1.5, 2.5 }, { 3.5, 4.5 } };
-            m.fill(patch);
+            m.copyFrom(patch);
             assertEquals(1.5, m.get(0, 0), DELTA);
             assertEquals(2.5, m.get(0, 1), DELTA);
             assertEquals(3.5, m.get(1, 0), DELTA);
@@ -2133,10 +2101,10 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_withArrayAtPosition() {
+        public void testCopyFromAtPosition() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } });
             double[][] patch = { { 1.5, 2.5 }, { 3.5, 4.5 } };
-            m.fill(1, 1, patch);
+            m.copyFrom(1, 1, patch);
             assertEquals(0.0, m.get(0, 0), DELTA); // unchanged
             assertEquals(1.5, m.get(1, 1), DELTA);
             assertEquals(2.5, m.get(1, 2), DELTA);
@@ -2145,10 +2113,10 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_outOfBounds() {
+        public void testCopyFrom_outOfBounds() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             double[][] patch = { { 1.0, 2.0 }, { 3.0, 4.0 } };
-            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(-1, 0, patch));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(-1, 0, patch));
         }
 
         // ============ Copy Tests ============
@@ -2496,7 +2464,7 @@ class DoubleMatrixTest extends TestBase {
         public void testFlatOp() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
             List<Double> sums = new ArrayList<>();
-            m.mutateFlattened(row -> {
+            m.mutateViaFlatArray(row -> {
                 double sum = 0.0;
                 for (double val : row) {
                     sum += val;
@@ -2738,17 +2706,17 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamH_withRow() {
+        public void testStreamH_withSingleRowRange() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 } });
-            double[] row1 = m.rowMajorStream(1).toArray();
+            double[] row1 = m.rowMajorStream(1, 2).toArray();
             assertArrayEquals(new double[] { 4.0, 5.0, 6.0 }, row1, DELTA);
         }
 
         @Test
-        public void testStreamH_withRow_outOfBounds() {
+        public void testStreamH_withSingleRowRange_outOfBounds() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(-1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(-1, 0));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(2, 3));
         }
 
         @Test
@@ -2780,17 +2748,17 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamV_withColumn() {
+        public void testStreamV_withSingleColumnRange() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 } });
-            double[] col1 = m.columnMajorStream(1).toArray();
+            double[] col1 = m.columnMajorStream(1, 2).toArray();
             assertArrayEquals(new double[] { 2.0, 5.0 }, col1, DELTA);
         }
 
         @Test
-        public void testStreamV_withColumn_outOfBounds() {
+        public void testStreamV_withSingleColumnRange_outOfBounds() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(-1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(-1, 0));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(2, 3));
         }
 
         @Test
@@ -2965,11 +2933,11 @@ class DoubleMatrixTest extends TestBase {
             assertEquals(45.0, totalSum, DELTA); // 1+2+3+4+5+6+7+8+9 = 45
 
             // Test sum of specific row
-            double row1Sum = m.rowMajorStream(1).sum();
+            double row1Sum = m.rowMajorStream(1, 2).sum();
             assertEquals(15.0, row1Sum, DELTA); // 4+5+6 = 15
 
             // Test sum of specific column
-            double col0Sum = m.columnMajorStream(0).sum();
+            double col0Sum = m.columnMajorStream(0, 1).sum();
             assertEquals(12.0, col0Sum, DELTA); // 1+4+7 = 12
 
             // Test min/max
@@ -3460,23 +3428,6 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFilled() {
-            DoubleMatrix m = DoubleMatrix.filled(1, 5, 3.14);
-            assertEquals(1, m.rowCount());
-            assertEquals(5, m.columnCount());
-            for (int i = 0; i < 5; i++) {
-                assertEquals(3.14, m.get(0, i));
-            }
-        }
-
-        @Test
-        public void testFilled_withZeroLength() {
-            DoubleMatrix m = DoubleMatrix.filled(1, 0, 1.0);
-            assertEquals(1, m.rowCount());
-            assertEquals(0, m.columnCount());
-        }
-
-        @Test
         public void testDiagonalLU2RD() {
             DoubleMatrix m = DoubleMatrix.ofMainDiagonal(new double[] { 1.0, 2.0, 3.0 });
             assertEquals(3, m.rowCount());
@@ -3836,9 +3787,9 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_array() {
+        public void testCopyFrom() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            m.fill(new double[][] { { 7.0, 8.0 }, { 9.0, 10.0 } });
+            m.copyFrom(new double[][] { { 7.0, 8.0 }, { 9.0, 10.0 } });
             assertEquals(7.0, m.get(0, 0));
             assertEquals(8.0, m.get(0, 1));
             assertEquals(9.0, m.get(1, 0));
@@ -3846,9 +3797,9 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_withPosition() {
+        public void testCopyFrom_withPosition() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
-            m.fill(1, 1, new double[][] { { 11.0, 12.0 }, { 13.0, 14.0 } });
+            m.copyFrom(1, 1, new double[][] { { 11.0, 12.0 }, { 13.0, 14.0 } });
             assertEquals(1.0, m.get(0, 0));
             assertEquals(11.0, m.get(1, 1));
             assertEquals(12.0, m.get(1, 2));
@@ -4099,7 +4050,7 @@ class DoubleMatrixTest extends TestBase {
         public void testFlatOp() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             final double[] sum = { 0.0 };
-            m.mutateFlattened(row -> {
+            m.mutateViaFlatArray(row -> {
                 for (double val : row) {
                     sum[0] += val;
                 }
@@ -4252,9 +4203,9 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamH_withRow() {
+        public void testStreamH_withSingleRowRange() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            DoubleStream stream = m.rowMajorStream(1);
+            DoubleStream stream = m.rowMajorStream(1, 2);
             double[] result = stream.toArray();
             assertArrayEquals(new double[] { 3.0, 4.0 }, result);
         }
@@ -4276,9 +4227,9 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamV_withColumn() {
+        public void testStreamV_withSingleColumnRange() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            DoubleStream stream = m.columnMajorStream(0);
+            DoubleStream stream = m.columnMajorStream(0, 1);
             double[] result = stream.toArray();
             assertArrayEquals(new double[] { 1.0, 3.0 }, result);
         }
@@ -4580,14 +4531,6 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFilled_withNegativeValue() {
-            DoubleMatrix m = DoubleMatrix.filled(1, 3, -5.5);
-            assertEquals(1, m.rowCount());
-            assertEquals(3, m.columnCount());
-            assertEquals(-5.5, m.get(0, 0));
-        }
-
-        @Test
         public void testDiagonalLU2RD_withEmptyArray() {
             DoubleMatrix m = DoubleMatrix.ofMainDiagonal(new double[0]);
             assertTrue(m.isEmpty());
@@ -4749,30 +4692,13 @@ class DoubleMatrixTest extends TestBase {
             assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.from(floats));
         }
 
-        // ============ Random.and.Filled.Tests ============
+        // ============ Random Tests ============
 
         @Test
         public void test_random() {
             DoubleMatrix m = DoubleMatrix.randomRow(5);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
-        }
-
-        @Test
-        public void test_filled() {
-            DoubleMatrix m = DoubleMatrix.filled(1, 5, 3.14);
-            assertEquals(1, m.rowCount());
-            assertEquals(5, m.columnCount());
-            for (int i = 0; i < 5; i++) {
-                assertEquals(3.14, m.get(0, i), 0.0);
-            }
-        }
-
-        @Test
-        public void test_filled_zeroLength() {
-            DoubleMatrix m = DoubleMatrix.filled(1, 0, 3.14);
-            assertEquals(1, m.rowCount());
-            assertEquals(0, m.columnCount());
         }
 
         // ============ Diagonal Tests ============
@@ -5202,9 +5128,9 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_fill_array() {
+        public void testCopyFrom() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            m.fill(new double[][] { { 9.0, 8.0 }, { 7.0, 6.0 } });
+            m.copyFrom(new double[][] { { 9.0, 8.0 }, { 7.0, 6.0 } });
             assertEquals(9.0, m.get(0, 0), 0.0);
             assertEquals(8.0, m.get(0, 1), 0.0);
             assertEquals(7.0, m.get(1, 0), 0.0);
@@ -5212,19 +5138,19 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_fill_withOffset() {
+        public void testCopyFrom_withOffset() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
-            m.fill(1, 1, new double[][] { { 99.0 } });
+            m.copyFrom(1, 1, new double[][] { { 99.0 } });
             assertEquals(1.0, m.get(0, 0), 0.0);
             assertEquals(99.0, m.get(1, 1), 0.0);
             assertEquals(9.0, m.get(2, 2), 0.0);
         }
 
         @Test
-        public void test_fill_withOffset_clipsToFit() {
+        public void testCopyFrom_withOffset_clipsToFit() {
             // fill method clips data to fit within matrix bounds, doesn't throw exception
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 } });
-            m.fill(0, 0, new double[][] { { 9.0, 8.0, 7.0 } }); // Source has 3 elements but matrix only has 2 columns
+            m.copyFrom(0, 0, new double[][] { { 9.0, 8.0, 7.0 } }); // Source has 3 elements but matrix only has 2 columns
             assertEquals(9.0, m.get(0, 0), 0.0);
             assertEquals(8.0, m.get(0, 1), 0.0); // Only first 2 elements are copied
         }
@@ -5507,10 +5433,10 @@ class DoubleMatrixTest extends TestBase {
         // ============ FlatOp Test ============
 
         @Test
-        public void test_mutateFlattened() {
+        public void test_mutateViaFlatArray() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             AtomicInteger count = new AtomicInteger(0);
-            m.mutateFlattened(row -> count.addAndGet(row.length));
+            m.mutateViaFlatArray(row -> count.addAndGet(row.length));
             assertEquals(4, count.get());
         }
 
@@ -5653,9 +5579,9 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_streamH_byRowIndex() {
+        public void test_streamH_bySingleRowRange() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            double sum = m.rowMajorStream(0).sum();
+            double sum = m.rowMajorStream(0, 1).sum();
             assertEquals(3.0, sum, 0.0);
         }
 
@@ -5674,9 +5600,9 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_streamV_byColumnIndex() {
+        public void test_streamV_bySingleColumnRange() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            double sum = m.columnMajorStream(0).sum();
+            double sum = m.columnMajorStream(0, 1).sum();
             assertEquals(4.0, sum, 0.0);
         }
 
@@ -5809,14 +5735,6 @@ class DoubleMatrixTest extends TestBase {
     @Nested
     class JavadocExampleMatrixGroup2Test_DoubleMatrix extends TestBase {
         // ==================== DoubleMatrix ====================
-
-        @Test
-        public void testDoubleMatrix_filled() {
-            DoubleMatrix matrix = DoubleMatrix.filled(2, 3, 1.0);
-            assertEquals(2, matrix.rowCount());
-            assertEquals(3, matrix.columnCount());
-            assertEquals(1.0, matrix.get(0, 0));
-        }
 
         @Test
         public void testDoubleMatrix_ofDiagonals() {
@@ -5971,9 +5889,9 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testDoubleMatrix_mutateFlattened() {
+        public void testDoubleMatrix_mutateViaFlatArray() {
             DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { 5.0, 3.0 }, { 4.0, 1.0 } });
-            matrix.mutateFlattened(arr -> java.util.Arrays.sort(arr));
+            matrix.mutateViaFlatArray(arr -> java.util.Arrays.sort(arr));
             assertEquals(1.0, matrix.get(0, 0));
             assertEquals(3.0, matrix.get(0, 1));
             assertEquals(4.0, matrix.get(1, 0));
@@ -6089,11 +6007,11 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testDoubleMatrix_horizontalStreamRow() {
+        public void testDoubleMatrix_horizontalStreamSingleRowRange() {
             DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            double[] row1 = matrix.rowMajorStream(1).toArray();
+            double[] row1 = matrix.rowMajorStream(1, 2).toArray();
             assertArrayEquals(new double[] { 3.0, 4.0 }, row1);
-            double rowSum = matrix.rowMajorStream(1).sum();
+            double rowSum = matrix.rowMajorStream(1, 2).sum();
             assertEquals(7.0, rowSum);
         }
 
@@ -6105,9 +6023,9 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testDoubleMatrix_verticalStreamColumn() {
+        public void testDoubleMatrix_verticalStreamSingleColumnRange() {
             DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            double[] column1 = matrix.columnMajorStream(1).toArray();
+            double[] column1 = matrix.columnMajorStream(1, 2).toArray();
             assertArrayEquals(new double[] { 2.0, 4.0 }, column1);
         }
 
@@ -6385,7 +6303,7 @@ class DoubleMatrixTest extends TestBase {
 
             double[][] backing = { { 1.0, 2.0 }, { 3.0, 4.0 }, { 5.0, 6.0 } };
             DoubleMatrix fillMatrix = DoubleMatrix.wrap(backing);
-            fillMatrix.fill(1, 0, backing);
+            fillMatrix.copyFrom(1, 0, backing);
             assertArrayEquals(new double[] { 3.0, 4.0 }, fillMatrix.rowCopy(2));
         }
 
@@ -6524,8 +6442,6 @@ class DoubleMatrixTest extends TestBase {
         assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.randomRow(-1));
         assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.random(-1, 2));
         assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.random(2, -1));
-        assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.filled(-1, 2, 7.0));
-        assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.filled(2, -1, 7.0));
     }
 
 }

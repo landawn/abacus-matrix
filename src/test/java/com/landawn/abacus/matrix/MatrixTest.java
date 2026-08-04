@@ -211,7 +211,7 @@ class MatrixTest extends TestBase {
         Matrix<Integer> intMatrix = Matrix.wrap(new Integer[][] { { 1, 2 } });
         Assertions.assertEquals(Integer.class, intMatrix.elementType());
 
-        Matrix<String> repeated = Matrix.filled(1, 2, "x");
+        Matrix<String> repeated = Matrix.wrap(new String[][] { { "x", "x" } });
         Assertions.assertEquals(String.class, repeated.elementType());
     }
 
@@ -785,11 +785,11 @@ class MatrixTest extends TestBase {
     }
 
     @Test
-    public void testFillWithArray() {
+    public void testCopyFrom() {
         Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 } });
 
         Integer[][] patch = { { 7, 8 } };
-        matrix.fill(patch);
+        matrix.copyFrom(patch);
         Assertions.assertEquals(7, matrix.get(0, 0));
         Assertions.assertEquals(8, matrix.get(0, 1));
         Assertions.assertEquals(3, matrix.get(0, 2)); // unchanged
@@ -797,11 +797,11 @@ class MatrixTest extends TestBase {
     }
 
     @Test
-    public void testFillWithPosition() {
+    public void testCopyFromWithPosition() {
         Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
 
         Integer[][] patch = { { 10, 11 }, { 12, 13 } };
-        matrix.fill(1, 1, patch);
+        matrix.copyFrom(1, 1, patch);
         Assertions.assertEquals(1, matrix.get(0, 0)); // unchanged
         Assertions.assertEquals(10, matrix.get(1, 1));
         Assertions.assertEquals(11, matrix.get(1, 2));
@@ -1063,7 +1063,7 @@ class MatrixTest extends TestBase {
     public void testFlatOp() throws Exception {
         Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 3, 1, 4 }, { 1, 5, 9 } });
 
-        matrix.mutateFlattened(arrays -> {
+        matrix.mutateViaFlatArray(arrays -> {
             Arrays.sort(arrays);
         });
 
@@ -1076,24 +1076,24 @@ class MatrixTest extends TestBase {
     public void testMutateFlattenedWriteBackContract() {
         Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } });
 
-        matrix.mutateFlattened(flat -> {
+        matrix.mutateViaFlatArray(flat -> {
             flat[0] = 9;
             assertEquals(1, matrix.get(0, 0)); // temporary buffer is not live
         });
         assertArrayEquals(new Integer[] { 9, 2 }, matrix.rowCopy(0));
 
-        assertThrows(IllegalStateException.class, () -> matrix.mutateFlattened(flat -> {
+        assertThrows(IllegalStateException.class, () -> matrix.mutateViaFlatArray(flat -> {
             flat[1] = 8;
             throw new IllegalStateException("abort");
         }));
         assertArrayEquals(new Integer[] { 9, 2 }, matrix.rowCopy(0)); // no copy-back after callback failure
 
         int[] zeroRowCalls = { 0 };
-        Matrix.<Integer> empty().mutateFlattened(flat -> zeroRowCalls[0]++);
+        Matrix.<Integer> empty().mutateViaFlatArray(flat -> zeroRowCalls[0]++);
         assertEquals(0, zeroRowCalls[0]);
 
         int[] zeroColumnCalls = { 0 };
-        Matrix.wrap(new Integer[2][0]).mutateFlattened(flat -> {
+        Matrix.wrap(new Integer[2][0]).mutateViaFlatArray(flat -> {
             zeroColumnCalls[0]++;
             assertEquals(0, flat.length);
         });
@@ -1101,7 +1101,7 @@ class MatrixTest extends TestBase {
 
         Integer[] shared = { 1, 2 };
         Matrix<Integer> aliased = Matrix.wrap(new Integer[][] { shared, shared });
-        aliased.mutateFlattened(flat -> {
+        aliased.mutateViaFlatArray(flat -> {
             flat[0] = 10;
             flat[1] = 20;
             flat[2] = 30;
@@ -1114,7 +1114,7 @@ class MatrixTest extends TestBase {
         narrowRows[1] = new Integer[] { 2 };
         Matrix<Number> heterogeneous = Matrix.wrap(narrowRows);
 
-        assertThrows(ArrayStoreException.class, () -> heterogeneous.mutateFlattened(flat -> {
+        assertThrows(ArrayStoreException.class, () -> heterogeneous.mutateViaFlatArray(flat -> {
             flat[0] = 10.5;
             flat[1] = 20.5;
         }));
@@ -1267,10 +1267,10 @@ class MatrixTest extends TestBase {
     }
 
     @Test
-    public void testStreamHRow() {
+    public void testStreamHSingleRowRange() {
         Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
 
-        List<Integer> row1 = matrix.rowMajorStream(1).toList();
+        List<Integer> row1 = matrix.rowMajorStream(1, 2).toList();
         Assertions.assertEquals(Arrays.asList(4, 5, 6), row1);
     }
 
@@ -1291,10 +1291,10 @@ class MatrixTest extends TestBase {
     }
 
     @Test
-    public void testStreamVColumn() {
+    public void testStreamVSingleColumnRange() {
         Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
 
-        List<Integer> col1 = matrix.columnMajorStream(1).toList();
+        List<Integer> col1 = matrix.columnMajorStream(1, 2).toList();
         Assertions.assertEquals(Arrays.asList(2, 5, 8), col1);
     }
 
@@ -1641,52 +1641,6 @@ class MatrixTest extends TestBase {
     }
 
     @Test
-    public void testFilledSupportsWiderGenericType() {
-        Matrix<Number> matrix = Matrix.filled(1, 1, 1D);
-
-        matrix.set(0, 0, 2.5d);
-        Assertions.assertEquals(2.5d, matrix.get(0, 0).doubleValue(), 0.000001d);
-    }
-
-    @Test
-    public void testFilledSupportsWiderGenericTypeAfterRowView() {
-        Matrix<Number> matrix = Matrix.filled(1, 1, 1D);
-
-        Number[] row = matrix.rowView(0);
-        Assertions.assertEquals(Double.class, row.getClass().getComponentType());
-
-        matrix.set(0, 0, 2.5d);
-        Assertions.assertEquals(2.5d, matrix.get(0, 0).doubleValue(), 0.000001d);
-    }
-
-    @Test
-    public void testFilledSupportsEnumConstantsWithClassBodies() {
-        // Regression: ADD's runtime class is an anonymous subclass of Op, so the backing array
-        // must use the declaring enum class for other constants of the same enum to be storable.
-        enum Op {
-            ADD {
-                @Override
-                int apply(int a, int b) {
-                    return a + b;
-                }
-            },
-            SUB {
-                @Override
-                int apply(int a, int b) {
-                    return a - b;
-                }
-            };
-
-            abstract int apply(int a, int b);
-        }
-
-        Matrix<Op> matrix = Matrix.filled(2, 2, Op.ADD);
-        matrix.set(0, 0, Op.SUB); // must not throw ArrayStoreException
-        Assertions.assertEquals(Op.SUB, matrix.get(0, 0));
-        Assertions.assertEquals(Op.ADD, matrix.get(1, 1));
-    }
-
-    @Test
     public void testDiagonalSupportsWiderGenericTypeAfterRowView() {
         Number[] mainDiag = new Number[] { 1 };
         Matrix<Number> matrix = Matrix.ofMainDiagonal(mainDiag);
@@ -1700,7 +1654,7 @@ class MatrixTest extends TestBase {
 
     @Test
     public void testTransformsStillWorkAfterWideningElementTypeAtRuntime() {
-        Matrix<Number> matrix = Matrix.filled(1, 2, 1D);
+        Matrix<Number> matrix = Matrix.<Number> wrap(new Double[][] { { 1D, 1D } });
         matrix.rowView(0);
         matrix.set(0, 1, 2.5d);
 
@@ -1713,7 +1667,7 @@ class MatrixTest extends TestBase {
 
     @Test
     public void testSetRowAndSetColumnWidenStorageWhenNeeded() {
-        Matrix<Number> matrix = Matrix.filled(2, 2, 1D);
+        Matrix<Number> matrix = Matrix.<Number> wrap(new Double[][] { { 1D, 1D }, { 1D, 1D } });
         matrix.rowView(0);
         matrix.rowView(1);
 
@@ -1726,15 +1680,15 @@ class MatrixTest extends TestBase {
     }
 
     @Test
-    public void testFillWidenStorageWhenNeeded() {
-        Matrix<Number> matrix = Matrix.filled(1, 2, 1D);
+    public void testCopyFromWidensStorageWhenNeeded() {
+        Matrix<Number> matrix = Matrix.<Number> wrap(new Double[][] { { 1D, 1D } });
         matrix.rowView(0);
 
         matrix.fill(2.5d);
         Assertions.assertEquals(2.5d, matrix.get(0, 0).doubleValue(), 0.000001d);
         Assertions.assertEquals(2.5d, matrix.get(0, 1).doubleValue(), 0.000001d);
 
-        matrix.fill(new Number[][] { { 3.5d, 4.5d } });
+        matrix.copyFrom(new Number[][] { { 3.5d, 4.5d } });
         Assertions.assertEquals(3.5d, matrix.get(0, 0).doubleValue(), 0.000001d);
         Assertions.assertEquals(4.5d, matrix.get(0, 1).doubleValue(), 0.000001d);
     }
@@ -1755,45 +1709,6 @@ class MatrixTest extends TestBase {
         Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.setRow(0, null));
         Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.setColumn(0, null));
         Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.setAntiDiagonal(null));
-    }
-
-    @Test
-    public void testCopyAndTransformsPreserveElementTypeForFilledMatrices() {
-        Matrix<String> matrix = Matrix.filled(1, 2, "x");
-
-        Matrix<String> copied = matrix.copy();
-        Assertions.assertEquals(String.class, copied.elementType());
-        Assertions.assertEquals(String.class, copied.rowView(0).getClass().getComponentType());
-
-        Matrix<String> transposed = matrix.transpose();
-        Assertions.assertEquals(String.class, transposed.elementType());
-        Assertions.assertEquals(String.class, transposed.rowView(0).getClass().getComponentType());
-
-        Matrix<String> reshaped = matrix.reshape(2, 1);
-        Assertions.assertEquals(String.class, reshaped.elementType());
-        Assertions.assertEquals(String.class, reshaped.rowView(0).getClass().getComponentType());
-
-        Matrix<String> repeated = matrix.repeatElements(2, 2);
-        Assertions.assertEquals(String.class, repeated.elementType());
-        Assertions.assertEquals(String.class, repeated.rowView(0).getClass().getComponentType());
-    }
-
-    @Test
-    public void testStackOperationsPreserveElementTypeForFilledMatrices() {
-        Matrix<Integer> top = Matrix.filled(1, 2, 1);
-        Matrix<Integer> bottom = Matrix.filled(1, 2, 2);
-
-        Matrix<Integer> vstacked = top.stackVertically(bottom);
-        Assertions.assertEquals(Integer.class, vstacked.elementType());
-        Assertions.assertEquals(Integer.class, vstacked.rowView(0).getClass().getComponentType());
-        vstacked.set(0, 0, 3);
-        Assertions.assertEquals(3, vstacked.get(0, 0));
-
-        Matrix<Integer> hstacked = top.stackHorizontally(bottom);
-        Assertions.assertEquals(Integer.class, hstacked.elementType());
-        Assertions.assertEquals(Integer.class, hstacked.rowView(0).getClass().getComponentType());
-        hstacked.set(0, 3, 4);
-        Assertions.assertEquals(4, hstacked.get(0, 3));
     }
 
     @Test
@@ -1822,15 +1737,6 @@ class MatrixTest extends TestBase {
             String[][] data = { { "a", "b" }, { "c", "d" } };
             Matrix<String> matrix = Matrix.wrap(data);
             assertEquals("c", matrix.get(1, 0));
-        }
-
-        @Test
-        public void testMatrix_filled() {
-            Matrix<String> matrix = Matrix.filled(2, 3, "a");
-            assertEquals(2, matrix.rowCount());
-            assertEquals(3, matrix.columnCount());
-            assertEquals("a", matrix.get(0, 0));
-            assertEquals("a", matrix.get(1, 2));
         }
 
         @Test
@@ -2050,9 +1956,9 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testMatrix_horizontalStreamRow() {
+        public void testMatrix_horizontalStreamSingleRowRange() {
             Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            Object[] firstRow = matrix.rowMajorStream(0).toArray();
+            Object[] firstRow = matrix.rowMajorStream(0, 1).toArray();
             assertArrayEquals(new Object[] { 1, 2, 3 }, firstRow);
         }
 
@@ -2071,9 +1977,9 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testMatrix_verticalStreamColumn() {
+        public void testMatrix_verticalStreamSingleColumnRange() {
             Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            Object[] secondCol = matrix.columnMajorStream(1).toArray();
+            Object[] secondCol = matrix.columnMajorStream(1, 2).toArray();
             assertArrayEquals(new Object[] { 2, 5, 8 }, secondCol);
         }
 
@@ -2153,24 +2059,6 @@ class MatrixTest extends TestBase {
             assertEquals(3, m.columnCount());
             assertEquals(Integer.valueOf(1), m.get(0, 0));
             assertEquals(Integer.valueOf(6), m.get(1, 2));
-        }
-
-        @Test
-        public void testFilled() {
-            Matrix<String> m = Matrix.filled(2, 3, "a");
-            assertEquals(2, m.rowCount());
-            assertEquals(3, m.columnCount());
-            for (int i = 0; i < 2; i++) {
-                for (int j = 0; j < 3; j++) {
-                    assertEquals("a", m.get(i, j));
-                }
-            }
-        }
-
-        @Test
-        public void testFilled_withNegativeDimensions() {
-            assertThrows(IllegalArgumentException.class, () -> Matrix.filled(-1, 2, "a"));
-            assertThrows(IllegalArgumentException.class, () -> Matrix.filled(1, -2, "a"));
         }
 
         @Test
@@ -2685,10 +2573,10 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_withArray() {
+        public void testCopyFrom() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "A", "A" }, { "A", "A", "A" }, { "A", "A", "A" } });
             String[][] patch = { { "X", "Y" }, { "Z", "W" } };
-            m.fill(patch);
+            m.copyFrom(patch);
             assertEquals("X", m.get(0, 0));
             assertEquals("Y", m.get(0, 1));
             assertEquals("Z", m.get(1, 0));
@@ -2697,10 +2585,10 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_withArrayAtPosition() {
+        public void testCopyFromAtPosition() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "A", "A" }, { "A", "A", "A" }, { "A", "A", "A" } });
             String[][] patch = { { "X", "Y" }, { "Z", "W" } };
-            m.fill(1, 1, patch);
+            m.copyFrom(1, 1, patch);
             assertEquals("A", m.get(0, 0)); // unchanged
             assertEquals("X", m.get(1, 1));
             assertEquals("Y", m.get(1, 2));
@@ -2709,10 +2597,10 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_outOfBounds() {
+        public void testCopyFrom_outOfBounds() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" }, { "C", "D" } });
             String[][] patch = { { "X", "Y" }, { "Z", "W" } };
-            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(-1, 0, patch));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(-1, 0, patch));
         }
 
         // ============ Copy Tests ============
@@ -3012,7 +2900,7 @@ class MatrixTest extends TestBase {
         public void testFlatOp() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B", "C" }, { "D", "E", "F" }, { "G", "H", "I" } });
             List<Integer> rowLengths = new ArrayList<>();
-            m.mutateFlattened(row -> {
+            m.mutateViaFlatArray(row -> {
                 rowLengths.add(row.length);
             });
             assertEquals(1, rowLengths.size());
@@ -3192,9 +3080,9 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamH_withRow() {
+        public void testStreamH_withSingleRowRange() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B", "C" }, { "D", "E", "F" } });
-            List<String> row1 = m.rowMajorStream(1).toList();
+            List<String> row1 = m.rowMajorStream(1, 2).toList();
             assertEquals(3, row1.size());
             assertEquals("D", row1.get(0));
             assertEquals("E", row1.get(1));
@@ -3202,10 +3090,10 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamH_withRow_outOfBounds() {
+        public void testStreamH_withSingleRowRange_outOfBounds() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" }, { "C", "D" } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(-1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(-1, 0));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(2, 3));
         }
 
         @Test
@@ -3240,19 +3128,19 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamV_withColumn() {
+        public void testStreamV_withSingleColumnRange() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B", "C" }, { "D", "E", "F" } });
-            List<String> col1 = m.columnMajorStream(1).toList();
+            List<String> col1 = m.columnMajorStream(1, 2).toList();
             assertEquals(2, col1.size());
             assertEquals("B", col1.get(0));
             assertEquals("E", col1.get(1));
         }
 
         @Test
-        public void testStreamV_withColumn_outOfBounds() {
+        public void testStreamV_withSingleColumnRange_outOfBounds() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" }, { "C", "D" } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(-1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(-1, 0));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(2, 3));
         }
 
         @Test
@@ -3621,25 +3509,25 @@ class MatrixTest extends TestBase {
         @Test
         public void testFill_withNullValue() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" }, { "C", "D" } });
-            m.fill((String) null);
+            m.fill(null);
             assertNull(m.get(0, 0));
             assertNull(m.get(1, 1));
         }
 
         @Test
-        public void testFill_withArray_emptySource() {
+        public void testCopyFrom_emptySource() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" }, { "C", "D" } });
             String[][] emptySource = {};
-            m.fill(emptySource);
+            m.copyFrom(emptySource);
             assertEquals("A", m.get(0, 0));
             assertEquals("D", m.get(1, 1));
         }
 
         @Test
-        public void testFill_withArray_largerSource() {
+        public void testCopyFrom_largerSource() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" }, { "C", "D" } });
             String[][] largeSource = { { "X", "Y", "Z" }, { "W", "V", "U" }, { "T", "S", "R" } };
-            m.fill(largeSource);
+            m.copyFrom(largeSource);
             assertEquals("X", m.get(0, 0));
             assertEquals("Y", m.get(0, 1));
             assertEquals("W", m.get(1, 0));
@@ -3647,19 +3535,19 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_atBoundary() {
+        public void testCopyFrom_atBoundary() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "A", "A" }, { "A", "A", "A" }, { "A", "A", "A" } });
             String[][] patch = { { "X" } };
-            m.fill(2, 2, patch);
+            m.copyFrom(2, 2, patch);
             assertEquals("A", m.get(0, 0));
             assertEquals("X", m.get(2, 2));
         }
 
         @Test
-        public void testFill_atEdgePosition() {
+        public void testCopyFrom_atEdgePosition() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" }, { "C", "D" } });
             String[][] patch = { { "X", "Y" } };
-            m.fill(1, 0, patch);
+            m.copyFrom(1, 0, patch);
             assertEquals("A", m.get(0, 0));
             assertEquals("X", m.get(1, 0));
             assertEquals("Y", m.get(1, 1));
@@ -3783,18 +3671,18 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamH_singleRow() {
+        public void testStreamH_singleRowRange() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B", "C" } });
-            List<String> result = m.rowMajorStream(0).toList();
+            List<String> result = m.rowMajorStream(0, 1).toList();
             assertEquals(3, result.size());
             assertEquals("A", result.get(0));
             assertEquals("C", result.get(2));
         }
 
         @Test
-        public void testStreamV_singleColumn() {
+        public void testStreamV_singleColumnRange() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A" }, { "B" }, { "C" } });
-            List<String> result = m.columnMajorStream(0).toList();
+            List<String> result = m.columnMajorStream(0, 1).toList();
             assertEquals(3, result.size());
             assertEquals("A", result.get(0));
             assertEquals("C", result.get(2));
@@ -3860,7 +3748,7 @@ class MatrixTest extends TestBase {
         public void testFlatOp_emptyMatrix() {
             Matrix<String> empty = Matrix.wrap(new String[0][0]);
             List<Integer> lengths = new ArrayList<>();
-            empty.mutateFlattened(row -> lengths.add(row.length));
+            empty.mutateViaFlatArray(row -> lengths.add(row.length));
             assertEquals(0, lengths.size());
         }
     }
@@ -4256,7 +4144,7 @@ class MatrixTest extends TestBase {
         @Test
         public void testFill_singleValue_null() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" }, { "C", "D" } });
-            m.fill((String) null);
+            m.fill(null);
             assertNull(m.get(0, 0));
             assertNull(m.get(0, 1));
             assertNull(m.get(1, 0));
@@ -4264,10 +4152,10 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_array_partial() {
+        public void testCopyFrom_partial() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B", "C" }, { "D", "E", "F" }, { "G", "H", "I" } });
             String[][] patch = { { "X", "Y" } };
-            m.fill(patch);
+            m.copyFrom(patch);
             assertEquals("X", m.get(0, 0));
             assertEquals("Y", m.get(0, 1));
             assertEquals("C", m.get(0, 2)); // Unchanged
@@ -4275,10 +4163,10 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_array_withOffset() {
+        public void testCopyFrom_withOffset() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B", "C" }, { "D", "E", "F" }, { "G", "H", "I" } });
             String[][] patch = { { "X", "Y" } };
-            m.fill(1, 1, patch);
+            m.copyFrom(1, 1, patch);
             assertEquals("A", m.get(0, 0));
             assertEquals("X", m.get(1, 1));
             assertEquals("Y", m.get(1, 2));
@@ -4286,13 +4174,13 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_array_withOffset_invalidIndices() {
+        public void testCopyFrom_withOffset_invalidIndices() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" } });
             String[][] patch = { { "X" } };
-            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(-1, 0, patch));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(0, -1, patch));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(2, 0, patch));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(0, 3, patch));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(-1, 0, patch));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(0, -1, patch));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(2, 0, patch));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(0, 3, patch));
         }
 
         @Test
@@ -4454,9 +4342,9 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamH_singleRow() {
+        public void testStreamH_singleRowRange() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B", "C" }, { "D", "E", "F" } });
-            List<String> row = m.rowMajorStream(1).toList();
+            List<String> row = m.rowMajorStream(1, 2).toList();
 
             assertEquals(3, row.size());
             assertEquals("D", row.get(0));
@@ -4477,9 +4365,9 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamV_singleColumn() {
+        public void testStreamV_singleColumnRange() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B", "C" }, { "D", "E", "F" } });
-            List<String> col = m.columnMajorStream(1).toList();
+            List<String> col = m.columnMajorStream(1, 2).toList();
 
             assertEquals(2, col.size());
             assertEquals("B", col.get(0));
@@ -4579,8 +4467,6 @@ class MatrixTest extends TestBase {
             assertEquals(1.5, m.get(0, 0));
             assertEquals(4.5, m.get(1, 1));
         }
-        // ============ Factory Method Tests - filled() ============
-
         // ============ Factory Method Tests - diagonal ============
 
         @Test
@@ -5030,10 +4916,10 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_array_strings() {
+        public void testCopyFrom_strings() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" }, { "C", "D" } });
             String[][] newData = { { "X", "Y" }, { "Z", "W" } };
-            m.fill(newData);
+            m.copyFrom(newData);
             assertEquals("X", m.get(0, 0));
             assertEquals("Y", m.get(0, 1));
             assertEquals("Z", m.get(1, 0));
@@ -5041,10 +4927,10 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_array_integers() {
+        public void testCopyFrom_integers() {
             Matrix<Integer> m = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } });
             Integer[][] newData = { { 10, 20 }, { 30, 40 } };
-            m.fill(newData);
+            m.copyFrom(newData);
             assertEquals(10, m.get(0, 0));
             assertEquals(20, m.get(0, 1));
             assertEquals(30, m.get(1, 0));
@@ -5511,7 +5397,7 @@ class MatrixTest extends TestBase {
         public void testFlatOp_strings() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" }, { "C", "D" } });
             List<String> captured = new java.util.ArrayList<>();
-            m.mutateFlattened(arr -> {
+            m.mutateViaFlatArray(arr -> {
                 for (String val : arr) {
                     captured.add(val);
                 }
@@ -5524,7 +5410,7 @@ class MatrixTest extends TestBase {
         public void testFlatOp_integers() {
             Matrix<Integer> m = Matrix.wrap(new Integer[][] { { 3, 1 }, { 4, 2 } });
             List<Integer> captured = new java.util.ArrayList<>();
-            m.mutateFlattened(arr -> {
+            m.mutateViaFlatArray(arr -> {
                 for (Integer val : arr) {
                     captured.add(val);
                 }
@@ -6512,21 +6398,21 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void test_fill_withArray() {
+        public void testCopyFrom() {
             String[][] arr = { { "a", "b" }, { "c", "d" } };
             Matrix<String> m = new Matrix<>(arr);
             String[][] b = { { "X", "Y" }, { "Z", "W" } };
-            m.fill(b);
+            m.copyFrom(b);
             assertEquals("X", m.get(0, 0));
             assertEquals("W", m.get(1, 1));
         }
 
         @Test
-        public void test_fill_withArrayAndOffset() {
+        public void testCopyFromAndOffset() {
             String[][] arr = { { "a", "b", "c" }, { "d", "e", "f" }, { "g", "h", "i" } };
             Matrix<String> m = new Matrix<>(arr);
             String[][] b = { { "X", "Y" } };
-            m.fill(1, 1, b);
+            m.copyFrom(1, 1, b);
             assertEquals("a", m.get(0, 0));
             assertEquals("X", m.get(1, 1));
             assertEquals("Y", m.get(1, 2));
@@ -6766,11 +6652,11 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void test_mutateFlattened_appliesOperationToEachRow() {
+        public void test_mutateViaFlatArray_appliesOperationToEachRow() {
             Integer[][] arr = { { 1, 2 }, { 3, 4 } };
             Matrix<Integer> m = new Matrix<>(arr);
             final int[] sum = { 0 };
-            m.mutateFlattened(row -> {
+            m.mutateViaFlatArray(row -> {
                 for (Integer val : row) {
                     sum[0] += val;
                 }
@@ -6860,10 +6746,10 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void test_streamH_withRowIndex() {
+        public void test_streamH_withSingleRowRange() {
             String[][] arr = { { "a", "b", "c" }, { "d", "e", "f" } };
             Matrix<String> m = new Matrix<>(arr);
-            List<String> result = m.rowMajorStream(1).toList();
+            List<String> result = m.rowMajorStream(1, 2).toList();
             assertEquals(Arrays.asList("d", "e", "f"), result);
         }
 
@@ -6884,10 +6770,10 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void test_streamV_withColumnIndex() {
+        public void test_streamV_withSingleColumnRange() {
             String[][] arr = { { "a", "b", "c" }, { "d", "e", "f" } };
             Matrix<String> m = new Matrix<>(arr);
-            List<String> result = m.columnMajorStream(1).toList();
+            List<String> result = m.columnMajorStream(1, 2).toList();
             assertEquals(Arrays.asList("b", "e"), result);
         }
 
@@ -7240,7 +7126,7 @@ class MatrixTest extends TestBase {
     @Test
     public void testCopyFrom_fullOverwrite() {
         Matrix<String> m = Matrix.wrap(new String[][] { { "x", "x" }, { "x", "x" } });
-        m.fill(new String[][] { { "a", "b" }, { "c", "d" } });
+        m.copyFrom(new String[][] { { "a", "b" }, { "c", "d" } });
         assertEquals("a", m.get(0, 0));
         assertEquals("b", m.get(0, 1));
         assertEquals("c", m.get(1, 0));
@@ -7250,7 +7136,7 @@ class MatrixTest extends TestBase {
     @Test
     public void testCopyFrom_partialOverwrite() {
         Matrix<String> m = Matrix.wrap(new String[][] { { "x", "x", "x" }, { "x", "x", "x" }, { "x", "x", "x" } });
-        m.fill(new String[][] { { "a", "b" }, { "c", "d" } });
+        m.copyFrom(new String[][] { { "a", "b" }, { "c", "d" } });
         assertEquals("a", m.get(0, 0));
         assertEquals("b", m.get(0, 1));
         assertEquals("x", m.get(0, 2));
@@ -7262,7 +7148,7 @@ class MatrixTest extends TestBase {
     @Test
     public void testCopyFrom_withOffset() {
         Matrix<String> m = Matrix.wrap(new String[][] { { "x", "x", "x" }, { "x", "x", "x" }, { "x", "x", "x" } });
-        m.fill(1, 1, new String[][] { { "a", "b" }, { "c", "d" } });
+        m.copyFrom(1, 1, new String[][] { { "a", "b" }, { "c", "d" } });
         assertEquals("x", m.get(0, 0));
         assertEquals("x", m.get(1, 0));
         assertEquals("a", m.get(1, 1));
@@ -7274,7 +7160,7 @@ class MatrixTest extends TestBase {
     @Test
     public void testCopyFrom_emptySource() {
         Matrix<String> m = Matrix.wrap(new String[][] { { "a", "b" }, { "c", "d" } });
-        m.fill(new String[0][0]);
+        m.copyFrom(new String[0][0]);
         assertEquals("a", m.get(0, 0));
         assertEquals("d", m.get(1, 1));
     }
@@ -7282,8 +7168,8 @@ class MatrixTest extends TestBase {
     @Test
     public void testCopyFrom_negativeIndexThrows() {
         Matrix<String> m = Matrix.wrap(new String[][] { { "a" } });
-        assertThrows(IndexOutOfBoundsException.class, () -> m.fill(-1, 0, new String[][] { { "b" } }));
-        assertThrows(IndexOutOfBoundsException.class, () -> m.fill(0, -1, new String[][] { { "b" } }));
+        assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(-1, 0, new String[][] { { "b" } }));
+        assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(0, -1, new String[][] { { "b" } }));
     }
 
     @Test
@@ -7663,7 +7549,7 @@ class MatrixTest extends TestBase {
 
             Integer[][] backing = { { 1, 2 }, { 3, 4 }, { 5, 6 } };
             Matrix<Integer> fillMatrix = Matrix.wrap(backing);
-            fillMatrix.fill(1, 0, new Integer[][] { backing[0], backing[1] });
+            fillMatrix.copyFrom(1, 0, new Integer[][] { backing[0], backing[1] });
             assertArrayEquals(new Integer[] { 3, 4 }, fillMatrix.rowCopy(2));
         }
 

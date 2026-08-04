@@ -61,7 +61,7 @@
  * transformations process each distinct backing row once so an operation does not compound merely because
  * a reference is repeated. Coordinate traversal that writes a position-dependent value runs sequentially
  * when rows are aliased, so a later logical row deterministically overwrites an earlier one; {@code replaceIf}
- * writes the same value at every matching coordinate and may still run in parallel. {@code mutateFlattened}
+ * writes the same value at every matching coordinate and may still run in parallel. {@code mutateViaFlatArray}
  * copies its temporary array back in row-major order, so values from a later logical row win when aliased
  * rows conflict.</p>
  *
@@ -71,7 +71,7 @@
  * {@link com.landawn.abacus.matrix.AbstractMatrix#flatten()}, return independent containers.</p>
  *
  * <p>On a matrix instance, methods named {@code set*}, {@code update*}, {@code fill}, {@code replaceIf},
- * or ending in {@code InPlace} modify the receiver. The specialized {@code mutateFlattened} operation lets
+ * or ending in {@code InPlace} modify the receiver. The specialized {@code mutateViaFlatArray} operation lets
  * its action modify the matrix through a temporary flattened array. Shape transformations whose names do not
  * end in {@code InPlace}, arithmetic operations, {@code map}, {@code zipWith}, and {@code copy} leave the
  * receiver unchanged and return a separate matrix instead, except that a degenerate empty result may be the

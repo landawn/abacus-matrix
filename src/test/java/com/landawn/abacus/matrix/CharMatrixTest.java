@@ -93,16 +93,6 @@ class CharMatrixTest extends TestBase {
     }
 
     @Test
-    public void testFilled() {
-        CharMatrix matrix = CharMatrix.filled(1, 4, 'x');
-        Assertions.assertEquals(1, matrix.rowCount());
-        Assertions.assertEquals(4, matrix.columnCount());
-        for (int i = 0; i < 4; i++) {
-            Assertions.assertEquals('x', matrix.get(0, i));
-        }
-    }
-
-    @Test
     public void testRange() {
         CharMatrix matrix = CharMatrix.range('a', 'e');
         Assertions.assertEquals(1, matrix.rowCount());
@@ -483,7 +473,7 @@ class CharMatrixTest extends TestBase {
 
     @Test
     public void testUpdateAllUnarySequentialTallMatrixUsesRowMajorOrder() throws Exception {
-        final CharMatrix matrix = CharMatrix.filled(3, 2, (char) 0);
+        final CharMatrix matrix = CharMatrix.wrap(new char[3][2]);
         final AtomicInteger next = new AtomicInteger();
 
         Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.updateAll(x -> (char) next.incrementAndGet()));
@@ -573,12 +563,12 @@ class CharMatrixTest extends TestBase {
     }
 
     @Test
-    public void testFillWithArray() {
+    public void testCopyFrom() {
         char[][] a = { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } };
         CharMatrix matrix = CharMatrix.wrap(a);
 
         char[][] b = { { 'x', 'y' }, { 'z', 'w' } };
-        matrix.fill(b);
+        matrix.copyFrom(b);
         Assertions.assertEquals('x', matrix.get(0, 0));
         Assertions.assertEquals('y', matrix.get(0, 1));
         Assertions.assertEquals('z', matrix.get(1, 0));
@@ -587,18 +577,18 @@ class CharMatrixTest extends TestBase {
     }
 
     @Test
-    public void testFillWithIndices() {
+    public void testCopyFromWithIndices() {
         char[][] a = { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } };
         CharMatrix matrix = CharMatrix.wrap(a);
 
         char[][] b = { { 'x', 'y' } };
-        matrix.fill(1, 1, b);
+        matrix.copyFrom(1, 1, b);
         Assertions.assertEquals('a', matrix.get(0, 0)); // unchanged
         Assertions.assertEquals('x', matrix.get(1, 1));
         Assertions.assertEquals('y', matrix.get(1, 2));
 
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.fill(-1, 0, b));
-        assertThrows(IndexOutOfBoundsException.class, () -> matrix.fill(0, -1, b));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyFrom(-1, 0, b));
+        assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyFrom(0, -1, b));
     }
 
     @Test
@@ -905,7 +895,7 @@ class CharMatrixTest extends TestBase {
         CharMatrix matrix = CharMatrix.wrap(a);
 
         List<Character> collected = new ArrayList<>();
-        matrix.mutateFlattened(row -> {
+        matrix.mutateViaFlatArray(row -> {
             for (char c : row) {
                 collected.add(c);
             }
@@ -1139,11 +1129,11 @@ class CharMatrixTest extends TestBase {
     }
 
     @Test
-    public void testStreamHRow() {
+    public void testStreamHSingleRowRange() {
         char[][] a = { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } };
         CharMatrix matrix = CharMatrix.wrap(a);
 
-        char[] row1 = matrix.rowMajorStream(1).toArray();
+        char[] row1 = matrix.rowMajorStream(1, 2).toArray();
         Assertions.assertArrayEquals(new char[] { 'd', 'e', 'f' }, row1);
     }
 
@@ -1169,11 +1159,11 @@ class CharMatrixTest extends TestBase {
     }
 
     @Test
-    public void testStreamVColumn() {
+    public void testStreamVSingleColumnRange() {
         char[][] a = { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } };
         CharMatrix matrix = CharMatrix.wrap(a);
 
-        char[] col1 = matrix.columnMajorStream(1).toArray();
+        char[] col1 = matrix.columnMajorStream(1, 2).toArray();
         Assertions.assertArrayEquals(new char[] { 'b', 'e' }, col1);
     }
 
@@ -1416,28 +1406,6 @@ class CharMatrixTest extends TestBase {
             for (int i = 0; i < 2; i++) {
                 for (int j = 0; j < 3; j++) {
                     assertNotNull(m.get(i, j));
-                }
-            }
-        }
-
-        @Test
-        public void testFilled() {
-            CharMatrix m = CharMatrix.filled(1, 5, 'Z');
-            assertEquals(1, m.rowCount());
-            assertEquals(5, m.columnCount());
-            for (int i = 0; i < 5; i++) {
-                assertEquals('Z', m.get(0, i));
-            }
-        }
-
-        @Test
-        public void testFilled_withRowsCols() {
-            CharMatrix m = CharMatrix.filled(2, 3, 'Z');
-            assertEquals(2, m.rowCount());
-            assertEquals(3, m.columnCount());
-            for (int i = 0; i < 2; i++) {
-                for (int j = 0; j < 3; j++) {
-                    assertEquals('Z', m.get(i, j));
                 }
             }
         }
@@ -1939,10 +1907,10 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_withArray() {
+        public void testCopyFrom() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'A', 'A', 'A' }, { 'A', 'A', 'A' }, { 'A', 'A', 'A' } });
             char[][] patch = { { 'X', 'Y' }, { 'Z', 'W' } };
-            m.fill(patch);
+            m.copyFrom(patch);
             assertEquals('X', m.get(0, 0));
             assertEquals('Y', m.get(0, 1));
             assertEquals('Z', m.get(1, 0));
@@ -1951,10 +1919,10 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_withArrayAtPosition() {
+        public void testCopyFromAtPosition() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'A', 'A', 'A' }, { 'A', 'A', 'A' }, { 'A', 'A', 'A' } });
             char[][] patch = { { 'X', 'Y' }, { 'Z', 'W' } };
-            m.fill(1, 1, patch);
+            m.copyFrom(1, 1, patch);
             assertEquals('A', m.get(0, 0)); // unchanged
             assertEquals('X', m.get(1, 1));
             assertEquals('Y', m.get(1, 2));
@@ -1963,10 +1931,10 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_outOfBounds() {
+        public void testCopyFrom_outOfBounds() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'A', 'B' }, { 'C', 'D' } });
             char[][] patch = { { 'X', 'Y' }, { 'Z', 'W' } };
-            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(-1, 0, patch));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(-1, 0, patch));
         }
 
         // ============ Copy Tests ============
@@ -2313,7 +2281,7 @@ class CharMatrixTest extends TestBase {
         public void testFlatOp() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'A', 'B', 'C' }, { 'D', 'E', 'F' }, { 'G', 'H', 'I' } });
             List<Integer> sums = new ArrayList<>();
-            m.mutateFlattened(row -> {
+            m.mutateViaFlatArray(row -> {
                 int sum = 0;
                 for (char val : row) {
                     sum += val;
@@ -2595,17 +2563,17 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamH_withRow() {
+        public void testStreamH_withSingleRowRange() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'A', 'B', 'C' }, { 'D', 'E', 'F' } });
-            char[] row1 = m.rowMajorStream(1).toArray();
+            char[] row1 = m.rowMajorStream(1, 2).toArray();
             assertArrayEquals(new char[] { 'D', 'E', 'F' }, row1);
         }
 
         @Test
-        public void testStreamH_withRow_outOfBounds() {
+        public void testStreamH_withSingleRowRange_outOfBounds() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'A', 'B' }, { 'C', 'D' } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(-1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(-1, 0));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.rowMajorStream(2, 3));
         }
 
         @Test
@@ -2637,17 +2605,17 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamV_withColumn() {
+        public void testStreamV_withSingleColumnRange() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'A', 'B', 'C' }, { 'D', 'E', 'F' } });
-            char[] col1 = m.columnMajorStream(1).toArray();
+            char[] col1 = m.columnMajorStream(1, 2).toArray();
             assertArrayEquals(new char[] { 'B', 'E' }, col1);
         }
 
         @Test
-        public void testStreamV_withColumn_outOfBounds() {
+        public void testStreamV_withSingleColumnRange_outOfBounds() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'A', 'B' }, { 'C', 'D' } });
-            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(-1));
-            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(-1, 0));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.columnMajorStream(2, 3));
         }
 
         @Test
@@ -2940,16 +2908,6 @@ class CharMatrixTest extends TestBase {
             CharMatrix m = CharMatrix.randomRow(0);
             assertEquals(1, m.rowCount());
             assertEquals(0, m.columnCount());
-        }
-
-        @Test
-        public void testFilled_withZero() {
-            CharMatrix m = CharMatrix.filled(1, 3, '\0');
-            assertEquals(1, m.rowCount());
-            assertEquals(3, m.columnCount());
-            for (int i = 0; i < 3; i++) {
-                assertEquals('\0', m.get(0, i));
-            }
         }
 
         @Test
@@ -3361,26 +3319,26 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_withArray() {
+        public void testCopyFrom() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { '\0', '\0' }, { '\0', '\0' } });
-            m.fill(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
+            m.copyFrom(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
             assertEquals('a', m.get(0, 0));
             assertEquals('d', m.get(1, 1));
         }
 
         @Test
-        public void testFill_withOffset() {
+        public void testCopyFrom_withOffset() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { '\0', '\0', '\0' }, { '\0', '\0', '\0' }, { '\0', '\0', '\0' } });
-            m.fill(1, 1, new char[][] { { 'a', 'b' }, { 'c', 'd' } });
+            m.copyFrom(1, 1, new char[][] { { 'a', 'b' }, { 'c', 'd' } });
             assertEquals('\0', m.get(0, 0));
             assertEquals('a', m.get(1, 1));
             assertEquals('d', m.get(2, 2));
         }
 
         @Test
-        public void testFill_withOffset_invalidPosition() {
+        public void testCopyFrom_withOffset_invalidPosition() {
             CharMatrix m = CharMatrix.wrap(new char[2][2]);
-            assertThrows(IndexOutOfBoundsException.class, () -> m.fill(3, 3, new char[][] { { 'a', 'b' }, { 'c', 'd' } }));
+            assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(3, 3, new char[][] { { 'a', 'b' }, { 'c', 'd' } }));
         }
 
         // ============ Copy Tests ============
@@ -3645,7 +3603,7 @@ class CharMatrixTest extends TestBase {
         public void testFlatOp() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
             AtomicInteger count = new AtomicInteger(0);
-            m.mutateFlattened(row -> count.addAndGet(row.length));
+            m.mutateViaFlatArray(row -> count.addAndGet(row.length));
             assertEquals(4, count.get());
         }
 
@@ -3756,9 +3714,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamH_singleRow() {
+        public void testStreamH_singleRowRange() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } });
-            List<Character> row = m.rowMajorStream(0).boxed().toList();
+            List<Character> row = m.rowMajorStream(0, 1).boxed().toList();
             assertEquals(3, row.size());
             assertEquals('a', row.get(0));
             assertEquals('b', row.get(1));
@@ -3784,9 +3742,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamV_singleColumn() {
+        public void testStreamV_singleColumnRange() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'a', 'b' }, { 'c', 'd' }, { 'e', 'f' } });
-            List<Character> col = m.columnMajorStream(0).boxed().toList();
+            List<Character> col = m.columnMajorStream(0, 1).boxed().toList();
             assertEquals(3, col.size());
             assertEquals('a', col.get(0));
             assertEquals('c', col.get(1));
@@ -4080,23 +4038,6 @@ class CharMatrixTest extends TestBase {
             CharMatrix m = CharMatrix.randomRow(1000);
             assertEquals(1, m.rowCount());
             assertEquals(1000, m.columnCount());
-        }
-
-        @Test
-        public void testFilled_withZero() {
-            CharMatrix m = CharMatrix.filled(1, 3, '\u0000');
-            assertEquals(1, m.rowCount());
-            assertEquals(3, m.columnCount());
-            for (int i = 0; i < 3; i++) {
-                assertEquals('\u0000', m.get(0, i));
-            }
-        }
-
-        @Test
-        public void testFilled_withZeroLength() {
-            CharMatrix m = CharMatrix.filled(1, 0, 'a');
-            assertEquals(1, m.rowCount());
-            assertEquals(0, m.columnCount());
         }
 
         @Test
@@ -4578,26 +4519,26 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFill_withArray() {
+        public void testCopyFrom() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { ' ', ' ' }, { ' ', ' ' } });
-            m.fill(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
+            m.copyFrom(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
             assertEquals('a', m.get(0, 0));
             assertEquals('d', m.get(1, 1));
         }
 
         @Test
-        public void testFill_withOffset() {
+        public void testCopyFrom_withOffset() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { ' ', ' ', ' ' }, { ' ', ' ', ' ' }, { ' ', ' ', ' ' } });
-            m.fill(1, 1, new char[][] { { 'a', 'b' }, { 'c', 'd' } });
+            m.copyFrom(1, 1, new char[][] { { 'a', 'b' }, { 'c', 'd' } });
             assertEquals(' ', m.get(0, 0));
             assertEquals('a', m.get(1, 1));
             assertEquals('d', m.get(2, 2));
         }
 
         @Test
-        public void testFill_withPartialArray() {
+        public void testCopyFrom_withPartialArray() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { ' ', ' ', ' ' }, { ' ', ' ', ' ' }, { ' ', ' ', ' ' } });
-            m.fill(0, 0, new char[][] { { 'a', 'b' } });
+            m.copyFrom(0, 0, new char[][] { { 'a', 'b' } });
             assertEquals('a', m.get(0, 0));
             assertEquals('b', m.get(0, 1));
             assertEquals(' ', m.get(0, 2));
@@ -4915,9 +4856,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamH_withRowIndex() {
+        public void testStreamH_withSingleRowRange() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            List<Character> row = m.rowMajorStream(1).boxed().toList();
+            List<Character> row = m.rowMajorStream(1, 2).boxed().toList();
             assertEquals(2, row.size());
             assertEquals('c', row.get(0).charValue());
             assertEquals('d', row.get(1).charValue());
@@ -4942,9 +4883,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamV_withColumnIndex() {
+        public void testStreamV_withSingleColumnRange() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            List<Character> col = m.columnMajorStream(1).boxed().toList();
+            List<Character> col = m.columnMajorStream(1, 2).boxed().toList();
             assertEquals(2, col.size());
             assertEquals('b', col.get(0).charValue());
             assertEquals('d', col.get(1).charValue());
@@ -5166,16 +5107,6 @@ class CharMatrixTest extends TestBase {
             CharMatrix m = CharMatrix.randomRow(5);
             assertEquals(1, m.rowCount());
             assertEquals(5, m.columnCount());
-        }
-
-        @Test
-        public void test_filled() {
-            CharMatrix m = CharMatrix.filled(1, 5, 'x');
-            assertEquals(1, m.rowCount());
-            assertEquals(5, m.columnCount());
-            for (int i = 0; i < 5; i++) {
-                assertEquals('x', m.get(0, i));
-            }
         }
 
         @Test
@@ -5548,9 +5479,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_fill_array() {
+        public void testCopyFrom() {
             CharMatrix m = CharMatrix.wrap(new char[3][3]);
-            m.fill(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
+            m.copyFrom(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
             assertEquals('a', m.get(0, 0));
             assertEquals('b', m.get(0, 1));
             assertEquals('c', m.get(1, 0));
@@ -5559,9 +5490,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_fill_arrayWithPosition() {
+        public void testCopyFromWithPosition() {
             CharMatrix m = CharMatrix.wrap(new char[4][4]);
-            m.fill(1, 1, new char[][] { { 'a', 'b' }, { 'c', 'd' } });
+            m.copyFrom(1, 1, new char[][] { { 'a', 'b' }, { 'c', 'd' } });
             assertEquals('\0', m.get(0, 0));
             assertEquals('a', m.get(1, 1));
             assertEquals('b', m.get(1, 2));
@@ -5718,9 +5649,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_mutateFlattened() {
+        public void test_mutateViaFlatArray() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            m.mutateFlattened(arr -> {
+            m.mutateViaFlatArray(arr -> {
                 for (int i = 0; i < arr.length; i++) {
                     arr[i] = (char) (arr[i] + 1);
                 }
@@ -5889,9 +5820,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_streamH_singleRow() {
+        public void test_streamH_singleRowRange() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            char[] row = m.rowMajorStream(1).toArray();
+            char[] row = m.rowMajorStream(1, 2).toArray();
             assertArrayEquals(new char[] { 'c', 'd' }, row);
         }
 
@@ -5910,9 +5841,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_streamV_singleColumn() {
+        public void test_streamV_singleColumnRange() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            char[] col = m.columnMajorStream(0).toArray();
+            char[] col = m.columnMajorStream(0, 1).toArray();
             assertArrayEquals(new char[] { 'a', 'c' }, col);
         }
 
@@ -5999,18 +5930,6 @@ class CharMatrixTest extends TestBase {
         // ==================== CharMatrix ====================
 
         @Test
-        public void testCharMatrix_filled() {
-            CharMatrix matrix = CharMatrix.filled(2, 3, 'a');
-            assertEquals(2, matrix.rowCount());
-            assertEquals(3, matrix.columnCount());
-            for (int i = 0; i < 2; i++) {
-                for (int j = 0; j < 3; j++) {
-                    assertEquals('a', matrix.get(i, j));
-                }
-            }
-        }
-
-        @Test
         public void testCharMatrix_rowView() {
             CharMatrix matrix = CharMatrix.wrap(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } });
             char[] firstRow = matrix.rowView(0);
@@ -6072,9 +5991,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCharMatrix_fill() {
+        public void testCharMatrix_copyFrom() {
             CharMatrix matrix = CharMatrix.wrap(new char[3][3]);
-            matrix.fill(1, 1, new char[][] { { 'a', 'b' }, { 'c', 'd' } });
+            matrix.copyFrom(1, 1, new char[][] { { 'a', 'b' }, { 'c', 'd' } });
             // Result: [[0, 0, 0], [0, 'a', 'b'], [0, 'c', 'd']]
             assertEquals('\0', matrix.get(0, 0));
             assertEquals('\0', matrix.get(1, 0));
@@ -6251,9 +6170,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCharMatrix_mutateFlattened() {
+        public void testCharMatrix_mutateViaFlatArray() {
             CharMatrix matrix = CharMatrix.wrap(new char[][] { { 'd', 'b' }, { 'c', 'a' } });
-            matrix.mutateFlattened(arr -> java.util.Arrays.sort(arr));
+            matrix.mutateViaFlatArray(arr -> java.util.Arrays.sort(arr));
             // matrix is now [['a', 'b'], ['c', 'd']]
             assertEquals('a', matrix.get(0, 0));
             assertEquals('b', matrix.get(0, 1));
@@ -6475,7 +6394,7 @@ class CharMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_fullOverwrite() {
         CharMatrix m = CharMatrix.wrap(new char[][] { { '\0', '\0' }, { '\0', '\0' } });
-        m.fill(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
+        m.copyFrom(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
         assertEquals('a', m.get(0, 0));
         assertEquals('b', m.get(0, 1));
         assertEquals('c', m.get(1, 0));
@@ -6485,7 +6404,7 @@ class CharMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_partialOverwrite() {
         CharMatrix m = CharMatrix.wrap(new char[][] { { '\0', '\0', '\0' }, { '\0', '\0', '\0' }, { '\0', '\0', '\0' } });
-        m.fill(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
+        m.copyFrom(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
         assertEquals('a', m.get(0, 0));
         assertEquals('b', m.get(0, 1));
         assertEquals('\0', m.get(0, 2));
@@ -6497,7 +6416,7 @@ class CharMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_withOffset() {
         CharMatrix m = CharMatrix.wrap(new char[][] { { '\0', '\0', '\0' }, { '\0', '\0', '\0' }, { '\0', '\0', '\0' } });
-        m.fill(1, 1, new char[][] { { 'x', 'y' }, { 'z', 'w' } });
+        m.copyFrom(1, 1, new char[][] { { 'x', 'y' }, { 'z', 'w' } });
         assertEquals('\0', m.get(0, 0));
         assertEquals('\0', m.get(1, 0));
         assertEquals('x', m.get(1, 1));
@@ -6509,7 +6428,7 @@ class CharMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_emptySource() {
         CharMatrix m = CharMatrix.wrap(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-        m.fill(new char[0][0]);
+        m.copyFrom(new char[0][0]);
         assertEquals('a', m.get(0, 0));
         assertEquals('d', m.get(1, 1));
     }
@@ -6517,8 +6436,8 @@ class CharMatrixTest extends TestBase {
     @Test
     public void testCopyFrom_negativeIndexThrows() {
         CharMatrix m = CharMatrix.wrap(new char[][] { { 'a' } });
-        assertThrows(IndexOutOfBoundsException.class, () -> m.fill(-1, 0, new char[][] { { 'b' } }));
-        assertThrows(IndexOutOfBoundsException.class, () -> m.fill(0, -1, new char[][] { { 'b' } }));
+        assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(-1, 0, new char[][] { { 'b' } }));
+        assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(0, -1, new char[][] { { 'b' } }));
     }
 
     @Test
@@ -6734,7 +6653,7 @@ class CharMatrixTest extends TestBase {
 
             char[][] backing = { { 'a', 'b' }, { 'c', 'd' }, { 'e', 'f' } };
             CharMatrix fillMatrix = CharMatrix.wrap(backing);
-            fillMatrix.fill(1, 0, backing);
+            fillMatrix.copyFrom(1, 0, backing);
             assertArrayEquals(new char[] { 'c', 'd' }, fillMatrix.rowCopy(2));
         }
 
@@ -6810,8 +6729,6 @@ class CharMatrixTest extends TestBase {
         assertThrows(IllegalArgumentException.class, () -> CharMatrix.randomRow(-1));
         assertThrows(IllegalArgumentException.class, () -> CharMatrix.random(-1, 2));
         assertThrows(IllegalArgumentException.class, () -> CharMatrix.random(2, -1));
-        assertThrows(IllegalArgumentException.class, () -> CharMatrix.filled(-1, 2, 'x'));
-        assertThrows(IllegalArgumentException.class, () -> CharMatrix.filled(2, -1, 'x'));
     }
 
 }
