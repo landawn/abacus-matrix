@@ -348,30 +348,30 @@ class AbstractMatrixTest extends TestBase {
     }
 
     @Test
-    public void testTile() {
+    public void testRepeatMatrix() {
         IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-        IntMatrix tiled = matrix.tile(2, 3);
+        IntMatrix repeated = matrix.repeatMatrix(2, 3);
 
-        tiled.println();
+        repeated.println();
 
-        Assertions.assertEquals(4, tiled.rowCount());
-        Assertions.assertEquals(6, tiled.columnCount());
-        Assertions.assertEquals(1, tiled.get(0, 0));
-        Assertions.assertEquals(2, tiled.get(0, 1));
-        Assertions.assertEquals(1, tiled.get(0, 2));
-        Assertions.assertEquals(3, tiled.get(1, 0));
+        Assertions.assertEquals(4, repeated.rowCount());
+        Assertions.assertEquals(6, repeated.columnCount());
+        Assertions.assertEquals(1, repeated.get(0, 0));
+        Assertions.assertEquals(2, repeated.get(0, 1));
+        Assertions.assertEquals(1, repeated.get(0, 2));
+        Assertions.assertEquals(3, repeated.get(1, 0));
     }
 
     @Test
-    public void testTileInvalidArgs() {
+    public void testRepeatMatrixInvalidArgs() {
         IntMatrix matrix = createTestMatrix();
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            matrix.tile(0, 1);
+            matrix.repeatMatrix(0, 1);
         });
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            matrix.tile(1, -1);
+            matrix.repeatMatrix(1, -1);
         });
     }
 
@@ -581,7 +581,7 @@ class AbstractMatrixTest extends TestBase {
     @Test
     public void testPointsHRow() {
         IntMatrix matrix = createTestMatrix2x3();
-        List<Sheet.Point> points = matrix.rowMajorPoints(1).collect(Collectors.toList());
+        List<Sheet.Point> points = matrix.rowMajorPoints(1, 1 + 1).collect(Collectors.toList());
 
         Assertions.assertEquals(3, points.size());
         Assertions.assertEquals(Sheet.Point.of(1, 0), points.get(0));
@@ -614,7 +614,7 @@ class AbstractMatrixTest extends TestBase {
     @Test
     public void testPointsVColumn() {
         IntMatrix matrix = createTestMatrix2x3();
-        List<Sheet.Point> points = matrix.columnMajorPoints(1).collect(Collectors.toList());
+        List<Sheet.Point> points = matrix.columnMajorPoints(1, 1 + 1).collect(Collectors.toList());
 
         Assertions.assertEquals(2, points.size());
         Assertions.assertEquals(Sheet.Point.of(0, 1), points.get(0));
@@ -1207,9 +1207,9 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile() {
+        public void testRepeatMatrix() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix repeated = m.tile(2, 3);
+            IntMatrix repeated = m.repeatMatrix(2, 3);
 
             assertEquals(4, repeated.rowCount());
             assertEquals(6, repeated.columnCount());
@@ -1220,11 +1220,11 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile_invalidArguments() {
+        public void testRepeatMatrix_invalidArguments() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 } });
-            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
-            assertThrows(IllegalArgumentException.class, () -> m.tile(-1, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(-1, 1));
         }
 
         // ============ Flatten Tests ============
@@ -1384,7 +1384,7 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void testPointsH_withRow() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            List<Point> points = m.rowMajorPoints(1).toList();
+            List<Point> points = m.rowMajorPoints(1, 1 + 1).toList();
 
             assertEquals(2, points.size());
             assertEquals(Point.of(1, 0), points.get(0));
@@ -1425,7 +1425,7 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void testPointsV_withColumn() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            List<Point> points = m.columnMajorPoints(1).toList();
+            List<Point> points = m.columnMajorPoints(1, 1 + 1).toList();
 
             assertEquals(2, points.size());
             assertEquals(Point.of(0, 1), points.get(0));
@@ -2322,38 +2322,38 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile() {
+        public void testRepeatMatrix() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix repeated = m.tile(2, 2);
+            IntMatrix repeated = m.repeatMatrix(2, 2);
 
             assertEquals(4, repeated.rowCount());
             assertEquals(4, repeated.columnCount());
             assertEquals(1, repeated.get(0, 0));
             assertEquals(2, repeated.get(0, 1));
-            assertEquals(1, repeated.get(0, 2)); // Tiled
-            assertEquals(1, repeated.get(2, 0)); // Tiled
+            assertEquals(1, repeated.get(0, 2)); // Repeated
+            assertEquals(1, repeated.get(2, 0)); // Repeated
             assertEquals(4, repeated.get(3, 3));
         }
 
         @Test
-        public void testTile_asymmetric() {
+        public void testRepeatMatrix_asymmetric() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 } });
-            IntMatrix repeated = m.tile(3, 2);
+            IntMatrix repeated = m.repeatMatrix(3, 2);
 
             assertEquals(3, repeated.rowCount());
             assertEquals(4, repeated.columnCount());
             assertEquals(1, repeated.get(0, 0));
             assertEquals(2, repeated.get(0, 1));
-            assertEquals(1, repeated.get(0, 2)); // Second tile
-            assertEquals(1, repeated.get(1, 0)); // Second row tile
+            assertEquals(1, repeated.get(0, 2)); // Second repeatMatrix
+            assertEquals(1, repeated.get(1, 0)); // Second row repeatMatrix
         }
 
         @Test
-        public void testTile_invalidArgs() {
+        public void testRepeatMatrix_invalidArgs() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1 } });
-            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
-            assertThrows(IllegalArgumentException.class, () -> m.tile(-1, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(-1, 1));
         }
 
         // ============ Flatten Tests ============
@@ -2651,7 +2651,7 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void testPointsH_singleRow() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            Stream<Point> points = m.rowMajorPoints(1);
+            Stream<Point> points = m.rowMajorPoints(1, 1 + 1);
             List<Point> list = points.toList();
 
             assertEquals(3, list.size());
@@ -2690,7 +2690,7 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void testPointsV_singleColumn() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            Stream<Point> points = m.columnMajorPoints(1);
+            Stream<Point> points = m.columnMajorPoints(1, 1 + 1);
             List<Point> list = points.toList();
 
             assertEquals(2, list.size());
@@ -3215,7 +3215,7 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void test_pointsH_singleRow() {
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            List<Point> points = matrix.rowMajorPoints(1).toList();
+            List<Point> points = matrix.rowMajorPoints(1, 1 + 1).toList();
             assertEquals(2, points.size());
             assertEquals(Point.of(1, 0), points.get(0));
             assertEquals(Point.of(1, 1), points.get(1));
@@ -3248,7 +3248,7 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void test_pointsV_singleColumn() {
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            List<Point> points = matrix.columnMajorPoints(0).toList();
+            List<Point> points = matrix.columnMajorPoints(0, 0 + 1).toList();
             assertEquals(2, points.size());
             assertEquals(Point.of(0, 0), points.get(0));
             assertEquals(Point.of(1, 0), points.get(1));
@@ -3731,33 +3731,33 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testAbstractMatrix_tile() {
-            // From tile Javadoc
-            // Original:    tile(2, 2):
+        public void testAbstractMatrix_repeatMatrix() {
+            // From repeatMatrix Javadoc
+            // Original:    repeatMatrix(2, 2):
             // 1 2          1 2 1 2
             // 3 4     =>   3 4 3 4
             //              1 2 1 2
             //              3 4 3 4
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix tiled = matrix.tile(2, 2);
-            assertEquals(4, tiled.rowCount());
-            assertEquals(4, tiled.columnCount());
-            assertEquals(1, tiled.get(0, 0));
-            assertEquals(2, tiled.get(0, 1));
-            assertEquals(1, tiled.get(0, 2));
-            assertEquals(2, tiled.get(0, 3));
-            assertEquals(3, tiled.get(1, 0));
-            assertEquals(4, tiled.get(1, 1));
-            assertEquals(3, tiled.get(1, 2));
-            assertEquals(4, tiled.get(1, 3));
-            assertEquals(1, tiled.get(2, 0));
-            assertEquals(2, tiled.get(2, 1));
-            assertEquals(1, tiled.get(2, 2));
-            assertEquals(2, tiled.get(2, 3));
-            assertEquals(3, tiled.get(3, 0));
-            assertEquals(4, tiled.get(3, 1));
-            assertEquals(3, tiled.get(3, 2));
-            assertEquals(4, tiled.get(3, 3));
+            IntMatrix repeated = matrix.repeatMatrix(2, 2);
+            assertEquals(4, repeated.rowCount());
+            assertEquals(4, repeated.columnCount());
+            assertEquals(1, repeated.get(0, 0));
+            assertEquals(2, repeated.get(0, 1));
+            assertEquals(1, repeated.get(0, 2));
+            assertEquals(2, repeated.get(0, 3));
+            assertEquals(3, repeated.get(1, 0));
+            assertEquals(4, repeated.get(1, 1));
+            assertEquals(3, repeated.get(1, 2));
+            assertEquals(4, repeated.get(1, 3));
+            assertEquals(1, repeated.get(2, 0));
+            assertEquals(2, repeated.get(2, 1));
+            assertEquals(1, repeated.get(2, 2));
+            assertEquals(2, repeated.get(2, 3));
+            assertEquals(3, repeated.get(3, 0));
+            assertEquals(4, repeated.get(3, 1));
+            assertEquals(3, repeated.get(3, 2));
+            assertEquals(4, repeated.get(3, 3));
         }
 
         @Test

@@ -35,9 +35,12 @@ import org.w3c.dom.NodeList;
 import com.sun.source.doctree.DeprecatedTree;
 import com.sun.source.doctree.DocCommentTree;
 import com.sun.source.doctree.DocTree;
+import com.sun.source.doctree.EndElementTree;
+import com.sun.source.doctree.LiteralTree;
 import com.sun.source.doctree.ParamTree;
 import com.sun.source.doctree.ReturnTree;
 import com.sun.source.doctree.SeeTree;
+import com.sun.source.doctree.StartElementTree;
 import com.sun.source.doctree.ThrowsTree;
 import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.AssignmentTree;
@@ -171,6 +174,7 @@ public final class ApiDocGenerator {
         Map<String, String> throwsDocs = new LinkedHashMap<>();
         List<String> seeAlso = new ArrayList<>();
         List<String> contract = new ArrayList<>();
+        List<String> examples = new ArrayList<>();
         String performance;
     }
 
@@ -202,10 +206,9 @@ public final class ApiDocGenerator {
         for (final CompilationUnitTree unit : task.parse()) {
             parsedUnits.add(unit);
         }
-        try {
-            task.analyze();
-        } catch (final Throwable ignored) {
-        }
+        // Parsing is sufficient for source positions and DocTrees. Avoid attribution here: the
+        // generator intentionally runs without the library's dependency classpath, so analyze()
+        // would add misleading unresolved-type diagnostics without improving the generated index.
         fileManager.close();
 
         final DocTrees docTrees = DocTrees.instance(task);
@@ -376,6 +379,7 @@ public final class ApiDocGenerator {
                         method.since = methodDoc.since;
                         method.contract = methodDoc.contract;
                         method.performance = methodDoc.performance;
+                        method.examples = methodDoc.examples;
                         method.seeAlso = methodDoc.seeAlso;
                     }
                     method.deprecated = readDeprecated(methodTree.getModifiers(), methodDoc);
@@ -508,7 +512,12 @@ public final class ApiDocGenerator {
 
         final DocInfo doc = new DocInfo();
         doc.summary = normalizeDocText(comment.getFirstSentence());
-        final String body = normalizeDocText(comment.getFullBody());
+        doc.examples = readExamples(comment.getFullBody());
+
+        // getBody() excludes the first sentence, which is already represented by summary. Exclude
+        // preformatted examples as well so example comments containing "if", "when", or "must"
+        // are not accidentally reported as behavioral contracts.
+        final String body = normalizeDocProse(comment.getBody());
         if (!isBlank(body)) {
             for (final String sentence : body.split("(?<=[.!?])\\s+")) {
                 final String s = sentence.trim();
@@ -544,7 +553,7 @@ public final class ApiDocGenerator {
                 }
                 case SEE -> {
                     final SeeTree s = (SeeTree) tag;
-                    final String ref = normalize(s.getReference().toString());
+                    final String ref = normalizeDocText(s.getReference());
                     if (!isBlank(ref)) {
                         doc.seeAlso.add(ref);
                     }
@@ -558,6 +567,104 @@ public final class ApiDocGenerator {
             }
         }
         return doc;
+    }
+
+    private static List<String> readExamples(final List<? extends DocTree> trees) {
+        final List<String> examples = new ArrayList<>();
+        StringBuilder current = null;
+
+        for (final DocTree tree : trees) {
+            if (tree instanceof StartElementTree startElement && startElement.getName().contentEquals("pre")) {
+                current = new StringBuilder();
+            } else if (tree instanceof EndElementTree endElement && endElement.getName().contentEquals("pre")) {
+                if (current != null) {
+                    final String example = normalizeExample(current.toString());
+                    if (!isBlank(example)) {
+                        examples.add(example);
+                    }
+                    current = null;
+                }
+            } else if (current != null) {
+                if (tree instanceof LiteralTree literal && tree.getKind() == DocTree.Kind.CODE) {
+                    current.append(literal.getBody().getBody());
+                } else {
+                    current.append(tree);
+                }
+            }
+        }
+
+        return examples;
+    }
+
+    private static String normalizeExample(final String value) {
+        if (value == null) {
+            return null;
+        }
+
+        final String[] lines = value.replace("\r\n", "\n").replace('\r', '\n').split("\n", -1);
+        int from = 0;
+        int to = lines.length;
+        while (from < to && lines[from].isBlank()) {
+            from++;
+        }
+        while (to > from && lines[to - 1].isBlank()) {
+            to--;
+        }
+        if (from == to) {
+            return null;
+        }
+
+        int commonIndent = Integer.MAX_VALUE;
+        for (int i = from; i < to; i++) {
+            if (lines[i].isBlank()) {
+                continue;
+            }
+            int indent = 0;
+            while (indent < lines[i].length() && Character.isWhitespace(lines[i].charAt(indent))) {
+                indent++;
+            }
+            commonIndent = Math.min(commonIndent, indent);
+        }
+        if (commonIndent == Integer.MAX_VALUE) {
+            commonIndent = 0;
+        }
+
+        final StringBuilder out = new StringBuilder(value.length());
+        for (int i = from; i < to; i++) {
+            if (i > from) {
+                out.append('\n');
+            }
+            final String line = lines[i];
+            out.append(line.isBlank() ? "" : line.substring(Math.min(commonIndent, line.length())));
+        }
+        return out.toString();
+    }
+
+    private static String normalizeDocProse(final List<? extends DocTree> trees) {
+        if (trees == null || trees.isEmpty()) {
+            return null;
+        }
+
+        final StringBuilder out = new StringBuilder();
+        boolean inPre = false;
+        for (final DocTree tree : trees) {
+            if (tree instanceof StartElementTree startElement) {
+                if (startElement.getName().contentEquals("pre")) {
+                    inPre = true;
+                } else if (!inPre) {
+                    out.append(' ');
+                }
+            } else if (tree instanceof EndElementTree endElement) {
+                if (endElement.getName().contentEquals("pre")) {
+                    inPre = false;
+                } else if (!inPre) {
+                    out.append(' ');
+                }
+            } else if (!inPre) {
+                out.append(tree).append(' ');
+            }
+        }
+        return normalize(out.toString());
     }
 
     private static String normalizeDocText(final List<? extends DocTree> trees) {
@@ -588,6 +695,7 @@ public final class ApiDocGenerator {
         final List<ThrowInfo> out = new ArrayList<>();
         final Set<String> ownerTypeParams = ownerType.typeParams.stream().map(tp -> tp.name).collect(Collectors.toSet());
         final Set<String> methodTypeParams = methodTree.getTypeParameters().stream().map(tp -> tp.getName().toString()).collect(Collectors.toSet());
+        final Set<String> included = new LinkedHashSet<>();
         for (final ExpressionTree thrownType : methodTree.getThrows()) {
             final String declared = normalize(thrownType.toString());
             final ThrowInfo t = new ThrowInfo();
@@ -600,6 +708,32 @@ public final class ApiDocGenerator {
                 t.condition = condition;
             }
             out.add(t);
+            included.add(declared);
+            included.add(simpleName(declared));
+            included.add(t.type);
+            included.add(simpleName(t.type));
+        }
+
+        // Unchecked exceptions are commonly documented with @throws but omitted from the Java
+        // throws clause. They are still part of the public API contract and must be indexed.
+        if (doc != null) {
+            for (final Map.Entry<String, String> entry : doc.throwsDocs.entrySet()) {
+                final String documented = entry.getKey();
+                final String resolved = resolveExceptionType(documented, unitData, typesByPackage, allTypes, ownerTypeParams, methodTypeParams);
+                if (included.contains(documented) || included.contains(simpleName(documented)) || included.contains(resolved)
+                        || included.contains(simpleName(resolved))) {
+                    continue;
+                }
+
+                final ThrowInfo t = new ThrowInfo();
+                t.type = resolved;
+                t.condition = entry.getValue();
+                out.add(t);
+                included.add(documented);
+                included.add(simpleName(documented));
+                included.add(resolved);
+                included.add(simpleName(resolved));
+            }
         }
         return out;
     }
@@ -859,6 +993,16 @@ public final class ApiDocGenerator {
                 }
                 if (!isBlank(m.performance)) {
                     sb.append("- **Performance:** ").append(md(m.performance)).append('\n');
+                }
+                if (!m.examples.isEmpty()) {
+                    sb.append("- **Examples:**\n");
+                    for (final String example : m.examples) {
+                        sb.append("  - ```java\n");
+                        for (final String line : example.split("\n", -1)) {
+                            sb.append("    ").append(line).append('\n');
+                        }
+                        sb.append("    ```\n");
+                    }
                 }
                 if (!m.seeAlso.isEmpty()) {
                     sb.append("- **See also:** ").append(md(String.join(", ", m.seeAlso))).append('\n');

@@ -868,11 +868,11 @@ class ByteMatrixTest extends TestBase {
     }
 
     @Test
-    public void testTile() {
+    public void testRepeatMatrix() {
         byte[][] a = { { 1, 2 }, { 3, 4 } };
         ByteMatrix matrix = ByteMatrix.wrap(a);
 
-        ByteMatrix repeated = matrix.tile(2, 3);
+        ByteMatrix repeated = matrix.repeatMatrix(2, 3);
         Assertions.assertEquals(4, repeated.rowCount());
         Assertions.assertEquals(6, repeated.columnCount());
         Assertions.assertEquals(1, repeated.get(0, 0));
@@ -881,8 +881,8 @@ class ByteMatrixTest extends TestBase {
         Assertions.assertEquals(1, repeated.get(2, 0));
         Assertions.assertEquals(4, repeated.get(3, 5));
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.tile(0, 1));
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.tile(1, 0));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.repeatMatrix(0, 1));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.repeatMatrix(1, 0));
     }
 
     @Test
@@ -2291,9 +2291,9 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile() {
+        public void testRepeatMatrix() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
-            ByteMatrix repeated = m.tile(2, 3);
+            ByteMatrix repeated = m.repeatMatrix(2, 3);
             assertEquals(4, repeated.rowCount());
             assertEquals(6, repeated.columnCount());
 
@@ -2312,10 +2312,10 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile_invalidArguments() {
+        public void testRepeatMatrix_invalidArguments() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 } });
-            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
         }
 
         // ============ Flatten Tests ============
@@ -2907,15 +2907,15 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTileOverflow() {
+        public void testRepeatMatrixOverflow() {
             int largeSize = 50000;
             ByteMatrix m = ByteMatrix.wrap(new byte[largeSize][2]);
 
-            IllegalArgumentException ex1 = assertThrows(IllegalArgumentException.class, () -> m.tile(50000, 1));
+            IllegalArgumentException ex1 = assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(50000, 1));
             assertTrue(ex1.getMessage().contains("row count overflow"));
 
             ByteMatrix m2 = ByteMatrix.wrap(new byte[2][largeSize]);
-            IllegalArgumentException ex2 = assertThrows(IllegalArgumentException.class, () -> m2.tile(1, 50000));
+            IllegalArgumentException ex2 = assertThrows(IllegalArgumentException.class, () -> m2.repeatMatrix(1, 50000));
             assertTrue(ex2.getMessage().contains("column count overflow"));
         }
     }
@@ -3508,9 +3508,9 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile() {
+        public void testRepeatMatrix() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
-            ByteMatrix result = m.tile(2, 2);
+            ByteMatrix result = m.repeatMatrix(2, 2);
             assertEquals(4, result.rowCount());
             assertEquals(4, result.columnCount());
             assertEquals(1, result.get(0, 0));
@@ -3520,10 +3520,10 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile_invalidRepeats() {
+        public void testRepeatMatrix_invalidRepeats() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1 } });
-            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
         }
 
         @Test
@@ -3776,7 +3776,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testPointsH_singleRow() {
             ByteMatrix m = ByteMatrix.wrap(new byte[2][3]);
-            List<Point> points = m.rowMajorPoints(0).toList();
+            List<Point> points = m.rowMajorPoints(0, 0 + 1).toList();
             assertEquals(3, points.size());
             assertEquals(Point.of(0, 0), points.get(0));
             assertEquals(Point.of(0, 2), points.get(2));
@@ -3794,7 +3794,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testPointsV_singleColumn() {
             ByteMatrix m = ByteMatrix.wrap(new byte[3][2]);
-            List<Point> points = m.columnMajorPoints(0).toList();
+            List<Point> points = m.columnMajorPoints(0, 0 + 1).toList();
             assertEquals(3, points.size());
             assertEquals(Point.of(0, 0), points.get(0));
             assertEquals(Point.of(2, 0), points.get(2));
@@ -4447,9 +4447,9 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile() {
+        public void testRepeatMatrix() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
-            ByteMatrix repeated = m.tile(2, 2);
+            ByteMatrix repeated = m.repeatMatrix(2, 2);
             assertEquals(4, repeated.rowCount());
             assertEquals(4, repeated.columnCount());
             assertEquals(1, repeated.get(0, 0));
@@ -4458,9 +4458,9 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile_singleRepeat() {
+        public void testRepeatMatrix_singleRepeat() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 } });
-            ByteMatrix repeated = m.tile(1, 1);
+            ByteMatrix repeated = m.repeatMatrix(1, 1);
             assertEquals(1, repeated.rowCount());
             assertEquals(2, repeated.columnCount());
             assertEquals(1, repeated.get(0, 0));
@@ -5310,14 +5310,14 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_tile() {
+        public void test_repeatMatrix() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
-            ByteMatrix tiled = m.tile(2, 2);
-            assertEquals(4, tiled.rowCount());
-            assertEquals(4, tiled.columnCount());
-            assertEquals(1, tiled.get(0, 0));
-            assertEquals(2, tiled.get(0, 1));
-            assertEquals(1, tiled.get(2, 2));
+            ByteMatrix repeated = m.repeatMatrix(2, 2);
+            assertEquals(4, repeated.rowCount());
+            assertEquals(4, repeated.columnCount());
+            assertEquals(1, repeated.get(0, 0));
+            assertEquals(2, repeated.get(0, 1));
+            assertEquals(1, repeated.get(2, 2));
         }
 
         // ============ Flatten Tests ============

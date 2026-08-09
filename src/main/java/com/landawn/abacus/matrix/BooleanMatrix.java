@@ -2355,7 +2355,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @return a new {@code BooleanMatrix} with dimensions {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}
      * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is not positive,
      *         or if either resulting dimension would overflow {@code Integer.MAX_VALUE}
-     * @see #tile(int, int)
+     * @see #repeatMatrix(int, int)
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">MATLAB repelem function</a>
      */
     @Override
@@ -2394,22 +2394,22 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
 
     /**
      * Repeats the entire matrix the specified number of times in both dimensions.
-     * The matrix is tiled {@code rowRepeats} times vertically and {@code columnRepeats} times horizontally.
+     * The matrix is repeated {@code rowRepeats} times vertically and {@code columnRepeats} times horizontally.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * // [[true, false]] with tile(2, 3) becomes:
+     * // [[true, false]] with repeatMatrix(2, 3) becomes:
      * // [[true, false, true, false, true, false],
      * //  [true, false, true, false, true, false]]
      * BooleanMatrix matrix = BooleanMatrix.wrap(new boolean[][] {{true, false}});
-     * BooleanMatrix tiled = matrix.tile(2, 3);
-     * tiled.rowCount();          // returns 2
-     * tiled.columnCount();       // returns 6
-     * tiled.get(0, 0);           // returns true
-     * tiled.get(0, 1);           // returns false (tile boundary preserves original pattern)
+     * BooleanMatrix repeated = matrix.repeatMatrix(2, 3);
+     * repeated.rowCount();          // returns 2
+     * repeated.columnCount();       // returns 6
+     * repeated.get(0, 0);           // returns true
+     * repeated.get(0, 1);           // returns false (repeat boundary preserves original pattern)
      *
-     * matrix.tile(0, 1);   // throws IllegalArgumentException (rowRepeats not positive)
-     * matrix.tile(1, 0);   // throws IllegalArgumentException (columnRepeats not positive)
+     * matrix.repeatMatrix(0, 1);   // throws IllegalArgumentException (rowRepeats not positive)
+     * matrix.repeatMatrix(1, 0);   // throws IllegalArgumentException (columnRepeats not positive)
      * }</pre>
      *
      * @param rowRepeats number of times to repeat the matrix vertically; must be {@code > 0}
@@ -2421,7 +2421,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
     @Override
-    public BooleanMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
+    public BooleanMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
 
         if (rowRepeats == 1 && columnRepeats == 1) {

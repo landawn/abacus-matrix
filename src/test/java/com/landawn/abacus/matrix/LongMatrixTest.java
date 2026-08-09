@@ -893,11 +893,11 @@ class LongMatrixTest extends TestBase {
     }
 
     @Test
-    public void testTile() {
+    public void testRepeatMatrix() {
         long[][] a = { { 1L, 2L }, { 3L, 4L } };
         LongMatrix matrix = LongMatrix.wrap(a);
 
-        LongMatrix repeated = matrix.tile(2, 3);
+        LongMatrix repeated = matrix.repeatMatrix(2, 3);
         Assertions.assertEquals(4, repeated.rowCount());
         Assertions.assertEquals(6, repeated.columnCount());
         Assertions.assertEquals(1L, repeated.get(0, 0));
@@ -906,8 +906,8 @@ class LongMatrixTest extends TestBase {
         Assertions.assertEquals(1L, repeated.get(2, 0));
         Assertions.assertEquals(4L, repeated.get(3, 5));
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.tile(0, 1));
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.tile(1, 0));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.repeatMatrix(0, 1));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.repeatMatrix(1, 0));
     }
 
     @Test
@@ -1547,13 +1547,13 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testLongMatrix_tile() {
+        public void testLongMatrix_repeatMatrix() {
             LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } });
-            LongMatrix tiled = matrix.tile(2, 3);
-            assertEquals(4, tiled.rowCount());
-            assertEquals(6, tiled.columnCount());
-            assertArrayEquals(new long[] { 1, 2, 1, 2, 1, 2 }, tiled.rowView(0));
-            assertArrayEquals(new long[] { 3, 4, 3, 4, 3, 4 }, tiled.rowView(1));
+            LongMatrix repeated = matrix.repeatMatrix(2, 3);
+            assertEquals(4, repeated.rowCount());
+            assertEquals(6, repeated.columnCount());
+            assertArrayEquals(new long[] { 1, 2, 1, 2, 1, 2 }, repeated.rowView(0));
+            assertArrayEquals(new long[] { 3, 4, 3, 4, 3, 4 }, repeated.rowView(1));
         }
 
         @Test
@@ -2642,9 +2642,9 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile() {
+        public void testRepeatMatrix() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix repeated = m.tile(2, 3);
+            LongMatrix repeated = m.repeatMatrix(2, 3);
             assertEquals(4, repeated.rowCount());
             assertEquals(6, repeated.columnCount());
 
@@ -2663,10 +2663,10 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile_invalidArguments() {
+        public void testRepeatMatrix_invalidArguments() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
-            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
         }
 
         // ============ Flatten Tests ============
@@ -4297,9 +4297,9 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile() {
+        public void testRepeatMatrix() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
-            LongMatrix result = m.tile(2, 2);
+            LongMatrix result = m.repeatMatrix(2, 2);
             assertEquals(2, result.rowCount());
             assertEquals(4, result.columnCount());
             assertEquals(1L, result.get(0, 0));
@@ -5408,9 +5408,9 @@ class LongMatrixTest extends TestBase {
         // ============ Repmat Test ============
 
         @Test
-        public void test_tile() {
+        public void test_repeatMatrix() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
-            LongMatrix result = m.tile(2, 2);
+            LongMatrix result = m.repeatMatrix(2, 2);
             assertEquals(2, result.rowCount());
             assertEquals(4, result.columnCount());
             assertEquals(1L, result.get(0, 0));
@@ -5420,9 +5420,9 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_tile_invalidRepeats() {
+        public void test_repeatMatrix_invalidRepeats() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
-            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
         }
 
         // ============ Flatten Test ============
@@ -5847,7 +5847,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testPointsHorizontal_SingleRow() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } });
-            List<Sheet.Point> points = m.rowMajorPoints(0).toList();
+            List<Sheet.Point> points = m.rowMajorPoints(0, 0 + 1).toList();
             assertEquals(2, points.size());
         }
 
@@ -5861,7 +5861,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testPointsVertical_SingleColumn() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } });
-            List<Sheet.Point> points = m.columnMajorPoints(1).toList();
+            List<Sheet.Point> points = m.columnMajorPoints(1, 1 + 1).toList();
             assertEquals(2, points.size());
         }
 
@@ -5928,7 +5928,7 @@ class LongMatrixTest extends TestBase {
         LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
         LongMatrix extended = matrix.pad(1, 0, 1, 0, 8L);
         LongMatrix repeatedElements = matrix.repeatElements(1, 2);
-        LongMatrix repeatedMatrix = matrix.tile(2, 1);
+        LongMatrix repeatedMatrix = matrix.repeatMatrix(2, 1);
         List<Long> visited = new ArrayList<>();
 
         matrix.forEach(0, 2, 1, 2, visited::add);

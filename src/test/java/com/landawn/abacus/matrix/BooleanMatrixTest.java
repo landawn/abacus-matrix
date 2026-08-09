@@ -761,18 +761,18 @@ class BooleanMatrixTest extends TestBase {
     }
 
     @Test
-    public void testTile() {
+    public void testRepeatMatrix() {
         boolean[][] arr = { { true, false } };
         BooleanMatrix matrix = BooleanMatrix.wrap(arr);
 
-        BooleanMatrix tiled = matrix.tile(2, 3);
-        assertEquals(2, tiled.rowCount());
-        assertEquals(6, tiled.columnCount());
-        assertTrue(tiled.get(0, 0));
-        assertFalse(tiled.get(0, 1));
-        assertTrue(tiled.get(0, 2));
+        BooleanMatrix repeated = matrix.repeatMatrix(2, 3);
+        assertEquals(2, repeated.rowCount());
+        assertEquals(6, repeated.columnCount());
+        assertTrue(repeated.get(0, 0));
+        assertFalse(repeated.get(0, 1));
+        assertTrue(repeated.get(0, 2));
 
-        assertThrows(IllegalArgumentException.class, () -> matrix.tile(0, 1));
+        assertThrows(IllegalArgumentException.class, () -> matrix.repeatMatrix(0, 1));
     }
 
     @Test
@@ -2026,9 +2026,9 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile() {
+        public void testRepeatMatrix() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false }, { false, true } });
-            BooleanMatrix repeated = m.tile(2, 3);
+            BooleanMatrix repeated = m.repeatMatrix(2, 3);
             assertEquals(4, repeated.rowCount());
             assertEquals(6, repeated.columnCount());
 
@@ -2047,10 +2047,10 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile_invalidArguments() {
+        public void testRepeatMatrix_invalidArguments() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false } });
-            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
         }
 
         // ============ Flatten Tests ============
@@ -2441,7 +2441,7 @@ class BooleanMatrixTest extends TestBase {
         public void testAllTrueMatrix() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, true, true } });
             m = m.reshape(3, 1);
-            m = m.tile(1, 3);
+            m = m.repeatMatrix(1, 3);
 
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3; j++) {
@@ -2763,9 +2763,9 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile_edge1x1() {
+        public void testRepeatMatrix_edge1x1() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true } });
-            BooleanMatrix repeated = m.tile(3, 3);
+            BooleanMatrix repeated = m.repeatMatrix(3, 3);
             assertEquals(3, repeated.rowCount());
             assertEquals(3, repeated.columnCount());
             for (int i = 0; i < 3; i++) {
@@ -2832,18 +2832,18 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTileOverflow() {
-            // Create matrix that will overflow when tiled
+        public void testRepeatMatrixOverflow() {
+            // Create matrix that will overflow when repeated
             int largeSize = 50000;
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[largeSize][2]);
 
             // Test row overflow
-            IllegalArgumentException ex1 = assertThrows(IllegalArgumentException.class, () -> m.tile(50000, 1));
+            IllegalArgumentException ex1 = assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(50000, 1));
             assertTrue(ex1.getMessage().contains("row count overflow"));
 
             // Test column overflow
             BooleanMatrix m2 = BooleanMatrix.wrap(new boolean[2][largeSize]);
-            IllegalArgumentException ex2 = assertThrows(IllegalArgumentException.class, () -> m2.tile(1, 50000));
+            IllegalArgumentException ex2 = assertThrows(IllegalArgumentException.class, () -> m2.repeatMatrix(1, 50000));
             assertTrue(ex2.getMessage().contains("column count overflow"));
         }
     }
@@ -3406,9 +3406,9 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile() {
+        public void testRepeatMatrix() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false }, { false, true } });
-            BooleanMatrix result = m.tile(2, 2);
+            BooleanMatrix result = m.repeatMatrix(2, 2);
             assertEquals(4, result.rowCount());
             assertEquals(4, result.columnCount());
             assertTrue(result.get(0, 0));
@@ -3418,10 +3418,10 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile_invalidRepeats() {
+        public void testRepeatMatrix_invalidRepeats() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true } });
-            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
         }
 
         @Test
@@ -3651,7 +3651,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testPointsH_singleRow() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[2][3]);
-            List<Point> points = m.rowMajorPoints(0).toList();
+            List<Point> points = m.rowMajorPoints(0, 0 + 1).toList();
             assertEquals(3, points.size());
             assertEquals(Point.of(0, 0), points.get(0));
             assertEquals(Point.of(0, 2), points.get(2));
@@ -3669,7 +3669,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testPointsV_singleColumn() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[3][2]);
-            List<Point> points = m.columnMajorPoints(0).toList();
+            List<Point> points = m.columnMajorPoints(0, 0 + 1).toList();
             assertEquals(3, points.size());
             assertEquals(Point.of(0, 0), points.get(0));
             assertEquals(Point.of(2, 0), points.get(2));
@@ -4219,9 +4219,9 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile() {
+        public void testRepeatMatrix() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false }, { false, true } });
-            BooleanMatrix repeated = m.tile(2, 2);
+            BooleanMatrix repeated = m.repeatMatrix(2, 2);
             assertEquals(4, repeated.rowCount());
             assertEquals(4, repeated.columnCount());
             assertTrue(repeated.get(0, 0));
@@ -4230,9 +4230,9 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile_singleRepeat() {
+        public void testRepeatMatrix_singleRepeat() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false } });
-            BooleanMatrix repeated = m.tile(1, 1);
+            BooleanMatrix repeated = m.repeatMatrix(1, 1);
             assertEquals(1, repeated.rowCount());
             assertEquals(2, repeated.columnCount());
             assertTrue(repeated.get(0, 0));
@@ -5019,14 +5019,14 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_tile() {
+        public void test_repeatMatrix() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false }, { false, true } });
-            BooleanMatrix tiled = m.tile(2, 2);
-            assertEquals(4, tiled.rowCount());
-            assertEquals(4, tiled.columnCount());
-            assertTrue(tiled.get(0, 0));
-            assertFalse(tiled.get(0, 1));
-            assertTrue(tiled.get(2, 2));
+            BooleanMatrix repeated = m.repeatMatrix(2, 2);
+            assertEquals(4, repeated.rowCount());
+            assertEquals(4, repeated.columnCount());
+            assertTrue(repeated.get(0, 0));
+            assertFalse(repeated.get(0, 1));
+            assertTrue(repeated.get(2, 2));
         }
 
         // ============ Flatten Tests ============

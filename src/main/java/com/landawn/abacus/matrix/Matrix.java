@@ -2591,7 +2591,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @return a new matrix with repeated elements, with dimensions {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}
      * @throws IllegalArgumentException if {@code rowRepeats < 1} or {@code columnRepeats < 1}, or if the resulting
      *         dimensions would overflow {@code Integer.MAX_VALUE}
-     * @see #tile(int, int)
+     * @see #repeatMatrix(int, int)
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">MATLAB repelem function</a>
      */
     @Override
@@ -2629,21 +2629,21 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     }
 
     /**
-     * Repeats the entire matrix as a tile pattern by the specified number of times.
+     * Repeats the entire matrix as a repeated pattern by the specified number of times.
      * The matrix is repeated as a whole block rowRepeats times vertically and columnRepeats times horizontally.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
-     * Matrix<Integer> tiled = matrix.tile(2, 3);
+     * Matrix<Integer> repeated = matrix.repeatMatrix(2, 3);
      * // Result: {{1,2,1,2,1,2}, {3,4,3,4,3,4}, {1,2,1,2,1,2}, {3,4,3,4,3,4}}
-     * tiled.rowCount();      // returns 4
-     * tiled.columnCount();   // returns 6
-     * tiled.rowCopy(0);      // returns [1, 2, 1, 2, 1, 2]
-     * tiled.rowCopy(3);      // returns [3, 4, 3, 4, 3, 4]
+     * repeated.rowCount();      // returns 4
+     * repeated.columnCount();   // returns 6
+     * repeated.rowCopy(0);      // returns [1, 2, 1, 2, 1, 2]
+     * repeated.rowCopy(3);      // returns [3, 4, 3, 4, 3, 4]
      *
-     * matrix.tile(0, 1);   // throws IllegalArgumentException (rowRepeats < 1)
-     * matrix.tile(1, 0);   // throws IllegalArgumentException (columnRepeats < 1)
+     * matrix.repeatMatrix(0, 1);   // throws IllegalArgumentException (rowRepeats < 1)
+     * matrix.repeatMatrix(1, 0);   // throws IllegalArgumentException (columnRepeats < 1)
      * }</pre>
      *
      * @param rowRepeats number of times to repeat the matrix in the row direction (must be {@code >= 1})
@@ -2655,7 +2655,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
     @Override
-    public Matrix<T> tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
+    public Matrix<T> repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
 
         if ((long) rowCount * rowRepeats > Integer.MAX_VALUE) {

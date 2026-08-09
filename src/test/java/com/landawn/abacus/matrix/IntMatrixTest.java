@@ -807,9 +807,9 @@ class IntMatrixTest extends TestBase {
     }
 
     @Test
-    public void testTile() {
+    public void testRepeatMatrix() {
         IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-        IntMatrix repeated = m.tile(2, 3);
+        IntMatrix repeated = m.repeatMatrix(2, 3);
         assertEquals(4, repeated.rowCount());
         assertEquals(6, repeated.columnCount());
 
@@ -829,8 +829,8 @@ class IntMatrixTest extends TestBase {
         assertEquals(2, repeated.get(2, 1));
 
         // Test invalid arguments
-        assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
-        assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
+        assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
+        assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
     }
 
     @Test
@@ -2169,10 +2169,10 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile_invalidArguments() {
+        public void testRepeatMatrix_invalidArguments() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 } });
-            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
         }
 
         // ============ Flatten Tests ============
@@ -3591,9 +3591,9 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile() {
+        public void testRepeatMatrix() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 } });
-            IntMatrix result = m.tile(2, 2);
+            IntMatrix result = m.repeatMatrix(2, 2);
             assertEquals(2, result.rowCount());
             assertEquals(4, result.columnCount());
             assertEquals(1, result.get(0, 0));
@@ -4730,9 +4730,9 @@ class IntMatrixTest extends TestBase {
         // ============ Repmat Test ============
 
         @Test
-        public void test_tile() {
+        public void test_repeatMatrix() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 } });
-            IntMatrix result = m.tile(2, 2);
+            IntMatrix result = m.repeatMatrix(2, 2);
             assertEquals(2, result.rowCount());
             assertEquals(4, result.columnCount());
             assertEquals(1, result.get(0, 0));
@@ -4742,9 +4742,9 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_tile_invalidRepeats() {
+        public void test_repeatMatrix_invalidRepeats() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 } });
-            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
         }
 
         // ============ Flatten Test ============
@@ -5370,9 +5370,9 @@ class IntMatrixTest extends TestBase {
         }
 
         @Test
-        public void testIntMatrix_tile() {
+        public void testIntMatrix_repeatMatrix() {
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix repeated = matrix.tile(2, 3);
+            IntMatrix repeated = matrix.repeatMatrix(2, 3);
             assertEquals(4, repeated.rowCount());
             assertEquals(6, repeated.columnCount());
             assertArrayEquals(new int[] { 1, 2, 1, 2, 1, 2 }, repeated.rowView(0));
@@ -5781,7 +5781,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testPointsHorizontal_SingleRow() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            List<Sheet.Point> points = m.rowMajorPoints(0).toList();
+            List<Sheet.Point> points = m.rowMajorPoints(0, 0 + 1).toList();
             assertEquals(2, points.size());
             assertEquals(0, points.get(0).rowIndex());
             assertEquals(0, points.get(0).columnIndex());
@@ -5807,7 +5807,7 @@ class IntMatrixTest extends TestBase {
         @Test
         public void testPointsVertical_SingleColumn() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            List<Sheet.Point> points = m.columnMajorPoints(1).toList();
+            List<Sheet.Point> points = m.columnMajorPoints(1, 1 + 1).toList();
             assertEquals(2, points.size());
             assertEquals(1, points.get(0).columnIndex());
         }
@@ -5936,7 +5936,7 @@ class IntMatrixTest extends TestBase {
         IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
         IntMatrix extended = matrix.pad(0, 1, 2, 0, 9);
         IntMatrix repeatedElements = matrix.repeatElements(1, 2);
-        IntMatrix repeatedMatrix = matrix.tile(2, 1);
+        IntMatrix repeatedMatrix = matrix.repeatMatrix(2, 1);
         IntList flattened = matrix.flatten();
         List<Integer> visited = new ArrayList<>();
 

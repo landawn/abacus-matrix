@@ -1038,17 +1038,17 @@ class MatrixTest extends TestBase {
     }
 
     @Test
-    public void testTile() {
+    public void testRepeatMatrix() {
         Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } });
 
-        Matrix<Integer> tiled = matrix.tile(2, 3);
-        Assertions.assertEquals(4, tiled.rowCount());
-        Assertions.assertEquals(6, tiled.columnCount());
-        Assertions.assertEquals(1, tiled.get(0, 0));
-        Assertions.assertEquals(2, tiled.get(0, 1));
-        Assertions.assertEquals(1, tiled.get(0, 2));
-        Assertions.assertEquals(1, tiled.get(2, 0));
-        Assertions.assertEquals(4, tiled.get(3, 5));
+        Matrix<Integer> repeated = matrix.repeatMatrix(2, 3);
+        Assertions.assertEquals(4, repeated.rowCount());
+        Assertions.assertEquals(6, repeated.columnCount());
+        Assertions.assertEquals(1, repeated.get(0, 0));
+        Assertions.assertEquals(2, repeated.get(0, 1));
+        Assertions.assertEquals(1, repeated.get(0, 2));
+        Assertions.assertEquals(1, repeated.get(2, 0));
+        Assertions.assertEquals(4, repeated.get(3, 5));
     }
 
     @Test
@@ -1921,17 +1921,17 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testMatrix_tile() {
+        public void testMatrix_repeatMatrix() {
             Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } });
-            Matrix<Integer> tiled = matrix.tile(2, 3);
-            assertEquals(4, tiled.rowCount());
-            assertEquals(6, tiled.columnCount());
-            assertEquals(1, tiled.get(0, 0));
-            assertEquals(2, tiled.get(0, 1));
-            assertEquals(1, tiled.get(0, 2));
-            assertEquals(2, tiled.get(0, 3));
-            assertEquals(3, tiled.get(1, 0));
-            assertEquals(4, tiled.get(1, 1));
+            Matrix<Integer> repeated = matrix.repeatMatrix(2, 3);
+            assertEquals(4, repeated.rowCount());
+            assertEquals(6, repeated.columnCount());
+            assertEquals(1, repeated.get(0, 0));
+            assertEquals(2, repeated.get(0, 1));
+            assertEquals(1, repeated.get(0, 2));
+            assertEquals(2, repeated.get(0, 3));
+            assertEquals(3, repeated.get(1, 0));
+            assertEquals(4, repeated.get(1, 1));
         }
 
         @Test
@@ -2851,9 +2851,9 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile() {
+        public void testRepeatMatrix() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" }, { "C", "D" } });
-            Matrix<String> repeated = m.tile(2, 3);
+            Matrix<String> repeated = m.repeatMatrix(2, 3);
             assertEquals(4, repeated.rowCount());
             assertEquals(6, repeated.columnCount());
 
@@ -2872,10 +2872,10 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile_invalidArguments() {
+        public void testRepeatMatrix_invalidArguments() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" } });
-            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
         }
 
         // ============ Flatten Tests ============
@@ -4279,10 +4279,10 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile_invalidArgs() {
+        public void testRepeatMatrix_invalidArgs() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A" } });
-            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
         }
 
         @Test
@@ -5353,30 +5353,30 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile_strings() {
+        public void testRepeatMatrix_strings() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" }, { "C", "D" } });
-            Matrix<String> repeated = m.tile(2, 2);
+            Matrix<String> repeated = m.repeatMatrix(2, 2);
 
             assertEquals(4, repeated.rowCount());
             assertEquals(4, repeated.columnCount());
             assertEquals("A", repeated.get(0, 0));
             assertEquals("B", repeated.get(0, 1));
-            assertEquals("A", repeated.get(0, 2)); // Tiled
-            assertEquals("A", repeated.get(2, 0)); // Tiled
+            assertEquals("A", repeated.get(0, 2)); // Repeated
+            assertEquals("A", repeated.get(2, 0)); // Repeated
             assertEquals("D", repeated.get(3, 3));
         }
 
         @Test
-        public void testTile_integers() {
+        public void testRepeatMatrix_integers() {
             Matrix<Integer> m = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } });
-            Matrix<Integer> repeated = m.tile(3, 2);
+            Matrix<Integer> repeated = m.repeatMatrix(3, 2);
 
             assertEquals(6, repeated.rowCount());
             assertEquals(4, repeated.columnCount());
             assertEquals(1, repeated.get(0, 0));
             assertEquals(2, repeated.get(0, 1));
-            assertEquals(1, repeated.get(0, 2)); // Tiled horizontally
-            assertEquals(1, repeated.get(2, 0)); // Tiled vertically
+            assertEquals(1, repeated.get(0, 2)); // Repeated horizontally
+            assertEquals(1, repeated.get(2, 0)); // Repeated vertically
             assertEquals(4, repeated.get(5, 3));
         }
         // ============ Flatten and Stream Methods ============
@@ -5767,7 +5767,7 @@ class MatrixTest extends TestBase {
         @Test
         public void testPointsH_withRow() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" }, { "C", "D" } });
-            Stream<Point> points = m.rowMajorPoints(1);
+            Stream<Point> points = m.rowMajorPoints(1, 1 + 1);
             assertEquals(2, points.count());
         }
 
@@ -5788,7 +5788,7 @@ class MatrixTest extends TestBase {
         @Test
         public void testPointsV_withColumn() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" }, { "C", "D" } });
-            Stream<Point> points = m.columnMajorPoints(1);
+            Stream<Point> points = m.columnMajorPoints(1, 1 + 1);
             assertEquals(2, points.count());
         }
 
@@ -6628,10 +6628,10 @@ class MatrixTest extends TestBase {
         // ============ Repmat Test ============
 
         @Test
-        public void test_tile_repeatsMatrix() {
+        public void test_repeatMatrix_repeatsMatrix() {
             String[][] arr = { { "a", "b" }, { "c", "d" } };
             Matrix<String> m = new Matrix<>(arr);
-            Matrix<String> repeated = m.tile(2, 2);
+            Matrix<String> repeated = m.repeatMatrix(2, 2);
             assertEquals(4, repeated.rowCount());
             assertEquals(4, repeated.columnCount());
             assertEquals("a", repeated.get(0, 0));
@@ -6963,7 +6963,7 @@ class MatrixTest extends TestBase {
                 final int rowRepeats = random.nextInt(3) + 1;
                 final int columnRepeats = random.nextInt(3) + 1;
                 assertMatrixEquals(intMatrix.repeatElements(rowRepeats, columnRepeats), genericMatrix.repeatElements(rowRepeats, columnRepeats));
-                assertMatrixEquals(intMatrix.tile(rowRepeats, columnRepeats), genericMatrix.tile(rowRepeats, columnRepeats));
+                assertMatrixEquals(intMatrix.repeatMatrix(rowRepeats, columnRepeats), genericMatrix.repeatMatrix(rowRepeats, columnRepeats));
 
                 final int elements = (int) intMatrix.elementCount();
                 int newRows = 0;
@@ -7227,7 +7227,7 @@ class MatrixTest extends TestBase {
 
         Matrix<String> extended = matrix.pad(0, 1, 1, 1, null);
         Matrix<String> repeatedElements = matrix.repeatElements(1, 2);
-        Matrix<String> repeatedMatrix = matrix.tile(2, 1);
+        Matrix<String> repeatedMatrix = matrix.repeatMatrix(2, 1);
 
         assertNull(extended.get(0, 0));
         assertNull(extended.get(0, 2));
@@ -7243,7 +7243,7 @@ class MatrixTest extends TestBase {
         Matrix<Object> matrix = Matrix.wrap(new Object[][] { new Integer[] { 1 }, new String[] { "a" } });
 
         Matrix<Object> repeatedElements = matrix.repeatElements(1, 1);
-        Matrix<Object> repeatedMatrix = matrix.tile(1, 1);
+        Matrix<Object> repeatedMatrix = matrix.repeatMatrix(1, 1);
 
         Assertions.assertDoesNotThrow(() -> repeatedElements.set(0, 0, "x"));
         Assertions.assertDoesNotThrow(() -> repeatedMatrix.set(0, 0, "x"));

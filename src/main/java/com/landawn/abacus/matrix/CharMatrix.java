@@ -2398,7 +2398,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @return a new {@code CharMatrix} with dimensions {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}
      * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is not positive,
      *         or the resulting dimensions would exceed {@link Integer#MAX_VALUE}
-     * @see #tile(int, int)
+     * @see #repeatMatrix(int, int)
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">MATLAB repelem function</a>
      */
     @Override
@@ -2437,18 +2437,18 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
     /**
      * Repeats the entire matrix in both row and column directions.
-     * The matrix is tiled rowRepeats times vertically and columnRepeats times horizontally.
+     * The matrix is repeated rowRepeats times vertically and columnRepeats times horizontally.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.wrap(new char[][] {{'a', 'b'}, {'c', 'd'}});
-     * CharMatrix repeated = matrix.tile(2, 3);
+     * CharMatrix repeated = matrix.repeatMatrix(2, 3);
      * repeated.rowView(0);        // returns ['a', 'b', 'a', 'b', 'a', 'b']
      * repeated.rowView(1);        // returns ['c', 'd', 'c', 'd', 'c', 'd']
      * repeated.rowCount();        // returns 4
      *
-     * matrix.tile(1, 1).equals(matrix); // returns true (1x1 tiling is a copy)
-     * matrix.tile(0, 1);                // throws IllegalArgumentException (repeats must be positive)
+     * matrix.repeatMatrix(1, 1).equals(matrix); // returns true (1x1 repeating is a copy)
+     * matrix.repeatMatrix(0, 1);                // throws IllegalArgumentException (repeats must be positive)
      * }</pre>
      *
      * @param rowRepeats number of times to repeat the matrix vertically; must be {@code > 0}
@@ -2460,7 +2460,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
     @Override
-    public CharMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
+    public CharMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
 
         if (rowRepeats == 1 && columnRepeats == 1) {

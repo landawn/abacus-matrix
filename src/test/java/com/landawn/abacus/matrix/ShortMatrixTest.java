@@ -827,9 +827,9 @@ class ShortMatrixTest extends TestBase {
     }
 
     @Test
-    public void testTile() {
+    public void testRepeatMatrix() {
         ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-        ShortMatrix repeated = m.tile(2, 3);
+        ShortMatrix repeated = m.repeatMatrix(2, 3);
         assertEquals(4, repeated.rowCount());
         assertEquals(6, repeated.columnCount());
 
@@ -849,8 +849,8 @@ class ShortMatrixTest extends TestBase {
         assertEquals((short) 2, repeated.get(2, 1));
 
         // Test invalid arguments
-        assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
-        assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
+        assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
+        assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
     }
 
     @Test
@@ -1473,18 +1473,18 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testShortMatrix_tile() {
+        public void testShortMatrix_repeatMatrix() {
             ShortMatrix matrix = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-            ShortMatrix tiled = matrix.tile(2, 3);
+            ShortMatrix repeated = matrix.repeatMatrix(2, 3);
             // Result: [[1, 2, 1, 2, 1, 2], [3, 4, 3, 4, 3, 4], [1, 2, 1, 2, 1, 2], [3, 4, 3, 4, 3, 4]]
-            assertEquals(4, tiled.rowCount());
-            assertEquals(6, tiled.columnCount());
-            assertEquals((short) 1, tiled.get(0, 0));
-            assertEquals((short) 2, tiled.get(0, 1));
-            assertEquals((short) 1, tiled.get(0, 2));
-            assertEquals((short) 4, tiled.get(1, 1));
-            assertEquals((short) 1, tiled.get(2, 0));
-            assertEquals((short) 4, tiled.get(3, 5));
+            assertEquals(4, repeated.rowCount());
+            assertEquals(6, repeated.columnCount());
+            assertEquals((short) 1, repeated.get(0, 0));
+            assertEquals((short) 2, repeated.get(0, 1));
+            assertEquals((short) 1, repeated.get(0, 2));
+            assertEquals((short) 4, repeated.get(1, 1));
+            assertEquals((short) 1, repeated.get(2, 0));
+            assertEquals((short) 4, repeated.get(3, 5));
         }
 
         @Test
@@ -2581,10 +2581,10 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile_invalidArguments() {
+        public void testRepeatMatrix_invalidArguments() {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 } });
-            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
         }
 
         // ============ Flatten Tests ============
@@ -3187,9 +3187,9 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile_oneDimension() {
+        public void testRepeatMatrix_oneDimension() {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 } });
-            ShortMatrix repeated = m.tile(1, 2);
+            ShortMatrix repeated = m.repeatMatrix(1, 2);
             assertEquals(1, repeated.rowCount());
             assertEquals(4, repeated.columnCount());
             assertEquals(1, repeated.get(0, 0));
@@ -4559,9 +4559,9 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile() {
+        public void testRepeatMatrix() {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 } });
-            ShortMatrix result = m.tile(2, 2);
+            ShortMatrix result = m.repeatMatrix(2, 2);
             assertEquals(2, result.rowCount());
             assertEquals(4, result.columnCount());
             assertEquals((short) 1, result.get(0, 0));
@@ -5593,10 +5593,10 @@ class ShortMatrixTest extends TestBase {
         // ============ Repmat Test ============
 
         @Test
-        public void test_tile_repeatsMatrix() {
+        public void test_repeatMatrix_repeatsMatrix() {
             short[][] arr = { { 1, 2 }, { 3, 4 } };
             ShortMatrix m = new ShortMatrix(arr);
-            ShortMatrix repeated = m.tile(2, 2);
+            ShortMatrix repeated = m.repeatMatrix(2, 2);
             assertEquals(4, repeated.rowCount());
             assertEquals(4, repeated.columnCount());
             assertEquals(1, repeated.get(0, 0));
@@ -6046,7 +6046,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testPointsHorizontal_SingleRow() {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-            List<Sheet.Point> points = m.rowMajorPoints(0).toList();
+            List<Sheet.Point> points = m.rowMajorPoints(0, 0 + 1).toList();
             assertEquals(2, points.size());
         }
 
@@ -6060,7 +6060,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testPointsVertical_SingleColumn() {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-            List<Sheet.Point> points = m.columnMajorPoints(1).toList();
+            List<Sheet.Point> points = m.columnMajorPoints(1, 1 + 1).toList();
             assertEquals(2, points.size());
         }
 

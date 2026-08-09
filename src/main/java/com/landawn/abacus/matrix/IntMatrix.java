@@ -2595,7 +2595,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @return a new {@code IntMatrix} with dimensions {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}
      * @throws IllegalArgumentException if rowRepeats or columnRepeats is not positive,
      *         or if the resulting dimensions would overflow {@code Integer.MAX_VALUE}
-     * @see #tile(int, int)
+     * @see #repeatMatrix(int, int)
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">MATLAB repelem function</a>
      */
     @Override
@@ -2633,20 +2633,20 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     }
 
     /**
-     * Repeats the entire matrix in a tiled pattern.
+     * Repeats the entire matrix in a repeated pattern.
      * The matrix is repeated as a whole rowRepeats times vertically and columnRepeats times horizontally.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.wrap(new int[][] {{1, 2}, {3, 4}});
-     * IntMatrix repeated = matrix.tile(2, 3);
+     * IntMatrix repeated = matrix.repeatMatrix(2, 3);
      * repeated.rowCount();                    // returns 4
      * repeated.rowCopy(0);                    // returns [1, 2, 1, 2, 1, 2]
      *
-     * matrix.tile(1, 2).rowCopy(0);  // returns [1, 2, 1, 2]
+     * matrix.repeatMatrix(1, 2).rowCopy(0);  // returns [1, 2, 1, 2]
      *
-     * matrix.tile(0, 3);             // throws IllegalArgumentException (not positive)
-     * matrix.tile(2, -1);            // throws IllegalArgumentException (not positive)
+     * matrix.repeatMatrix(0, 3);             // throws IllegalArgumentException (not positive)
+     * matrix.repeatMatrix(2, -1);            // throws IllegalArgumentException (not positive)
      * }</pre>
      *
      * @param rowRepeats number of times to repeat the matrix vertically; must be {@code > 0}
@@ -2658,7 +2658,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
     @Override
-    public IntMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
+    public IntMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
 
         if (rowRepeats == 1 && columnRepeats == 1) {

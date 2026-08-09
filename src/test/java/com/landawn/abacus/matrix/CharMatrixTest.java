@@ -857,11 +857,11 @@ class CharMatrixTest extends TestBase {
     }
 
     @Test
-    public void testTile() {
+    public void testRepeatMatrix() {
         char[][] a = { { 'a', 'b' }, { 'c', 'd' } };
         CharMatrix matrix = CharMatrix.wrap(a);
 
-        CharMatrix repeated = matrix.tile(2, 3);
+        CharMatrix repeated = matrix.repeatMatrix(2, 3);
         Assertions.assertEquals(4, repeated.rowCount());
         Assertions.assertEquals(6, repeated.columnCount());
         Assertions.assertEquals('a', repeated.get(0, 0));
@@ -870,8 +870,8 @@ class CharMatrixTest extends TestBase {
         Assertions.assertEquals('a', repeated.get(2, 0));
         Assertions.assertEquals('d', repeated.get(3, 5));
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.tile(0, 1));
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.tile(1, 0));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.repeatMatrix(0, 1));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.repeatMatrix(1, 0));
     }
 
     @Test
@@ -2230,9 +2230,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile() {
+        public void testRepeatMatrix() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'A', 'B' }, { 'C', 'D' } });
-            CharMatrix repeated = m.tile(2, 3);
+            CharMatrix repeated = m.repeatMatrix(2, 3);
             assertEquals(4, repeated.rowCount());
             assertEquals(6, repeated.columnCount());
 
@@ -2251,10 +2251,10 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile_invalidArguments() {
+        public void testRepeatMatrix_invalidArguments() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'A', 'B' } });
-            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
         }
 
         // ============ Flatten Tests ============
@@ -2839,15 +2839,15 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTileOverflow() {
+        public void testRepeatMatrixOverflow() {
             int largeSize = 50000;
             CharMatrix m = CharMatrix.wrap(new char[largeSize][2]);
 
-            IllegalArgumentException ex1 = assertThrows(IllegalArgumentException.class, () -> m.tile(50000, 1));
+            IllegalArgumentException ex1 = assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(50000, 1));
             assertTrue(ex1.getMessage().contains("row count overflow"));
 
             CharMatrix m2 = CharMatrix.wrap(new char[2][largeSize]);
-            IllegalArgumentException ex2 = assertThrows(IllegalArgumentException.class, () -> m2.tile(1, 50000));
+            IllegalArgumentException ex2 = assertThrows(IllegalArgumentException.class, () -> m2.repeatMatrix(1, 50000));
             assertTrue(ex2.getMessage().contains("column count overflow"));
         }
     }
@@ -3581,9 +3581,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile() {
+        public void testRepeatMatrix() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            CharMatrix result = m.tile(2, 2);
+            CharMatrix result = m.repeatMatrix(2, 2);
             assertEquals(4, result.rowCount());
             assertEquals(4, result.columnCount());
             assertEquals('a', result.get(0, 0));
@@ -3593,10 +3593,10 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile_invalidRepeats() {
+        public void testRepeatMatrix_invalidRepeats() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'a' } });
-            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
         }
 
         @Test
@@ -3847,7 +3847,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testPointsH_singleRow() {
             CharMatrix m = CharMatrix.wrap(new char[2][3]);
-            List<Point> points = m.rowMajorPoints(0).toList();
+            List<Point> points = m.rowMajorPoints(0, 0 + 1).toList();
             assertEquals(3, points.size());
             assertEquals(Point.of(0, 0), points.get(0));
             assertEquals(Point.of(0, 2), points.get(2));
@@ -3865,7 +3865,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testPointsV_singleColumn() {
             CharMatrix m = CharMatrix.wrap(new char[3][2]);
-            List<Point> points = m.columnMajorPoints(0).toList();
+            List<Point> points = m.columnMajorPoints(0, 0 + 1).toList();
             assertEquals(3, points.size());
             assertEquals(Point.of(0, 0), points.get(0));
             assertEquals(Point.of(2, 0), points.get(2));
@@ -4752,9 +4752,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile() {
+        public void testRepeatMatrix() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            CharMatrix repeated = m.tile(2, 2);
+            CharMatrix repeated = m.repeatMatrix(2, 2);
             assertEquals(4, repeated.rowCount());
             assertEquals(4, repeated.columnCount());
             assertEquals('a', repeated.get(0, 0));
@@ -4763,9 +4763,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile_singleRepeat() {
+        public void testRepeatMatrix_singleRepeat() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'a', 'b' } });
-            CharMatrix repeated = m.tile(1, 1);
+            CharMatrix repeated = m.repeatMatrix(1, 1);
             assertEquals(1, repeated.rowCount());
             assertEquals(2, repeated.columnCount());
             assertEquals('a', repeated.get(0, 0));
@@ -5625,14 +5625,14 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_tile() {
+        public void test_repeatMatrix() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            CharMatrix tiled = m.tile(2, 2);
-            assertEquals(4, tiled.rowCount());
-            assertEquals(4, tiled.columnCount());
-            assertEquals('a', tiled.get(0, 0));
-            assertEquals('b', tiled.get(0, 1));
-            assertEquals('a', tiled.get(2, 2));
+            CharMatrix repeated = m.repeatMatrix(2, 2);
+            assertEquals(4, repeated.rowCount());
+            assertEquals(4, repeated.columnCount());
+            assertEquals('a', repeated.get(0, 0));
+            assertEquals('b', repeated.get(0, 1));
+            assertEquals('a', repeated.get(2, 2));
         }
 
         // ============ Flatten Tests ============
@@ -6141,9 +6141,9 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testCharMatrix_tile() {
+        public void testCharMatrix_repeatMatrix() {
             CharMatrix matrix = CharMatrix.wrap(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
-            CharMatrix repeated = matrix.tile(2, 3);
+            CharMatrix repeated = matrix.repeatMatrix(2, 3);
             // Result: [['a', 'b', 'a', 'b', 'a', 'b'], ['c', 'd', 'c', 'd', 'c', 'd'],
             //          ['a', 'b', 'a', 'b', 'a', 'b'], ['c', 'd', 'c', 'd', 'c', 'd']]
             assertEquals(4, repeated.rowCount());

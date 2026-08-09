@@ -779,9 +779,9 @@ class FloatMatrixTest extends TestBase {
     }
 
     @Test
-    public void testTile() {
+    public void testRepeatMatrix() {
         FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-        FloatMatrix repeated = m.tile(2, 3);
+        FloatMatrix repeated = m.repeatMatrix(2, 3);
         assertEquals(4, repeated.rowCount());
         assertEquals(6, repeated.columnCount());
 
@@ -801,8 +801,8 @@ class FloatMatrixTest extends TestBase {
         assertEquals(2.0f, repeated.get(2, 1), DELTA);
 
         // Test invalid arguments
-        assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
-        assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
+        assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
+        assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
     }
 
     @Test
@@ -2181,10 +2181,10 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile_invalidArguments() {
+        public void testRepeatMatrix_invalidArguments() {
             FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f } });
-            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
         }
 
         // ============ Flatten Tests ============
@@ -3529,9 +3529,9 @@ class FloatMatrixTest extends TestBase {
         // ============ Repmat Tests ============
 
         @Test
-        public void testTile() {
+        public void testRepeatMatrix() {
             FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            FloatMatrix result = m.tile(2, 2);
+            FloatMatrix result = m.repeatMatrix(2, 2);
             assertEquals(4, result.rowCount());
             assertEquals(4, result.columnCount());
             assertEquals(1.0f, result.get(0, 0));
@@ -3897,7 +3897,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testPointsH_withRow() {
             FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            Stream<Point> points = m.rowMajorPoints(1);
+            Stream<Point> points = m.rowMajorPoints(1, 1 + 1);
             assertEquals(2, points.count());
         }
 
@@ -3918,7 +3918,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testPointsV_withColumn() {
             FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            Stream<Point> points = m.columnMajorPoints(1);
+            Stream<Point> points = m.columnMajorPoints(1, 1 + 1);
             assertEquals(2, points.count());
         }
 
@@ -4904,9 +4904,9 @@ class FloatMatrixTest extends TestBase {
         // ============ Repmat Test ============
 
         @Test
-        public void test_tile() {
+        public void test_repeatMatrix() {
             FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f } });
-            FloatMatrix result = m.tile(2, 2);
+            FloatMatrix result = m.repeatMatrix(2, 2);
             assertEquals(2, result.rowCount());
             assertEquals(4, result.columnCount());
             assertEquals(1.0f, result.get(0, 0), 0.0f);
@@ -4916,9 +4916,9 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_tile_invalidRepeats() {
+        public void test_repeatMatrix_invalidRepeats() {
             FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f } });
-            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
         }
 
         // ============ Flatten Test ============
@@ -5408,9 +5408,9 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFloatMatrix_tile() {
+        public void testFloatMatrix_repeatMatrix() {
             FloatMatrix matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            FloatMatrix repeated = matrix.tile(2, 3);
+            FloatMatrix repeated = matrix.repeatMatrix(2, 3);
             assertEquals(4, repeated.rowCount());
             assertEquals(6, repeated.columnCount());
             assertArrayEquals(new float[] { 1.0f, 2.0f, 1.0f, 2.0f, 1.0f, 2.0f }, repeated.rowView(0));
@@ -5676,7 +5676,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testPointsHorizontal_SingleRow() {
             FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1, 2 }, { 3, 4 } });
-            List<Sheet.Point> points = m.rowMajorPoints(0).toList();
+            List<Sheet.Point> points = m.rowMajorPoints(0, 0 + 1).toList();
             assertEquals(2, points.size());
         }
 
@@ -5690,7 +5690,7 @@ class FloatMatrixTest extends TestBase {
         @Test
         public void testPointsVertical_SingleColumn() {
             FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1, 2 }, { 3, 4 } });
-            List<Sheet.Point> points = m.columnMajorPoints(1).toList();
+            List<Sheet.Point> points = m.columnMajorPoints(1, 1 + 1).toList();
             assertEquals(2, points.size());
         }
 
@@ -5779,7 +5779,7 @@ class FloatMatrixTest extends TestBase {
         FloatMatrix matrix = FloatMatrix.wrap(new float[][] { { 1f, 2f }, { 3f, 4f } });
         FloatMatrix extended = matrix.pad(0, 1, 1, 0, 8f);
         FloatMatrix repeatedElements = matrix.repeatElements(2, 1);
-        FloatMatrix repeatedMatrix = matrix.tile(1, 2);
+        FloatMatrix repeatedMatrix = matrix.repeatMatrix(1, 2);
         List<Float> visited = new ArrayList<>();
 
         matrix.forEach(0, 2, 1, 2, visited::add);

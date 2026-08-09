@@ -826,18 +826,18 @@ class DoubleMatrixTest extends TestBase {
     }
 
     @Test
-    public void testTile() {
+    public void testRepeatMatrix() {
         double[][] arr = { { 1.0, 2.0 } };
         DoubleMatrix matrix = DoubleMatrix.wrap(arr);
 
-        DoubleMatrix tiled = matrix.tile(2, 3);
-        assertEquals(2, tiled.rowCount());
-        assertEquals(6, tiled.columnCount());
-        assertEquals(1.0, tiled.get(0, 0));
-        assertEquals(2.0, tiled.get(0, 1));
-        assertEquals(1.0, tiled.get(0, 2));
+        DoubleMatrix repeated = matrix.repeatMatrix(2, 3);
+        assertEquals(2, repeated.rowCount());
+        assertEquals(6, repeated.columnCount());
+        assertEquals(1.0, repeated.get(0, 0));
+        assertEquals(2.0, repeated.get(0, 1));
+        assertEquals(1.0, repeated.get(0, 2));
 
-        assertThrows(IllegalArgumentException.class, () -> matrix.tile(0, 1));
+        assertThrows(IllegalArgumentException.class, () -> matrix.repeatMatrix(0, 1));
     }
 
     @Test
@@ -2414,9 +2414,9 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile() {
+        public void testRepeatMatrix() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.5, 2.5 }, { 3.5, 4.5 } });
-            DoubleMatrix repeated = m.tile(2, 3);
+            DoubleMatrix repeated = m.repeatMatrix(2, 3);
             assertEquals(4, repeated.rowCount());
             assertEquals(6, repeated.columnCount());
 
@@ -2435,10 +2435,10 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTile_invalidArguments() {
+        public void testRepeatMatrix_invalidArguments() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 } });
-            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> m.tile(1, 0));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
         }
 
         // ============ Flatten Tests ============
@@ -4021,9 +4021,9 @@ class DoubleMatrixTest extends TestBase {
         // ============ Repmat Tests ============
 
         @Test
-        public void testTile() {
+        public void testRepeatMatrix() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            DoubleMatrix result = m.tile(2, 2);
+            DoubleMatrix result = m.repeatMatrix(2, 2);
             assertEquals(4, result.rowCount());
             assertEquals(4, result.columnCount());
             assertEquals(1.0, result.get(0, 0));
@@ -4379,7 +4379,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testPointsH_withRow() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            Stream<Point> points = m.rowMajorPoints(1);
+            Stream<Point> points = m.rowMajorPoints(1, 1 + 1);
             assertEquals(2, points.count());
         }
 
@@ -4400,7 +4400,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testPointsV_withColumn() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            Stream<Point> points = m.columnMajorPoints(1);
+            Stream<Point> points = m.columnMajorPoints(1, 1 + 1);
             assertEquals(2, points.count());
         }
 
@@ -5400,9 +5400,9 @@ class DoubleMatrixTest extends TestBase {
         // ============ Repmat Test ============
 
         @Test
-        public void test_tile() {
+        public void test_repeatMatrix() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 } });
-            DoubleMatrix result = m.tile(2, 2);
+            DoubleMatrix result = m.repeatMatrix(2, 2);
             assertEquals(2, result.rowCount());
             assertEquals(4, result.columnCount());
             assertEquals(1.0, result.get(0, 0), 0.0);
@@ -5412,9 +5412,9 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void test_tile_invalidRepeats() {
+        public void test_repeatMatrix_invalidRepeats() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 } });
-            assertThrows(IllegalArgumentException.class, () -> m.tile(0, 1));
+            assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
         }
 
         // ============ Flatten Test ============
@@ -5988,13 +5988,13 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testDoubleMatrix_tile() {
+        public void testDoubleMatrix_repeatMatrix() {
             DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            DoubleMatrix tiled = matrix.tile(2, 3);
-            assertEquals(4, tiled.rowCount());
-            assertEquals(6, tiled.columnCount());
-            assertArrayEquals(new double[] { 1.0, 2.0, 1.0, 2.0, 1.0, 2.0 }, tiled.rowView(0));
-            assertArrayEquals(new double[] { 3.0, 4.0, 3.0, 4.0, 3.0, 4.0 }, tiled.rowView(1));
+            DoubleMatrix repeated = matrix.repeatMatrix(2, 3);
+            assertEquals(4, repeated.rowCount());
+            assertEquals(6, repeated.columnCount());
+            assertArrayEquals(new double[] { 1.0, 2.0, 1.0, 2.0, 1.0, 2.0 }, repeated.rowView(0));
+            assertArrayEquals(new double[] { 3.0, 4.0, 3.0, 4.0, 3.0, 4.0 }, repeated.rowView(1));
         }
 
         @Test
@@ -6182,7 +6182,7 @@ class DoubleMatrixTest extends TestBase {
 
         DoubleMatrix extended = matrix.pad(1, 0, 1, 0, 9.5d);
         DoubleMatrix repeatedElements = matrix.repeatElements(1, 2);
-        DoubleMatrix repeatedMatrix = matrix.tile(2, 1);
+        DoubleMatrix repeatedMatrix = matrix.repeatMatrix(2, 1);
 
         assertEquals(9.5d, extended.get(0, 0));
         assertArrayEquals(new double[] { 1.5d, 1.5d, 2.5d, 2.5d }, repeatedElements.flatten().toArray(), 0.0001d);

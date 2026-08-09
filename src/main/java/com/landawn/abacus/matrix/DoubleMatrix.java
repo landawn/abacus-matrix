@@ -2548,7 +2548,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @return a new {@code DoubleMatrix} with dimensions {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}
      * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is not positive,
      *         or if either resulting dimension would overflow {@code Integer.MAX_VALUE}
-     * @see #tile(int, int)
+     * @see #repeatMatrix(int, int)
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repelem.html">MATLAB repelem function</a>
      */
     @Override
@@ -2586,23 +2586,23 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     }
 
     /**
-     * Repeats the entire matrix in a tiled pattern.
+     * Repeats the entire matrix in a repeated pattern.
      * The matrix is repeated as a whole {@code rowRepeats} times vertically and {@code columnRepeats} times horizontally.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
-     * DoubleMatrix repeated = matrix.tile(2, 3);
+     * DoubleMatrix repeated = matrix.repeatMatrix(2, 3);
      * // Result: [[1.0, 2.0, 1.0, 2.0, 1.0, 2.0],
      * //          [3.0, 4.0, 3.0, 4.0, 3.0, 4.0],
      * //          [1.0, 2.0, 1.0, 2.0, 1.0, 2.0],
      * //          [3.0, 4.0, 3.0, 4.0, 3.0, 4.0]]
      * repeated.rowCount();               // returns 4
      * repeated.columnCount();            // returns 6
-     * repeated.get(2, 3);                // returns 2.0 (tiled copy)
+     * repeated.get(2, 3);                // returns 2.0 (repeated copy)
      *
-     * matrix.tile(1, 1).equals(matrix); // returns true (single tile)
-     * matrix.tile(2, 0);                // throws IllegalArgumentException (repeats must be positive)
+     * matrix.repeatMatrix(1, 1).equals(matrix); // returns true (single repeat)
+     * matrix.repeatMatrix(2, 0);                // throws IllegalArgumentException (repeats must be positive)
      * }</pre>
      *
      * @param rowRepeats number of times to repeat the matrix vertically; must be {@code > 0}
@@ -2614,7 +2614,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
     @Override
-    public DoubleMatrix tile(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
+    public DoubleMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
 
         if (rowRepeats == 1 && columnRepeats == 1) {

@@ -1226,38 +1226,38 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     public abstract M repeatElements(int rowRepeats, int columnRepeats);
 
     /**
-     * Returns a new matrix formed by tiling this matrix the specified number of times in both dimensions.
-     * The matrix is tiled {@code rowRepeats} times vertically and {@code columnRepeats} times horizontally.
+     * Returns a new matrix formed by repeating this matrix the specified number of times in both dimensions.
+     * The matrix is repeated {@code rowRepeats} times vertically and {@code columnRepeats} times horizontally.
      * The resulting matrix has dimensions {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}.
      * The original matrix is not modified.
      *
      * <p>This operation is similar to MATLAB's {@code repmat} function. The entire matrix pattern
-     * is replicated, creating a tiled arrangement.</p>
+     * is replicated, creating a repeated arrangement.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.wrap(new int[][] {{1, 2}, {3, 4}});
-     * IntMatrix tiled = matrix.tile(2, 2);           // returns {{1,2,1,2},{3,4,3,4},{1,2,1,2},{3,4,3,4}}
-     * tiled.rowCount();                                      // returns 4 (2 * 2)
-     * tiled.columnCount();                                   // returns 4 (2 * 2)
-     * tiled.get(0, 2);                                       // returns 1 (pattern tiled, not element repeated)
+     * IntMatrix repeated = matrix.repeatMatrix(2, 2);           // returns {{1,2,1,2},{3,4,3,4},{1,2,1,2},{3,4,3,4}}
+     * repeated.rowCount();                                      // returns 4 (2 * 2)
+     * repeated.columnCount();                                   // returns 4 (2 * 2)
+     * repeated.get(0, 2);                                       // returns 1 (pattern repeated, not element repeated)
      *
-     * IntMatrix sameMatrix = matrix.tile(1, 1);     // returns a copy with identical values
+     * IntMatrix sameMatrix = matrix.repeatMatrix(1, 1);     // returns a copy with identical values
      * sameMatrix.get(1, 0);                                 // returns 3
      *
-     * matrix.tile(0, 2);                            // throws IllegalArgumentException (rowRepeats < 1)
-     * matrix.tile(2, 0);                            // throws IllegalArgumentException (columnRepeats < 1)
+     * matrix.repeatMatrix(0, 2);                            // throws IllegalArgumentException (rowRepeats < 1)
+     * matrix.repeatMatrix(2, 0);                            // throws IllegalArgumentException (columnRepeats < 1)
      * }</pre>
      *
      * @param rowRepeats number of times to repeat the matrix in the row direction (must be positive)
      * @param columnRepeats number of times to repeat the matrix in the column direction (must be positive)
-     * @return a new matrix with this matrix tiled, with dimensions
+     * @return a new matrix with this matrix repeated, with dimensions
      *         {@code (rowCount * rowRepeats) × (columnCount * columnRepeats)}
      * @throws IllegalArgumentException if {@code rowRepeats} or {@code columnRepeats} is not positive,
      *         or if either resulting dimension would overflow {@code Integer.MAX_VALUE}
      * @see <a href="https://www.mathworks.com/help/matlab/ref/repmat.html">MATLAB repmat function</a>
      */
-    public abstract M tile(int rowRepeats, int columnRepeats);
+    public abstract M repeatMatrix(int rowRepeats, int columnRepeats);
 
     /**
      * Returns a new matrix grown by the specified non-negative pad widths on each side.
@@ -2048,33 +2048,6 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     }
 
     /**
-     * Returns a stream of points for a specific row in row-major order (left to right).
-     *
-     * <p>This is equivalent to calling {@code rowMajorPoints(rowIndex, rowIndex + 1)}.</p>
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * IntMatrix matrix = IntMatrix.wrap(new int[][] {{1, 2, 3, 4, 5}, {6, 7, 8, 9, 10}, {11, 12, 13, 14, 15}});
-     * matrix.rowMajorPoints(1).toList();                    // returns [(1,0), (1,1), (1,2), (1,3), (1,4)]
-     * matrix.rowMajorPoints(1).count();                     // returns 5 (one per column)
-     *
-     * matrix.rowMajorPoints(0).count();                     // returns 5 (first row)
-     *
-     * matrix.rowMajorPoints(3);                             // throws IndexOutOfBoundsException (rowIndex >= rowCount)
-     * matrix.rowMajorPoints(-1);                            // throws IndexOutOfBoundsException (negative index)
-     * }</pre>
-     *
-     * @param rowIndex the row index (0-based)
-     * @return a stream of {@link Point} objects for all columns in the specified row
-     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
-     */
-    public Stream<Point> rowMajorPoints(final int rowIndex) {
-        checkRowIndex(rowIndex);
-
-        return rowMajorPoints(rowIndex, rowIndex + 1);
-    }
-
-    /**
      * Returns a stream of points for a range of rows in row-major order.
      * Points are generated row by row from left to right for the specified row range.
      *
@@ -2128,33 +2101,6 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      */
     public Stream<Point> columnMajorPoints() {
         return columnMajorPoints(0, columnCount);
-    }
-
-    /**
-     * Returns a stream of points for a specific column in column-major order (top to bottom).
-     *
-     * <p>This is equivalent to calling {@code columnMajorPoints(columnIndex, columnIndex + 1)}.</p>
-     *
-     * <p><b>Usage Examples:</b></p>
-     * <pre>{@code
-     * IntMatrix matrix = IntMatrix.wrap(new int[][] {{1, 2, 3, 4, 5}, {6, 7, 8, 9, 10}, {11, 12, 13, 14, 15}});
-     * matrix.columnMajorPoints(2).toList();                      // returns [(0,2), (1,2), (2,2)]
-     * matrix.columnMajorPoints(2).count();                       // returns 3 (one per row)
-     *
-     * matrix.columnMajorPoints(0).count();                       // returns 3 (first column)
-     *
-     * matrix.columnMajorPoints(5);                               // throws IndexOutOfBoundsException (columnIndex >= columnCount)
-     * matrix.columnMajorPoints(-1);                              // throws IndexOutOfBoundsException (negative index)
-     * }</pre>
-     *
-     * @param columnIndex the column index (0-based)
-     * @return a stream of {@link Point} objects for all rows in the specified column
-     * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
-     */
-    public Stream<Point> columnMajorPoints(final int columnIndex) {
-        checkColumnIndex(columnIndex);
-
-        return columnMajorPoints(columnIndex, columnIndex + 1);
     }
 
     /**
@@ -2596,7 +2542,6 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     /**
      * Applies the specified function to this matrix and returns the result.
      * This method enables fluent-style transformations where the matrix needs to be passed to a function.
-     * It follows the functional programming pattern of applying a function and returning its result.
      *
      * <p>This method is useful for extracting values from the matrix or transforming it
      * into a different type while maintaining a fluent interface.</p>
