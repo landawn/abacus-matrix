@@ -185,6 +185,27 @@ class CharMatrixTest extends TestBase {
     }
 
     @Test
+    public void testUnboxSharedEmptyAndPreserveZeroColumnRows() {
+        CharMatrix sharedEmpty = CharMatrix.unbox(Matrix.empty());
+        Assertions.assertSame(CharMatrix.empty(), sharedEmpty);
+
+        CharMatrix zeroColumns = CharMatrix.unbox(Matrix.wrap(new Character[][] { {}, {} }));
+        Assertions.assertEquals(2, zeroColumns.rowCount());
+        Assertions.assertEquals(0, zeroColumns.columnCount());
+
+        Matrix<Character> typeNeutralZeroColumns = Matrix.<Character>empty().resize(2, 0);
+        CharMatrix unboxedTypeNeutralZeroColumns = CharMatrix.unbox(typeNeutralZeroColumns);
+        Assertions.assertEquals(2, unboxedTypeNeutralZeroColumns.rowCount());
+        Assertions.assertEquals(0, unboxedTypeNeutralZeroColumns.columnCount());
+
+        Matrix<Character> typeNeutralValues = Matrix.<Character>empty().resize(2, 2);
+        typeNeutralValues.set(0, 1, 'x');
+        CharMatrix unboxedTypeNeutralValues = CharMatrix.unbox(typeNeutralValues);
+        Assertions.assertArrayEquals(new char[] { 0, 'x' }, unboxedTypeNeutralValues.rowCopy(0));
+        Assertions.assertArrayEquals(new char[] { 0, 0 }, unboxedTypeNeutralValues.rowCopy(1));
+    }
+
+    @Test
     public void testComponentType() {
         CharMatrix matrix = CharMatrix.empty();
         Assertions.assertEquals(char.class, matrix.elementType());

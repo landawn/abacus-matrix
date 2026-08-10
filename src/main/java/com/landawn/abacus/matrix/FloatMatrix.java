@@ -17,7 +17,6 @@ package com.landawn.abacus.matrix;
 import java.util.NoSuchElementException;
 
 import com.landawn.abacus.annotation.SuppressFBWarnings;
-import com.landawn.abacus.util.Array;
 import com.landawn.abacus.util.Arrays;
 import com.landawn.abacus.util.FloatList;
 import com.landawn.abacus.util.InternalUtil;
@@ -470,7 +469,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     public static FloatMatrix unbox(final Matrix<Float> x) {
         N.checkArgNotNull(x, "x");
 
-        return FloatMatrix.wrap(Array.unbox(x.a));
+        return x.mapToFloat(value -> value == null ? 0f : value);
     }
 
     /**

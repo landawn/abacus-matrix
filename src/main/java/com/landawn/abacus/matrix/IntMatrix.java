@@ -654,7 +654,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     public static IntMatrix unbox(final Matrix<Integer> x) {
         N.checkArgNotNull(x, "x");
 
-        return IntMatrix.wrap(Array.unbox(x.a));
+        return x.mapToInt(value -> value == null ? 0 : value);
     }
 
     /**

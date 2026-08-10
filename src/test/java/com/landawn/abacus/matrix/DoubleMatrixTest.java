@@ -6292,6 +6292,27 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
+        public void testUnbox_typeNeutralEmptyReturnsPrimitiveEmptyAndTypedZeroColumnsPreserveRows() {
+            DoubleMatrix sharedEmpty = DoubleMatrix.unbox(Matrix.empty());
+            DoubleMatrix copiedTypeNeutralEmpty = DoubleMatrix.unbox(Matrix.<Double>empty().copy());
+
+            assertSame(DoubleMatrix.empty(), sharedEmpty);
+            assertSame(DoubleMatrix.empty(), copiedTypeNeutralEmpty);
+
+            DoubleMatrix zeroColumns = DoubleMatrix.unbox(Matrix.wrap(new Double[][] { {}, {} }));
+            assertEquals(2, zeroColumns.rowCount());
+            assertEquals(0, zeroColumns.columnCount());
+
+            DoubleMatrix typeNeutralZeroColumns = DoubleMatrix.unbox(Matrix.<Double>empty().resize(2, 0));
+            assertEquals(2, typeNeutralZeroColumns.rowCount());
+            assertEquals(0, typeNeutralZeroColumns.columnCount());
+
+            Matrix<Double> typeNeutralExpanded = Matrix.<Double>empty().resize(2, 2);
+            typeNeutralExpanded.set(0, 1, 7d);
+            assertEquals(DoubleMatrix.wrap(new double[][] { { 0d, 7d }, { 0d, 0d } }), DoubleMatrix.unbox(typeNeutralExpanded));
+        }
+
+        @Test
         public void testAliasedArraySourcesAreSnapshotted() {
             DoubleMatrix columnMatrix = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             columnMatrix.setColumn(1, columnMatrix.rowView(0));

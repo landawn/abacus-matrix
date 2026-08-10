@@ -219,6 +219,27 @@ class IntMatrixTest extends TestBase {
     }
 
     @Test
+    public void testUnboxSharedEmptyAndPreserveZeroColumnRows() {
+        IntMatrix sharedEmpty = IntMatrix.unbox(Matrix.empty());
+        assertSame(IntMatrix.empty(), sharedEmpty);
+
+        IntMatrix zeroColumns = IntMatrix.unbox(Matrix.wrap(new Integer[][] { {}, {} }));
+        assertEquals(2, zeroColumns.rowCount());
+        assertEquals(0, zeroColumns.columnCount());
+
+        Matrix<Integer> typeNeutralZeroColumns = Matrix.<Integer>empty().resize(2, 0);
+        IntMatrix unboxedTypeNeutralZeroColumns = IntMatrix.unbox(typeNeutralZeroColumns);
+        assertEquals(2, unboxedTypeNeutralZeroColumns.rowCount());
+        assertEquals(0, unboxedTypeNeutralZeroColumns.columnCount());
+
+        Matrix<Integer> typeNeutralValues = Matrix.<Integer>empty().resize(2, 2);
+        typeNeutralValues.set(0, 1, 7);
+        IntMatrix unboxedTypeNeutralValues = IntMatrix.unbox(typeNeutralValues);
+        assertArrayEquals(new int[] { 0, 7 }, unboxedTypeNeutralValues.rowCopy(0));
+        assertArrayEquals(new int[] { 0, 0 }, unboxedTypeNeutralValues.rowCopy(1));
+    }
+
+    @Test
     public void testComponentType() {
         assertEquals(int.class, matrix.elementType());
     }

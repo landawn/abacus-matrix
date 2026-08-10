@@ -17,7 +17,6 @@ package com.landawn.abacus.matrix;
 import java.util.NoSuchElementException;
 
 import com.landawn.abacus.annotation.SuppressFBWarnings;
-import com.landawn.abacus.util.Array;
 import com.landawn.abacus.util.Arrays;
 import com.landawn.abacus.util.DoubleList;
 import com.landawn.abacus.util.InternalUtil;
@@ -588,7 +587,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     public static DoubleMatrix unbox(final Matrix<Double> x) {
         N.checkArgNotNull(x, "x");
 
-        return DoubleMatrix.wrap(Array.unbox(x.a));
+        return x.mapToDouble(value -> value == null ? 0d : value);
     }
 
     /**

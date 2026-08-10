@@ -500,7 +500,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     public static CharMatrix unbox(final Matrix<Character> x) {
         N.checkArgNotNull(x, "x");
 
-        return CharMatrix.wrap(Array.unbox(x.a));
+        return x.mapToChar(value -> value == null ? CHAR_0 : value);
     }
 
     /**

@@ -494,7 +494,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     public static ShortMatrix unbox(final Matrix<Short> x) {
         N.checkArgNotNull(x, "x");
 
-        return ShortMatrix.wrap(Array.unbox(x.a));
+        return x.mapToShort(value -> value == null ? SHORT_0 : value);
     }
 
     /**

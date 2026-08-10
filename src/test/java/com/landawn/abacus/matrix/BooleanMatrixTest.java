@@ -6154,6 +6154,25 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
+        public void testUnbox_typeNeutralGenericStorageAndEmptyShapes() {
+            assertSame(BooleanMatrix.empty(), BooleanMatrix.unbox(Matrix.empty()));
+            assertSame(BooleanMatrix.empty(), BooleanMatrix.unbox(Matrix.<Boolean>empty().copy()));
+            assertSame(BooleanMatrix.empty(), BooleanMatrix.unbox(Matrix.wrap(new Boolean[0][0])));
+
+            BooleanMatrix rowsWithNoColumns = BooleanMatrix.unbox(Matrix.wrap(new Boolean[2][0]));
+            assertEquals(2, rowsWithNoColumns.rowCount());
+            assertEquals(0, rowsWithNoColumns.columnCount());
+
+            BooleanMatrix typeNeutralRowsWithNoColumns = BooleanMatrix.unbox(Matrix.<Boolean>empty().resize(2, 0));
+            assertEquals(2, typeNeutralRowsWithNoColumns.rowCount());
+            assertEquals(0, typeNeutralRowsWithNoColumns.columnCount());
+
+            Matrix<Boolean> expandedTypeNeutral = Matrix.<Boolean>empty().resize(2, 2);
+            expandedTypeNeutral.set(0, 1, true);
+            assertEquals(BooleanMatrix.wrap(new boolean[][] { { false, true }, { false, false } }), BooleanMatrix.unbox(expandedTypeNeutral));
+        }
+
+        @Test
         public void testAliasedArraySourcesAreSnapshotted() {
             BooleanMatrix columnMatrix = BooleanMatrix.wrap(new boolean[][] { { true, false }, { false, true } });
             columnMatrix.setColumn(1, columnMatrix.rowView(0));

@@ -192,6 +192,27 @@ class ShortMatrixTest extends TestBase {
     }
 
     @Test
+    public void testUnboxSharedEmptyAndPreserveZeroColumnRows() {
+        ShortMatrix sharedEmpty = ShortMatrix.unbox(Matrix.empty());
+        assertSame(ShortMatrix.empty(), sharedEmpty);
+
+        ShortMatrix zeroColumns = ShortMatrix.unbox(Matrix.wrap(new Short[][] { {}, {} }));
+        assertEquals(2, zeroColumns.rowCount());
+        assertEquals(0, zeroColumns.columnCount());
+
+        Matrix<Short> typeNeutralZeroColumns = Matrix.<Short>empty().resize(2, 0);
+        ShortMatrix unboxedTypeNeutralZeroColumns = ShortMatrix.unbox(typeNeutralZeroColumns);
+        assertEquals(2, unboxedTypeNeutralZeroColumns.rowCount());
+        assertEquals(0, unboxedTypeNeutralZeroColumns.columnCount());
+
+        Matrix<Short> typeNeutralValues = Matrix.<Short>empty().resize(2, 2);
+        typeNeutralValues.set(0, 1, (short) 7);
+        ShortMatrix unboxedTypeNeutralValues = ShortMatrix.unbox(typeNeutralValues);
+        assertArrayEquals(new short[] { 0, 7 }, unboxedTypeNeutralValues.rowCopy(0));
+        assertArrayEquals(new short[] { 0, 0 }, unboxedTypeNeutralValues.rowCopy(1));
+    }
+
+    @Test
     public void testComponentType() {
         assertEquals(short.class, matrix.elementType());
     }

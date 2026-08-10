@@ -17,7 +17,6 @@ package com.landawn.abacus.matrix;
 import java.util.NoSuchElementException;
 
 import com.landawn.abacus.annotation.SuppressFBWarnings;
-import com.landawn.abacus.util.Array;
 import com.landawn.abacus.util.Arrays;
 import com.landawn.abacus.util.BooleanList;
 import com.landawn.abacus.util.InternalUtil;
@@ -402,7 +401,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     public static BooleanMatrix unbox(final Matrix<Boolean> x) {
         N.checkArgNotNull(x, "x");
 
-        return BooleanMatrix.wrap(Array.unbox(x.a));
+        return x.mapToBoolean(value -> value != null && value);
     }
 
     /**

@@ -539,7 +539,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     public static LongMatrix unbox(final Matrix<Long> x) {
         N.checkArgNotNull(x, "x");
 
-        return LongMatrix.wrap(Array.unbox(x.a));
+        return x.mapToLong(value -> value == null ? 0L : value);
     }
 
     /**

@@ -6080,6 +6080,27 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
+        public void testUnbox_typeNeutralEmptyReturnsPrimitiveEmptyAndTypedZeroColumnsPreserveRows() {
+            FloatMatrix sharedEmpty = FloatMatrix.unbox(Matrix.empty());
+            FloatMatrix copiedTypeNeutralEmpty = FloatMatrix.unbox(Matrix.<Float>empty().copy());
+
+            assertSame(FloatMatrix.empty(), sharedEmpty);
+            assertSame(FloatMatrix.empty(), copiedTypeNeutralEmpty);
+
+            FloatMatrix zeroColumns = FloatMatrix.unbox(Matrix.wrap(new Float[][] { {}, {} }));
+            assertEquals(2, zeroColumns.rowCount());
+            assertEquals(0, zeroColumns.columnCount());
+
+            FloatMatrix typeNeutralZeroColumns = FloatMatrix.unbox(Matrix.<Float>empty().resize(2, 0));
+            assertEquals(2, typeNeutralZeroColumns.rowCount());
+            assertEquals(0, typeNeutralZeroColumns.columnCount());
+
+            Matrix<Float> typeNeutralExpanded = Matrix.<Float>empty().resize(2, 2);
+            typeNeutralExpanded.set(0, 1, 7f);
+            assertEquals(FloatMatrix.wrap(new float[][] { { 0f, 7f }, { 0f, 0f } }), FloatMatrix.unbox(typeNeutralExpanded));
+        }
+
+        @Test
         public void testAliasedArraySourcesAreSnapshotted() {
             FloatMatrix columnMatrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             columnMatrix.setColumn(1, columnMatrix.rowView(0));

@@ -526,7 +526,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     public static ByteMatrix unbox(final Matrix<Byte> x) {
         N.checkArgNotNull(x, "x");
 
-        return ByteMatrix.wrap(Array.unbox(x.a));
+        return x.mapToByte(value -> value == null ? BYTE_0 : value);
     }
 
     /**

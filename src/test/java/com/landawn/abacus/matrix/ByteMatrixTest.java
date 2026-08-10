@@ -6214,6 +6214,25 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
+        public void testUnbox_typeNeutralGenericStorageAndEmptyShapes() {
+            assertSame(ByteMatrix.empty(), ByteMatrix.unbox(Matrix.empty()));
+            assertSame(ByteMatrix.empty(), ByteMatrix.unbox(Matrix.<Byte>empty().copy()));
+            assertSame(ByteMatrix.empty(), ByteMatrix.unbox(Matrix.wrap(new Byte[0][0])));
+
+            ByteMatrix rowsWithNoColumns = ByteMatrix.unbox(Matrix.wrap(new Byte[2][0]));
+            assertEquals(2, rowsWithNoColumns.rowCount());
+            assertEquals(0, rowsWithNoColumns.columnCount());
+
+            ByteMatrix typeNeutralRowsWithNoColumns = ByteMatrix.unbox(Matrix.<Byte>empty().resize(2, 0));
+            assertEquals(2, typeNeutralRowsWithNoColumns.rowCount());
+            assertEquals(0, typeNeutralRowsWithNoColumns.columnCount());
+
+            Matrix<Byte> expandedTypeNeutral = Matrix.<Byte>empty().resize(2, 2);
+            expandedTypeNeutral.set(0, 1, (byte) 7);
+            assertEquals(ByteMatrix.wrap(new byte[][] { { 0, 7 }, { 0, 0 } }), ByteMatrix.unbox(expandedTypeNeutral));
+        }
+
+        @Test
         public void testAliasedArraySourcesAreSnapshotted() {
             ByteMatrix columnMatrix = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
             columnMatrix.setColumn(1, columnMatrix.rowView(0));
