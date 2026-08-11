@@ -182,16 +182,6 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     final A[] a;
 
     /**
-     * Memoized result of {@link #hasAliasedRows()}: {@code 0} = not yet computed, {@code 1} = aliased,
-     * {@code 2} = not aliased. The answer is invariant for the lifetime of the instance because {@link #a}
-     * is {@code final} and the only structural mutation performed by this package is the row swap in
-     * {@code flipVerticallyInPlace}, which permutes the same set of row references. Row reassignment done
-     * externally through {@link #unsafeBackingArray()} is outside that contract and can leave this value
-     * stale. Matrices are not thread-safe, so this needs no synchronization.
-     */
-    private byte aliasedRowsState;
-
-    /**
      * The element type tracked for this matrix. For primitive matrices this is the matching
      * primitive class (e.g. {@code int.class}); for {@link Matrix} it is the backing array
      * component type, or an explicit element type selected by the factory.
@@ -309,11 +299,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @return {@code true} if at least two rows are the same array object; otherwise {@code false}
      */
     final boolean hasAliasedRows() {
-        if (aliasedRowsState == 0) {
-            aliasedRowsState = computeHasAliasedRows() ? (byte) 1 : (byte) 2;
-        }
-
-        return aliasedRowsState == 1;
+        // Constructors and wrap factories deliberately retain the caller's outer array. Its row
+        // references can therefore change without going through this class, so aliasing is not an
+        // invariant that can be safely memoized.
+        return computeHasAliasedRows();
     }
 
     /**
@@ -348,16 +337,6 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @throws E if the action throws an exception
      */
     final <E extends Exception> void forEachDistinctRow(final Throwables.Consumer<? super A, E> action) throws E {
-        if (!hasAliasedRows()) {
-            // Every row is distinct, so the identity set below would visit all of them anyway.
-            // Skipping it keeps this the same cost as a plain loop for the overwhelmingly common case.
-            for (final A row : a) {
-                action.accept(row);
-            }
-
-            return;
-        }
-
         final Map<A, Boolean> seenRows = new IdentityHashMap<>(a.length);
 
         for (final A row : a) {
@@ -523,10 +502,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Any changes made to the returned array (including reassigning row references or mutating row contents)
      * will be reflected in this matrix. Reassigned rows must remain non-{@code null} and keep the original
      * {@link #columnCount()}; violating those shape invariants leaves the matrix in an invalid state because
-     * its dimensions are fixed at construction. Reassignment must also preserve which entries refer to the
-     * same row array: whether this matrix has aliased rows is computed once and then cached, so introducing
-     * or removing aliasing through this array can make row-wise in-place operations such as {@code updateAll}
-     * and {@code updateColumn} apply the operator the wrong number of times.
+     * its dimensions are fixed at construction.
      * If you need an independent matrix instance, use {@link #copy()}.
      * If you only need the data as a flat list in row-major order, use {@link #flatten()}.</p>
      *

@@ -512,6 +512,63 @@ class AbstractMatrixTest extends TestBase {
     }
 
     @Test
+    public void testAliasedRowsAreRecomputedWhenWrappedOuterArrayCreatesAlias() {
+        int[][] backingArray = { { 1 }, { 10 } };
+        IntMatrix matrix = IntMatrix.wrap(backingArray);
+
+        assertFalse(matrix.hasAliasedRows());
+
+        backingArray[1] = backingArray[0];
+        AtomicInteger calls = new AtomicInteger();
+        matrix.updateAll(value -> {
+            calls.incrementAndGet();
+            return value + 1;
+        });
+
+        assertTrue(matrix.hasAliasedRows());
+        assertEquals(1, calls.get());
+        assertArrayEquals(new int[] { 2 }, backingArray[0]);
+        assertArrayEquals(new int[] { 2 }, backingArray[1]);
+    }
+
+    @Test
+    public void testAliasedRowsAreRecomputedWhenWrappedOuterArrayRemovesAlias() {
+        int[] sharedRow = { 1 };
+        int[][] backingArray = { sharedRow, sharedRow };
+        IntMatrix matrix = IntMatrix.wrap(backingArray);
+
+        assertTrue(matrix.hasAliasedRows());
+
+        backingArray[1] = new int[] { 10 };
+
+        assertFalse(matrix.hasAliasedRows());
+        matrix.updateAll(value -> value + 1);
+        assertArrayEquals(new int[] { 2 }, backingArray[0]);
+        assertArrayEquals(new int[] { 11 }, backingArray[1]);
+    }
+
+    @Test
+    public void testDistinctRowTraversalHandlesAliasCreatedByCallback() {
+        int[][] backingArray = { { 1 }, { 10 } };
+        IntMatrix matrix = IntMatrix.wrap(backingArray);
+        AtomicInteger calls = new AtomicInteger();
+
+        matrix.updateAll(value -> {
+            calls.incrementAndGet();
+
+            if (value == 1) {
+                backingArray[1] = backingArray[0];
+            }
+
+            return value + 1;
+        });
+
+        assertEquals(1, calls.get());
+        assertArrayEquals(new int[] { 2 }, backingArray[0]);
+        assertArrayEquals(new int[] { 2 }, backingArray[1]);
+    }
+
+    @Test
     public void testForEachNullAction() {
         IntMatrix matrix = createTestMatrix();
 
