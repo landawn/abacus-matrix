@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -453,15 +455,8 @@ class AbstractMatrixTest extends TestBase {
     }
 
     @Test
-    public void testForEachIndicesUsesRowMajorOrderForAliasedRowsWhenParallelIsForced() throws Exception {
-        int[] sharedRow = new int[2];
-        int[][] backingArray = new int[3][];
-
-        for (int i = 0; i < backingArray.length; i++) {
-            backingArray[i] = sharedRow;
-        }
-
-        IntMatrix matrix = IntMatrix.wrap(backingArray);
+    public void testForEachIndicesUsesRowMajorOrderWhenParallelIsForcedOff() throws Exception {
+        IntMatrix matrix = IntMatrix.wrap(new int[][] { { 0, 0 }, { 0, 0 }, { 0, 0 } });
         List<Integer> expectedFull = new ArrayList<>();
 
         for (int i = 0; i < matrix.rowCount(); i++) {
@@ -471,20 +466,20 @@ class AbstractMatrixTest extends TestBase {
         }
 
         List<Integer> visits = new ArrayList<>();
-        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> matrix.forEachIndices((i, j) -> {
+        Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.forEachIndices((i, j) -> {
             visits.add(i * matrix.columnCount() + j);
             matrix.set(i, j, i);
         }));
         assertEquals(expectedFull, visits);
-        assertArrayEquals(new int[] { 2, 2 }, sharedRow);
+        assertArrayEquals(new int[][] { { 0, 0 }, { 1, 1 }, { 2, 2 } }, matrix.unsafeBackingArray());
 
         visits.clear();
-        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> matrix.forEachIndices((i, j, m) -> {
+        Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.forEachIndices((i, j, m) -> {
             visits.add(i * m.columnCount() + j);
             m.set(i, j, i + 100);
         }));
         assertEquals(expectedFull, visits);
-        assertArrayEquals(new int[] { 102, 102 }, sharedRow);
+        assertArrayEquals(new int[][] { { 100, 100 }, { 101, 101 }, { 102, 102 } }, matrix.unsafeBackingArray());
 
         List<Integer> expectedRegion = new ArrayList<>();
 
@@ -495,28 +490,26 @@ class AbstractMatrixTest extends TestBase {
         }
 
         visits.clear();
-        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> matrix.forEachIndices(1, 3, 0, matrix.columnCount(), (i, j) -> {
+        Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.forEachIndices(1, 3, 0, matrix.columnCount(), (i, j) -> {
             visits.add(i * matrix.columnCount() + j);
             matrix.set(i, j, i + 200);
         }));
         assertEquals(expectedRegion, visits);
-        assertArrayEquals(new int[] { 202, 202 }, sharedRow);
+        assertArrayEquals(new int[][] { { 100, 100 }, { 201, 201 }, { 202, 202 } }, matrix.unsafeBackingArray());
 
         visits.clear();
-        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> matrix.forEachIndices(1, 3, 0, matrix.columnCount(), (i, j, m) -> {
+        Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.forEachIndices(1, 3, 0, matrix.columnCount(), (i, j, m) -> {
             visits.add(i * m.columnCount() + j);
             m.set(i, j, i + 300);
         }));
         assertEquals(expectedRegion, visits);
-        assertArrayEquals(new int[] { 302, 302 }, sharedRow);
+        assertArrayEquals(new int[][] { { 100, 100 }, { 301, 301 }, { 302, 302 } }, matrix.unsafeBackingArray());
     }
 
     @Test
-    public void testAliasedRowsAreRecomputedWhenWrappedOuterArrayCreatesAlias() {
+    public void testWrapTakesStructuralSnapshotOfOuterArray() {
         int[][] backingArray = { { 1 }, { 10 } };
         IntMatrix matrix = IntMatrix.wrap(backingArray);
-
-        assertFalse(matrix.hasAliasedRows());
 
         backingArray[1] = backingArray[0];
         AtomicInteger calls = new AtomicInteger();
@@ -525,30 +518,23 @@ class AbstractMatrixTest extends TestBase {
             return value + 1;
         });
 
-        assertTrue(matrix.hasAliasedRows());
-        assertEquals(1, calls.get());
+        assertEquals(2, calls.get());
         assertArrayEquals(new int[] { 2 }, backingArray[0]);
         assertArrayEquals(new int[] { 2 }, backingArray[1]);
+        assertArrayEquals(new int[] { 11 }, matrix.rowView(1));
     }
 
     @Test
-    public void testAliasedRowsAreRecomputedWhenWrappedOuterArrayRemovesAlias() {
+    public void testWrapRejectsDuplicateRows() {
         int[] sharedRow = { 1 };
         int[][] backingArray = { sharedRow, sharedRow };
-        IntMatrix matrix = IntMatrix.wrap(backingArray);
 
-        assertTrue(matrix.hasAliasedRows());
-
-        backingArray[1] = new int[] { 10 };
-
-        assertFalse(matrix.hasAliasedRows());
-        matrix.updateAll(value -> value + 1);
-        assertArrayEquals(new int[] { 2 }, backingArray[0]);
-        assertArrayEquals(new int[] { 11 }, backingArray[1]);
+        assertThrows(IllegalArgumentException.class, () -> IntMatrix.wrap(backingArray));
+        assertThrows(IllegalArgumentException.class, () -> new IntMatrix(backingArray));
     }
 
     @Test
-    public void testDistinctRowTraversalHandlesAliasCreatedByCallback() {
+    public void testOuterArrayMutationDuringTraversalDoesNotChangeStructure() {
         int[][] backingArray = { { 1 }, { 10 } };
         IntMatrix matrix = IntMatrix.wrap(backingArray);
         AtomicInteger calls = new AtomicInteger();
@@ -563,9 +549,10 @@ class AbstractMatrixTest extends TestBase {
             return value + 1;
         });
 
-        assertEquals(1, calls.get());
+        assertEquals(2, calls.get());
         assertArrayEquals(new int[] { 2 }, backingArray[0]);
         assertArrayEquals(new int[] { 2 }, backingArray[1]);
+        assertArrayEquals(new int[] { 11 }, matrix.rowView(1));
     }
 
     @Test
@@ -607,9 +594,8 @@ class AbstractMatrixTest extends TestBase {
     public void testPointsLU2RDNonSquare() {
         IntMatrix matrix = createTestMatrix2x3();
 
-        Assertions.assertThrows(IllegalStateException.class, () -> {
-            matrix.mainDiagonalPoints().collect(Collectors.toList());
-        });
+        List<Sheet.Point> points = matrix.mainDiagonalPoints().collect(Collectors.toList());
+        Assertions.assertEquals(java.util.Arrays.asList(Sheet.Point.of(0, 0), Sheet.Point.of(1, 1)), points);
     }
 
     @Test
@@ -903,20 +889,6 @@ class AbstractMatrixTest extends TestBase {
         // This should throw
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
             matrix1.checkSameShape(matrix3);
-        });
-    }
-
-    @Test
-    public void testCheckIsSquare() {
-        IntMatrix squareMatrix = createTestMatrix();
-        IntMatrix nonSquareMatrix = createTestMatrix2x3();
-
-        // This should not throw
-        squareMatrix.checkIsSquare();
-
-        // This should throw
-        Assertions.assertThrows(IllegalStateException.class, () -> {
-            nonSquareMatrix.checkIsSquare();
         });
     }
 
@@ -1406,7 +1378,7 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void testPointsLU2RD_nonSquare() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalPoints());
+            assertEquals(java.util.Arrays.asList(Point.of(0, 0)), m.mainDiagonalPoints().toList());
         }
 
         @Test
@@ -1423,7 +1395,7 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void testPointsRU2LD_nonSquare() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.antiDiagonalPoints());
+            assertEquals(java.util.Arrays.asList(Point.of(0, 1)), m.antiDiagonalPoints().toList());
         }
 
         @Test
@@ -1569,13 +1541,13 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void testStreamLU2RD_nonSquare() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalStream());
+            assertArrayEquals(new int[] { 1 }, m.mainDiagonalStream().toArray());
         }
 
         @Test
         public void testStreamRU2LD_nonSquare() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.antiDiagonalStream());
+            assertArrayEquals(new int[] { 2 }, m.antiDiagonalStream().toArray());
         }
 
         @Test
@@ -2666,7 +2638,7 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void testPointsLU2RD_nonSquare() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalPoints().toList());
+            assertEquals(java.util.Arrays.asList(Point.of(0, 0), Point.of(1, 1)), m.mainDiagonalPoints().toList());
         }
 
         @Test
@@ -2687,7 +2659,7 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void testPointsRU2LD_nonSquare() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.antiDiagonalPoints().toList());
+            assertEquals(java.util.Arrays.asList(Point.of(0, 1), Point.of(1, 0)), m.antiDiagonalPoints().toList());
         }
 
         @Test
@@ -3237,7 +3209,7 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void test_mainDiagonalPoints_nonSquareMatrix() {
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> matrix.mainDiagonalPoints().toList());
+            assertEquals(java.util.Arrays.asList(Point.of(0, 0), Point.of(1, 1)), matrix.mainDiagonalPoints().toList());
         }
 
         @Test
@@ -3253,7 +3225,7 @@ class AbstractMatrixTest extends TestBase {
         @Test
         public void test_antiDiagonalPoints_nonSquareMatrix() {
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> matrix.antiDiagonalPoints().toList());
+            assertEquals(java.util.Arrays.asList(Point.of(0, 1), Point.of(1, 0)), matrix.antiDiagonalPoints().toList());
         }
 
         // ============ Horizontal Point Stream Tests ============
@@ -3432,13 +3404,16 @@ class AbstractMatrixTest extends TestBase {
         // ============ Array Method Test ============
 
         @Test
-        public void test_array_returnsInternalArray() {
+        public void test_array_returnsStructuralSnapshotSharingRows() {
             int[][] arr = { { 1, 2 }, { 3, 4 } };
             IntMatrix matrix = IntMatrix.wrap(arr);
             int[][] returned = matrix.unsafeBackingArray();
-            assertEquals(arr, returned); // Same reference
+            assertNotSame(arr, returned);
+            assertSame(arr[0], returned[0]);
             returned[0][0] = 999;
-            assertEquals(999, matrix.get(0, 0)); // Modification affects matrix
+            assertEquals(999, matrix.get(0, 0));
+            returned[1] = returned[0];
+            assertArrayEquals(new int[] { 3, 4 }, matrix.rowView(1));
         }
 
         // ============ Println Test ============
@@ -3867,14 +3842,7 @@ class AbstractMatrixTest extends TestBase {
             assertEquals(1, zeroColumnCalls.get());
 
             int[] shared = { 1, 2 };
-            IntMatrix aliased = IntMatrix.wrap(new int[][] { shared, shared });
-            aliased.mutateViaFlatArray(flattened -> {
-                flattened[0] = 10;
-                flattened[1] = 20;
-                flattened[2] = 30;
-                flattened[3] = 40;
-            });
-            assertArrayEquals(new int[] { 30, 40 }, shared);
+            assertThrows(IllegalArgumentException.class, () -> IntMatrix.wrap(new int[][] { shared, shared }));
         }
 
         @Test
@@ -3933,7 +3901,7 @@ class AbstractMatrixTest extends TestBase {
     class MatrixRepresentableShapeValidationTest extends TestBase {
 
         @Test
-        public void testPadRejectsZeroRowNonZeroColumnShape() {
+        public void testResizePreservesZeroRowNonZeroColumnShape() {
             Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } });
             BooleanMatrix booleanMatrix = BooleanMatrix.wrap(new boolean[][] { { true, false }, { false, true } });
             ByteMatrix byteMatrix = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
@@ -3944,19 +3912,19 @@ class AbstractMatrixTest extends TestBase {
             FloatMatrix floatMatrix = FloatMatrix.wrap(new float[][] { { 1F, 2F }, { 3F, 4F } });
             DoubleMatrix doubleMatrix = DoubleMatrix.wrap(new double[][] { { 1D, 2D }, { 3D, 4D } });
 
-            assertThrows(IllegalArgumentException.class, () -> matrix.resize(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> booleanMatrix.resize(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> byteMatrix.resize(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> charMatrix.resize(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> shortMatrix.resize(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> intMatrix.resize(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> longMatrix.resize(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> floatMatrix.resize(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> doubleMatrix.resize(0, 1));
+            assertEquals(1, matrix.resize(0, 1).columnCount());
+            assertEquals(1, booleanMatrix.resize(0, 1).columnCount());
+            assertEquals(1, byteMatrix.resize(0, 1).columnCount());
+            assertEquals(1, charMatrix.resize(0, 1).columnCount());
+            assertEquals(1, shortMatrix.resize(0, 1).columnCount());
+            assertEquals(1, intMatrix.resize(0, 1).columnCount());
+            assertEquals(1, longMatrix.resize(0, 1).columnCount());
+            assertEquals(1, floatMatrix.resize(0, 1).columnCount());
+            assertEquals(1, doubleMatrix.resize(0, 1).columnCount());
         }
 
         @Test
-        public void testDirectionalExtendRejectsZeroRowNonZeroColumnShapeOnEmptyMatrix() {
+        public void testDirectionalPadPreservesZeroRowNonZeroColumnShapeOnEmptyMatrix() {
             Matrix<Integer> matrix = Matrix.wrap(new Integer[0][0]);
             BooleanMatrix booleanMatrix = BooleanMatrix.empty();
             ByteMatrix byteMatrix = ByteMatrix.empty();
@@ -3967,15 +3935,15 @@ class AbstractMatrixTest extends TestBase {
             FloatMatrix floatMatrix = FloatMatrix.empty();
             DoubleMatrix doubleMatrix = DoubleMatrix.empty();
 
-            assertThrows(IllegalArgumentException.class, () -> matrix.pad(0, 0, 0, 1));
-            assertThrows(IllegalArgumentException.class, () -> booleanMatrix.pad(0, 0, 0, 1));
-            assertThrows(IllegalArgumentException.class, () -> byteMatrix.pad(0, 0, 0, 1));
-            assertThrows(IllegalArgumentException.class, () -> charMatrix.pad(0, 0, 0, 1));
-            assertThrows(IllegalArgumentException.class, () -> shortMatrix.pad(0, 0, 0, 1));
-            assertThrows(IllegalArgumentException.class, () -> intMatrix.pad(0, 0, 0, 1));
-            assertThrows(IllegalArgumentException.class, () -> longMatrix.pad(0, 0, 0, 1));
-            assertThrows(IllegalArgumentException.class, () -> floatMatrix.pad(0, 0, 0, 1));
-            assertThrows(IllegalArgumentException.class, () -> doubleMatrix.pad(0, 0, 0, 1));
+            assertEquals(1, matrix.pad(0, 0, 0, 1).columnCount());
+            assertEquals(1, booleanMatrix.pad(0, 0, 0, 1).columnCount());
+            assertEquals(1, byteMatrix.pad(0, 0, 0, 1).columnCount());
+            assertEquals(1, charMatrix.pad(0, 0, 0, 1).columnCount());
+            assertEquals(1, shortMatrix.pad(0, 0, 0, 1).columnCount());
+            assertEquals(1, intMatrix.pad(0, 0, 0, 1).columnCount());
+            assertEquals(1, longMatrix.pad(0, 0, 0, 1).columnCount());
+            assertEquals(1, floatMatrix.pad(0, 0, 0, 1).columnCount());
+            assertEquals(1, doubleMatrix.pad(0, 0, 0, 1).columnCount());
         }
 
         @Test
@@ -4021,14 +3989,14 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRotateAndTransposeOnNxZeroMatricesReturnEmptyShape() {
+        public void testRotateAndTransposeOnNxZeroMatricesPreserveTransformedShape() {
             Matrix<String> objectMatrix = Matrix.wrap(new String[][] { {}, {} });
             assertEquals(0, objectMatrix.rotate90().rowCount());
-            assertEquals(0, objectMatrix.rotate90().columnCount());
+            assertEquals(2, objectMatrix.rotate90().columnCount());
             assertEquals(0, objectMatrix.rotate270().rowCount());
-            assertEquals(0, objectMatrix.rotate270().columnCount());
+            assertEquals(2, objectMatrix.rotate270().columnCount());
             assertEquals(0, objectMatrix.transpose().rowCount());
-            assertEquals(0, objectMatrix.transpose().columnCount());
+            assertEquals(2, objectMatrix.transpose().columnCount());
 
             BooleanMatrix booleanMatrix = BooleanMatrix.wrap(new boolean[][] { {}, {} });
             ByteMatrix byteMatrix = ByteMatrix.wrap(new byte[][] { {}, {} });
@@ -4040,35 +4008,59 @@ class AbstractMatrixTest extends TestBase {
             DoubleMatrix doubleMatrix = DoubleMatrix.wrap(new double[][] { {}, {} });
 
             assertEquals(0, booleanMatrix.transpose().rowCount());
+            assertEquals(2, booleanMatrix.transpose().columnCount());
             assertEquals(0, booleanMatrix.rotate90().rowCount());
+            assertEquals(2, booleanMatrix.rotate90().columnCount());
             assertEquals(0, booleanMatrix.rotate270().rowCount());
+            assertEquals(2, booleanMatrix.rotate270().columnCount());
             assertEquals(0, byteMatrix.transpose().rowCount());
+            assertEquals(2, byteMatrix.transpose().columnCount());
             assertEquals(0, byteMatrix.rotate90().rowCount());
+            assertEquals(2, byteMatrix.rotate90().columnCount());
             assertEquals(0, byteMatrix.rotate270().rowCount());
+            assertEquals(2, byteMatrix.rotate270().columnCount());
             assertEquals(0, charMatrix.transpose().rowCount());
+            assertEquals(2, charMatrix.transpose().columnCount());
             assertEquals(0, charMatrix.rotate90().rowCount());
+            assertEquals(2, charMatrix.rotate90().columnCount());
             assertEquals(0, charMatrix.rotate270().rowCount());
+            assertEquals(2, charMatrix.rotate270().columnCount());
             assertEquals(0, shortMatrix.transpose().rowCount());
+            assertEquals(2, shortMatrix.transpose().columnCount());
             assertEquals(0, shortMatrix.rotate90().rowCount());
+            assertEquals(2, shortMatrix.rotate90().columnCount());
             assertEquals(0, shortMatrix.rotate270().rowCount());
+            assertEquals(2, shortMatrix.rotate270().columnCount());
             assertEquals(0, intMatrix.transpose().rowCount());
+            assertEquals(2, intMatrix.transpose().columnCount());
             assertEquals(0, intMatrix.rotate90().rowCount());
+            assertEquals(2, intMatrix.rotate90().columnCount());
             assertEquals(0, intMatrix.rotate270().rowCount());
+            assertEquals(2, intMatrix.rotate270().columnCount());
             assertEquals(0, longMatrix.transpose().rowCount());
+            assertEquals(2, longMatrix.transpose().columnCount());
             assertEquals(0, longMatrix.rotate90().rowCount());
+            assertEquals(2, longMatrix.rotate90().columnCount());
             assertEquals(0, longMatrix.rotate270().rowCount());
+            assertEquals(2, longMatrix.rotate270().columnCount());
             assertEquals(0, floatMatrix.transpose().rowCount());
+            assertEquals(2, floatMatrix.transpose().columnCount());
             assertEquals(0, floatMatrix.rotate90().rowCount());
+            assertEquals(2, floatMatrix.rotate90().columnCount());
             assertEquals(0, floatMatrix.rotate270().rowCount());
+            assertEquals(2, floatMatrix.rotate270().columnCount());
             assertEquals(0, doubleMatrix.transpose().rowCount());
+            assertEquals(2, doubleMatrix.transpose().columnCount());
             assertEquals(0, doubleMatrix.rotate90().rowCount());
+            assertEquals(2, doubleMatrix.rotate90().columnCount());
             assertEquals(0, doubleMatrix.rotate270().rowCount());
+            assertEquals(2, doubleMatrix.rotate270().columnCount());
         }
 
         @Test
         public void testCopyRangesEmptyReturnsEmptyMatrix() {
             // copy with an empty row range is a valid empty slice across every matrix type.
-            // It must return an empty (0x0) matrix rather than throw, even when columnCount > 0.
+            // The slice retains the selected column dimension even though it has no rows.
             Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 1, 2 } });
             BooleanMatrix booleanMatrix = BooleanMatrix.wrap(new boolean[][] { { true, false } });
             ByteMatrix byteMatrix = ByteMatrix.wrap(new byte[][] { { 1, 2 } });
@@ -4080,24 +4072,42 @@ class AbstractMatrixTest extends TestBase {
             DoubleMatrix doubleMatrix = DoubleMatrix.wrap(new double[][] { { 1D, 2D } });
 
             assertEquals(0, matrix.copyRows(0, 0).rowCount());
+            assertEquals(2, matrix.copyRows(0, 0).columnCount());
             assertEquals(0, booleanMatrix.copyRows(0, 0).rowCount());
+            assertEquals(2, booleanMatrix.copyRows(0, 0).columnCount());
             assertEquals(0, byteMatrix.copyRows(0, 0).rowCount());
+            assertEquals(2, byteMatrix.copyRows(0, 0).columnCount());
             assertEquals(0, charMatrix.copyRows(0, 0).rowCount());
+            assertEquals(2, charMatrix.copyRows(0, 0).columnCount());
             assertEquals(0, shortMatrix.copyRows(0, 0).rowCount());
+            assertEquals(2, shortMatrix.copyRows(0, 0).columnCount());
             assertEquals(0, intMatrix.copyRows(0, 0).rowCount());
+            assertEquals(2, intMatrix.copyRows(0, 0).columnCount());
             assertEquals(0, longMatrix.copyRows(0, 0).rowCount());
+            assertEquals(2, longMatrix.copyRows(0, 0).columnCount());
             assertEquals(0, floatMatrix.copyRows(0, 0).rowCount());
+            assertEquals(2, floatMatrix.copyRows(0, 0).columnCount());
             assertEquals(0, doubleMatrix.copyRows(0, 0).rowCount());
+            assertEquals(2, doubleMatrix.copyRows(0, 0).columnCount());
 
             assertEquals(0, matrix.copyRegion(0, 0, 0, 1).rowCount());
+            assertEquals(1, matrix.copyRegion(0, 0, 0, 1).columnCount());
             assertEquals(0, booleanMatrix.copyRegion(0, 0, 0, 1).rowCount());
+            assertEquals(1, booleanMatrix.copyRegion(0, 0, 0, 1).columnCount());
             assertEquals(0, byteMatrix.copyRegion(0, 0, 0, 1).rowCount());
+            assertEquals(1, byteMatrix.copyRegion(0, 0, 0, 1).columnCount());
             assertEquals(0, charMatrix.copyRegion(0, 0, 0, 1).rowCount());
+            assertEquals(1, charMatrix.copyRegion(0, 0, 0, 1).columnCount());
             assertEquals(0, shortMatrix.copyRegion(0, 0, 0, 1).rowCount());
+            assertEquals(1, shortMatrix.copyRegion(0, 0, 0, 1).columnCount());
             assertEquals(0, intMatrix.copyRegion(0, 0, 0, 1).rowCount());
+            assertEquals(1, intMatrix.copyRegion(0, 0, 0, 1).columnCount());
             assertEquals(0, longMatrix.copyRegion(0, 0, 0, 1).rowCount());
+            assertEquals(1, longMatrix.copyRegion(0, 0, 0, 1).columnCount());
             assertEquals(0, floatMatrix.copyRegion(0, 0, 0, 1).rowCount());
+            assertEquals(1, floatMatrix.copyRegion(0, 0, 0, 1).columnCount());
             assertEquals(0, doubleMatrix.copyRegion(0, 0, 0, 1).rowCount());
+            assertEquals(1, doubleMatrix.copyRegion(0, 0, 0, 1).columnCount());
 
             assertEquals(1, matrix.copyColumns(1, 1).rowCount());
             assertEquals(0, matrix.copyColumns(1, 1).columnCount());
@@ -4120,15 +4130,15 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testRandomRejectsUnrepresentableShape() {
-            assertThrows(IllegalArgumentException.class, () -> BooleanMatrix.random(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> ByteMatrix.random(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> CharMatrix.random(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> ShortMatrix.random(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> IntMatrix.random(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> LongMatrix.random(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> FloatMatrix.random(0, 1));
-            assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.random(0, 1));
+        public void testRandomPreservesZeroRowNonZeroColumnShape() {
+            assertEquals(1, BooleanMatrix.random(0, 1).columnCount());
+            assertEquals(1, ByteMatrix.random(0, 1).columnCount());
+            assertEquals(1, CharMatrix.random(0, 1).columnCount());
+            assertEquals(1, ShortMatrix.random(0, 1).columnCount());
+            assertEquals(1, IntMatrix.random(0, 1).columnCount());
+            assertEquals(1, LongMatrix.random(0, 1).columnCount());
+            assertEquals(1, FloatMatrix.random(0, 1).columnCount());
+            assertEquals(1, DoubleMatrix.random(0, 1).columnCount());
         }
 
         @Test
@@ -4191,10 +4201,18 @@ class AbstractMatrixTest extends TestBase {
         }
 
         @Test
-        public void testBackingArray_isSameReference() {
+        public void testBackingArraySharesRowsButNotOuterStructure() {
             int[][] data = { { 1, 2 }, { 3, 4 } };
             IntMatrix m = IntMatrix.wrap(data);
-            assertTrue(data == m.unsafeBackingArray());
+            int[][] exposed = m.unsafeBackingArray();
+
+            assertNotSame(data, exposed);
+            assertSame(data[0], exposed[0]);
+            exposed[1] = exposed[0];
+            assertArrayEquals(new int[] { 3, 4 }, m.rowView(1));
+
+            exposed[0][0] = 99;
+            assertEquals(99, m.get(0, 0));
         }
 
         @Test

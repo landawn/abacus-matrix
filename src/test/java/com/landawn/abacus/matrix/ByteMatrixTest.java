@@ -412,7 +412,7 @@ class ByteMatrixTest extends TestBase {
         Assertions.assertArrayEquals(new byte[] { 1, 5, 9 }, diagonal);
 
         ByteMatrix nonSquare = ByteMatrix.wrap(new byte[][] { { 1, 2 } });
-        Assertions.assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalCopy());
+        Assertions.assertArrayEquals(new byte[] { 1 }, nonSquare.mainDiagonalCopy());
     }
 
     @Test
@@ -1109,7 +1109,7 @@ class ByteMatrixTest extends TestBase {
         Assertions.assertTrue(empty.mainDiagonalStream().toList().isEmpty());
 
         ByteMatrix nonSquare = ByteMatrix.wrap(new byte[][] { { 1, 2 } });
-        Assertions.assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalStream());
+        Assertions.assertArrayEquals(new byte[] { 1 }, nonSquare.mainDiagonalStream().toArray());
     }
 
     @Test
@@ -1328,7 +1328,7 @@ class ByteMatrixTest extends TestBase {
         ObjIteratorEx<ByteStream> rowEx = (ObjIteratorEx<ByteStream>) rowIterator;
         rowEx.advance(0);
         Assertions.assertEquals(2L, rowEx.count());
-        Assertions.assertArrayEquals(new byte[] { 1, 2 }, rowEx.next().toArray());
+        Assertions.assertFalse(rowEx.hasNext());
         rowEx.advance(10);
         Assertions.assertEquals(0L, rowEx.count());
         Assertions.assertThrows(NoSuchElementException.class, rowEx::next);
@@ -1346,7 +1346,7 @@ class ByteMatrixTest extends TestBase {
         ByteIteratorEx byteEx = (ByteIteratorEx) valueIterator;
         byteEx.advance(0);
         Assertions.assertEquals(2L, byteEx.count());
-        Assertions.assertEquals((byte) 1, byteEx.nextByte());
+        Assertions.assertFalse(byteEx.hasNext());
         byteEx.advance(10);
         Assertions.assertEquals(0L, byteEx.count());
         Assertions.assertThrows(NoSuchElementException.class, byteEx::nextByte);
@@ -1816,13 +1816,14 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD_nonSquare() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
+            assertArrayEquals(new byte[] { 1 }, m.mainDiagonalCopy());
         }
 
         @Test
         public void testSetLU2RD_nonSquare() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.setMainDiagonal(new byte[] { 1 }));
+            m.setMainDiagonal(new byte[] { 9 });
+            assertEquals((byte) 9, m.get(0, 0));
         }
 
         @Test
@@ -1844,7 +1845,8 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testUpdateLU2RD_nonSquare() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.updateMainDiagonal(x -> (byte) (x * 2)));
+            m.updateMainDiagonal(x -> (byte) (x * 2));
+            assertEquals((byte) 2, m.get(0, 0));
         }
 
         @Test
@@ -1856,13 +1858,14 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testGetRU2LD_nonSquare() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
+            assertArrayEquals(new byte[] { 2 }, m.antiDiagonalCopy());
         }
 
         @Test
         public void testSetRU2LD_nonSquare() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.setAntiDiagonal(new byte[] { 1 }));
+            m.setAntiDiagonal(new byte[] { 9 });
+            assertEquals((byte) 9, m.get(0, 1));
         }
 
         @Test
@@ -1884,7 +1887,8 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testUpdateRU2LD_nonSquare() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.updateAntiDiagonal(x -> (byte) (x * 2)));
+            m.updateAntiDiagonal(x -> (byte) (x * 2));
+            assertEquals((byte) 4, m.get(0, 1));
         }
 
         // ============ Transformation Tests ============
@@ -2587,7 +2591,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testStreamLU2RD_nonSquare() {
             ByteMatrix nonSquare = ByteMatrix.wrap(new byte[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalStream());
+            assertArrayEquals(new byte[] { 1 }, nonSquare.mainDiagonalStream().toArray());
         }
 
         @Test
@@ -2606,7 +2610,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testStreamRU2LD_nonSquare() {
             ByteMatrix nonSquare = ByteMatrix.wrap(new byte[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> nonSquare.antiDiagonalStream());
+            assertArrayEquals(new byte[] { 2 }, nonSquare.antiDiagonalStream().toArray());
         }
 
         @Test
@@ -3192,7 +3196,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD_nonSquare() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
+            assertArrayEquals(new byte[] { 1, 5 }, m.mainDiagonalCopy());
         }
 
         @Test
@@ -4145,7 +4149,8 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testSetLU2RD_nonSquare() {
             ByteMatrix m = ByteMatrix.wrap(new byte[2][3]);
-            assertThrows(IllegalStateException.class, () -> m.setMainDiagonal(new byte[] { 1, 2 }));
+            m.setMainDiagonal(new byte[] { 1, 2 });
+            assertArrayEquals(new byte[] { 1, 2 }, m.mainDiagonalCopy());
         }
 
         @Test
@@ -4176,7 +4181,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testGetRU2LD_nonSquare() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
+            assertArrayEquals(new byte[] { 3, 5 }, m.antiDiagonalCopy());
         }
 
         @Test
@@ -4197,7 +4202,8 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void testUpdateRU2LD_rectangular() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 0, 0, 1 }, { 2, 0, 0 } });
-            assertThrows(IllegalStateException.class, () -> m.updateAntiDiagonal(val -> (byte) (val + 10)));
+            m.updateAntiDiagonal(val -> (byte) (val + 10));
+            assertArrayEquals(new byte[] { 11, 10 }, m.antiDiagonalCopy());
         }
 
         @Test
@@ -5038,7 +5044,7 @@ class ByteMatrixTest extends TestBase {
         @Test
         public void test_mainDiagonalCopy_nonSquare() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
+            assertArrayEquals(new byte[] { 1, 4 }, m.mainDiagonalCopy());
         }
 
         @Test
@@ -6125,7 +6131,11 @@ class ByteMatrixTest extends TestBase {
         com.landawn.abacus.util.stream.ByteIteratorEx ex = (com.landawn.abacus.util.stream.ByteIteratorEx) iterator;
         ex.advance(3);
         assertEquals(1L, ex.count());
-        assertEquals((byte) 4, ex.nextByte());
+        assertFalse(ex.hasNext());
+
+        com.landawn.abacus.util.stream.ByteIteratorEx fresh = (com.landawn.abacus.util.stream.ByteIteratorEx) matrix.rowMajorStream(0, 2).iterator();
+        fresh.advance(3);
+        assertEquals((byte) 4, fresh.nextByte());
         ex.advance(10);
         assertEquals(0L, ex.count());
         assertThrows(java.util.NoSuchElementException.class, ex::nextByte);
@@ -6168,12 +6178,12 @@ class ByteMatrixTest extends TestBase {
     public class ReviewBugfixTests {
 
         @Test
-        public void testDiagonalStream_Nx0MatrixThrowsBecauseNotSquare() {
+        public void testDiagonalStream_Nx0MatrixIsEmpty() {
             ByteMatrix m = ByteMatrix.wrap(new byte[3][0]);
             assertEquals(3, m.rowCount());
             assertEquals(0, m.columnCount());
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalStream());
-            assertThrows(IllegalStateException.class, () -> m.antiDiagonalStream());
+            assertEquals(0, m.mainDiagonalStream().count());
+            assertEquals(0, m.antiDiagonalStream().count());
 
             ByteMatrix empty = ByteMatrix.empty();
             assertEquals(0, empty.mainDiagonalStream().count());
@@ -6181,14 +6191,14 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTranspose_Nx0_collapsesToEmpty() {
+        public void testTranspose_Nx0_preservesSwappedShape() {
             ByteMatrix t = ByteMatrix.wrap(new byte[3][0]).transpose();
             assertEquals(0, t.rowCount());
-            assertEquals(0, t.columnCount());
+            assertEquals(3, t.columnCount());
         }
 
         @Test
-        public void testRotate180_Nx0_preservesShape_whileRotate90TwiceCollapses() {
+        public void testRotate180AndRotate90Twice_preserveNx0Shape() {
             ByteMatrix m = ByteMatrix.wrap(new byte[3][0]);
 
             ByteMatrix via180 = m.rotate180();
@@ -6196,14 +6206,15 @@ class ByteMatrixTest extends TestBase {
             assertEquals(0, via180.columnCount());
 
             ByteMatrix viaRotate90Twice = m.rotate90().rotate90();
-            assertEquals(0, viaRotate90Twice.rowCount());
+            assertEquals(3, viaRotate90Twice.rowCount());
             assertEquals(0, viaRotate90Twice.columnCount());
         }
 
         @Test
-        public void testReshape_oversizedShapeThrowsIllegalArgumentException() {
-            ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1 } });
-            assertThrows(IllegalArgumentException.class, () -> m.reshape(46341, 46341));
+        public void testZeroRowShapeWithMaxColumnCountIsAllocationSafe() {
+            ByteMatrix m = new ByteMatrix(new byte[0][], 1);
+            assertShape(0, Integer.MAX_VALUE, m.resize(0, Integer.MAX_VALUE));
+            assertShape(0, Integer.MAX_VALUE, m.reshapeAndPad(0, Integer.MAX_VALUE));
         }
 
         @Test
@@ -6215,19 +6226,19 @@ class ByteMatrixTest extends TestBase {
 
         @Test
         public void testUnbox_typeNeutralGenericStorageAndEmptyShapes() {
-            assertSame(ByteMatrix.empty(), ByteMatrix.unbox(Matrix.empty()));
-            assertSame(ByteMatrix.empty(), ByteMatrix.unbox(Matrix.<Byte>empty().copy()));
+            assertSame(ByteMatrix.empty(), ByteMatrix.unbox(Matrix.empty(Byte.class)));
+            assertSame(ByteMatrix.empty(), ByteMatrix.unbox(Matrix.empty(Byte.class).copy()));
             assertSame(ByteMatrix.empty(), ByteMatrix.unbox(Matrix.wrap(new Byte[0][0])));
 
             ByteMatrix rowsWithNoColumns = ByteMatrix.unbox(Matrix.wrap(new Byte[2][0]));
             assertEquals(2, rowsWithNoColumns.rowCount());
             assertEquals(0, rowsWithNoColumns.columnCount());
 
-            ByteMatrix typeNeutralRowsWithNoColumns = ByteMatrix.unbox(Matrix.<Byte>empty().resize(2, 0));
+            ByteMatrix typeNeutralRowsWithNoColumns = ByteMatrix.unbox(Matrix.empty(Byte.class).resize(2, 0));
             assertEquals(2, typeNeutralRowsWithNoColumns.rowCount());
             assertEquals(0, typeNeutralRowsWithNoColumns.columnCount());
 
-            Matrix<Byte> expandedTypeNeutral = Matrix.<Byte>empty().resize(2, 2);
+            Matrix<Byte> expandedTypeNeutral = Matrix.empty(Byte.class).resize(2, 2);
             expandedTypeNeutral.set(0, 1, (byte) 7);
             assertEquals(ByteMatrix.wrap(new byte[][] { { 0, 7 }, { 0, 0 } }), ByteMatrix.unbox(expandedTypeNeutral));
         }
@@ -6249,42 +6260,14 @@ class ByteMatrixTest extends TestBase {
         }
 
         @Test
-        public void testAliasedRowsAreMutatedOnceByValueOnlyOperations() {
-            byte[] sharedColumnRow = { 1, 2 };
-            ByteMatrix columnMatrix = ByteMatrix.wrap(new byte[][] { sharedColumnRow, sharedColumnRow });
-            columnMatrix.updateColumn(0, value -> (byte) (value + 1));
-            assertArrayEquals(new byte[] { 2, 2 }, sharedColumnRow);
+        public void testAliasedRowsAreRejected() {
+            byte[] sharedRow = { 1, 2 };
+            assertThrows(IllegalArgumentException.class, () -> ByteMatrix.wrap(new byte[][] { sharedRow, sharedRow }));
 
-            byte[] sharedUpdateRow = { 1, 2 };
-            ByteMatrix updateMatrix = ByteMatrix.wrap(new byte[][] { sharedUpdateRow, sharedUpdateRow });
-            updateMatrix.updateAll(value -> (byte) (value + 1));
-            assertArrayEquals(new byte[] { 2, 3 }, sharedUpdateRow);
-
-            byte[] sharedParallelRow = { 1, 2 };
-            ByteMatrix parallelMatrix = ByteMatrix.wrap(new byte[][] { sharedParallelRow, sharedParallelRow });
-            AtomicInteger invocationCount = new AtomicInteger();
-            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> parallelMatrix.updateAll(value -> {
-                invocationCount.incrementAndGet();
-                return (byte) (value + 1);
-            }));
-            assertEquals(sharedParallelRow.length, invocationCount.get());
-            assertArrayEquals(new byte[] { 2, 3 }, sharedParallelRow);
-
-            byte[] sharedReplaceRow = { 1, 2 };
-            ByteMatrix replaceMatrix = ByteMatrix.wrap(new byte[][] { sharedReplaceRow, sharedReplaceRow });
-            AtomicInteger replaceInvocationCount = new AtomicInteger();
-            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> replaceMatrix.replaceIf(value -> {
-                replaceInvocationCount.incrementAndGet();
-                return value > 0;
-            }, (byte) 9));
-            assertEquals(sharedReplaceRow.length, replaceInvocationCount.get());
-            assertArrayEquals(new byte[] { 9, 9 }, sharedReplaceRow);
-
-            byte[] sharedFlipRow = { 1, 2, 3 };
-            ByteMatrix flipMatrix = ByteMatrix.wrap(new byte[][] { sharedFlipRow, sharedFlipRow });
-            flipMatrix.flipHorizontallyInPlace();
-            assertArrayEquals(new byte[] { 3, 2, 1 }, sharedFlipRow);
-            assertSame(flipMatrix.rowView(0), flipMatrix.rowView(1));
+            byte[][] outer = { { 1, 2 }, { 3, 4 } };
+            ByteMatrix matrix = ByteMatrix.wrap(outer);
+            outer[0] = new byte[] { 9, 9 };
+            assertArrayEquals(new byte[] { 1, 2 }, matrix.rowCopy(0));
         }
     }
 
@@ -6297,19 +6280,28 @@ class ByteMatrixTest extends TestBase {
         com.landawn.abacus.util.stream.ByteIteratorEx rowMajor = (com.landawn.abacus.util.stream.ByteIteratorEx) rowMajorIterator;
         rowMajor.advance(1); // mid-row cursor: the chunked toArray must start at column 1
         assertEquals(5L, rowMajor.count());
-        assertArrayEquals(new byte[] { 2, 3, 4, 5, 6 }, rowMajor.toArray());
+        assertArrayEquals(new byte[0], rowMajor.toArray());
+
+        com.landawn.abacus.util.stream.ByteIteratorEx rowMajorFresh = (com.landawn.abacus.util.stream.ByteIteratorEx) matrix.rowMajorStream(0, 2).iterator();
+        rowMajorFresh.advance(1);
+        assertArrayEquals(new byte[] { 2, 3, 4, 5, 6 }, rowMajorFresh.toArray());
 
         var columnMajorIterator = matrix.columnMajorStream(0, 3).iterator();
         com.landawn.abacus.util.stream.ByteIteratorEx columnMajor = (com.landawn.abacus.util.stream.ByteIteratorEx) columnMajorIterator;
         columnMajor.advance(1); // mid-column cursor: row 1 of column 0
         assertEquals(5L, columnMajor.count());
-        assertArrayEquals(new byte[] { 4, 2, 5, 3, 6 }, columnMajor.toArray());
+        assertArrayEquals(new byte[0], columnMajor.toArray());
+
+        com.landawn.abacus.util.stream.ByteIteratorEx columnMajorFresh = (com.landawn.abacus.util.stream.ByteIteratorEx) matrix.columnMajorStream(0, 3)
+                .iterator();
+        columnMajorFresh.advance(1);
+        assertArrayEquals(new byte[] { 4, 2, 5, 3, 6 }, columnMajorFresh.toArray());
 
         var crossingIterator = matrix.columnMajorStream(0, 3).iterator();
         com.landawn.abacus.util.stream.ByteIteratorEx crossing = (com.landawn.abacus.util.stream.ByteIteratorEx) crossingIterator;
         crossing.advance(3); // crosses a column boundary: lands on row 1 of column 1
         assertEquals(3L, crossing.count());
-        assertEquals((byte) 5, crossing.nextByte());
+        assertFalse(crossing.hasNext());
         crossing.advance(10);
         assertEquals(0L, crossing.count());
         assertThrows(java.util.NoSuchElementException.class, crossing::nextByte);
@@ -6320,6 +6312,118 @@ class ByteMatrixTest extends TestBase {
         assertThrows(IllegalArgumentException.class, () -> ByteMatrix.randomRow(-1));
         assertThrows(IllegalArgumentException.class, () -> ByteMatrix.random(-1, 2));
         assertThrows(IllegalArgumentException.class, () -> ByteMatrix.random(2, -1));
+    }
+
+    @Test
+    public void testRandomGeneratorOverloadsAreReproducibleAndPreserveZeroRowShape() {
+        assertEquals(ByteMatrix.random(4, 5, new java.util.Random(1234)), ByteMatrix.random(4, 5, new java.util.Random(1234)));
+        assertEquals(ByteMatrix.randomRow(5, new java.util.Random(4321)), ByteMatrix.randomRow(5, new java.util.Random(4321)));
+        assertShape(0, 7, ByteMatrix.random(0, 7, new java.util.Random(1)));
+        assertThrows(IllegalArgumentException.class, () -> ByteMatrix.random(1, 1, null));
+        assertThrows(IllegalArgumentException.class, () -> ByteMatrix.randomRow(1, null));
+    }
+
+    @Test
+    public void testWidenedAndExactArithmetic() {
+        ByteMatrix maxAndMin = ByteMatrix.wrap(new byte[][] { { Byte.MAX_VALUE, Byte.MIN_VALUE } });
+        ByteMatrix ones = ByteMatrix.wrap(new byte[][] { { 1, 1 } });
+
+        assertArrayEquals(new int[] { 128, -127 }, maxAndMin.addWidened(ones).rowCopy(0));
+        ArithmeticException addOverflow = assertThrows(ArithmeticException.class, () -> maxAndMin.addExact(ones));
+        assertEquals("byte overflow: 128", addOverflow.getMessage());
+
+        assertArrayEquals(new int[] { 126, -129 }, maxAndMin.subtractWidened(ones).rowCopy(0));
+        ArithmeticException subtractOverflow = assertThrows(ArithmeticException.class, () -> maxAndMin.subtractExact(ones));
+        assertEquals("byte overflow: -129", subtractOverflow.getMessage());
+
+        assertEquals(ByteMatrix.wrap(new byte[][] { { 3, 5 } }), ByteMatrix.wrap(new byte[][] { { 1, 2 } }).addExact(ByteMatrix.wrap(new byte[][] { { 2, 3 } })));
+
+        ByteMatrix left = ByteMatrix.wrap(new byte[][] { { Byte.MAX_VALUE, Byte.MAX_VALUE } });
+        ByteMatrix right = ByteMatrix.wrap(new byte[][] { { Byte.MAX_VALUE }, { Byte.MAX_VALUE } });
+        assertEquals(32258L, left.matrixMultiplyWidened(right).get(0, 0));
+        assertThrows(ArithmeticException.class, () -> left.matrixMultiplyExact(right));
+
+        ByteMatrix cancellationLeft = ByteMatrix.wrap(new byte[][] { { 100, 100 } });
+        ByteMatrix cancellationRight = ByteMatrix.wrap(new byte[][] { { 1 }, { -1 } });
+        assertEquals((byte) 0, cancellationLeft.matrixMultiplyExact(cancellationRight).get(0, 0));
+    }
+
+    @Test
+    public void testZeroRowResultMethodsPreserveLogicalColumnCount() {
+        ByteMatrix matrix = new ByteMatrix(new byte[0][], 3);
+        ByteMatrix other = new ByteMatrix(new byte[0][], 3);
+
+        assertShape(0, 3, matrix.copy());
+        assertShape(0, 3, matrix.copyRows(0, 0));
+        assertShape(0, 2, matrix.copyRegion(0, 0, 1, 3));
+        assertShape(0, 3, matrix.map(value -> (byte) (value + 1)));
+        assertShape(0, 3, matrix.mapToObj(Byte::valueOf, Byte.class));
+        assertShape(0, 5, matrix.resize(0, 5));
+        assertShape(0, 5, matrix.pad(0, 0, 1, 1));
+        assertShape(3, 0, matrix.rotate90());
+        assertShape(0, 3, matrix.rotate180());
+        assertShape(3, 0, matrix.rotate270());
+        assertShape(3, 0, matrix.transpose());
+        assertShape(0, 4, matrix.reshapeAndPad(0, 4));
+        assertShape(0, 6, matrix.repeatElements(2, 2));
+        assertShape(0, 6, matrix.repeatMatrix(2, 2));
+        assertShape(0, 3, matrix.stackVertically(other));
+        assertShape(0, 6, matrix.stackHorizontally(other));
+        assertShape(0, 3, matrix.add(other));
+        assertShape(0, 3, matrix.addWidened(other));
+        assertShape(0, 3, matrix.addExact(other));
+        assertShape(0, 3, matrix.subtract(other));
+        assertShape(0, 3, matrix.subtractWidened(other));
+        assertShape(0, 3, matrix.subtractExact(other));
+        ByteMatrix right = ByteMatrix.wrap(new byte[3][2]);
+        assertShape(0, 2, matrix.matrixMultiply(right));
+        assertShape(0, 2, matrix.matrixMultiplyWidened(right));
+        assertShape(0, 2, matrix.matrixMultiplyExact(right));
+        assertShape(0, 3, matrix.boxed());
+        assertShape(0, 3, matrix.toIntMatrix());
+        assertShape(0, 3, matrix.toLongMatrix());
+        assertShape(0, 3, matrix.toFloatMatrix());
+        assertShape(0, 3, matrix.toDoubleMatrix());
+        assertShape(0, 3, matrix.zipWith(other, (left, rightValue) -> left));
+        assertShape(0, 3, matrix.zipWith(other, other, (first, second, third) -> first));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testIteratorExCountConsumesEveryCustomIterator() {
+        ByteMatrix matrix = ByteMatrix.wrap(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+
+        com.landawn.abacus.util.stream.ByteIteratorEx main = (com.landawn.abacus.util.stream.ByteIteratorEx) matrix.mainDiagonalStream().iterator();
+        assertEquals(2, main.count());
+        assertFalse(main.hasNext());
+
+        com.landawn.abacus.util.stream.ByteIteratorEx anti = (com.landawn.abacus.util.stream.ByteIteratorEx) matrix.antiDiagonalStream().iterator();
+        assertEquals(2, anti.count());
+        assertFalse(anti.hasNext());
+
+        com.landawn.abacus.util.stream.ByteIteratorEx rowMajor = (com.landawn.abacus.util.stream.ByteIteratorEx) matrix.rowMajorStream().iterator();
+        assertEquals(6, rowMajor.count());
+        assertFalse(rowMajor.hasNext());
+
+        com.landawn.abacus.util.stream.ByteIteratorEx columnMajor = (com.landawn.abacus.util.stream.ByteIteratorEx) matrix.columnMajorStream().iterator();
+        assertEquals(6, columnMajor.count());
+        assertFalse(columnMajor.hasNext());
+
+        ObjIteratorEx<ByteStream> rows = (ObjIteratorEx<ByteStream>) matrix.rowStreams().iterator();
+        assertEquals(2, rows.count());
+        assertFalse(rows.hasNext());
+
+        ObjIteratorEx<ByteStream> columns = (ObjIteratorEx<ByteStream>) matrix.columnStreams().iterator();
+        ByteIteratorEx columnValues = (ByteIteratorEx) columns.next().iterator();
+        assertEquals(2, columnValues.count());
+        assertFalse(columnValues.hasNext());
+        assertEquals(2, columns.count());
+        assertFalse(columns.hasNext());
+    }
+
+    private static void assertShape(final int expectedRows, final int expectedColumns, final AbstractMatrix<?, ?, ?, ?, ?> matrix) {
+        assertEquals(expectedRows, matrix.rowCount());
+        assertEquals(expectedColumns, matrix.columnCount());
     }
 
 }

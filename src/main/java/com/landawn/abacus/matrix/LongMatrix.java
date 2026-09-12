@@ -15,6 +15,7 @@
 package com.landawn.abacus.matrix;
 
 import java.util.NoSuchElementException;
+import java.util.random.RandomGenerator;
 
 import com.landawn.abacus.annotation.SuppressFBWarnings;
 import com.landawn.abacus.util.Array;
@@ -89,6 +90,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     public LongMatrix(final long[][] a) {
         super(N.checkArgNotNull(a, "Matrix array cannot be null"), long.class);
+    }
+
+    LongMatrix(final long[][] a, final int columnCount) {
+        super(N.checkArgNotNull(a, "Matrix array cannot be null"), long.class, columnCount);
     }
 
     /**
@@ -254,9 +259,14 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @see #random(int, int)
      */
     public static LongMatrix randomRow(final int columnCount) {
-        N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
+        return randomRow(columnCount, defaultRandomGenerator());
+    }
 
-        return random(1, columnCount);
+    /** Returns a random row using the supplied generator, enabling deterministic tests and caller-selected randomness. */
+    public static LongMatrix randomRow(final int columnCount, final RandomGenerator random) {
+        N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
+        N.checkArgNotNull(random, "random");
+        return random(1, columnCount, random);
     }
 
     /**
@@ -281,19 +291,28 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *         or if the resulting shape cannot be represented (e.g. zero rows with non-zero columns)
      */
     public static LongMatrix random(final int rowCount, final int columnCount) {
+        return random(rowCount, columnCount, defaultRandomGenerator());
+    }
+
+    /**
+     * Returns a random matrix using {@code random}. The generator is consumed once per cell in
+     * row-major order, making seeded generators reproducible.
+     */
+    public static LongMatrix random(final int rowCount, final int columnCount, final RandomGenerator random) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
+        N.checkArgNotNull(random, "random");
         checkRepresentableShape(rowCount, columnCount);
 
         final long[][] a = new long[rowCount][columnCount];
 
         for (long[] ea : a) {
             for (int i = 0; i < columnCount; i++) {
-                ea[i] = RAND.nextLong();
+                ea[i] = random.nextLong();
             }
         }
 
-        return new LongMatrix(a);
+        return new LongMatrix(a, columnCount);
     }
 
     /**
@@ -1004,12 +1023,13 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
         checkColumnIndex(columnIndex);
 
-        forEachDistinctRow(row -> row[columnIndex] = operator.applyAsLong(row[columnIndex]));
+        for (final long[] row : a) {
+            row[columnIndex] = operator.applyAsLong(row[columnIndex]);
+        }
     }
 
     /**
-     * Returns a copy of the main diagonal elements (upper-left to lower-right) as an array.
-     * The matrix must be square (rowCount == columnCount) for this operation.
+     * Returns the {@code min(rowCount, columnCount)} main-diagonal elements as an independent array.
      *
      * <p>This method extracts the main diagonal elements at positions (0,0), (1,1), (2,2), etc.
      * The returned array is a copy; modifications to it will not affect the matrix.
@@ -1023,20 +1043,18 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * small.mainDiagonalCopy();               // returns [1, 4]
      *
      * LongMatrix.empty().mainDiagonalCopy();   // returns [] (0x0 is square)
-     * LongMatrix nonSquare = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
-     * nonSquare.mainDiagonalCopy();           // throws IllegalStateException (not square)
+     * LongMatrix rectangular = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
+     * rectangular.mainDiagonalCopy();         // returns [1, 5]
      * }</pre>
      *
      * @return a new long array containing a copy of the main diagonal elements
-     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
-    public long[] mainDiagonalCopy() throws IllegalStateException {
-        checkIsSquare();
+    public long[] mainDiagonalCopy() {
+        final int diagonalLength = diagonalLength();
+        final long[] res = new long[diagonalLength];
 
-        final long[] res = new long[rowCount];
-
-        for (int i = 0; i < rowCount; i++) {
+        for (int i = 0; i < diagonalLength; i++) {
             res[i] = a[i][i]; // NOSONAR
         }
 
@@ -1044,9 +1062,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     }
 
     /**
-     * Sets the elements on the main diagonal (upper-left to lower-right).
-     * The matrix must be square (rowCount == columnCount), and the diagonal array must have
-     * exactly as many elements as the matrix has rows.
+     * Sets all {@code min(rowCount, columnCount)} main-diagonal elements.
      *
      * <p>This method sets the main diagonal elements at positions (0,0), (1,1), (2,2), etc.</p>
      *
@@ -1058,28 +1074,26 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * matrix.get(1, 1);                       // returns 8L (diagonal element updated)
      *
      * matrix.setMainDiagonal(new long[] {1L}); // throws IllegalArgumentException (length != rowCount)
-     * LongMatrix nonSquare = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
-     * nonSquare.setMainDiagonal(new long[] {1L, 2L}); // throws IllegalStateException (not square)
+     * LongMatrix rectangular = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
+     * rectangular.setMainDiagonal(new long[] {7L, 8L}); // supported; updates (0,0) and (1,1)
      * }</pre>
      *
-     * @param mainDiagonal the new values for the main diagonal; must be non-{@code null} and of length {@code rowCount}
-     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
-     * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null} or its length is not equal to {@code rowCount}
+     * @param mainDiagonal the new values; length must equal {@code min(rowCount, columnCount)}
+     * @throws IllegalArgumentException if the argument is {@code null} or has the wrong length
      */
     @Override
-    public void setMainDiagonal(final long[] mainDiagonal) throws IllegalStateException, IllegalArgumentException {
-        checkIsSquare();
+    public void setMainDiagonal(final long[] mainDiagonal) throws IllegalArgumentException {
         N.checkArgNotNull(mainDiagonal, "mainDiagonal");
-        N.checkArgument(N.len(mainDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(mainDiagonal));
+        final int diagonalLength = diagonalLength();
+        N.checkArgument(N.len(mainDiagonal) == diagonalLength, MSG_DIAGONAL_LENGTH_MISMATCH, diagonalLength, N.len(mainDiagonal));
 
-        for (int i = 0; i < rowCount; i++) {
+        for (int i = 0; i < diagonalLength; i++) {
             a[i][i] = mainDiagonal[i];
         }
     }
 
     /**
-     * Updates the values on the main diagonal (upper-left to lower-right) by applying the specified operator.
-     * The matrix must be square.
+     * Updates all {@code min(rowCount, columnCount)} main-diagonal values.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1089,30 +1103,29 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * matrix.get(0, 1);                       // returns 2L (off-diagonal unchanged)
      *
      * matrix.updateMainDiagonal(null);       // throws IllegalArgumentException (operator is null)
-     * LongMatrix nonSquare = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
-     * nonSquare.updateMainDiagonal(x -> x);  // throws IllegalStateException (not square)
+     * LongMatrix rectangular = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
+     * rectangular.updateMainDiagonal(x -> x + 1); // supported; updates two cells
      * }</pre>
      *
      * @param <E> the type of exception that the operator may throw
      * @param operator the operator to apply to each diagonal element; receives current element value and returns new value
-     * @throws IllegalStateException if the matrix is not square
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateMainDiagonal(final Throwables.LongUnaryOperator<E> operator)
-            throws IllegalStateException, IllegalArgumentException, E {
+            throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, cs.operator);
 
-        checkIsSquare();
+        final int diagonalLength = diagonalLength();
 
-        for (int i = 0; i < rowCount; i++) {
+        for (int i = 0; i < diagonalLength; i++) {
             a[i][i] = operator.applyAsLong(a[i][i]);
         }
     }
 
     /**
-     * Returns a copy of the anti-diagonal elements (upper-right to lower-left) as an array.
-     * The matrix must be square (rowCount == columnCount) for this operation.
+     * Returns the {@code min(rowCount, columnCount)} anti-diagonal elements, beginning at the
+     * upper-right corner, as an independent array.
      *
      * <p>This method extracts the anti-diagonal (secondary diagonal) elements from
      * upper-right to lower-left, at positions (0,n-1), (1,n-2), (2,n-3), etc.
@@ -1127,20 +1140,18 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * small.antiDiagonalCopy();               // returns [2, 3]
      *
      * LongMatrix.empty().antiDiagonalCopy();   // returns [] (0x0 is square)
-     * LongMatrix nonSquare = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
-     * nonSquare.antiDiagonalCopy();           // throws IllegalStateException (not square)
+     * LongMatrix rectangular = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
+     * rectangular.antiDiagonalCopy();         // returns [3, 5]
      * }</pre>
      *
      * @return a new long array containing a copy of the anti-diagonal elements
-     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
-    public long[] antiDiagonalCopy() throws IllegalStateException {
-        checkIsSquare();
+    public long[] antiDiagonalCopy() {
+        final int diagonalLength = diagonalLength();
+        final long[] res = new long[diagonalLength];
 
-        final long[] res = new long[rowCount];
-
-        for (int i = 0; i < rowCount; i++) {
+        for (int i = 0; i < diagonalLength; i++) {
             res[i] = a[i][columnCount - i - 1];
         }
 
@@ -1148,9 +1159,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     }
 
     /**
-     * Sets the elements on the anti-diagonal (upper-right to lower-left).
-     * The matrix must be square (rowCount == columnCount), and the diagonal array must have
-     * exactly as many elements as the matrix has rows.
+     * Sets all {@code min(rowCount, columnCount)} anti-diagonal elements, beginning at the upper-right corner.
      *
      * <p>This method sets the anti-diagonal (secondary diagonal) elements from
      * top-right to bottom-left, at positions (0,n-1), (1,n-2), (2,n-3), etc.</p>
@@ -1163,29 +1172,28 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * matrix.get(0, 1);                       // returns 9L (anti-diagonal cell)
      *
      * matrix.setAntiDiagonal(new long[] {1L}); // throws IllegalArgumentException (length != rowCount)
-     * LongMatrix nonSquare = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
-     * nonSquare.setAntiDiagonal(new long[] {1L, 2L}); // throws IllegalStateException (not square)
+     * LongMatrix rectangular = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
+     * rectangular.setAntiDiagonal(new long[] {7L, 8L}); // supported; updates (0,2) and (1,1)
      * }</pre>
      *
      * @param antiDiagonal the new values for the anti-diagonal; must be non-{@code null} and of length {@code rowCount}
-     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
-     * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null} or its length is not equal to {@code rowCount}
+     * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null} or its length is not
+     *         {@code min(rowCount, columnCount)}
      */
     @Override
-    public void setAntiDiagonal(final long[] antiDiagonal) throws IllegalStateException, IllegalArgumentException {
-        checkIsSquare();
+    public void setAntiDiagonal(final long[] antiDiagonal) throws IllegalArgumentException {
         N.checkArgNotNull(antiDiagonal, "antiDiagonal");
-        N.checkArgument(N.len(antiDiagonal) == rowCount, MSG_DIAGONAL_LENGTH_MISMATCH, rowCount, N.len(antiDiagonal));
+        final int diagonalLength = diagonalLength();
+        N.checkArgument(N.len(antiDiagonal) == diagonalLength, MSG_DIAGONAL_LENGTH_MISMATCH, diagonalLength, N.len(antiDiagonal));
         final long[] values = snapshotIfBackingRow(antiDiagonal);
 
-        for (int i = 0; i < rowCount; i++) {
+        for (int i = 0; i < diagonalLength; i++) {
             a[i][columnCount - i - 1] = values[i];
         }
     }
 
     /**
-     * Updates the values on the anti-diagonal (upper-right to lower-left) by applying the specified operator.
-     * The matrix must be square.
+     * Updates all {@code min(rowCount, columnCount)} anti-diagonal values.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1195,23 +1203,22 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * matrix.get(0, 0);                       // returns 1L (off anti-diagonal unchanged)
      *
      * matrix.updateAntiDiagonal(null);       // throws IllegalArgumentException (operator is null)
-     * LongMatrix nonSquare = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
-     * nonSquare.updateAntiDiagonal(x -> x);  // throws IllegalStateException (not square)
+     * LongMatrix rectangular = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
+     * rectangular.updateAntiDiagonal(x -> -x); // supported; updates two cells
      * }</pre>
      *
      * @param <E> the type of exception that the operator may throw
      * @param operator the operator to apply to each anti-diagonal element; receives current element value and returns new value
-     * @throws IllegalStateException if the matrix is not square
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
     public <E extends Exception> void updateAntiDiagonal(final Throwables.LongUnaryOperator<E> operator)
-            throws IllegalStateException, IllegalArgumentException, E {
+            throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, cs.operator);
 
-        checkIsSquare();
+        final int diagonalLength = diagonalLength();
 
-        for (int i = 0; i < rowCount; i++) {
+        for (int i = 0; i < diagonalLength; i++) {
             a[i][columnCount - i - 1] = operator.applyAsLong(a[i][columnCount - i - 1]);
         }
     }
@@ -1254,24 +1261,14 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         }
 
         if (Matrices.shouldRunInParallel(this)) {
-            if (hasAliasedRows()) {
-                final long[][] distinctRows = new long[rowCount][];
-                final int[] distinctRowCount = { 0 };
-                forEachDistinctRow(row -> distinctRows[distinctRowCount[0]++] = row);
-
-                final Throwables.IntBiConsumer<E> elementAction = (i, j) -> distinctRows[i][j] = operator.applyAsLong(distinctRows[i][j]);
-                final long distinctElementCount = (long) distinctRowCount[0] * columnCount;
-                Matrices.forEachIndices(distinctRowCount[0], columnCount, elementAction, Matrices.shouldRunInParallel(this, distinctElementCount));
-            } else {
-                final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.applyAsLong(a[i][j]);
-                Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
-            }
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.applyAsLong(a[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
         } else {
-            forEachDistinctRow(row -> {
+            for (final long[] row : a) {
                 for (int j = 0; j < columnCount; j++) {
                     row[j] = operator.applyAsLong(row[j]);
                 }
-            });
+            }
         }
     }
 
@@ -1282,9 +1279,6 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p>The mapper receives the row and column indices for each element and returns the new value
      * for that position. This is useful for initializing matrices based on position patterns or
      * mathematical formulas. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
-     *
-     * <p>If logical rows share a backing array, every logical coordinate is still visited, but
-     * traversal is kept sequential so later aliases overwrite earlier ones deterministically.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1312,7 +1306,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         N.checkArgNotNull(mapper, cs.mapper);
 
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this) && !hasAliasedRows());
+        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
     }
 
     /**
@@ -1321,9 +1315,6 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * This modifies the matrix directly.
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.</p>
-     *
-     * <p>If multiple logical rows share the same backing array, the predicate is evaluated once
-     * per physical cell and that backing row is updated once.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1350,34 +1341,20 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         N.checkArgNotNull(predicate, cs.predicate);
 
         if (Matrices.shouldRunInParallel(this)) {
-            if (hasAliasedRows()) {
-                final long[][] distinctRows = new long[rowCount][];
-                final int[] distinctRowCount = { 0 };
-                forEachDistinctRow(row -> distinctRows[distinctRowCount[0]++] = row);
-
-                final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
-                    if (predicate.test(distinctRows[i][j])) {
-                        distinctRows[i][j] = newValue;
-                    }
-                };
-                final long distinctElementCount = (long) distinctRowCount[0] * columnCount;
-                Matrices.forEachIndices(distinctRowCount[0], columnCount, elementAction, Matrices.shouldRunInParallel(this, distinctElementCount));
-            } else {
-                final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
-                    if (predicate.test(a[i][j])) {
-                        a[i][j] = newValue;
-                    }
-                };
-                Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
-            }
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
+                if (predicate.test(a[i][j])) {
+                    a[i][j] = newValue;
+                }
+            };
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
         } else {
-            forEachDistinctRow(row -> {
+            for (final long[] row : a) {
                 for (int j = 0; j < columnCount; j++) {
                     if (predicate.test(row[j])) {
                         row[j] = newValue;
                     }
                 }
-            });
+            }
         }
     }
 
@@ -1462,7 +1439,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return LongMatrix.wrap(result);
+        return new LongMatrix(result, columnCount);
     }
 
     /**
@@ -1498,7 +1475,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return IntMatrix.wrap(result);
+        return new IntMatrix(result, columnCount);
     }
 
     /**
@@ -1533,7 +1510,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return DoubleMatrix.wrap(result);
+        return new DoubleMatrix(result, columnCount);
     }
 
     /**
@@ -1709,7 +1686,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
             c[i] = a[i].clone();
         }
 
-        return new LongMatrix(c);
+        return new LongMatrix(c, columnCount);
     }
 
     /**
@@ -1745,7 +1722,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
             c[i - fromRowIndex] = a[i].clone();
         }
 
-        return new LongMatrix(c);
+        return new LongMatrix(c, columnCount);
     }
 
     /**
@@ -1784,7 +1761,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
             c[i - fromRowIndex] = N.copyOfRange(a[i], fromColumnIndex, toColumnIndex);
         }
 
-        return new LongMatrix(c);
+        return new LongMatrix(c, toColumnIndex - fromColumnIndex);
     }
 
     /**
@@ -1829,9 +1806,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param newRowCount the row count of the returned matrix; must be {@code >= 0}
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
      * @return a new LongMatrix with the specified dimensions
-     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
-     *         if the resulting shape is not representable (zero rows with a non-zero column count),
-     *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
+     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative
      * @see #resize(int, int, long)
      * @see #pad(int, int, int, int)
      */
@@ -1881,9 +1856,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param defaultValue the value used to fill cells that are added when a dimension grows;
      *        ignored when neither dimension grows
      * @return a new LongMatrix with the specified dimensions
-     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
-     *         if the resulting shape is not representable (zero rows with a non-zero column count),
-     *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
+     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative
      * @see #resize(int, int)
      * @see #pad(int, int, int, int, long)
      */
@@ -1891,11 +1864,6 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
         checkRepresentableShape(newRowCount, newColumnCount);
-        // Check for overflow before allocation
-        if ((long) newRowCount * newColumnCount > Integer.MAX_VALUE) {
-            throw new IllegalArgumentException("Matrix dimensions overflow: " + newRowCount + " x " + newColumnCount + " exceeds Integer.MAX_VALUE");
-        }
-
         if (newRowCount <= rowCount && newColumnCount <= columnCount) {
             return copyRegion(0, newRowCount, 0, newColumnCount);
         } else {
@@ -1914,7 +1882,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
                 }
             }
 
-            return new LongMatrix(b);
+            return new LongMatrix(b, newColumnCount);
         }
     }
 
@@ -1956,9 +1924,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param padLeft number of padding columns to add to the left of the original matrix; must be {@code >= 0}
      * @param padRight number of padding columns to add to the right of the original matrix; must be {@code >= 0}
      * @return a new LongMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
-     * @throws IllegalArgumentException if any padding parameter is negative,
-     *         if the resulting dimensions would overflow {@code Integer.MAX_VALUE},
-     *         or if the resulting shape is not representable (zero rows with a non-zero column count)
+     * @throws IllegalArgumentException if any padding parameter is negative or if a resulting
+     *         dimension would overflow {@code Integer.MAX_VALUE}
      * @see #pad(int, int, int, int, long)
      * @see #resize(int, int)
      */
@@ -2009,9 +1976,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param padRight number of padding columns to add to the right of the original matrix; must be {@code >= 0}
      * @param defaultValue the value to fill all new padding cells with
      * @return a new LongMatrix with dimensions {@code (padTop + rowCount + padBottom) × (padLeft + columnCount + padRight)}
-     * @throws IllegalArgumentException if any padding parameter is negative,
-     *         if the resulting dimensions would overflow {@code Integer.MAX_VALUE},
-     *         or if the resulting shape is not representable (zero rows with a non-zero column count)
+     * @throws IllegalArgumentException if any padding parameter is negative or if a resulting
+     *         dimension would overflow {@code Integer.MAX_VALUE}
      * @see #pad(int, int, int, int)
      * @see #resize(int, int, long)
      */
@@ -2061,7 +2027,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
                 }
             }
 
-            return new LongMatrix(b);
+            return new LongMatrix(b, newColumnCount);
         }
     }
 
@@ -2097,7 +2063,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
             return;
         }
 
-        forEachDistinctRow(N::reverse);
+        for (final long[] row : a) {
+            N.reverse(row);
+        }
     }
 
     /**
@@ -2241,7 +2209,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
             }
         }
 
-        return new LongMatrix(c);
+        return new LongMatrix(c, rowCount);
     }
 
     /**
@@ -2275,7 +2243,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
             N.reverse(c[i]);
         }
 
-        return new LongMatrix(c);
+        return new LongMatrix(c, columnCount);
     }
 
     /**
@@ -2329,7 +2297,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
             }
         }
 
-        return new LongMatrix(c);
+        return new LongMatrix(c, rowCount);
     }
 
     /**
@@ -2350,9 +2318,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * LongMatrix.empty().transpose().isEmpty();      // returns true
      * }</pre>
      *
-     * @return a new {@code LongMatrix} of shape {@code columnCount x rowCount} that is the transpose of this matrix;
-     *         an {@code N x 0} matrix transposes to the empty {@code 0 x 0} matrix, because the swapped shape
-     *         {@code 0 x N} (zero rows with a non-zero column count) is not representable
+     * @return a new {@code LongMatrix} of shape {@code columnCount x rowCount} that is the transpose
+     *         of this matrix, including exact degenerate shapes
      */
     @Override
     public LongMatrix transpose() {
@@ -2378,7 +2345,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
             }
         }
 
-        return new LongMatrix(c);
+        return new LongMatrix(c, rowCount);
     }
 
     /**
@@ -2406,24 +2373,21 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param newRowCount the number of rows in the reshaped matrix; must be {@code >= 0}
      * @param newColumnCount the number of columns in the reshaped matrix; must be {@code >= 0}
      * @return a new {@code LongMatrix} with the specified dimensions
-     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative, if the resulting shape is not
-     *         representable (zero rows with a non-zero column count), if the total cell count {@code (long) newRowCount * newColumnCount}
-     *         exceeds {@code Integer.MAX_VALUE}, or if the new shape is too small to hold every existing element
+     * @throws IllegalArgumentException if a dimension is negative or the total cell count
+     *         {@code (long) newRowCount * newColumnCount} is too small to hold every existing element
      */
-    @SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG")
     @Override
     public LongMatrix reshapeAndPad(final int newRowCount, final int newColumnCount) {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
         checkRepresentableShape(newRowCount, newColumnCount);
-        checkMaterializableShape(newRowCount, newColumnCount);
         N.checkArgument((long) newRowCount * newColumnCount >= elementCount(), "New shape [{}x{}={}] is too small to hold all {} elements", newRowCount,
                 newColumnCount, (long) newRowCount * newColumnCount, elementCount());
 
         final long[][] c = new long[newRowCount][newColumnCount];
 
         if (newRowCount == 0 || newColumnCount == 0 || N.isEmpty(a)) {
-            return new LongMatrix(c);
+            return new LongMatrix(c, newColumnCount);
         }
 
         final int rowLen = (int) N.min(newRowCount, ceilDiv(elementCount, newColumnCount));
@@ -2456,7 +2420,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
             }
         }
 
-        return new LongMatrix(c);
+        return new LongMatrix(c, newColumnCount);
     }
 
     /**
@@ -2515,7 +2479,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
             }
         }
 
-        return new LongMatrix(c);
+        return new LongMatrix(c, columnCount * columnRepeats);
     }
 
     /**
@@ -2573,7 +2537,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
             }
         }
 
-        return new LongMatrix(c);
+        return new LongMatrix(c, columnCount * columnRepeats);
     }
 
     /**
@@ -2703,7 +2667,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
             c[j++] = other.a[i].clone();
         }
 
-        return LongMatrix.wrap(c);
+        return new LongMatrix(c, columnCount);
     }
 
     /**
@@ -2749,7 +2713,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
             N.copy(other.a[i], 0, c[i], columnCount, other.columnCount);
         }
 
-        return LongMatrix.wrap(c);
+        return new LongMatrix(c, (int) mergedColumnCount);
     }
 
     /**
@@ -2804,7 +2768,30 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
             }
         }
 
-        return LongMatrix.wrap(result);
+        return new LongMatrix(result, columnCount);
+    }
+
+    /**
+     * Adds corresponding elements and throws instead of silently wrapping on {@code long} overflow.
+     * Neither input is modified if an overflow is detected.
+     *
+     * @param other the matrix to add; must be non-{@code null} and have the same shape
+     * @return the exact element-wise sum
+     * @throws IllegalArgumentException if {@code other} is {@code null} or has a different shape
+     * @throws ArithmeticException if any element sum overflows {@code long}
+     */
+    public LongMatrix addExact(final LongMatrix other) {
+        N.checkArgNotNull(other, "other");
+        checkSameShape(other);
+        final long[][] result = new long[rowCount][columnCount];
+
+        for (int i = 0; i < rowCount; i++) {
+            for (int j = 0; j < columnCount; j++) {
+                result[i][j] = Math.addExact(a[i][j], other.a[i][j]);
+            }
+        }
+
+        return new LongMatrix(result, columnCount);
     }
 
     /**
@@ -2859,7 +2846,29 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
             }
         }
 
-        return LongMatrix.wrap(result);
+        return new LongMatrix(result, columnCount);
+    }
+
+    /**
+     * Subtracts corresponding elements and throws instead of silently wrapping on {@code long} overflow.
+     *
+     * @param other the matrix to subtract; must be non-{@code null} and have the same shape
+     * @return the exact element-wise difference
+     * @throws IllegalArgumentException if {@code other} is {@code null} or has a different shape
+     * @throws ArithmeticException if any element difference overflows {@code long}
+     */
+    public LongMatrix subtractExact(final LongMatrix other) {
+        N.checkArgNotNull(other, "other");
+        checkSameShape(other);
+        final long[][] result = new long[rowCount][columnCount];
+
+        for (int i = 0; i < rowCount; i++) {
+            for (int j = 0; j < columnCount; j++) {
+                result[i][j] = Math.subtractExact(a[i][j], other.a[i][j]);
+            }
+        }
+
+        return new LongMatrix(result, columnCount);
     }
 
     /**
@@ -2892,7 +2901,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * @param other the matrix to multiply with; must not be {@code null}
      * @return a new {@code LongMatrix} of shape {@code this.rowCount x other.columnCount} containing the matrix product
-     * @throws IllegalArgumentException if {@code other} is {@code null}, if {@code this.columnCount != other.rowCount}, or if this matrix has zero rows while {@code other} has a non-zero column count (the resulting shape is not representable)
+     * @throws IllegalArgumentException if {@code other} is {@code null} or if
+     *         {@code this.columnCount != other.rowCount}
      */
     public LongMatrix matrixMultiply(final LongMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, "other");
@@ -2927,7 +2937,39 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
             }
         }
 
-        return LongMatrix.wrap(result);
+        return new LongMatrix(result, newColumnCount);
+    }
+
+    /**
+     * Computes the matrix product with checked multiplication and accumulation. This method is
+     * deliberately sequential so the first reported overflow is deterministic.
+     *
+     * @param other the right operand; must be non-{@code null} and dimensionally compatible
+     * @return the exact matrix product
+     * @throws IllegalArgumentException if {@code other} is {@code null} or dimensions are incompatible
+     * @throws ArithmeticException if a product or accumulated dot-product sum overflows {@code long}
+     */
+    public LongMatrix matrixMultiplyExact(final LongMatrix other) {
+        N.checkArgNotNull(other, "other");
+        N.checkArgument(columnCount == other.rowCount,
+                "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
+                columnCount, other.rowCount, other.columnCount);
+
+        final long[][] result = new long[rowCount][other.columnCount];
+
+        for (int i = 0; i < rowCount; i++) {
+            for (int j = 0; j < other.columnCount; j++) {
+                long sum = 0;
+
+                for (int k = 0; k < columnCount; k++) {
+                    sum = Math.addExact(sum, Math.multiplyExact(a[i][k], other.a[k][j]));
+                }
+
+                result[i][j] = sum;
+            }
+        }
+
+        return new LongMatrix(result, other.columnCount);
     }
 
     /**
@@ -2959,7 +3001,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
             }
         }
 
-        return new Matrix<>(c);
+        return new Matrix<>(c, Long.class, columnCount);
     }
 
     /**
@@ -2999,7 +3041,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
             }
         }
 
-        return new IntMatrix(c);
+        return new IntMatrix(c, columnCount);
     }
 
     /**
@@ -3037,7 +3079,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
             }
         }
 
-        return new FloatMatrix(c);
+        return new FloatMatrix(c, columnCount);
     }
 
     /**
@@ -3122,7 +3164,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return LongMatrix.wrap(result);
+        return new LongMatrix(result, columnCount);
     }
 
     /**
@@ -3182,12 +3224,11 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return LongMatrix.wrap(result);
+        return new LongMatrix(result, columnCount);
     }
 
     /**
-     * Returns a stream of elements on the main diagonal (upper-left to lower-right).
-     * The matrix must be square.
+     * Returns the {@code min(rowCount, columnCount)} main-diagonal elements.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3196,23 +3237,20 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * matrix.mainDiagonalStream().sum();      // returns 15L
      *
      * LongMatrix.empty().mainDiagonalStream().count(); // returns 0 (empty stream)
-     * LongMatrix nonSquare = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
-     * nonSquare.mainDiagonalStream();         // throws IllegalStateException (not square)
+     * LongMatrix rectangular = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
+     * rectangular.mainDiagonalStream().toArray(); // returns [1, 5]
      * }</pre>
      *
      * @return a LongStream of main-diagonal elements, or an empty stream if this is the empty {@code 0x0} matrix
-     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
     public LongStream mainDiagonalStream() {
-        checkIsSquare();
-
         if (isEmpty()) {
             return LongStream.empty();
         }
 
         return LongStream.of(new LongIteratorEx() {
-            private final int toIndex = rowCount;
+            private final int toIndex = diagonalLength();
             private int cursor = 0;
 
             @Override
@@ -3240,14 +3278,15 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
             @Override
             public long count() {
-                return toIndex - cursor; // NOSONAR
+                final long remaining = toIndex - cursor;
+                cursor = toIndex;
+                return remaining;
             }
         });
     }
 
     /**
-     * Returns a stream of elements on the anti-diagonal (upper-right to lower-left).
-     * The matrix must be square.
+     * Returns the {@code min(rowCount, columnCount)} anti-diagonal elements, beginning at the upper-right corner.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3256,23 +3295,20 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * matrix.antiDiagonalStream().sum();      // returns 15L
      *
      * LongMatrix.empty().antiDiagonalStream().count(); // returns 0 (empty stream)
-     * LongMatrix nonSquare = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
-     * nonSquare.antiDiagonalStream();         // throws IllegalStateException (not square)
+     * LongMatrix rectangular = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
+     * rectangular.antiDiagonalStream().toArray(); // returns [3, 5]
      * }</pre>
      *
      * @return a LongStream of anti-diagonal elements, or an empty stream if this is the empty {@code 0x0} matrix
-     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     @Override
     public LongStream antiDiagonalStream() {
-        checkIsSquare();
-
         if (isEmpty()) {
             return LongStream.empty();
         }
 
         return LongStream.of(new LongIteratorEx() {
-            private final int toIndex = rowCount;
+            private final int toIndex = diagonalLength();
             private int cursor = 0;
 
             @Override
@@ -3302,7 +3338,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
             @Override
             public long count() {
-                return toIndex - cursor; // NOSONAR
+                final long remaining = toIndex - cursor;
+                cursor = toIndex;
+                return remaining;
             }
         });
     }
@@ -3406,12 +3444,15 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
             @Override
             public long count() {
-                return (long) (toRowIndex - i) * columnCount - j;
+                final long remaining = (long) (toRowIndex - i) * columnCount - j;
+                i = toRowIndex;
+                j = 0;
+                return remaining;
             }
 
             @Override
             public long[] toArray() {
-                final int len = toArrayLength(count());
+                final int len = toArrayLength((long) (toRowIndex - i) * columnCount - j);
                 final long[] c = new long[len];
                 int k = 0;
 
@@ -3532,12 +3573,15 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
             @Override
             public long count() {
-                return (long) (toColumnIndex - j) * rowCount - i; // NOSONAR
+                final long remaining = (long) (toColumnIndex - j) * rowCount - i;
+                i = 0;
+                j = toColumnIndex;
+                return remaining;
             }
 
             @Override
             public long[] toArray() {
-                final int len = toArrayLength(count());
+                final int len = toArrayLength((long) (toColumnIndex - j) * rowCount - i);
                 final long[] c = new long[len];
 
                 for (int k = 0; k < len; k++) {
@@ -3644,7 +3688,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
             @Override
             public long count() {
-                return toIndex - cursor; // NOSONAR
+                final long remaining = toIndex - cursor;
+                cursor = toIndex;
+                return remaining;
             }
         });
     }
@@ -3710,10 +3756,6 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     public Stream<LongStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
-        if (isEmpty()) {
-            return Stream.empty();
-        }
-
         return Stream.of(new ObjIteratorEx<>() {
             private final int toIndex = toColumnIndex;
             private int cursor = fromColumnIndex;
@@ -3759,7 +3801,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
                     @Override
                     public long count() {
-                        return toIndex2 - cursor2; // NOSONAR
+                        final long remaining = toIndex2 - cursor2;
+                        cursor2 = toIndex2;
+                        return remaining;
                     }
                 });
             }
@@ -3775,7 +3819,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
             @Override
             public long count() {
-                return toIndex - cursor; // NOSONAR
+                final long remaining = toIndex - cursor;
+                cursor = toIndex;
+                return remaining;
             }
         });
     }

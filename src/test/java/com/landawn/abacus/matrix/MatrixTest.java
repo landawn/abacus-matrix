@@ -67,10 +67,95 @@ class MatrixTest extends TestBase {
     // Test for empty() factory method
     @Test
     public void testEmpty() {
-        Matrix<String> empty = Matrix.empty();
+        Matrix<String> empty = Matrix.empty(String.class);
         assertTrue(empty.isEmpty());
         assertEquals(0, empty.rowCount());
         assertEquals(0, empty.columnCount());
+        assertEquals(String.class, empty.elementType());
+        assertEquals(Object.class, Matrix.empty().elementType());
+    }
+
+    @Test
+    public void testTypedEmptyPreservesZeroByNShapeAcrossResults() {
+        Matrix<String> empty = Matrix.empty(String.class, 3);
+
+        assertEquals(0, empty.rowCount());
+        assertEquals(3, empty.columnCount());
+        assertEquals(String.class, empty.elementType());
+        assertEquals(3, empty.copy().columnCount());
+        assertEquals(2, empty.copyRegion(0, 0, 1, 3).columnCount());
+        assertEquals(3, empty.map(String::toUpperCase).columnCount());
+        assertEquals(3, empty.mapToBoolean(value -> true).columnCount());
+        assertEquals(3, empty.mapToByte(value -> (byte) 1).columnCount());
+        assertEquals(3, empty.mapToChar(value -> 'x').columnCount());
+        assertEquals(3, empty.mapToShort(value -> (short) 1).columnCount());
+        assertEquals(3, empty.mapToInt(String::length).columnCount());
+        assertEquals(3, empty.mapToLong(String::length).columnCount());
+        assertEquals(3, empty.mapToFloat(value -> 1f).columnCount());
+        assertEquals(3, empty.mapToDouble(value -> 1d).columnCount());
+        assertEquals(3, empty.flipHorizontally().columnCount());
+        assertEquals(3, empty.flipVertically().columnCount());
+        assertEquals(3, empty.rotate180().columnCount());
+        assertEquals(6, empty.repeatMatrix(2, 2).columnCount());
+        assertEquals(6, empty.stackHorizontally(Matrix.empty(String.class, 3), String.class).columnCount());
+        assertEquals(3, empty.zipWith(Matrix.empty(String.class, 3), (left, right) -> left).columnCount());
+
+        Matrix<String> transposed = empty.transpose();
+        assertEquals(3, transposed.rowCount());
+        assertEquals(0, transposed.columnCount());
+        assertEquals(3, empty.columnStreams().count());
+
+        Matrix<String> roundTrip = transposed.transpose();
+        assertEquals(0, roundTrip.rowCount());
+        assertEquals(3, roundTrip.columnCount());
+    }
+
+    @Test
+    public void testExplicitElementTypeFactoriesProvideUniformWritableRows() {
+        Number[][] covariant = new Integer[][] { { 1, 2 } };
+        assertThrows(IllegalArgumentException.class, () -> Matrix.wrap(Number.class, covariant));
+        assertThrows(IllegalArgumentException.class, () -> new Matrix<>(Number.class, covariant));
+
+        Matrix<Number> copied = Matrix.copyOf(Number.class, covariant);
+        assertEquals(Number.class, copied.rowView(0).getClass().getComponentType());
+        Assertions.assertDoesNotThrow(() -> copied.set(0, 0, 2.5d));
+        assertEquals(2.5d, copied.get(0, 0).doubleValue());
+
+        Matrix<Number> diagonal = Matrix.ofDiagonals(Number.class, new Integer[] { 1, 2 }, new Double[] { 3d, 4d });
+        Assertions.assertDoesNotThrow(() -> diagonal.set(0, 0, BigDecimal.TEN));
+        assertEquals(Number.class, diagonal.rowView(0).getClass().getComponentType());
+
+        Number[][] otherCovariant = new Integer[][] { { 3, 4 } };
+        Matrix<Number> legacyFirst = Matrix.wrap(covariant);
+        Matrix<Number> legacySecond = Matrix.wrap(otherCovariant);
+        Matrix<Number> vertical = legacyFirst.stackVertically(legacySecond, Number.class);
+        Matrix<Number> horizontal = legacyFirst.stackHorizontally(legacySecond, Number.class);
+        assertEquals(Number.class, vertical.rowView(0).getClass().getComponentType());
+        assertEquals(Number.class, vertical.rowView(1).getClass().getComponentType());
+        assertEquals(Number.class, horizontal.rowView(0).getClass().getComponentType());
+        Assertions.assertDoesNotThrow(() -> vertical.set(0, 0, 2.5d));
+        Assertions.assertDoesNotThrow(() -> vertical.set(1, 0, 3.5d));
+        Assertions.assertDoesNotThrow(() -> horizontal.set(0, 2, 4.5d));
+    }
+
+    @Test
+    public void testWrappingSnapshotsOuterArrayButKeepsRowsLive() {
+        Integer[] first = { 1, 2 };
+        Integer[] second = { 3, 4 };
+        Integer[][] source = { first, second };
+        Matrix<Integer> matrix = Matrix.wrap(Integer.class, source);
+
+        source[0] = new Integer[] { 9, 9 };
+        assertEquals(1, matrix.get(0, 0));
+
+        Integer[][] snapshot = matrix.unsafeBackingArray();
+        snapshot[1] = new Integer[] { 8, 8 };
+        assertEquals(3, matrix.get(1, 0));
+
+        first[0] = 7;
+        assertEquals(7, matrix.get(0, 0));
+        snapshot[0][1] = 6;
+        assertEquals(6, matrix.get(0, 1));
     }
 
     @Test
@@ -516,12 +601,9 @@ class MatrixTest extends TestBase {
     }
 
     @Test
-    public void testGetLU2RDNonSquare() {
+    public void testGetLU2RDRectangular() {
         Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-
-        Assertions.assertThrows(IllegalStateException.class, () -> {
-            matrix.mainDiagonalCopy();
-        });
+        Assertions.assertArrayEquals(new Integer[] { 1, 5 }, matrix.mainDiagonalCopy());
     }
 
     @Test
@@ -847,17 +929,16 @@ class MatrixTest extends TestBase {
     }
 
     @Test
-    public void testCopyRangesEmpty_returnsEmptyMatrix() {
-        // Regression: copyRows(from, from) on a matrix with columns > 0 must not throw.
+    public void testCopyRangesWithZeroRowsPreserveRequestedColumns() {
         Matrix<Integer> m = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
 
         Matrix<Integer> empty = m.copyRows(0, 0);
         Assertions.assertEquals(0, empty.rowCount());
-        Assertions.assertEquals(0, empty.columnCount());
+        Assertions.assertEquals(3, empty.columnCount());
 
         Matrix<Integer> emptyRows = m.copyRegion(1, 1, 0, 3);
         Assertions.assertEquals(0, emptyRows.rowCount());
-        Assertions.assertEquals(0, emptyRows.columnCount());
+        Assertions.assertEquals(3, emptyRows.columnCount());
 
         Matrix<Integer> emptyCols = m.copyRegion(0, 3, 1, 1);
         Assertions.assertEquals(3, emptyCols.rowCount());
@@ -1089,7 +1170,7 @@ class MatrixTest extends TestBase {
         assertArrayEquals(new Integer[] { 9, 2 }, matrix.rowCopy(0)); // no copy-back after callback failure
 
         int[] zeroRowCalls = { 0 };
-        Matrix.<Integer> empty().mutateViaFlatArray(flat -> zeroRowCalls[0]++);
+        Matrix.empty(Integer.class).mutateViaFlatArray(flat -> zeroRowCalls[0]++);
         assertEquals(0, zeroRowCalls[0]);
 
         int[] zeroColumnCalls = { 0 };
@@ -1100,26 +1181,30 @@ class MatrixTest extends TestBase {
         assertEquals(1, zeroColumnCalls[0]);
 
         Integer[] shared = { 1, 2 };
-        Matrix<Integer> aliased = Matrix.wrap(new Integer[][] { shared, shared });
-        aliased.mutateViaFlatArray(flat -> {
+        assertThrows(IllegalArgumentException.class, () -> Matrix.wrap(Integer.class, shared, shared));
+
+        Matrix<Integer> detached = Matrix.copyOf(Integer.class, shared, shared);
+        detached.mutateViaFlatArray(flat -> {
             flat[0] = 10;
             flat[1] = 20;
             flat[2] = 30;
             flat[3] = 40;
         });
-        assertArrayEquals(new Integer[] { 30, 40 }, shared); // later logical row wins
+        assertArrayEquals(new Integer[] { 10, 20 }, detached.rowCopy(0));
+        assertArrayEquals(new Integer[] { 30, 40 }, detached.rowCopy(1));
+        assertArrayEquals(new Integer[] { 1, 2 }, shared);
 
         Number[][] narrowRows = new Number[2][];
         narrowRows[0] = new Number[] { 1 };
         narrowRows[1] = new Integer[] { 2 };
-        Matrix<Number> heterogeneous = Matrix.wrap(narrowRows);
+        Matrix<Number> heterogeneous = Matrix.copyOf(Number.class, narrowRows);
 
-        assertThrows(ArrayStoreException.class, () -> heterogeneous.mutateViaFlatArray(flat -> {
+        Assertions.assertDoesNotThrow(() -> heterogeneous.mutateViaFlatArray(flat -> {
             flat[0] = 10.5;
             flat[1] = 20.5;
         }));
-        assertEquals(Double.valueOf(10.5), heterogeneous.get(0, 0)); // earlier row was already copied
-        assertEquals(Integer.valueOf(2), heterogeneous.get(1, 0));
+        assertEquals(Double.valueOf(10.5), heterogeneous.get(0, 0));
+        assertEquals(Double.valueOf(20.5), heterogeneous.get(1, 0));
     }
 
     @Test
@@ -1317,12 +1402,14 @@ class MatrixTest extends TestBase {
         ObjIteratorEx<Integer> ex = (ObjIteratorEx<Integer>) iterator;
         ex.advance(0);
         Assertions.assertEquals(4L, ex.count());
-        ex.advance(3);
-        Assertions.assertEquals(1L, ex.count());
-        Assertions.assertEquals(4, ex.next());
-        ex.advance(10);
-        Assertions.assertEquals(0L, ex.count());
+        Assertions.assertFalse(ex.hasNext());
         Assertions.assertThrows(NoSuchElementException.class, ex::next);
+
+        ObjIteratorEx<Integer> advanced = (ObjIteratorEx<Integer>) matrix.columnMajorStream(0, 2).iterator();
+        advanced.advance(3);
+        Assertions.assertEquals(4, advanced.next());
+        Assertions.assertEquals(0L, advanced.count());
+        Assertions.assertFalse(advanced.hasNext());
     }
 
     @SuppressWarnings("unchecked")
@@ -1339,6 +1426,33 @@ class MatrixTest extends TestBase {
 
         Assertions.assertSame(destination, array);
         Assertions.assertArrayEquals(new Integer[] { 1, 3, 2, 4, null, -1 }, array);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testAllExtendedIteratorCountsConsumeRemainingElements() {
+        Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } });
+
+        assertCountConsumes(matrix.mainDiagonalStream(), 2);
+        assertCountConsumes(matrix.antiDiagonalStream(), 2);
+        assertCountConsumes(matrix.rowMajorStream(), 4);
+        assertCountConsumes(matrix.columnMajorStream(), 4);
+        assertCountConsumes(matrix.rowStreams(), 2);
+
+        ObjIteratorEx<Stream<Integer>> columns = (ObjIteratorEx<Stream<Integer>>) matrix.columnStreams().iterator();
+        Stream<Integer> firstColumn = columns.next();
+        assertCountConsumes(firstColumn, 2);
+        assertEquals(1L, columns.count());
+        assertFalse(columns.hasNext());
+    }
+
+    private static void assertCountConsumes(final Stream<?> stream, final long expectedCount) {
+        final java.util.Iterator<?> rawIterator = stream.iterator();
+        assertTrue(rawIterator instanceof ObjIteratorEx);
+        final ObjIteratorEx<?> iterator = (ObjIteratorEx<?>) rawIterator;
+        assertEquals(expectedCount, iterator.count());
+        assertFalse(iterator.hasNext());
+        assertThrows(NoSuchElementException.class, iterator::next);
     }
 
     @Test
@@ -1585,6 +1699,8 @@ class MatrixTest extends TestBase {
             ex.advance(2);
             Assertions.assertEquals(3, ex.next());
             Assertions.assertEquals(3, ex.count());
+            Assertions.assertFalse(ex.hasNext());
+            Assertions.assertThrows(NoSuchElementException.class, ex::next);
         }
     }
 
@@ -1631,13 +1747,13 @@ class MatrixTest extends TestBase {
     }
 
     @Test
-    public void testRejectUnrepresentableZeroRowNonZeroColumnShape() {
-        Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } });
+    public void testRepresentableZeroRowNonZeroColumnShape() {
+        Matrix<Integer> matrix = Matrix.empty(Integer.class).reshape(0, 3);
 
-        // Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.copyRows(0, 0));
-        // Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.copyRegion(0, 0, 0, 1));
-        // Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.pad(0, 1));
-        Assertions.assertThrows(IllegalArgumentException.class, () -> matrix.reshape(0, 1));
+        assertEquals(0, matrix.rowCount());
+        assertEquals(3, matrix.columnCount());
+        assertEquals(3, matrix.copyRows(0, 0).columnCount());
+        assertEquals(2, matrix.copyRegion(0, 0, 1, 3).columnCount());
     }
 
     @Test
@@ -2321,9 +2437,9 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testGetLU2RD_nonSquare() {
+        public void testGetLU2RD_rectangular() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
+            assertArrayEquals(new String[] { "A" }, m.mainDiagonalCopy());
         }
 
         @Test
@@ -2336,9 +2452,10 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testSetLU2RD_nonSquare() {
+        public void testSetLU2RD_rectangular() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" } });
-            assertThrows(IllegalStateException.class, () -> m.setMainDiagonal(new String[] { "X" }));
+            m.setMainDiagonal(new String[] { "X" });
+            assertArrayEquals(new String[] { "X", "B" }, m.rowCopy(0));
         }
 
         @Test
@@ -2358,9 +2475,10 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testUpdateLU2RD_nonSquare() {
+        public void testUpdateLU2RD_rectangular() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" } });
-            assertThrows(IllegalStateException.class, () -> m.updateMainDiagonal(x -> x + "1"));
+            m.updateMainDiagonal(x -> x + "1");
+            assertArrayEquals(new String[] { "A1" }, m.mainDiagonalCopy());
         }
 
         @Test
@@ -2370,9 +2488,9 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testGetRU2LD_nonSquare() {
+        public void testGetRU2LD_rectangular() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" } });
-            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
+            assertArrayEquals(new String[] { "B" }, m.antiDiagonalCopy());
         }
 
         @Test
@@ -2385,9 +2503,10 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testSetRU2LD_nonSquare() {
+        public void testSetRU2LD_rectangular() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" } });
-            assertThrows(IllegalStateException.class, () -> m.setAntiDiagonal(new String[] { "X" }));
+            m.setAntiDiagonal(new String[] { "X" });
+            assertArrayEquals(new String[] { "A", "X" }, m.rowCopy(0));
         }
 
         @Test
@@ -2407,9 +2526,10 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testUpdateRU2LD_nonSquare() {
+        public void testUpdateRU2LD_rectangular() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" } });
-            assertThrows(IllegalStateException.class, () -> m.updateAntiDiagonal(x -> x + "2"));
+            m.updateAntiDiagonal(x -> x + "2");
+            assertArrayEquals(new String[] { "B2" }, m.antiDiagonalCopy());
         }
 
         // ============ Transformation Tests ============
@@ -3035,9 +3155,9 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamLU2RD_nonSquare() {
+        public void testStreamLU2RD_rectangular() {
             Matrix<String> nonSquare = Matrix.wrap(new String[][] { { "A", "B" } });
-            assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalStream());
+            assertEquals(List.of("A"), nonSquare.mainDiagonalStream().toList());
         }
 
         @Test
@@ -3057,9 +3177,9 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamRU2LD_nonSquare() {
+        public void testStreamRU2LD_rectangular() {
             Matrix<String> nonSquare = Matrix.wrap(new String[][] { { "A", "B" } });
-            assertThrows(IllegalStateException.class, () -> nonSquare.antiDiagonalStream());
+            assertEquals(List.of("B"), nonSquare.antiDiagonalStream().toList());
         }
 
         @Test
@@ -4012,15 +4132,16 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testGetLU2RD_nonSquare() {
+        public void testGetLU2RD_rectangular() {
             Matrix<Integer> m = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
+            assertArrayEquals(new Integer[] { 1, 4 }, m.mainDiagonalCopy());
         }
 
         @Test
-        public void testSetLU2RD_nonSquare() {
+        public void testSetLU2RD_rectangular() {
             Matrix<Integer> m = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.setMainDiagonal(new Integer[] { 10, 20 }));
+            m.setMainDiagonal(new Integer[] { 10, 20 });
+            assertArrayEquals(new Integer[] { 10, 20 }, m.mainDiagonalCopy());
         }
 
         @Test
@@ -4030,21 +4151,23 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testUpdateLU2RD_nonSquare() {
+        public void testUpdateLU2RD_rectangular() {
             Matrix<Integer> m = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.updateMainDiagonal(x -> x * 2));
+            m.updateMainDiagonal(x -> x * 2);
+            assertArrayEquals(new Integer[] { 2, 8 }, m.mainDiagonalCopy());
         }
 
         @Test
-        public void testGetRU2LD_nonSquare() {
+        public void testGetRU2LD_rectangular() {
             Matrix<Integer> m = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
+            assertArrayEquals(new Integer[] { 2, 3 }, m.antiDiagonalCopy());
         }
 
         @Test
-        public void testSetRU2LD_nonSquare() {
+        public void testSetRU2LD_rectangular() {
             Matrix<Integer> m = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.setAntiDiagonal(new Integer[] { 10, 20 }));
+            m.setAntiDiagonal(new Integer[] { 10, 20 });
+            assertArrayEquals(new Integer[] { 10, 20 }, m.antiDiagonalCopy());
         }
 
         @Test
@@ -4054,9 +4177,10 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testUpdateRU2LD_nonSquare() {
+        public void testUpdateRU2LD_rectangular() {
             Matrix<Integer> m = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.updateAntiDiagonal(x -> x * 2));
+            m.updateAntiDiagonal(x -> x * 2);
+            assertArrayEquals(new Integer[] { 4, 6 }, m.antiDiagonalCopy());
         }
 
         @Test
@@ -4330,15 +4454,15 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testStreamLU2RD_nonSquare() {
+        public void testStreamLU2RD_rectangular() {
             Matrix<Integer> m = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalStream().toList());
+            assertEquals(List.of(1, 4), m.mainDiagonalStream().toList());
         }
 
         @Test
-        public void testStreamRU2LD_nonSquare() {
+        public void testStreamRU2LD_rectangular() {
             Matrix<Integer> m = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.antiDiagonalStream().toList());
+            assertEquals(List.of(2, 3), m.antiDiagonalStream().toList());
         }
 
         @Test
@@ -6183,9 +6307,9 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void test_mainDiagonalCopy_nonSquare_throwsException() {
+        public void test_mainDiagonalCopy_rectangular() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "a", "b", "c" }, { "d", "e", "f" } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
+            assertArrayEquals(new String[] { "a", "e" }, m.mainDiagonalCopy());
         }
 
         @Test
@@ -7214,11 +7338,12 @@ class MatrixTest extends TestBase {
     }
 
     @Test
-    public void testSetAndSetRow_WidensRowStorageForMixedNumberTypes() {
-        Matrix<Object> matrix = Matrix.<Object> wrap(new Object[] { 1, 2 }, new Integer[] { 3, 4 });
+    public void testSetAndSetRow_UseCanonicalObjectStorageForMixedTypes() {
+        Matrix<Object> matrix = Matrix.copyOf(Object.class, new Object[] { 1, 2 }, new Integer[] { 3, 4 });
 
         matrix.set(0, 0, 1.5d);
-        Assertions.assertThrows(ArrayStoreException.class, () -> matrix.setRow(1, new Number[] { BigDecimal.TEN, 4.5d }));
+        Assertions.assertDoesNotThrow(() -> matrix.setRow(1, new Number[] { BigDecimal.TEN, 4.5d }));
+        assertEquals(List.of(1.5d, 2, BigDecimal.TEN, 4.5d), matrix.flatten());
     }
 
     @Test
@@ -7249,18 +7374,17 @@ class MatrixTest extends TestBase {
         Assertions.assertDoesNotThrow(() -> repeatedMatrix.set(0, 0, "x"));
     }
 
-    // Regression test for bug: flipVerticallyInPlace previously swapped individual elements
-    // between rows, which threw ArrayStoreException when rows had different runtime
-    // component types (a state allowed by the constructor — only rectangularity is enforced).
-    // The fix swaps row references instead.
     @Test
-    public void testFlipVerticallyInPlace_HeterogeneousRowTypes_DoesNotThrow() {
+    public void testTokenFactoriesRejectOrCanonicalizeHeterogeneousRowTypes() {
         Object[][] data = new Object[][] { new Integer[] { 1, 2 }, new String[] { "a", "b" } };
-        Matrix<Object> matrix = Matrix.wrap(data);
+        assertThrows(IllegalArgumentException.class, () -> Matrix.wrap(Object.class, data));
+
+        Matrix<Object> matrix = Matrix.copyOf(Object.class, data);
+        assertEquals(Object.class, matrix.rowView(0).getClass().getComponentType());
+        assertEquals(Object.class, matrix.rowView(1).getClass().getComponentType());
 
         matrix.flipVerticallyInPlace();
 
-        // Row references are swapped, so values move with their original storage type.
         assertEquals("a", matrix.get(0, 0));
         assertEquals("b", matrix.get(0, 1));
         assertEquals(1, matrix.get(1, 0));
@@ -7294,7 +7418,7 @@ class MatrixTest extends TestBase {
 
         @Test
         public void testPrintln_empty_returnsNonNullString() {
-            Matrix<String> empty = Matrix.empty();
+            Matrix<String> empty = Matrix.empty(String.class);
             String result = empty.toMultilineString();
             assertNotNull(result);
             assertEquals("[]", result);
@@ -7307,49 +7431,46 @@ class MatrixTest extends TestBase {
     public class ReviewBugfixTests {
 
         @Test
-        public void testDiagonalStream_Nx0MatrixThrowsBecauseNotSquare() {
+        public void testDiagonalStream_Nx0MatrixIsEmpty() {
             Matrix<Integer> m = Matrix.wrap(new Integer[3][0]);
             assertEquals(3, m.rowCount());
             assertEquals(0, m.columnCount());
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalStream());
-            assertThrows(IllegalStateException.class, () -> m.antiDiagonalStream());
+            assertEquals(0, m.mainDiagonalStream().count());
+            assertEquals(0, m.antiDiagonalStream().count());
 
-            Matrix<Integer> empty = Matrix.empty();
+            Matrix<Integer> empty = Matrix.empty(Integer.class);
             assertEquals(0, empty.mainDiagonalStream().count());
             assertEquals(0, empty.antiDiagonalStream().count());
         }
 
-        @SuppressWarnings({ "unchecked", "rawtypes" })
         @Test
-        public void testMap_singleArg_throwsArrayStoreWhenMapperWidens() {
-            // Backing array runtime type is String[][]; returning an Integer is type-valid for T=Object
-            // but cannot be stored into a String[][].
-            Matrix<Object> m = (Matrix) Matrix.wrap(new String[][] { { "x" } });
-            assertThrows(ArrayStoreException.class, () -> m.map(o -> Integer.valueOf(5)));
+        public void testMap_singleArg_acceptsAnyDeclaredTypeWithCanonicalStorage() {
+            Matrix<Object> m = Matrix.copyOf(Object.class, new String[][] { { "x" } });
+            Matrix<Object> widened = m.map(o -> Integer.valueOf(5));
+            assertEquals(Integer.valueOf(5), widened.get(0, 0));
 
-            // The explicit-target-type overload is the documented escape hatch.
             Matrix<Integer> ok = m.map(o -> Integer.valueOf(5), Integer.class);
             assertEquals(Integer.valueOf(5), ok.get(0, 0));
         }
 
-        @SuppressWarnings({ "unchecked", "rawtypes" })
         @Test
-        public void testZipWith_twoArg_throwsArrayStoreWhenZipFunctionWidens() {
-            Matrix<Object> a = (Matrix) Matrix.wrap(new String[][] { { "x" } });
-            Matrix<Object> b = (Matrix) Matrix.wrap(new String[][] { { "y" } });
-            assertThrows(ArrayStoreException.class, () -> a.zipWith(b, (x, y) -> Integer.valueOf(1)));
+        public void testZipWith_twoArg_acceptsDeclaredTypeWithCanonicalStorage() {
+            Matrix<Object> a = Matrix.copyOf(Object.class, new String[][] { { "x" } });
+            Matrix<Object> b = Matrix.copyOf(Object.class, new String[][] { { "y" } });
+            Matrix<Object> widened = a.zipWith(b, (x, y) -> Integer.valueOf(1));
+            assertEquals(Integer.valueOf(1), widened.get(0, 0));
 
             Matrix<Integer> ok = a.zipWith(b, (x, y) -> Integer.valueOf(1), Integer.class);
             assertEquals(Integer.valueOf(1), ok.get(0, 0));
         }
 
-        @SuppressWarnings({ "unchecked", "rawtypes" })
         @Test
-        public void testZipWith_threeMatrix_throwsArrayStoreWhenZipFunctionWidens() {
-            Matrix<Object> a = (Matrix) Matrix.wrap(new String[][] { { "x" } });
-            Matrix<Object> b = (Matrix) Matrix.wrap(new String[][] { { "y" } });
-            Matrix<Object> c = (Matrix) Matrix.wrap(new String[][] { { "z" } });
-            assertThrows(ArrayStoreException.class, () -> a.zipWith(b, c, (x, y, z) -> Integer.valueOf(0)));
+        public void testZipWith_threeMatrix_acceptsDeclaredTypeWithCanonicalStorage() {
+            Matrix<Object> a = Matrix.copyOf(Object.class, new String[][] { { "x" } });
+            Matrix<Object> b = Matrix.copyOf(Object.class, new String[][] { { "y" } });
+            Matrix<Object> c = Matrix.copyOf(Object.class, new String[][] { { "z" } });
+            Matrix<Object> widened = a.zipWith(b, c, (x, y, z) -> Integer.valueOf(0));
+            assertEquals(Integer.valueOf(0), widened.get(0, 0));
         }
 
         @Test
@@ -7380,12 +7501,6 @@ class MatrixTest extends TestBase {
             assertEquals("x", resized.get(1, 1));
             assertEquals(Object.class, resized.rowView(0).getClass().getComponentType());
             assertEquals(Object.class, resized.rowView(1).getClass().getComponentType());
-        }
-
-        @Test
-        public void testReshape_oversizedShapeThrowsIllegalArgumentException() {
-            Matrix<Integer> m = Matrix.wrap(new Integer[][] { { 1 } });
-            assertThrows(IllegalArgumentException.class, () -> m.reshape(46341, 46341));
         }
 
         @Test
@@ -7429,26 +7544,16 @@ class MatrixTest extends TestBase {
         }
 
         @Test
-        public void testUpdateColumnTransformsAliasedBackingCellOnce() {
+        public void testWrapRejectsAliasedLogicalRows() {
             Integer[] sharedRow = { 1, 2 };
-            Matrix<Integer> m = Matrix.wrap(new Integer[][] { sharedRow, sharedRow });
-            final int[] calls = { 0 };
-
-            m.updateColumn(0, value -> {
-                calls[0]++;
-                return value + 1;
-            });
-
-            assertEquals(1, calls[0]);
-            assertArrayEquals(new Integer[] { 2, 2 }, m.rowCopy(0));
-            assertArrayEquals(new Integer[] { 2, 2 }, m.rowCopy(1));
+            assertThrows(IllegalArgumentException.class, () -> Matrix.wrap(Integer.class, sharedRow, sharedRow));
+            assertThrows(IllegalArgumentException.class, () -> new Matrix<>(new Integer[][] { sharedRow, sharedRow }));
         }
 
         @Test
-        public void testUpdateAllTransformsAliasedBackingRowOnce() {
+        public void testCopyOfDetachesAliasedSourceRows() {
             Integer[] sharedRow = { 1, 2 };
-            Integer[] distinctRow = { 3, 4 };
-            Matrix<Integer> m = Matrix.wrap(new Integer[][] { sharedRow, sharedRow, distinctRow });
+            Matrix<Integer> m = Matrix.copyOf(Integer.class, sharedRow, sharedRow);
             final int[] calls = { 0 };
 
             m.updateAll(value -> {
@@ -7457,13 +7562,14 @@ class MatrixTest extends TestBase {
             });
 
             assertEquals(4, calls[0]);
-            assertEquals(List.of(11, 12, 11, 12, 13, 14), m.flatten());
+            assertEquals(List.of(11, 12, 11, 12), m.flatten());
+            assertArrayEquals(new Integer[] { 1, 2 }, sharedRow);
         }
 
         @Test
-        public void testReplaceIfTestsAliasedBackingCellsOnce() {
+        public void testReplaceIfVisitsDetachedRowsIndependently() {
             Integer[] sharedRow = { 1, 2 };
-            Matrix<Integer> m = Matrix.wrap(new Integer[][] { sharedRow, sharedRow });
+            Matrix<Integer> m = Matrix.copyOf(Integer.class, sharedRow, sharedRow);
             final int[] calls = { 0 };
 
             m.replaceIf(value -> {
@@ -7471,27 +7577,27 @@ class MatrixTest extends TestBase {
                 return value > 0;
             }, 9);
 
-            assertEquals(2, calls[0]);
-            assertArrayEquals(new Integer[] { 9, 9 }, sharedRow);
+            assertEquals(4, calls[0]);
+            assertEquals(List.of(9, 9, 9, 9), m.flatten());
+            assertArrayEquals(new Integer[] { 1, 2 }, sharedRow);
         }
 
         @Test
-        public void testHorizontalInPlaceFlipReversesAliasedBackingRowOnce() {
+        public void testHorizontalInPlaceFlipOnDetachedRowsDoesNotMutateSource() {
             Integer[] sharedRow = { 1, 2, 3 };
-            Matrix<Integer> m = Matrix.wrap(new Integer[][] { sharedRow, sharedRow });
+            Matrix<Integer> m = Matrix.copyOf(Integer.class, sharedRow, sharedRow);
 
             m.flipHorizontallyInPlace();
 
             assertArrayEquals(new Integer[] { 3, 2, 1 }, m.rowCopy(0));
             assertArrayEquals(new Integer[] { 3, 2, 1 }, m.rowCopy(1));
 
-            m.flipHorizontallyInPlace();
-            assertArrayEquals(new Integer[] { 1, 2, 3 }, m.rowCopy(0));
+            assertArrayEquals(new Integer[] { 1, 2, 3 }, sharedRow);
         }
 
         @Test
         public void testVerticalStackTreatsZeroRowOperandAsRuntimeTypeNeutral() {
-            Matrix<String> empty = Matrix.empty();
+            Matrix<String> empty = Matrix.empty(String.class);
             Matrix<String> zeroWidthRows = Matrix.wrap(new String[][] { {}, {} });
             Matrix<String> typedEmpty = Matrix.wrap(new String[0][0]);
 
@@ -7512,7 +7618,7 @@ class MatrixTest extends TestBase {
 
         @Test
         public void testHorizontalStackTreatsSharedEmptyAsRuntimeTypeNeutral() {
-            Matrix<String> empty = Matrix.empty();
+            Matrix<String> empty = Matrix.empty(String.class);
             Matrix<String> typedEmpty = Matrix.wrap(new String[0][0]);
 
             Matrix<String> emptyFirst = empty.stackHorizontally(typedEmpty).resize(1, 0);
@@ -7528,8 +7634,8 @@ class MatrixTest extends TestBase {
         public void testRepeatedSharedEmptyStacksRemainRuntimeTypeNeutral() {
             Matrix<String> typedEmpty = Matrix.wrap(new String[0][0]);
 
-            Matrix<String> vertical = Matrix.<String> empty().stackVertically(Matrix.<String> empty()).stackVertically(typedEmpty).resize(1, 1);
-            Matrix<String> horizontal = Matrix.<String> empty().stackHorizontally(Matrix.<String> empty()).stackHorizontally(typedEmpty).resize(1, 1);
+            Matrix<String> vertical = Matrix.empty(String.class).stackVertically(Matrix.empty(String.class)).stackVertically(typedEmpty).resize(1, 1);
+            Matrix<String> horizontal = Matrix.empty(String.class).stackHorizontally(Matrix.empty(String.class)).stackHorizontally(typedEmpty).resize(1, 1);
 
             String[] verticalRow = vertical.rowView(0);
             String[] horizontalRow = horizontal.rowView(0);

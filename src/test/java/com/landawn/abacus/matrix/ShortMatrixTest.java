@@ -193,19 +193,19 @@ class ShortMatrixTest extends TestBase {
 
     @Test
     public void testUnboxSharedEmptyAndPreserveZeroColumnRows() {
-        ShortMatrix sharedEmpty = ShortMatrix.unbox(Matrix.empty());
-        assertSame(ShortMatrix.empty(), sharedEmpty);
+        ShortMatrix sharedEmpty = ShortMatrix.unbox(Matrix.empty(Short.class));
+        assertEquals(ShortMatrix.empty(), sharedEmpty);
 
         ShortMatrix zeroColumns = ShortMatrix.unbox(Matrix.wrap(new Short[][] { {}, {} }));
         assertEquals(2, zeroColumns.rowCount());
         assertEquals(0, zeroColumns.columnCount());
 
-        Matrix<Short> typeNeutralZeroColumns = Matrix.<Short>empty().resize(2, 0);
+        Matrix<Short> typeNeutralZeroColumns = Matrix.empty(Short.class).resize(2, 0);
         ShortMatrix unboxedTypeNeutralZeroColumns = ShortMatrix.unbox(typeNeutralZeroColumns);
         assertEquals(2, unboxedTypeNeutralZeroColumns.rowCount());
         assertEquals(0, unboxedTypeNeutralZeroColumns.columnCount());
 
-        Matrix<Short> typeNeutralValues = Matrix.<Short>empty().resize(2, 2);
+        Matrix<Short> typeNeutralValues = Matrix.empty(Short.class).resize(2, 2);
         typeNeutralValues.set(0, 1, (short) 7);
         ShortMatrix unboxedTypeNeutralValues = ShortMatrix.unbox(typeNeutralValues);
         assertArrayEquals(new short[] { 0, 7 }, unboxedTypeNeutralValues.rowCopy(0));
@@ -409,7 +409,7 @@ class ShortMatrixTest extends TestBase {
 
         // Test non-square matrix
         ShortMatrix nonSquare = ShortMatrix.wrap(new short[][] { { 1, 2 } });
-        assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalCopy());
+        assertArrayEquals(new short[] { 1 }, nonSquare.mainDiagonalCopy());
     }
 
     @Test
@@ -422,7 +422,8 @@ class ShortMatrixTest extends TestBase {
 
         // Test non-square matrix
         ShortMatrix nonSquare = ShortMatrix.wrap(new short[][] { { 1, 2 } });
-        assertThrows(IllegalStateException.class, () -> nonSquare.setMainDiagonal(new short[] { 1 }));
+        nonSquare.setMainDiagonal(new short[] { 9 });
+        assertEquals((short) 9, nonSquare.get(0, 0));
 
         // Test array too short
         assertThrows(IllegalArgumentException.class, () -> m.setMainDiagonal(new short[] { 1, 2 }));
@@ -438,7 +439,8 @@ class ShortMatrixTest extends TestBase {
 
         // Test non-square matrix
         ShortMatrix nonSquare = ShortMatrix.wrap(new short[][] { { 1, 2 } });
-        assertThrows(IllegalStateException.class, () -> nonSquare.updateMainDiagonal(x -> (short) (x * 2)));
+        nonSquare.updateMainDiagonal(x -> (short) (x * 2));
+        assertArrayEquals(new short[] { 2 }, nonSquare.mainDiagonalCopy());
     }
 
     @Test
@@ -448,7 +450,7 @@ class ShortMatrixTest extends TestBase {
 
         // Test non-square matrix
         ShortMatrix nonSquare = ShortMatrix.wrap(new short[][] { { 1, 2 } });
-        assertThrows(IllegalStateException.class, () -> nonSquare.antiDiagonalCopy());
+        assertArrayEquals(new short[] { 2 }, nonSquare.antiDiagonalCopy());
     }
 
     @Test
@@ -461,7 +463,8 @@ class ShortMatrixTest extends TestBase {
 
         // Test non-square matrix
         ShortMatrix nonSquare = ShortMatrix.wrap(new short[][] { { 1, 2 } });
-        assertThrows(IllegalStateException.class, () -> nonSquare.setAntiDiagonal(new short[] { 1 }));
+        nonSquare.setAntiDiagonal(new short[] { 9 });
+        assertEquals((short) 9, nonSquare.get(0, 1));
     }
 
     @Test
@@ -474,7 +477,8 @@ class ShortMatrixTest extends TestBase {
 
         // Test non-square matrix
         ShortMatrix nonSquare = ShortMatrix.wrap(new short[][] { { 1, 2 } });
-        assertThrows(IllegalStateException.class, () -> nonSquare.updateAntiDiagonal(x -> (short) (x * 2)));
+        nonSquare.updateAntiDiagonal(x -> (short) (x * 2));
+        assertArrayEquals(new short[] { 4 }, nonSquare.antiDiagonalCopy());
     }
 
     @Test
@@ -640,11 +644,11 @@ class ShortMatrixTest extends TestBase {
         // Regression: copyRows(from, from) on a matrix with columns > 0 must not throw.
         ShortMatrix empty = matrix.copyRows(0, 0);
         assertEquals(0, empty.rowCount());
-        assertEquals(0, empty.columnCount());
+        assertEquals(3, empty.columnCount());
 
         ShortMatrix emptyRows = matrix.copyRegion(1, 1, 0, 3);
         assertEquals(0, emptyRows.rowCount());
-        assertEquals(0, emptyRows.columnCount());
+        assertEquals(3, emptyRows.columnCount());
 
         ShortMatrix emptyCols = matrix.copyRegion(0, 3, 1, 1);
         assertEquals(3, emptyCols.rowCount());
@@ -1036,7 +1040,7 @@ class ShortMatrixTest extends TestBase {
 
         // Test non-square
         ShortMatrix nonSquare = ShortMatrix.wrap(new short[][] { { 1, 2 } });
-        assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalStream());
+        assertArrayEquals(new short[] { 1 }, nonSquare.mainDiagonalStream().toArray());
     }
 
     @Test
@@ -1049,7 +1053,7 @@ class ShortMatrixTest extends TestBase {
 
         // Test non-square
         ShortMatrix nonSquare = ShortMatrix.wrap(new short[][] { { 1, 2 } });
-        assertThrows(IllegalStateException.class, () -> nonSquare.antiDiagonalStream());
+        assertArrayEquals(new short[] { 2 }, nonSquare.antiDiagonalStream().toArray());
     }
 
     @Test
@@ -2126,7 +2130,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD_nonSquare() {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
+            assertArrayEquals(new short[] { 1 }, m.mainDiagonalCopy());
         }
 
         @Test
@@ -2141,7 +2145,8 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testSetLU2RD_nonSquare() {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.setMainDiagonal(new short[] { 1 }));
+            m.setMainDiagonal(new short[] { 9 });
+            assertEquals((short) 9, m.get(0, 0));
         }
 
         @Test
@@ -2163,7 +2168,8 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testUpdateLU2RD_nonSquare() {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.updateMainDiagonal(x -> (short) (x * 2)));
+            m.updateMainDiagonal(x -> (short) (x * 2));
+            assertArrayEquals(new short[] { 2 }, m.mainDiagonalCopy());
         }
 
         @Test
@@ -2175,7 +2181,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testGetRU2LD_nonSquare() {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
+            assertArrayEquals(new short[] { 2 }, m.antiDiagonalCopy());
         }
 
         @Test
@@ -2190,7 +2196,8 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testSetRU2LD_nonSquare() {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.setAntiDiagonal(new short[] { 1 }));
+            m.setAntiDiagonal(new short[] { 9 });
+            assertEquals((short) 9, m.get(0, 1));
         }
 
         @Test
@@ -2212,7 +2219,8 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testUpdateRU2LD_nonSquare() {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.updateAntiDiagonal(x -> (short) (x * 2)));
+            m.updateAntiDiagonal(x -> (short) (x * 2));
+            assertArrayEquals(new short[] { 4 }, m.antiDiagonalCopy());
         }
 
         // ============ Transformation Tests ============
@@ -2755,14 +2763,10 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testmatrixMultiply_emptyProductReturnsCanonicalEmpty() {
-            // Regression: matrixMultiply must build its result via ShortMatrix.wrap(result) (not the raw
-            // constructor) so an empty product yields the shared EMPTY singleton, and must call
-            // checkRepresentableShape before allocation for consistency with the other
-            // result-allocating methods (resize/reshape/transpose/rotate).
+        public void testmatrixMultiply_emptyProductPreservesShape() {
             ShortMatrix product = ShortMatrix.empty().matrixMultiply(ShortMatrix.empty());
-            assertSame(ShortMatrix.empty(), product);
             assertTrue(product.isEmpty());
+            assertEquals(0, product.columnCount());
         }
 
         // ============ Conversion Tests ============
@@ -2864,7 +2868,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testStreamLU2RD_nonSquare() {
             ShortMatrix nonSquare = ShortMatrix.wrap(new short[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalStream());
+            assertArrayEquals(new short[] { 1 }, nonSquare.mainDiagonalStream().toArray());
         }
 
         @Test
@@ -2883,7 +2887,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testStreamRU2LD_nonSquare() {
             ShortMatrix nonSquare = ShortMatrix.wrap(new short[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> nonSquare.antiDiagonalStream());
+            assertArrayEquals(new short[] { 2 }, nonSquare.antiDiagonalStream().toArray());
         }
 
         @Test
@@ -3827,7 +3831,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testStreamLU2RD_nonSquare() {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalStream().toArray());
+            assertArrayEquals(new short[] { 1 }, m.mainDiagonalStream().toArray());
         }
 
         @Test
@@ -3840,7 +3844,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testStreamRU2LD_nonSquare() {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 } });
-            assertThrows(IllegalStateException.class, () -> m.antiDiagonalStream().toArray());
+            assertArrayEquals(new short[] { 2 }, m.antiDiagonalStream().toArray());
         }
 
         @Test
@@ -4239,7 +4243,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD_nonSquare() {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
+            assertArrayEquals(new short[] { 1, 4 }, m.mainDiagonalCopy());
         }
 
         @Test
@@ -5241,7 +5245,7 @@ class ShortMatrixTest extends TestBase {
         @Test
         public void test_mainDiagonalCopy_nonSquare_throwsException() {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
+            assertArrayEquals(new short[] { 1, 5 }, m.mainDiagonalCopy());
         }
 
         @Test
@@ -6043,9 +6047,12 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testPointsMainDiagonal_NonSquareThrows() {
+        public void testPointsMainDiagonal_NonSquare() {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalPoints());
+            List<Sheet.Point> points = m.mainDiagonalPoints().toList();
+            assertEquals(2, points.size());
+            assertEquals(1, points.get(1).rowIndex());
+            assertEquals(1, points.get(1).columnIndex());
         }
 
         @Test
@@ -6220,8 +6227,6 @@ class ShortMatrixTest extends TestBase {
         com.landawn.abacus.util.stream.ShortIteratorEx rowEx = (com.landawn.abacus.util.stream.ShortIteratorEx) rowIterator;
         rowEx.advance(2);
         assertEquals(2L, rowEx.count());
-        assertEquals((short) 3, rowEx.nextShort());
-        rowEx.advance(10);
         assertEquals(0L, rowEx.count());
         assertThrows(java.util.NoSuchElementException.class, rowEx::nextShort);
 
@@ -6230,8 +6235,6 @@ class ShortMatrixTest extends TestBase {
         com.landawn.abacus.util.stream.ShortIteratorEx columnEx = (com.landawn.abacus.util.stream.ShortIteratorEx) columnIterator;
         columnEx.advance(1);
         assertEquals(3L, columnEx.count());
-        assertEquals((short) 3, columnEx.nextShort());
-        columnEx.advance(10);
         assertEquals(0L, columnEx.count());
         assertThrows(java.util.NoSuchElementException.class, columnEx::nextShort);
     }
@@ -6456,12 +6459,12 @@ class ShortMatrixTest extends TestBase {
     public class ReviewBugfixTests {
 
         @Test
-        public void testDiagonalStream_Nx0MatrixThrowsBecauseNotSquare() {
+        public void testDiagonalStream_Nx0MatrixIsEmpty() {
             ShortMatrix m = ShortMatrix.wrap(new short[3][0]);
             assertEquals(3, m.rowCount());
             assertEquals(0, m.columnCount());
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalStream());
-            assertThrows(IllegalStateException.class, () -> m.antiDiagonalStream());
+            assertEquals(0, m.mainDiagonalStream().count());
+            assertEquals(0, m.antiDiagonalStream().count());
 
             ShortMatrix empty = ShortMatrix.empty();
             assertEquals(0, empty.mainDiagonalStream().count());
@@ -6469,14 +6472,15 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTranspose_Nx0_collapsesToEmpty() {
+        public void testTranspose_Nx0_preservesSwappedShape() {
             ShortMatrix t = ShortMatrix.wrap(new short[3][0]).transpose();
             assertEquals(0, t.rowCount());
-            assertEquals(0, t.columnCount());
+            assertEquals(3, t.columnCount());
+            assertEquals(ShortMatrix.wrap(new short[3][0]), t.transpose());
         }
 
         @Test
-        public void testRotate180_Nx0_preservesShape_whileRotate90TwiceCollapses() {
+        public void testRotations_Nx0_preserveMathematicalShape() {
             ShortMatrix m = ShortMatrix.wrap(new short[3][0]);
 
             ShortMatrix via180 = m.rotate180();
@@ -6484,14 +6488,15 @@ class ShortMatrixTest extends TestBase {
             assertEquals(0, via180.columnCount());
 
             ShortMatrix viaRotate90Twice = m.rotate90().rotate90();
-            assertEquals(0, viaRotate90Twice.rowCount());
+            assertEquals(3, viaRotate90Twice.rowCount());
             assertEquals(0, viaRotate90Twice.columnCount());
         }
 
         @Test
-        public void testReshape_oversizedShapeThrowsIllegalArgumentException() {
-            ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1 } });
-            assertThrows(IllegalArgumentException.class, () -> m.reshape(46341, 46341));
+        public void testReshape_zeroRowsPreservesLargeColumnDimension() {
+            ShortMatrix m = ShortMatrix.empty().reshapeAndPad(0, 46_341);
+            assertEquals(0, m.rowCount());
+            assertEquals(46_341, m.columnCount());
         }
 
         @Test
@@ -6518,60 +6523,18 @@ class ShortMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFlipHorizontallyInPlace_reversesSharedBackingRowOnce() {
+        public void testDuplicateRowsAreRejected() {
             short[] sharedRow = { 1, 2, 3, 4 };
-            ShortMatrix matrix = ShortMatrix.wrap(sharedRow, sharedRow);
-
-            matrix.flipHorizontallyInPlace();
-
-            assertArrayEquals(new short[] { 4, 3, 2, 1 }, sharedRow);
-            assertSame(matrix.rowView(0), matrix.rowView(1));
+            assertThrows(IllegalArgumentException.class, () -> new ShortMatrix(new short[][] { sharedRow, sharedRow }));
+            assertThrows(IllegalArgumentException.class, () -> ShortMatrix.wrap(sharedRow, sharedRow));
         }
 
         @Test
-        public void testUnaryUpdates_transformSharedBackingCellsOnce() {
-            short[] sharedColumnRow = { 1, 2 };
-            ShortMatrix columnMatrix = ShortMatrix.wrap(sharedColumnRow, sharedColumnRow);
-
-            columnMatrix.updateColumn(0, value -> (short) (value + 1));
-
-            assertArrayEquals(new short[] { 2, 2 }, sharedColumnRow);
-
-            short[] sharedSequentialRow = { 1, 2 };
-            ShortMatrix sequentialMatrix = ShortMatrix.wrap(sharedSequentialRow, sharedSequentialRow);
-            AtomicInteger sequentialCalls = new AtomicInteger();
-
-            Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> sequentialMatrix.updateAll(value -> {
-                sequentialCalls.incrementAndGet();
-                return (short) (value + 1);
-            }));
-
-            assertEquals(2, sequentialCalls.get());
-            assertArrayEquals(new short[] { 2, 3 }, sharedSequentialRow);
-
-            short[] sharedParallelRow = { 1, 2 };
-            ShortMatrix parallelMatrix = ShortMatrix.wrap(sharedParallelRow, sharedParallelRow);
-            AtomicInteger parallelCalls = new AtomicInteger();
-
-            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> parallelMatrix.updateAll(value -> {
-                parallelCalls.incrementAndGet();
-                return (short) (value + 1);
-            }));
-
-            assertEquals(2, parallelCalls.get());
-            assertArrayEquals(new short[] { 2, 3 }, sharedParallelRow);
-
-            short[] sharedReplaceRow = { 1, 2 };
-            ShortMatrix replaceMatrix = ShortMatrix.wrap(sharedReplaceRow, sharedReplaceRow);
-            AtomicInteger replaceCalls = new AtomicInteger();
-
-            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> replaceMatrix.replaceIf(value -> {
-                replaceCalls.incrementAndGet();
-                return value > 0;
-            }, (short) 9));
-
-            assertEquals(2, replaceCalls.get());
-            assertArrayEquals(new short[] { 9, 9 }, sharedReplaceRow);
+        public void testCopyOfSeparatesDuplicateSourceRows() {
+            short[] sharedRow = { 1, 2 };
+            ShortMatrix matrix = ShortMatrix.copyOf(sharedRow, sharedRow);
+            matrix.set(0, 0, (short) 9);
+            assertEquals((short) 1, matrix.get(1, 0));
         }
     }
 
@@ -6583,21 +6546,28 @@ class ShortMatrixTest extends TestBase {
         assertTrue(rowMajorIterator instanceof com.landawn.abacus.util.stream.ShortIteratorEx);
         com.landawn.abacus.util.stream.ShortIteratorEx rowMajor = (com.landawn.abacus.util.stream.ShortIteratorEx) rowMajorIterator;
         rowMajor.advance(1); // mid-row cursor: the chunked toArray must start at column 1
-        assertEquals(5L, rowMajor.count());
         assertArrayEquals(new short[] { 2, 3, 4, 5, 6 }, rowMajor.toArray());
+
+        com.landawn.abacus.util.stream.ShortIteratorEx rowCount = (com.landawn.abacus.util.stream.ShortIteratorEx) matrix.rowMajorStream(0, 2).iterator();
+        rowCount.advance(1);
+        assertEquals(5L, rowCount.count());
+        assertFalse(rowCount.hasNext());
 
         var columnMajorIterator = matrix.columnMajorStream(0, 3).iterator();
         com.landawn.abacus.util.stream.ShortIteratorEx columnMajor = (com.landawn.abacus.util.stream.ShortIteratorEx) columnMajorIterator;
         columnMajor.advance(1); // mid-column cursor: row 1 of column 0
-        assertEquals(5L, columnMajor.count());
         assertArrayEquals(new short[] { 4, 2, 5, 3, 6 }, columnMajor.toArray());
+
+        com.landawn.abacus.util.stream.ShortIteratorEx columnCount = (com.landawn.abacus.util.stream.ShortIteratorEx) matrix.columnMajorStream(0, 3).iterator();
+        columnCount.advance(1);
+        assertEquals(5L, columnCount.count());
+        assertFalse(columnCount.hasNext());
 
         var crossingIterator = matrix.columnMajorStream(0, 3).iterator();
         com.landawn.abacus.util.stream.ShortIteratorEx crossing = (com.landawn.abacus.util.stream.ShortIteratorEx) crossingIterator;
         crossing.advance(3); // crosses a column boundary: lands on row 1 of column 1
-        assertEquals(3L, crossing.count());
         assertEquals((short) 5, crossing.nextShort());
-        crossing.advance(10);
+        assertEquals(2L, crossing.count());
         assertEquals(0L, crossing.count());
         assertThrows(java.util.NoSuchElementException.class, crossing::nextShort);
     }
@@ -6610,13 +6580,94 @@ class ShortMatrixTest extends TestBase {
     }
 
     @Test
-    public void testUpdateAllPositional_aliasedRowsUnderForcedParallel_runSequentiallyAndDeterministic() {
+    public void testUpdateAllPositional_duplicateRowsRejectedBeforeMutation() {
         short[] sharedRow = { 1, 2 };
-        ShortMatrix matrix = ShortMatrix.wrap(new short[][] { sharedRow, sharedRow });
-        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> matrix.updateAll((i, j) -> (short) (i * 10 + j)));
-        // Aliased rows force the positional update onto the sequential row-major path, so the
-        // shared row deterministically ends with the values written for the last row index.
-        assertArrayEquals(new short[] { 10, 11 }, sharedRow);
+        assertThrows(IllegalArgumentException.class, () -> ShortMatrix.wrap(new short[][] { sharedRow, sharedRow }));
+    }
+
+    @Test
+    public void testRandomGeneratorOverloads_areDeterministicAndPreserveZeroByN() {
+        ShortMatrix first = ShortMatrix.random(2, 3, new java.util.Random(12345L));
+        ShortMatrix second = ShortMatrix.random(2, 3, new java.util.Random(12345L));
+        assertEquals(first, second);
+        assertEquals(ShortMatrix.randomRow(4, new java.util.Random(7L)), ShortMatrix.randomRow(4, new java.util.Random(7L)));
+
+        ShortMatrix zeroByFive = ShortMatrix.random(0, 5, new java.util.Random(1L));
+        assertEquals(0, zeroByFive.rowCount());
+        assertEquals(5, zeroByFive.columnCount());
+        assertThrows(IllegalArgumentException.class,
+                () -> ShortMatrix.random(1, 1, (java.util.random.RandomGenerator) null));
+    }
+
+    @Test
+    public void testExactAndWidenedArithmetic() {
+        ShortMatrix max = ShortMatrix.wrap(new short[][] { { Short.MAX_VALUE } });
+        ShortMatrix one = ShortMatrix.wrap(new short[][] { { 1 } });
+        assertEquals(32_768, max.addWidened(one).get(0, 0));
+        ArithmeticException addOverflow = assertThrows(ArithmeticException.class, () -> max.addExact(one));
+        assertTrue(addOverflow.getMessage().contains("short overflow"));
+
+        ShortMatrix min = ShortMatrix.wrap(new short[][] { { Short.MIN_VALUE } });
+        assertEquals(-32_769, min.subtractWidened(one).get(0, 0));
+        assertThrows(ArithmeticException.class, () -> min.subtractExact(one));
+        assertEquals(ShortMatrix.wrap(new short[][] { { 2 } }), one.addExact(one));
+
+        ShortMatrix overflowLeft = ShortMatrix.wrap(new short[][] { { 30_000 } });
+        ShortMatrix twice = ShortMatrix.wrap(new short[][] { { 2 } });
+        assertEquals(60_000L, overflowLeft.matrixMultiplyWidened(twice).get(0, 0));
+        assertThrows(ArithmeticException.class, () -> overflowLeft.matrixMultiplyExact(twice));
+
+        // The exact short product validates the final mathematical dot product, not a narrowed partial sum.
+        ShortMatrix cancellationLeft = ShortMatrix.wrap(new short[][] { { 30_000, 30_000 } });
+        ShortMatrix cancellationRight = ShortMatrix.wrap(new short[][] { { 2 }, { -1 } });
+        assertEquals((short) 30_000, cancellationLeft.matrixMultiplyExact(cancellationRight).get(0, 0));
+    }
+
+    @Test
+    public void testZeroByNShapeFlowsThroughResultsAndColumnStreams() {
+        ShortMatrix zeroByThree = ShortMatrix.random(0, 3, new java.util.Random(1L));
+        assertEquals(3, zeroByThree.copy().columnCount());
+        assertEquals(3, zeroByThree.copyRows(0, 0).columnCount());
+        assertEquals(2, zeroByThree.copyRegion(0, 0, 1, 3).columnCount());
+        assertEquals(5, zeroByThree.resize(0, 5).columnCount());
+        assertEquals(6, zeroByThree.pad(0, 0, 1, 2).columnCount());
+        assertEquals(3, zeroByThree.map(v -> v).columnCount());
+        assertEquals(3, zeroByThree.boxed().columnCount());
+        assertEquals(3, zeroByThree.toIntMatrix().columnCount());
+        assertEquals(3, zeroByThree.toLongMatrix().columnCount());
+        assertEquals(6, zeroByThree.repeatElements(2, 2).columnCount());
+
+        java.util.List<ShortStream> columns = zeroByThree.columnStreams().toList();
+        assertEquals(3, columns.size());
+        columns.forEach(column -> assertEquals(0L, column.count()));
+
+        ShortMatrix zeroProduct = ShortMatrix.random(0, 2).matrixMultiply(ShortMatrix.wrap(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } }));
+        assertEquals(0, zeroProduct.rowCount());
+        assertEquals(3, zeroProduct.columnCount());
+        assertEquals(3, ShortMatrix.random(0, 2).matrixMultiplyWidened(ShortMatrix.wrap(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } }))
+                .columnCount());
+    }
+
+    @Test
+    public void testAllCustomIteratorCountsConsumeTheirIterators() {
+        ShortMatrix matrix = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
+
+        com.landawn.abacus.util.stream.ShortIteratorEx diagonal = (com.landawn.abacus.util.stream.ShortIteratorEx) matrix.mainDiagonalStream().iterator();
+        assertEquals(2L, diagonal.count());
+        assertFalse(diagonal.hasNext());
+
+        com.landawn.abacus.util.stream.ObjIteratorEx<ShortStream> rows = (com.landawn.abacus.util.stream.ObjIteratorEx<ShortStream>) matrix.rowStreams()
+                .iterator();
+        assertEquals(2L, rows.count());
+        assertFalse(rows.hasNext());
+
+        com.landawn.abacus.util.stream.ObjIteratorEx<ShortStream> columns = (com.landawn.abacus.util.stream.ObjIteratorEx<ShortStream>) matrix.columnStreams()
+                .iterator();
+        com.landawn.abacus.util.stream.ShortIteratorEx firstColumn = (com.landawn.abacus.util.stream.ShortIteratorEx) columns.next().iterator();
+        assertEquals(2L, firstColumn.count());
+        assertFalse(firstColumn.hasNext());
+        assertEquals(1L, columns.count());
+        assertFalse(columns.hasNext());
     }
 
 }

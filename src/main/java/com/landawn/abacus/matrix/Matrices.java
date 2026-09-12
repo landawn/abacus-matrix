@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import com.landawn.abacus.logging.Logger;
 import com.landawn.abacus.logging.LoggerFactory;
@@ -29,7 +30,9 @@ import com.landawn.abacus.util.ClassUtil;
 import com.landawn.abacus.util.ExceptionUtil;
 import com.landawn.abacus.util.N;
 import com.landawn.abacus.util.Throwables;
+import com.landawn.abacus.util.stream.IntIteratorEx;
 import com.landawn.abacus.util.stream.IntStream;
+import com.landawn.abacus.util.stream.ObjIteratorEx;
 import com.landawn.abacus.util.stream.Stream;
 
 /**
@@ -81,9 +84,10 @@ public final class Matrices {
 
     /**
      * The per-thread {@link ParallelMode} setting that drives automatic parallelization decisions.
-     * Defaults to {@link ParallelMode#AUTO} for every thread.
+     * Defaults to {@link ParallelMode#FORCE_OFF} for every thread, so callback execution remains
+     * deterministic unless the caller explicitly opts in to a parallel policy.
      */
-    static final ThreadLocal<ParallelMode> PARALLEL_MODE_TL = ThreadLocal.withInitial(() -> ParallelMode.AUTO);
+    static final ThreadLocal<ParallelMode> PARALLEL_MODE_TL = ThreadLocal.withInitial(() -> ParallelMode.FORCE_OFF);
 
     static {
         boolean tmp = false;
@@ -131,7 +135,7 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrices.getParallelMode();                          // returns ParallelMode.AUTO (the default)
+     * Matrices.getParallelMode();                          // returns ParallelMode.FORCE_OFF (the default)
      *
      * Matrices.setParallelMode(ParallelMode.FORCE_ON);
      * Matrices.getParallelMode();                          // returns ParallelMode.FORCE_ON
@@ -139,7 +143,7 @@ public final class Matrices {
      * Matrices.setParallelMode(ParallelMode.FORCE_OFF);
      * Matrices.getParallelMode();                          // returns ParallelMode.FORCE_OFF
      *
-     * Matrices.setParallelMode(ParallelMode.AUTO);         // restore the default
+     * Matrices.setParallelMode(ParallelMode.AUTO);         // opt in to size-based automatic parallelism
      * Matrices.getParallelMode();                          // returns ParallelMode.AUTO
      * }</pre>
      *
@@ -176,7 +180,7 @@ public final class Matrices {
      * Matrices.setParallelMode(ParallelMode.FORCE_ON);
      * Matrices.getParallelMode();                          // returns ParallelMode.FORCE_ON
      *
-     * Matrices.setParallelMode(ParallelMode.AUTO);         // reset to default
+     * Matrices.setParallelMode(ParallelMode.FORCE_OFF);    // reset to the default
      * Matrices.getParallelMode();                          // returns ParallelMode.AUTO
      *
      * Matrices.setParallelMode(null);                      // throws IllegalArgumentException
@@ -217,7 +221,7 @@ public final class Matrices {
      * Matrices.shouldRunInParallel(small);                    // returns false (forced off)
      * Matrices.shouldRunInParallel(large);                    // returns false (forced off)
      *
-     * Matrices.setParallelMode(ParallelMode.AUTO);         // restore default; under AUTO the
+     * Matrices.setParallelMode(ParallelMode.AUTO);         // opt in to AUTO; the
      *                                                      // small matrix is never parallelized
      * Matrices.shouldRunInParallel(small);                    // returns false (4 < 8192)
      *
@@ -263,7 +267,7 @@ public final class Matrices {
      * Matrices.setParallelMode(ParallelMode.FORCE_OFF);
      * Matrices.shouldRunInParallel(matrix, 100000L);          // returns false (forced off, count ignored)
      *
-     * Matrices.setParallelMode(ParallelMode.AUTO);         // restore default
+     * Matrices.setParallelMode(ParallelMode.AUTO);         // opt in to automatic selection
      * Matrices.shouldRunInParallel(matrix, 5000L);         // returns false (5000 < 8192)
      *
      * Matrices.shouldRunInParallel((IntMatrix) null, 100L);   // throws IllegalArgumentException
@@ -480,9 +484,9 @@ public final class Matrices {
      * is initialized to {@code null} (the default value for reference types, including primitive
      * wrapper types).</p>
      *
-     * <p>The requested dimensions must form a representable matrix shape: either a positive
-     * {@code rowCount} or a {@code columnCount} of zero. A zero {@code rowCount} combined with a
-     * non-zero {@code columnCount} is rejected.</p>
+     * <p>Both dimensions may be zero independently. Java arrays cannot encode a column count when
+     * there are no rows, so callers that wrap a returned {@code 0 x N} array as a matrix must pass
+     * the column count through a shape-aware matrix factory.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -492,12 +496,11 @@ public final class Matrices {
      * Integer[][] ints = Matrices.newMatrixArray(2, 5, int.class);  // primitive auto-wrapped
      * // ints.length == 2, ints[0].length == 5
      *
-     * String[][] empty = Matrices.newMatrixArray(0, 0, String.class);
-     * // empty.length == 0  (representable empty shape)
+     * String[][] empty = Matrices.newMatrixArray(0, 3, String.class);
+     * // empty.length == 0; the requested column count is meaningful to a shape-aware caller
      *
      * Matrices.newMatrixArray(2, 3, null);                 // throws IllegalArgumentException (null type)
      * Matrices.newMatrixArray(-1, 3, String.class);        // throws IllegalArgumentException (negative rowCount)
-     * Matrices.newMatrixArray(0, 3, String.class);         // throws IllegalArgumentException (0 rows, 3 cols)
      * }</pre>
      *
      * @param <T> the element type of the array
@@ -505,9 +508,8 @@ public final class Matrices {
      * @param columnCount the number of columns in each row, must be non-negative
      * @param targetElementType the class of the element type; primitive types will be auto-wrapped, must not be {@code null}
      * @return a new two-dimensional array of type {@code T[][]} with the specified dimensions, never {@code null}
-     * @throws IllegalArgumentException if {@code targetElementType} is {@code null}, if {@code rowCount} or
-     *         {@code columnCount} is negative, or if the dimensions do not form a representable matrix shape
-     *         (i.e. {@code rowCount} is zero while {@code columnCount} is non-zero)
+     * @throws IllegalArgumentException if {@code targetElementType} is {@code null}, or if {@code rowCount}
+     *         or {@code columnCount} is negative
      */
     public static <T> T[][] newMatrixArray(final int rowCount, final int columnCount, final Class<T> targetElementType) {
         N.checkArgNotNull(targetElementType, "targetElementType");
@@ -518,7 +520,9 @@ public final class Matrices {
         final T[][] result = N.newArray(subArrayType, rowCount);
 
         for (int i = 0; i < rowCount; i++) {
-            result[i] = N.newArray(eleType, columnCount);
+            // N.newArray may reuse a cached zero-length array. Each logical row must remain
+            // independently addressable even when it currently has no columns.
+            result[i] = columnCount == 0 ? (T[]) java.lang.reflect.Array.newInstance(eleType, 0) : N.newArray(eleType, columnCount);
         }
 
         return result;
@@ -636,11 +640,10 @@ public final class Matrices {
      *
      * <p>Visitation order:</p>
      * <ul>
-     * <li>Sequential mode with row count ≤ column count: row-major order (outer loop over rows).</li>
-     * <li>Sequential mode with row count &gt; column count: column-major order (outer loop over columns).</li>
+     * <li>Sequential mode: stable row-major order (outer loop over rows).</li>
      * <li>Parallel mode (when parallel streams are available): the outer loop runs over the larger of the
      *     two dimensions and is parallelized while the inner loop remains sequential; encounter order is
-     *     unspecified. If parallel streams are unavailable, execution falls back to the sequential order above.</li>
+     *     unspecified. If parallel streams are unavailable, execution falls back to row-major order.</li>
      * </ul>
      *
      * <p><b>Usage Examples:</b></p>
@@ -705,17 +708,11 @@ public final class Matrices {
                 });
             }
         } else {
-            if (rowCount <= columnCount) {
-                for (int i = fromRowIndex; i < toRowIndex; i++) {
-                    for (int j = fromColumnIndex; j < toColumnIndex; j++) {
-                        action.accept(i, j);
-                    }
-                }
-            } else {
+            // A sequential traversal has one stable contract regardless of aspect ratio. This is
+            // also cache-friendly because the physical backing layout is row-major.
+            for (int i = fromRowIndex; i < toRowIndex; i++) {
                 for (int j = fromColumnIndex; j < toColumnIndex; j++) {
-                    for (int i = fromRowIndex; i < toRowIndex; i++) {
-                        action.accept(i, j);
-                    }
+                    action.accept(i, j);
                 }
             }
         }
@@ -779,14 +776,8 @@ public final class Matrices {
      * <p>This method applies the provided function to each position (i, j) in the rectangular
      * region defined by the row and column index ranges, collecting all results into a {@link Stream}.</p>
      *
-     * <p>For sequential execution, stream encounter order is:</p>
-     * <ul>
-     * <li>Row count ≤ column count: row-major order.</li>
-     * <li>Row count &gt; column count: column-major order.</li>
-     * </ul>
-     * <p>When {@code inParallel} is {@code true} and parallel streams are available, the encounter
-     * order of the returned stream is unspecified. If parallel streams are unavailable, sequential
-     * order above is used even when {@code inParallel} is {@code true}.</p>
+     * <p>The stream is lazy and has row-major encounter order. Requesting parallel execution marks
+     * the returned stream parallel when supported; the mapper still runs only as the stream is consumed.</p>
      *
      * <p>If {@code mapper} throws a checked exception, it is wrapped in a {@code RuntimeException}
      * and rethrown when the returned stream is consumed. Runtime exceptions from {@code mapper}
@@ -834,40 +825,49 @@ public final class Matrices {
             return Stream.empty();
         }
 
-        final boolean parallel = inParallel && IS_PARALLEL_STREAM_SUPPORTED;
+        final long total = (long) rowCount * columnCount;
+        final ObjIteratorEx<T> iterator = new ObjIteratorEx<>() {
+            private long cursor;
 
-        // Sequential execution keeps the smaller dimension on the outside (the documented encounter
-        // order); parallel execution splits the larger dimension so the work divides into as many
-        // independent units as possible (a 1xN or Nx1 region would otherwise get no parallelism).
-        if (parallel ? rowCount >= columnCount : rowCount <= columnCount) {
-            return IntStream.range(fromRowIndex, toRowIndex).transform(s -> parallel ? s.parallel() : s).flatmapToObj(i -> {
-                final List<T> ret = new ArrayList<>(columnCount);
+            @Override
+            public boolean hasNext() {
+                return cursor < total;
+            }
+
+            @Override
+            public T next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+
+                final long position = cursor++;
+                final int i = fromRowIndex + (int) (position / columnCount);
+                final int j = fromColumnIndex + (int) (position % columnCount);
 
                 try {
-                    for (int j = fromColumnIndex; j < toColumnIndex; j++) {
-                        ret.add(mapper.apply(i, j));
-                    }
+                    return mapper.apply(i, j);
                 } catch (final Exception e) {
                     throw ExceptionUtil.toRuntimeException(e, true);
                 }
+            }
 
-                return ret;
-            });
-        } else {
-            return IntStream.range(fromColumnIndex, toColumnIndex).transform(s -> parallel ? s.parallel() : s).flatmapToObj(j -> {
-                final List<T> ret = new ArrayList<>(rowCount);
-
-                try {
-                    for (int i = fromRowIndex; i < toRowIndex; i++) {
-                        ret.add(mapper.apply(i, j));
-                    }
-                } catch (final Exception e) {
-                    throw ExceptionUtil.toRuntimeException(e, true);
+            @Override
+            public void advance(final long n) {
+                if (n > 0) {
+                    cursor = n < total - cursor ? cursor + n : total;
                 }
+            }
 
-                return ret;
-            });
-        }
+            @Override
+            public long count() {
+                final long remaining = total - cursor;
+                cursor = total;
+                return remaining;
+            }
+        };
+
+        final Stream<T> result = Stream.of(iterator);
+        return inParallel && IS_PARALLEL_STREAM_SUPPORTED ? result.parallel() : result;
     }
 
     /**
@@ -930,11 +930,8 @@ public final class Matrices {
      * rectangular region defined by the row and column index ranges, collecting all results into
      * an {@link IntStream} and avoiding boxing overhead of a generic {@link Stream}.</p>
      *
-     * <p>For sequential execution, stream encounter order is row-major when the row range is not
-     * larger than the column range, and column-major otherwise. When {@code inParallel} is
-     * {@code true} and parallel streams are available, the encounter order of the returned stream
-     * is unspecified. If parallel streams are unavailable, sequential order above is used even when
-     * {@code inParallel} is {@code true}.</p>
+     * <p>The stream is lazy and has row-major encounter order. Requesting parallel execution marks
+     * the returned stream parallel when supported; the mapper still runs only as the stream is consumed.</p>
      *
      * <p>If {@code mapper} throws a checked exception, it is wrapped in a {@code RuntimeException}
      * and rethrown when the returned stream is consumed. Runtime exceptions from {@code mapper}
@@ -981,40 +978,49 @@ public final class Matrices {
             return IntStream.empty();
         }
 
-        final boolean parallel = inParallel && IS_PARALLEL_STREAM_SUPPORTED;
+        final long total = (long) rowCount * columnCount;
+        final IntIteratorEx iterator = new IntIteratorEx() {
+            private long cursor;
 
-        // Sequential execution keeps the smaller dimension on the outside (the documented encounter
-        // order); parallel execution splits the larger dimension so the work divides into as many
-        // independent units as possible (a 1xN or Nx1 region would otherwise get no parallelism).
-        if (parallel ? rowCount >= columnCount : rowCount <= columnCount) {
-            return IntStream.range(fromRowIndex, toRowIndex).transform(s -> parallel ? s.parallel() : s).flatMapArray(i -> {
-                final int[] ret = new int[columnCount];
+            @Override
+            public boolean hasNext() {
+                return cursor < total;
+            }
+
+            @Override
+            public int nextInt() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+
+                final long position = cursor++;
+                final int i = fromRowIndex + (int) (position / columnCount);
+                final int j = fromColumnIndex + (int) (position % columnCount);
 
                 try {
-                    for (int j = fromColumnIndex; j < toColumnIndex; j++) {
-                        ret[j - fromColumnIndex] = mapper.applyAsInt(i, j);
-                    }
+                    return mapper.applyAsInt(i, j);
                 } catch (final Exception e) {
                     throw ExceptionUtil.toRuntimeException(e, true);
                 }
+            }
 
-                return ret;
-            });
-        } else {
-            return IntStream.range(fromColumnIndex, toColumnIndex).transform(s -> parallel ? s.parallel() : s).flatMapArray(j -> {
-                final int[] ret = new int[rowCount];
-
-                try {
-                    for (int i = fromRowIndex; i < toRowIndex; i++) {
-                        ret[i - fromRowIndex] = mapper.applyAsInt(i, j);
-                    }
-                } catch (final Exception e) {
-                    throw ExceptionUtil.toRuntimeException(e, true);
+            @Override
+            public void advance(final long n) {
+                if (n > 0) {
+                    cursor = n < total - cursor ? cursor + n : total;
                 }
+            }
 
-                return ret;
-            });
-        }
+            @Override
+            public long count() {
+                final long remaining = total - cursor;
+                cursor = total;
+                return remaining;
+            }
+        };
+
+        final IntStream result = IntStream.of(iterator);
+        return inParallel && IS_PARALLEL_STREAM_SUPPORTED ? result.parallel() : result;
     }
 
     /**
@@ -1257,8 +1263,8 @@ public final class Matrices {
      * Equivalent to chaining {@link AbstractMatrix#stackVertically(AbstractMatrix)} calls,
      * but avoids the boilerplate when stacking three or more matrices.</p>
      *
-     * <p>Inputs with compatible runtime storage are combined in balanced rounds. This preserves
-     * iteration order while reducing repeated copying compared with a left-to-right chain.</p>
+     * <p>Inputs with compatible runtime storage are copied directly into one result allocation in
+     * encounter order. Incompatible implementations use the public pairwise operation.</p>
      *
      * <p>A single input is normally copied. The shared type-neutral {@link Matrix#empty()} instance
      * is returned as-is because it has no mutable cells and copying it would prematurely fix its
@@ -1304,8 +1310,8 @@ public final class Matrices {
      * Equivalent to chaining {@link AbstractMatrix#stackHorizontally(AbstractMatrix)} calls,
      * but avoids the boilerplate when stacking three or more matrices.</p>
      *
-     * <p>Inputs with compatible runtime storage are combined in balanced rounds. This preserves
-     * iteration order while reducing repeated copying compared with a left-to-right chain.</p>
+     * <p>Inputs with compatible runtime storage are copied directly into one result allocation in
+     * encounter order. Incompatible implementations use the public pairwise operation.</p>
      *
      * <p>A single input is normally copied. The shared type-neutral {@link Matrix#empty()} instance
      * is returned as-is because it has no mutable cells and copying it would prematurely fix its
@@ -1376,37 +1382,102 @@ public final class Matrices {
             return result;
         }
 
-        List<M> currentLevel = new ArrayList<>(matrices);
+        return stackCompatibleStorage(matrices, vertically);
+    }
 
-        while (currentLevel.size() > 1) {
-            final int size = currentLevel.size();
-            final List<M> nextLevel = new ArrayList<>(size / 2 + size % 2);
+    /**
+     * Stacks storage-compatible matrices with one result allocation and one pass over the inputs.
+     * Pairwise folding repeatedly copied cells, making n-ary stacking needlessly super-linear.
+     */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private static <M extends AbstractMatrix<?, ?, ?, ?, M>> M stackCompatibleStorage(final Collection<? extends M> matrices, final boolean vertically) {
+        final AbstractMatrix first = matrices.iterator().next();
+        final Object[] resultRows;
+        final int resultColumnCount;
 
-            for (int i = 0; i < size; i += 2) {
-                final M left = currentLevel.get(i);
+        if (vertically) {
+            long totalRows = 0;
 
-                if (i + 1 == size) {
-                    nextLevel.add(left);
-                } else {
-                    final M right = currentLevel.get(i + 1);
-                    nextLevel.add(vertically ? left.stackVertically(right) : left.stackHorizontally(right));
-                }
+            for (final M matrix : matrices) {
+                N.checkArgument(matrix.columnCount == first.columnCount, AbstractMatrix.MSG_VSTACK_COLUMN_MISMATCH, first.columnCount, matrix.columnCount);
+                totalRows += matrix.rowCount;
+                N.checkArgument(totalRows <= Integer.MAX_VALUE, "Merged row count exceeds Integer.MAX_VALUE: {}", totalRows);
             }
 
-            currentLevel = nextLevel;
+            resultColumnCount = first.columnCount;
+            resultRows = (Object[]) java.lang.reflect.Array.newInstance(first.a.getClass().getComponentType(), (int) totalRows);
+            int targetRow = 0;
+
+            for (final M matrix : matrices) {
+                for (final Object sourceRow : (Object[]) matrix.a) {
+                    final int length = java.lang.reflect.Array.getLength(sourceRow);
+                    final Object copy = java.lang.reflect.Array.newInstance(sourceRow.getClass().getComponentType(), length);
+                    System.arraycopy(sourceRow, 0, copy, 0, length);
+                    resultRows[targetRow++] = copy;
+                }
+            }
+        } else {
+            long totalColumns = 0;
+
+            for (final M matrix : matrices) {
+                N.checkArgument(matrix.rowCount == first.rowCount, AbstractMatrix.MSG_HSTACK_ROW_MISMATCH, first.rowCount, matrix.rowCount);
+                totalColumns += matrix.columnCount;
+                N.checkArgument(totalColumns <= Integer.MAX_VALUE, "Merged column count exceeds Integer.MAX_VALUE: {}", totalColumns);
+            }
+
+            resultColumnCount = (int) totalColumns;
+            resultRows = (Object[]) java.lang.reflect.Array.newInstance(first.a.getClass().getComponentType(), first.rowCount);
+
+            for (int i = 0; i < first.rowCount; i++) {
+                final Class<?> componentType = first.a.getClass().getComponentType().getComponentType();
+                final Object resultRow = java.lang.reflect.Array.newInstance(componentType, resultColumnCount);
+                int targetColumn = 0;
+
+                for (final M matrix : matrices) {
+                    final Object sourceRow = ((Object[]) matrix.a)[i];
+                    System.arraycopy(sourceRow, 0, resultRow, targetColumn, matrix.columnCount);
+                    targetColumn += matrix.columnCount;
+                }
+
+                resultRows[i] = resultRow;
+            }
         }
 
-        return currentLevel.get(0);
+        return (M) newMatrixLike(first, resultRows, resultColumnCount);
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private static AbstractMatrix newMatrixLike(final AbstractMatrix template, final Object[] rows, final int columnCount) {
+        if (template instanceof BooleanMatrix) {
+            return new BooleanMatrix((boolean[][]) rows, columnCount);
+        } else if (template instanceof ByteMatrix) {
+            return new ByteMatrix((byte[][]) rows, columnCount);
+        } else if (template instanceof CharMatrix) {
+            return new CharMatrix((char[][]) rows, columnCount);
+        } else if (template instanceof ShortMatrix) {
+            return new ShortMatrix((short[][]) rows, columnCount);
+        } else if (template instanceof IntMatrix) {
+            return new IntMatrix((int[][]) rows, columnCount);
+        } else if (template instanceof LongMatrix) {
+            return new LongMatrix((long[][]) rows, columnCount);
+        } else if (template instanceof FloatMatrix) {
+            return new FloatMatrix((float[][]) rows, columnCount);
+        } else if (template instanceof DoubleMatrix) {
+            return new DoubleMatrix((double[][]) rows, columnCount);
+        } else if (template instanceof Matrix<?> matrix) {
+            return new Matrix<>((Object[][]) rows, (Class<Object>) matrix.elementType, columnCount);
+        }
+
+        throw new IllegalArgumentException("Unsupported matrix type: " + template.getClass().getName());
     }
 
     /**
      * Checks whether all matrices in the collection share the same runtime storage: the same
      * matrix class and, for generic {@link Matrix} instances, the same runtime element type.
-     * Only then may n-ary stacking regroup the inputs in balanced rounds without changing
-     * which intermediate allocation would fail.
+     * Only then may n-ary stacking copy the inputs directly into one result allocation.
      *
      * @param matrices the matrices to check, must be non-empty and contain no {@code null} elements
-     * @return {@code true} if all matrices have compatible storage for balanced stacking
+     * @return {@code true} if all matrices have compatible storage for direct stacking
      */
     private static boolean hasCompatibleStackStorage(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> matrices) {
         final Iterator<? extends AbstractMatrix<?, ?, ?, ?, ?>> iterator = matrices.iterator();
@@ -3986,37 +4057,50 @@ public final class Matrices {
      * @see #zip(Matrix, Matrix, Throwables.BiFunction)
      * @see #zip(Collection, Throwables.Function, Class)
      */
+    @Deprecated
     public static <T, E extends Exception> Matrix<T> zip(final Collection<Matrix<T>> coll, final Throwables.BinaryOperator<T, E> zipFunction)
             throws IllegalArgumentException, E {
         N.checkArgNotNull(coll, cs.coll);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
-
         checkShapeForZip(coll);
 
+        final Matrix<T>[] matrices = coll.toArray(new Matrix[coll.size()]);
+        return zip(coll, zipFunction, resolveCommonElementType(matrices));
+    }
+
+    /**
+     * Combines a non-empty collection of same-shaped matrices with a left-to-right binary fold,
+     * storing every result in rows whose exact runtime component type is {@code elementType}.
+     * Supplying the type explicitly avoids guessing a writable array type from potentially
+     * heterogeneous input implementations.
+     *
+     * @param <T> the input and result element type
+     * @param <E> the checked exception type of the operator
+     * @param coll the non-empty, null-free collection of same-shaped matrices
+     * @param zipFunction the left-to-right per-cell fold
+     * @param elementType the exact writable result and accepted input supertype
+     * @return a newly allocated matrix with the same shape, including an explicit {@code 0 x N} shape
+     * @throws IllegalArgumentException if an argument is invalid, shapes differ, or a non-empty
+     *         matrix's declared element type is not assignable to {@code elementType}
+     * @throws ArrayStoreException if the operator returns a value not assignable to {@code elementType}
+     * @throws E if the operator throws
+     */
+    @SuppressWarnings("unchecked")
+    public static <T, E extends Exception> Matrix<T> zip(final Collection<Matrix<T>> coll, final Throwables.BinaryOperator<T, E> zipFunction,
+            final Class<T> elementType) throws IllegalArgumentException, E {
+        N.checkArgNotNull(coll, cs.coll);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+        N.checkArgNotNull(elementType, "elementType");
+        checkShapeForZip(coll);
+
+        final Class<T> normalizedElementType = (Class<T>) ClassUtil.wrap(elementType);
         final int size = coll.size();
         final Matrix<T>[] matrices = coll.toArray(new Matrix[size]);
-
-        if (size == 1) {
-            return matrices[0].isSharedEmptyMatrix() ? matrices[0] : matrices[0].copy();
-        }
-
-        boolean allSharedEmpty = true;
-
-        for (final Matrix<T> matrix : matrices) {
-            if (!matrix.isSharedEmptyMatrix()) {
-                allSharedEmpty = false;
-                break;
-            }
-        }
-
-        if (allSharedEmpty) {
-            return Matrix.empty();
-        }
+        checkCompatibleElementTypes(matrices, normalizedElementType);
 
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
-        final Class<T> elementType = resolveCommonElementType(matrices);
-        final T[][] result = newMatrixArray(rowCount, columnCount, elementType);
+        final T[][] result = newMatrixArray(rowCount, columnCount, normalizedElementType);
 
         final Throwables.IntBiConsumer<E> action = (i, j) -> {
             T zipped = matrices[0].a[i][j];
@@ -4030,7 +4114,7 @@ public final class Matrices {
 
         forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(matrices[0]));
 
-        return new Matrix<>(result);
+        return new Matrix<>(result, normalizedElementType, columnCount);
     }
 
     /**
@@ -4078,6 +4162,7 @@ public final class Matrices {
      * @see #zip(Collection, Throwables.Function, boolean, Class)
      * @see #zip(Collection, Throwables.BinaryOperator)
      */
+    @Deprecated
     public static <T, R, E extends Exception> Matrix<R> zip(final Collection<Matrix<T>> coll, final Throwables.Function<? super T[], R, E> zipFunction,
             final Class<R> targetElementType) throws E {
         N.checkArgNotNull(coll, cs.coll);
@@ -4085,6 +4170,29 @@ public final class Matrices {
         N.checkArgNotNull(targetElementType, cs.targetElementType);
 
         return zip(coll, zipFunction, false, targetElementType);
+    }
+
+    /**
+     * Combines each cell position by passing a typed array containing one value per matrix to
+     * {@code zipFunction}. Both array component types are explicit so neither input callback
+     * storage nor result storage depends on a runtime common-type heuristic.
+     *
+     * @param <T> the input element type
+     * @param <R> the result element type
+     * @param <E> the checked exception type of the function
+     * @param coll the non-empty, null-free collection of same-shaped matrices
+     * @param zipFunction the per-cell aggregation function
+     * @param inputElementType the exact runtime component type of the callback array
+     * @param targetElementType the exact runtime component type of result rows
+     * @return a newly allocated result matrix with the same shape
+     * @throws IllegalArgumentException if an argument is invalid, shapes differ, or a non-empty
+     *         input matrix's declared element type is incompatible with {@code inputElementType}
+     * @throws ArrayStoreException if an input or result is not assignable to its declared type
+     * @throws E if the function throws
+     */
+    public static <T, R, E extends Exception> Matrix<R> zip(final Collection<Matrix<T>> coll, final Throwables.Function<? super T[], R, E> zipFunction,
+            final Class<T> inputElementType, final Class<R> targetElementType) throws E {
+        return zip(coll, zipFunction, false, inputElementType, targetElementType);
     }
 
     /**
@@ -4146,24 +4254,58 @@ public final class Matrices {
      * @see #zip(Collection, Throwables.Function, Class)
      * @see #zip(Collection, Throwables.BinaryOperator)
      */
+    @Deprecated
     public static <T, R, E extends Exception> Matrix<R> zip(final Collection<Matrix<T>> coll, final Throwables.Function<? super T[], R, E> zipFunction,
             final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E {
         N.checkArgNotNull(coll, cs.coll);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgNotNull(targetElementType, cs.targetElementType);
-
         checkShapeForZip(coll);
 
+        final Matrix<T>[] matrices = coll.toArray(new Matrix[coll.size()]);
+        return zip(coll, zipFunction, shareIntermediateArray, resolveCommonElementType(matrices), targetElementType);
+    }
+
+    /**
+     * Full typed collection-zip overload with optional sequential callback-array reuse.
+     * When parallel execution is enabled, a distinct callback array is always used per cell.
+     *
+     * @param <T> the input element type
+     * @param <R> the result element type
+     * @param <E> the checked exception type of the function
+     * @param coll the non-empty, null-free collection of same-shaped matrices
+     * @param zipFunction the per-cell aggregation function
+     * @param shareIntermediateArray whether sequential execution may reuse one callback array;
+     *        callers must not retain or modify a reused array
+     * @param inputElementType the exact runtime component type of callback arrays
+     * @param targetElementType the exact runtime component type of result rows
+     * @return a newly allocated result matrix with the same shape
+     * @throws IllegalArgumentException if an argument is invalid, shapes differ, or a non-empty
+     *         input matrix's declared element type is incompatible with {@code inputElementType}
+     * @throws ArrayStoreException if an input or result is not assignable to its declared type
+     * @throws E if the function throws
+     */
+    @SuppressWarnings("unchecked")
+    public static <T, R, E extends Exception> Matrix<R> zip(final Collection<Matrix<T>> coll, final Throwables.Function<? super T[], R, E> zipFunction,
+            final boolean shareIntermediateArray, final Class<T> inputElementType, final Class<R> targetElementType) throws IllegalArgumentException, E {
+        N.checkArgNotNull(coll, cs.coll);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
+        N.checkArgNotNull(inputElementType, "inputElementType");
+        N.checkArgNotNull(targetElementType, cs.targetElementType);
+        checkShapeForZip(coll);
+
+        final Class<T> normalizedInputType = (Class<T>) ClassUtil.wrap(inputElementType);
+        final Class<R> normalizedTargetType = (Class<R>) ClassUtil.wrap(targetElementType);
         final int size = coll.size();
         final Matrix<T>[] matrices = coll.toArray(new Matrix[size]);
+        checkCompatibleElementTypes(matrices, normalizedInputType);
 
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
         final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0]);
         final boolean shareArray = shareIntermediateArray && !zipInParallel;
-        final Class<T> elementType = resolveCommonElementType(matrices);
-        final T[] intermediateArray = N.newArray(elementType, size);
-        final R[][] result = newMatrixArray(rowCount, columnCount, targetElementType);
+        final T[] intermediateArray = N.newArray(normalizedInputType, size);
+        final R[][] result = newMatrixArray(rowCount, columnCount, normalizedTargetType);
 
         final Throwables.IntBiConsumer<E> action = (i, j) -> {
             final T[] tmp = shareArray ? intermediateArray : N.clone(intermediateArray);
@@ -4177,7 +4319,20 @@ public final class Matrices {
 
         forEachIndices(rowCount, columnCount, action, zipInParallel);
 
-        return new Matrix<>(result);
+        return new Matrix<>(result, normalizedTargetType, columnCount);
+    }
+
+    private static <T> void checkCompatibleElementTypes(final Matrix<T>[] matrices, final Class<T> inputElementType) {
+        for (int i = 0; i < matrices.length; i++) {
+            final Matrix<T> matrix = matrices[i];
+
+            // An empty matrix contributes no value to a callback array, so its placeholder token
+            // cannot cause an ArrayStoreException and need not constrain the requested input type.
+            if (matrix.elementCount > 0 && !inputElementType.isAssignableFrom(matrix.elementType)) {
+                throw new IllegalArgumentException("matrices[" + i + "] declares element type " + matrix.elementType.getTypeName()
+                        + ", which is not assignable to input element type " + inputElementType.getTypeName());
+            }
+        }
     }
 
     /**
@@ -4252,9 +4407,9 @@ public final class Matrices {
      *
      * <p>This method ranks the types that are assignable from every original matrix element
      * type. Considering all inputs together keeps the result independent of matrix order. If no
-     * more specific common type can be identified, {@link Object} is returned. The shared
-     * type-neutral {@link Matrix#empty()} placeholder is ignored when at least one input has a
-     * reified runtime element type. When every retained input element type is a reference-array
+     * more specific common type can be identified, {@link Object} is returned. Empty matrices
+     * participate because their declared runtime element type still constrains the component type
+     * of the resulting backing array. When every input element type is a reference-array
      * type, component types are resolved recursively and the common component is wrapped back into
      * an array type, preserving the element-array dimensionality.</p>
      *
@@ -4265,25 +4420,10 @@ public final class Matrices {
      */
     @SuppressWarnings("unchecked")
     static <T> Class<T> resolveCommonElementType(final Matrix<T>[] matrices) {
-        int reifiedTypeCount = 0;
+        final Class<?>[] elementTypes = new Class<?>[matrices.length];
 
-        for (final Matrix<T> matrix : matrices) {
-            if (!matrix.isSharedEmptyMatrix()) {
-                reifiedTypeCount++;
-            }
-        }
-
-        if (reifiedTypeCount == 0) {
-            return (Class<T>) Object.class;
-        }
-
-        final Class<?>[] elementTypes = new Class<?>[reifiedTypeCount];
-        int typeIndex = 0;
-
-        for (final Matrix<T> matrix : matrices) {
-            if (!matrix.isSharedEmptyMatrix()) {
-                elementTypes[typeIndex++] = matrix.elementType;
-            }
+        for (int i = 0; i < matrices.length; i++) {
+            elementTypes[i] = matrices[i].elementType;
         }
 
         return (Class<T>) resolveCommonType(elementTypes);

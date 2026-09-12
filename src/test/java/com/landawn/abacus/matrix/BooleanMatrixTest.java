@@ -331,7 +331,7 @@ class BooleanMatrixTest extends TestBase {
 
         // Test non-square matrix
         BooleanMatrix nonSquare = BooleanMatrix.wrap(new boolean[][] { { true, false, true } });
-        assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalCopy());
+        assertArrayEquals(new boolean[] { true }, nonSquare.mainDiagonalCopy());
     }
 
     @Test
@@ -1539,7 +1539,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD_nonSquare() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
+            assertArrayEquals(new boolean[] { true }, m.mainDiagonalCopy());
         }
 
         @Test
@@ -1554,7 +1554,8 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testSetLU2RD_nonSquare() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false } });
-            assertThrows(IllegalStateException.class, () -> m.setMainDiagonal(new boolean[] { true }));
+            m.setMainDiagonal(new boolean[] { false });
+            assertFalse(m.get(0, 0));
         }
 
         @Test
@@ -1576,7 +1577,8 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testUpdateLU2RD_nonSquare() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false } });
-            assertThrows(IllegalStateException.class, () -> m.updateMainDiagonal(x -> !x));
+            m.updateMainDiagonal(x -> !x);
+            assertFalse(m.get(0, 0));
         }
 
         @Test
@@ -1588,13 +1590,14 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testGetRU2LD_nonSquare() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false } });
-            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
+            assertArrayEquals(new boolean[] { false }, m.antiDiagonalCopy());
         }
 
         @Test
         public void testSetRU2LD_nonSquare() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false } });
-            assertThrows(IllegalStateException.class, () -> m.setAntiDiagonal(new boolean[] { true }));
+            m.setAntiDiagonal(new boolean[] { true });
+            assertTrue(m.get(0, 1));
         }
 
         @Test
@@ -1616,7 +1619,8 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testUpdateRU2LD_nonSquare() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false } });
-            assertThrows(IllegalStateException.class, () -> m.updateAntiDiagonal(x -> !x));
+            m.updateAntiDiagonal(x -> !x);
+            assertTrue(m.get(0, 1));
         }
 
         // ============ Transformation Tests ============
@@ -2207,7 +2211,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testStreamLU2RD_nonSquare() {
             BooleanMatrix nonSquare = BooleanMatrix.wrap(new boolean[][] { { true, false } });
-            assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalStream());
+            assertEquals(List.of(true), nonSquare.mainDiagonalStream().toList());
         }
 
         @Test
@@ -2229,7 +2233,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testStreamRU2LD_nonSquare() {
             BooleanMatrix nonSquare = BooleanMatrix.wrap(new boolean[][] { { true, false } });
-            assertThrows(IllegalStateException.class, () -> nonSquare.antiDiagonalStream());
+            assertEquals(List.of(false), nonSquare.antiDiagonalStream().toList());
         }
 
         @Test
@@ -3070,7 +3074,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD_nonSquare() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false, true }, { false, true, false } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
+            assertArrayEquals(new boolean[] { true, true }, m.mainDiagonalCopy());
         }
 
         @Test
@@ -3988,7 +3992,8 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testSetLU2RD_nonSquare() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[2][3]);
-            assertThrows(IllegalStateException.class, () -> m.setMainDiagonal(new boolean[] { true, true }));
+            m.setMainDiagonal(new boolean[] { true, true });
+            assertArrayEquals(new boolean[] { true, true }, m.mainDiagonalCopy());
         }
 
         @Test
@@ -4003,7 +4008,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testGetRU2LD_nonSquare() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false, true }, { false, true, false } });
-            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
+            assertArrayEquals(new boolean[] { true, true }, m.antiDiagonalCopy());
         }
 
         @Test
@@ -4015,7 +4020,8 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void testUpdateRU2LD_rectangular() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { false, false, true }, { true, false, false } });
-            assertThrows(IllegalStateException.class, () -> m.updateAntiDiagonal(val -> !val));
+            m.updateAntiDiagonal(val -> !val);
+            assertArrayEquals(new boolean[] { false, true }, m.antiDiagonalCopy());
         }
 
         @Test
@@ -4757,7 +4763,7 @@ class BooleanMatrixTest extends TestBase {
         @Test
         public void test_mainDiagonalCopy_nonSquare() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false }, { false, true }, { true, false } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
+            assertArrayEquals(new boolean[] { true, true }, m.mainDiagonalCopy());
         }
 
         @Test
@@ -5878,13 +5884,13 @@ class BooleanMatrixTest extends TestBase {
     // --- Bug fix tests ---
 
     @Test
-    public void testUpdateAntiDiagonal_throwsIllegalStateExceptionForNonSquare() {
-        // Bug fix: updateAntiDiagonal was missing 'throws IllegalStateException' declaration.
-        // Verify it throws IllegalStateException for non-square matrices, consistent with updateMainDiagonal.
+    public void testUpdateDiagonals_rectangular() {
         BooleanMatrix nonSquare = BooleanMatrix.wrap(new boolean[][] { { true, false, true }, { false, true, false } });
 
-        assertThrows(IllegalStateException.class, () -> nonSquare.updateAntiDiagonal(v -> !v));
-        assertThrows(IllegalStateException.class, () -> nonSquare.updateMainDiagonal(v -> !v));
+        nonSquare.updateAntiDiagonal(v -> !v);
+        assertArrayEquals(new boolean[] { false, false }, nonSquare.antiDiagonalCopy());
+        nonSquare.updateMainDiagonal(v -> !v);
+        assertArrayEquals(new boolean[] { false, true }, nonSquare.mainDiagonalCopy());
     }
 
     @Test
@@ -5920,7 +5926,13 @@ class BooleanMatrixTest extends TestBase {
         com.landawn.abacus.util.stream.ObjIteratorEx<Boolean> ex = (com.landawn.abacus.util.stream.ObjIteratorEx<Boolean>) iterator;
         ex.advance(1);
         assertEquals(5L, ex.count());
-        assertArrayEquals(new Boolean[] { false, true, false, true, false }, ex.toArray(new Boolean[0]));
+        assertFalse(ex.hasNext());
+        assertArrayEquals(new Boolean[0], ex.toArray(new Boolean[0]));
+
+        com.landawn.abacus.util.stream.ObjIteratorEx<Boolean> fresh = (com.landawn.abacus.util.stream.ObjIteratorEx<Boolean>) matrix.rowMajorStream(0, 2)
+                .iterator();
+        fresh.advance(1);
+        assertArrayEquals(new Boolean[] { false, true, false, true, false }, fresh.toArray(new Boolean[0]));
         ex.advance(10);
         assertEquals(0L, ex.count());
         assertThrows(java.util.NoSuchElementException.class, ex::next);
@@ -5954,7 +5966,14 @@ class BooleanMatrixTest extends TestBase {
         assertEquals(Boolean.TRUE, ex.next());
         ex.advance(1);
         assertEquals(4L, ex.count());
-        assertArrayEquals(new Boolean[] { true, false, true, true }, ex.toArray(new Boolean[0]));
+        assertFalse(ex.hasNext());
+        assertArrayEquals(new Boolean[0], ex.toArray(new Boolean[0]));
+
+        com.landawn.abacus.util.stream.ObjIteratorEx<Boolean> fresh = (com.landawn.abacus.util.stream.ObjIteratorEx<Boolean>) matrix.columnMajorStream(0, 2)
+                .iterator();
+        assertEquals(Boolean.TRUE, fresh.next());
+        fresh.advance(1);
+        assertArrayEquals(new Boolean[] { true, false, true, true }, fresh.toArray(new Boolean[0]));
         ex.advance(10);
         assertEquals(0L, ex.count());
         assertThrows(java.util.NoSuchElementException.class, ex::next);
@@ -6108,12 +6127,12 @@ class BooleanMatrixTest extends TestBase {
     public class ReviewBugfixTests {
 
         @Test
-        public void testDiagonalStream_Nx0MatrixThrowsBecauseNotSquare() {
+        public void testDiagonalStream_Nx0MatrixIsEmpty() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[3][0]);
             assertEquals(3, m.rowCount());
             assertEquals(0, m.columnCount());
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalStream());
-            assertThrows(IllegalStateException.class, () -> m.antiDiagonalStream());
+            assertEquals(0, m.mainDiagonalStream().count());
+            assertEquals(0, m.antiDiagonalStream().count());
 
             BooleanMatrix empty = BooleanMatrix.empty();
             assertEquals(0, empty.mainDiagonalStream().count());
@@ -6121,14 +6140,14 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTranspose_Nx0_collapsesToEmpty() {
+        public void testTranspose_Nx0_preservesSwappedShape() {
             BooleanMatrix t = BooleanMatrix.wrap(new boolean[3][0]).transpose();
             assertEquals(0, t.rowCount());
-            assertEquals(0, t.columnCount());
+            assertEquals(3, t.columnCount());
         }
 
         @Test
-        public void testRotate180_Nx0_preservesShape_whileRotate90TwiceCollapses() {
+        public void testRotate180AndRotate90Twice_preserveNx0Shape() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[3][0]);
 
             BooleanMatrix via180 = m.rotate180();
@@ -6136,14 +6155,15 @@ class BooleanMatrixTest extends TestBase {
             assertEquals(0, via180.columnCount());
 
             BooleanMatrix viaRotate90Twice = m.rotate90().rotate90();
-            assertEquals(0, viaRotate90Twice.rowCount());
+            assertEquals(3, viaRotate90Twice.rowCount());
             assertEquals(0, viaRotate90Twice.columnCount());
         }
 
         @Test
-        public void testReshape_oversizedShapeThrowsIllegalArgumentException() {
-            BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true } });
-            assertThrows(IllegalArgumentException.class, () -> m.reshape(46341, 46341));
+        public void testZeroRowShapeWithMaxColumnCountIsAllocationSafe() {
+            BooleanMatrix m = new BooleanMatrix(new boolean[0][], 1);
+            assertShape(0, Integer.MAX_VALUE, m.resize(0, Integer.MAX_VALUE));
+            assertShape(0, Integer.MAX_VALUE, m.reshapeAndPad(0, Integer.MAX_VALUE));
         }
 
         @Test
@@ -6155,19 +6175,19 @@ class BooleanMatrixTest extends TestBase {
 
         @Test
         public void testUnbox_typeNeutralGenericStorageAndEmptyShapes() {
-            assertSame(BooleanMatrix.empty(), BooleanMatrix.unbox(Matrix.empty()));
-            assertSame(BooleanMatrix.empty(), BooleanMatrix.unbox(Matrix.<Boolean>empty().copy()));
+            assertSame(BooleanMatrix.empty(), BooleanMatrix.unbox(Matrix.empty(Boolean.class)));
+            assertSame(BooleanMatrix.empty(), BooleanMatrix.unbox(Matrix.empty(Boolean.class).copy()));
             assertSame(BooleanMatrix.empty(), BooleanMatrix.unbox(Matrix.wrap(new Boolean[0][0])));
 
             BooleanMatrix rowsWithNoColumns = BooleanMatrix.unbox(Matrix.wrap(new Boolean[2][0]));
             assertEquals(2, rowsWithNoColumns.rowCount());
             assertEquals(0, rowsWithNoColumns.columnCount());
 
-            BooleanMatrix typeNeutralRowsWithNoColumns = BooleanMatrix.unbox(Matrix.<Boolean>empty().resize(2, 0));
+            BooleanMatrix typeNeutralRowsWithNoColumns = BooleanMatrix.unbox(Matrix.empty(Boolean.class).resize(2, 0));
             assertEquals(2, typeNeutralRowsWithNoColumns.rowCount());
             assertEquals(0, typeNeutralRowsWithNoColumns.columnCount());
 
-            Matrix<Boolean> expandedTypeNeutral = Matrix.<Boolean>empty().resize(2, 2);
+            Matrix<Boolean> expandedTypeNeutral = Matrix.empty(Boolean.class).resize(2, 2);
             expandedTypeNeutral.set(0, 1, true);
             assertEquals(BooleanMatrix.wrap(new boolean[][] { { false, true }, { false, false } }), BooleanMatrix.unbox(expandedTypeNeutral));
         }
@@ -6189,43 +6209,98 @@ class BooleanMatrixTest extends TestBase {
         }
 
         @Test
-        public void testAliasedRowsAreMutatedOnceByValueOnlyOperations() {
-            boolean[] sharedColumnRow = { true, false };
-            BooleanMatrix columnMatrix = BooleanMatrix.wrap(new boolean[][] { sharedColumnRow, sharedColumnRow });
-            columnMatrix.updateColumn(0, value -> !value);
-            assertArrayEquals(new boolean[] { false, false }, sharedColumnRow);
+        public void testAliasedRowsAreRejected() {
+            boolean[] sharedRow = { true, false };
+            assertThrows(IllegalArgumentException.class, () -> BooleanMatrix.wrap(new boolean[][] { sharedRow, sharedRow }));
 
-            boolean[] sharedUpdateRow = { true, false };
-            BooleanMatrix updateMatrix = BooleanMatrix.wrap(new boolean[][] { sharedUpdateRow, sharedUpdateRow });
-            updateMatrix.updateAll(value -> !value);
-            assertArrayEquals(new boolean[] { false, true }, sharedUpdateRow);
-
-            boolean[] sharedParallelRow = { true, false };
-            BooleanMatrix parallelMatrix = BooleanMatrix.wrap(new boolean[][] { sharedParallelRow, sharedParallelRow });
-            AtomicInteger invocationCount = new AtomicInteger();
-            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> parallelMatrix.updateAll(value -> {
-                invocationCount.incrementAndGet();
-                return !value;
-            }));
-            assertEquals(sharedParallelRow.length, invocationCount.get());
-            assertArrayEquals(new boolean[] { false, true }, sharedParallelRow);
-
-            boolean[] sharedReplaceRow = { true, false };
-            BooleanMatrix replaceMatrix = BooleanMatrix.wrap(new boolean[][] { sharedReplaceRow, sharedReplaceRow });
-            AtomicInteger replaceInvocationCount = new AtomicInteger();
-            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> replaceMatrix.replaceIf(value -> {
-                replaceInvocationCount.incrementAndGet();
-                return value;
-            }, false));
-            assertEquals(sharedReplaceRow.length, replaceInvocationCount.get());
-            assertArrayEquals(new boolean[] { false, false }, sharedReplaceRow);
-
-            boolean[] sharedFlipRow = { true, false, false };
-            BooleanMatrix flipMatrix = BooleanMatrix.wrap(new boolean[][] { sharedFlipRow, sharedFlipRow });
-            flipMatrix.flipHorizontallyInPlace();
-            assertArrayEquals(new boolean[] { false, false, true }, sharedFlipRow);
-            assertSame(flipMatrix.rowView(0), flipMatrix.rowView(1));
+            boolean[][] outer = { { true, false }, { false, true } };
+            BooleanMatrix matrix = BooleanMatrix.wrap(outer);
+            outer[0] = new boolean[] { false, false };
+            assertArrayEquals(new boolean[] { true, false }, matrix.rowCopy(0));
         }
+    }
+
+    @Test
+    public void testRandomGeneratorOverloadsAreReproducibleAndPreserveZeroRowShape() {
+        assertEquals(BooleanMatrix.random(4, 5, new java.util.Random(1234)), BooleanMatrix.random(4, 5, new java.util.Random(1234)));
+        assertEquals(BooleanMatrix.randomRow(5, new java.util.Random(4321)), BooleanMatrix.randomRow(5, new java.util.Random(4321)));
+        assertShape(0, 7, BooleanMatrix.random(0, 7, new java.util.Random(1)));
+        assertThrows(IllegalArgumentException.class, () -> BooleanMatrix.random(1, 1, null));
+        assertThrows(IllegalArgumentException.class, () -> BooleanMatrix.randomRow(1, null));
+    }
+
+    @Test
+    public void testZeroRowResultMethodsPreserveLogicalColumnCount() {
+        BooleanMatrix matrix = new BooleanMatrix(new boolean[0][], 3);
+        BooleanMatrix other = new BooleanMatrix(new boolean[0][], 3);
+
+        assertShape(0, 3, matrix.copy());
+        assertShape(0, 3, matrix.copyRows(0, 0));
+        assertShape(0, 2, matrix.copyRegion(0, 0, 1, 3));
+        assertShape(0, 3, matrix.map(value -> !value));
+        assertShape(0, 3, matrix.mapToObj(Boolean::valueOf, Boolean.class));
+        assertShape(0, 5, matrix.resize(0, 5));
+        assertShape(0, 5, matrix.pad(0, 0, 1, 1));
+        assertShape(3, 0, matrix.rotate90());
+        assertShape(0, 3, matrix.rotate180());
+        assertShape(3, 0, matrix.rotate270());
+        assertShape(3, 0, matrix.transpose());
+        assertShape(0, 4, matrix.reshapeAndPad(0, 4));
+        assertShape(0, 6, matrix.repeatElements(2, 2));
+        assertShape(0, 6, matrix.repeatMatrix(2, 2));
+        assertShape(0, 3, matrix.and(other));
+        assertShape(0, 3, matrix.or(other));
+        assertShape(0, 3, matrix.xor(other));
+        assertShape(0, 3, matrix.stackVertically(other));
+        assertShape(0, 6, matrix.stackHorizontally(other));
+        assertShape(0, 3, matrix.boxed());
+        assertShape(0, 3, matrix.zipWith(other, (left, right) -> left));
+        assertShape(0, 3, matrix.zipWith(other, other, (first, second, third) -> first));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testIteratorExCountConsumesEveryCustomIterator() {
+        BooleanMatrix matrix = BooleanMatrix.wrap(new boolean[][] { { true, false, true }, { false, true, false } });
+
+        com.landawn.abacus.util.stream.ObjIteratorEx<Boolean> main = (com.landawn.abacus.util.stream.ObjIteratorEx<Boolean>) matrix.mainDiagonalStream()
+                .iterator();
+        assertEquals(2, main.count());
+        assertFalse(main.hasNext());
+
+        com.landawn.abacus.util.stream.ObjIteratorEx<Boolean> anti = (com.landawn.abacus.util.stream.ObjIteratorEx<Boolean>) matrix.antiDiagonalStream()
+                .iterator();
+        assertEquals(2, anti.count());
+        assertFalse(anti.hasNext());
+
+        com.landawn.abacus.util.stream.ObjIteratorEx<Boolean> rowMajor = (com.landawn.abacus.util.stream.ObjIteratorEx<Boolean>) matrix.rowMajorStream()
+                .iterator();
+        assertEquals(6, rowMajor.count());
+        assertFalse(rowMajor.hasNext());
+
+        com.landawn.abacus.util.stream.ObjIteratorEx<Boolean> columnMajor = (com.landawn.abacus.util.stream.ObjIteratorEx<Boolean>) matrix.columnMajorStream()
+                .iterator();
+        assertEquals(6, columnMajor.count());
+        assertFalse(columnMajor.hasNext());
+
+        com.landawn.abacus.util.stream.ObjIteratorEx<Stream<Boolean>> rows = (com.landawn.abacus.util.stream.ObjIteratorEx<Stream<Boolean>>) matrix.rowStreams()
+                .iterator();
+        assertEquals(2, rows.count());
+        assertFalse(rows.hasNext());
+
+        com.landawn.abacus.util.stream.ObjIteratorEx<Stream<Boolean>> columns = (com.landawn.abacus.util.stream.ObjIteratorEx<Stream<Boolean>>) matrix
+                .columnStreams().iterator();
+        Stream<Boolean> firstColumn = columns.next();
+        com.landawn.abacus.util.stream.ObjIteratorEx<Boolean> columnValues = (com.landawn.abacus.util.stream.ObjIteratorEx<Boolean>) firstColumn.iterator();
+        assertEquals(2, columnValues.count());
+        assertFalse(columnValues.hasNext());
+        assertEquals(2, columns.count());
+        assertFalse(columns.hasNext());
+    }
+
+    private static void assertShape(final int expectedRows, final int expectedColumns, final AbstractMatrix<?, ?, ?, ?, ?> matrix) {
+        assertEquals(expectedRows, matrix.rowCount());
+        assertEquals(expectedColumns, matrix.columnCount());
     }
 
 }

@@ -417,7 +417,7 @@ class LongMatrixTest extends TestBase {
         Assertions.assertArrayEquals(new long[] { 1L, 5L, 9L }, diagonal);
 
         LongMatrix nonSquare = LongMatrix.wrap(new long[][] { { 1L, 2L } });
-        Assertions.assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalCopy());
+        Assertions.assertArrayEquals(new long[] { 1L }, nonSquare.mainDiagonalCopy());
     }
 
     @Test
@@ -1124,7 +1124,7 @@ class LongMatrixTest extends TestBase {
         Assertions.assertTrue(empty.mainDiagonalStream().toList().isEmpty());
 
         LongMatrix nonSquare = LongMatrix.wrap(new long[][] { { 1L, 2L } });
-        Assertions.assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalStream());
+        Assertions.assertArrayEquals(new long[] { 1L }, nonSquare.mainDiagonalStream().toArray());
     }
 
     @Test
@@ -2138,7 +2138,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD_nonSquare() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
+            assertArrayEquals(new long[] { 1L }, m.mainDiagonalCopy());
         }
 
         @Test
@@ -2153,7 +2153,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testSetLU2RD_nonSquare() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
-            assertThrows(IllegalStateException.class, () -> m.setMainDiagonal(new long[] { 1L }));
+            Assertions.assertDoesNotThrow(() -> m.setMainDiagonal(new long[] { 1L }));
         }
 
         @Test
@@ -2175,7 +2175,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testUpdateLU2RD_nonSquare() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
-            assertThrows(IllegalStateException.class, () -> m.updateMainDiagonal(x -> x * 2L));
+            Assertions.assertDoesNotThrow(() -> m.updateMainDiagonal(x -> x * 2L));
         }
 
         @Test
@@ -2187,7 +2187,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testGetRU2LD_nonSquare() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
-            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
+            assertArrayEquals(new long[] { 2L }, m.antiDiagonalCopy());
         }
 
         @Test
@@ -2202,7 +2202,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testSetRU2LD_nonSquare() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
-            assertThrows(IllegalStateException.class, () -> m.setAntiDiagonal(new long[] { 1L }));
+            Assertions.assertDoesNotThrow(() -> m.setAntiDiagonal(new long[] { 1L }));
         }
 
         @Test
@@ -2224,7 +2224,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testUpdateRU2LD_nonSquare() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
-            assertThrows(IllegalStateException.class, () -> m.updateAntiDiagonal(x -> x * 2L));
+            Assertions.assertDoesNotThrow(() -> m.updateAntiDiagonal(x -> x * 2L));
         }
 
         // ============ Transformation Tests ============
@@ -3002,7 +3002,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testStreamLU2RD_nonSquare() {
             LongMatrix nonSquare = LongMatrix.wrap(new long[][] { { 1L, 2L } });
-            assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalStream());
+            assertArrayEquals(new long[] { 1L }, nonSquare.mainDiagonalStream().toArray());
         }
 
         @Test
@@ -3021,7 +3021,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testStreamRU2LD_nonSquare() {
             LongMatrix nonSquare = LongMatrix.wrap(new long[][] { { 1L, 2L } });
-            assertThrows(IllegalStateException.class, () -> nonSquare.antiDiagonalStream());
+            assertArrayEquals(new long[] { 2L }, nonSquare.antiDiagonalStream().toArray());
         }
 
         @Test
@@ -3661,7 +3661,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testStreamLU2RD_nonSquare() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalStream().toArray());
+            assertArrayEquals(new long[] { 1L }, m.mainDiagonalStream().toArray());
         }
 
         @Test
@@ -3674,7 +3674,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testStreamRU2LD_nonSquare() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
-            assertThrows(IllegalStateException.class, () -> m.antiDiagonalStream().toArray());
+            assertArrayEquals(new long[] { 2L }, m.antiDiagonalStream().toArray());
         }
 
         @Test
@@ -5001,7 +5001,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void test_mainDiagonalCopy_nonSquare() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L }, { 5L, 6L } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
+            assertArrayEquals(new long[] { 1L, 4L }, m.mainDiagonalCopy());
         }
 
         @Test
@@ -5014,7 +5014,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void test_setMainDiagonal_nonSquare() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L } });
-            assertThrows(IllegalStateException.class, () -> m.setMainDiagonal(new long[] { 9L }));
+            Assertions.assertDoesNotThrow(() -> m.setMainDiagonal(new long[] { 9L }));
         }
 
         @Test
@@ -5825,7 +5825,7 @@ class LongMatrixTest extends TestBase {
         @Test
         public void testPointsMainDiagonal_NonSquareThrows() {
             LongMatrix m = LongMatrix.wrap(new long[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalPoints());
+            assertEquals(List.of(Point.of(0, 0), Point.of(1, 1)), m.mainDiagonalPoints().toList());
         }
 
         @Test
@@ -6188,8 +6188,8 @@ class LongMatrixTest extends TestBase {
             LongMatrix m = LongMatrix.wrap(new long[3][0]);
             assertEquals(3, m.rowCount());
             assertEquals(0, m.columnCount());
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalStream());
-            assertThrows(IllegalStateException.class, () -> m.antiDiagonalStream());
+            assertEquals(0, m.mainDiagonalStream().toArray().length);
+            assertEquals(0, m.antiDiagonalStream().toArray().length);
 
             LongMatrix empty = LongMatrix.empty();
             assertEquals(0, empty.mainDiagonalStream().count());
@@ -6231,8 +6231,8 @@ class LongMatrixTest extends TestBase {
 
         @Test
         public void testUnbox_typeNeutralEmptyReturnsPrimitiveEmptyAndTypedZeroColumnsPreserveRows() {
-            LongMatrix sharedEmpty = LongMatrix.unbox(Matrix.empty());
-            LongMatrix copiedTypeNeutralEmpty = LongMatrix.unbox(Matrix.<Long>empty().copy());
+            LongMatrix sharedEmpty = LongMatrix.unbox(Matrix.empty(Long.class));
+            LongMatrix copiedTypeNeutralEmpty = LongMatrix.unbox(Matrix.empty(Long.class).copy());
 
             assertSame(LongMatrix.empty(), sharedEmpty);
             assertSame(LongMatrix.empty(), copiedTypeNeutralEmpty);
@@ -6241,11 +6241,11 @@ class LongMatrixTest extends TestBase {
             assertEquals(2, zeroColumns.rowCount());
             assertEquals(0, zeroColumns.columnCount());
 
-            LongMatrix typeNeutralZeroColumns = LongMatrix.unbox(Matrix.<Long>empty().resize(2, 0));
+            LongMatrix typeNeutralZeroColumns = LongMatrix.unbox(Matrix.empty(Long.class).resize(2, 0));
             assertEquals(2, typeNeutralZeroColumns.rowCount());
             assertEquals(0, typeNeutralZeroColumns.columnCount());
 
-            Matrix<Long> typeNeutralExpanded = Matrix.<Long>empty().resize(2, 2);
+            Matrix<Long> typeNeutralExpanded = Matrix.empty(Long.class).resize(2, 2);
             typeNeutralExpanded.set(0, 1, 7L);
             assertEquals(LongMatrix.wrap(new long[][] { { 0L, 7L }, { 0L, 0L } }), LongMatrix.unbox(typeNeutralExpanded));
         }

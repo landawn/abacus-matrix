@@ -186,19 +186,19 @@ class CharMatrixTest extends TestBase {
 
     @Test
     public void testUnboxSharedEmptyAndPreserveZeroColumnRows() {
-        CharMatrix sharedEmpty = CharMatrix.unbox(Matrix.empty());
+        CharMatrix sharedEmpty = CharMatrix.unbox(Matrix.empty(Character.class));
         Assertions.assertSame(CharMatrix.empty(), sharedEmpty);
 
         CharMatrix zeroColumns = CharMatrix.unbox(Matrix.wrap(new Character[][] { {}, {} }));
         Assertions.assertEquals(2, zeroColumns.rowCount());
         Assertions.assertEquals(0, zeroColumns.columnCount());
 
-        Matrix<Character> typeNeutralZeroColumns = Matrix.<Character>empty().resize(2, 0);
+        Matrix<Character> typeNeutralZeroColumns = Matrix.empty(Character.class).resize(2, 0);
         CharMatrix unboxedTypeNeutralZeroColumns = CharMatrix.unbox(typeNeutralZeroColumns);
         Assertions.assertEquals(2, unboxedTypeNeutralZeroColumns.rowCount());
         Assertions.assertEquals(0, unboxedTypeNeutralZeroColumns.columnCount());
 
-        Matrix<Character> typeNeutralValues = Matrix.<Character>empty().resize(2, 2);
+        Matrix<Character> typeNeutralValues = Matrix.empty(Character.class).resize(2, 2);
         typeNeutralValues.set(0, 1, 'x');
         CharMatrix unboxedTypeNeutralValues = CharMatrix.unbox(typeNeutralValues);
         Assertions.assertArrayEquals(new char[] { 0, 'x' }, unboxedTypeNeutralValues.rowCopy(0));
@@ -422,7 +422,7 @@ class CharMatrixTest extends TestBase {
         Assertions.assertArrayEquals(new char[] { 'a', 'e', 'i' }, diagonal);
 
         CharMatrix nonSquare = CharMatrix.wrap(new char[][] { { 'a', 'b' } });
-        Assertions.assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalCopy());
+        Assertions.assertArrayEquals(new char[] { 'a' }, nonSquare.mainDiagonalCopy());
     }
 
     @Test
@@ -1125,7 +1125,7 @@ class CharMatrixTest extends TestBase {
         Assertions.assertTrue(empty.mainDiagonalStream().toList().isEmpty());
 
         CharMatrix nonSquare = CharMatrix.wrap(new char[][] { { 'a', 'b' } });
-        Assertions.assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalStream());
+        Assertions.assertArrayEquals(new char[] { 'a' }, nonSquare.mainDiagonalStream().toArray());
     }
 
     @Test
@@ -1760,7 +1760,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD_nonSquare() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'A', 'B' } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
+            assertArrayEquals(new char[] { 'A' }, m.mainDiagonalCopy());
         }
 
         @Test
@@ -1775,7 +1775,8 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testSetLU2RD_nonSquare() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'A', 'B' } });
-            assertThrows(IllegalStateException.class, () -> m.setMainDiagonal(new char[] { 'X' }));
+            m.setMainDiagonal(new char[] { 'X' });
+            assertEquals('X', m.get(0, 0));
         }
 
         @Test
@@ -1797,7 +1798,8 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testUpdateLU2RD_nonSquare() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'A', 'B' } });
-            assertThrows(IllegalStateException.class, () -> m.updateMainDiagonal(x -> (char) (x + 1)));
+            m.updateMainDiagonal(x -> (char) (x + 1));
+            assertEquals('B', m.get(0, 0));
         }
 
         @Test
@@ -1809,7 +1811,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testGetRU2LD_nonSquare() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'A', 'B' } });
-            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
+            assertArrayEquals(new char[] { 'B' }, m.antiDiagonalCopy());
         }
 
         @Test
@@ -1824,7 +1826,8 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testSetRU2LD_nonSquare() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'A', 'B' } });
-            assertThrows(IllegalStateException.class, () -> m.setAntiDiagonal(new char[] { 'X' }));
+            m.setAntiDiagonal(new char[] { 'X' });
+            assertEquals('X', m.get(0, 1));
         }
 
         @Test
@@ -1846,7 +1849,8 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testUpdateRU2LD_nonSquare() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'A', 'B' } });
-            assertThrows(IllegalStateException.class, () -> m.updateAntiDiagonal(x -> (char) (x + 1)));
+            m.updateAntiDiagonal(x -> (char) (x + 1));
+            assertEquals('C', m.get(0, 1));
         }
 
         // ============ Transformation Tests ============
@@ -2548,7 +2552,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamLU2RD_nonSquare() {
             CharMatrix nonSquare = CharMatrix.wrap(new char[][] { { 'A', 'B' } });
-            assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalStream());
+            assertArrayEquals(new char[] { 'A' }, nonSquare.mainDiagonalStream().toArray());
         }
 
         @Test
@@ -2567,7 +2571,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testStreamRU2LD_nonSquare() {
             CharMatrix nonSquare = CharMatrix.wrap(new char[][] { { 'A', 'B' } });
-            assertThrows(IllegalStateException.class, () -> nonSquare.antiDiagonalStream());
+            assertArrayEquals(new char[] { 'B' }, nonSquare.antiDiagonalStream().toArray());
         }
 
         @Test
@@ -3227,7 +3231,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD_nonSquare() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
+            assertArrayEquals(new char[] { 'a', 'e' }, m.mainDiagonalCopy());
         }
 
         @Test
@@ -4368,7 +4372,8 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testSetLU2RD_nonSquare() {
             CharMatrix m = CharMatrix.wrap(new char[2][3]);
-            assertThrows(IllegalStateException.class, () -> m.setMainDiagonal(new char[] { 'a', 'b' }));
+            m.setMainDiagonal(new char[] { 'a', 'b' });
+            assertArrayEquals(new char[] { 'a', 'b' }, m.mainDiagonalCopy());
         }
 
         @Test
@@ -4399,7 +4404,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testGetRU2LD_nonSquare() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } });
-            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
+            assertArrayEquals(new char[] { 'c', 'e' }, m.antiDiagonalCopy());
         }
 
         @Test
@@ -4430,7 +4435,8 @@ class CharMatrixTest extends TestBase {
         @Test
         public void testUpdateRU2LD_rectangular() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { ' ', ' ', 'a' }, { 'b', ' ', ' ' } });
-            assertThrows(IllegalStateException.class, () -> m.updateAntiDiagonal(val -> Character.toUpperCase(val)));
+            m.updateAntiDiagonal(val -> Character.toUpperCase(val));
+            assertArrayEquals(new char[] { 'A', ' ' }, m.antiDiagonalCopy());
         }
 
         // ============ Update/Replace Tests ============
@@ -5374,7 +5380,7 @@ class CharMatrixTest extends TestBase {
         @Test
         public void test_mainDiagonalCopy_nonSquare() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'a', 'b' }, { 'c', 'd' }, { 'e', 'f' } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
+            assertArrayEquals(new char[] { 'a', 'd' }, m.mainDiagonalCopy());
         }
 
         @Test
@@ -6564,7 +6570,7 @@ class CharMatrixTest extends TestBase {
         assertEquals('z', extended.get(0, 0));
         assertArrayEquals(new char[] { 'a', 'b', 'c', 'd' }, flattened.toArray());
         assertEquals(List.of('b', 'd'), visited);
-        assertTrue(printed.contains("[a, b]"));
+        assertTrue(printed.contains("['a', 'b']"));
     }
 
     @Test
@@ -6577,7 +6583,11 @@ class CharMatrixTest extends TestBase {
         com.landawn.abacus.util.stream.CharIteratorEx ex = (com.landawn.abacus.util.stream.CharIteratorEx) iterator;
         ex.advance(2);
         assertEquals(2L, ex.count());
-        assertEquals('c', ex.nextChar());
+        assertFalse(ex.hasNext());
+
+        com.landawn.abacus.util.stream.CharIteratorEx fresh = (com.landawn.abacus.util.stream.CharIteratorEx) matrix.rowMajorStream(0, 2).iterator();
+        fresh.advance(2);
+        assertEquals('c', fresh.nextChar());
         ex.advance(10);
         assertEquals(0L, ex.count());
         assertThrows(java.util.NoSuchElementException.class, ex::nextChar);
@@ -6598,7 +6608,7 @@ class CharMatrixTest extends TestBase {
             CharMatrix matrix = CharMatrix.wrap(new char[][] { { 'a', 'b' } });
             String s = matrix.toMultilineString();
             Assertions.assertNotNull(s);
-            Assertions.assertTrue(s.contains("[a, b]"));
+            Assertions.assertTrue(s.contains("['a', 'b']"));
         }
 
         @Test
@@ -6606,8 +6616,8 @@ class CharMatrixTest extends TestBase {
             CharMatrix matrix = CharMatrix.wrap(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
             String s = matrix.toMultilineString();
             Assertions.assertNotNull(s);
-            Assertions.assertTrue(s.contains("[a, b]"));
-            Assertions.assertTrue(s.contains("[c, d]"));
+            Assertions.assertTrue(s.contains("['a', 'b']"));
+            Assertions.assertTrue(s.contains("['c', 'd']"));
         }
     }
 
@@ -6617,12 +6627,12 @@ class CharMatrixTest extends TestBase {
     public class ReviewBugfixTests {
 
         @Test
-        public void testDiagonalStream_Nx0MatrixThrowsBecauseNotSquare() {
+        public void testDiagonalStream_Nx0MatrixIsEmpty() {
             CharMatrix m = CharMatrix.wrap(new char[3][0]);
             assertEquals(3, m.rowCount());
             assertEquals(0, m.columnCount());
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalStream());
-            assertThrows(IllegalStateException.class, () -> m.antiDiagonalStream());
+            assertEquals(0, m.mainDiagonalStream().count());
+            assertEquals(0, m.antiDiagonalStream().count());
 
             CharMatrix empty = CharMatrix.empty();
             assertEquals(0, empty.mainDiagonalStream().count());
@@ -6630,14 +6640,14 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTranspose_Nx0_collapsesToEmpty() {
+        public void testTranspose_Nx0_preservesSwappedShape() {
             CharMatrix t = CharMatrix.wrap(new char[3][0]).transpose();
             assertEquals(0, t.rowCount());
-            assertEquals(0, t.columnCount());
+            assertEquals(3, t.columnCount());
         }
 
         @Test
-        public void testRotate180_Nx0_preservesShape_whileRotate90TwiceCollapses() {
+        public void testRotate180AndRotate90Twice_preserveNx0Shape() {
             CharMatrix m = CharMatrix.wrap(new char[3][0]);
 
             CharMatrix via180 = m.rotate180();
@@ -6645,14 +6655,15 @@ class CharMatrixTest extends TestBase {
             assertEquals(0, via180.columnCount());
 
             CharMatrix viaRotate90Twice = m.rotate90().rotate90();
-            assertEquals(0, viaRotate90Twice.rowCount());
+            assertEquals(3, viaRotate90Twice.rowCount());
             assertEquals(0, viaRotate90Twice.columnCount());
         }
 
         @Test
-        public void testReshape_oversizedShapeThrowsIllegalArgumentException() {
-            CharMatrix m = CharMatrix.wrap(new char[][] { { 'a' } });
-            assertThrows(IllegalArgumentException.class, () -> m.reshape(46341, 46341));
+        public void testZeroRowShapeWithMaxColumnCountIsAllocationSafe() {
+            CharMatrix m = new CharMatrix(new char[0][], 1);
+            assertShape(0, Integer.MAX_VALUE, m.resize(0, Integer.MAX_VALUE));
+            assertShape(0, Integer.MAX_VALUE, m.reshapeAndPad(0, Integer.MAX_VALUE));
         }
 
         @Test
@@ -6679,42 +6690,14 @@ class CharMatrixTest extends TestBase {
         }
 
         @Test
-        public void testAliasedRowsAreMutatedOnceByValueOnlyOperations() {
-            char[] sharedColumnRow = { 'a', 'b' };
-            CharMatrix columnMatrix = CharMatrix.wrap(new char[][] { sharedColumnRow, sharedColumnRow });
-            columnMatrix.updateColumn(0, value -> (char) (value + 1));
-            assertArrayEquals(new char[] { 'b', 'b' }, sharedColumnRow);
+        public void testAliasedRowsAreRejected() {
+            char[] sharedRow = { 'a', 'b' };
+            assertThrows(IllegalArgumentException.class, () -> CharMatrix.wrap(new char[][] { sharedRow, sharedRow }));
 
-            char[] sharedUpdateRow = { 'a', 'b' };
-            CharMatrix updateMatrix = CharMatrix.wrap(new char[][] { sharedUpdateRow, sharedUpdateRow });
-            updateMatrix.updateAll(value -> (char) (value + 1));
-            assertArrayEquals(new char[] { 'b', 'c' }, sharedUpdateRow);
-
-            char[] sharedParallelRow = { 'a', 'b' };
-            CharMatrix parallelMatrix = CharMatrix.wrap(new char[][] { sharedParallelRow, sharedParallelRow });
-            AtomicInteger invocationCount = new AtomicInteger();
-            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> parallelMatrix.updateAll(value -> {
-                invocationCount.incrementAndGet();
-                return (char) (value + 1);
-            }));
-            assertEquals(sharedParallelRow.length, invocationCount.get());
-            assertArrayEquals(new char[] { 'b', 'c' }, sharedParallelRow);
-
-            char[] sharedReplaceRow = { 'a', 'b' };
-            CharMatrix replaceMatrix = CharMatrix.wrap(new char[][] { sharedReplaceRow, sharedReplaceRow });
-            AtomicInteger replaceInvocationCount = new AtomicInteger();
-            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> replaceMatrix.replaceIf(value -> {
-                replaceInvocationCount.incrementAndGet();
-                return value < 'z';
-            }, 'x'));
-            assertEquals(sharedReplaceRow.length, replaceInvocationCount.get());
-            assertArrayEquals(new char[] { 'x', 'x' }, sharedReplaceRow);
-
-            char[] sharedFlipRow = { 'a', 'b', 'c' };
-            CharMatrix flipMatrix = CharMatrix.wrap(new char[][] { sharedFlipRow, sharedFlipRow });
-            flipMatrix.flipHorizontallyInPlace();
-            assertArrayEquals(new char[] { 'c', 'b', 'a' }, sharedFlipRow);
-            assertSame(flipMatrix.rowView(0), flipMatrix.rowView(1));
+            char[][] outer = { { 'a', 'b' }, { 'c', 'd' } };
+            CharMatrix matrix = CharMatrix.wrap(outer);
+            outer[0] = new char[] { 'x', 'y' };
+            assertArrayEquals(new char[] { 'a', 'b' }, matrix.rowCopy(0));
         }
     }
 
@@ -6727,19 +6710,28 @@ class CharMatrixTest extends TestBase {
         com.landawn.abacus.util.stream.CharIteratorEx rowMajor = (com.landawn.abacus.util.stream.CharIteratorEx) rowMajorIterator;
         rowMajor.advance(1); // mid-row cursor: the chunked toArray must start at column 1
         assertEquals(5L, rowMajor.count());
-        assertArrayEquals(new char[] { 'b', 'c', 'd', 'e', 'f' }, rowMajor.toArray());
+        assertArrayEquals(new char[0], rowMajor.toArray());
+
+        com.landawn.abacus.util.stream.CharIteratorEx rowMajorFresh = (com.landawn.abacus.util.stream.CharIteratorEx) matrix.rowMajorStream(0, 2).iterator();
+        rowMajorFresh.advance(1);
+        assertArrayEquals(new char[] { 'b', 'c', 'd', 'e', 'f' }, rowMajorFresh.toArray());
 
         var columnMajorIterator = matrix.columnMajorStream(0, 3).iterator();
         com.landawn.abacus.util.stream.CharIteratorEx columnMajor = (com.landawn.abacus.util.stream.CharIteratorEx) columnMajorIterator;
         columnMajor.advance(1); // mid-column cursor: row 1 of column 0
         assertEquals(5L, columnMajor.count());
-        assertArrayEquals(new char[] { 'd', 'b', 'e', 'c', 'f' }, columnMajor.toArray());
+        assertArrayEquals(new char[0], columnMajor.toArray());
+
+        com.landawn.abacus.util.stream.CharIteratorEx columnMajorFresh = (com.landawn.abacus.util.stream.CharIteratorEx) matrix.columnMajorStream(0, 3)
+                .iterator();
+        columnMajorFresh.advance(1);
+        assertArrayEquals(new char[] { 'd', 'b', 'e', 'c', 'f' }, columnMajorFresh.toArray());
 
         var crossingIterator = matrix.columnMajorStream(0, 3).iterator();
         com.landawn.abacus.util.stream.CharIteratorEx crossing = (com.landawn.abacus.util.stream.CharIteratorEx) crossingIterator;
         crossing.advance(3); // crosses a column boundary: lands on row 1 of column 1
         assertEquals(3L, crossing.count());
-        assertEquals('e', crossing.nextChar());
+        assertFalse(crossing.hasNext());
         crossing.advance(10);
         assertEquals(0L, crossing.count());
         assertThrows(java.util.NoSuchElementException.class, crossing::nextChar);
@@ -6750,6 +6742,109 @@ class CharMatrixTest extends TestBase {
         assertThrows(IllegalArgumentException.class, () -> CharMatrix.randomRow(-1));
         assertThrows(IllegalArgumentException.class, () -> CharMatrix.random(-1, 2));
         assertThrows(IllegalArgumentException.class, () -> CharMatrix.random(2, -1));
+    }
+
+    @Test
+    public void testRandomGeneratorOverloadsAreReproducibleAndPreserveZeroRowShape() {
+        assertEquals(CharMatrix.random(4, 5, new java.util.Random(1234)), CharMatrix.random(4, 5, new java.util.Random(1234)));
+        assertEquals(CharMatrix.randomRow(5, new java.util.Random(4321)), CharMatrix.randomRow(5, new java.util.Random(4321)));
+        assertShape(0, 7, CharMatrix.random(0, 7, new java.util.Random(1)));
+        assertThrows(IllegalArgumentException.class, () -> CharMatrix.random(1, 1, null));
+        assertThrows(IllegalArgumentException.class, () -> CharMatrix.randomRow(1, null));
+    }
+
+    @Test
+    public void testEscapedDiagnosticsAndAppendTo() {
+        CharMatrix matrix = CharMatrix.wrap(new char[][] { { '\n', '\t', '\'', '\\', (char) 0, (char) 0xd800, (char) 0x00e9 } });
+        String multiline = matrix.toMultilineString();
+
+        assertFalse(multiline.contains("\n"));
+        assertTrue(multiline.contains("\\n"));
+        assertTrue(multiline.contains("\\t"));
+        assertTrue(multiline.contains("\\'"));
+        assertTrue(multiline.contains("\\\\"));
+        assertTrue(multiline.contains("\\" + "u0000"));
+        assertTrue(multiline.contains("\\" + "uD800"));
+        assertTrue(multiline.contains("\\" + "u00E9"));
+        assertEquals("[" + multiline + "]", matrix.toString());
+
+        StringBuilder output = new StringBuilder("prefix:");
+        matrix.appendTo(output);
+        assertEquals("prefix:" + multiline, output.toString());
+    }
+
+    @Test
+    public void testZeroRowResultMethodsPreserveLogicalColumnCount() {
+        CharMatrix matrix = new CharMatrix(new char[0][], 3);
+        CharMatrix other = new CharMatrix(new char[0][], 3);
+
+        assertShape(0, 3, matrix.copy());
+        assertShape(0, 3, matrix.copyRows(0, 0));
+        assertShape(0, 2, matrix.copyRegion(0, 0, 1, 3));
+        assertShape(0, 3, matrix.map(value -> Character.toUpperCase(value)));
+        assertShape(0, 3, matrix.mapToObj(Character::valueOf, Character.class));
+        assertShape(0, 5, matrix.resize(0, 5));
+        assertShape(0, 5, matrix.pad(0, 0, 1, 1));
+        assertShape(3, 0, matrix.rotate90());
+        assertShape(0, 3, matrix.rotate180());
+        assertShape(3, 0, matrix.rotate270());
+        assertShape(3, 0, matrix.transpose());
+        assertShape(0, 4, matrix.reshapeAndPad(0, 4));
+        assertShape(0, 6, matrix.repeatElements(2, 2));
+        assertShape(0, 6, matrix.repeatMatrix(2, 2));
+        assertShape(0, 3, matrix.stackVertically(other));
+        assertShape(0, 6, matrix.stackHorizontally(other));
+        assertShape(0, 3, matrix.add(other));
+        assertShape(0, 3, matrix.subtract(other));
+        CharMatrix right = CharMatrix.wrap(new char[3][2]);
+        assertShape(0, 2, matrix.matrixMultiply(right));
+        assertShape(0, 3, matrix.boxed());
+        assertShape(0, 3, matrix.toIntMatrix());
+        assertShape(0, 3, matrix.toLongMatrix());
+        assertShape(0, 3, matrix.toFloatMatrix());
+        assertShape(0, 3, matrix.toDoubleMatrix());
+        assertShape(0, 3, matrix.zipWith(other, (left, rightValue) -> left));
+        assertShape(0, 3, matrix.zipWith(other, other, (first, second, third) -> first));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testIteratorExCountConsumesEveryCustomIterator() {
+        CharMatrix matrix = CharMatrix.wrap(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } });
+
+        com.landawn.abacus.util.stream.CharIteratorEx main = (com.landawn.abacus.util.stream.CharIteratorEx) matrix.mainDiagonalStream().iterator();
+        assertEquals(2, main.count());
+        assertFalse(main.hasNext());
+
+        com.landawn.abacus.util.stream.CharIteratorEx anti = (com.landawn.abacus.util.stream.CharIteratorEx) matrix.antiDiagonalStream().iterator();
+        assertEquals(2, anti.count());
+        assertFalse(anti.hasNext());
+
+        com.landawn.abacus.util.stream.CharIteratorEx rowMajor = (com.landawn.abacus.util.stream.CharIteratorEx) matrix.rowMajorStream().iterator();
+        assertEquals(6, rowMajor.count());
+        assertFalse(rowMajor.hasNext());
+
+        com.landawn.abacus.util.stream.CharIteratorEx columnMajor = (com.landawn.abacus.util.stream.CharIteratorEx) matrix.columnMajorStream().iterator();
+        assertEquals(6, columnMajor.count());
+        assertFalse(columnMajor.hasNext());
+
+        com.landawn.abacus.util.stream.ObjIteratorEx<CharStream> rows = (com.landawn.abacus.util.stream.ObjIteratorEx<CharStream>) matrix.rowStreams()
+                .iterator();
+        assertEquals(2, rows.count());
+        assertFalse(rows.hasNext());
+
+        com.landawn.abacus.util.stream.ObjIteratorEx<CharStream> columns = (com.landawn.abacus.util.stream.ObjIteratorEx<CharStream>) matrix.columnStreams()
+                .iterator();
+        com.landawn.abacus.util.stream.CharIteratorEx columnValues = (com.landawn.abacus.util.stream.CharIteratorEx) columns.next().iterator();
+        assertEquals(2, columnValues.count());
+        assertFalse(columnValues.hasNext());
+        assertEquals(2, columns.count());
+        assertFalse(columns.hasNext());
+    }
+
+    private static void assertShape(final int expectedRows, final int expectedColumns, final AbstractMatrix<?, ?, ?, ?, ?> matrix) {
+        assertEquals(expectedRows, matrix.rowCount());
+        assertEquals(expectedColumns, matrix.columnCount());
     }
 
 }

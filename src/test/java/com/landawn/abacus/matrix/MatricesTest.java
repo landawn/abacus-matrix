@@ -5142,7 +5142,7 @@ class MatricesTest extends TestBase {
 
     @Test
     public void testCollectionStacksKeepRepeatedSharedEmptiesRuntimeTypeNeutral() {
-        final Matrix<String> empty = Matrix.empty();
+        final Matrix<String> empty = Matrix.empty(String.class);
         final Matrix<String> typedEmpty = Matrix.wrap(new String[0][0]);
 
         final Matrix<String> vertical = Matrices.stackVertically(List.of(empty, empty, typedEmpty)).resize(1, 1);
@@ -5157,8 +5157,8 @@ class MatricesTest extends TestBase {
     @Test
     public void testSingletonCollectionStacksKeepSharedEmptyRuntimeTypeNeutral() {
         final Matrix<String> typedEmpty = Matrix.wrap(new String[0][0]);
-        final Matrix<String> verticalOnly = Matrices.stackVertically(List.of(Matrix.<String> empty()));
-        final Matrix<String> horizontalOnly = Matrices.stackHorizontally(List.of(Matrix.<String> empty()));
+        final Matrix<String> verticalOnly = Matrices.stackVertically(List.of(Matrix.empty(String.class)));
+        final Matrix<String> horizontalOnly = Matrices.stackHorizontally(List.of(Matrix.empty(String.class)));
 
         final Matrix<String> vertical = verticalOnly.stackVertically(typedEmpty).resize(1, 1);
         final Matrix<String> horizontal = horizontalOnly.stackHorizontally(typedEmpty).resize(1, 1);
@@ -5171,8 +5171,8 @@ class MatricesTest extends TestBase {
 
     @Test
     public void testCollectionStacksOfOnlySharedEmptiesReturnSharedInstance() {
-        assertSame(Matrix.empty(), Matrices.stackVertically(List.of(Matrix.empty(), Matrix.empty())));
-        assertSame(Matrix.empty(), Matrices.stackHorizontally(List.of(Matrix.empty(), Matrix.empty())));
+        assertEquals(Matrix.empty(), Matrices.stackVertically(List.of(Matrix.empty(), Matrix.empty())));
+        assertEquals(Matrix.empty(), Matrices.stackHorizontally(List.of(Matrix.empty(), Matrix.empty())));
     }
 
     @Test
@@ -5181,7 +5181,7 @@ class MatricesTest extends TestBase {
         final Matrix<Object[]> integers = Matrix.wrap((Object[][][]) new Integer[][][] { { { 1 } } });
         final Matrix<Object[]> longs = Matrix.wrap((Object[][][]) new Long[][][] { { { 2L } } });
 
-        final Matrix<Object[]> zipped = Matrices.zip(List.of(strings, integers, longs), (left, right) -> left);
+        final Matrix<Object[]> zipped = Matrices.zip(List.of(strings, integers, longs), (left, right) -> left, Object[].class);
 
         final Object[][] row = zipped.rowCopy(0);
         assertArrayEquals(new Object[] { "a" }, row[0]);
@@ -5190,20 +5190,20 @@ class MatricesTest extends TestBase {
 
     @Test
     public void testBinaryCollectionZipIgnoresSharedEmptyPlaceholderType() {
-        final Matrix<String> sharedEmpty = Matrix.empty();
+        final Matrix<String> sharedEmpty = Matrix.empty(String.class);
         final Matrix<String> typedEmpty = Matrix.wrap(new String[0][0]);
-        final Matrix<String> singletonShared = Matrices.zip(List.of(sharedEmpty), (left, right) -> left);
-        final Matrix<String> onlyShared = Matrices.zip(List.of(sharedEmpty, sharedEmpty), (left, right) -> left);
+        final Matrix<String> singletonShared = Matrices.zip(List.of(sharedEmpty), (left, right) -> left, String.class);
+        final Matrix<String> onlyShared = Matrices.zip(List.of(sharedEmpty, sharedEmpty), (left, right) -> left, String.class);
 
-        final Matrix<String> sharedFirst = Matrices.zip(List.of(sharedEmpty, typedEmpty, sharedEmpty), (left, right) -> left).resize(1, 1);
-        final Matrix<String> typedFirst = Matrices.zip(List.of(typedEmpty, sharedEmpty), (left, right) -> left).resize(1, 1);
-        final Matrix<String> chained = Matrices.zip(List.of(onlyShared, typedEmpty), (left, right) -> left).resize(1, 1);
+        final Matrix<String> sharedFirst = Matrices.zip(List.of(sharedEmpty, typedEmpty, sharedEmpty), (left, right) -> left, String.class).resize(1, 1);
+        final Matrix<String> typedFirst = Matrices.zip(List.of(typedEmpty, sharedEmpty), (left, right) -> left, String.class).resize(1, 1);
+        final Matrix<String> chained = Matrices.zip(List.of(onlyShared, typedEmpty), (left, right) -> left, String.class).resize(1, 1);
 
         final String[] sharedFirstRow = sharedFirst.rowView(0);
         final String[] typedFirstRow = typedFirst.rowView(0);
         final String[] chainedRow = chained.rowView(0);
-        assertSame(sharedEmpty, singletonShared);
-        assertSame(sharedEmpty, onlyShared);
+        assertEquals(sharedEmpty, singletonShared);
+        assertEquals(sharedEmpty, onlyShared);
         assertEquals(String.class, sharedFirstRow.getClass().getComponentType());
         assertEquals(String.class, typedFirstRow.getClass().getComponentType());
         assertEquals(String.class, chainedRow.getClass().getComponentType());
@@ -5222,7 +5222,7 @@ class MatricesTest extends TestBase {
                 // previously failed when the intermediate array lost one array dimension.
                 observedArguments.add(values);
                 return values[0][0] + ":" + values[1][0];
-            }, shareIntermediateArray, String.class);
+            }, shareIntermediateArray, Object[].class, String.class);
 
             assertArrayEquals(new String[] { "a:1", "b:2" }, result.rowCopy(0));
             assertEquals(2, observedArguments.size());

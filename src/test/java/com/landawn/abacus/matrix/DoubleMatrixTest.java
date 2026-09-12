@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -378,7 +379,7 @@ class DoubleMatrixTest extends TestBase {
 
         // Test non-square matrix
         DoubleMatrix nonSquare = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0, 3.0 } });
-        assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalCopy());
+        assertArrayEquals(new double[] { 1.0 }, nonSquare.mainDiagonalCopy());
     }
 
     @Test
@@ -1903,7 +1904,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testGetLU2RD_nonSquare() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
+            assertArrayEquals(new double[] { 1.0 }, m.mainDiagonalCopy(), DELTA);
         }
 
         @Test
@@ -1918,7 +1919,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testSetLU2RD_nonSquare() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 } });
-            assertThrows(IllegalStateException.class, () -> m.setMainDiagonal(new double[] { 1.0 }));
+            Assertions.assertDoesNotThrow(() -> m.setMainDiagonal(new double[] { 1.0 }));
         }
 
         @Test
@@ -1940,7 +1941,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testUpdateLU2RD_nonSquare() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 } });
-            assertThrows(IllegalStateException.class, () -> m.updateMainDiagonal(x -> x * 2.0));
+            Assertions.assertDoesNotThrow(() -> m.updateMainDiagonal(x -> x * 2.0));
         }
 
         @Test
@@ -1952,7 +1953,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testGetRU2LD_nonSquare() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 } });
-            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
+            assertArrayEquals(new double[] { 2.0 }, m.antiDiagonalCopy(), DELTA);
         }
 
         @Test
@@ -1967,7 +1968,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testSetRU2LD_nonSquare() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 } });
-            assertThrows(IllegalStateException.class, () -> m.setAntiDiagonal(new double[] { 1.0 }));
+            Assertions.assertDoesNotThrow(() -> m.setAntiDiagonal(new double[] { 1.0 }));
         }
 
         @Test
@@ -1989,7 +1990,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testUpdateRU2LD_nonSquare() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 } });
-            assertThrows(IllegalStateException.class, () -> m.updateAntiDiagonal(x -> x * 2.0));
+            Assertions.assertDoesNotThrow(() -> m.updateAntiDiagonal(x -> x * 2.0));
         }
 
         // ============ Transformation Tests ============
@@ -2670,7 +2671,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testStreamLU2RD_nonSquare() {
             DoubleMatrix nonSquare = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 } });
-            assertThrows(IllegalStateException.class, () -> nonSquare.mainDiagonalStream());
+            assertArrayEquals(new double[] { 1.0 }, nonSquare.mainDiagonalStream().toArray(), DELTA);
         }
 
         @Test
@@ -2689,7 +2690,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testStreamRU2LD_nonSquare() {
             DoubleMatrix nonSquare = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 } });
-            assertThrows(IllegalStateException.class, () -> nonSquare.antiDiagonalStream());
+            assertArrayEquals(new double[] { 2.0 }, nonSquare.antiDiagonalStream().toArray(), DELTA);
         }
 
         @Test
@@ -3339,6 +3340,8 @@ class DoubleMatrixTest extends TestBase {
     @Tag("2510")
     class DoubleMatrix2510Test extends TestBase {
 
+        private static final double DELTA = 0.0001;
+
         // ============ Constructor Tests ============
 
         @Test
@@ -3657,7 +3660,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testSetLU2RD_nonSquare() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 }, { 5.0, 6.0 } });
-            assertThrows(IllegalStateException.class, () -> m.setMainDiagonal(new double[] { 9.0, 8.0 }));
+            Assertions.assertDoesNotThrow(() -> m.setMainDiagonal(new double[] { 9.0, 8.0 }));
         }
 
         @Test
@@ -3678,7 +3681,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void testGetRU2LD_nonSquare() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 }, { 5.0, 6.0 } });
-            assertThrows(IllegalStateException.class, () -> m.antiDiagonalCopy());
+            assertArrayEquals(new double[] { 2.0, 3.0 }, m.antiDiagonalCopy(), DELTA);
         }
 
         @Test
@@ -4975,7 +4978,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void test_mainDiagonalCopy_nonSquare() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 }, { 5.0, 6.0 } });
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalCopy());
+            assertArrayEquals(new double[] { 1.0, 4.0 }, m.mainDiagonalCopy(), 0.0);
         }
 
         @Test
@@ -4988,7 +4991,7 @@ class DoubleMatrixTest extends TestBase {
         @Test
         public void test_setMainDiagonal_nonSquare() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 } });
-            assertThrows(IllegalStateException.class, () -> m.setMainDiagonal(new double[] { 9.0 }));
+            Assertions.assertDoesNotThrow(() -> m.setMainDiagonal(new double[] { 9.0 }));
         }
 
         @Test
@@ -6250,8 +6253,8 @@ class DoubleMatrixTest extends TestBase {
             DoubleMatrix m = DoubleMatrix.wrap(new double[3][0]);
             assertEquals(3, m.rowCount());
             assertEquals(0, m.columnCount());
-            assertThrows(IllegalStateException.class, () -> m.mainDiagonalStream());
-            assertThrows(IllegalStateException.class, () -> m.antiDiagonalStream());
+            assertEquals(0, m.mainDiagonalStream().toArray().length);
+            assertEquals(0, m.antiDiagonalStream().toArray().length);
 
             DoubleMatrix empty = DoubleMatrix.empty();
             assertEquals(0, empty.mainDiagonalStream().count());
@@ -6293,8 +6296,8 @@ class DoubleMatrixTest extends TestBase {
 
         @Test
         public void testUnbox_typeNeutralEmptyReturnsPrimitiveEmptyAndTypedZeroColumnsPreserveRows() {
-            DoubleMatrix sharedEmpty = DoubleMatrix.unbox(Matrix.empty());
-            DoubleMatrix copiedTypeNeutralEmpty = DoubleMatrix.unbox(Matrix.<Double>empty().copy());
+            DoubleMatrix sharedEmpty = DoubleMatrix.unbox(Matrix.empty(Double.class));
+            DoubleMatrix copiedTypeNeutralEmpty = DoubleMatrix.unbox(Matrix.empty(Double.class).copy());
 
             assertSame(DoubleMatrix.empty(), sharedEmpty);
             assertSame(DoubleMatrix.empty(), copiedTypeNeutralEmpty);
@@ -6303,11 +6306,11 @@ class DoubleMatrixTest extends TestBase {
             assertEquals(2, zeroColumns.rowCount());
             assertEquals(0, zeroColumns.columnCount());
 
-            DoubleMatrix typeNeutralZeroColumns = DoubleMatrix.unbox(Matrix.<Double>empty().resize(2, 0));
+            DoubleMatrix typeNeutralZeroColumns = DoubleMatrix.unbox(Matrix.empty(Double.class).resize(2, 0));
             assertEquals(2, typeNeutralZeroColumns.rowCount());
             assertEquals(0, typeNeutralZeroColumns.columnCount());
 
-            Matrix<Double> typeNeutralExpanded = Matrix.<Double>empty().resize(2, 2);
+            Matrix<Double> typeNeutralExpanded = Matrix.empty(Double.class).resize(2, 2);
             typeNeutralExpanded.set(0, 1, 7d);
             assertEquals(DoubleMatrix.wrap(new double[][] { { 0d, 7d }, { 0d, 0d } }), DoubleMatrix.unbox(typeNeutralExpanded));
         }

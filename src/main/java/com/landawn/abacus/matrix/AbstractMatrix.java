@@ -16,12 +16,12 @@ package com.landawn.abacus.matrix;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
 
 import com.landawn.abacus.annotation.SuppressFBWarnings;
 import com.landawn.abacus.util.IOUtil;
@@ -39,7 +39,7 @@ import com.landawn.abacus.util.stream.Stream;
  * coordinate navigation, row and column access, reshaping, and stream-oriented traversal.</p>
  *
  * <p>Several APIs intentionally cross the usual defensive-copy boundary for performance-sensitive code:
- * {@link #unsafeBackingArray()} and {@link #rowView(int)} expose live storage, while
+ * {@link #rowView(int)} and the rows returned by {@link #unsafeBackingArray()} expose live element storage, while
  * {@link #mutateViaFlatArray(Throwables.Consumer)} lets callers mutate the matrix through a temporary
  * flattened array that is copied back afterward.
  * Callers that need isolation should prefer
@@ -95,11 +95,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     protected static final String ARRAY_PRINT_SEPARATOR = IOUtil.LINE_SEPARATOR_UNIX;
 
     /**
-     * Shared random source used by primitive matrix factories that produce randomized data
-     * (for example {@code IntMatrix.randomRow(int)}). Backed by {@link SecureRandom} for higher-quality
-     * sequences than the default {@link Random}.
+     * Returns the current thread's non-cryptographic default generator for convenience random factories.
+     * Callers that need reproducibility or stronger randomness should use an overload accepting a
+     * {@link RandomGenerator}.
      */
-    protected static final Random RAND = new SecureRandom();
+    protected static RandomGenerator defaultRandomGenerator() {
+        return ThreadLocalRandom.current();
+    }
 
     /** The {@code char} default value ({@code '\0'}), used to fill newly introduced cells. */
     static final char CHAR_0 = (char) 0;
@@ -128,9 +130,6 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     /** Exception message format for diagonal array length mismatch. Arguments: expected, actual */
     protected static final String MSG_DIAGONAL_LENGTH_MISMATCH = "Diagonal array length must equal matrix size: expected {} but got {}";
 
-    /** Exception message format for non-square matrix error. Arguments: rowCount, columnCount */
-    protected static final String MSG_MATRIX_NOT_SQUARE = "Matrix must be square: current dimensions are {} rows x {} columns";
-
     /** Exception message format for shape mismatch between two matrices. Arguments: rows1, cols1, rows2, cols2 */
     protected static final String MSG_SHAPE_MISMATCH = "Matrix shape mismatch: this matrix is {}x{} but other is {}x{}";
 
@@ -149,11 +148,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     /** Exception message format for non-positive repeats. Arguments: rowRepeats, columnRepeats */
     protected static final String MSG_REPEATS_NOT_POSITIVE = "rowRepeats and columnRepeats must be positive: rowRepeats={}, columnRepeats={}";
 
-    /**
-     * Exception message format for matrix shapes that cannot be represented by this row-array-backed implementation.
-     * Arguments: rowCount, columnCount.
-     */
-    protected static final String MSG_UNREPRESENTABLE_SHAPE = "Matrix shape {}x{} is not representable: zero rows require zero columns";
+    /** Exception message format for duplicate row storage. Arguments: currentRowIndex, firstRowIndex */
+    protected static final String MSG_DUPLICATE_ROW = "Rows must have independent storage: row {} is the same array as row {}";
 
     // ==================== End Exception Message Constants ====================
 
@@ -176,8 +172,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     final long elementCount;
 
     /**
-     * The underlying two-dimensional array storing the matrix data.
-     * Public callers obtain this reference only through {@link #unsafeBackingArray()}.
+     * The private structural snapshot of the supplied two-dimensional array. Row arrays remain
+     * shared with callers, but the outer array is never exposed directly.
      */
     final A[] a;
 
@@ -192,40 +188,75 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     /**
      * Constructs a new {@code AbstractMatrix} with the specified two-dimensional array and element type.
      * The constructor validates that all rows are non-{@code null} and have the same length.
-     * The supplied array is retained by reference and not defensively copied.
+     * The supplied outer array is shallow-copied so callers cannot replace or reorder this
+     * matrix's rows after construction. Individual rows remain shared.
      *
      * @param a the two-dimensional array containing matrix data; must not be {@code null}
      * @param elementType the element type of the matrix (e.g. {@code int.class});
      *        must not be {@code null}
      * @throws IllegalArgumentException if {@code a} or {@code elementType} is {@code null},
-     *         if any row of {@code a} is {@code null}, or if the rows have different lengths
-     *         (i.e. the array is not rectangular)
+     *         if any row of {@code a} is {@code null}, if rows have different lengths, or if two
+     *         logical rows are the same array object
      */
     @SuppressFBWarnings("CT_CONSTRUCTOR_THROW")
     protected AbstractMatrix(final A[] a, final Class<?> elementType) {
+        this(a, elementType, inferColumnCount(a));
+    }
+
+    /**
+     * Constructs a matrix with an explicit logical column count. The explicit form is required
+     * for a {@code 0 x N} matrix because a zero-length outer array cannot encode {@code N}.
+     *
+     * @param a the row arrays; must be non-{@code null}, rectangular, and identity-distinct
+     * @param elementType the matrix element type; must be non-{@code null}
+     * @param explicitColumnCount the logical column count; must be non-negative and, when rows
+     *        are present, equal to every row's length
+     * @throws IllegalArgumentException if an argument or row violates the stated contract
+     */
+    @SuppressFBWarnings("CT_CONSTRUCTOR_THROW")
+    protected AbstractMatrix(final A[] a, final Class<?> elementType, final int explicitColumnCount) {
         N.checkArgNotNull(a, "Matrix array cannot be null");
         N.checkArgNotNull(elementType, "Element type cannot be null");
+        N.checkArgument(explicitColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", explicitColumnCount);
 
-        this.a = a;
+        // The logical shape is cached, so retaining the caller's outer array would let a row
+        // replacement silently invalidate every bounds and traversal invariant in this class.
+        this.a = a.clone();
         this.elementType = elementType;
         rowCount = a.length;
 
-        if (rowCount > 0) {
-            N.checkArgument(a[0] != null, "Row 0 cannot be null");
-        }
+        columnCount = explicitColumnCount;
+        final Map<A, Integer> seenRows = new IdentityHashMap<>(a.length);
 
-        columnCount = rowCount == 0 ? 0 : length(a[0]);
+        for (int i = 0; i < a.length; i++) {
+            final A row = a[i];
+            N.checkArgument(row != null, "Row {} cannot be null", i);
 
-        if (a.length > 1) {
-            for (int i = 1, len = a.length; i < len; i++) {
-                N.checkArgument(a[i] != null, "Row {} cannot be null", i);
-                if (length(a[i]) != columnCount) {
-                    throw new IllegalArgumentException(formatMsg(MSG_NOT_RECTANGULAR, columnCount, i, length(a[i])));
-                }
+            if (length(row) != columnCount) {
+                throw new IllegalArgumentException(formatMsg(MSG_NOT_RECTANGULAR, columnCount, i, length(row)));
+            }
+
+            final Integer firstIndex = seenRows.put(row, i);
+
+            if (firstIndex != null) {
+                // One physical row cannot represent two independently addressable logical rows:
+                // updating either position would necessarily and invisibly update the other.
+                throw new IllegalArgumentException(formatMsg(MSG_DUPLICATE_ROW, i, firstIndex));
             }
         }
 
         elementCount = (long) columnCount * rowCount;
+    }
+
+    private static int inferColumnCount(final Object[] rows) {
+        N.checkArgNotNull(rows, "Matrix array cannot be null");
+
+        if (rows.length == 0) {
+            return 0;
+        }
+
+        N.checkArgument(rows[0] != null, "Row 0 cannot be null");
+        return java.lang.reflect.Array.getLength(rows[0]);
     }
 
     /**
@@ -294,59 +325,6 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     }
 
     /**
-     * Returns whether two or more logical rows share the same backing array.
-     *
-     * @return {@code true} if at least two rows are the same array object; otherwise {@code false}
-     */
-    final boolean hasAliasedRows() {
-        // Constructors and wrap factories deliberately retain the caller's outer array. Its row
-        // references can therefore change without going through this class, so aliasing is not an
-        // invariant that can be safely memoized.
-        return computeHasAliasedRows();
-    }
-
-    /**
-     * Determines whether the current backing storage contains the same row array at more than one
-     * logical row position.
-     *
-     * @return {@code true} if a row array occurs more than once; otherwise {@code false}
-     */
-    private boolean computeHasAliasedRows() {
-        if (a.length < 2) {
-            return false;
-        }
-
-        final Map<A, Boolean> seenRows = new IdentityHashMap<>(a.length);
-
-        for (final A row : a) {
-            if (seenRows.put(row, Boolean.TRUE) != null) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Performs {@code action} once for each distinct backing row, in first-occurrence order.
-     * This prevents a row-wise in-place transformation from being applied repeatedly when the
-     * outer backing array contains the same row reference more than once.
-     *
-     * @param <E> the type of exception that the action may throw
-     * @param action the row transformation to perform
-     * @throws E if the action throws an exception
-     */
-    final <E extends Exception> void forEachDistinctRow(final Throwables.Consumer<? super A, E> action) throws E {
-        final Map<A, Boolean> seenRows = new IdentityHashMap<>(a.length);
-
-        for (final A row : a) {
-            if (seenRows.put(row, Boolean.TRUE) == null) {
-                action.accept(row);
-            }
-        }
-    }
-
-    /**
      * Returns a new array of the same runtime type and length as {@code source}, containing the same
      * primitive values or element references. The supplied array is not modified.
      *
@@ -386,34 +364,15 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     }
 
     /**
-     * Validates that the specified shape is representable by this matrix implementation.
-     * Because dimensions are encoded by row arrays, a matrix with zero rows can only have zero columns.
+     * Validates the two independently stored matrix dimensions.
      *
      * @param rowCount the row count; must be non-negative
      * @param columnCount the column count; must be non-negative
-     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative, or if {@code rowCount == 0} while
-     *         {@code columnCount != 0} (zero rows with a non-zero column count is not representable)
+     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative
      */
     protected static void checkRepresentableShape(final int rowCount, final int columnCount) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
-        N.checkArgument(rowCount > 0 || columnCount == 0, MSG_UNREPRESENTABLE_SHAPE, rowCount, columnCount);
-    }
-
-    /**
-     * Validates that a newly materialized shape stays within the flat-cardinality limit used by
-     * operations such as {@code reshape} that intentionally require compatibility with a single
-     * flat array or list. Row-array operations that do not require flat materialization may support
-     * a larger total cell count as long as each individual dimension is representable.
-     *
-     * @param rowCount the row count
-     * @param columnCount the column count
-     * @throws IllegalArgumentException if the total cell count {@code (long) rowCount * columnCount} exceeds {@code Integer.MAX_VALUE}
-     */
-    protected static void checkMaterializableShape(final int rowCount, final int columnCount) {
-        if ((long) rowCount * columnCount > Integer.MAX_VALUE) {
-            throw new IllegalArgumentException("Matrix dimensions overflow: " + rowCount + " x " + columnCount + " exceeds Integer.MAX_VALUE");
-        }
     }
 
     /**
@@ -495,14 +454,11 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     }
 
     /**
-     * Returns the underlying two-dimensional array of this matrix without copying.
-     * Modifications to the returned array (including reassigning its row references) are visible through this matrix.
+     * Returns a shallow snapshot of this matrix's rows. Reassigning or reordering entries in the
+     * returned outer array does not affect this matrix; mutating an element in one of its row arrays does.
      *
-     * <p><b>&#9888;&#65039; Unsafe API boundary:</b> This method returns the actual internal array, not a copy.
-     * Any changes made to the returned array (including reassigning row references or mutating row contents)
-     * will be reflected in this matrix. Reassigned rows must remain non-{@code null} and keep the original
-     * {@link #columnCount()}; violating those shape invariants leaves the matrix in an invalid state because
-     * its dimensions are fixed at construction.
+     * <p><b>&#9888;&#65039; Live element storage:</b> rows are intentionally not copied, so element
+     * mutations are reflected in this matrix.
      * If you need an independent matrix instance, use {@link #copy()}.
      * If you only need the data as a flat list in row-major order, use {@link #flatten()}.</p>
      *
@@ -513,6 +469,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * int rowArrayCount = array.length;                         // 2 (one entry per row)
      * array[0][0] = 10;                                         // WILL modify the matrix
      * matrix.get(0, 0);                                         // returns 10 (mutation visible through the matrix)
+     * array[0] = new int[] {99, 99};                             // does NOT replace matrix row 0
      *
      * IntMatrix empty = IntMatrix.wrap(new int[0][0]);
      * int emptyRowArrayCount = empty.unsafeBackingArray().length;   // 0 (zero-row matrix yields zero-length array)
@@ -521,13 +478,12 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * int zeroColumnRowCount = rowsNoCols.unsafeBackingArray().length; // 3 (3 x 0 matrix keeps 3 empty rows)
      * }</pre>
      *
-     * @return the underlying two-dimensional array (not a copy); its length equals {@code rowCount}
+     * @return a new outer array containing the live backing rows; its length equals {@code rowCount}
      *         (so a {@code 0}-row matrix yields a zero-length array, but a {@code rowCount × 0} matrix
      *         yields a {@code rowCount}-length array of zero-length rows)
      */
-    @SuppressFBWarnings("EI_EXPOSE_REP")
     public A[] unsafeBackingArray() {
-        return a;
+        return a.clone();
     }
 
     /**
@@ -832,10 +788,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @return a new matrix containing the specified region with dimensions
-     *         {@code (toRowIndex - fromRowIndex) × (toColumnIndex - fromColumnIndex)}; when the row range is empty
-     *         ({@code fromRowIndex == toRowIndex}) the result is an empty {@code 0 x 0} matrix
-     *         (the column count is not preserved), whereas an empty column range with a non-empty row range
-     *         correctly yields {@code (toRowIndex - fromRowIndex) x 0}
+     *         {@code (toRowIndex - fromRowIndex) × (toColumnIndex - fromColumnIndex)}, including exact
+     *         zero-row or zero-column dimensions for degenerate regions
      * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount},
      *         {@code fromRowIndex > toRowIndex}, {@code fromColumnIndex < 0},
      *         {@code toColumnIndex > columnCount}, or {@code fromColumnIndex > toColumnIndex}
@@ -868,9 +822,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * empty.rotate90().isEmpty();                              // returns true (empty rotates to empty)
      * }</pre>
      *
-     * @return a new matrix that is this matrix rotated 90 degrees clockwise, with dimensions {@code columnCount × rowCount};
-     *         a matrix with zero columns (an {@code N x 0} shape) rotates to the empty {@code 0 x 0} matrix, because the
-     *         swapped shape {@code 0 x N} (zero rows with a non-zero column count) is not representable
+     * @return a new matrix that is this matrix rotated 90 degrees clockwise, with dimensions
+     *         {@code columnCount × rowCount}, including degenerate {@code 0 x N} and {@code N x 0} shapes
      */
     public abstract M rotate90();
 
@@ -883,10 +836,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <p>Rotation formula: element at position {@code (i, j)} in the original matrix
      * moves to position {@code (rowCount - 1 - i, columnCount - 1 - j)} in the rotated matrix.</p>
      *
-     * <p>For non-degenerate matrices this operation is equivalent to calling {@code rotate90().rotate90()}.
-     * The equivalence does not hold for {@code N x 0} shapes ({@code N > 0}): {@code rotate180()} preserves the
-     * {@code N x 0} shape, whereas {@code rotate90().rotate90()} collapses it to {@code 0 x 0} because the
-     * intermediate {@code 0 x N} shape is not representable.</p>
+     * <p>This operation is equivalent to calling {@code rotate90().rotate90()}, including for degenerate shapes.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -932,9 +882,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * empty.rotate270().isEmpty();                             // returns true (empty rotates to empty)
      * }</pre>
      *
-     * @return a new matrix that is this matrix rotated 270 degrees clockwise, with dimensions {@code columnCount × rowCount};
-     *         a matrix with zero columns (an {@code N x 0} shape) rotates to the empty {@code 0 x 0} matrix, because the
-     *         swapped shape {@code 0 x N} (zero rows with a non-zero column count) is not representable
+     * @return a new matrix that is this matrix rotated 270 degrees clockwise, with dimensions
+     *         {@code columnCount × rowCount}, including degenerate {@code 0 x N} and {@code N x 0} shapes
      */
     public abstract M rotate270();
 
@@ -966,9 +915,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * empty.transpose().isEmpty();                           // returns true (empty transposes to empty)
      * }</pre>
      *
-     * @return a new matrix that is the transpose of this matrix, with dimensions {@code columnCount × rowCount};
-     *         a matrix with zero columns (an {@code N x 0} shape) transposes to the empty {@code 0 x 0} matrix, because the
-     *         swapped shape {@code 0 x N} (zero rows with a non-zero column count) is not representable
+     * @return a new matrix that is the transpose of this matrix, with dimensions {@code columnCount × rowCount},
+     *         including degenerate {@code 0 x N} and {@code N x 0} shapes
      */
     public abstract M transpose();
 
@@ -1026,10 +974,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param newRowCount the number of rows in the reshaped matrix; must be non-negative
      * @param newColumnCount the number of columns in the reshaped matrix; must be non-negative
      * @return a new matrix with the specified dimensions ({@code newRowCount × newColumnCount})
-     * @throws IllegalArgumentException if {@code newRowCount < 0} or {@code newColumnCount < 0}, if the
-     *         requested shape is not representable (zero rows with a non-zero column count), if the total
-     *         cell count {@code (long) newRowCount * newColumnCount} exceeds {@code Integer.MAX_VALUE}, or if it
-     *         is not exactly equal to {@code elementCount()}
+     * @throws IllegalArgumentException if either dimension is negative or if
+     *         {@code (long) newRowCount * newColumnCount} is not exactly equal to {@code elementCount()}
      * @see #reshapeAndPad(int, int)
      * @see #reshapeAndPadToColumnCount(int)
      */
@@ -1037,8 +983,6 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
         checkRepresentableShape(newRowCount, newColumnCount);
-        checkMaterializableShape(newRowCount, newColumnCount);
-
         final long newElementCount = (long) newRowCount * newColumnCount;
         N.checkArgument(newElementCount == elementCount, "New shape [{}x{}={}] must contain exactly the existing {} elements", newRowCount, newColumnCount,
                 newElementCount, elementCount);
@@ -1069,8 +1013,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param newRowCount the number of rows in the reshaped matrix; must be non-negative
      * @param newColumnCount the number of columns in the reshaped matrix; must be non-negative
      * @return a new matrix with the specified dimensions, padded with default values when necessary
-     * @throws IllegalArgumentException if either dimension is negative, if the requested shape is not
-     *         representable, if its cell count exceeds {@code Integer.MAX_VALUE}, or if it is too small
+     * @throws IllegalArgumentException if either dimension is negative or if the requested shape is too small
      *         to contain all existing elements
      * @see #reshape(int, int)
      * @see #reshapeAndPadToColumnCount(int)
@@ -1099,16 +1042,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * matrix.reshapeAndPadToColumnCount(0);                                       // throws IllegalArgumentException (newColumnCount <= 0)
      *
      * IntMatrix empty = IntMatrix.wrap(new int[0][0]);
-     * empty.reshapeAndPadToColumnCount(2);                                        // throws IllegalArgumentException (0 rows with positive column count is not representable)
+     * empty.reshapeAndPadToColumnCount(2);                                  // returns a 0 x 2 matrix
      * }</pre>
      *
      * @param newColumnCount the number of columns in the reshaped matrix (must be positive)
      * @return a new matrix with the specified number of columns
-     * @throws IllegalArgumentException if {@code newColumnCount <= 0}, if the implied row count
-     *         {@code ceil(elementCount / newColumnCount)} exceeds {@code Integer.MAX_VALUE}, if the
-     *         resulting shape is not representable (which occurs when this matrix is empty, since the
-     *         implied row count is then {@code 0} while {@code newColumnCount} is positive), or if the
-     *         total cell count {@code (long) newRowCount * newColumnCount} exceeds {@code Integer.MAX_VALUE}
+     * @throws IllegalArgumentException if {@code newColumnCount <= 0} or if the implied row count
+     *         {@code ceil(elementCount / newColumnCount)} exceeds {@code Integer.MAX_VALUE}
      */
     public M reshapeAndPadToColumnCount(final int newColumnCount) {
         N.checkArgument(newColumnCount > 0, "newColumnCount must be positive, but got: {}", newColumnCount);
@@ -1158,9 +1098,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param newRowCount the row count of the returned matrix; must be {@code >= 0}
      * @param newColumnCount the column count of the returned matrix; must be {@code >= 0}
      * @return a new matrix with the specified dimensions
-     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative,
-     *         if the resulting shape is not representable (zero rows with a non-zero column count),
-     *         or if {@code (long) newRowCount * newColumnCount} overflows {@code Integer.MAX_VALUE}
+     * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative
      * @see #pad(int, int, int, int)
      * @see #reshape(int, int)
      */
@@ -1263,8 +1201,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param padLeft number of columns to add to the left of the matrix (must be {@code >= 0})
      * @param padRight number of columns to add to the right of the matrix (must be {@code >= 0})
      * @return a new matrix grown by the specified pad widths, with new cells filled with the type's default value
-     * @throws IllegalArgumentException if any pad value is negative, if the resulting dimensions overflow {@code Integer.MAX_VALUE},
-     *         or if the resulting shape is not representable (zero rows with a non-zero column count)
+     * @throws IllegalArgumentException if any pad value is negative or if a resulting dimension overflows {@code Integer.MAX_VALUE}
      */
     public abstract M pad(int padTop, int padBottom, int padLeft, int padRight);
 
@@ -1532,7 +1469,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     public <E extends Exception> void forEachIndices(final Throwables.IntBiConsumer<E> action) throws E {
         N.checkArgNotNull(action, cs.action);
 
-        if (Matrices.shouldRunInParallel(this) && !hasAliasedRows()) {
+        if (Matrices.shouldRunInParallel(this)) {
             Matrices.forEachIndices(rowCount, columnCount, action, true);
         } else {
             for (int i = 0; i < rowCount; i++) {
@@ -1592,7 +1529,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
-        if (Matrices.shouldRunInParallel(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex)) && !hasAliasedRows()) {
+        if (Matrices.shouldRunInParallel(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
             Matrices.forEachIndices(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, action, true);
         } else {
             for (int i = fromRowIndex; i < toRowIndex; i++) {
@@ -1643,7 +1580,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
         final M matrix = (M) this;
 
-        if (Matrices.shouldRunInParallel(this) && !hasAliasedRows()) {
+        if (Matrices.shouldRunInParallel(this)) {
             final Throwables.IntBiConsumer<E> elementAction = (i, j) -> action.accept(i, j, matrix);
             Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
         } else {
@@ -1706,7 +1643,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
         final M matrix = (M) this;
 
-        if (Matrices.shouldRunInParallel(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex)) && !hasAliasedRows()) {
+        if (Matrices.shouldRunInParallel(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
             final Throwables.IntBiConsumer<E> elementAction = (i, j) -> action.accept(i, j, matrix);
             Matrices.forEachIndices(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, elementAction, true);
         } else {
@@ -1840,8 +1777,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
     /**
      * Returns a stream of points along the main diagonal (upper-left to lower-right).
-     * The main diagonal consists of elements where row index equals column index.
-     * The matrix must be square (rowCount == columnCount) for this operation.
+     * The main diagonal consists of elements where row index equals column index and therefore
+     * contains {@code min(rowCount, columnCount)} positions for a rectangular matrix.
      *
      * <p>The main diagonal runs from the upper-left corner to the lower-right corner.</p>
      *
@@ -1854,24 +1791,21 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * IntMatrix single = IntMatrix.wrap(new int[][] {{42}});
      * single.mainDiagonalPoints().count();                    // returns 1: [(0,0)]
      *
-     * IntMatrix nonSquare = IntMatrix.wrap(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * nonSquare.mainDiagonalPoints();                         // throws IllegalStateException (not square)
+     * IntMatrix rectangular = IntMatrix.wrap(new int[][] {{1, 2, 3}, {4, 5, 6}});
+     * rectangular.mainDiagonalPoints().toList();             // returns [(0,0), (1,1)]
      * }</pre>
      *
      * @return a stream of {@link Point} objects representing the main diagonal positions
-     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     public Stream<Point> mainDiagonalPoints() {
-        checkIsSquare();
-
         //noinspection resource
-        return IntStream.range(0, rowCount).mapToObj(i -> Point.of(i, i));
+        return IntStream.range(0, diagonalLength()).mapToObj(i -> Point.of(i, i));
     }
 
     /**
      * Returns a stream of points along the anti-diagonal (upper-right to lower-left).
-     * The anti-diagonal consists of the elements where {@code rowIndex + columnIndex == rowCount - 1}.
-     * The matrix must be square (rowCount == columnCount) for this operation.
+     * The anti-diagonal starts at the upper-right corner and contains
+     * {@code min(rowCount, columnCount)} positions.
      *
      * <p>The anti-diagonal runs from the upper-right corner to the lower-left corner.</p>
      *
@@ -1884,23 +1818,26 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * IntMatrix single = IntMatrix.wrap(new int[][] {{42}});
      * single.antiDiagonalPoints().count();                    // returns 1: [(0,0)]
      *
-     * IntMatrix nonSquare = IntMatrix.wrap(new int[][] {{1, 2}, {3, 4}, {5, 6}});
-     * nonSquare.antiDiagonalPoints();                         // throws IllegalStateException (not square)
+     * IntMatrix rectangular = IntMatrix.wrap(new int[][] {{1, 2, 3}, {4, 5, 6}});
+     * rectangular.antiDiagonalPoints().toList();             // returns [(0,2), (1,1)]
      * }</pre>
      *
      * @return a stream of {@link Point} objects representing the anti-diagonal positions
-     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     public Stream<Point> antiDiagonalPoints() {
-        checkIsSquare();
-
         //noinspection resource
-        return IntStream.range(0, rowCount).mapToObj(i -> Point.of(i, columnCount - i - 1));
+        return IntStream.range(0, diagonalLength()).mapToObj(i -> Point.of(i, columnCount - i - 1));
+    }
+
+    /** Returns the number of elements in either corner-to-corner rectangular diagonal. */
+    protected final int diagonalLength() {
+        return N.min(rowCount, columnCount);
     }
 
     /**
      * Returns a copy of the main diagonal elements (upper-left to lower-right) as the matrix's
-     * underlying array type. The matrix must be square (rowCount == columnCount).
+     * underlying array type. For a rectangular matrix the diagonal contains
+     * {@code min(rowCount, columnCount)} elements.
      *
      * <p>The returned array is a copy; modifications to it do not affect the matrix.</p>
      *
@@ -1914,19 +1851,17 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * IntMatrix single = IntMatrix.wrap(new int[][] {{42}});
      * single.mainDiagonalCopy();                               // returns [42]
      *
-     * IntMatrix nonSquare = IntMatrix.wrap(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * nonSquare.mainDiagonalCopy();                            // throws IllegalStateException (not square)
+     * IntMatrix rectangular = IntMatrix.wrap(new int[][] {{1, 2, 3}, {4, 5, 6}});
+     * rectangular.mainDiagonalCopy();                          // returns [1, 5]
      * }</pre>
      *
-     * @return a new array containing the main diagonal values
-     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
+     * @return a new array containing {@code min(rowCount, columnCount)} main-diagonal values
      */
     public abstract A mainDiagonalCopy();
 
     /**
      * Sets the elements on the main diagonal (upper-left to lower-right).
-     * The matrix must be square (rowCount == columnCount), and the supplied array must contain
-     * exactly {@code rowCount} elements.
+     * The supplied array must contain exactly {@code min(rowCount, columnCount)} elements.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1936,21 +1871,22 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * matrix.get(2, 2);                                       // returns 30
      * matrix.get(0, 1);                                       // returns 2 (off-diagonal unchanged)
      *
-     * matrix.setMainDiagonal(new int[] {1, 2});              // throws IllegalArgumentException (length != rowCount)
+     * matrix.setMainDiagonal(new int[] {1, 2});              // throws IllegalArgumentException (wrong diagonal length)
      *
-     * IntMatrix nonSquare = IntMatrix.wrap(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * nonSquare.setMainDiagonal(new int[] {1, 2});           // throws IllegalStateException (not square)
+     * IntMatrix rectangular = IntMatrix.wrap(new int[][] {{1, 2, 3}, {4, 5, 6}});
+     * rectangular.setMainDiagonal(new int[] {7, 8});         // valid; updates (0,0) and (1,1)
      * }</pre>
      *
-     * @param mainDiagonal the new values for the main diagonal; must be non-{@code null} and have length equal to {@code rowCount}
-     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
-     * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null} or its length does not equal {@code rowCount}
+     * @param mainDiagonal the new values for the main diagonal; must be non-{@code null} and have length
+     *        {@code min(rowCount, columnCount)}
+     * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null} or has the wrong length
      */
     public abstract void setMainDiagonal(A mainDiagonal);
 
     /**
      * Returns a copy of the anti-diagonal elements (upper-right to lower-left) as the matrix's
-     * underlying array type. The matrix must be square (rowCount == columnCount).
+     * underlying array type. For a rectangular matrix the diagonal contains
+     * {@code min(rowCount, columnCount)} elements and starts at {@code (0, columnCount - 1)}.
      *
      * <p>The returned array is a copy; modifications to it do not affect the matrix.</p>
      *
@@ -1964,19 +1900,17 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * IntMatrix single = IntMatrix.wrap(new int[][] {{42}});
      * single.antiDiagonalCopy();                               // returns [42]
      *
-     * IntMatrix nonSquare = IntMatrix.wrap(new int[][] {{1, 2}, {3, 4}, {5, 6}});
-     * nonSquare.antiDiagonalCopy();                            // throws IllegalStateException (not square)
+     * IntMatrix rectangular = IntMatrix.wrap(new int[][] {{1, 2, 3}, {4, 5, 6}});
+     * rectangular.antiDiagonalCopy();                          // returns [3, 5]
      * }</pre>
      *
-     * @return a new array containing the anti-diagonal values
-     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
+     * @return a new array containing {@code min(rowCount, columnCount)} anti-diagonal values
      */
     public abstract A antiDiagonalCopy();
 
     /**
      * Sets the elements on the anti-diagonal (upper-right to lower-left).
-     * The matrix must be square (rowCount == columnCount), and the supplied array must contain
-     * exactly {@code rowCount} elements.
+     * The supplied array must contain exactly {@code min(rowCount, columnCount)} elements.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1986,15 +1920,15 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * matrix.get(2, 0);                                       // returns 30 (bottom-left corner)
      * matrix.get(0, 0);                                       // returns 1 (off-anti-diagonal unchanged)
      *
-     * matrix.setAntiDiagonal(new int[] {1, 2});              // throws IllegalArgumentException (length != rowCount)
+     * matrix.setAntiDiagonal(new int[] {1, 2});              // throws IllegalArgumentException (wrong diagonal length)
      *
-     * IntMatrix nonSquare = IntMatrix.wrap(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * nonSquare.setAntiDiagonal(new int[] {1, 2});           // throws IllegalStateException (not square)
+     * IntMatrix rectangular = IntMatrix.wrap(new int[][] {{1, 2, 3}, {4, 5, 6}});
+     * rectangular.setAntiDiagonal(new int[] {7, 8});         // valid; updates (0,2) and (1,1)
      * }</pre>
      *
-     * @param antiDiagonal the new values for the anti-diagonal; must be non-{@code null} and have length equal to {@code rowCount}
-     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
-     * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null} or its length does not equal {@code rowCount}
+     * @param antiDiagonal the new values for the anti-diagonal; must be non-{@code null} and have length
+     *        {@code min(rowCount, columnCount)}
+     * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null} or has the wrong length
      */
     public abstract void setAntiDiagonal(A antiDiagonal);
 
@@ -2225,9 +2159,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     }
 
     /**
-     * Returns a stream of elements along the main diagonal (upper-left to lower-right).
-     * The main diagonal consists of elements where row index equals column index.
-     * The matrix must be square (rowCount == columnCount) for this operation.
+     * Returns the {@code min(rowCount, columnCount)} elements along the main diagonal
+     * (upper-left toward lower-right).
      *
      * <p>The main diagonal runs from the upper-left corner to the lower-right corner.</p>
      *
@@ -2240,19 +2173,17 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * IntMatrix single = IntMatrix.wrap(new int[][] {{42}});
      * single.mainDiagonalStream().sum();                      // returns 42
      *
-     * IntMatrix nonSquare = IntMatrix.wrap(new int[][] {{1, 2, 3}, {4, 5, 6}});
-     * nonSquare.mainDiagonalStream();                         // throws IllegalStateException (not square)
+     * IntMatrix rectangular = IntMatrix.wrap(new int[][] {{1, 2, 3}, {4, 5, 6}});
+     * rectangular.mainDiagonalStream().toArray();            // returns [1, 5]
      * }</pre>
      *
      * @return a stream of the main-diagonal elements
-     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     public abstract ES mainDiagonalStream();
 
     /**
-     * Returns a stream of elements along the anti-diagonal (upper-right to lower-left).
-     * The anti-diagonal consists of the elements where {@code rowIndex + columnIndex == rowCount - 1}.
-     * The matrix must be square (rowCount == columnCount) for this operation.
+     * Returns the {@code min(rowCount, columnCount)} elements along the anti-diagonal
+     * (upper-right toward lower-left).
      *
      * <p>The anti-diagonal runs from the upper-right corner to the lower-left corner.</p>
      *
@@ -2265,12 +2196,11 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * IntMatrix single = IntMatrix.wrap(new int[][] {{42}});
      * single.antiDiagonalStream().sum();                      // returns 42
      *
-     * IntMatrix nonSquare = IntMatrix.wrap(new int[][] {{1, 2}, {3, 4}, {5, 6}});
-     * nonSquare.antiDiagonalStream();                         // throws IllegalStateException (not square)
+     * IntMatrix rectangular = IntMatrix.wrap(new int[][] {{1, 2, 3}, {4, 5, 6}});
+     * rectangular.antiDiagonalStream().toArray();            // returns [3, 5]
      * }</pre>
      *
      * @return a stream of anti-diagonal elements
-     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
      */
     public abstract ES antiDiagonalStream();
 
@@ -2571,10 +2501,47 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         N.checkArgNotNull(output, "output");
 
         try {
-            output.append(toMultilineString());
+            if (rowCount == 0) {
+                output.append("[]");
+                return;
+            }
+
+            // Stream directly to the destination. Building the complete rendering first can
+            // temporarily double the memory needed for a large matrix and defeats Appendable's
+            // purpose for writers and other incremental sinks.
+            for (int i = 0; i < rowCount; i++) {
+                if (i > 0) {
+                    output.append(ARRAY_PRINT_SEPARATOR);
+                }
+
+                output.append('[');
+                final A row = a[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    if (j > 0) {
+                        output.append(", ");
+                    }
+
+                    appendElementForOutput(output, java.lang.reflect.Array.get(row, j));
+                }
+
+                output.append(']');
+            }
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    /**
+     * Appends one rendered element for {@link #appendTo(Appendable)}. Subclasses may override when
+     * their textual contract is not the element's ordinary string form (for example escaped chars).
+     *
+     * @param output the destination
+     * @param value the boxed element value, possibly {@code null}
+     * @throws IOException if the destination rejects the append
+     */
+    protected void appendElementForOutput(final Appendable output, final Object value) throws IOException {
+        output.append(N.toString(value));
     }
 
     /**
@@ -2686,18 +2653,6 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     protected void checkRowColumnIndex(final int rowIndex, final int columnIndex) {
         checkRowIndex(rowIndex);
         checkColumnIndex(columnIndex);
-    }
-
-    /**
-     * Validates that this matrix is square (rowCount == columnCount).
-     * This is a helper method used internally to enforce the square matrix requirement
-     * for diagonal operations such as {@link #mainDiagonalStream()}, {@link #antiDiagonalStream()},
-     * {@link #mainDiagonalPoints()}, and {@link #antiDiagonalPoints()}.
-     *
-     * @throws IllegalStateException if the matrix is not square (rowCount != columnCount)
-     */
-    protected void checkIsSquare() {
-        N.checkState(rowCount == columnCount, MSG_MATRIX_NOT_SQUARE, rowCount, columnCount);
     }
 
 }
