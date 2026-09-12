@@ -17,7 +17,6 @@ package com.landawn.abacus.matrix;
 import java.util.NoSuchElementException;
 import java.util.random.RandomGenerator;
 
-import com.landawn.abacus.annotation.SuppressFBWarnings;
 import com.landawn.abacus.util.Arrays;
 import com.landawn.abacus.util.FloatList;
 import com.landawn.abacus.util.InternalUtil;
@@ -1034,8 +1033,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
-    public <E extends Exception> void updateMainDiagonal(final Throwables.FloatUnaryOperator<E> operator)
-            throws IllegalArgumentException, E {
+    public <E extends Exception> void updateMainDiagonal(final Throwables.FloatUnaryOperator<E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, cs.operator);
 
         final int diagonalLength = diagonalLength();
@@ -1134,8 +1132,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IllegalArgumentException if {@code operator} is {@code null}
      * @throws E if the operator throws an exception
      */
-    public <E extends Exception> void updateAntiDiagonal(final Throwables.FloatUnaryOperator<E> operator)
-            throws IllegalArgumentException, E {
+    public <E extends Exception> void updateAntiDiagonal(final Throwables.FloatUnaryOperator<E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, cs.operator);
 
         final int diagonalLength = diagonalLength();
@@ -1497,6 +1494,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null}
      * @throws E if the function throws an exception
      */
+    @SuppressWarnings("deprecation")
     public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.FloatFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E {
         N.checkArgNotNull(mapper, cs.mapper);
         N.checkArgNotNull(targetElementType, "targetElementType");

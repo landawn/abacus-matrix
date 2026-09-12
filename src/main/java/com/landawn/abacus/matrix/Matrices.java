@@ -1409,7 +1409,7 @@ public final class Matrices {
             int targetRow = 0;
 
             for (final M matrix : matrices) {
-                for (final Object sourceRow : (Object[]) matrix.a) {
+                for (final Object sourceRow : matrix.a) {
                     final int length = java.lang.reflect.Array.getLength(sourceRow);
                     final Object copy = java.lang.reflect.Array.newInstance(sourceRow.getClass().getComponentType(), length);
                     System.arraycopy(sourceRow, 0, copy, 0, length);
@@ -1434,7 +1434,7 @@ public final class Matrices {
                 int targetColumn = 0;
 
                 for (final M matrix : matrices) {
-                    final Object sourceRow = ((Object[]) matrix.a)[i];
+                    final Object sourceRow = matrix.a[i];
                     System.arraycopy(sourceRow, 0, resultRow, targetColumn, matrix.columnCount);
                     targetColumn += matrix.columnCount;
                 }
@@ -2047,6 +2047,7 @@ public final class Matrices {
      * @see #zipToObj(Collection, Throwables.ByteNFunction, Class)
      * @see #zip(Collection, Throwables.ByteBinaryOperator)
      */
+    @SuppressWarnings("deprecation")
     public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction,
             final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E {
         N.checkArgNotNull(coll, cs.coll);
@@ -2874,6 +2875,7 @@ public final class Matrices {
      * @see #zipToObj(Collection, Throwables.IntNFunction, Class)
      * @see #zip(Collection, Throwables.IntBinaryOperator)
      */
+    @SuppressWarnings("deprecation")
     public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction,
             final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E {
         N.checkArgNotNull(coll, cs.coll);
@@ -3440,6 +3442,7 @@ public final class Matrices {
      * @see #zipToObj(Collection, Throwables.LongNFunction, Class)
      * @see #zip(Collection, Throwables.LongBinaryOperator)
      */
+    @SuppressWarnings("deprecation")
     public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction,
             final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E {
         N.checkArgNotNull(coll, cs.coll);
@@ -3752,6 +3755,7 @@ public final class Matrices {
      * @see #zipToObj(Collection, Throwables.DoubleNFunction, Class)
      * @see #zip(Collection, Throwables.DoubleBinaryOperator)
      */
+    @SuppressWarnings("deprecation")
     public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<DoubleMatrix> coll, final Throwables.DoubleNFunction<? extends R, E> zipFunction,
             final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E {
         N.checkArgNotNull(coll, cs.coll);

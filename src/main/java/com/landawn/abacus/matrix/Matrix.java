@@ -72,6 +72,7 @@ import com.landawn.abacus.util.stream.Stream;
 public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Stream<Stream<T>>, Matrix<T>> {
 
     /** The shared {@code Object}-typed {@code 0 x 0} matrix returned by {@link #empty()}. */
+    @SuppressWarnings("deprecation")
     private static final Matrix<Object> EMPTY_MATRIX = new Matrix<>(new Object[0][0]);
 
     /** The runtime type of each row array, used for type-compatible result allocation. */
@@ -85,7 +86,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p>The outer array is shallow-copied; its row arrays remain live. Cell changes are visible
      * in both directions, while replacing an entry in the caller's outer array is not.</p>
-
+    
      * <p><b>Runtime-type constraint:</b> Java's covariant arrays permit the static {@code T} to be
      * broader than the rows' runtime component type. Such a matrix may reject an otherwise legal
      * {@code T} value with {@link ArrayStoreException}. Prefer
@@ -270,7 +271,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p>The matrix retains the provided row arrays but snapshots the outer array. Cell mutations
      * remain visible in both directions; replacing or reordering entries in the caller's outer
      * array does not affect the matrix.</p>
-
+    
      * <p><b>Runtime-type constraint:</b> the writable type is the supplied arrays' runtime
      * component type, which Java array covariance may make narrower than {@code T}. Prefer
      * {@link #wrap(Class, Object[][])} for writable matrices.</p>
@@ -1195,8 +1196,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws ArrayStoreException if the operator returns a value that is not assignable to the
      *         corresponding row's runtime storage component type
      */
-    public <E extends Exception> void updateMainDiagonal(final Throwables.UnaryOperator<T, E> operator)
-            throws IllegalArgumentException, E {
+    public <E extends Exception> void updateMainDiagonal(final Throwables.UnaryOperator<T, E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, cs.operator);
 
         final int len = diagonalLength();
@@ -1303,8 +1303,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws ArrayStoreException if the operator returns a value that is not assignable to the
      *         corresponding row's runtime storage component type
      */
-    public <E extends Exception> void updateAntiDiagonal(final Throwables.UnaryOperator<T, E> operator)
-            throws IllegalArgumentException, E {
+    public <E extends Exception> void updateAntiDiagonal(final Throwables.UnaryOperator<T, E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, cs.operator);
 
         final int len = diagonalLength();
@@ -3162,8 +3161,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     }
 
     private void checkStackElementType(final Class<T> resultElementType, final Matrix<T> other) {
-        N.checkArgument(resultElementType.isAssignableFrom(elementType),
-                "Target element type {} cannot safely store this matrix's runtime element type {}", resultElementType.getTypeName(), elementType.getTypeName());
+        N.checkArgument(resultElementType.isAssignableFrom(elementType), "Target element type {} cannot safely store this matrix's runtime element type {}",
+                resultElementType.getTypeName(), elementType.getTypeName());
         N.checkArgument(resultElementType.isAssignableFrom(other.elementType),
                 "Target element type {} cannot safely store the other matrix's runtime element type {}", resultElementType.getTypeName(),
                 other.elementType.getTypeName());
