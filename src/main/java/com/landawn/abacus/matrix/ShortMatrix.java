@@ -39,7 +39,9 @@ import com.landawn.abacus.util.stream.Stream;
  * a validated backing array. The constructor and {@link #wrap(short[]...)} snapshot the outer array
  * structure but share each row array, so cell changes remain visible through both views while caller
  * row reassignment does not change the matrix. Duplicate row identities are rejected.
- * {@link #copyOf(short[]...)}, conversions, and mapping operations do not share mutable cell storage.</p>
+ * {@link #copyOf(short[]...)}, conversions, and mapping operations do not share mutable cell storage.
+ * Operations producing a {@code 0 x 0} matrix return the shared empty singleton, while {@code 0 x N}
+ * and {@code N x 0} results keep their shape.</p>
  *
  * <p>Cells introduced by growth or reshaping default to {@code 0} unless an overload accepts an
  * explicit fill value.</p>
@@ -103,6 +105,26 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
 
     ShortMatrix(final short[][] a, final int columnCount) {
         super(N.checkArgNotNull(a, "Matrix array cannot be null"), short.class, columnCount);
+    }
+
+    private ShortMatrix(final short[][] a, final int columnCount, final boolean rowsAreKnownDistinct) {
+        super(N.checkArgNotNull(a, "Matrix array cannot be null"), short.class, columnCount, rowsAreKnownDistinct);
+    }
+
+    /**
+     * Canonicalises a derived result: a genuinely {@code 0 x 0} result becomes the shared empty
+     * instance, while {@code 0 x N} and {@code N x 0} results keep their logical shape. Every
+     * result-producing method routes through here so the empty singleton and the degenerate
+     * shapes are handled in exactly one place.
+     *
+     * @param a the backing rows of the result
+     * @param columnCount the result's logical column count
+     * @return the shared empty matrix when the result is {@code 0 x 0}, otherwise a new matrix
+     */
+    static ShortMatrix wrapResult(final short[][] a, final int columnCount) {
+        // Every wrapResult(...) call site passes an array this class just allocated, so the rows are
+        // identity-distinct by construction and the duplicate-row scan can be skipped.
+        return a.length == 0 && columnCount == 0 ? EMPTY_SHORT_MATRIX : new ShortMatrix(a, columnCount, true);
     }
 
     /**
@@ -170,6 +192,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * ShortMatrix.copyOf((short[][]) null);            // throws IllegalArgumentException
      * ShortMatrix.copyOf(new short[][] {{1, 2}, {3}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
+     *
+     * <p>Because every row is cloned, an input that repeats the same row array is accepted here,
+     * while {@code wrap(...)} would reject it.</p>
      *
      * @param a the two-dimensional short array to copy, or empty for an empty matrix; must not be {@code null}
      * @return a new {@code ShortMatrix} backed by a deep copy of {@code a} when it is non-empty, or the shared empty matrix if {@code a} has no rows
@@ -282,7 +307,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             }
         }
 
-        return new ShortMatrix(a, columnCount);
+        return wrapResult(a, columnCount);
     }
 
     /**
@@ -521,7 +546,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @param x the boxed {@code Short} matrix to convert; must not be {@code null}
-     * @return a new {@code ShortMatrix} with primitive short values, or the shared empty matrix if {@code x} has no rows
+     * @return a new {@code ShortMatrix} with primitive short values, with the same shape as {@code x}
      * @throws IllegalArgumentException if {@code x} is {@code null}
      * @see #boxed()
      */
@@ -883,6 +908,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p>The values from the source array are copied into the matrix column.
      * The source array must have exactly the same length as the number of rows in the matrix.
      *
+     * <p>If the supplied array is one of this matrix's live backing rows (for example a value returned
+     * by {@code rowView(int)}), it is snapshotted first, so the values read are the ones in place when
+     * this method was called.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.wrap(new short[][] {{1, 2, 3}, {4, 5, 6}});
@@ -1039,7 +1068,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * matrix.mainDiagonalCopy();              // returns [9, 8]
      * matrix.get(1, 1);                       // returns 8 (diagonal element updated)
      *
-     * matrix.setMainDiagonal(new short[] {1}); // throws IllegalArgumentException (length != rowCount)
+     * matrix.setMainDiagonal(new short[] {1}); // throws IllegalArgumentException (length != min(rowCount, columnCount))
      * ShortMatrix rectangular = ShortMatrix.wrap(new short[][] {{1, 2, 3}, {4, 5, 6}});
      * rectangular.setMainDiagonal(new short[] {7, 8}); // valid; updates two diagonal cells
      * }</pre>
@@ -1130,6 +1159,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p>This method sets the anti-diagonal (secondary diagonal) elements from
      * top-right to bottom-left, at positions (0,n-1), (1,n-2), (2,n-3), etc.</p>
      *
+     * <p>If the supplied array is one of this matrix's live backing rows (for example a value returned
+     * by {@code rowView(int)}), it is snapshotted first, so the values read are the ones in place when
+     * this method was called.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.wrap(new short[][] {{1, 2}, {3, 4}});
@@ -1137,7 +1170,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * matrix.antiDiagonalCopy();              // returns [9, 8]
      * matrix.get(0, 1);                       // returns 9 (anti-diagonal cell)
      *
-     * matrix.setAntiDiagonal(new short[] {1}); // throws IllegalArgumentException (length != rowCount)
+     * matrix.setAntiDiagonal(new short[] {1}); // throws IllegalArgumentException (length != min(rowCount, columnCount))
      * ShortMatrix rectangular = ShortMatrix.wrap(new short[][] {{1, 2, 3}, {4, 5, 6}});
      * rectangular.setAntiDiagonal(new short[] {7, 8}); // valid; updates (0,2) and (1,1)
      * }</pre>
@@ -1327,8 +1360,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p>This is useful for position-based replacements such as setting diagonals, borders,
      * or specific regions. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
      *
-     * <p>Nonmatching positions perform no write. If logical rows share a backing array, a
-     * replacement made through any matching coordinate is therefore visible through every alias.</p>
+     * <p>Nonmatching positions perform no write.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1400,7 +1432,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return new ShortMatrix(result, columnCount);
+        return wrapResult(result, columnCount);
     }
 
     /**
@@ -1432,7 +1464,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      */
     public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.ShortFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E {
         N.checkArgNotNull(mapper, cs.mapper);
-        N.checkArgNotNull(targetElementType, "targetElementType");
+        N.checkArgNotNull(targetElementType, cs.targetElementType);
 
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
@@ -1576,7 +1608,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             c[i] = a[i].clone();
         }
 
-        return new ShortMatrix(c, columnCount);
+        return wrapResult(c, columnCount);
     }
 
     /**
@@ -1612,7 +1644,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             c[i - fromRowIndex] = a[i].clone();
         }
 
-        return new ShortMatrix(c, columnCount);
+        return wrapResult(c, columnCount);
     }
 
     /**
@@ -1651,7 +1683,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             c[i - fromRowIndex] = N.copyOfRange(a[i], fromColumnIndex, toColumnIndex);
         }
 
-        return new ShortMatrix(c, toColumnIndex - fromColumnIndex);
+        return wrapResult(c, toColumnIndex - fromColumnIndex);
     }
 
     /**
@@ -1753,7 +1785,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     public ShortMatrix resize(final int newRowCount, final int newColumnCount, final short defaultValue) throws IllegalArgumentException {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
-        checkRepresentableShape(newRowCount, newColumnCount);
+        checkNonNegativeShape(newRowCount, newColumnCount);
         if (newRowCount <= rowCount && newColumnCount <= columnCount) {
             return copyRegion(0, newRowCount, 0, newColumnCount);
         } else {
@@ -1772,7 +1804,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
                 }
             }
 
-            return new ShortMatrix(result, newColumnCount);
+            return wrapResult(result, newColumnCount);
         }
     }
 
@@ -1891,7 +1923,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
 
             final int newRowCount = padTop + rowCount + padBottom;
             final int newColumnCount = padLeft + columnCount + padRight;
-            checkRepresentableShape(newRowCount, newColumnCount);
+            checkNonNegativeShape(newRowCount, newColumnCount);
             final boolean fillDefaultValue = defaultValue != SHORT_0;
             final short[][] b = new short[newRowCount][newColumnCount];
 
@@ -1915,7 +1947,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
                 }
             }
 
-            return new ShortMatrix(b, columnCount + padLeft + padRight);
+            return wrapResult(b, columnCount + padLeft + padRight);
         }
     }
 
@@ -2087,7 +2119,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             }
         }
 
-        return new ShortMatrix(c, rowCount);
+        return wrapResult(c, rowCount);
     }
 
     /**
@@ -2121,7 +2153,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             N.reverse(c[i]);
         }
 
-        return new ShortMatrix(c, columnCount);
+        return wrapResult(c, columnCount);
     }
 
     /**
@@ -2168,7 +2200,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             }
         }
 
-        return new ShortMatrix(c, rowCount);
+        return wrapResult(c, rowCount);
     }
 
     /**
@@ -2210,7 +2242,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             }
         }
 
-        return new ShortMatrix(c, rowCount);
+        return wrapResult(c, rowCount);
     }
 
     /**
@@ -2244,14 +2276,14 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     public ShortMatrix reshapeAndPad(final int newRowCount, final int newColumnCount) {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
-        checkRepresentableShape(newRowCount, newColumnCount);
+        checkNonNegativeShape(newRowCount, newColumnCount);
         N.checkArgument((long) newRowCount * newColumnCount >= elementCount(), "New shape [{}x{}={}] is too small to hold all {} elements", newRowCount,
                 newColumnCount, (long) newRowCount * newColumnCount, elementCount());
 
         final short[][] c = new short[newRowCount][newColumnCount];
 
         if (newRowCount == 0 || newColumnCount == 0 || N.isEmpty(a)) {
-            return new ShortMatrix(c, newColumnCount);
+            return wrapResult(c, newColumnCount);
         }
 
         final int rowLen = (int) N.min(newRowCount, ceilDiv(elementCount, newColumnCount));
@@ -2284,7 +2316,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             }
         }
 
-        return new ShortMatrix(c, newColumnCount);
+        return wrapResult(c, newColumnCount);
     }
 
     /**
@@ -2343,7 +2375,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             }
         }
 
-        return new ShortMatrix(c, columnCount * columnRepeats);
+        return wrapResult(c, columnCount * columnRepeats);
     }
 
     /**
@@ -2401,7 +2433,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             }
         }
 
-        return new ShortMatrix(c, columnCount * columnRepeats);
+        return wrapResult(c, columnCount * columnRepeats);
     }
 
     /**
@@ -2513,7 +2545,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      */
     @Override
     public ShortMatrix stackVertically(final ShortMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(columnCount == other.columnCount, MSG_VSTACK_COLUMN_MISMATCH, columnCount, other.columnCount);
         final long mergedRowCount = (long) rowCount + other.rowCount;
         N.checkArgument(mergedRowCount <= Integer.MAX_VALUE, "Merged row count overflow: {} + {} = {}", rowCount, other.rowCount, mergedRowCount);
@@ -2529,7 +2561,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             c[j++] = other.a[i].clone();
         }
 
-        return new ShortMatrix(c, columnCount);
+        return wrapResult(c, columnCount);
     }
 
     /**
@@ -2562,7 +2594,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      */
     @Override
     public ShortMatrix stackHorizontally(final ShortMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(rowCount == other.rowCount, MSG_HSTACK_ROW_MISMATCH, rowCount, other.rowCount);
         final long mergedColumnCount = (long) columnCount + other.columnCount;
         N.checkArgument(mergedColumnCount <= Integer.MAX_VALUE, "Merged column count overflow: {} + {} = {}", columnCount, other.columnCount,
@@ -2575,7 +2607,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             N.copy(other.a[i], 0, c[i], columnCount, other.columnCount);
         }
 
-        return new ShortMatrix(c, (int) mergedColumnCount);
+        return wrapResult(c, (int) mergedColumnCount);
     }
 
     /**
@@ -2585,7 +2617,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p><b>Overflow:</b> each pair of elements is added using Java numeric promotion to {@code int}
      * and the sum is stored as a {@code short}, so values outside the short range
      * {@code [-32768, 32767]} wrap modulo 65536. If you need a wider result, call
-     * {@link #toIntMatrix()} (or {@link #toLongMatrix()}) first.</p>
+     * {@link #toIntMatrix()} (or {@link #toLongMatrix()}) first.
+     * To keep the wider intermediate value instead, use {@link #addWidened(ShortMatrix)}; to be told
+     * about an overflow rather than silently wrapping, use {@link #addExact(ShortMatrix)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2608,9 +2642,11 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @throws IllegalArgumentException if {@code other} is {@code null}, or if the matrices have different shapes
      * @see #subtract(ShortMatrix)
      * @see #zipWith(ShortMatrix, Throwables.ShortBinaryOperator)
+     * @see #addWidened(ShortMatrix)
+     * @see #addExact(ShortMatrix)
      */
     public ShortMatrix add(final ShortMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot add matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -2632,7 +2668,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             }
         }
 
-        return new ShortMatrix(result, columnCount);
+        return wrapResult(result, columnCount);
     }
 
     /**
@@ -2643,7 +2679,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @throws IllegalArgumentException if {@code other} is {@code null} or has a different shape
      */
     public IntMatrix addWidened(final ShortMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot add matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -2655,7 +2691,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             }
         }
 
-        return new IntMatrix(result, columnCount);
+        return IntMatrix.wrapResult(result, columnCount);
     }
 
     /**
@@ -2667,7 +2703,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @throws ArithmeticException if any sum cannot be represented as a {@code short}
      */
     public ShortMatrix addExact(final ShortMatrix other) throws IllegalArgumentException, ArithmeticException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot add matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -2679,7 +2715,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             }
         }
 
-        return new ShortMatrix(result, columnCount);
+        return wrapResult(result, columnCount);
     }
 
     /**
@@ -2689,7 +2725,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p><b>Overflow:</b> each pair of elements is subtracted using Java numeric promotion to {@code int}
      * and the difference is stored as a {@code short}, so values outside the short range
      * {@code [-32768, 32767]} wrap modulo 65536. If you need a wider result, call
-     * {@link #toIntMatrix()} (or {@link #toLongMatrix()}) first.</p>
+     * {@link #toIntMatrix()} (or {@link #toLongMatrix()}) first.
+     * To keep the wider intermediate value instead, use {@link #subtractWidened(ShortMatrix)}; to be
+     * told about an overflow rather than silently wrapping, use {@link #subtractExact(ShortMatrix)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2712,9 +2750,11 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @throws IllegalArgumentException if {@code other} is {@code null}, or if the matrices have different shapes
      * @see #add(ShortMatrix)
      * @see #zipWith(ShortMatrix, Throwables.ShortBinaryOperator)
+     * @see #subtractWidened(ShortMatrix)
+     * @see #subtractExact(ShortMatrix)
      */
     public ShortMatrix subtract(final ShortMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot subtract matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -2736,7 +2776,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             }
         }
 
-        return new ShortMatrix(result, columnCount);
+        return wrapResult(result, columnCount);
     }
 
     /**
@@ -2747,7 +2787,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @throws IllegalArgumentException if {@code other} is {@code null} or has a different shape
      */
     public IntMatrix subtractWidened(final ShortMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot subtract matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -2759,7 +2799,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             }
         }
 
-        return new IntMatrix(result, columnCount);
+        return IntMatrix.wrapResult(result, columnCount);
     }
 
     /**
@@ -2771,7 +2811,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @throws ArithmeticException if any difference cannot be represented as a {@code short}
      */
     public ShortMatrix subtractExact(final ShortMatrix other) throws IllegalArgumentException, ArithmeticException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot subtract matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -2783,7 +2823,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             }
         }
 
-        return new ShortMatrix(result, columnCount);
+        return wrapResult(result, columnCount);
     }
 
     /**
@@ -2797,7 +2837,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p><b>Overflow:</b> each partial product is computed with Java numeric promotion to {@code int}
      * and accumulated into a {@code short} cell, so intermediate sums wrap modulo 65536 and the final
      * result is always in the short range {@code [-32768, 32767]}. For inputs that may overflow,
-     * widen via {@link #toIntMatrix()} (or {@link #toLongMatrix()}) and multiply there.</p>
+     * widen via {@link #toIntMatrix()} (or {@link #toLongMatrix()}) and multiply there.
+     * To keep the wider intermediate value instead, use {@link #matrixMultiplyWidened(ShortMatrix)};
+     * to be told about an overflow rather than silently wrapping, use
+     * {@link #matrixMultiplyExact(ShortMatrix)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2818,14 +2861,16 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param other the matrix to multiply with; must not be {@code null}
      * @return a new {@code ShortMatrix} of shape {@code this.rowCount x other.columnCount} containing the matrix product
      * @throws IllegalArgumentException if {@code other} is {@code null} or {@code this.columnCount != other.rowCount}
+     * @see #matrixMultiplyWidened(ShortMatrix)
+     * @see #matrixMultiplyExact(ShortMatrix)
      */
     public ShortMatrix matrixMultiply(final ShortMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(columnCount == other.rowCount,
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
                 columnCount, other.rowCount, other.columnCount);
 
-        checkRepresentableShape(rowCount, other.columnCount);
+        checkNonNegativeShape(rowCount, other.columnCount);
 
         final short[][] otherArray = other.a;
         final int newColumnCount = other.columnCount;
@@ -2852,7 +2897,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             }
         }
 
-        return new ShortMatrix(result, other.columnCount);
+        return wrapResult(result, other.columnCount);
     }
 
     /**
@@ -2865,7 +2910,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @throws IllegalArgumentException if {@code other} is {@code null} or the inner dimensions differ
      */
     public LongMatrix matrixMultiplyWidened(final ShortMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(columnCount == other.rowCount,
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
                 columnCount, other.rowCount, other.columnCount);
@@ -2883,7 +2928,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             }
         }
 
-        return new LongMatrix(result, other.columnCount);
+        return LongMatrix.wrapResult(result, other.columnCount);
     }
 
     /**
@@ -2906,7 +2951,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             }
         }
 
-        return new ShortMatrix(result, other.columnCount);
+        return wrapResult(result, other.columnCount);
     }
 
     /**
@@ -2963,7 +3008,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @see IntMatrix#from(short[][])
      */
     public IntMatrix toIntMatrix() {
-        return rowCount == 0 ? new IntMatrix(new int[0][], columnCount) : IntMatrix.from(a);
+        return rowCount == 0 ? IntMatrix.wrapResult(new int[0][], columnCount) : IntMatrix.from(a);
     }
 
     /**
@@ -2997,7 +3042,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             }
         }
 
-        return new LongMatrix(c, columnCount);
+        return LongMatrix.wrapResult(c, columnCount);
     }
 
     /**
@@ -3031,7 +3076,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             }
         }
 
-        return new FloatMatrix(c, columnCount);
+        return FloatMatrix.wrapResult(c, columnCount);
     }
 
     /**
@@ -3065,7 +3110,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             }
         }
 
-        return new DoubleMatrix(c, columnCount);
+        return DoubleMatrix.wrapResult(c, columnCount);
     }
 
     /**
@@ -3109,7 +3154,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      */
     public <E extends Exception> ShortMatrix zipWith(final ShortMatrix other, final Throwables.ShortBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgument(isSameShape(other), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
@@ -3121,7 +3166,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return new ShortMatrix(result, columnCount);
+        return wrapResult(result, columnCount);
     }
 
     /**
@@ -3167,8 +3212,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      */
     public <E extends Exception> ShortMatrix zipWith(final ShortMatrix other, final ShortMatrix third, final Throwables.ShortTernaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
-        N.checkArgNotNull(other, "other");
-        N.checkArgNotNull(third, "third");
+        N.checkArgNotNull(other, cs.other);
+        N.checkArgNotNull(third, cs.third);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: this is {}x{}, other is {}x{}, third is {}x{}",
                 rowCount, columnCount, other.rowCount, other.columnCount, third.rowCount, third.columnCount);
@@ -3181,7 +3226,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return new ShortMatrix(result, columnCount);
+        return wrapResult(result, columnCount);
     }
 
     /**
@@ -3584,7 +3629,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @return a Stream of ShortStream objects, one for each row in the matrix,
-     *         or an empty stream if the matrix is empty
+     *         or an empty stream when there are no rows (an {@code N x 0} matrix still yields one
+     *         empty stream per row)
      * @see #rowMajorStream(int, int)
      */
     @Override
@@ -3681,7 +3727,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @return a Stream of ShortStream objects, one for each column in the matrix,
-     *         or an empty stream if the matrix is empty
+     *         or an empty stream when there are no columns (a {@code 0 x N} matrix still yields one
+     *         empty stream per column)
      */
     @Override
     public Stream<ShortStream> columnStreams() {
@@ -3955,7 +4002,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
 
     /**
      * Returns a hash code value for this matrix.
-     * The hash code is computed based on the deep contents of the internal two-dimensional array.
+     * The hash code is computed from the deep contents of the internal two-dimensional array. A matrix
+     * with no rows has no contents to hash, so its column count participates instead, keeping
+     * {@code 0 x 3} and {@code 0 x 5} -- which {@code equals} distinguishes -- apart.
      * Matrices with the same dimensions and element values will have equal hash codes,
      * consistent with the {@link #equals(Object)} method.
      *
@@ -3974,7 +4023,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      */
     @Override
     public int hashCode() {
-        return N.deepHashCode(a);
+        // A zero-row matrix carries its column count outside the backing array, and equals() compares
+        // it, so it must take part in the hash; every other shape is already distinguished by the data.
+        return rowCount == 0 && columnCount > 0 ? 961 + columnCount : N.deepHashCode(a);
     }
 
     /**

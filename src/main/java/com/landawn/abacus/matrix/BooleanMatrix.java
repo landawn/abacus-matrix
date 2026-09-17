@@ -35,8 +35,8 @@ import com.landawn.abacus.util.stream.Stream;
  * <p>This type specializes {@link AbstractMatrix} for {@code boolean} values while keeping the data in
  * a validated backing array. The constructor and {@link #wrap(boolean[]...)} copy the outer array but
  * share its row arrays. {@link #copyOf(boolean[]...)}, conversions, and mapping operations do not share mutable cell
- * storage with a non-empty source; operations producing an empty matrix may return the shared empty
- * singleton.</p>
+ * storage with a non-empty source; operations producing a {@code 0 x 0} matrix return the shared empty
+ * singleton, while {@code 0 x N} and {@code N x 0} results keep their shape.</p>
  *
  * <p>Cells introduced by growth or reshaping default to {@code false} unless an overload accepts an
  * explicit fill value. Optional return values use {@link OptionalBoolean}.</p>
@@ -96,8 +96,14 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
         super(N.checkArgNotNull(a, "Matrix array cannot be null"), boolean.class, columnCount);
     }
 
-    private static BooleanMatrix wrapResult(final boolean[][] a, final int columnCount) {
-        return a.length == 0 && columnCount == 0 ? EMPTY_BOOLEAN_MATRIX : new BooleanMatrix(a, columnCount);
+    private BooleanMatrix(final boolean[][] a, final int columnCount, final boolean rowsAreKnownDistinct) {
+        super(N.checkArgNotNull(a, "Matrix array cannot be null"), boolean.class, columnCount, rowsAreKnownDistinct);
+    }
+
+    static BooleanMatrix wrapResult(final boolean[][] a, final int columnCount) {
+        // Every wrapResult(...) call site passes an array this class just allocated, so the rows are
+        // identity-distinct by construction and the duplicate-row scan can be skipped.
+        return a.length == 0 && columnCount == 0 ? EMPTY_BOOLEAN_MATRIX : new BooleanMatrix(a, columnCount, true);
     }
 
     /**
@@ -168,6 +174,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * BooleanMatrix.copyOf((boolean[][]) null);                      // throws IllegalArgumentException
      * BooleanMatrix.copyOf(new boolean[][] {{true, false}, {true}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
+     *
+     * <p>Because every row is cloned, an input that repeats the same row array is accepted here,
+     * while {@code wrap(...)} would reject it.</p>
      *
      * @param a the two-dimensional boolean array to copy, or empty for an empty matrix; must not be {@code null}
      * @return a new {@code BooleanMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is empty
@@ -268,7 +277,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
         N.checkArgNotNull(randomGenerator, "randomGenerator");
-        checkRepresentableShape(rowCount, columnCount);
+        checkNonNegativeShape(rowCount, columnCount);
 
         final boolean[][] a = new boolean[rowCount][columnCount];
 
@@ -791,6 +800,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * <p>The values from the source array are copied into the matrix column.
      * The source array must have exactly the same length as the number of rows in the matrix.</p>
      *
+     * <p>If the supplied array is one of this matrix's live backing rows (for example a value returned
+     * by {@code rowView(int)}), it is snapshotted first, so the values read are the ones in place when
+     * this method was called.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * BooleanMatrix matrix = BooleanMatrix.wrap(new boolean[][] {{true, false, false}, {false, true, false}});
@@ -1054,6 +1067,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * <p>This method sets the anti-diagonal (secondary diagonal) elements from
      * top-right toward the lower-left, at positions {@code (0,columnCount-1)},
      * {@code (1,columnCount-2)}, and so on.</p>
+     *
+     * <p>If the supplied array is one of this matrix's live backing rows (for example a value returned
+     * by {@code rowView(int)}), it is snapshotted first, so the values read are the ones in place when
+     * this method was called.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1370,7 +1387,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.BooleanFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E {
         N.checkArgNotNull(mapper, cs.mapper);
-        N.checkArgNotNull(targetElementType, "targetElementType");
+        N.checkArgNotNull(targetElementType, cs.targetElementType);
 
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
@@ -1726,7 +1743,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     public BooleanMatrix resize(final int newRowCount, final int newColumnCount, final boolean defaultValue) throws IllegalArgumentException {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
-        checkRepresentableShape(newRowCount, newColumnCount);
+        checkNonNegativeShape(newRowCount, newColumnCount);
         if (newRowCount <= rowCount && newColumnCount <= columnCount) {
             return copyRegion(0, newRowCount, 0, newColumnCount);
         } else {
@@ -1876,7 +1893,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
 
             final int newRowCount = padTop + rowCount + padBottom;
             final int newColumnCount = padLeft + columnCount + padRight;
-            checkRepresentableShape(newRowCount, newColumnCount);
+            checkNonNegativeShape(newRowCount, newColumnCount);
             final boolean[][] b = new boolean[newRowCount][newColumnCount];
 
             for (int i = 0; i < newRowCount; i++) {
@@ -2050,7 +2067,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * }</pre>
      *
      * @return a new matrix rotated 90 degrees clockwise (dimensions {@code columnCount × rowCount}),
-     *         or an empty matrix if this matrix has zero columns
+     *         an {@code N x 0} matrix becomes {@code 0 x N}, so the column count is preserved
      * @see #rotate180()
      * @see #rotate270()
      * @see #transpose()
@@ -2061,7 +2078,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
             return wrapResult(new boolean[0][], rowCount);
         }
 
-        checkRepresentableShape(columnCount, rowCount);
+        checkNonNegativeShape(columnCount, rowCount);
 
         final boolean[][] c = new boolean[columnCount][rowCount];
 
@@ -2144,7 +2161,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * }</pre>
      *
      * @return a new matrix rotated 270 degrees clockwise (dimensions {@code columnCount × rowCount}),
-     *         or an empty matrix if this matrix has zero columns
+     *         an {@code N x 0} matrix becomes {@code 0 x N}, so the column count is preserved
      * @see #rotate90()
      * @see #rotate180()
      * @see #transpose()
@@ -2155,7 +2172,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
             return wrapResult(new boolean[0][], rowCount);
         }
 
-        checkRepresentableShape(columnCount, rowCount);
+        checkNonNegativeShape(columnCount, rowCount);
 
         final boolean[][] c = new boolean[columnCount][rowCount];
 
@@ -2195,7 +2212,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * transposed.get(1, 1);                           // returns true  (original (1,1))
      *
      * BooleanMatrix.empty().transpose().isEmpty();                 // returns true
-     * BooleanMatrix.wrap(new boolean[3][0]).transpose().isEmpty();   // returns true (Nx0 -> empty)
+     * BooleanMatrix.wrap(new boolean[3][0]).transpose().isEmpty();      // returns true (no elements)
+     * BooleanMatrix.wrap(new boolean[3][0]).transpose().columnCount();  // returns 3 (N x 0 -> 0 x N)
      * }</pre>
      *
      * @return a new matrix with dimensions {@code columnCount × rowCount}; an {@code N x 0} matrix becomes {@code 0 x N}
@@ -2206,7 +2224,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
             return wrapResult(new boolean[0][], rowCount);
         }
 
-        checkRepresentableShape(columnCount, rowCount);
+        checkNonNegativeShape(columnCount, rowCount);
 
         final boolean[][] c = new boolean[columnCount][rowCount];
 
@@ -2260,7 +2278,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     public BooleanMatrix reshapeAndPad(final int newRowCount, final int newColumnCount) {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
-        checkRepresentableShape(newRowCount, newColumnCount);
+        checkNonNegativeShape(newRowCount, newColumnCount);
         N.checkArgument((long) newRowCount * newColumnCount >= elementCount(), "New shape [{}x{}={}] is too small to hold all {} elements", newRowCount,
                 newColumnCount, (long) newRowCount * newColumnCount, elementCount());
 
@@ -2530,7 +2548,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @see #zipWith(BooleanMatrix, Throwables.BooleanBinaryOperator)
      */
     public BooleanMatrix and(final BooleanMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot AND matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -2580,7 +2598,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @see #zipWith(BooleanMatrix, Throwables.BooleanBinaryOperator)
      */
     public BooleanMatrix or(final BooleanMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot OR matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount, other.rowCount,
                 other.columnCount);
 
@@ -2630,7 +2648,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @see #zipWith(BooleanMatrix, Throwables.BooleanBinaryOperator)
      */
     public BooleanMatrix xor(final BooleanMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot XOR matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -2790,7 +2808,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     @Override
     public BooleanMatrix stackVertically(final BooleanMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(columnCount == other.columnCount, MSG_VSTACK_COLUMN_MISMATCH, columnCount, other.columnCount);
         final long mergedRowCount = (long) rowCount + other.rowCount;
         N.checkArgument(mergedRowCount <= Integer.MAX_VALUE, "Merged row count overflow: {} + {} = {}", rowCount, other.rowCount, mergedRowCount);
@@ -2844,7 +2862,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     @Override
     public BooleanMatrix stackHorizontally(final BooleanMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(rowCount == other.rowCount, MSG_HSTACK_ROW_MISMATCH, rowCount, other.rowCount);
         final long mergedColumnCount = (long) columnCount + other.columnCount;
         N.checkArgument(mergedColumnCount <= Integer.MAX_VALUE, "Merged column count overflow: {} + {} = {}", columnCount, other.columnCount,
@@ -2936,7 +2954,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     public <E extends Exception> BooleanMatrix zipWith(final BooleanMatrix other, final Throwables.BooleanBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgument(isSameShape(other), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
@@ -2993,8 +3011,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     public <E extends Exception> BooleanMatrix zipWith(final BooleanMatrix other, final BooleanMatrix third,
             final Throwables.BooleanTernaryOperator<E> zipFunction) throws IllegalArgumentException, E {
-        N.checkArgNotNull(other, "other");
-        N.checkArgNotNull(third, "third");
+        N.checkArgNotNull(other, cs.other);
+        N.checkArgNotNull(third, cs.third);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: this is {}x{}, other is {}x{}, third is {}x{}",
                 rowCount, columnCount, other.rowCount, other.columnCount, third.rowCount, third.columnCount);
@@ -3036,7 +3054,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * }</pre>
      *
      * @return a {@code Stream<Boolean>} containing the diagonal elements from top-left to bottom-right,
-     *         or an empty stream if the matrix is empty (0 × 0)
+     *         or an empty stream if the matrix has no diagonal
      */
     @Override
     public Stream<Boolean> mainDiagonalStream() {
@@ -3108,7 +3126,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * }</pre>
      *
      * @return a {@code Stream<Boolean>} containing the anti-diagonal elements from top-right to bottom-left,
-     *         or an empty stream if the matrix is empty (0 × 0)
+     *         or an empty stream if the matrix has no diagonal
      */
     @Override
     public Stream<Boolean> antiDiagonalStream() {
@@ -3616,10 +3634,6 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     public Stream<Stream<Boolean>> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
-        if (isEmpty()) {
-            return Stream.empty();
-        }
-
         return Stream.of(new ObjIteratorEx<>() {
             private final int toIndex = toColumnIndex;
             private int cursor = fromColumnIndex;
@@ -3853,7 +3867,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
 
     /**
      * Returns a hash code value for this matrix.
-     * The hash code is computed based on the deep contents of the internal two-dimensional array.
+     * The hash code is computed from the deep contents of the internal two-dimensional array. A matrix
+     * with no rows has no contents to hash, so its column count participates instead, keeping
+     * {@code 0 x 3} and {@code 0 x 5} -- which {@code equals} distinguishes -- apart.
      * Matrices with the same dimensions and element values will have equal hash codes,
      * consistent with the {@link #equals(Object)} method.
      *
@@ -3872,7 +3888,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     @Override
     public int hashCode() {
-        return N.deepHashCode(a);
+        // A zero-row matrix carries its column count outside the backing array, and equals() compares
+        // it, so it must take part in the hash; every other shape is already distinguished by the data.
+        return rowCount == 0 && columnCount > 0 ? 961 + columnCount : N.deepHashCode(a);
     }
 
     /**

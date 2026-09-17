@@ -50,7 +50,9 @@ class FunctionalInterfaceNullValidationTest extends TestBase {
             }
         }
 
-        assertEquals(212, validatedParameterCount);
+        // Tripwire: bump this whenever a public method gains a functional-interface parameter, so that a
+        // silently non-matching reflection filter cannot make this test vacuous.
+        assertEquals(215, validatedParameterCount);
     }
 
     private static boolean isFunctionalInterface(final Class<?> type) {

@@ -79,7 +79,7 @@ build:
 ```java
 import com.landawn.abacus.matrix.IntMatrix;
 
-// Create a matrix from a 2D array (wraps the array directly — see "Array sharing" below)
+// Create a matrix from a 2D array (shares the row arrays — see "Array sharing" below)
 IntMatrix a = IntMatrix.wrap(new int[][] {
     {1, 2, 3},
     {4, 5, 6}
@@ -142,7 +142,9 @@ IntMatrix lengths = grid.mapToInt(String::length);   // project to a primitive m
   `mapToDouble` on `Matrix<T>` and the numeric primitives, plus `boxed()` to lift a primitive
   matrix to `Matrix<Wrapper>`.
 - **Arithmetic** — `add`, `subtract`, and `matrixMultiply` on the numeric primitive matrices.
-  Integer types follow standard Java overflow semantics (silent wraparound).
+  Integer types follow standard Java overflow semantics (silent wraparound); use the `*Exact`
+  variants (`addExact`, `subtractExact`, `matrixMultiplyExact`) to be told about an overflow
+  instead, or the `*Widened` variants to keep the wider result.
 - **Combining matrices** — instance `zipWith`, and `Matrices.zip` / `zipToInt` / `zipToLong` /
   `zipToDouble` / `zipToObj` for pairs, triples, or collections.
 - **Streaming and flattening** — `rowMajorStream` / `columnMajorStream` (whole matrix, a single
@@ -156,22 +158,28 @@ IntMatrix lengths = grid.mapToInt(String::length);   // project to a primitive m
 
 ## Array sharing and copying
 
-Constructors and the `wrap(...)` factories **wrap the supplied 2D array directly** (after a
-rectangular-shape check) — no defensive copy is made, so later changes to the array or the matrix
-are visible through the other. This is intentional and fast. When you need isolation from the
+Constructors and the `wrap(...)` factories **share the supplied row arrays** (after validating that
+the array is rectangular and that no two rows are the same array object). The *outer* array is
+snapshotted, so writing a cell through either view is visible through the other, but replacing a
+whole row in your array is not. This is intentional and fast. When you need isolation from the
 original array, use a copy-producing API instead:
 
 ```java
 int[][] data = {{1, 2}, {3, 4}};
 
-IntMatrix wrapped = IntMatrix.wrap(data);       // shares 'data'
+IntMatrix wrapped = IntMatrix.wrap(data);     // shares the row arrays
 data[0][0] = 99;
-wrapped.get(0, 0);                            // 99
+wrapped.get(0, 0);                            // 99   (cell writes are shared)
+data[0] = new int[] {-1, -1};
+wrapped.get(0, 0);                            // 99   (row replacement is not)
 
 IntMatrix owned = IntMatrix.copyOf(data);     // deep-copies 'data'
-data[0][0] = -1;
-owned.get(0, 0);                              // 99 (unaffected)
+data[1][0] = -1;
+owned.get(1, 0);                              // 3 (unaffected)
 ```
+
+Because every logical row must own its storage, `wrap(row, row)` is rejected with an
+`IllegalArgumentException`, while `copyOf(row, row)` succeeds — it clones each row.
 
 `copy()`, `copyOf(...)`, and the mapping/transformation methods all return independent matrices.
 The matrix types are **not thread-safe**; guard external synchronization if you share an instance
@@ -187,14 +195,15 @@ import com.landawn.abacus.matrix.Matrices;
 import com.landawn.abacus.matrix.ParallelMode;
 
 Matrices.setParallelMode(ParallelMode.FORCE_ON);   // always parallel, ignore size
-Matrices.setParallelMode(ParallelMode.FORCE_OFF);  // always sequential
-Matrices.setParallelMode(ParallelMode.AUTO);       // default: parallel only past a size threshold
+Matrices.setParallelMode(ParallelMode.FORCE_OFF);  // the default: always sequential
+Matrices.setParallelMode(ParallelMode.AUTO);       // parallel only past a size threshold
 ```
 
-`AUTO` is the default and keeps small operations sequential (to avoid dispatch overhead) while
-larger ones run in parallel. The setting is stored in a `ThreadLocal`, so it only affects the
-current thread. Use `Matrices.runWithParallelMode(mode, action)` to scope a mode change to a
-single block of work.
+`FORCE_OFF` is the default for every thread, so these operations are sequential — and their
+callbacks run deterministically — unless you opt in. `AUTO` keeps small operations sequential
+(to avoid dispatch overhead) while larger ones run in parallel. The setting is stored in a
+`ThreadLocal`, so it only affects the current thread. Use
+`Matrices.runWithParallelMode(mode, action)` to scope a mode change to a single block of work.
 
 ## Documentation
 

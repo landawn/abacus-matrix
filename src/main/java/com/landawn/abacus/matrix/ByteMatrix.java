@@ -38,8 +38,8 @@ import com.landawn.abacus.util.stream.Stream;
  * <p>This type specializes {@link AbstractMatrix} for {@code byte} values while keeping the data in a
  * validated backing array. The constructor and {@link #wrap(byte[]...)} copy the outer array but
  * share its row arrays. {@link #copyOf(byte[]...)}, conversions, and mapping operations do not share mutable cell
- * storage with a non-empty source; operations producing an empty matrix may return the shared empty
- * singleton.</p>
+ * storage with a non-empty source; operations producing a {@code 0 x 0} matrix return the shared empty
+ * singleton, while {@code 0 x N} and {@code N x 0} results keep their shape.</p>
  *
  * <p>Cells introduced by growth or reshaping default to {@code 0} unless an overload accepts an
  * explicit fill value.</p>
@@ -109,8 +109,14 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         super(N.checkArgNotNull(a, "Matrix array cannot be null"), byte.class, columnCount);
     }
 
-    private static ByteMatrix wrapResult(final byte[][] a, final int columnCount) {
-        return a.length == 0 && columnCount == 0 ? EMPTY_BYTE_MATRIX : new ByteMatrix(a, columnCount);
+    private ByteMatrix(final byte[][] a, final int columnCount, final boolean rowsAreKnownDistinct) {
+        super(N.checkArgNotNull(a, "Matrix array cannot be null"), byte.class, columnCount, rowsAreKnownDistinct);
+    }
+
+    static ByteMatrix wrapResult(final byte[][] a, final int columnCount) {
+        // Every wrapResult(...) call site passes an array this class just allocated, so the rows are
+        // identity-distinct by construction and the duplicate-row scan can be skipped.
+        return a.length == 0 && columnCount == 0 ? EMPTY_BYTE_MATRIX : new ByteMatrix(a, columnCount, true);
     }
 
     /**
@@ -181,6 +187,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * ByteMatrix.copyOf((byte[][]) null);            // throws IllegalArgumentException
      * ByteMatrix.copyOf(new byte[][] {{1, 2}, {3}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
+     *
+     * <p>Because every row is cloned, an input that repeats the same row array is accepted here,
+     * while {@code wrap(...)} would reject it.</p>
      *
      * @param a the two-dimensional byte array to copy, or empty for an empty matrix; must not be {@code null}
      * @return a new {@code ByteMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is empty
@@ -284,7 +293,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
         N.checkArgNotNull(randomGenerator, "randomGenerator");
-        checkRepresentableShape(rowCount, columnCount);
+        checkNonNegativeShape(rowCount, columnCount);
 
         final byte[][] a = new byte[rowCount][columnCount];
 
@@ -300,7 +309,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     /**
      * Creates a single-row {@code ByteMatrix} containing a half-open range of byte values.
      * The range is {@code [startInclusive, endExclusive)} with an implicit step of {@code +1}.
-     * If {@code endExclusive <= startInclusive}, the result is an empty matrix.
+     * If {@code endExclusive <= startInclusive}, a {@code 1x0} matrix is returned.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -360,7 +369,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     /**
      * Creates a single-row {@code ByteMatrix} containing a closed range of byte values.
      * The range is {@code [startInclusive, endInclusive]} with an implicit step of {@code +1}.
-     * If {@code endInclusive < startInclusive}, the result is an empty matrix.
+     * If {@code endInclusive < startInclusive}, a {@code 1x0} matrix is returned.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -916,6 +925,10 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p>The values from the source array are copied into the matrix column.
      * The source array must have exactly the same length as the number of rows in the matrix.</p>
      *
+     * <p>If the supplied array is one of this matrix's live backing rows (for example a value returned
+     * by {@code rowView(int)}), it is snapshotted first, so the values read are the ones in place when
+     * this method was called.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.wrap(new byte[][] {{1, 2, 3}, {4, 5, 6}});
@@ -1164,6 +1177,10 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p>This method sets the anti-diagonal (secondary diagonal) elements from
      * top-right toward the lower-left, beginning at {@code (0,columnCount-1)}.</p>
      *
+     * <p>If the supplied array is one of this matrix's live backing rows (for example a value returned
+     * by {@code rowView(int)}), it is snapshotted first, so the values read are the ones in place when
+     * this method was called.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.wrap(new byte[][] {{1, 2}, {3, 4}});
@@ -1366,8 +1383,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p>This is useful for position-based replacements such as setting diagonals, borders,
      * or specific regions. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
      *
-     * <p>Nonmatching positions perform no write. If logical rows share a backing array, a
-     * replacement made through any matching coordinate is therefore visible through every alias.</p>
+     * <p>Nonmatching positions perform no write.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1472,7 +1488,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      */
     public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.ByteFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E {
         N.checkArgNotNull(mapper, cs.mapper);
-        N.checkArgNotNull(targetElementType, "targetElementType");
+        N.checkArgNotNull(targetElementType, cs.targetElementType);
 
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
@@ -1793,7 +1809,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     public ByteMatrix resize(final int newRowCount, final int newColumnCount, final byte defaultValue) throws IllegalArgumentException {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
-        checkRepresentableShape(newRowCount, newColumnCount);
+        checkNonNegativeShape(newRowCount, newColumnCount);
         if (newRowCount <= rowCount && newColumnCount <= columnCount) {
             return copyRegion(0, newRowCount, 0, newColumnCount);
         } else {
@@ -1931,7 +1947,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
 
             final int newRowCount = padTop + rowCount + padBottom;
             final int newColumnCount = padLeft + columnCount + padRight;
-            checkRepresentableShape(newRowCount, newColumnCount);
+            checkNonNegativeShape(newRowCount, newColumnCount);
             final boolean fillDefaultValue = defaultValue != BYTE_0;
             final byte[][] b = new byte[newRowCount][newColumnCount];
 
@@ -2105,7 +2121,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * }</pre>
      *
      * @return a new matrix rotated 90 degrees clockwise (dimensions {@code columnCount × rowCount}),
-     *         or an empty matrix if this matrix has zero columns
+     *         an {@code N x 0} matrix becomes {@code 0 x N}, so the column count is preserved
      * @see #rotate180()
      * @see #rotate270()
      * @see #transpose()
@@ -2116,7 +2132,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
             return wrapResult(new byte[0][], rowCount);
         }
 
-        checkRepresentableShape(columnCount, rowCount);
+        checkNonNegativeShape(columnCount, rowCount);
 
         final byte[][] c = new byte[columnCount][rowCount];
 
@@ -2193,7 +2209,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * }</pre>
      *
      * @return a new matrix rotated 270 degrees clockwise (dimensions {@code columnCount × rowCount}),
-     *         or an empty matrix if this matrix has zero columns
+     *         an {@code N x 0} matrix becomes {@code 0 x N}, so the column count is preserved
      * @see #rotate90()
      * @see #rotate180()
      * @see #transpose()
@@ -2204,7 +2220,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
             return wrapResult(new byte[0][], rowCount);
         }
 
-        checkRepresentableShape(columnCount, rowCount);
+        checkNonNegativeShape(columnCount, rowCount);
 
         final byte[][] c = new byte[columnCount][rowCount];
 
@@ -2251,7 +2267,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
             return wrapResult(new byte[0][], rowCount);
         }
 
-        checkRepresentableShape(columnCount, rowCount);
+        checkNonNegativeShape(columnCount, rowCount);
 
         final byte[][] c = new byte[columnCount][rowCount];
 
@@ -2304,7 +2320,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     public ByteMatrix reshapeAndPad(final int newRowCount, final int newColumnCount) {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
-        checkRepresentableShape(newRowCount, newColumnCount);
+        checkNonNegativeShape(newRowCount, newColumnCount);
         N.checkArgument((long) newRowCount * newColumnCount >= elementCount(), "New shape [{}x{}={}] is too small to hold all {} elements", newRowCount,
                 newColumnCount, (long) newRowCount * newColumnCount, elementCount());
 
@@ -2512,8 +2528,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p>The action receives a temporary array. Its mutations are copied back only if the action
      * returns normally; if the action throws, those mutations are discarded. An action is not invoked
      * when this matrix has zero rows, while an {@code n x 0} matrix with {@code n > 0} invokes it once
-     * with an empty array. If logical rows share a backing array, write-back is row-major, so values for
-     * the last logical row using that array determine its final contents.</p>
+     * with an empty array. Write-back proceeds in row-major order.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2573,7 +2588,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      */
     @Override
     public ByteMatrix stackVertically(final ByteMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(columnCount == other.columnCount, MSG_VSTACK_COLUMN_MISMATCH, columnCount, other.columnCount);
         final long mergedRowCount = (long) rowCount + other.rowCount;
         N.checkArgument(mergedRowCount <= Integer.MAX_VALUE, "Merged row count overflow: {} + {} = {}", rowCount, other.rowCount, mergedRowCount);
@@ -2622,7 +2637,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      */
     @Override
     public ByteMatrix stackHorizontally(final ByteMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(rowCount == other.rowCount, MSG_HSTACK_ROW_MISMATCH, rowCount, other.rowCount);
         final long mergedColumnCount = (long) columnCount + other.columnCount;
         N.checkArgument(mergedColumnCount <= Integer.MAX_VALUE, "Merged column count overflow: {} + {} = {}", columnCount, other.columnCount,
@@ -2673,7 +2688,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @see #zipWith(ByteMatrix, Throwables.ByteBinaryOperator)
      */
     public ByteMatrix add(final ByteMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot add matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -2706,7 +2721,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @throws IllegalArgumentException if {@code other} is {@code null} or has a different shape
      */
     public IntMatrix addWidened(final ByteMatrix other) {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot add matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -2718,7 +2733,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
             }
         }
 
-        return new IntMatrix(result, columnCount);
+        return IntMatrix.wrapResult(result, columnCount);
     }
 
     /**
@@ -2730,7 +2745,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @throws ArithmeticException if any sum is outside {@code [-128, 127]}
      */
     public ByteMatrix addExact(final ByteMatrix other) {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot add matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -2779,7 +2794,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @see #zipWith(ByteMatrix, Throwables.ByteBinaryOperator)
      */
     public ByteMatrix subtract(final ByteMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot subtract matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -2812,7 +2827,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @throws IllegalArgumentException if {@code other} is {@code null} or has a different shape
      */
     public IntMatrix subtractWidened(final ByteMatrix other) {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot subtract matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -2824,7 +2839,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
             }
         }
 
-        return new IntMatrix(result, columnCount);
+        return IntMatrix.wrapResult(result, columnCount);
     }
 
     /**
@@ -2836,7 +2851,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @throws ArithmeticException if any difference is outside {@code [-128, 127]}
      */
     public ByteMatrix subtractExact(final ByteMatrix other) {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot subtract matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -2886,12 +2901,12 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @throws IllegalArgumentException if {@code other} is {@code null} or {@code this.columnCount != other.rowCount}
      */
     public ByteMatrix matrixMultiply(final ByteMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(columnCount == other.rowCount,
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
                 columnCount, other.rowCount, other.columnCount);
 
-        checkRepresentableShape(rowCount, other.columnCount);
+        checkNonNegativeShape(rowCount, other.columnCount);
 
         final byte[][] otherArray = other.a;
         final int newColumnCount = other.columnCount;
@@ -2929,7 +2944,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @throws IllegalArgumentException if {@code other} is {@code null} or dimensions are incompatible
      */
     public LongMatrix matrixMultiplyWidened(final ByteMatrix other) {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(columnCount == other.rowCount,
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
                 columnCount, other.rowCount, other.columnCount);
@@ -2949,7 +2964,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
             }
         }
 
-        return new LongMatrix(result, newColumnCount);
+        return LongMatrix.wrapResult(result, newColumnCount);
     }
 
     /**
@@ -2962,7 +2977,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @throws ArithmeticException if any result cell is outside {@code [-128, 127]}
      */
     public ByteMatrix matrixMultiplyExact(final ByteMatrix other) {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(columnCount == other.rowCount,
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
                 columnCount, other.rowCount, other.columnCount);
@@ -3057,7 +3072,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      */
     public IntMatrix toIntMatrix() {
         if (rowCount == 0) {
-            return columnCount == 0 ? IntMatrix.empty() : new IntMatrix(new int[0][], columnCount);
+            return IntMatrix.wrapResult(new int[0][], columnCount);
         }
 
         return IntMatrix.from(a);
@@ -3096,7 +3111,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
             }
         }
 
-        return rowCount == 0 && columnCount == 0 ? LongMatrix.empty() : new LongMatrix(c, columnCount);
+        return LongMatrix.wrapResult(c, columnCount);
     }
 
     /**
@@ -3132,7 +3147,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
             }
         }
 
-        return rowCount == 0 && columnCount == 0 ? FloatMatrix.empty() : new FloatMatrix(c, columnCount);
+        return FloatMatrix.wrapResult(c, columnCount);
     }
 
     /**
@@ -3168,7 +3183,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
             }
         }
 
-        return rowCount == 0 && columnCount == 0 ? DoubleMatrix.empty() : new DoubleMatrix(c, columnCount);
+        return DoubleMatrix.wrapResult(c, columnCount);
     }
 
     /**
@@ -3212,7 +3227,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      */
     public <E extends Exception> ByteMatrix zipWith(final ByteMatrix other, final Throwables.ByteBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgument(isSameShape(other), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
@@ -3270,8 +3285,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      */
     public <E extends Exception> ByteMatrix zipWith(final ByteMatrix other, final ByteMatrix third, final Throwables.ByteTernaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
-        N.checkArgNotNull(other, "other");
-        N.checkArgNotNull(third, "third");
+        N.checkArgNotNull(other, cs.other);
+        N.checkArgNotNull(third, cs.third);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: this is {}x{}, other is {}x{}, third is {}x{}",
                 rowCount, columnCount, other.rowCount, other.columnCount, third.rowCount, third.columnCount);
@@ -3688,7 +3703,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * }</pre>
      *
      * @return a Stream of ByteStream objects, one for each row in the matrix,
-     *         or an empty stream if the matrix is empty
+     *         or an empty stream when there are no rows (an {@code N x 0} matrix still yields one
+     *         empty stream per row)
      * @see #rowMajorStream(int, int)
      */
     @Override
@@ -3785,7 +3801,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * }</pre>
      *
      * @return a Stream of ByteStream objects, one for each column in the matrix,
-     *         or an empty stream if the matrix is empty
+     *         or an empty stream when there are no columns (a {@code 0 x N} matrix still yields one
+     *         empty stream per column)
      */
     @Override
     public Stream<ByteStream> columnStreams() {
@@ -3821,10 +3838,6 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     @Override
     public Stream<ByteStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
-
-        if (isEmpty()) {
-            return Stream.empty();
-        }
 
         return Stream.of(new ObjIteratorEx<>() {
             private final int toIndex = toColumnIndex;
@@ -4055,7 +4068,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
 
     /**
      * Returns a hash code value for this matrix.
-     * The hash code is computed based on the deep contents of the internal two-dimensional array.
+     * The hash code is computed from the deep contents of the internal two-dimensional array. A matrix
+     * with no rows has no contents to hash, so its column count participates instead, keeping
+     * {@code 0 x 3} and {@code 0 x 5} -- which {@code equals} distinguishes -- apart.
      * Matrices with the same dimensions and element values will have equal hash codes,
      * consistent with the {@link #equals(Object)} method.
      *
@@ -4074,7 +4089,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      */
     @Override
     public int hashCode() {
-        return N.deepHashCode(a);
+        // A zero-row matrix carries its column count outside the backing array, and equals() compares
+        // it, so it must take part in the hash; every other shape is already distinguished by the data.
+        return rowCount == 0 && columnCount > 0 ? 961 + columnCount : N.deepHashCode(a);
     }
 
     /**

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -634,16 +635,17 @@ class DoubleMatrixTest extends TestBase {
 
     @Test
     public void testCopyRangesEmpty_returnsEmptyMatrix() {
-        // Regression: copyRows(from, from) on a matrix with columns > 0 must not throw.
+        // An empty row slice keeps the column count (0 x N) and an empty column slice keeps the row
+        // count (N x 0); only an empty range in BOTH dimensions collapses to 0 x 0.
         DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 } });
 
         DoubleMatrix empty = m.copyRows(0, 0);
         assertEquals(0, empty.rowCount());
-        assertEquals(0, empty.columnCount());
+        assertEquals(3, empty.columnCount());
 
         DoubleMatrix emptyRows = m.copyRegion(1, 1, 0, 3);
         assertEquals(0, emptyRows.rowCount());
-        assertEquals(0, emptyRows.columnCount());
+        assertEquals(3, emptyRows.columnCount());
 
         DoubleMatrix emptyCols = m.copyRegion(0, 2, 1, 1);
         assertEquals(2, emptyCols.rowCount());
@@ -2592,7 +2594,7 @@ class DoubleMatrixTest extends TestBase {
         public void testmatrixMultiply_emptyProductReturnsCanonicalEmpty() {
             // Regression: matrixMultiply must build its result via DoubleMatrix.wrap(result) (not the raw
             // constructor) so an empty product yields the shared EMPTY singleton, and must call
-            // checkRepresentableShape before allocation for consistency with the other
+            // checkNonNegativeShape before allocation for consistency with the other
             // result-allocating methods (resize/reshape/transpose/rotate).
             DoubleMatrix product = DoubleMatrix.empty().matrixMultiply(DoubleMatrix.empty());
             assertSame(DoubleMatrix.empty(), product);
@@ -6204,11 +6206,17 @@ class DoubleMatrixTest extends TestBase {
 
         com.landawn.abacus.util.stream.DoubleIteratorEx ex = (com.landawn.abacus.util.stream.DoubleIteratorEx) iterator;
         ex.advance(2);
-        assertEquals(2L, ex.count());
         assertEquals(3d, ex.nextDouble(), 0.0001d);
         ex.advance(10);
-        assertEquals(0L, ex.count());
+        assertFalse(ex.hasNext());
         assertThrows(java.util.NoSuchElementException.class, ex::nextDouble);
+
+        // IteratorEx.count() is terminal: it consumes the remaining elements and leaves the iterator
+        // exhausted, so a remaining-size assertion needs its own iterator.
+        var counting = (com.landawn.abacus.util.stream.DoubleIteratorEx) matrix.rowMajorStream(0, 2).iterator();
+        counting.advance(2);
+        assertEquals(2L, counting.count());
+        assertFalse(counting.hasNext());
     }
 
     @Nested
@@ -6262,22 +6270,25 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTranspose_Nx0_collapsesToEmpty() {
+        public void testTranspose_Nx0_preservesTransposedShape() {
+            // An N x 0 matrix transposes to 0 x N: no elements, but the column count survives.
             DoubleMatrix t = DoubleMatrix.wrap(new double[3][0]).transpose();
             assertEquals(0, t.rowCount());
-            assertEquals(0, t.columnCount());
+            assertEquals(3, t.columnCount());
         }
 
         @Test
-        public void testRotate180_Nx0_preservesShape_whileRotate90TwiceCollapses() {
+        public void testRotate180_Nx0_agreesWithRotate90Twice() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[3][0]);
 
             DoubleMatrix via180 = m.rotate180();
             assertEquals(3, via180.rowCount());
             assertEquals(0, via180.columnCount());
 
+            // Two 90-degree rotations must equal one 180-degree rotation even for a degenerate
+            // shape; that only holds because rotate90 preserves the transposed column count.
             DoubleMatrix viaRotate90Twice = m.rotate90().rotate90();
-            assertEquals(0, viaRotate90Twice.rowCount());
+            assertEquals(3, viaRotate90Twice.rowCount());
             assertEquals(0, viaRotate90Twice.columnCount());
         }
 
@@ -6332,39 +6343,28 @@ class DoubleMatrixTest extends TestBase {
         }
 
         @Test
-        public void testAliasedBackingRowsAreTransformedOnce() {
+        public void testDuplicateBackingRowsAreRejectedAtConstruction() {
+            // One array cannot back two independently addressable logical rows, so wrap() rejects it.
             final double[] sharedRow = { 1.0, 2.0, 3.0 };
-            final DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { sharedRow, sharedRow });
+            final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                    () -> DoubleMatrix.wrap(new double[][] { sharedRow, sharedRow }));
+            assertTrue(ex.getMessage().contains("independent storage"));
 
+            // copyOf() clones each row, so the same values are accepted and stay independent.
+            final DoubleMatrix matrix = DoubleMatrix.copyOf(new double[][] { sharedRow, sharedRow });
             matrix.updateColumn(0, value -> value + 1.0);
-            assertArrayEquals(new double[] { 2.0, 2.0, 3.0 }, sharedRow);
+            assertArrayEquals(new double[] { 2.0, 2.0, 3.0 }, matrix.rowCopy(0));
+            assertArrayEquals(new double[] { 2.0, 2.0, 3.0 }, matrix.rowCopy(1));
+            assertArrayEquals(new double[] { 1.0, 2.0, 3.0 }, sharedRow);
+            assertNotSame(matrix.rowView(0), matrix.rowView(1));
 
-            matrix.updateAll(value -> value * 2.0);
-            assertArrayEquals(new double[] { 4.0, 4.0, 6.0 }, sharedRow);
-
-            final double[] forcedParallelRow = { 1.0, 2.0 };
-            final DoubleMatrix forcedParallelMatrix = DoubleMatrix.wrap(new double[][] { forcedParallelRow, forcedParallelRow });
+            // Forced-parallel mutation still visits each of the four cells exactly once.
             final AtomicInteger calls = new AtomicInteger();
-            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> forcedParallelMatrix.updateAll(value -> {
+            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> matrix.updateAll(value -> {
                 calls.incrementAndGet();
-                return value + 1.0;
+                return value;
             }));
-            assertEquals(2, calls.get());
-            assertArrayEquals(new double[] { 2.0, 3.0 }, forcedParallelRow);
-
-            final double[] forcedParallelReplaceRow = { 1.0, 2.0 };
-            final DoubleMatrix forcedParallelReplaceMatrix = DoubleMatrix.wrap(new double[][] { forcedParallelReplaceRow, forcedParallelReplaceRow });
-            final AtomicInteger replaceCalls = new AtomicInteger();
-            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> forcedParallelReplaceMatrix.replaceIf(value -> {
-                replaceCalls.incrementAndGet();
-                return value > 0.0;
-            }, 9.0));
-            assertEquals(2, replaceCalls.get());
-            assertArrayEquals(new double[] { 9.0, 9.0 }, forcedParallelReplaceRow);
-
-            matrix.flipHorizontallyInPlace();
-            assertArrayEquals(new double[] { 6.0, 4.0, 4.0 }, sharedRow);
-            assertSame(matrix.rowView(0), matrix.rowView(1));
+            assertEquals(6, calls.get());
         }
     }
 
@@ -6442,23 +6442,35 @@ class DoubleMatrixTest extends TestBase {
         assertTrue(rowMajorIterator instanceof com.landawn.abacus.util.stream.DoubleIteratorEx);
         com.landawn.abacus.util.stream.DoubleIteratorEx rowMajor = (com.landawn.abacus.util.stream.DoubleIteratorEx) rowMajorIterator;
         rowMajor.advance(1); // mid-row cursor: the chunked toArray must start at column 1
-        assertEquals(5L, rowMajor.count());
         assertArrayEquals(new double[] { 2.0, 3.0, 4.0, 5.0, 6.0 }, rowMajor.toArray());
+
+        // IteratorEx.count() is terminal: it consumes the remainder and exhausts the iterator, so every
+        // remaining-size assertion below uses its own freshly positioned iterator.
+        var rowMajorCount = (com.landawn.abacus.util.stream.DoubleIteratorEx) matrix.rowMajorStream(0, 2).iterator();
+        rowMajorCount.advance(1);
+        assertEquals(5L, rowMajorCount.count());
 
         var columnMajorIterator = matrix.columnMajorStream(0, 3).iterator();
         com.landawn.abacus.util.stream.DoubleIteratorEx columnMajor = (com.landawn.abacus.util.stream.DoubleIteratorEx) columnMajorIterator;
         columnMajor.advance(1); // mid-column cursor: row 1 of column 0
-        assertEquals(5L, columnMajor.count());
         assertArrayEquals(new double[] { 4.0, 2.0, 5.0, 3.0, 6.0 }, columnMajor.toArray());
+
+        var columnMajorCount = (com.landawn.abacus.util.stream.DoubleIteratorEx) matrix.columnMajorStream(0, 3).iterator();
+        columnMajorCount.advance(1);
+        assertEquals(5L, columnMajorCount.count());
 
         var crossingIterator = matrix.columnMajorStream(0, 3).iterator();
         com.landawn.abacus.util.stream.DoubleIteratorEx crossing = (com.landawn.abacus.util.stream.DoubleIteratorEx) crossingIterator;
         crossing.advance(3); // crosses a column boundary: lands on row 1 of column 1
-        assertEquals(3L, crossing.count());
         assertEquals(5.0, crossing.nextDouble());
         crossing.advance(10);
         assertEquals(0L, crossing.count());
         assertThrows(java.util.NoSuchElementException.class, crossing::nextDouble);
+
+        var crossingCount = (com.landawn.abacus.util.stream.DoubleIteratorEx) matrix.columnMajorStream(0, 3).iterator();
+        crossingCount.advance(3);
+        assertEquals(3L, crossingCount.count()); // consumes 5.0, 3.0, 6.0
+        assertFalse(crossingCount.hasNext());
     }
 
     @Test

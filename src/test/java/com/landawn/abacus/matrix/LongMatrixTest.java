@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -674,16 +675,17 @@ class LongMatrixTest extends TestBase {
 
     @Test
     public void testCopyRangesEmpty_returnsEmptyMatrix() {
-        // Regression: copyRows(from, from) on a matrix with columns > 0 must not throw.
+        // An empty row slice keeps the column count (0 x N) and an empty column slice keeps the row
+        // count (N x 0); only an empty range in BOTH dimensions collapses to 0 x 0.
         LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 2L, 3L }, { 4L, 5L, 6L }, { 7L, 8L, 9L } });
 
         LongMatrix empty = m.copyRows(0, 0);
         Assertions.assertEquals(0, empty.rowCount());
-        Assertions.assertEquals(0, empty.columnCount());
+        Assertions.assertEquals(3, empty.columnCount());
 
         LongMatrix emptyRows = m.copyRegion(1, 1, 0, 3);
         Assertions.assertEquals(0, emptyRows.rowCount());
-        Assertions.assertEquals(0, emptyRows.columnCount());
+        Assertions.assertEquals(3, emptyRows.columnCount());
 
         LongMatrix emptyCols = m.copyRegion(0, 3, 1, 1);
         Assertions.assertEquals(3, emptyCols.rowCount());
@@ -2828,7 +2830,7 @@ class LongMatrixTest extends TestBase {
         public void testmatrixMultiply_emptyProductReturnsCanonicalEmpty() {
             // Regression: matrixMultiply must build its result via LongMatrix.wrap(result) (not the raw
             // constructor) so an empty product yields the shared EMPTY singleton, and must call
-            // checkRepresentableShape before allocation for consistency with the other
+            // checkNonNegativeShape before allocation for consistency with the other
             // result-allocating methods (resize/reshape/transpose/rotate).
             LongMatrix product = LongMatrix.empty().matrixMultiply(LongMatrix.empty());
             assertSame(LongMatrix.empty(), product);
@@ -5949,11 +5951,17 @@ class LongMatrixTest extends TestBase {
 
         com.landawn.abacus.util.stream.LongIteratorEx ex = (com.landawn.abacus.util.stream.LongIteratorEx) iterator;
         ex.advance(2);
-        assertEquals(2L, ex.count());
         assertEquals(3L, ex.nextLong());
         ex.advance(10);
-        assertEquals(0L, ex.count());
+        assertFalse(ex.hasNext());
         assertThrows(java.util.NoSuchElementException.class, ex::nextLong);
+
+        // IteratorEx.count() is terminal: it consumes the remaining elements and leaves the iterator
+        // exhausted, so a remaining-size assertion needs its own iterator.
+        var counting = (com.landawn.abacus.util.stream.LongIteratorEx) matrix.rowMajorStream(0, 2).iterator();
+        counting.advance(2);
+        assertEquals(2L, counting.count());
+        assertFalse(counting.hasNext());
     }
 
     // =====================================================================
@@ -6040,12 +6048,15 @@ class LongMatrixTest extends TestBase {
         LongMatrix m = LongMatrix.wrap(new long[][] { { 1L, 0L, 0L, 0L }, { 0L, 2L, 0L, 0L }, { 0L, 0L, 3L, 0L }, { 0L, 0L, 0L, 4L } });
 
         var it = (com.landawn.abacus.util.stream.LongIteratorEx) m.mainDiagonalStream().iterator();
-        assertEquals(4L, it.count());
         assertEquals(1L, it.nextLong());
         it.advance(2);
-        assertEquals(1L, it.count());
         assertEquals(4L, it.nextLong());
         assertFalse(it.hasNext());
+
+        // count() consumes what remains, so it is asserted on a fresh iterator.
+        var counting = (com.landawn.abacus.util.stream.LongIteratorEx) m.mainDiagonalStream().iterator();
+        assertEquals(4L, counting.count());
+        assertFalse(counting.hasNext());
     }
 
     @Test
@@ -6058,8 +6069,13 @@ class LongMatrixTest extends TestBase {
 
         var it = (com.landawn.abacus.util.stream.LongIteratorEx) m.antiDiagonalStream().iterator();
         it.advance(1);
-        assertEquals(3L, it.count());
         assertEquals(3L, it.nextLong());
+
+        // count() consumes the remaining 3, 2, 1 and exhausts the iterator.
+        var counting = (com.landawn.abacus.util.stream.LongIteratorEx) m.antiDiagonalStream().iterator();
+        counting.advance(1);
+        assertEquals(3L, counting.count());
+        assertFalse(counting.hasNext());
     }
 
     @Test
@@ -6069,15 +6085,19 @@ class LongMatrixTest extends TestBase {
 
         var it = (com.landawn.abacus.util.stream.LongIteratorEx) m.columnMajorStream().iterator();
         // columnMajorStream() → 1,2,3 (col 0) | 4,5,6 (col 1) | 7,8,9 (col 2)
-        assertEquals(9L, it.count());
         it.advance(4);
         // After advancing 4 elements we have skipped 1,2,3,4; next should be 5.
-        assertEquals(5L, it.count());
         assertEquals(5L, it.nextLong());
         it.advance(2);
         // After advancing 2 more (6, 7) the next element is 8.
-        assertEquals(2L, it.count());
         assertEquals(8L, it.nextLong());
+
+        // count() is terminal, so each remaining-size assertion uses a fresh iterator.
+        assertEquals(9L, ((com.landawn.abacus.util.stream.LongIteratorEx) m.columnMajorStream().iterator()).count());
+        var afterFour = (com.landawn.abacus.util.stream.LongIteratorEx) m.columnMajorStream().iterator();
+        afterFour.advance(4);
+        assertEquals(5L, afterFour.count());
+        assertFalse(afterFour.hasNext());
     }
 
     @Test
@@ -6197,22 +6217,25 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTranspose_Nx0_collapsesToEmpty() {
+        public void testTranspose_Nx0_preservesTransposedShape() {
+            // An N x 0 matrix transposes to 0 x N: no elements, but the column count survives.
             LongMatrix t = LongMatrix.wrap(new long[3][0]).transpose();
             assertEquals(0, t.rowCount());
-            assertEquals(0, t.columnCount());
+            assertEquals(3, t.columnCount());
         }
 
         @Test
-        public void testRotate180_Nx0_preservesShape_whileRotate90TwiceCollapses() {
+        public void testRotate180_Nx0_agreesWithRotate90Twice() {
             LongMatrix m = LongMatrix.wrap(new long[3][0]);
 
             LongMatrix via180 = m.rotate180();
             assertEquals(3, via180.rowCount());
             assertEquals(0, via180.columnCount());
 
+            // Two 90-degree rotations must equal one 180-degree rotation even for a degenerate
+            // shape; that only holds because rotate90 preserves the transposed column count.
             LongMatrix viaRotate90Twice = m.rotate90().rotate90();
-            assertEquals(0, viaRotate90Twice.rowCount());
+            assertEquals(3, viaRotate90Twice.rowCount());
             assertEquals(0, viaRotate90Twice.columnCount());
         }
 
@@ -6267,60 +6290,50 @@ class LongMatrixTest extends TestBase {
         }
 
         @Test
-        public void testFlipHorizontallyInPlace_reversesSharedBackingRowOnce() {
-            long[] sharedRow = { 1L, 2L, 3L, 4L };
-            LongMatrix matrix = LongMatrix.wrap(sharedRow, sharedRow);
+        public void testWrapRejectsDuplicateRowIdentities() {
+            // Every logical row must own its storage: one array cannot back two independently
+            // addressable rows. wrap() shares the caller's rows, so it rejects a repeat...
+            final long[] sharedRow = { 1L, 2L, 3L, 4L };
+            final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> LongMatrix.wrap(sharedRow, sharedRow));
+            assertTrue(ex.getMessage().contains("independent storage"));
 
-            matrix.flipHorizontallyInPlace();
+            // ...while copyOf() clones each row, so the same input is accepted.
+            final LongMatrix copied = LongMatrix.copyOf(sharedRow, sharedRow);
+            assertEquals(2, copied.rowCount());
+            assertEquals(4, copied.columnCount());
+            assertNotSame(copied.rowView(0), copied.rowView(1));
 
-            assertArrayEquals(new long[] { 4L, 3L, 2L, 1L }, sharedRow);
-            assertSame(matrix.rowView(0), matrix.rowView(1));
+            copied.updateRow(0, value -> value + 10L);
+            assertArrayEquals(new long[] { 11L, 12L, 13L, 14L }, copied.rowCopy(0));
+            assertArrayEquals(new long[] { 1L, 2L, 3L, 4L }, copied.rowCopy(1));
+            assertArrayEquals(new long[] { 1L, 2L, 3L, 4L }, sharedRow);
         }
 
         @Test
-        public void testUnaryUpdates_transformSharedBackingCellsOnce() {
-            long[] sharedColumnRow = { 1L, 2L };
-            LongMatrix columnMatrix = LongMatrix.wrap(sharedColumnRow, sharedColumnRow);
+        public void testUnaryUpdatesTouchEveryCellExactlyOnce() {
+            // With independent rows guaranteed, every cell is visited exactly once, sequentially
+            // or in parallel, and each row is updated independently of the others.
+            final LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 1L, 2L } });
 
-            columnMatrix.updateColumn(0, value -> value + 1L);
+            matrix.updateColumn(0, value -> value + 1L);
+            assertArrayEquals(new long[] { 2L, 2L }, matrix.rowCopy(0));
+            assertArrayEquals(new long[] { 2L, 2L }, matrix.rowCopy(1));
 
-            assertArrayEquals(new long[] { 2L, 2L }, sharedColumnRow);
-
-            long[] sharedSequentialRow = { 1L, 2L };
-            LongMatrix sequentialMatrix = LongMatrix.wrap(sharedSequentialRow, sharedSequentialRow);
-            AtomicInteger sequentialCalls = new AtomicInteger();
-
-            Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> sequentialMatrix.updateAll(value -> {
+            final AtomicInteger sequentialCalls = new AtomicInteger();
+            Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> matrix.updateAll(value -> {
                 sequentialCalls.incrementAndGet();
                 return value + 1L;
             }));
+            assertEquals(4, sequentialCalls.get());
 
-            assertEquals(2, sequentialCalls.get());
-            assertArrayEquals(new long[] { 2L, 3L }, sharedSequentialRow);
-
-            long[] sharedParallelRow = { 1L, 2L };
-            LongMatrix parallelMatrix = LongMatrix.wrap(sharedParallelRow, sharedParallelRow);
-            AtomicInteger parallelCalls = new AtomicInteger();
-
-            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> parallelMatrix.updateAll(value -> {
+            final AtomicInteger parallelCalls = new AtomicInteger();
+            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> matrix.updateAll(value -> {
                 parallelCalls.incrementAndGet();
                 return value + 1L;
             }));
-
-            assertEquals(2, parallelCalls.get());
-            assertArrayEquals(new long[] { 2L, 3L }, sharedParallelRow);
-
-            long[] sharedReplaceRow = { 1L, 2L };
-            LongMatrix replaceMatrix = LongMatrix.wrap(sharedReplaceRow, sharedReplaceRow);
-            AtomicInteger replaceCalls = new AtomicInteger();
-
-            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> replaceMatrix.replaceIf(value -> {
-                replaceCalls.incrementAndGet();
-                return value > 0L;
-            }, 9L));
-
-            assertEquals(2, replaceCalls.get());
-            assertArrayEquals(new long[] { 9L, 9L }, sharedReplaceRow);
+            assertEquals(4, parallelCalls.get());
+            assertArrayEquals(new long[] { 4L, 4L }, matrix.rowCopy(0));
+            assertArrayEquals(new long[] { 4L, 4L }, matrix.rowCopy(1));
         }
     }
 
@@ -6332,23 +6345,35 @@ class LongMatrixTest extends TestBase {
         assertTrue(rowMajorIterator instanceof com.landawn.abacus.util.stream.LongIteratorEx);
         com.landawn.abacus.util.stream.LongIteratorEx rowMajor = (com.landawn.abacus.util.stream.LongIteratorEx) rowMajorIterator;
         rowMajor.advance(1); // mid-row cursor: the chunked toArray must start at column 1
-        assertEquals(5L, rowMajor.count());
         assertArrayEquals(new long[] { 2L, 3L, 4L, 5L, 6L }, rowMajor.toArray());
+
+        // IteratorEx.count() is terminal: it consumes the remainder and exhausts the iterator, so every
+        // remaining-size assertion below uses its own freshly positioned iterator.
+        var rowMajorCount = (com.landawn.abacus.util.stream.LongIteratorEx) matrix.rowMajorStream(0, 2).iterator();
+        rowMajorCount.advance(1);
+        assertEquals(5L, rowMajorCount.count());
 
         var columnMajorIterator = matrix.columnMajorStream(0, 3).iterator();
         com.landawn.abacus.util.stream.LongIteratorEx columnMajor = (com.landawn.abacus.util.stream.LongIteratorEx) columnMajorIterator;
         columnMajor.advance(1); // mid-column cursor: row 1 of column 0
-        assertEquals(5L, columnMajor.count());
         assertArrayEquals(new long[] { 4L, 2L, 5L, 3L, 6L }, columnMajor.toArray());
+
+        var columnMajorCount = (com.landawn.abacus.util.stream.LongIteratorEx) matrix.columnMajorStream(0, 3).iterator();
+        columnMajorCount.advance(1);
+        assertEquals(5L, columnMajorCount.count());
 
         var crossingIterator = matrix.columnMajorStream(0, 3).iterator();
         com.landawn.abacus.util.stream.LongIteratorEx crossing = (com.landawn.abacus.util.stream.LongIteratorEx) crossingIterator;
         crossing.advance(3); // crosses a column boundary: lands on row 1 of column 1
-        assertEquals(3L, crossing.count());
         assertEquals(5L, crossing.nextLong());
         crossing.advance(10);
         assertEquals(0L, crossing.count());
         assertThrows(java.util.NoSuchElementException.class, crossing::nextLong);
+
+        var crossingCount = (com.landawn.abacus.util.stream.LongIteratorEx) matrix.columnMajorStream(0, 3).iterator();
+        crossingCount.advance(3);
+        assertEquals(3L, crossingCount.count()); // consumes 5L, 3L, 6L
+        assertFalse(crossingCount.hasNext());
     }
 
     @Test

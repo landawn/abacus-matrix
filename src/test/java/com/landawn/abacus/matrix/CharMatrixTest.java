@@ -659,16 +659,17 @@ class CharMatrixTest extends TestBase {
 
     @Test
     public void testCopyRangesEmpty_returnsEmptyMatrix() {
-        // Regression: copyRows(from, from) on a matrix with columns > 0 must not throw.
+        // An empty row slice keeps the column count (0 x N) and an empty column slice keeps the row
+        // count (N x 0); only an empty range in BOTH dimensions collapses to 0 x 0.
         CharMatrix m = CharMatrix.wrap(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } });
 
         CharMatrix empty = m.copyRows(0, 0);
         Assertions.assertEquals(0, empty.rowCount());
-        Assertions.assertEquals(0, empty.columnCount());
+        Assertions.assertEquals(3, empty.columnCount());
 
         CharMatrix emptyRows = m.copyRegion(1, 1, 0, 3);
         Assertions.assertEquals(0, emptyRows.rowCount());
-        Assertions.assertEquals(0, emptyRows.columnCount());
+        Assertions.assertEquals(3, emptyRows.columnCount());
 
         CharMatrix emptyCols = m.copyRegion(0, 3, 1, 1);
         Assertions.assertEquals(3, emptyCols.rowCount());
@@ -2433,7 +2434,7 @@ class CharMatrixTest extends TestBase {
         public void testmatrixMultiply_emptyProductReturnsCanonicalEmpty() {
             // Regression: matrixMultiply must build its result via CharMatrix.wrap(result) (not the raw
             // constructor) so an empty product yields the shared EMPTY singleton, and must call
-            // checkRepresentableShape before allocation for consistency with the other
+            // checkNonNegativeShape before allocation for consistency with the other
             // result-allocating methods (resize/reshape/transpose/rotate).
             CharMatrix product = CharMatrix.empty().matrixMultiply(CharMatrix.empty());
             assertSame(CharMatrix.empty(), product);
@@ -3939,7 +3940,15 @@ class CharMatrixTest extends TestBase {
             char[][] arr = { { 'a', 'b' }, { 'c', 'd' } };
             CharMatrix m = CharMatrix.wrap(arr);
             char[][] result = m.unsafeBackingArray();
-            assertSame(arr, result);
+
+            // The outer array is a private snapshot, so replacing a row in either array is invisible
+            // to the other; the row arrays themselves are still shared, so cell writes are visible.
+            assertNotSame(arr, result);
+            assertSame(arr[0], result[0]);
+            assertSame(arr[1], result[1]);
+
+            arr[0][0] = 'z';
+            assertEquals('z', m.get(0, 0));
         }
 
         @Test

@@ -39,14 +39,24 @@
  * {@code toRowIndex}, {@code fromColumnIndex}, and {@code toColumnIndex} describe half-open ranges; the
  * {@code from} index is included and the {@code to} index is excluded.</p>
  *
- * <p>Java arrays can represent {@code N x 0} matrices but cannot retain a non-zero column count when
- * there are no rows. Consequently, {@code 0 x 0} and {@code N x 0} shapes are supported, while a
- * conceptual {@code 0 x N} shape for {@code N > 0} is rejected or, where documented for a
- * transformation, collapses to {@code 0 x 0}.</p>
+ * <p>All degenerate shapes are supported and preserved: {@code 0 x 0}, {@code N x 0} and {@code 0 x N}.
+ * A Java array cannot itself encode a non-zero column count when it has no rows, so a matrix carries its
+ * logical column count alongside the backing array. Every operation propagates it: an {@code N x 0} matrix
+ * transposes to {@code 0 x N}, a conversion or element-wise map of a {@code 0 x N} matrix is {@code 0 x N},
+ * an empty row slice keeps the column count, and a {@code 0 x N} matrix yields {@code N} empty column
+ * streams. Only a result that is genuinely {@code 0 x 0} is canonicalized to the shared empty instance.</p>
+ *
+ * <p>Because a bare {@code T[][]} loses this information, a zero-row array obtained from
+ * {@link com.landawn.abacus.matrix.Matrices#newMatrixArray(int, int, Class)} or from
+ * {@link com.landawn.abacus.matrix.AbstractMatrix#unsafeBackingArray()} must be paired with the column
+ * count by the caller; the {@code wrap(...)} factories, which take only an array, therefore report
+ * {@code 0 x 0} for a zero-row input.</p>
  *
  * <h2>Storage ownership and mutation</h2>
  *
- * <p>Public constructors validate and then wrap the supplied array; they do not make a defensive copy.
+ * <p>Public constructors validate the supplied array and then take a private snapshot of the <i>outer</i>
+ * array while sharing its row arrays. Writing a cell through the caller's row is therefore visible through
+ * the matrix and vice versa, but replacing a whole row in either outer array is not.
  * {@link com.landawn.abacus.matrix.Matrix#wrap(Object[][])} does the same, as do the primitive
  * {@code wrap(...)} factories when the input has at least one row. A primitive {@code wrap(...)} factory
  * canonicalizes a zero-row input to its shared {@code 0 x 0} singleton, so the caller's empty outer-array
@@ -56,14 +66,15 @@
  * input array or {@link com.landawn.abacus.matrix.AbstractMatrix#copy()} to copy a matrix. For reference matrices,
  * these operations copy the array structure but not the referenced element objects.</p>
  *
- * <p>Rows are required to be rectangular but need not be identity-distinct. If the same row array
- * appears multiple times in wrapped storage, all of those logical rows remain aliases. Unary value
- * transformations process each distinct backing row once so an operation does not compound merely because
- * a reference is repeated. Coordinate traversal that writes a position-dependent value runs sequentially
- * when rows are aliased, so a later logical row deterministically overwrites an earlier one; {@code replaceIf}
- * writes the same value at every matching coordinate and may still run in parallel. {@code mutateViaFlatArray}
- * copies its temporary array back in row-major order, so values from a later logical row win when aliased
- * rows conflict.</p>
+ * <p>Rows must be rectangular <i>and</i> identity-distinct: no two logical rows may be the same array
+ * object, because one physical row cannot represent two independently addressable logical rows. Construction
+ * rejects a repeat with {@code IllegalArgumentException}, so {@code wrap(row, row)} throws while
+ * {@code copyOf(row, row)} succeeds (it clones each row). Every logical coordinate therefore names exactly
+ * one storage cell, and a value transformation visits each cell exactly once whether it runs sequentially
+ * or in parallel.</p>
+ *
+ * <p>A caller-supplied array may still contain one of a matrix's live rows -- {@code m.setColumn(0, m.rowView(1))}
+ * is legal -- so the writers that need it snapshot such a source before writing.</p>
  *
  * <p>{@link com.landawn.abacus.matrix.AbstractMatrix#unsafeBackingArray()} and methods whose names end
  * in {@code View}, such as {@link com.landawn.abacus.matrix.AbstractMatrix#rowView(int)}, expose live

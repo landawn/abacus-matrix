@@ -1864,20 +1864,20 @@ class AbstractMatrixTest extends TestBase {
 
         @Test
         public void testCopyRows_emptyRange() {
-            // copy with from == to is a valid empty slice and must return an empty matrix.
+            // copy with from == to is a valid empty row slice; the column count is preserved.
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
             IntMatrix empty = m.copyRows(1, 1);
             assertEquals(0, empty.rowCount());
-            assertEquals(0, empty.columnCount());
+            assertEquals(2, empty.columnCount());
         }
 
         @Test
         public void testCopyRegion_emptyRange() {
-            // copy with an empty row sub-range is a valid empty slice and must return an empty matrix.
+            // copy with an empty row sub-range is a valid empty slice; the column sub-range width survives.
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             IntMatrix empty = m.copyRegion(1, 1, 0, 2);
             assertEquals(0, empty.rowCount());
-            assertEquals(0, empty.columnCount());
+            assertEquals(2, empty.columnCount());
         }
 
         @Test
@@ -3962,8 +3962,14 @@ class AbstractMatrixTest extends TestBase {
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> Matrix.wrap(new Integer[][] { { 1, 2 }, { 3 } }));
 
             assertFalse(ex.getMessage().contains("{}"));
-            assertTrue(ex.getMessage().contains("row 0"));
-            assertTrue(ex.getMessage().contains("row 1"));
+            // The message names the expected width and the offending row, and must not attribute the
+            // expected width to a row: on the explicit-columnCount path it does not come from row 0.
+            assertTrue(ex.getMessage().contains("expected 2 columns per row"), ex.getMessage());
+            assertTrue(ex.getMessage().contains("row 1"), ex.getMessage());
+
+            IllegalArgumentException explicit = assertThrows(IllegalArgumentException.class,
+                    () -> IntMatrix.wrap(new int[][] { { 1, 2 } }).reshape(1, 3));
+            assertFalse(explicit.getMessage().contains("{}"));
         }
 
         @Test
@@ -4143,8 +4149,8 @@ class AbstractMatrixTest extends TestBase {
 
         @Test
         public void testRepresentableShapeRejectsNegativeDimensions() {
-            assertThrows(IllegalArgumentException.class, () -> AbstractMatrix.checkRepresentableShape(-1, 0));
-            assertThrows(IllegalArgumentException.class, () -> AbstractMatrix.checkRepresentableShape(1, -1));
+            assertThrows(IllegalArgumentException.class, () -> AbstractMatrix.checkNonNegativeShape(-1, 0));
+            assertThrows(IllegalArgumentException.class, () -> AbstractMatrix.checkNonNegativeShape(1, -1));
         }
 
         @Test

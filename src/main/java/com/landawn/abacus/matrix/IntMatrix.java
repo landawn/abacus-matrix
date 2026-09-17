@@ -39,7 +39,9 @@ import com.landawn.abacus.util.stream.Stream;
  * validated backing array. The constructor and {@link #wrap(int[]...)} snapshot the outer array
  * structure but share each row array, so cell changes remain visible through both views while caller
  * row reassignment does not change the matrix. Duplicate row identities are rejected.
- * {@link #copyOf(int[]...)}, conversions, and mapping operations do not share mutable cell storage.</p>
+ * {@link #copyOf(int[]...)}, conversions, and mapping operations do not share mutable cell storage.
+ * Operations producing a {@code 0 x 0} matrix return the shared empty singleton, while {@code 0 x N}
+ * and {@code N x 0} results keep their shape.</p>
  *
  * <p>Cells introduced by growth or reshaping default to {@code 0} unless an overload accepts an
  * explicit fill value. Arithmetic operations (e.g. {@link #add(IntMatrix)}, {@link #subtract(IntMatrix)},
@@ -95,6 +97,26 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
 
     IntMatrix(final int[][] a, final int columnCount) {
         super(N.checkArgNotNull(a, "Matrix array cannot be null"), int.class, columnCount);
+    }
+
+    private IntMatrix(final int[][] a, final int columnCount, final boolean rowsAreKnownDistinct) {
+        super(N.checkArgNotNull(a, "Matrix array cannot be null"), int.class, columnCount, rowsAreKnownDistinct);
+    }
+
+    /**
+     * Canonicalises a derived result: a genuinely {@code 0 x 0} result becomes the shared empty
+     * instance, while {@code 0 x N} and {@code N x 0} results keep their logical shape. Every
+     * result-producing method routes through here so the empty singleton and the degenerate
+     * shapes are handled in exactly one place.
+     *
+     * @param a the backing rows of the result
+     * @param columnCount the result's logical column count
+     * @return the shared empty matrix when the result is {@code 0 x 0}, otherwise a new matrix
+     */
+    static IntMatrix wrapResult(final int[][] a, final int columnCount) {
+        // Every wrapResult(...) call site passes an array this class just allocated, so the rows are
+        // identity-distinct by construction and the duplicate-row scan can be skipped.
+        return a.length == 0 && columnCount == 0 ? EMPTY_INT_MATRIX : new IntMatrix(a, columnCount, true);
     }
 
     /**
@@ -161,6 +183,9 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * IntMatrix.copyOf((int[][]) null);            // throws IllegalArgumentException
      * IntMatrix.copyOf(new int[][] {{1, 2}, {3}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
+     *
+     * <p>Because every row is cloned, an input that repeats the same row array is accepted here,
+     * while {@code wrap(...)} would reject it.</p>
      *
      * @param a the two-dimensional int array to copy, or empty for an empty matrix; must not be {@code null}
      * @return a new {@code IntMatrix} backed by a deep copy of {@code a} when it is non-empty, or the shared empty matrix if {@code a} has no rows
@@ -443,7 +468,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             }
         }
 
-        return new IntMatrix(a, columnCount);
+        return wrapResult(a, columnCount);
     }
 
     /**
@@ -682,7 +707,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * }</pre>
      *
      * @param x the boxed {@code Integer} matrix to convert; must not be {@code null}
-     * @return a new {@code IntMatrix} with primitive int values, or the shared empty matrix if {@code x} has no rows
+     * @return a new {@code IntMatrix} with primitive int values, with the same shape as {@code x}
      * @throws IllegalArgumentException if {@code x} is {@code null}
      * @see #boxed()
      */
@@ -1048,6 +1073,10 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p>The values from the source array are copied into the matrix column.
      * The source array must have exactly the same length as the number of rows in the matrix.
      *
+     * <p>If the supplied array is one of this matrix's live backing rows (for example a value returned
+     * by {@code rowView(int)}), it is snapshotted first, so the values read are the ones in place when
+     * this method was called.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.wrap(new int[][] {{1, 2, 3}, {4, 5, 6}});
@@ -1204,7 +1233,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * matrix.mainDiagonalCopy();              // returns [9, 8]
      * matrix.get(1, 1);                       // returns 8 (diagonal element updated)
      *
-     * matrix.setMainDiagonal(new int[] {1}); // throws IllegalArgumentException (length != rowCount)
+     * matrix.setMainDiagonal(new int[] {1}); // throws IllegalArgumentException (length != min(rowCount, columnCount))
      * IntMatrix rectangular = IntMatrix.wrap(new int[][] {{1, 2, 3}, {4, 5, 6}});
      * rectangular.setMainDiagonal(new int[] {7, 8}); // valid; updates two diagonal cells
      * }</pre>
@@ -1295,6 +1324,10 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p>This method sets the anti-diagonal (secondary diagonal) elements from
      * top-right to bottom-left, at positions (0,n-1), (1,n-2), (2,n-3), etc.</p>
      *
+     * <p>If the supplied array is one of this matrix's live backing rows (for example a value returned
+     * by {@code rowView(int)}), it is snapshotted first, so the values read are the ones in place when
+     * this method was called.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * IntMatrix matrix = IntMatrix.wrap(new int[][] {{1, 2}, {3, 4}});
@@ -1302,7 +1335,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * matrix.antiDiagonalCopy();              // returns [9, 8]
      * matrix.get(0, 1);                       // returns 9 (anti-diagonal cell)
      *
-     * matrix.setAntiDiagonal(new int[] {1}); // throws IllegalArgumentException (length != rowCount)
+     * matrix.setAntiDiagonal(new int[] {1}); // throws IllegalArgumentException (length != min(rowCount, columnCount))
      * IntMatrix rectangular = IntMatrix.wrap(new int[][] {{1, 2, 3}, {4, 5, 6}});
      * rectangular.setAntiDiagonal(new int[] {7, 8}); // valid; updates (0,2) and (1,1)
      * }</pre>
@@ -1492,8 +1525,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p>This is useful for position-based replacements such as setting diagonals, borders,
      * or specific regions. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
      *
-     * <p>Nonmatching positions perform no write. If logical rows share a backing array, a
-     * replacement made through any matching coordinate is therefore visible through every alias.</p>
+     * <p>Nonmatching positions perform no write.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1565,7 +1597,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return new IntMatrix(result, columnCount);
+        return wrapResult(result, columnCount);
     }
 
     /**
@@ -1601,7 +1633,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return new LongMatrix(result, columnCount);
+        return LongMatrix.wrapResult(result, columnCount);
     }
 
     /**
@@ -1636,7 +1668,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return new DoubleMatrix(result, columnCount);
+        return DoubleMatrix.wrapResult(result, columnCount);
     }
 
     /**
@@ -1668,7 +1700,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      */
     public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.IntFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E {
         N.checkArgNotNull(mapper, cs.mapper);
-        N.checkArgNotNull(targetElementType, "targetElementType");
+        N.checkArgNotNull(targetElementType, cs.targetElementType);
 
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
@@ -1812,7 +1844,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             c[i] = a[i].clone();
         }
 
-        return new IntMatrix(c, columnCount);
+        return wrapResult(c, columnCount);
     }
 
     /**
@@ -1848,7 +1880,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             c[i - fromRowIndex] = a[i].clone();
         }
 
-        return new IntMatrix(c, columnCount);
+        return wrapResult(c, columnCount);
     }
 
     /**
@@ -1887,7 +1919,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             c[i - fromRowIndex] = N.copyOfRange(a[i], fromColumnIndex, toColumnIndex);
         }
 
-        return new IntMatrix(c, toColumnIndex - fromColumnIndex);
+        return wrapResult(c, toColumnIndex - fromColumnIndex);
     }
 
     /**
@@ -1989,7 +2021,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     public IntMatrix resize(final int newRowCount, final int newColumnCount, final int defaultValue) throws IllegalArgumentException {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
-        checkRepresentableShape(newRowCount, newColumnCount);
+        checkNonNegativeShape(newRowCount, newColumnCount);
         if (newRowCount <= rowCount && newColumnCount <= columnCount) {
             return copyRegion(0, newRowCount, 0, newColumnCount);
         } else {
@@ -2008,7 +2040,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
                 }
             }
 
-            return new IntMatrix(extendedData, newColumnCount);
+            return wrapResult(extendedData, newColumnCount);
         }
     }
 
@@ -2126,7 +2158,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
 
             final int newRowCount = padTop + rowCount + padBottom;
             final int newColumnCount = padLeft + columnCount + padRight;
-            checkRepresentableShape(newRowCount, newColumnCount);
+            checkNonNegativeShape(newRowCount, newColumnCount);
             final boolean fillDefaultValue = defaultValue != 0;
             final int[][] b = new int[newRowCount][newColumnCount];
 
@@ -2150,7 +2182,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
                 }
             }
 
-            return new IntMatrix(b, columnCount + padLeft + padRight);
+            return wrapResult(b, columnCount + padLeft + padRight);
         }
     }
 
@@ -2322,7 +2354,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             }
         }
 
-        return new IntMatrix(c, rowCount);
+        return wrapResult(c, rowCount);
     }
 
     /**
@@ -2356,7 +2388,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             N.reverse(c[i]);
         }
 
-        return new IntMatrix(c, columnCount);
+        return wrapResult(c, columnCount);
     }
 
     /**
@@ -2403,7 +2435,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             }
         }
 
-        return new IntMatrix(c, rowCount);
+        return wrapResult(c, rowCount);
     }
 
     /**
@@ -2445,7 +2477,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             }
         }
 
-        return new IntMatrix(c, rowCount);
+        return wrapResult(c, rowCount);
     }
 
     /**
@@ -2479,14 +2511,14 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     public IntMatrix reshapeAndPad(final int newRowCount, final int newColumnCount) {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
-        checkRepresentableShape(newRowCount, newColumnCount);
+        checkNonNegativeShape(newRowCount, newColumnCount);
         N.checkArgument((long) newRowCount * newColumnCount >= elementCount(), "New shape [{}x{}={}] is too small to hold all {} elements", newRowCount,
                 newColumnCount, (long) newRowCount * newColumnCount, elementCount());
 
         final int[][] c = new int[newRowCount][newColumnCount];
 
         if (newRowCount == 0 || newColumnCount == 0 || N.isEmpty(a)) {
-            return new IntMatrix(c, newColumnCount);
+            return wrapResult(c, newColumnCount);
         }
 
         final int rowLen = (int) N.min(newRowCount, ceilDiv(elementCount, newColumnCount));
@@ -2519,7 +2551,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             }
         }
 
-        return new IntMatrix(c, newColumnCount);
+        return wrapResult(c, newColumnCount);
     }
 
     /**
@@ -2578,7 +2610,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             }
         }
 
-        return new IntMatrix(c, columnCount * columnRepeats);
+        return wrapResult(c, columnCount * columnRepeats);
     }
 
     /**
@@ -2636,7 +2668,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             }
         }
 
-        return new IntMatrix(c, columnCount * columnRepeats);
+        return wrapResult(c, columnCount * columnRepeats);
     }
 
     /**
@@ -2748,7 +2780,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      */
     @Override
     public IntMatrix stackVertically(final IntMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(columnCount == other.columnCount, MSG_VSTACK_COLUMN_MISMATCH, columnCount, other.columnCount);
         final long mergedRowCount = (long) rowCount + other.rowCount;
         N.checkArgument(mergedRowCount <= Integer.MAX_VALUE, "Merged row count overflow: {} + {} = {}", rowCount, other.rowCount, mergedRowCount);
@@ -2764,7 +2796,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             c[j++] = other.a[i].clone();
         }
 
-        return new IntMatrix(c, columnCount);
+        return wrapResult(c, columnCount);
     }
 
     /**
@@ -2797,7 +2829,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      */
     @Override
     public IntMatrix stackHorizontally(final IntMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(rowCount == other.rowCount, MSG_HSTACK_ROW_MISMATCH, rowCount, other.rowCount);
         final long mergedColumnCount = (long) columnCount + other.columnCount;
         N.checkArgument(mergedColumnCount <= Integer.MAX_VALUE, "Merged column count overflow: {} + {} = {}", columnCount, other.columnCount,
@@ -2810,7 +2842,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             N.copy(other.a[i], 0, c[i], columnCount, other.columnCount);
         }
 
-        return new IntMatrix(c, (int) mergedColumnCount);
+        return wrapResult(c, (int) mergedColumnCount);
     }
 
     /**
@@ -2818,7 +2850,9 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * The matrices must have the same dimensions. The original matrices are not modified.
      *
      * <p><b>Overflow:</b> arithmetic uses standard Java {@code int} addition, which silently
-     * wraps around modulo 2<sup>32</sup> on overflow.</p>
+     * wraps around modulo 2<sup>32</sup> on overflow.
+     * To keep the wider intermediate value instead, use {@link #addWidened(IntMatrix)}; to be told
+     * about an overflow rather than silently wrapping, use {@link #addExact(IntMatrix)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2841,9 +2875,11 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @throws IllegalArgumentException if {@code other} is {@code null}, or if the matrices have different shapes
      * @see #subtract(IntMatrix)
      * @see #zipWith(IntMatrix, Throwables.IntBinaryOperator)
+     * @see #addWidened(IntMatrix)
+     * @see #addExact(IntMatrix)
      */
     public IntMatrix add(final IntMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot add matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -2865,7 +2901,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             }
         }
 
-        return new IntMatrix(result, columnCount);
+        return wrapResult(result, columnCount);
     }
 
     /**
@@ -2876,7 +2912,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @throws IllegalArgumentException if {@code other} is {@code null} or has a different shape
      */
     public LongMatrix addWidened(final IntMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot add matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -2888,7 +2924,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             }
         }
 
-        return new LongMatrix(result, columnCount);
+        return LongMatrix.wrapResult(result, columnCount);
     }
 
     /**
@@ -2900,7 +2936,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @throws ArithmeticException if any sum overflows {@code int}
      */
     public IntMatrix addExact(final IntMatrix other) throws IllegalArgumentException, ArithmeticException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot add matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -2912,7 +2948,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             }
         }
 
-        return new IntMatrix(result, columnCount);
+        return wrapResult(result, columnCount);
     }
 
     /**
@@ -2921,7 +2957,9 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * <p><b>Overflow:</b> arithmetic uses standard Java {@code int} subtraction, which silently
      * wraps around modulo 2<sup>32</sup> on overflow. If you need a wider result, call
-     * {@link #toLongMatrix()} first or use {@link #mapToLong(Throwables.IntToLongFunction)}.</p>
+     * {@link #toLongMatrix()} first or use {@link #mapToLong(Throwables.IntToLongFunction)}.
+     * To keep the wider intermediate value instead, use {@link #subtractWidened(IntMatrix)}; to be
+     * told about an overflow rather than silently wrapping, use {@link #subtractExact(IntMatrix)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2944,9 +2982,11 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @throws IllegalArgumentException if {@code other} is {@code null}, or if the matrices have different shapes
      * @see #add(IntMatrix)
      * @see #zipWith(IntMatrix, Throwables.IntBinaryOperator)
+     * @see #subtractWidened(IntMatrix)
+     * @see #subtractExact(IntMatrix)
      */
     public IntMatrix subtract(final IntMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot subtract matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -2968,7 +3008,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             }
         }
 
-        return new IntMatrix(result, columnCount);
+        return wrapResult(result, columnCount);
     }
 
     /**
@@ -2979,7 +3019,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @throws IllegalArgumentException if {@code other} is {@code null} or has a different shape
      */
     public LongMatrix subtractWidened(final IntMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot subtract matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -2991,7 +3031,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             }
         }
 
-        return new LongMatrix(result, columnCount);
+        return LongMatrix.wrapResult(result, columnCount);
     }
 
     /**
@@ -3003,7 +3043,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @throws ArithmeticException if any difference overflows {@code int}
      */
     public IntMatrix subtractExact(final IntMatrix other) throws IllegalArgumentException, ArithmeticException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot subtract matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -3015,7 +3055,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             }
         }
 
-        return new IntMatrix(result, columnCount);
+        return wrapResult(result, columnCount);
     }
 
     /**
@@ -3029,7 +3069,10 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * <p><b>Overflow:</b> both the per-step products {@code a[i][k] * other[k][j]} and the
      * accumulating sums use standard Java {@code int} arithmetic, which silently wraps modulo
      * 2<sup>32</sup>. For inputs that may overflow, convert to long first via
-     * {@link #toLongMatrix()} and multiply there.</p>
+     * {@link #toLongMatrix()} and multiply there.
+     * To keep the wider intermediate value instead, use {@link #matrixMultiplyWidened(IntMatrix)};
+     * to be told about an overflow rather than silently wrapping, use
+     * {@link #matrixMultiplyExact(IntMatrix)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3050,14 +3093,16 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param other the matrix to multiply with; must not be {@code null}
      * @return a new {@code IntMatrix} of shape {@code this.rowCount x other.columnCount} containing the matrix product
      * @throws IllegalArgumentException if {@code other} is {@code null} or {@code this.columnCount != other.rowCount}
+     * @see #matrixMultiplyWidened(IntMatrix)
+     * @see #matrixMultiplyExact(IntMatrix)
      */
     public IntMatrix matrixMultiply(final IntMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(columnCount == other.rowCount,
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
                 columnCount, other.rowCount, other.columnCount);
 
-        checkRepresentableShape(rowCount, other.columnCount);
+        checkNonNegativeShape(rowCount, other.columnCount);
 
         final int[][] otherData = other.a;
         final int newColumnCount = other.columnCount;
@@ -3084,7 +3129,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             }
         }
 
-        return new IntMatrix(result, other.columnCount);
+        return wrapResult(result, other.columnCount);
     }
 
     /**
@@ -3098,7 +3143,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @throws IllegalArgumentException if {@code other} is {@code null} or the inner dimensions differ
      */
     public LongMatrix matrixMultiplyWidened(final IntMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(columnCount == other.rowCount,
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
                 columnCount, other.rowCount, other.columnCount);
@@ -3115,7 +3160,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             }
         }
 
-        return new LongMatrix(result, other.columnCount);
+        return LongMatrix.wrapResult(result, other.columnCount);
     }
 
     /**
@@ -3128,7 +3173,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @throws ArithmeticException if a dot-product sum overflows {@code long}
      */
     public LongMatrix matrixMultiplyWidenedExact(final IntMatrix other) throws IllegalArgumentException, ArithmeticException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(columnCount == other.rowCount,
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
                 columnCount, other.rowCount, other.columnCount);
@@ -3145,38 +3190,39 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             }
         }
 
-        return new LongMatrix(result, other.columnCount);
+        return LongMatrix.wrapResult(result, other.columnCount);
     }
 
     /**
-     * Multiplies this matrix by {@code other} with exact {@code int} multiplication and addition.
-     * An exception is thrown as soon as a product or the left-to-right sum for a result cell
-     * overflows {@code int}.
+     * Multiplies this matrix by {@code other} and returns the exact {@code int} product.
+     *
+     * <p>Each dot product is accumulated in full precision and only the finished cell value is
+     * narrowed, so a result whose intermediate terms cancel out is accepted: the product of
+     * {@code [[2000000000, 2000000000, -2000000000]]} and {@code [[1], [1], [1]]} is
+     * {@code 2000000000}, not an overflow. An exception is thrown only when a finished cell value
+     * does not fit in an {@code int} (or when the exact sum exceeds {@code long} range).</p>
      *
      * @param other the right-hand matrix
      * @return the exact matrix product as an {@code IntMatrix}
      * @throws IllegalArgumentException if {@code other} is {@code null} or the inner dimensions differ
-     * @throws ArithmeticException if a product or accumulated result overflows {@code int}
+     * @throws ArithmeticException if a result cell does not fit in an {@code int}
+     * @see #matrixMultiplyWidenedExact(IntMatrix)
+     * @see #matrixMultiply(IntMatrix)
      */
     public IntMatrix matrixMultiplyExact(final IntMatrix other) throws IllegalArgumentException, ArithmeticException {
-        N.checkArgNotNull(other, "other");
-        N.checkArgument(columnCount == other.rowCount,
-                "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
-                columnCount, other.rowCount, other.columnCount);
-
+        // Accumulate the whole dot product before narrowing (matrixMultiplyWidenedExact already
+        // validates the arguments). Checking each product and each partial sum in int instead would
+        // incorrectly reject valid results whose positive and negative terms cancel.
+        final LongMatrix widened = matrixMultiplyWidenedExact(other);
         final int[][] result = new int[rowCount][other.columnCount];
 
         for (int i = 0; i < rowCount; i++) {
-            for (int k = 0; k < columnCount; k++) {
-                final int left = a[i][k];
-
-                for (int j = 0; j < other.columnCount; j++) {
-                    result[i][j] = Math.addExact(result[i][j], Math.multiplyExact(left, other.a[k][j]));
-                }
+            for (int j = 0; j < other.columnCount; j++) {
+                result[i][j] = Math.toIntExact(widened.get(i, j));
             }
         }
 
-        return new IntMatrix(result, other.columnCount);
+        return wrapResult(result, other.columnCount);
     }
 
     /**
@@ -3232,7 +3278,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @see LongMatrix#from(int[][])
      */
     public LongMatrix toLongMatrix() {
-        return rowCount == 0 ? new LongMatrix(new long[0][], columnCount) : LongMatrix.from(a);
+        return rowCount == 0 ? LongMatrix.wrapResult(new long[0][], columnCount) : LongMatrix.from(a);
     }
 
     /**
@@ -3260,7 +3306,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @see FloatMatrix#from(int[][])
      */
     public FloatMatrix toFloatMatrix() {
-        return rowCount == 0 ? new FloatMatrix(new float[0][], columnCount) : FloatMatrix.from(a);
+        return rowCount == 0 ? FloatMatrix.wrapResult(new float[0][], columnCount) : FloatMatrix.from(a);
     }
 
     /**
@@ -3285,7 +3331,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @see DoubleMatrix#from(int[][])
      */
     public DoubleMatrix toDoubleMatrix() {
-        return rowCount == 0 ? new DoubleMatrix(new double[0][], columnCount) : DoubleMatrix.from(a);
+        return rowCount == 0 ? DoubleMatrix.wrapResult(new double[0][], columnCount) : DoubleMatrix.from(a);
     }
 
     /**
@@ -3329,7 +3375,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      */
     public <E extends Exception> IntMatrix zipWith(final IntMatrix other, final Throwables.IntBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgument(isSameShape(other), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
@@ -3341,7 +3387,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return new IntMatrix(result, columnCount);
+        return wrapResult(result, columnCount);
     }
 
     /**
@@ -3387,8 +3433,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      */
     public <E extends Exception> IntMatrix zipWith(final IntMatrix other, final IntMatrix third, final Throwables.IntTernaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
-        N.checkArgNotNull(other, "other");
-        N.checkArgNotNull(third, "third");
+        N.checkArgNotNull(other, cs.other);
+        N.checkArgNotNull(third, cs.third);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: this is {}x{}, other is {}x{}, third is {}x{}",
                 rowCount, columnCount, other.rowCount, other.columnCount, third.rowCount, third.columnCount);
@@ -3401,7 +3447,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return new IntMatrix(result, columnCount);
+        return wrapResult(result, columnCount);
     }
 
     /**
@@ -3804,7 +3850,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * }</pre>
      *
      * @return a Stream of IntStream objects, one for each row in the matrix,
-     *         or an empty stream if the matrix is empty
+     *         or an empty stream when there are no rows (an {@code N x 0} matrix still yields one
+     *         empty stream per row)
      * @see #rowMajorStream(int, int)
      */
     @Override
@@ -3901,7 +3948,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * }</pre>
      *
      * @return a Stream of IntStream objects, one for each column in the matrix,
-     *         or an empty stream if the matrix is empty
+     *         or an empty stream when there are no columns (a {@code 0 x N} matrix still yields one
+     *         empty stream per column)
      */
     @Override
     public Stream<IntStream> columnStreams() {
@@ -4167,7 +4215,9 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
 
     /**
      * Returns a hash code value for this matrix.
-     * The hash code is computed based on the deep contents of the internal two-dimensional array.
+     * The hash code is computed from the deep contents of the internal two-dimensional array. A matrix
+     * with no rows has no contents to hash, so its column count participates instead, keeping
+     * {@code 0 x 3} and {@code 0 x 5} -- which {@code equals} distinguishes -- apart.
      * Matrices with the same dimensions and element values will have equal hash codes,
      * consistent with the {@link #equals(Object)} method.
      *
@@ -4186,7 +4236,9 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      */
     @Override
     public int hashCode() {
-        return N.deepHashCode(a);
+        // A zero-row matrix carries its column count outside the backing array, and equals() compares
+        // it, so it must take part in the hash; every other shape is already distinguished by the data.
+        return rowCount == 0 && columnCount > 0 ? 961 + columnCount : N.deepHashCode(a);
     }
 
     /**

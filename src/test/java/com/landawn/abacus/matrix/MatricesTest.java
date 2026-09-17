@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -102,9 +103,15 @@ class MatricesTest extends TestBase {
     }
 
     @Test
-    public void testGetParallelMode() {
-        // Test default value
-        assertEquals(ParallelMode.AUTO, Matrices.getParallelMode());
+    public void testGetParallelMode() throws InterruptedException {
+        // The thread-local default is FORCE_OFF. It must be asserted on a thread this suite has not
+        // touched: tearDown() leaves the JUnit thread on AUTO, which would otherwise mask the real
+        // default and make this assertion depend on test execution order.
+        final AtomicReference<ParallelMode> freshThreadDefault = new AtomicReference<>();
+        final Thread fresh = new Thread(() -> freshThreadDefault.set(Matrices.getParallelMode()));
+        fresh.start();
+        fresh.join();
+        assertEquals(ParallelMode.FORCE_OFF, freshThreadDefault.get());
 
         // Test after setting
         Matrices.setParallelMode(ParallelMode.FORCE_ON);
@@ -1834,12 +1841,14 @@ class MatricesTest extends TestBase {
         @Test
         public void testRun_withRange_moreRowsThanCols_sequential() {
             List<String> positions = new ArrayList<>();
-            // 5 rows x 2 columnCount - should iterate by columns first
+            // 5 rows x 2 columns - the sequential path visits indices in row-major order
             Matrices.forEachIndices(0, 5, 0, 2, (i, j) -> positions.add(i + "," + j), false);
             assertEquals(10, positions.size());
-            // Should start with all rows for first column
+            // Row-major: the whole of row 0 before row 1
             assertEquals("0,0", positions.get(0));
-            assertEquals("1,0", positions.get(1));
+            assertEquals("0,1", positions.get(1));
+            assertEquals("1,0", positions.get(2));
+            assertEquals("4,1", positions.get(9));
         }
 
         @Test
@@ -3572,7 +3581,11 @@ class MatricesTest extends TestBase {
 
         @Test
         public void testNewArray_zeroRows() {
-            assertThrows(IllegalArgumentException.class, () -> Matrices.newMatrixArray(0, 5, int.class));
+            // Both dimensions may be zero independently. A zero-row array cannot encode its column
+            // count, so the request succeeds and the caller carries the column count separately.
+            Integer[][] arr = Matrices.newMatrixArray(0, 5, int.class);
+            assertNotNull(arr);
+            assertEquals(0, arr.length);
         }
 
         @Test
@@ -4213,7 +4226,9 @@ class MatricesTest extends TestBase {
 
         @Test
         public void test_newArray_withZeroRows() {
-            assertThrows(IllegalArgumentException.class, () -> Matrices.newMatrixArray(0, 5, Integer.class));
+            Integer[][] arr = Matrices.newMatrixArray(0, 5, Integer.class);
+            assertNotNull(arr);
+            assertEquals(0, arr.length);
         }
 
         @Test
@@ -4693,8 +4708,11 @@ class MatricesTest extends TestBase {
     }
 
     @Test
-    public void testNewMatrixArray_zeroRowsNonZeroColsThrows() {
-        assertThrows(IllegalArgumentException.class, () -> Matrices.newMatrixArray(0, 5, String.class));
+    public void testNewMatrixArray_zeroRowsNonZeroCols() {
+        String[][] arr = Matrices.newMatrixArray(0, 5, String.class);
+        assertNotNull(arr);
+        assertEquals(0, arr.length);
+        assertEquals(String[].class, arr.getClass().getComponentType());
     }
 
     @Test
@@ -4970,22 +4988,28 @@ class MatricesTest extends TestBase {
     }
 
     @Test
-    public void testMatrixMultiply_parallelDecisionSaturatesOverflowingWorkEstimate() {
-        // Reusing one row gives this matrix a large logical shape without a large allocation.
-        // Its multiplication work estimate overflows long with ordinary arithmetic.
+    public void testMatrixMultiply_parallelDecisionOnLargeWorkEstimates() {
+        // This previously built a 100_000 x 100_000 logical matrix from one repeated row, which the
+        // identity-distinct-row invariant now forbids. The overflowing work estimate it exercised is
+        // therefore no longer reachable through public construction (it would need >4e9 real cells),
+        // so what remains testable is that a large-but-allocatable estimate still opts into parallel
+        // execution, and that the old aliasing shortcut is rejected rather than silently accepted.
         final int dimension = 100_000;
-        final int[] sharedRow = new int[dimension];
         final int[][] rows = new int[dimension][];
+        final int[] sharedRow = new int[4];
         Arrays.fill(rows, sharedRow);
+        assertThrows(IllegalArgumentException.class, () -> IntMatrix.wrap(rows));
 
-        final IntMatrix matrix = IntMatrix.wrap(rows);
-        final int resultColumnCount = 1_000_000_000;
-
-        assertEquals(10_000_000_000L, matrix.elementCount());
-        assertTrue(matrix.elementCount() * resultColumnCount < 0, "The unsaturated estimate must demonstrate the overflow regression");
+        final IntMatrix matrix = IntMatrix.wrap(new int[4096][4]);
+        assertEquals(16_384L, matrix.elementCount());
 
         Matrices.setParallelMode(ParallelMode.AUTO);
-        assertTrue(Matrices.shouldRunMatrixMultiplyInParallel(matrix, resultColumnCount));
+        assertTrue(Matrices.shouldRunMatrixMultiplyInParallel(matrix, 1_000_000_000));
+        assertTrue(Matrices.shouldRunMatrixMultiplyInParallel(matrix, Integer.MAX_VALUE));
+
+        Matrices.setParallelMode(ParallelMode.FORCE_OFF);
+        assertFalse(Matrices.shouldRunMatrixMultiplyInParallel(matrix, Integer.MAX_VALUE));
+        Matrices.setParallelMode(ParallelMode.AUTO);
     }
 
     @Test
@@ -4999,128 +5023,65 @@ class MatricesTest extends TestBase {
     }
 
     @Test
-    public void testAliasedPositionMutatorsAreDeterministic() {
-        final int aliasCount = Matrices.MIN_COUNT_FOR_PARALLEL;
-        final Set<Thread> mapperThreads = ConcurrentHashMap.newKeySet();
+    public void testPositionMutatorsVisitEveryCellOnceUnderForcedParallelism() {
+        // Previously this exercised aliased rows; rows must now be identity-distinct, so the
+        // property under test is simply that forced parallelism still visits each cell exactly
+        // once and leaves a deterministic result in every variant.
+        final int rowCount = 64;
+        final int columnCount = 4;
+        final int cellCount = rowCount * columnCount;
 
-        final boolean[] booleanRow = { false };
-        final boolean[][] booleanRows = new boolean[aliasCount][];
-        Arrays.fill(booleanRows, booleanRow);
-        final BooleanMatrix booleanMatrix = BooleanMatrix.wrap(booleanRows);
+        final BooleanMatrix booleanMatrix = BooleanMatrix.wrap(new boolean[rowCount][columnCount]);
+        final AtomicInteger booleanCalls = new AtomicInteger();
         Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> booleanMatrix.updateAll((i, j) -> {
-            mapperThreads.add(Thread.currentThread());
-            return i == aliasCount - 1;
+            booleanCalls.incrementAndGet();
+            return i == rowCount - 1;
         }));
-        assertEquals(1, mapperThreads.size());
-        assertTrue(booleanRow[0]);
-        booleanRow[0] = false;
-        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> booleanMatrix.replaceIf((i, j) -> i == 0, true));
-        assertTrue(booleanRow[0]);
+        assertEquals(cellCount, booleanCalls.get());
+        assertTrue(booleanMatrix.get(rowCount - 1, 0));
+        assertFalse(booleanMatrix.get(0, 0));
 
-        mapperThreads.clear();
-        final byte[] byteRow = { 0 };
-        final byte[][] byteRows = new byte[aliasCount][];
-        Arrays.fill(byteRows, byteRow);
-        final ByteMatrix byteMatrix = ByteMatrix.wrap(byteRows);
-        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> byteMatrix.updateAll((i, j) -> {
-            mapperThreads.add(Thread.currentThread());
-            return (byte) i;
-        }));
-        assertEquals(1, mapperThreads.size());
-        assertEquals((byte) (aliasCount - 1), byteRow[0]);
-        byteRow[0] = 0;
+        final ByteMatrix byteMatrix = ByteMatrix.wrap(new byte[rowCount][columnCount]);
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> byteMatrix.updateAll((i, j) -> (byte) i));
+        assertEquals((byte) (rowCount - 1), byteMatrix.get(rowCount - 1, 0));
         Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> byteMatrix.replaceIf((i, j) -> i == 0, (byte) 42));
-        assertEquals((byte) 42, byteRow[0]);
+        assertEquals((byte) 42, byteMatrix.get(0, 0));
 
-        mapperThreads.clear();
-        final char[] charRow = { 0 };
-        final char[][] charRows = new char[aliasCount][];
-        Arrays.fill(charRows, charRow);
-        final CharMatrix charMatrix = CharMatrix.wrap(charRows);
-        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> charMatrix.updateAll((i, j) -> {
-            mapperThreads.add(Thread.currentThread());
-            return (char) i;
-        }));
-        assertEquals(1, mapperThreads.size());
-        assertEquals((char) (aliasCount - 1), charRow[0]);
-        charRow[0] = 0;
+        final CharMatrix charMatrix = CharMatrix.wrap(new char[rowCount][columnCount]);
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> charMatrix.updateAll((i, j) -> (char) i));
+        assertEquals((char) (rowCount - 1), charMatrix.get(rowCount - 1, 0));
         Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> charMatrix.replaceIf((i, j) -> i == 0, 'x'));
-        assertEquals('x', charRow[0]);
+        assertEquals('x', charMatrix.get(0, 0));
 
-        mapperThreads.clear();
-        final short[] shortRow = { 0 };
-        final short[][] shortRows = new short[aliasCount][];
-        Arrays.fill(shortRows, shortRow);
-        final ShortMatrix shortMatrix = ShortMatrix.wrap(shortRows);
-        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> shortMatrix.updateAll((i, j) -> {
-            mapperThreads.add(Thread.currentThread());
-            return (short) i;
-        }));
-        assertEquals(1, mapperThreads.size());
-        assertEquals((short) (aliasCount - 1), shortRow[0]);
-        shortRow[0] = 0;
+        final ShortMatrix shortMatrix = ShortMatrix.wrap(new short[rowCount][columnCount]);
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> shortMatrix.updateAll((i, j) -> (short) i));
+        assertEquals((short) (rowCount - 1), shortMatrix.get(rowCount - 1, 0));
         Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> shortMatrix.replaceIf((i, j) -> i == 0, (short) 42));
-        assertEquals((short) 42, shortRow[0]);
+        assertEquals((short) 42, shortMatrix.get(0, 0));
 
-        mapperThreads.clear();
-        final int[] intRow = { 0 };
-        final int[][] intRows = new int[aliasCount][];
-        Arrays.fill(intRows, intRow);
-        final IntMatrix intMatrix = IntMatrix.wrap(intRows);
-        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> intMatrix.updateAll((i, j) -> {
-            mapperThreads.add(Thread.currentThread());
-            return i;
-        }));
-        assertEquals(1, mapperThreads.size());
-        assertEquals(aliasCount - 1, intRow[0]);
-        intRow[0] = 0;
+        final IntMatrix intMatrix = IntMatrix.wrap(new int[rowCount][columnCount]);
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> intMatrix.updateAll((i, j) -> i));
+        assertEquals(rowCount - 1, intMatrix.get(rowCount - 1, 0));
         Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> intMatrix.replaceIf((i, j) -> i == 0, 42));
-        assertEquals(42, intRow[0]);
+        assertEquals(42, intMatrix.get(0, 0));
 
-        mapperThreads.clear();
-        final long[] longRow = { 0 };
-        final long[][] longRows = new long[aliasCount][];
-        Arrays.fill(longRows, longRow);
-        final LongMatrix longMatrix = LongMatrix.wrap(longRows);
-        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> longMatrix.updateAll((i, j) -> {
-            mapperThreads.add(Thread.currentThread());
-            return (long) i;
-        }));
-        assertEquals(1, mapperThreads.size());
-        assertEquals(aliasCount - 1L, longRow[0]);
-        longRow[0] = 0;
+        final LongMatrix longMatrix = LongMatrix.wrap(new long[rowCount][columnCount]);
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> longMatrix.updateAll((i, j) -> (long) i));
+        assertEquals(rowCount - 1L, longMatrix.get(rowCount - 1, 0));
         Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> longMatrix.replaceIf((i, j) -> i == 0, 42L));
-        assertEquals(42L, longRow[0]);
+        assertEquals(42L, longMatrix.get(0, 0));
 
-        mapperThreads.clear();
-        final float[] floatRow = { 0 };
-        final float[][] floatRows = new float[aliasCount][];
-        Arrays.fill(floatRows, floatRow);
-        final FloatMatrix floatMatrix = FloatMatrix.wrap(floatRows);
-        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> floatMatrix.updateAll((i, j) -> {
-            mapperThreads.add(Thread.currentThread());
-            return (float) i;
-        }));
-        assertEquals(1, mapperThreads.size());
-        assertEquals(aliasCount - 1.0f, floatRow[0]);
-        floatRow[0] = 0;
+        final FloatMatrix floatMatrix = FloatMatrix.wrap(new float[rowCount][columnCount]);
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> floatMatrix.updateAll((i, j) -> (float) i));
+        assertEquals(rowCount - 1.0f, floatMatrix.get(rowCount - 1, 0));
         Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> floatMatrix.replaceIf((i, j) -> i == 0, 42.0f));
-        assertEquals(42.0f, floatRow[0]);
+        assertEquals(42.0f, floatMatrix.get(0, 0));
 
-        mapperThreads.clear();
-        final double[] doubleRow = { 0 };
-        final double[][] doubleRows = new double[aliasCount][];
-        Arrays.fill(doubleRows, doubleRow);
-        final DoubleMatrix doubleMatrix = DoubleMatrix.wrap(doubleRows);
-        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> doubleMatrix.updateAll((i, j) -> {
-            mapperThreads.add(Thread.currentThread());
-            return (double) i;
-        }));
-        assertEquals(1, mapperThreads.size());
-        assertEquals(aliasCount - 1.0, doubleRow[0]);
-        doubleRow[0] = 0;
+        final DoubleMatrix doubleMatrix = DoubleMatrix.wrap(new double[rowCount][columnCount]);
+        Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> doubleMatrix.updateAll((i, j) -> (double) i));
+        assertEquals(rowCount - 1.0, doubleMatrix.get(rowCount - 1, 0));
         Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> doubleMatrix.replaceIf((i, j) -> i == 0, 42.0));
-        assertEquals(42.0, doubleRow[0]);
+        assertEquals(42.0, doubleMatrix.get(0, 0));
     }
 
     @Test

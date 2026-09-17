@@ -39,8 +39,8 @@ import com.landawn.abacus.util.stream.Stream;
  * <p>This type specializes {@link AbstractMatrix} for {@code char} values while keeping the data in a
  * validated backing array. The constructor and {@link #wrap(char[]...)} copy the outer array but
  * share its row arrays. {@link #copyOf(char[]...)}, conversions, and mapping operations do not share mutable cell
- * storage with a non-empty source; operations producing an empty matrix may return the shared empty
- * singleton.</p>
+ * storage with a non-empty source; operations producing a {@code 0 x 0} matrix return the shared empty
+ * singleton, while {@code 0 x N} and {@code N x 0} results keep their shape.</p>
  *
  * <p>Cells introduced by growth or reshaping default to {@code (char) 0} (the NUL character) unless an overload accepts an
  * explicit fill value. Arithmetic operations (e.g. {@link #add(CharMatrix)}, {@link #subtract(CharMatrix)},
@@ -103,8 +103,14 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
         super(N.checkArgNotNull(a, "Matrix array cannot be null"), char.class, columnCount);
     }
 
-    private static CharMatrix wrapResult(final char[][] a, final int columnCount) {
-        return a.length == 0 && columnCount == 0 ? EMPTY_CHAR_MATRIX : new CharMatrix(a, columnCount);
+    private CharMatrix(final char[][] a, final int columnCount, final boolean rowsAreKnownDistinct) {
+        super(N.checkArgNotNull(a, "Matrix array cannot be null"), char.class, columnCount, rowsAreKnownDistinct);
+    }
+
+    static CharMatrix wrapResult(final char[][] a, final int columnCount) {
+        // Every wrapResult(...) call site passes an array this class just allocated, so the rows are
+        // identity-distinct by construction and the duplicate-row scan can be skipped.
+        return a.length == 0 && columnCount == 0 ? EMPTY_CHAR_MATRIX : new CharMatrix(a, columnCount, true);
     }
 
     /**
@@ -170,6 +176,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * CharMatrix.copyOf((char[][]) null);                  // throws IllegalArgumentException
      * CharMatrix.copyOf(new char[][] {{'a', 'b'}, {'c'}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
+     *
+     * <p>Because every row is cloned, an input that repeats the same row array is accepted here,
+     * while {@code wrap(...)} would reject it.</p>
      *
      * @param a the two-dimensional char array to copy, or empty for an empty matrix; must not be {@code null}
      * @return a new {@code CharMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is empty
@@ -271,7 +280,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
         N.checkArgNotNull(randomGenerator, "randomGenerator");
-        checkRepresentableShape(rowCount, columnCount);
+        checkNonNegativeShape(rowCount, columnCount);
 
         final char[][] a = new char[rowCount][columnCount];
 
@@ -287,7 +296,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     /**
      * Creates a single-row {@code CharMatrix} containing a half-open range of char values.
      * The range is {@code [startInclusive, endExclusive)} with an implicit step of {@code +1}.
-     * If {@code endExclusive <= startInclusive}, the result is an empty matrix.
+     * If {@code endExclusive <= startInclusive}, a {@code 1x0} matrix is returned.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -335,7 +344,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     /**
      * Creates a single-row {@code CharMatrix} containing a closed range of char values.
      * The range is {@code [startInclusive, endInclusive]} with an implicit step of {@code +1}.
-     * If {@code endInclusive < startInclusive}, the result is an empty matrix.
+     * If {@code endInclusive < startInclusive}, a {@code 1x0} matrix is returned.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -892,6 +901,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p>The values from the source array are copied into the matrix column.
      * The source array must have exactly the same length as the number of rows in the matrix.</p>
      *
+     * <p>If the supplied array is one of this matrix's live backing rows (for example a value returned
+     * by {@code rowView(int)}), it is snapshotted first, so the values read are the ones in place when
+     * this method was called.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.wrap(new char[][] {{'a', 'b', 'c'}, {'d', 'e', 'f'}});
@@ -1142,6 +1155,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p>This method sets the anti-diagonal (secondary diagonal) elements from
      * top-right toward the lower-left, beginning at {@code (0,columnCount-1)}.</p>
      *
+     * <p>If the supplied array is one of this matrix's live backing rows (for example a value returned
+     * by {@code rowView(int)}), it is snapshotted first, so the values read are the ones in place when
+     * this method was called.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * CharMatrix matrix = CharMatrix.wrap(new char[][] {{'a', 'b', 'c'},
@@ -1351,8 +1368,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p>This is useful for position-based replacements such as setting diagonals, borders,
      * or specific regions. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
      *
-     * <p>Nonmatching positions perform no write. If logical rows share a backing array, a
-     * replacement made through any matching coordinate is therefore visible through every alias.</p>
+     * <p>Nonmatching positions perform no write.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1457,7 +1473,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      */
     public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.CharFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E {
         N.checkArgNotNull(mapper, cs.mapper);
-        N.checkArgNotNull(targetElementType, "targetElementType");
+        N.checkArgNotNull(targetElementType, cs.targetElementType);
 
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
@@ -1790,7 +1806,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     public CharMatrix resize(final int newRowCount, final int newColumnCount, final char defaultValue) throws IllegalArgumentException {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
-        checkRepresentableShape(newRowCount, newColumnCount);
+        checkNonNegativeShape(newRowCount, newColumnCount);
         if (newRowCount <= rowCount && newColumnCount <= columnCount) {
             return copyRegion(0, newRowCount, 0, newColumnCount);
         } else {
@@ -1932,7 +1948,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
             final int newRowCount = padTop + rowCount + padBottom;
             final int newColumnCount = padLeft + columnCount + padRight;
-            checkRepresentableShape(newRowCount, newColumnCount);
+            checkNonNegativeShape(newRowCount, newColumnCount);
             final boolean fillDefaultValue = defaultValue != CHAR_0;
             final char[][] b = new char[newRowCount][newColumnCount];
 
@@ -2099,7 +2115,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * }</pre>
      *
      * @return a new matrix rotated 90 degrees clockwise (dimensions {@code columnCount × rowCount}),
-     *         or an empty matrix if this matrix has zero columns
+     *         an {@code N x 0} matrix becomes {@code 0 x N}, so the column count is preserved
      * @see #rotate180()
      * @see #rotate270()
      * @see #transpose()
@@ -2110,7 +2126,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
             return wrapResult(new char[0][], rowCount);
         }
 
-        checkRepresentableShape(columnCount, rowCount);
+        checkNonNegativeShape(columnCount, rowCount);
 
         final char[][] c = new char[columnCount][rowCount];
 
@@ -2187,7 +2203,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * }</pre>
      *
      * @return a new matrix rotated 270 degrees clockwise (dimensions {@code columnCount × rowCount}),
-     *         or an empty matrix if this matrix has zero columns
+     *         an {@code N x 0} matrix becomes {@code 0 x N}, so the column count is preserved
      * @see #rotate90()
      * @see #rotate180()
      * @see #transpose()
@@ -2198,7 +2214,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
             return wrapResult(new char[0][], rowCount);
         }
 
-        checkRepresentableShape(columnCount, rowCount);
+        checkNonNegativeShape(columnCount, rowCount);
 
         final char[][] c = new char[columnCount][rowCount];
 
@@ -2238,9 +2254,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * transposed.rowView(0);                        // returns ['a', 'd']
      * transposed.rowView(2);                        // returns ['c', 'f']
      *
-     * // An N x 0 matrix transposes to the empty 0 x 0 matrix.
-     * CharMatrix.empty().transpose().isEmpty();            // returns true
-     * CharMatrix.wrap(new char[2][0]).transpose().isEmpty(); // returns true
+     * // An N x 0 matrix transposes to 0 x N: no elements, but the column count survives.
+     * CharMatrix.empty().transpose().isEmpty();               // returns true
+     * CharMatrix.wrap(new char[2][0]).transpose().isEmpty();  // returns true (no elements)
+     * CharMatrix.wrap(new char[2][0]).transpose().columnCount(); // returns 2
      * }</pre>
      *
      * @return a new matrix with dimensions {@code columnCount x rowCount}; an {@code N x 0} matrix becomes {@code 0 x N}
@@ -2251,7 +2268,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
             return wrapResult(new char[0][], rowCount);
         }
 
-        checkRepresentableShape(columnCount, rowCount);
+        checkNonNegativeShape(columnCount, rowCount);
 
         final char[][] c = new char[columnCount][rowCount];
 
@@ -2304,7 +2321,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     public CharMatrix reshapeAndPad(final int newRowCount, final int newColumnCount) {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
-        checkRepresentableShape(newRowCount, newColumnCount);
+        checkNonNegativeShape(newRowCount, newColumnCount);
         N.checkArgument((long) newRowCount * newColumnCount >= elementCount(), "New shape [{}x{}={}] is too small to hold all {} elements", newRowCount,
                 newColumnCount, (long) newRowCount * newColumnCount, elementCount());
 
@@ -2506,9 +2523,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p>This enables operations that need to process all matrix elements together (e.g., sorting all
      * elements across the entire matrix). The shape of this matrix is preserved; only element
      * values change. If the action throws, none of its changes to the temporary array are copied
-     * back. If logical rows share a backing array, each logical row still occupies its own segment
-     * in the temporary array; copy-back proceeds in row-major order, so a later logical row wins
-     * where aliases target the same backing cells.</p>
+     * back. Each logical row occupies its own segment in the temporary array, and copy-back proceeds
+     * in row-major order.</p>
      *
      * <p>For a matrix with no rows, the action is not invoked. For a matrix with one or more
      * zero-length rows, the action is invoked once with an empty array. See
@@ -2572,7 +2588,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      */
     @Override
     public CharMatrix stackVertically(final CharMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(columnCount == other.columnCount, MSG_VSTACK_COLUMN_MISMATCH, columnCount, other.columnCount);
         final long mergedRowCount = (long) rowCount + other.rowCount;
         N.checkArgument(mergedRowCount <= Integer.MAX_VALUE, "Merged row count overflow: {} + {} = {}", rowCount, other.rowCount, mergedRowCount);
@@ -2620,7 +2636,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      */
     @Override
     public CharMatrix stackHorizontally(final CharMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(rowCount == other.rowCount, MSG_HSTACK_ROW_MISMATCH, rowCount, other.rowCount);
         final long mergedColumnCount = (long) columnCount + other.columnCount;
         N.checkArgument(mergedColumnCount <= Integer.MAX_VALUE, "Merged column count overflow: {} + {} = {}", columnCount, other.columnCount,
@@ -2671,7 +2687,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @see #zipWith(CharMatrix, Throwables.CharBinaryOperator)
      */
     public CharMatrix add(final CharMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot add matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -2732,7 +2748,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @see #zipWith(CharMatrix, Throwables.CharBinaryOperator)
      */
     public CharMatrix subtract(final CharMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot subtract matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -2793,12 +2809,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @throws IllegalArgumentException if {@code other} is {@code null} or {@code this.columnCount != other.rowCount}
      */
     public CharMatrix matrixMultiply(final CharMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(columnCount == other.rowCount,
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
                 columnCount, other.rowCount, other.columnCount);
 
-        checkRepresentableShape(rowCount, other.columnCount);
+        checkNonNegativeShape(rowCount, other.columnCount);
 
         final char[][] otherArray = other.a;
         final int newColumnCount = other.columnCount;
@@ -2883,7 +2899,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      */
     public IntMatrix toIntMatrix() {
         if (rowCount == 0) {
-            return columnCount == 0 ? IntMatrix.empty() : new IntMatrix(new int[0][], columnCount);
+            return IntMatrix.wrapResult(new int[0][], columnCount);
         }
 
         return IntMatrix.from(a);
@@ -2921,7 +2937,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
             }
         }
 
-        return rowCount == 0 && columnCount == 0 ? LongMatrix.empty() : new LongMatrix(c, columnCount);
+        return LongMatrix.wrapResult(c, columnCount);
     }
 
     /**
@@ -2956,7 +2972,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
             }
         }
 
-        return rowCount == 0 && columnCount == 0 ? FloatMatrix.empty() : new FloatMatrix(c, columnCount);
+        return FloatMatrix.wrapResult(c, columnCount);
     }
 
     /**
@@ -2991,7 +3007,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
             }
         }
 
-        return rowCount == 0 && columnCount == 0 ? DoubleMatrix.empty() : new DoubleMatrix(c, columnCount);
+        return DoubleMatrix.wrapResult(c, columnCount);
     }
 
     /**
@@ -3031,7 +3047,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      */
     public <E extends Exception> CharMatrix zipWith(final CharMatrix other, final Throwables.CharBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgument(isSameShape(other), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
@@ -3085,8 +3101,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      */
     public <E extends Exception> CharMatrix zipWith(final CharMatrix other, final CharMatrix third, final Throwables.CharTernaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
-        N.checkArgNotNull(other, "other");
-        N.checkArgNotNull(third, "third");
+        N.checkArgNotNull(other, cs.other);
+        N.checkArgNotNull(third, cs.third);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: this is {}x{}, other is {}x{}, third is {}x{}",
                 rowCount, columnCount, other.rowCount, other.columnCount, third.rowCount, third.columnCount);
@@ -3503,7 +3519,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * }</pre>
      *
      * @return a Stream of CharStream objects, one for each row in the matrix,
-     *         or an empty stream if the matrix is empty
+     *         or an empty stream when there are no rows (an {@code N x 0} matrix still yields one
+     *         empty stream per row)
      * @see #rowMajorStream(int, int)
      */
     @Override
@@ -3600,7 +3617,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * }</pre>
      *
      * @return a Stream of CharStream objects, one for each column in the matrix,
-     *         or an empty stream if the matrix is empty
+     *         or an empty stream when there are no columns (a {@code 0 x N} matrix still yields one
+     *         empty stream per column)
      */
     @Override
     public Stream<CharStream> columnStreams() {
@@ -3636,10 +3654,6 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     @Override
     public Stream<CharStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
-
-        if (isEmpty()) {
-            return Stream.empty();
-        }
 
         return Stream.of(new ObjIteratorEx<>() {
             private final int toIndex = toColumnIndex;
@@ -3936,7 +3950,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
     /**
      * Returns a hash code value for this matrix.
-     * The hash code is computed based on the deep contents of the internal two-dimensional array.
+     * The hash code is computed from the deep contents of the internal two-dimensional array. A matrix
+     * with no rows has no contents to hash, so its column count participates instead, keeping
+     * {@code 0 x 3} and {@code 0 x 5} -- which {@code equals} distinguishes -- apart.
      * Matrices with the same dimensions and element values will have equal hash codes,
      * consistent with the {@link #equals(Object)} method.
      *
@@ -3955,7 +3971,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      */
     @Override
     public int hashCode() {
-        return N.deepHashCode(a);
+        // A zero-row matrix carries its column count outside the backing array, and equals() compares
+        // it, so it must take part in the hash; every other shape is already distinguished by the data.
+        return rowCount == 0 && columnCount > 0 ? 961 + columnCount : N.deepHashCode(a);
     }
 
     /**

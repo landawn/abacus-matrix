@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -605,14 +606,15 @@ class FloatMatrixTest extends TestBase {
 
     @Test
     public void testCopyRangesEmpty_returnsEmptyMatrix() {
-        // Regression: copyRows(from, from) on a matrix with columns > 0 must not throw.
+        // An empty row slice keeps the column count (0 x N) and an empty column slice keeps the row
+        // count (N x 0); only an empty range in BOTH dimensions collapses to 0 x 0.
         FloatMatrix empty = matrix.copyRows(0, 0);
         assertEquals(0, empty.rowCount());
-        assertEquals(0, empty.columnCount());
+        assertEquals(3, empty.columnCount());
 
         FloatMatrix emptyRows = matrix.copyRegion(1, 1, 0, 3);
         assertEquals(0, emptyRows.rowCount());
-        assertEquals(0, emptyRows.columnCount());
+        assertEquals(3, emptyRows.columnCount());
 
         FloatMatrix emptyCols = matrix.copyRegion(0, 3, 1, 1);
         assertEquals(3, emptyCols.rowCount());
@@ -2326,7 +2328,7 @@ class FloatMatrixTest extends TestBase {
         public void testmatrixMultiply_emptyProductReturnsCanonicalEmpty() {
             // Regression: matrixMultiply must build its result via FloatMatrix.wrap(result) (not the raw
             // constructor) so an empty product yields the shared EMPTY singleton, and must call
-            // checkRepresentableShape before allocation for consistency with the other
+            // checkNonNegativeShape before allocation for consistency with the other
             // result-allocating methods (resize/reshape/transpose/rotate).
             FloatMatrix product = FloatMatrix.empty().matrixMultiply(FloatMatrix.empty());
             assertSame(FloatMatrix.empty(), product);
@@ -5915,12 +5917,15 @@ class FloatMatrixTest extends TestBase {
                 .wrap(new float[][] { { 1.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 2.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 3.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 4.0f } });
 
         var it = (com.landawn.abacus.util.stream.FloatIteratorEx) m.mainDiagonalStream().iterator();
-        assertEquals(4L, it.count());
         assertEquals(1.0f, it.nextFloat(), DELTA);
         it.advance(2);
-        assertEquals(1L, it.count());
         assertEquals(4.0f, it.nextFloat(), DELTA);
         assertFalse(it.hasNext());
+
+        // count() consumes what remains, so it is asserted on a fresh iterator.
+        var counting = (com.landawn.abacus.util.stream.FloatIteratorEx) m.mainDiagonalStream().iterator();
+        assertEquals(4L, counting.count());
+        assertFalse(counting.hasNext());
     }
 
     @Test
@@ -5930,15 +5935,19 @@ class FloatMatrixTest extends TestBase {
 
         var it = (com.landawn.abacus.util.stream.FloatIteratorEx) m.columnMajorStream().iterator();
         // columnMajorStream() → 1,2,3 (col 0) | 4,5,6 (col 1) | 7,8,9 (col 2)
-        assertEquals(9L, it.count());
         it.advance(4);
         // After advancing 4 elements we have read 1,2,3,4; next should be 5.
-        assertEquals(5L, it.count());
         assertEquals(5.0f, it.nextFloat(), DELTA);
         it.advance(2);
         // After advancing 2 more (6, 7) the next element is 8.
-        assertEquals(2L, it.count());
         assertEquals(8.0f, it.nextFloat(), DELTA);
+
+        // count() is terminal, so each remaining-size assertion uses a fresh iterator.
+        assertEquals(9L, ((com.landawn.abacus.util.stream.FloatIteratorEx) m.columnMajorStream().iterator()).count());
+        var afterFour = (com.landawn.abacus.util.stream.FloatIteratorEx) m.columnMajorStream().iterator();
+        afterFour.advance(4);
+        assertEquals(5L, afterFour.count());
+        assertFalse(afterFour.hasNext());
     }
 
     @Test
@@ -6048,22 +6057,25 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void testTranspose_Nx0_collapsesToEmpty() {
+        public void testTranspose_Nx0_preservesTransposedShape() {
+            // An N x 0 matrix transposes to 0 x N: no elements, but the column count survives.
             FloatMatrix t = FloatMatrix.wrap(new float[3][0]).transpose();
             assertEquals(0, t.rowCount());
-            assertEquals(0, t.columnCount());
+            assertEquals(3, t.columnCount());
         }
 
         @Test
-        public void testRotate180_Nx0_preservesShape_whileRotate90TwiceCollapses() {
+        public void testRotate180_Nx0_agreesWithRotate90Twice() {
             FloatMatrix m = FloatMatrix.wrap(new float[3][0]);
 
             FloatMatrix via180 = m.rotate180();
             assertEquals(3, via180.rowCount());
             assertEquals(0, via180.columnCount());
 
+            // Two 90-degree rotations must equal one 180-degree rotation even for a degenerate
+            // shape; that only holds because rotate90 preserves the transposed column count.
             FloatMatrix viaRotate90Twice = m.rotate90().rotate90();
-            assertEquals(0, viaRotate90Twice.rowCount());
+            assertEquals(3, viaRotate90Twice.rowCount());
             assertEquals(0, viaRotate90Twice.columnCount());
         }
 
@@ -6118,39 +6130,28 @@ class FloatMatrixTest extends TestBase {
         }
 
         @Test
-        public void testAliasedBackingRowsAreTransformedOnce() {
+        public void testDuplicateBackingRowsAreRejectedAtConstruction() {
+            // One array cannot back two independently addressable logical rows, so wrap() rejects it.
             final float[] sharedRow = { 1.0f, 2.0f, 3.0f };
-            final FloatMatrix matrix = FloatMatrix.wrap(new float[][] { sharedRow, sharedRow });
+            final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                    () -> FloatMatrix.wrap(new float[][] { sharedRow, sharedRow }));
+            assertTrue(ex.getMessage().contains("independent storage"));
 
+            // copyOf() clones each row, so the same values are accepted and stay independent.
+            final FloatMatrix matrix = FloatMatrix.copyOf(new float[][] { sharedRow, sharedRow });
             matrix.updateColumn(0, value -> value + 1.0f);
-            assertArrayEquals(new float[] { 2.0f, 2.0f, 3.0f }, sharedRow);
+            assertArrayEquals(new float[] { 2.0f, 2.0f, 3.0f }, matrix.rowCopy(0));
+            assertArrayEquals(new float[] { 2.0f, 2.0f, 3.0f }, matrix.rowCopy(1));
+            assertArrayEquals(new float[] { 1.0f, 2.0f, 3.0f }, sharedRow);
+            assertNotSame(matrix.rowView(0), matrix.rowView(1));
 
-            matrix.updateAll(value -> value * 2.0f);
-            assertArrayEquals(new float[] { 4.0f, 4.0f, 6.0f }, sharedRow);
-
-            final float[] forcedParallelRow = { 1.0f, 2.0f };
-            final FloatMatrix forcedParallelMatrix = FloatMatrix.wrap(new float[][] { forcedParallelRow, forcedParallelRow });
+            // Forced-parallel mutation still visits each of the four cells exactly once.
             final AtomicInteger calls = new AtomicInteger();
-            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> forcedParallelMatrix.updateAll(value -> {
+            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> matrix.updateAll(value -> {
                 calls.incrementAndGet();
-                return value + 1.0f;
+                return value;
             }));
-            assertEquals(2, calls.get());
-            assertArrayEquals(new float[] { 2.0f, 3.0f }, forcedParallelRow);
-
-            final float[] forcedParallelReplaceRow = { 1.0f, 2.0f };
-            final FloatMatrix forcedParallelReplaceMatrix = FloatMatrix.wrap(new float[][] { forcedParallelReplaceRow, forcedParallelReplaceRow });
-            final AtomicInteger replaceCalls = new AtomicInteger();
-            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> forcedParallelReplaceMatrix.replaceIf(value -> {
-                replaceCalls.incrementAndGet();
-                return value > 0.0f;
-            }, 9.0f));
-            assertEquals(2, replaceCalls.get());
-            assertArrayEquals(new float[] { 9.0f, 9.0f }, forcedParallelReplaceRow);
-
-            matrix.flipHorizontallyInPlace();
-            assertArrayEquals(new float[] { 6.0f, 4.0f, 4.0f }, sharedRow);
-            assertSame(matrix.rowView(0), matrix.rowView(1));
+            assertEquals(6, calls.get());
         }
     }
 
@@ -6162,23 +6163,35 @@ class FloatMatrixTest extends TestBase {
         assertTrue(rowMajorIterator instanceof com.landawn.abacus.util.stream.FloatIteratorEx);
         com.landawn.abacus.util.stream.FloatIteratorEx rowMajor = (com.landawn.abacus.util.stream.FloatIteratorEx) rowMajorIterator;
         rowMajor.advance(1); // mid-row cursor: the chunked toArray must start at column 1
-        assertEquals(5L, rowMajor.count());
         assertArrayEquals(new float[] { 2.0f, 3.0f, 4.0f, 5.0f, 6.0f }, rowMajor.toArray());
+
+        // IteratorEx.count() is terminal: it consumes the remainder and exhausts the iterator, so every
+        // remaining-size assertion below uses its own freshly positioned iterator.
+        var rowMajorCount = (com.landawn.abacus.util.stream.FloatIteratorEx) matrix.rowMajorStream(0, 2).iterator();
+        rowMajorCount.advance(1);
+        assertEquals(5L, rowMajorCount.count());
 
         var columnMajorIterator = matrix.columnMajorStream(0, 3).iterator();
         com.landawn.abacus.util.stream.FloatIteratorEx columnMajor = (com.landawn.abacus.util.stream.FloatIteratorEx) columnMajorIterator;
         columnMajor.advance(1); // mid-column cursor: row 1 of column 0
-        assertEquals(5L, columnMajor.count());
         assertArrayEquals(new float[] { 4.0f, 2.0f, 5.0f, 3.0f, 6.0f }, columnMajor.toArray());
+
+        var columnMajorCount = (com.landawn.abacus.util.stream.FloatIteratorEx) matrix.columnMajorStream(0, 3).iterator();
+        columnMajorCount.advance(1);
+        assertEquals(5L, columnMajorCount.count());
 
         var crossingIterator = matrix.columnMajorStream(0, 3).iterator();
         com.landawn.abacus.util.stream.FloatIteratorEx crossing = (com.landawn.abacus.util.stream.FloatIteratorEx) crossingIterator;
         crossing.advance(3); // crosses a column boundary: lands on row 1 of column 1
-        assertEquals(3L, crossing.count());
         assertEquals(5.0f, crossing.nextFloat());
         crossing.advance(10);
         assertEquals(0L, crossing.count());
         assertThrows(java.util.NoSuchElementException.class, crossing::nextFloat);
+
+        var crossingCount = (com.landawn.abacus.util.stream.FloatIteratorEx) matrix.columnMajorStream(0, 3).iterator();
+        crossingCount.advance(3);
+        assertEquals(3L, crossingCount.count()); // consumes 5.0f, 3.0f, 6.0f
+        assertFalse(crossingCount.hasNext());
     }
 
     @Test

@@ -17,9 +17,11 @@ package com.landawn.abacus.matrix;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.random.RandomGenerator;
 
@@ -133,8 +135,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     /** Exception message format for shape mismatch between two matrices. Arguments: rows1, cols1, rows2, cols2 */
     protected static final String MSG_SHAPE_MISMATCH = "Matrix shape mismatch: this matrix is {}x{} but other is {}x{}";
 
-    /** Exception message format for non-rectangular matrix. Arguments: firstRowLength, currentRowIndex, currentRowLength */
-    protected static final String MSG_NOT_RECTANGULAR = "Matrix must be rectangular: row 0 has {} columns, but row {} has {} columns";
+    /** Exception message format for non-rectangular input. Arguments: expectedColumnCount, rowIndex, actualColumnCount */
+    protected static final String MSG_NOT_RECTANGULAR = "Matrix must be rectangular: expected {} columns per row, but row {} has {} columns";
 
     /** Exception message format for stackVertically column count mismatch. Arguments: thisColumnCount, otherColumnCount */
     protected static final String MSG_VSTACK_COLUMN_MISMATCH = "Column count mismatch for stackVertically: this matrix has {} columns but other has {}";
@@ -172,7 +174,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     final long elementCount;
 
     /**
-     * The private structural snapshot of the supplied two-dimensional array. Row arrays remain
+     * The internal structural snapshot of the supplied two-dimensional array. Row arrays remain
      * shared with callers, but the outer array is never exposed directly.
      */
     final A[] a;
@@ -215,6 +217,31 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      */
     @SuppressFBWarnings("CT_CONSTRUCTOR_THROW")
     protected AbstractMatrix(final A[] a, final Class<?> elementType, final int explicitColumnCount) {
+        this(a, elementType, explicitColumnCount, false);
+    }
+
+    /**
+     * Constructs a matrix, optionally skipping the duplicate-row scan.
+     *
+     * <p>Pass {@code true} for {@code rowsAreKnownDistinct} only when this library allocated the row
+     * arrays itself -- {@code new T[rowCount][columnCount]}, a per-row {@code clone()}, or
+     * {@code newIndependentRow(...)} -- because each of those produces identity-distinct rows by
+     * construction, so the scan can only ever confirm what the allocation already guarantees. The scan
+     * is not free: it allocates an {@link IdentityHashMap} sized to {@code rowCount} and boxes one
+     * {@code Integer} per row on <i>every</i> construction, which dominates tall-and-thin matrices --
+     * adding two {@code 200000 x 2} matrices spent over half its time there, roughly 70x slower than
+     * the same 400000 cells shaped {@code 2 x 200000}. Rows are still checked for null and
+     * rectangularity on both paths.</p>
+     *
+     * @param a the row arrays; must be non-{@code null} and rectangular
+     * @param elementType the matrix element type; must be non-{@code null}
+     * @param explicitColumnCount the logical column count; must be non-negative and, when rows
+     *        are present, equal to every row's length
+     * @param rowsAreKnownDistinct {@code true} only for row arrays this library allocated itself
+     * @throws IllegalArgumentException if an argument or row violates the stated contract
+     */
+    @SuppressFBWarnings("CT_CONSTRUCTOR_THROW")
+    AbstractMatrix(final A[] a, final Class<?> elementType, final int explicitColumnCount, final boolean rowsAreKnownDistinct) {
         N.checkArgNotNull(a, "Matrix array cannot be null");
         N.checkArgNotNull(elementType, "Element type cannot be null");
         N.checkArgument(explicitColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", explicitColumnCount);
@@ -223,25 +250,31 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         // replacement silently invalidate every bounds and traversal invariant in this class.
         this.a = a.clone();
         this.elementType = elementType;
-        rowCount = a.length;
+        rowCount = this.a.length;
 
         columnCount = explicitColumnCount;
-        final Map<A, Integer> seenRows = new IdentityHashMap<>(a.length);
 
-        for (int i = 0; i < a.length; i++) {
-            final A row = a[i];
+        // Fewer than two rows cannot contain a duplicate, so the map is never worth allocating there.
+        final Map<A, Integer> seenRows = rowsAreKnownDistinct || this.a.length < 2 ? null : new IdentityHashMap<>(this.a.length);
+
+        // Validate the snapshot, not the caller's array: a concurrent write to `a` between the
+        // clone above and this loop would otherwise let an invalid row reach `this.a` unchecked.
+        for (int i = 0; i < this.a.length; i++) {
+            final A row = this.a[i];
             N.checkArgument(row != null, "Row {} cannot be null", i);
 
             if (length(row) != columnCount) {
                 throw new IllegalArgumentException(formatMsg(MSG_NOT_RECTANGULAR, columnCount, i, length(row)));
             }
 
-            final Integer firstIndex = seenRows.put(row, i);
+            if (seenRows != null) {
+                final Integer firstIndex = seenRows.put(row, i);
 
-            if (firstIndex != null) {
-                // One physical row cannot represent two independently addressable logical rows:
-                // updating either position would necessarily and invisibly update the other.
-                throw new IllegalArgumentException(formatMsg(MSG_DUPLICATE_ROW, i, firstIndex));
+                if (firstIndex != null) {
+                    // One physical row cannot represent two independently addressable logical rows:
+                    // updating either position would necessarily and invisibly update the other.
+                    throw new IllegalArgumentException(formatMsg(MSG_DUPLICATE_ROW, i, firstIndex));
+                }
             }
         }
 
@@ -287,37 +320,39 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *         aliased row replaced by an independent snapshot
      */
     final A[] snapshotRowsIfBackingRows(final A[] source) {
-        if (a.length == 0) {
+        if (a.length == 0 || source.length == 0) {
             return source;
         }
 
-        if (source == a) {
-            final A[] snapshot = source.clone();
+        // Index the SOURCE, not this matrix: `source` is a caller-supplied block that is typically a
+        // handful of rows, while this matrix may have millions, and only the smaller side has to be
+        // in a lookup table. Indexing the matrix instead made copyFrom(0, 0, oneRow) allocate a table
+        // sized to the whole matrix.
+        final Set<A> sourceRows = Collections.newSetFromMap(new IdentityHashMap<>(source.length));
 
-            for (int i = 0; i < snapshot.length; i++) {
-                if (snapshot[i] != null) {
-                    snapshot[i] = cloneArray(snapshot[i]);
-                }
+        for (final A row : source) {
+            if (row != null) {
+                sourceRows.add(row);
             }
-
-            return snapshot;
         }
 
-        final Map<A, Boolean> backingRows = new IdentityHashMap<>(a.length);
+        final Set<A> aliasedRows = Collections.newSetFromMap(new IdentityHashMap<>());
 
         for (final A row : a) {
-            backingRows.put(row, Boolean.TRUE);
+            if (sourceRows.contains(row)) {
+                aliasedRows.add(row);
+            }
         }
 
-        A[] snapshot = source;
+        if (aliasedRows.isEmpty()) {
+            return source;
+        }
 
-        for (int i = 0; i < source.length; i++) {
-            if (backingRows.containsKey(source[i])) {
-                if (snapshot == source) {
-                    snapshot = source.clone();
-                }
+        final A[] snapshot = source.clone();
 
-                snapshot[i] = cloneArray(source[i]);
+        for (int i = 0; i < snapshot.length; i++) {
+            if (aliasedRows.contains(snapshot[i])) {
+                snapshot[i] = cloneArray(snapshot[i]);
             }
         }
 
@@ -364,13 +399,16 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     }
 
     /**
-     * Validates the two independently stored matrix dimensions.
+     * Rejects a negative row or column count.
+     *
+     * <p>This checks only the sign of each dimension; it does not validate that their product is
+     * allocatable. Callers that need that (for example {@code flatten()}) check it themselves.</p>
      *
      * @param rowCount the row count; must be non-negative
      * @param columnCount the column count; must be non-negative
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative
      */
-    protected static void checkRepresentableShape(final int rowCount, final int columnCount) {
+    protected static void checkNonNegativeShape(final int rowCount, final int columnCount) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
     }
@@ -704,8 +742,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * IntMatrix lastRow = matrix.copyRows(2, 3);                   // returns {{5, 6}}
      *
-     * IntMatrix none = matrix.copyRows(1, 1);                      // returns an empty 0 x 0 matrix
+     * IntMatrix none = matrix.copyRows(1, 1);                      // returns an empty 0 x 2 matrix
      * none.rowCount();                                         // returns 0
+     * none.columnCount();                                      // returns 2 (the column count is preserved)
      *
      * matrix.copyRows(0, 4);                                       // throws IndexOutOfBoundsException (toRowIndex > rowCount)
      * matrix.copyRows(2, 1);                                       // throws IndexOutOfBoundsException (fromRowIndex > toRowIndex)
@@ -715,8 +754,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param toRowIndex the ending row index (exclusive)
      * @return a new matrix containing the specified rows with dimensions
      *         {@code (toRowIndex - fromRowIndex) × columnCount}; when the row range is empty
-     *         ({@code fromRowIndex == toRowIndex}) the result is an empty {@code 0 x 0} matrix
-     *         (the column count is not preserved)
+     *         ({@code fromRowIndex == toRowIndex}) the result is a {@code 0 x columnCount} matrix,
+     *         so the column count is preserved
      * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount},
      *         or {@code fromRowIndex > toRowIndex}
      * @see #copyColumns(int, int)
@@ -949,7 +988,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @throws IllegalArgumentException if {@code other} is {@code null}
      */
     public boolean isSameShape(final M other) {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         return rowCount == other.rowCount && columnCount == other.columnCount;
     }
 
@@ -982,7 +1021,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     public M reshape(final int newRowCount, final int newColumnCount) {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
-        checkRepresentableShape(newRowCount, newColumnCount);
+        checkNonNegativeShape(newRowCount, newColumnCount);
         final long newElementCount = (long) newRowCount * newColumnCount;
         N.checkArgument(newElementCount == elementCount, "New shape [{}x{}={}] must contain exactly the existing {} elements", newRowCount, newColumnCount,
                 newElementCount, elementCount);
@@ -1058,7 +1097,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         N.checkArgument(newRowCount <= Integer.MAX_VALUE, "Reshaped row count overflow: ceil({} / {}) = {} exceeds Integer.MAX_VALUE", elementCount,
                 newColumnCount, newRowCount);
 
-        checkRepresentableShape((int) newRowCount, newColumnCount);
+        checkNonNegativeShape((int) newRowCount, newColumnCount);
 
         return reshapeAndPad((int) newRowCount, newColumnCount);
     }
@@ -1200,8 +1239,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param padBottom number of rows to add below the matrix (must be {@code >= 0})
      * @param padLeft number of columns to add to the left of the matrix (must be {@code >= 0})
      * @param padRight number of columns to add to the right of the matrix (must be {@code >= 0})
-     * @return a new matrix grown by the specified pad widths, with new cells filled with the type's default value
+     * @return a new matrix grown by the specified pad widths, with new cells filled with the type's default value;
+     *         subclasses additionally provide a {@code pad} overload that accepts an explicit fill value
      * @throws IllegalArgumentException if any pad value is negative or if a resulting dimension overflows {@code Integer.MAX_VALUE}
+     * @see #resize(int, int)
      */
     public abstract M pad(int padTop, int padBottom, int padLeft, int padRight);
 
@@ -1389,9 +1430,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * such as sorting all elements, applying statistical transformations, or batch updates.</p>
      *
      * <p><b>&#9888;&#65039; Unsafe API boundary:</b> the supplied action receives a mutable temporary array whose
-     * contents can replace matrix state. If logical rows share a backing row array, their flattened segments cannot
-     * remain independent during copy-back: rows are written in logical row order, so a later aliased row overwrites
-     * values written through an earlier alias.</p>
+     * contents can replace matrix state. Copy-back proceeds in row-major order and is skipped entirely if the
+     * action throws, so a failed action leaves the matrix unchanged.</p>
      *
      * <p>A zero-row matrix does not invoke {@code action}. A matrix with one or more rows but zero columns invokes
      * {@code action} once with a zero-length array.</p>
@@ -1410,11 +1450,6 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * int[] zeroRowCalls = {0};
      * empty.mutateViaFlatArray(flat -> zeroRowCalls[0]++);              // action is not invoked
      * int callbackCount = zeroRowCalls[0];                           // 0
-     *
-     * int[] shared = {1, 2};
-     * IntMatrix aliased = IntMatrix.wrap(new int[][] {shared, shared});
-     * aliased.mutateViaFlatArray(flat -> { flat[0] = 10; flat[1] = 20; flat[2] = 30; flat[3] = 40; });
-     * aliased.rowCopy(0);                                            // returns [30, 40] (later aliased row wins)
      *
      * // Checked exceptions propagate to the caller (do not wrap in try/catch inside the block)
      * matrix.mutateViaFlatArray(flat -> { throw new java.io.IOException(); });   // throws IOException
@@ -1435,8 +1470,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Elements are processed in row-major order (row by row from left to right) when executed sequentially.
      * For large matrices the operation may be automatically parallelized, in which case the order in which
      * positions are visited is unspecified and the supplied action must be thread-safe; every position is
-     * still visited exactly once. When logical rows share a backing row array, the operation runs sequentially
-     * to avoid concurrent access to shared row storage and preserve deterministic row-major visitation.
+     * still visited exactly once; because every logical row owns its storage, no two positions can write to the
+     * same cell.
      *
      * <p>This method is useful when you need to access matrix positions without caring about
      * the actual element values, or when the element access logic is handled inside the action.</p>
@@ -1486,8 +1521,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Elements are processed in row-major order within the specified region when executed sequentially.
      * For large regions the operation may be automatically parallelized, in which case the order in which
      * positions are visited is unspecified and the supplied action must be thread-safe; every position is
-     * still visited exactly once. When logical rows share a backing row array, the operation runs sequentially
-     * to avoid concurrent access to shared row storage and preserve deterministic row-major visitation.
+     * still visited exactly once; because every logical row owns its storage, no two positions can write to the
+     * same cell.
      *
      * <p>This allows selective processing of matrix subregions without creating a copy.</p>
      *
@@ -1546,8 +1581,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Elements are processed in row-major order (row by row from left to right) when executed sequentially.
      * For large matrices the operation may be automatically parallelized, in which case the order in which
      * positions are visited is unspecified and the supplied action must be thread-safe; every position is
-     * still visited exactly once. When logical rows share a backing row array, the operation runs sequentially
-     * to avoid concurrent access to shared row storage and preserve deterministic row-major visitation.
+     * still visited exactly once; because every logical row owns its storage, no two positions can write to the
+     * same cell.
      *
      * <p>This variant is useful when the action needs access to matrix elements or methods,
      * allowing you to read/write values or use matrix operations within the action.</p>
@@ -1598,8 +1633,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Elements are processed in row-major order within the specified region when executed sequentially.
      * For large regions the operation may be automatically parallelized, in which case the order in which
      * positions are visited is unspecified and the supplied action must be thread-safe; every position is
-     * still visited exactly once. When logical rows share a backing row array, the operation runs sequentially
-     * to avoid concurrent access to shared row storage and preserve deterministic row-major visitation.
+     * still visited exactly once; because every logical row owns its storage, no two positions can write to the
+     * same cell.
      *
      * <p>This combines region-based iteration with matrix access, allowing you to process
      * a subregion while having access to the entire matrix.</p>
@@ -2555,6 +2590,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * <ul>
      *   <li>Primitive matrices display each element's natural string form (for example {@code 1} for
      *       {@code int}, {@code 1.0} for {@code double}, {@code true} for {@code boolean})</li>
+     *   <li>{@link CharMatrix} is the exception: each code unit is quoted and Java-escaped, so a row
+     *       renders as {@code ['a', 'b']}, and a newline renders as a quoted two-character escape
+     *       ({@code \n} between single quotes)</li>
      *   <li>Object matrices display using the {@code toString()} method of elements, with a
      *       {@code null} element rendered as {@code "null"}</li>
      * </ul>
@@ -2611,7 +2649,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *         different row counts or column counts
      */
     protected void checkSameShape(final M other) {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), MSG_SHAPE_MISMATCH, rowCount, columnCount, other.rowCount, other.columnCount);
     }
 

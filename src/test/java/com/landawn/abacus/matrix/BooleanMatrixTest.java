@@ -570,16 +570,17 @@ class BooleanMatrixTest extends TestBase {
 
     @Test
     public void testCopyRangesEmpty_returnsEmptyMatrix() {
-        // Regression: copyRows(from, from) on a matrix with columns > 0 must not throw.
+        // An empty row slice keeps the column count (0 x N) and an empty column slice keeps the row
+        // count (N x 0); only an empty range in BOTH dimensions collapses to 0 x 0.
         BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false, true }, { false, true, false } });
 
         BooleanMatrix empty = m.copyRows(0, 0);
         assertEquals(0, empty.rowCount());
-        assertEquals(0, empty.columnCount());
+        assertEquals(3, empty.columnCount());
 
         BooleanMatrix emptyRows = m.copyRegion(1, 1, 0, 3);
         assertEquals(0, emptyRows.rowCount());
-        assertEquals(0, emptyRows.columnCount());
+        assertEquals(3, emptyRows.columnCount());
 
         BooleanMatrix emptyCols = m.copyRegion(0, 2, 1, 1);
         assertEquals(2, emptyCols.rowCount());
@@ -3722,7 +3723,15 @@ class BooleanMatrixTest extends TestBase {
             boolean[][] arr = { { true, false }, { false, true } };
             BooleanMatrix m = BooleanMatrix.wrap(arr);
             boolean[][] result = m.unsafeBackingArray();
-            assertSame(arr, result);
+
+            // The outer array is a private snapshot, so replacing a row in either array is invisible
+            // to the other; the row arrays themselves are still shared, so cell writes are visible.
+            assertNotSame(arr, result);
+            assertSame(arr[0], result[0]);
+            assertSame(arr[1], result[1]);
+
+            arr[0][0] = false;
+            assertEquals(false, m.get(0, 0));
         }
 
         @Test

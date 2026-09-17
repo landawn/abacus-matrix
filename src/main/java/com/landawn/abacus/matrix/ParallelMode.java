@@ -25,7 +25,8 @@ package com.landawn.abacus.matrix;
  * <ul>
  *   <li>{@link #FORCE_ON} requests parallel execution irrespective of operation size when the required
  *       runtime support is present and the operation's safety restrictions permit it.</li>
- *   <li>{@link #FORCE_OFF} keeps automatic operations that consult this policy sequential.</li>
+ *   <li>{@link #FORCE_OFF} keeps automatic operations that consult this policy sequential. This is the
+ *       default for every thread.</li>
  *   <li>{@link #AUTO} combines runtime support, operation-specific safety restrictions, and the
  *       operation's work-count threshold.</li>
  * </ul>
@@ -34,7 +35,9 @@ package com.landawn.abacus.matrix;
  * consult this policy.</p>
  *
  * <p>Because the setting is stored in a {@link ThreadLocal}, changing it on one thread does not affect
- * other threads. {@link #AUTO} is the default value for every thread.</p>
+ * other threads. {@link #FORCE_OFF} is the default value for every thread, so automatic operations are
+ * sequential and their callbacks run deterministically unless a caller opts in to {@link #AUTO} or
+ * {@link #FORCE_ON}.</p>
  *
  * @see Matrices#setParallelMode(ParallelMode)
  * @see Matrices#getParallelMode()
@@ -55,9 +58,10 @@ public enum ParallelMode {
     /**
      * Selects sequential execution for automatic operations that consult the current thread's policy.
      *
-     * <p>Use this mode to keep those operations on the calling thread and retain their documented sequential
-     * visitation order, for example when running inside a context that already manages its own parallelism or
-     * when debugging. Explicit overloads with an {@code inParallel} argument remain controlled by that argument.</p>
+     * <p>This is the default mode for every thread. Use it to keep those operations on the calling thread and
+     * retain their documented sequential visitation order, for example when running inside a context that already
+     * manages its own parallelism or when debugging. Explicit overloads with an {@code inParallel} argument remain
+     * controlled by that argument.</p>
      */
     FORCE_OFF,
 
@@ -66,8 +70,9 @@ public enum ParallelMode {
      * it, the operation's safety restrictions permit it, and the operation-specific work count meets the
      * threshold checked by {@link Matrices#shouldRunInParallel(AbstractMatrix, long)}.
      *
-     * <p>This is the default mode and is recommended for most workloads: small operations stay sequential
-     * to avoid parallel-dispatch overhead, while larger eligible operations can run in parallel.</p>
+     * <p>This is the recommended mode for most workloads once a caller has opted in to parallelism: small
+     * operations stay sequential to avoid parallel-dispatch overhead, while larger eligible operations can
+     * run in parallel. It is <i>not</i> the default; every thread starts at {@link #FORCE_OFF}.</p>
      */
     AUTO
 }

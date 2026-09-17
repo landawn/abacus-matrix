@@ -36,8 +36,8 @@ import com.landawn.abacus.util.stream.Stream;
  * <p>This type specializes {@link AbstractMatrix} for {@code double} values while keeping the data in
  * a validated backing array. The constructor and {@link #wrap(double[]...)} wrap the supplied storage
  * directly. {@link #copyOf(double[]...)}, conversions, and mapping operations do not share mutable
- * cell storage with a non-empty source; operations producing an empty matrix may return the shared
- * empty singleton.</p>
+ * cell storage with a non-empty source; operations producing a {@code 0 x 0} matrix return the shared empty
+ * singleton, while {@code 0 x N} and {@code N x 0} results keep their shape.</p>
  *
  * <p>Cells introduced by growth or reshaping default to {@code 0.0d} unless an overload accepts an
  * explicit fill value.</p>
@@ -78,9 +78,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     /**
      * Constructs a {@code DoubleMatrix} backed by the supplied two-dimensional array.
      *
-     * <p><b>&#9888;&#65039; Shared backing:</b> The supplied array is used directly after rectangular-shape validation, so later modifications to either the input
-     * array or the matrix remain visible through the other view. Call {@link #copy()} if you need an
-     * independently owned matrix.</p>
+     * <p><b>&#9888;&#65039; Shared rows:</b> The outer array is copied, but its row arrays are shared.
+     * Mutating a row element through either view is visible through the other; replacing a row in the
+     * caller's outer array is not. Call {@link #copy()} for independently owned rows.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -98,7 +98,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * @param a the two-dimensional double array to wrap, must not be {@code null}
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
-     *         different lengths (i.e. the array is not rectangular)
+     *         different lengths (i.e. the array is not rectangular), or if two positions reference the same row array
      */
     public DoubleMatrix(final double[][] a) {
         super(N.checkArgNotNull(a, "Matrix array cannot be null"), double.class);
@@ -106,6 +106,26 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
 
     DoubleMatrix(final double[][] a, final int columnCount) {
         super(N.checkArgNotNull(a, "Matrix array cannot be null"), double.class, columnCount);
+    }
+
+    private DoubleMatrix(final double[][] a, final int columnCount, final boolean rowsAreKnownDistinct) {
+        super(N.checkArgNotNull(a, "Matrix array cannot be null"), double.class, columnCount, rowsAreKnownDistinct);
+    }
+
+    /**
+     * Canonicalises a derived result: a genuinely {@code 0 x 0} result becomes the shared empty
+     * instance, while {@code 0 x N} and {@code N x 0} results keep their logical shape. Every
+     * result-producing method routes through here so the empty singleton and the degenerate
+     * shapes are handled in exactly one place.
+     *
+     * @param a the backing rows of the result
+     * @param columnCount the result's logical column count
+     * @return the shared empty matrix when the result is {@code 0 x 0}, otherwise a new matrix
+     */
+    static DoubleMatrix wrapResult(final double[][] a, final int columnCount) {
+        // Every wrapResult(...) call site passes an array this class just allocated, so the rows are
+        // identity-distinct by construction and the duplicate-row scan can be skipped.
+        return a.length == 0 && columnCount == 0 ? EMPTY_DOUBLE_MATRIX : new DoubleMatrix(a, columnCount, true);
     }
 
     /**
@@ -130,9 +150,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     /**
      * Wraps the supplied two-dimensional double array as {@code DoubleMatrix}.
      *
-     * <p><b>&#9888;&#65039; Shared backing:</b> When the input has at least one row, the provided array is used directly without defensive copying.
-     * Changes to the input array are reflected in the returned matrix, and vice versa. A zero-row input is instead canonicalized to the shared empty matrix,
-     * so its outer-array identity is not retained.</p>
+     * <p><b>&#9888;&#65039; Shared rows:</b> For a non-empty input, the outer array is copied while its
+     * row arrays remain shared. Cell changes are visible in both directions, but later row replacement
+     * in the caller's outer array is not. A zero-row input is canonicalized to the shared empty matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -151,7 +171,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param a the two-dimensional double array to wrap, or empty for an empty matrix; must not be {@code null}
      * @return a new {@code DoubleMatrix} backed by {@code a}, or the shared empty matrix if {@code a} is empty
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
-     *         different lengths (i.e. the array is not rectangular)
+     *         different lengths (i.e. the array is not rectangular), or if two positions reference the same row array
      */
     public static DoubleMatrix wrap(final double[]... a) {
         N.checkArgNotNull(a, "Matrix array cannot be null");
@@ -176,6 +196,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * DoubleMatrix.copyOf((double[][]) null);            // throws IllegalArgumentException
      * DoubleMatrix.copyOf(new double[][] {{1, 2}, {3}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
+     *
+     * <p>Because every row is cloned, an input that repeats the same row array is accepted here,
+     * while {@code wrap(...)} would reject it.</p>
      *
      * @param a the two-dimensional double array to copy, or empty for an empty matrix; must not be {@code null}
      * @return a new {@code DoubleMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is empty
@@ -396,11 +419,19 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
         return randomRow(columnCount, defaultRandomGenerator());
     }
 
-    /** Returns a random row generated by the supplied, caller-controlled source. */
-    public static DoubleMatrix randomRow(final int columnCount, final RandomGenerator random) {
+    /**
+     * Creates a {@code 1 x columnCount} matrix using the caller-supplied random source.
+     * Supplying the source makes generation reproducible when it has a fixed seed.
+     *
+     * @param columnCount the number of columns; must be non-negative
+     * @param randomGenerator the random source; must not be {@code null}
+     * @return the generated single-row matrix
+     * @throws IllegalArgumentException if {@code columnCount} is negative or the random source is {@code null}
+     */
+    public static DoubleMatrix randomRow(final int columnCount, final RandomGenerator randomGenerator) {
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
-        N.checkArgNotNull(random, "random");
-        return random(1, columnCount, random);
+        N.checkArgNotNull(randomGenerator, "randomGenerator");
+        return random(1, columnCount, randomGenerator);
     }
 
     /**
@@ -427,22 +458,32 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
         return random(rowCount, columnCount, defaultRandomGenerator());
     }
 
-    /** Returns a random matrix, consuming {@code random} once per cell in row-major order. */
-    public static DoubleMatrix random(final int rowCount, final int columnCount, final RandomGenerator random) {
+    /**
+     * Creates a {@code rowCount x columnCount} matrix using the caller-supplied random source.
+     * The source is consumed once per cell in row-major order, so a fixed seed reproduces the matrix.
+     *
+     * @param rowCount the number of rows; must be non-negative
+     * @param columnCount the number of columns; must be non-negative
+     * @param randomGenerator the random source; must not be {@code null}
+     * @return the generated matrix
+     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
+     *         or if the random source is {@code null}
+     */
+    public static DoubleMatrix random(final int rowCount, final int columnCount, final RandomGenerator randomGenerator) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
-        N.checkArgNotNull(random, "random");
-        checkRepresentableShape(rowCount, columnCount);
+        N.checkArgNotNull(randomGenerator, "randomGenerator");
+        checkNonNegativeShape(rowCount, columnCount);
 
         final double[][] a = new double[rowCount][columnCount];
 
         for (double[] ea : a) {
             for (int i = 0; i < columnCount; i++) {
-                ea[i] = random.nextDouble();
+                ea[i] = randomGenerator.nextDouble();
             }
         }
 
-        return new DoubleMatrix(a, columnCount);
+        return wrapResult(a, columnCount);
     }
 
     /**
@@ -956,6 +997,10 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p>The values from the source array are copied into the matrix column.
      * The source array must have exactly the same length as the number of rows in the matrix.
      *
+     * <p>If the supplied array is one of this matrix's live backing rows (for example a value returned
+     * by {@code rowView(int)}), it is snapshotted first, so the values read are the ones in place when
+     * this method was called.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] {{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}});
@@ -1031,8 +1076,6 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * <p>The operator is applied to each element in the specified column sequentially
      * from top to bottom (row {@code 0} to row {@code rowCount - 1}).</p>
-     *
-     * <p>If multiple logical rows share one backing array, that backing value is transformed only once.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1110,12 +1153,12 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * matrix.get(1, 1);                              // returns 8.0
      * matrix.get(0, 1);                              // returns 2.0 (off-diagonal unchanged)
      *
-     * matrix.setMainDiagonal(new double[] {1.0});                                             // throws IllegalArgumentException (length != rowCount)
+     * matrix.setMainDiagonal(new double[] {1.0});                                             // throws IllegalArgumentException (length != min(rowCount, columnCount))
      * DoubleMatrix.wrap(new double[][] {{1.0, 2.0, 3.0}}).setMainDiagonal(new double[] {1.0});  // supported
      * }</pre>
      *
-     * @param mainDiagonal the new values for the main diagonal; must be non-{@code null} and of length {@code rowCount}
-     * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null} or its length is not equal to {@code rowCount}
+     * @param mainDiagonal the new values for the main diagonal; must be non-{@code null} and of length {@code min(rowCount, columnCount)}
+     * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null} or its length is not equal to {@code min(rowCount, columnCount)}
      */
     @Override
     public void setMainDiagonal(final double[] mainDiagonal) throws IllegalArgumentException {
@@ -1200,6 +1243,10 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p>This method sets the anti-diagonal (secondary diagonal) elements from
      * top-right to bottom-left, at positions (0,n-1), (1,n-2), (2,n-3), etc.</p>
      *
+     * <p>If the supplied array is one of this matrix's live backing rows (for example a value returned
+     * by {@code rowView(int)}), it is snapshotted first, so the values read are the ones in place when
+     * this method was called.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
@@ -1208,12 +1255,12 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * matrix.get(1, 0);                              // returns 8.0
      * matrix.get(0, 0);                              // returns 1.0 (off anti-diagonal unchanged)
      *
-     * matrix.setAntiDiagonal(new double[] {1.0});                                             // throws IllegalArgumentException (length != rowCount)
+     * matrix.setAntiDiagonal(new double[] {1.0});                                             // throws IllegalArgumentException (length != min(rowCount, columnCount))
      * DoubleMatrix.wrap(new double[][] {{1.0, 2.0, 3.0}}).setAntiDiagonal(new double[] {1.0});  // supported
      * }</pre>
      *
-     * @param antiDiagonal the new values for the anti-diagonal; must be non-{@code null} and of length {@code rowCount}
-     * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null} or its length is not equal to {@code rowCount}
+     * @param antiDiagonal the new values for the anti-diagonal; must be non-{@code null} and of length {@code min(rowCount, columnCount)}
+     * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null} or its length is not equal to {@code min(rowCount, columnCount)}
      */
     @Override
     public void setAntiDiagonal(final double[] antiDiagonal) throws IllegalArgumentException {
@@ -1268,8 +1315,6 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * When this operation is not parallelized, elements are processed in first-occurrence row-major order;
      * when it is parallelized, the encounter order is unspecified.</p>
      *
-     * <p>If multiple logical rows share one backing array, each value in that array is transformed only once.</p>
-     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
@@ -1315,9 +1360,6 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * for that position. This is useful for initializing matrices based on position patterns or
      * mathematical formulas. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
      *
-     * <p>If logical rows share a backing array, every logical coordinate is still visited, but
-     * traversal is kept sequential so later aliases overwrite earlier ones deterministically.</p>
-     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}});
@@ -1351,9 +1393,6 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * This modifies the matrix directly.
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.</p>
-     *
-     * <p>If multiple logical rows share the same backing array, the predicate is evaluated once
-     * per physical cell and that backing row is updated once.</p>
      *
      * <p><b>Floating-point note:</b> {@code NaN} fails ordering comparisons such as {@code <},
      * {@code >}, {@code <=}, {@code >=} and is not equal to itself under {@code ==}. To match
@@ -1414,8 +1453,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p>This is useful for position-based replacements such as setting diagonals, borders,
      * or specific regions. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
      *
-     * <p>Nonmatching positions perform no write. If logical rows share a backing array, a
-     * replacement made through any matching coordinate is therefore visible through every alias.</p>
+     * <p>Nonmatching positions perform no write.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1484,7 +1522,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return new DoubleMatrix(result, columnCount);
+        return wrapResult(result, columnCount);
     }
 
     /**
@@ -1519,7 +1557,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return new IntMatrix(result, columnCount);
+        return IntMatrix.wrapResult(result, columnCount);
     }
 
     /**
@@ -1554,7 +1592,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return new LongMatrix(result, columnCount);
+        return LongMatrix.wrapResult(result, columnCount);
     }
 
     /**
@@ -1583,17 +1621,16 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null}
      * @throws E if the function throws an exception
      */
-    @SuppressWarnings("deprecation")
     public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.DoubleFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E {
         N.checkArgNotNull(mapper, cs.mapper);
-        N.checkArgNotNull(targetElementType, "targetElementType");
+        N.checkArgNotNull(targetElementType, cs.targetElementType);
 
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return Matrix.wrap(result);
+        return new Matrix<>(result, targetElementType, columnCount);
     }
 
     /**
@@ -1730,7 +1767,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
             c[i] = a[i].clone();
         }
 
-        return new DoubleMatrix(c, columnCount);
+        return wrapResult(c, columnCount);
     }
 
     /**
@@ -1766,7 +1803,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
             c[i - fromRowIndex] = a[i].clone();
         }
 
-        return new DoubleMatrix(c, columnCount);
+        return wrapResult(c, columnCount);
     }
 
     /**
@@ -1805,7 +1842,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
             c[i - fromRowIndex] = N.copyOfRange(a[i], fromColumnIndex, toColumnIndex);
         }
 
-        return new DoubleMatrix(c, toColumnIndex - fromColumnIndex);
+        return wrapResult(c, toColumnIndex - fromColumnIndex);
     }
 
     /**
@@ -1928,7 +1965,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     public DoubleMatrix resize(final int newRowCount, final int newColumnCount, final double defaultValue) throws IllegalArgumentException {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
-        checkRepresentableShape(newRowCount, newColumnCount);
+        checkNonNegativeShape(newRowCount, newColumnCount);
         if (newRowCount <= rowCount && newColumnCount <= columnCount) {
             return copyRegion(0, newRowCount, 0, newColumnCount);
         } else {
@@ -1947,7 +1984,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
                 }
             }
 
-            return new DoubleMatrix(b, newColumnCount);
+            return wrapResult(b, newColumnCount);
         }
     }
 
@@ -2074,7 +2111,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
 
             final int newRowCount = padTop + rowCount + padBottom;
             final int newColumnCount = padLeft + columnCount + padRight;
-            checkRepresentableShape(newRowCount, newColumnCount);
+            checkNonNegativeShape(newRowCount, newColumnCount);
             final boolean fillDefaultValue = Double.doubleToRawLongBits(defaultValue) != 0;
             final double[][] b = new double[newRowCount][newColumnCount];
 
@@ -2098,7 +2135,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
                 }
             }
 
-            return new DoubleMatrix(b, newColumnCount);
+            return wrapResult(b, newColumnCount);
         }
     }
 
@@ -2108,8 +2145,6 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * <p>This is an in-place operation that modifies the current matrix.
      * For a non-destructive version that returns a new matrix, use {@link #flipHorizontally()}.</p>
-     *
-     * <p>If multiple logical rows share one backing array, that array is reversed only once, preserving the alias relationship.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2246,18 +2281,14 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @return a new matrix rotated 90 degrees clockwise (dimensions {@code columnCount × rowCount}),
-     *         or an empty matrix if this matrix has zero columns
+     *         an {@code N x 0} matrix becomes {@code 0 x N}, so the column count is preserved
      * @see #rotate180()
      * @see #rotate270()
      * @see #transpose()
      */
     @Override
     public DoubleMatrix rotate90() {
-        if (columnCount == 0) {
-            return EMPTY_DOUBLE_MATRIX;
-        }
-
-        checkRepresentableShape(columnCount, rowCount);
+        checkNonNegativeShape(columnCount, rowCount);
 
         final double[][] c = new double[columnCount][rowCount];
 
@@ -2275,7 +2306,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
             }
         }
 
-        return new DoubleMatrix(c, rowCount);
+        return wrapResult(c, rowCount);
     }
 
     /**
@@ -2309,7 +2340,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
             N.reverse(c[i]);
         }
 
-        return new DoubleMatrix(c, columnCount);
+        return wrapResult(c, columnCount);
     }
 
     /**
@@ -2334,18 +2365,14 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @return a new matrix rotated 270 degrees clockwise (dimensions {@code columnCount × rowCount}),
-     *         or an empty matrix if this matrix has zero columns
+     *         an {@code N x 0} matrix becomes {@code 0 x N}, so the column count is preserved
      * @see #rotate90()
      * @see #rotate180()
      * @see #transpose()
      */
     @Override
     public DoubleMatrix rotate270() {
-        if (columnCount == 0) {
-            return EMPTY_DOUBLE_MATRIX;
-        }
-
-        checkRepresentableShape(columnCount, rowCount);
+        checkNonNegativeShape(columnCount, rowCount);
 
         final double[][] c = new double[columnCount][rowCount];
 
@@ -2363,7 +2390,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
             }
         }
 
-        return new DoubleMatrix(c, rowCount);
+        return wrapResult(c, rowCount);
     }
 
     /**
@@ -2392,11 +2419,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     @Override
     public DoubleMatrix transpose() {
-        if (columnCount == 0) {
-            return EMPTY_DOUBLE_MATRIX;
-        }
-
-        checkRepresentableShape(columnCount, rowCount);
+        checkNonNegativeShape(columnCount, rowCount);
 
         final double[][] c = new double[columnCount][rowCount];
 
@@ -2414,7 +2437,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
             }
         }
 
-        return new DoubleMatrix(c, rowCount);
+        return wrapResult(c, rowCount);
     }
 
     /**
@@ -2449,14 +2472,14 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     public DoubleMatrix reshapeAndPad(final int newRowCount, final int newColumnCount) {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
-        checkRepresentableShape(newRowCount, newColumnCount);
+        checkNonNegativeShape(newRowCount, newColumnCount);
         N.checkArgument((long) newRowCount * newColumnCount >= elementCount(), "New shape [{}x{}={}] is too small to hold all {} elements", newRowCount,
                 newColumnCount, (long) newRowCount * newColumnCount, elementCount());
 
         final double[][] c = new double[newRowCount][newColumnCount];
 
         if (newRowCount == 0 || newColumnCount == 0 || N.isEmpty(a)) {
-            return new DoubleMatrix(c, newColumnCount);
+            return wrapResult(c, newColumnCount);
         }
 
         final int rowLen = (int) N.min(newRowCount, ceilDiv(elementCount, newColumnCount));
@@ -2489,7 +2512,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
             }
         }
 
-        return new DoubleMatrix(c, newColumnCount);
+        return wrapResult(c, newColumnCount);
     }
 
     /**
@@ -2549,7 +2572,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
             }
         }
 
-        return new DoubleMatrix(c, columnCount * columnRepeats);
+        return wrapResult(c, columnCount * columnRepeats);
     }
 
     /**
@@ -2610,7 +2633,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
             }
         }
 
-        return new DoubleMatrix(c, columnCount * columnRepeats);
+        return wrapResult(c, columnCount * columnRepeats);
     }
 
     /**
@@ -2661,8 +2684,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * <p>The action receives a temporary array. Its mutations are copied back only if the action
      * returns normally; if the action throws, those mutations are discarded. An action is not invoked
      * when this matrix has zero rows, while an {@code n x 0} matrix with {@code n > 0} invokes it once
-     * with an empty array. If logical rows share a backing array, write-back is row-major, so values for
-     * the last logical row using that array determine its final contents.</p>
+     * with an empty array. Write-back proceeds in row-major order.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2721,7 +2743,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     @Override
     public DoubleMatrix stackVertically(final DoubleMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(columnCount == other.columnCount, MSG_VSTACK_COLUMN_MISMATCH, columnCount, other.columnCount);
         final long mergedRowCount = (long) rowCount + other.rowCount;
         N.checkArgument(mergedRowCount <= Integer.MAX_VALUE, "Merged row count overflow: {} + {} = {}", rowCount, other.rowCount, mergedRowCount);
@@ -2737,7 +2759,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
             c[j++] = other.a[i].clone();
         }
 
-        return new DoubleMatrix(c, columnCount);
+        return wrapResult(c, columnCount);
     }
 
     /**
@@ -2770,7 +2792,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     @Override
     public DoubleMatrix stackHorizontally(final DoubleMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(rowCount == other.rowCount, MSG_HSTACK_ROW_MISMATCH, rowCount, other.rowCount);
         final long mergedColumnCount = (long) columnCount + other.columnCount;
         N.checkArgument(mergedColumnCount <= Integer.MAX_VALUE, "Merged column count overflow: {} + {} = {}", columnCount, other.columnCount,
@@ -2783,7 +2805,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
             N.copy(other.a[i], 0, c[i], columnCount, other.columnCount);
         }
 
-        return new DoubleMatrix(c, (int) mergedColumnCount);
+        return wrapResult(c, (int) mergedColumnCount);
     }
 
     /**
@@ -2817,7 +2839,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @see #zipWith(DoubleMatrix, Throwables.DoubleBinaryOperator)
      */
     public DoubleMatrix add(final DoubleMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot add matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -2839,7 +2861,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
             }
         }
 
-        return new DoubleMatrix(result, columnCount);
+        return wrapResult(result, columnCount);
     }
 
     /**
@@ -2872,7 +2894,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @see #zipWith(DoubleMatrix, Throwables.DoubleBinaryOperator)
      */
     public DoubleMatrix subtract(final DoubleMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot subtract matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -2894,7 +2916,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
             }
         }
 
-        return new DoubleMatrix(result, columnCount);
+        return wrapResult(result, columnCount);
     }
 
     /**
@@ -2938,12 +2960,12 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *         are incompatible ({@code this.columnCount != other.rowCount})
      */
     public DoubleMatrix matrixMultiply(final DoubleMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(columnCount == other.rowCount,
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
                 columnCount, other.rowCount, other.columnCount);
 
-        checkRepresentableShape(rowCount, other.columnCount);
+        checkNonNegativeShape(rowCount, other.columnCount);
 
         final double[][] otherData = other.a;
         final int newColumnCount = other.columnCount;
@@ -2970,7 +2992,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
             }
         }
 
-        return new DoubleMatrix(result, newColumnCount);
+        return wrapResult(result, newColumnCount);
     }
 
     /**
@@ -3052,7 +3074,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
             }
         }
 
-        return new IntMatrix(c, columnCount);
+        return IntMatrix.wrapResult(c, columnCount);
     }
 
     /**
@@ -3099,7 +3121,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
             }
         }
 
-        return new LongMatrix(c, columnCount);
+        return LongMatrix.wrapResult(c, columnCount);
     }
 
     /**
@@ -3140,7 +3162,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
             }
         }
 
-        return new FloatMatrix(c, columnCount);
+        return FloatMatrix.wrapResult(c, columnCount);
     }
 
     /**
@@ -3183,7 +3205,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     public <E extends Exception> DoubleMatrix zipWith(final DoubleMatrix other, final Throwables.DoubleBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgument(isSameShape(other), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
@@ -3195,7 +3217,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return new DoubleMatrix(result, columnCount);
+        return wrapResult(result, columnCount);
     }
 
     /**
@@ -3238,8 +3260,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     public <E extends Exception> DoubleMatrix zipWith(final DoubleMatrix other, final DoubleMatrix third, final Throwables.DoubleTernaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
-        N.checkArgNotNull(other, "other");
-        N.checkArgNotNull(third, "third");
+        N.checkArgNotNull(other, cs.other);
+        N.checkArgNotNull(third, cs.third);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: this is {}x{}, other is {}x{}, third is {}x{}",
                 rowCount, columnCount, other.rowCount, other.columnCount, third.rowCount, third.columnCount);
@@ -3252,7 +3274,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return new DoubleMatrix(result, columnCount);
+        return wrapResult(result, columnCount);
     }
 
     /**
@@ -3652,7 +3674,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @return a Stream of DoubleStream objects, one for each row in the matrix,
-     *         or an empty stream if the matrix is empty
+     *         or an empty stream when there are no rows (an {@code N x 0} matrix still yields one
+     *         empty stream per row)
      * @see #rowMajorStream(int, int)
      */
     @Override
@@ -3745,7 +3768,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @return a Stream of DoubleStream objects, one for each column in the matrix,
-     *         or an empty stream if the matrix is empty
+     *         or an empty stream when there are no columns (a {@code 0 x N} matrix still yields one
+     *         empty stream per column)
      */
     @Override
     public Stream<DoubleStream> columnStreams() {
@@ -4004,7 +4028,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
 
     /**
      * Returns a hash code value for this matrix.
-     * The hash code is computed based on the deep contents of the internal two-dimensional array.
+     * The hash code is computed from the deep contents of the internal two-dimensional array. A matrix
+     * with no rows has no contents to hash, so its column count participates instead, keeping
+     * {@code 0 x 3} and {@code 0 x 5} -- which {@code equals} distinguishes -- apart.
      * Matrices with the same dimensions and element values will have equal hash codes,
      * consistent with the {@link #equals(Object)} method.
      *
@@ -4023,7 +4049,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     @Override
     public int hashCode() {
-        return N.deepHashCode(a);
+        // A zero-row matrix carries its column count outside the backing array, and equals() compares
+        // it, so it must take part in the hash; every other shape is already distinguished by the data.
+        return rowCount == 0 && columnCount > 0 ? 961 + columnCount : N.deepHashCode(a);
     }
 
     /**

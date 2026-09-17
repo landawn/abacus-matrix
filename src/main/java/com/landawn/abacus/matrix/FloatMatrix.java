@@ -36,8 +36,8 @@ import com.landawn.abacus.util.stream.Stream;
  * <p>This type specializes {@link AbstractMatrix} for {@code float} values while keeping the data in
  * a validated backing array. The constructor and {@link #wrap(float[]...)} wrap the supplied storage
  * directly. {@link #copyOf(float[]...)}, conversions, and mapping operations do not share mutable
- * cell storage with a non-empty source; operations producing an empty matrix may return the shared
- * empty singleton.</p>
+ * cell storage with a non-empty source; operations producing a {@code 0 x 0} matrix return the shared empty
+ * singleton, while {@code 0 x N} and {@code N x 0} results keep their shape.</p>
  *
  * <p>Cells introduced by growth or reshaping default to {@code 0.0f} unless an overload accepts an
  * explicit fill value.</p>
@@ -77,9 +77,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     /**
      * Constructs a {@code FloatMatrix} backed by the supplied two-dimensional array.
      *
-     * <p><b>&#9888;&#65039; Shared backing:</b> The supplied array is used directly after rectangular-shape validation, so later modifications to either the input
-     * array or the matrix remain visible through the other view. Call {@link #copy()} if you need an
-     * independently owned matrix.</p>
+     * <p><b>&#9888;&#65039; Shared rows:</b> The outer array is copied, but its row arrays are shared.
+     * Mutating a row element through either view is visible through the other; replacing a row in the
+     * caller's outer array is not. Call {@link #copy()} for independently owned rows.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -96,7 +96,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * @param a the two-dimensional float array to wrap, must not be {@code null}
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
-     *         different lengths (i.e. the array is not rectangular)
+     *         different lengths (i.e. the array is not rectangular), or if two positions reference the same row array
      */
     public FloatMatrix(final float[][] a) {
         super(N.checkArgNotNull(a, "Matrix array cannot be null"), float.class);
@@ -104,6 +104,26 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
     FloatMatrix(final float[][] a, final int columnCount) {
         super(N.checkArgNotNull(a, "Matrix array cannot be null"), float.class, columnCount);
+    }
+
+    private FloatMatrix(final float[][] a, final int columnCount, final boolean rowsAreKnownDistinct) {
+        super(N.checkArgNotNull(a, "Matrix array cannot be null"), float.class, columnCount, rowsAreKnownDistinct);
+    }
+
+    /**
+     * Canonicalises a derived result: a genuinely {@code 0 x 0} result becomes the shared empty
+     * instance, while {@code 0 x N} and {@code N x 0} results keep their logical shape. Every
+     * result-producing method routes through here so the empty singleton and the degenerate
+     * shapes are handled in exactly one place.
+     *
+     * @param a the backing rows of the result
+     * @param columnCount the result's logical column count
+     * @return the shared empty matrix when the result is {@code 0 x 0}, otherwise a new matrix
+     */
+    static FloatMatrix wrapResult(final float[][] a, final int columnCount) {
+        // Every wrapResult(...) call site passes an array this class just allocated, so the rows are
+        // identity-distinct by construction and the duplicate-row scan can be skipped.
+        return a.length == 0 && columnCount == 0 ? EMPTY_FLOAT_MATRIX : new FloatMatrix(a, columnCount, true);
     }
 
     /**
@@ -127,9 +147,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     /**
      * Wraps the supplied two-dimensional float array as {@code FloatMatrix}.
      *
-     * <p><b>&#9888;&#65039; Shared backing:</b> When the input has at least one row, the provided array is used directly without defensive copying.
-     * Changes to the input array are reflected in the returned matrix, and vice versa. A zero-row input is instead canonicalized to the shared empty matrix,
-     * so its outer-array identity is not retained.</p>
+     * <p><b>&#9888;&#65039; Shared rows:</b> For a non-empty input, the outer array is copied while its
+     * row arrays remain shared. Cell changes are visible in both directions, but later row replacement
+     * in the caller's outer array is not. A zero-row input is canonicalized to the shared empty matrix.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -145,7 +165,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param a the two-dimensional float array to wrap, or empty for an empty matrix; must not be {@code null}
      * @return a new {@code FloatMatrix} backed by {@code a}, or the shared empty matrix if {@code a} is empty
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
-     *         different lengths (i.e. the array is not rectangular)
+     *         different lengths (i.e. the array is not rectangular), or if two positions reference the same row array
      */
     public static FloatMatrix wrap(final float[]... a) {
         N.checkArgNotNull(a, "Matrix array cannot be null");
@@ -170,6 +190,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * FloatMatrix.copyOf((float[][]) null);                     // throws IllegalArgumentException
      * FloatMatrix.copyOf(new float[][] {{1.0f, 2.0f}, {3.0f}}); // throws IllegalArgumentException (non-rectangular)
      * }</pre>
+     *
+     * <p>Because every row is cloned, an input that repeats the same row array is accepted here,
+     * while {@code wrap(...)} would reject it.</p>
      *
      * @param a the two-dimensional float array to copy, or empty for an empty matrix; must not be {@code null}
      * @return a new {@code FloatMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is empty
@@ -280,11 +303,19 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
         return randomRow(columnCount, defaultRandomGenerator());
     }
 
-    /** Returns a random row generated by the supplied, caller-controlled source. */
-    public static FloatMatrix randomRow(final int columnCount, final RandomGenerator random) {
+    /**
+     * Creates a {@code 1 x columnCount} matrix using the caller-supplied random source.
+     * Supplying the source makes generation reproducible when it has a fixed seed.
+     *
+     * @param columnCount the number of columns; must be non-negative
+     * @param randomGenerator the random source; must not be {@code null}
+     * @return the generated single-row matrix
+     * @throws IllegalArgumentException if {@code columnCount} is negative or the random source is {@code null}
+     */
+    public static FloatMatrix randomRow(final int columnCount, final RandomGenerator randomGenerator) {
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
-        N.checkArgNotNull(random, "random");
-        return random(1, columnCount, random);
+        N.checkArgNotNull(randomGenerator, "randomGenerator");
+        return random(1, columnCount, randomGenerator);
     }
 
     /**
@@ -311,22 +342,32 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
         return random(rowCount, columnCount, defaultRandomGenerator());
     }
 
-    /** Returns a random matrix, consuming {@code random} once per cell in row-major order. */
-    public static FloatMatrix random(final int rowCount, final int columnCount, final RandomGenerator random) {
+    /**
+     * Creates a {@code rowCount x columnCount} matrix using the caller-supplied random source.
+     * The source is consumed once per cell in row-major order, so a fixed seed reproduces the matrix.
+     *
+     * @param rowCount the number of rows; must be non-negative
+     * @param columnCount the number of columns; must be non-negative
+     * @param randomGenerator the random source; must not be {@code null}
+     * @return the generated matrix
+     * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
+     *         or if the random source is {@code null}
+     */
+    public static FloatMatrix random(final int rowCount, final int columnCount, final RandomGenerator randomGenerator) {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
-        N.checkArgNotNull(random, "random");
-        checkRepresentableShape(rowCount, columnCount);
+        N.checkArgNotNull(randomGenerator, "randomGenerator");
+        checkNonNegativeShape(rowCount, columnCount);
 
         final float[][] a = new float[rowCount][columnCount];
 
         for (float[] ea : a) {
             for (int i = 0; i < columnCount; i++) {
-                ea[i] = random.nextFloat();
+                ea[i] = randomGenerator.nextFloat();
             }
         }
 
-        return new FloatMatrix(a, columnCount);
+        return wrapResult(a, columnCount);
     }
 
     /**
@@ -838,6 +879,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p>The values from the source array are copied into the matrix column.
      * The source array must have exactly the same length as the number of rows in the matrix.
      *
+     * <p>If the supplied array is one of this matrix's live backing rows (for example a value returned
+     * by {@code rowView(int)}), it is snapshotted first, so the values read are the ones in place when
+     * this method was called.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.wrap(new float[][] {{1.0f, 2.0f, 3.0f}, {4.0f, 5.0f, 6.0f}});
@@ -913,8 +958,6 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * <p>The operator is applied to each element in the specified column sequentially
      * from top to bottom (row {@code 0} to row {@code rowCount - 1}).</p>
-     *
-     * <p>If multiple logical rows share one backing array, that backing value is transformed only once.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -992,12 +1035,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * matrix.get(1, 1);                              // returns 8.0f
      * matrix.get(0, 1);                              // returns 2.0f (off-diagonal unchanged)
      *
-     * matrix.setMainDiagonal(new float[] {1.0f});                                             // throws IllegalArgumentException (length != rowCount)
+     * matrix.setMainDiagonal(new float[] {1.0f});                                             // throws IllegalArgumentException (length != min(rowCount, columnCount))
      * FloatMatrix.wrap(new float[][] {{1.0f, 2.0f, 3.0f}}).setMainDiagonal(new float[] {1.0f}); // supported
      * }</pre>
      *
-     * @param mainDiagonal the new values for the main diagonal; must be non-{@code null} and of length {@code rowCount}
-     * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null} or its length is not equal to {@code rowCount}
+     * @param mainDiagonal the new values for the main diagonal; must be non-{@code null} and of length {@code min(rowCount, columnCount)}
+     * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null} or its length is not equal to {@code min(rowCount, columnCount)}
      */
     @Override
     public void setMainDiagonal(final float[] mainDiagonal) throws IllegalArgumentException {
@@ -1082,6 +1125,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p>This method sets the anti-diagonal (secondary diagonal) elements from
      * top-right to bottom-left, at positions (0,n-1), (1,n-2), (2,n-3), etc.</p>
      *
+     * <p>If the supplied array is one of this matrix's live backing rows (for example a value returned
+     * by {@code rowView(int)}), it is snapshotted first, so the values read are the ones in place when
+     * this method was called.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.wrap(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
@@ -1090,12 +1137,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * matrix.get(1, 0);                              // returns 8.0f
      * matrix.get(0, 0);                              // returns 1.0f (off anti-diagonal unchanged)
      *
-     * matrix.setAntiDiagonal(new float[] {1.0f});                                             // throws IllegalArgumentException (length != rowCount)
+     * matrix.setAntiDiagonal(new float[] {1.0f});                                             // throws IllegalArgumentException (length != min(rowCount, columnCount))
      * FloatMatrix.wrap(new float[][] {{1.0f, 2.0f, 3.0f}}).setAntiDiagonal(new float[] {1.0f}); // supported
      * }</pre>
      *
-     * @param antiDiagonal the new values for the anti-diagonal; must be non-{@code null} and of length {@code rowCount}
-     * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null} or its length is not equal to {@code rowCount}
+     * @param antiDiagonal the new values for the anti-diagonal; must be non-{@code null} and of length {@code min(rowCount, columnCount)}
+     * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null} or its length is not equal to {@code min(rowCount, columnCount)}
      */
     @Override
     public void setAntiDiagonal(final float[] antiDiagonal) throws IllegalArgumentException {
@@ -1150,8 +1197,6 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * When this operation is not parallelized, elements are processed in first-occurrence row-major order;
      * when it is parallelized, the encounter order is unspecified.</p>
      *
-     * <p>If multiple logical rows share one backing array, each value in that array is transformed only once.</p>
-     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.wrap(new float[][] {{1.0f, 2.0f}, {3.0f, 4.0f}});
@@ -1197,9 +1242,6 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * for that position. This is useful for initializing matrices based on position patterns or
      * mathematical formulas. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
      *
-     * <p>If logical rows share a backing array, every logical coordinate is still visited, but
-     * traversal is kept sequential so later aliases overwrite earlier ones deterministically.</p>
-     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * FloatMatrix matrix = FloatMatrix.wrap(new float[][] {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}});
@@ -1233,9 +1275,6 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * This modifies the matrix directly.
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.</p>
-     *
-     * <p>If multiple logical rows share the same backing array, the predicate is evaluated once
-     * per physical cell and that backing row is updated once.</p>
      *
      * <p><b>Floating-point note:</b> {@code NaN} fails ordering comparisons such as {@code <},
      * {@code >}, {@code <=}, {@code >=} and is not equal to itself under {@code ==}. To match
@@ -1296,8 +1335,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p>This is useful for position-based replacements such as setting diagonals, borders,
      * or specific regions. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
      *
-     * <p>Nonmatching positions perform no write. If logical rows share a backing array, a
-     * replacement made through any matching coordinate is therefore visible through every alias.</p>
+     * <p>Nonmatching positions perform no write.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1366,7 +1404,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return new FloatMatrix(result, columnCount);
+        return wrapResult(result, columnCount);
     }
 
     /**
@@ -1399,7 +1437,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return new IntMatrix(result, columnCount);
+        return IntMatrix.wrapResult(result, columnCount);
     }
 
     /**
@@ -1432,7 +1470,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return new LongMatrix(result, columnCount);
+        return LongMatrix.wrapResult(result, columnCount);
     }
 
     /**
@@ -1465,7 +1503,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return new DoubleMatrix(result, columnCount);
+        return DoubleMatrix.wrapResult(result, columnCount);
     }
 
     /**
@@ -1494,17 +1532,16 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null}
      * @throws E if the function throws an exception
      */
-    @SuppressWarnings("deprecation")
     public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.FloatFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E {
         N.checkArgNotNull(mapper, cs.mapper);
-        N.checkArgNotNull(targetElementType, "targetElementType");
+        N.checkArgNotNull(targetElementType, cs.targetElementType);
 
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return Matrix.wrap(result);
+        return new Matrix<>(result, targetElementType, columnCount);
     }
 
     /**
@@ -1640,7 +1677,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
             c[i] = a[i].clone();
         }
 
-        return new FloatMatrix(c, columnCount);
+        return wrapResult(c, columnCount);
     }
 
     /**
@@ -1676,7 +1713,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
             c[i - fromRowIndex] = a[i].clone();
         }
 
-        return new FloatMatrix(c, columnCount);
+        return wrapResult(c, columnCount);
     }
 
     /**
@@ -1715,7 +1752,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
             c[i - fromRowIndex] = N.copyOfRange(a[i], fromColumnIndex, toColumnIndex);
         }
 
-        return new FloatMatrix(c, toColumnIndex - fromColumnIndex);
+        return wrapResult(c, toColumnIndex - fromColumnIndex);
     }
 
     /**
@@ -1838,7 +1875,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     public FloatMatrix resize(final int newRowCount, final int newColumnCount, final float defaultValue) throws IllegalArgumentException {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
-        checkRepresentableShape(newRowCount, newColumnCount);
+        checkNonNegativeShape(newRowCount, newColumnCount);
         if (newRowCount <= rowCount && newColumnCount <= columnCount) {
             return copyRegion(0, newRowCount, 0, newColumnCount);
         } else {
@@ -1857,7 +1894,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
                 }
             }
 
-            return new FloatMatrix(b, newColumnCount);
+            return wrapResult(b, newColumnCount);
         }
     }
 
@@ -1984,7 +2021,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
             final int newRowCount = padTop + rowCount + padBottom;
             final int newColumnCount = padLeft + columnCount + padRight;
-            checkRepresentableShape(newRowCount, newColumnCount);
+            checkNonNegativeShape(newRowCount, newColumnCount);
             final boolean fillDefaultValue = Float.floatToRawIntBits(defaultValue) != 0;
             final float[][] b = new float[newRowCount][newColumnCount];
 
@@ -2008,7 +2045,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
                 }
             }
 
-            return new FloatMatrix(b, newColumnCount);
+            return wrapResult(b, newColumnCount);
         }
     }
 
@@ -2018,8 +2055,6 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * <p>This is an in-place operation that modifies the current matrix.
      * For a non-destructive version that returns a new matrix, use {@link #flipHorizontally()}.</p>
-     *
-     * <p>If multiple logical rows share one backing array, that array is reversed only once, preserving the alias relationship.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2156,18 +2191,14 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @return a new matrix rotated 90 degrees clockwise (dimensions {@code columnCount × rowCount}),
-     *         or an empty matrix if this matrix has zero columns
+     *         an {@code N x 0} matrix becomes {@code 0 x N}, so the column count is preserved
      * @see #rotate180()
      * @see #rotate270()
      * @see #transpose()
      */
     @Override
     public FloatMatrix rotate90() {
-        if (columnCount == 0) {
-            return EMPTY_FLOAT_MATRIX;
-        }
-
-        checkRepresentableShape(columnCount, rowCount);
+        checkNonNegativeShape(columnCount, rowCount);
 
         final float[][] c = new float[columnCount][rowCount];
 
@@ -2185,7 +2216,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
             }
         }
 
-        return new FloatMatrix(c, rowCount);
+        return wrapResult(c, rowCount);
     }
 
     /**
@@ -2219,7 +2250,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
             N.reverse(c[i]);
         }
 
-        return new FloatMatrix(c, columnCount);
+        return wrapResult(c, columnCount);
     }
 
     /**
@@ -2244,18 +2275,14 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @return a new matrix rotated 270 degrees clockwise (dimensions {@code columnCount × rowCount}),
-     *         or an empty matrix if this matrix has zero columns
+     *         an {@code N x 0} matrix becomes {@code 0 x N}, so the column count is preserved
      * @see #rotate90()
      * @see #rotate180()
      * @see #transpose()
      */
     @Override
     public FloatMatrix rotate270() {
-        if (columnCount == 0) {
-            return EMPTY_FLOAT_MATRIX;
-        }
-
-        checkRepresentableShape(columnCount, rowCount);
+        checkNonNegativeShape(columnCount, rowCount);
 
         final float[][] c = new float[columnCount][rowCount];
 
@@ -2273,7 +2300,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
             }
         }
 
-        return new FloatMatrix(c, rowCount);
+        return wrapResult(c, rowCount);
     }
 
     /**
@@ -2302,11 +2329,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     @Override
     public FloatMatrix transpose() {
-        if (columnCount == 0) {
-            return EMPTY_FLOAT_MATRIX;
-        }
-
-        checkRepresentableShape(columnCount, rowCount);
+        checkNonNegativeShape(columnCount, rowCount);
 
         final float[][] c = new float[columnCount][rowCount];
 
@@ -2324,7 +2347,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
             }
         }
 
-        return new FloatMatrix(c, rowCount);
+        return wrapResult(c, rowCount);
     }
 
     /**
@@ -2358,14 +2381,14 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     public FloatMatrix reshapeAndPad(final int newRowCount, final int newColumnCount) {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
-        checkRepresentableShape(newRowCount, newColumnCount);
+        checkNonNegativeShape(newRowCount, newColumnCount);
         N.checkArgument((long) newRowCount * newColumnCount >= elementCount(), "New shape [{}x{}={}] is too small to hold all {} elements", newRowCount,
                 newColumnCount, (long) newRowCount * newColumnCount, elementCount());
 
         final float[][] c = new float[newRowCount][newColumnCount];
 
         if (newRowCount == 0 || newColumnCount == 0 || N.isEmpty(a)) {
-            return new FloatMatrix(c, newColumnCount);
+            return wrapResult(c, newColumnCount);
         }
 
         final int rowLen = (int) N.min(newRowCount, ceilDiv(elementCount, newColumnCount));
@@ -2398,7 +2421,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
             }
         }
 
-        return new FloatMatrix(c, newColumnCount);
+        return wrapResult(c, newColumnCount);
     }
 
     /**
@@ -2458,7 +2481,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
             }
         }
 
-        return new FloatMatrix(c, columnCount * columnRepeats);
+        return wrapResult(c, columnCount * columnRepeats);
     }
 
     /**
@@ -2519,7 +2542,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
             }
         }
 
-        return new FloatMatrix(c, columnCount * columnRepeats);
+        return wrapResult(c, columnCount * columnRepeats);
     }
 
     /**
@@ -2570,8 +2593,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * <p>The action receives a temporary array. Its mutations are copied back only if the action
      * returns normally; if the action throws, those mutations are discarded. An action is not invoked
      * when this matrix has zero rows, while an {@code n x 0} matrix with {@code n > 0} invokes it once
-     * with an empty array. If logical rows share a backing array, write-back is row-major, so values for
-     * the last logical row using that array determine its final contents.</p>
+     * with an empty array. Write-back proceeds in row-major order.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2630,7 +2652,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     @Override
     public FloatMatrix stackVertically(final FloatMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(columnCount == other.columnCount, MSG_VSTACK_COLUMN_MISMATCH, columnCount, other.columnCount);
         final long mergedRowCount = (long) rowCount + other.rowCount;
         N.checkArgument(mergedRowCount <= Integer.MAX_VALUE, "Merged row count overflow: {} + {} = {}", rowCount, other.rowCount, mergedRowCount);
@@ -2646,7 +2668,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
             c[j++] = other.a[i].clone();
         }
 
-        return new FloatMatrix(c, columnCount);
+        return wrapResult(c, columnCount);
     }
 
     /**
@@ -2679,7 +2701,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     @Override
     public FloatMatrix stackHorizontally(final FloatMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(rowCount == other.rowCount, MSG_HSTACK_ROW_MISMATCH, rowCount, other.rowCount);
         final long mergedColumnCount = (long) columnCount + other.columnCount;
         N.checkArgument(mergedColumnCount <= Integer.MAX_VALUE, "Merged column count overflow: {} + {} = {}", columnCount, other.columnCount,
@@ -2692,7 +2714,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
             N.copy(other.a[i], 0, c[i], columnCount, other.columnCount);
         }
 
-        return new FloatMatrix(c, (int) mergedColumnCount);
+        return wrapResult(c, (int) mergedColumnCount);
     }
 
     /**
@@ -2726,7 +2748,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @see #zipWith(FloatMatrix, Throwables.FloatBinaryOperator)
      */
     public FloatMatrix add(final FloatMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot add matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -2748,7 +2770,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
             }
         }
 
-        return new FloatMatrix(result, columnCount);
+        return wrapResult(result, columnCount);
     }
 
     /**
@@ -2781,7 +2803,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @see #zipWith(FloatMatrix, Throwables.FloatBinaryOperator)
      */
     public FloatMatrix subtract(final FloatMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot subtract matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
@@ -2803,7 +2825,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
             }
         }
 
-        return new FloatMatrix(result, columnCount);
+        return wrapResult(result, columnCount);
     }
 
     /**
@@ -2848,12 +2870,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *         are incompatible ({@code this.columnCount != other.rowCount})
      */
     public FloatMatrix matrixMultiply(final FloatMatrix other) throws IllegalArgumentException {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgument(columnCount == other.rowCount,
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
                 columnCount, other.rowCount, other.columnCount);
 
-        checkRepresentableShape(rowCount, other.columnCount);
+        checkNonNegativeShape(rowCount, other.columnCount);
 
         final float[][] otherMatrix = other.a;
         final int newColumnCount = other.columnCount;
@@ -2880,7 +2902,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
             }
         }
 
-        return new FloatMatrix(result, newColumnCount);
+        return wrapResult(result, newColumnCount);
     }
 
     /**
@@ -2939,7 +2961,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @see DoubleMatrix#from(float[][])
      */
     public DoubleMatrix toDoubleMatrix() {
-        return DoubleMatrix.from(a);
+        return rowCount == 0 ? DoubleMatrix.wrapResult(new double[0][], columnCount) : DoubleMatrix.from(a);
     }
 
     /**
@@ -2987,7 +3009,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
             }
         }
 
-        return new IntMatrix(c, columnCount);
+        return IntMatrix.wrapResult(c, columnCount);
     }
 
     /**
@@ -3035,7 +3057,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
             }
         }
 
-        return new LongMatrix(c, columnCount);
+        return LongMatrix.wrapResult(c, columnCount);
     }
 
     /**
@@ -3078,7 +3100,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     public <E extends Exception> FloatMatrix zipWith(final FloatMatrix other, final Throwables.FloatBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
-        N.checkArgNotNull(other, "other");
+        N.checkArgNotNull(other, cs.other);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgument(isSameShape(other), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
@@ -3090,7 +3112,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return new FloatMatrix(result, columnCount);
+        return wrapResult(result, columnCount);
     }
 
     /**
@@ -3133,8 +3155,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     public <E extends Exception> FloatMatrix zipWith(final FloatMatrix other, final FloatMatrix third, final Throwables.FloatTernaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
-        N.checkArgNotNull(other, "other");
-        N.checkArgNotNull(third, "third");
+        N.checkArgNotNull(other, cs.other);
+        N.checkArgNotNull(third, cs.third);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: this is {}x{}, other is {}x{}, third is {}x{}",
                 rowCount, columnCount, other.rowCount, other.columnCount, third.rowCount, third.columnCount);
@@ -3147,7 +3169,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return new FloatMatrix(result, columnCount);
+        return wrapResult(result, columnCount);
     }
 
     /**
@@ -3547,7 +3569,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @return a Stream of FloatStream objects, one for each row in the matrix,
-     *         or an empty stream if the matrix is empty
+     *         or an empty stream when there are no rows (an {@code N x 0} matrix still yields one
+     *         empty stream per row)
      * @see #rowMajorStream(int, int)
      */
     @Override
@@ -3640,7 +3663,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @return a Stream of FloatStream objects, one for each column in the matrix,
-     *         or an empty stream if the matrix is empty
+     *         or an empty stream when there are no columns (a {@code 0 x N} matrix still yields one
+     *         empty stream per column)
      */
     @Override
     public Stream<FloatStream> columnStreams() {
@@ -3899,7 +3923,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
     /**
      * Returns a hash code value for this matrix.
-     * The hash code is computed based on the deep contents of the internal two-dimensional array.
+     * The hash code is computed from the deep contents of the internal two-dimensional array. A matrix
+     * with no rows has no contents to hash, so its column count participates instead, keeping
+     * {@code 0 x 3} and {@code 0 x 5} -- which {@code equals} distinguishes -- apart.
      * Matrices with the same dimensions and element values will have equal hash codes,
      * consistent with the {@link #equals(Object)} method.
      *
@@ -3918,7 +3944,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     @Override
     public int hashCode() {
-        return N.deepHashCode(a);
+        // A zero-row matrix carries its column count outside the backing array, and equals() compares
+        // it, so it must take part in the hash; every other shape is already distinguished by the data.
+        return rowCount == 0 && columnCount > 0 ? 961 + columnCount : N.deepHashCode(a);
     }
 
     /**
