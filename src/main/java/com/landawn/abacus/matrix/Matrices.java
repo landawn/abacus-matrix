@@ -235,7 +235,7 @@ public final class Matrices {
      * @see #setParallelMode(ParallelMode)
      */
     public static boolean shouldRunInParallel(final AbstractMatrix<?, ?, ?, ?, ?> m) {
-        N.checkArgNotNull(m, "m");
+        N.checkArgNotNull(m, cs.m);
         return shouldRunInParallel(m, m.elementCount);
     }
 
@@ -283,8 +283,8 @@ public final class Matrices {
      * @see ParallelMode
      */
     public static boolean shouldRunInParallel(final AbstractMatrix<?, ?, ?, ?, ?> m, final long count) {
-        N.checkArgNotNull(m, "m");
-        N.checkArgument(count >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, "count", count);
+        N.checkArgNotNull(m, cs.m);
+        N.checkArgument(count >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, cs.count, count);
 
         if (!IS_PARALLEL_STREAM_SUPPORTED) {
             return false;
@@ -339,8 +339,8 @@ public final class Matrices {
      * @throws IllegalArgumentException if {@code m} is {@code null} or {@code resultColumnCount} is negative
      */
     static boolean shouldRunMatrixMultiplyInParallel(final AbstractMatrix<?, ?, ?, ?, ?> m, final int resultColumnCount) {
-        N.checkArgNotNull(m, "m");
-        N.checkArgument(resultColumnCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, "resultColumnCount", resultColumnCount);
+        N.checkArgNotNull(m, cs.m);
+        N.checkArgument(resultColumnCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, cs.resultColumnCount, resultColumnCount);
 
         return shouldRunInParallel(m, saturatedMultiply(m.elementCount, resultColumnCount));
     }
@@ -372,8 +372,8 @@ public final class Matrices {
      * @throws IllegalArgumentException if {@code a} or {@code b} is {@code null}
      */
     public static <M extends AbstractMatrix<?, ?, ?, ?, ?>> boolean isSameShape(final M a, final M b) {
-        N.checkArgNotNull(a, "a");
-        N.checkArgNotNull(b, "b");
+        N.checkArgNotNull(a, cs.a);
+        N.checkArgNotNull(b, cs.b);
         return a.rowCount == b.rowCount && a.columnCount == b.columnCount;
     }
 
@@ -405,9 +405,9 @@ public final class Matrices {
      * @throws IllegalArgumentException if {@code a}, {@code b}, or {@code c} is {@code null}
      */
     public static <M extends AbstractMatrix<?, ?, ?, ?, ?>> boolean isSameShape(final M a, final M b, final M c) {
-        N.checkArgNotNull(a, "a");
-        N.checkArgNotNull(b, "b");
-        N.checkArgNotNull(c, "c");
+        N.checkArgNotNull(a, cs.a);
+        N.checkArgNotNull(b, cs.b);
+        N.checkArgNotNull(c, cs.c);
         return a.rowCount == b.rowCount && a.rowCount == c.rowCount && a.columnCount == b.columnCount && a.columnCount == c.columnCount;
     }
 
@@ -643,8 +643,8 @@ public final class Matrices {
     public static <E extends Exception> void forEachIndices(final int rowCount, final int columnCount, final Throwables.IntBiConsumer<E> action,
             final boolean inParallel) throws E {
         N.checkArgNotNull(action, cs.action);
-        N.checkArgument(rowCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
-        N.checkArgument(columnCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
+        N.checkArgument(rowCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, cs.rowCount, rowCount);
+        N.checkArgument(columnCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, cs.columnCount, columnCount);
 
         forEachIndices(0, rowCount, 0, columnCount, action, inParallel);
     }
@@ -738,8 +738,8 @@ public final class Matrices {
     /**
      * Executes a function for each position in a matrix grid and returns the results as a stream.
      *
-     * <p>This method applies the provided function to each position (i, j) in a matrix of the
-     * specified dimensions and collects all results into a {@link Stream}. Sequential and parallel
+     * <p>This method lazily applies the provided function to positions (i, j) in a matrix of the
+     * specified dimensions and exposes the results as a {@link Stream}. Sequential and parallel
      * encounter order match {@link #mapIndices(int, int, int, int, Throwables.IntBiFunction, boolean)}.</p>
      *
      * <p>This is a convenience method that delegates to
@@ -780,8 +780,8 @@ public final class Matrices {
     public static <T> Stream<T> mapIndices(final int rowCount, final int columnCount, final Throwables.IntBiFunction<? extends T, ? extends Exception> mapper,
             final boolean inParallel) {
         N.checkArgNotNull(mapper, cs.mapper);
-        N.checkArgument(rowCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
-        N.checkArgument(columnCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
+        N.checkArgument(rowCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, cs.rowCount, rowCount);
+        N.checkArgument(columnCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, cs.columnCount, columnCount);
 
         return mapIndices(0, rowCount, 0, columnCount, mapper, inParallel);
     }
@@ -790,11 +790,12 @@ public final class Matrices {
      * Executes a function for each position in a specified subregion of a matrix grid and
      * returns the results as a stream.
      *
-     * <p>This method applies the provided function to each position (i, j) in the rectangular
-     * region defined by the row and column index ranges, collecting all results into a {@link Stream}.</p>
+     * <p>This method lazily applies the provided function to positions (i, j) in the rectangular
+     * region defined by the row and column index ranges, exposing the results as a {@link Stream}.</p>
      *
      * <p>The stream is lazy and has row-major encounter order. Requesting parallel execution marks
-     * the returned stream parallel when supported; the mapper still runs only as the stream is consumed.</p>
+     * the returned stream parallel when supported, including for an empty region. The mapper runs only
+     * when a value is requested; counting or skipping positions can bypass it.</p>
      *
      * <p>If {@code mapper} throws a checked exception, it is wrapped in a {@code RuntimeException}
      * and rethrown when the returned stream is consumed. Runtime exceptions from {@code mapper}
@@ -837,10 +838,6 @@ public final class Matrices {
 
         final int rowCount = toRowIndex - fromRowIndex;
         final int columnCount = toColumnIndex - fromColumnIndex;
-
-        if (rowCount == 0 || columnCount == 0) {
-            return Stream.empty();
-        }
 
         final long total = (long) rowCount * columnCount;
         final ObjIteratorEx<T> iterator = new ObjIteratorEx<>() {
@@ -891,8 +888,8 @@ public final class Matrices {
      * Executes a function that returns {@code int} values for each position in a matrix grid
      * and returns the results as an {@link IntStream}.
      *
-     * <p>This method applies the provided integer binary operator to each position (i, j) in a
-     * matrix of the specified dimensions and collects all results into an {@link IntStream},
+     * <p>This method lazily applies the provided integer binary operator to positions (i, j) in a
+     * matrix of the specified dimensions and exposes the results as an {@link IntStream},
      * avoiding boxing overhead of a generic {@link Stream}.</p>
      *
      * <p>This is a convenience method that delegates to
@@ -933,8 +930,8 @@ public final class Matrices {
     public static IntStream mapIndicesToInt(final int rowCount, final int columnCount, final Throwables.IntBinaryOperator<? extends Exception> mapper,
             final boolean inParallel) {
         N.checkArgNotNull(mapper, cs.mapper);
-        N.checkArgument(rowCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
-        N.checkArgument(columnCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
+        N.checkArgument(rowCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, cs.rowCount, rowCount);
+        N.checkArgument(columnCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, cs.columnCount, columnCount);
 
         return mapIndicesToInt(0, rowCount, 0, columnCount, mapper, inParallel);
     }
@@ -943,12 +940,13 @@ public final class Matrices {
      * Executes a function that returns {@code int} values for each position in a specified
      * subregion of a matrix grid and returns the results as an {@link IntStream}.
      *
-     * <p>This method applies the provided integer binary operator to each position (i, j) in the
-     * rectangular region defined by the row and column index ranges, collecting all results into
+     * <p>This method lazily applies the provided integer binary operator to positions (i, j) in the
+     * rectangular region defined by the row and column index ranges, exposing the results as
      * an {@link IntStream} and avoiding boxing overhead of a generic {@link Stream}.</p>
      *
      * <p>The stream is lazy and has row-major encounter order. Requesting parallel execution marks
-     * the returned stream parallel when supported; the mapper still runs only as the stream is consumed.</p>
+     * the returned stream parallel when supported, including for an empty region. The mapper runs only
+     * when a value is requested; counting or skipping positions can bypass it.</p>
      *
      * <p>If {@code mapper} throws a checked exception, it is wrapped in a {@code RuntimeException}
      * and rethrown when the returned stream is consumed. Runtime exceptions from {@code mapper}
@@ -990,10 +988,6 @@ public final class Matrices {
 
         final int rowCount = toRowIndex - fromRowIndex;
         final int columnCount = toColumnIndex - fromColumnIndex;
-
-        if (rowCount == 0 || columnCount == 0) {
-            return IntStream.empty();
-        }
 
         final long total = (long) rowCount * columnCount;
         final IntIteratorEx iterator = new IntIteratorEx() {
@@ -1094,8 +1088,8 @@ public final class Matrices {
      */
     public static <M extends AbstractMatrix<?, ?, ?, ?, ?>> void forEachCartesianIndices(final M a, final M b,
             final Throwables.IntTriConsumer<RuntimeException> action) throws IllegalArgumentException {
-        N.checkArgNotNull(a, "a");
-        N.checkArgNotNull(b, "b");
+        N.checkArgNotNull(a, cs.a);
+        N.checkArgNotNull(b, cs.b);
         N.checkArgNotNull(action, cs.action);
 
         N.checkArgument(a.columnCount == b.rowCount,
@@ -1150,8 +1144,8 @@ public final class Matrices {
     public static <M extends AbstractMatrix<?, ?, ?, ?, ?>> void forEachCartesianIndices(final M a, final M b,
             final Throwables.IntTriConsumer<RuntimeException> action, // NOSONAR
             final boolean inParallel) throws IllegalArgumentException {
-        N.checkArgNotNull(a, "a");
-        N.checkArgNotNull(b, "b");
+        N.checkArgNotNull(a, cs.a);
+        N.checkArgNotNull(b, cs.b);
         N.checkArgNotNull(action, cs.action);
 
         N.checkArgument(a.columnCount == b.rowCount,
@@ -1283,10 +1277,10 @@ public final class Matrices {
      * <p>Inputs with compatible runtime storage are copied directly into one result allocation in
      * encounter order. Incompatible implementations use the public pairwise operation.</p>
      *
-     * <p>A single input is normally copied. The shared type-neutral {@link Matrix#empty()} instance
-     * is returned as-is because it has no mutable cells and copying it would prematurely fix its
-     * runtime element type as {@link Object}; retaining the singleton lets a later stack with a
-     * reified empty matrix select the correct component type.</p>
+     * <p>A single input is normally copied. When that input is the shared {@link Matrix#empty()}
+     * instance, it is returned as-is because it has no mutable cells. A collection of two or more
+     * such inputs produces a new {@code Object}-typed matrix. Primitive {@code 0 x 0} results may
+     * reuse their type's shared empty instance.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1307,10 +1301,10 @@ public final class Matrices {
      * @param <M> the matrix type
      * @param matrices the matrices to stack vertically, must not be {@code null}, empty, or contain {@code null} elements
      * @return a matrix containing the rows of all input matrices, never {@code null}; normally a new
-     *         instance, except that inputs consisting only of the shared {@link Matrix#empty()}
-     *         instance yield that shared instance
+     *         instance, with the shared empty-instance exceptions described above
      * @throws IllegalArgumentException if {@code matrices} is {@code null}, empty, contains
-     *         {@code null} elements, or contains matrices with mismatched column counts
+     *         {@code null} elements, contains matrices with mismatched column counts, or the combined
+     *         row count exceeds {@code Integer.MAX_VALUE}
      * @see AbstractMatrix#stackVertically(AbstractMatrix)
      * @see #stackHorizontally(Collection)
      */
@@ -1330,10 +1324,10 @@ public final class Matrices {
      * <p>Inputs with compatible runtime storage are copied directly into one result allocation in
      * encounter order. Incompatible implementations use the public pairwise operation.</p>
      *
-     * <p>A single input is normally copied. The shared type-neutral {@link Matrix#empty()} instance
-     * is returned as-is because it has no mutable cells and copying it would prematurely fix its
-     * runtime element type as {@link Object}; retaining the singleton lets a later stack with a
-     * reified empty matrix select the correct component type.</p>
+     * <p>A single input is normally copied. When that input is the shared {@link Matrix#empty()}
+     * instance, it is returned as-is because it has no mutable cells. A collection of two or more
+     * such inputs produces a new {@code Object}-typed matrix. Primitive {@code 0 x 0} results may
+     * reuse their type's shared empty instance.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1354,10 +1348,10 @@ public final class Matrices {
      * @param <M> the matrix type
      * @param matrices the matrices to stack horizontally, must not be {@code null}, empty, or contain {@code null} elements
      * @return a matrix containing the columns of all input matrices, never {@code null}; normally a new
-     *         instance, except that inputs consisting only of the shared {@link Matrix#empty()}
-     *         instance yield that shared instance
+     *         instance, with the shared empty-instance exceptions described above
      * @throws IllegalArgumentException if {@code matrices} is {@code null}, empty, contains
-     *         {@code null} elements, or contains matrices with mismatched row counts
+     *         {@code null} elements, contains matrices with mismatched row counts, or the combined
+     *         column count exceeds {@code Integer.MAX_VALUE}
      * @see AbstractMatrix#stackHorizontally(AbstractMatrix)
      * @see #stackVertically(Collection)
      */
@@ -1368,7 +1362,7 @@ public final class Matrices {
 
     /**
      * Stacks a validated, non-empty collection of matrices in encounter order. A single input is
-     * copied, except that the type-neutral shared {@link Matrix#empty()} instance is returned as-is.
+     * copied, except that the shared {@link Matrix#empty()} instance is returned as-is.
      *
      * @param <M> the concrete matrix type
      * @param matrices the matrices to stack; must be non-{@code null}, non-empty, contain no
@@ -1381,8 +1375,7 @@ public final class Matrices {
         if (matrices.size() == 1) {
             final M only = matrices.iterator().next();
 
-            // Matrix.empty() has no cells that a caller can mutate, and its identity carries the
-            // information that Object is only a placeholder until a typed operand is encountered.
+            // The shared Object-typed empty matrix has no cells that a caller can mutate.
             return only instanceof Matrix<?> matrix && matrix.isSharedEmptyMatrix() ? only : only.copy();
         }
 
@@ -1557,8 +1550,8 @@ public final class Matrices {
      * @see ByteMatrix#zipWith(ByteMatrix, Throwables.ByteBinaryOperator)
      */
     public static <E extends Exception> ByteMatrix zip(final ByteMatrix a, final ByteMatrix b, final Throwables.ByteBinaryOperator<E> zipFunction) throws E {
-        N.checkArgNotNull(a, "a");
-        N.checkArgNotNull(b, "b");
+        N.checkArgNotNull(a, cs.a);
+        N.checkArgNotNull(b, cs.b);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
 
         return a.zipWith(b, zipFunction);
@@ -1605,9 +1598,9 @@ public final class Matrices {
      */
     public static <E extends Exception> ByteMatrix zip(final ByteMatrix a, final ByteMatrix b, final ByteMatrix c,
             final Throwables.ByteTernaryOperator<E> zipFunction) throws E {
-        N.checkArgNotNull(a, "a");
-        N.checkArgNotNull(b, "b");
-        N.checkArgNotNull(c, "c");
+        N.checkArgNotNull(a, cs.a);
+        N.checkArgNotNull(b, cs.b);
+        N.checkArgNotNull(c, cs.c);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
 
         return a.zipWith(b, c, zipFunction);
@@ -1733,8 +1726,8 @@ public final class Matrices {
      */
     public static <E extends Exception> IntMatrix zipToInt(final ByteMatrix a, final ByteMatrix b, final Throwables.ByteBiFunction<Integer, E> zipFunction)
             throws IllegalArgumentException, E {
-        N.checkArgNotNull(a, "a");
-        N.checkArgNotNull(b, "b");
+        N.checkArgNotNull(a, cs.a);
+        N.checkArgNotNull(b, cs.b);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
 
         checkShapeForZip(a, b);
@@ -1798,9 +1791,9 @@ public final class Matrices {
      */
     public static <E extends Exception> IntMatrix zipToInt(final ByteMatrix a, final ByteMatrix b, final ByteMatrix c,
             final Throwables.ByteTriFunction<Integer, E> zipFunction) throws IllegalArgumentException, E {
-        N.checkArgNotNull(a, "a");
-        N.checkArgNotNull(b, "b");
-        N.checkArgNotNull(c, "c");
+        N.checkArgNotNull(a, cs.a);
+        N.checkArgNotNull(b, cs.b);
+        N.checkArgNotNull(c, cs.c);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
 
         checkShapeForZip(a, b, c);
@@ -2142,8 +2135,8 @@ public final class Matrices {
      * @see IntMatrix#zipWith(IntMatrix, Throwables.IntBinaryOperator)
      */
     public static <E extends Exception> IntMatrix zip(final IntMatrix a, final IntMatrix b, final Throwables.IntBinaryOperator<E> zipFunction) throws E {
-        N.checkArgNotNull(a, "a");
-        N.checkArgNotNull(b, "b");
+        N.checkArgNotNull(a, cs.a);
+        N.checkArgNotNull(b, cs.b);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
 
         return a.zipWith(b, zipFunction);
@@ -2190,9 +2183,9 @@ public final class Matrices {
      */
     public static <E extends Exception> IntMatrix zip(final IntMatrix a, final IntMatrix b, final IntMatrix c,
             final Throwables.IntTernaryOperator<E> zipFunction) throws E {
-        N.checkArgNotNull(a, "a");
-        N.checkArgNotNull(b, "b");
-        N.checkArgNotNull(c, "c");
+        N.checkArgNotNull(a, cs.a);
+        N.checkArgNotNull(b, cs.b);
+        N.checkArgNotNull(c, cs.c);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
 
         return a.zipWith(b, c, zipFunction);
@@ -2320,8 +2313,8 @@ public final class Matrices {
      */
     public static <E extends Exception> LongMatrix zipToLong(final IntMatrix a, final IntMatrix b, final Throwables.IntBiFunction<Long, E> zipFunction)
             throws IllegalArgumentException, E {
-        N.checkArgNotNull(a, "a");
-        N.checkArgNotNull(b, "b");
+        N.checkArgNotNull(a, cs.a);
+        N.checkArgNotNull(b, cs.b);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         checkShapeForZip(a, b);
 
@@ -2380,9 +2373,9 @@ public final class Matrices {
      */
     public static <E extends Exception> LongMatrix zipToLong(final IntMatrix a, final IntMatrix b, final IntMatrix c,
             final Throwables.IntTriFunction<Long, E> zipFunction) throws IllegalArgumentException, E {
-        N.checkArgNotNull(a, "a");
-        N.checkArgNotNull(b, "b");
-        N.checkArgNotNull(c, "c");
+        N.checkArgNotNull(a, cs.a);
+        N.checkArgNotNull(b, cs.b);
+        N.checkArgNotNull(c, cs.c);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         checkShapeForZip(a, b, c);
 
@@ -2578,8 +2571,8 @@ public final class Matrices {
      */
     public static <E extends Exception> DoubleMatrix zipToDouble(final IntMatrix a, final IntMatrix b, final Throwables.IntBiFunction<Double, E> zipFunction)
             throws IllegalArgumentException, E {
-        N.checkArgNotNull(a, "a");
-        N.checkArgNotNull(b, "b");
+        N.checkArgNotNull(a, cs.a);
+        N.checkArgNotNull(b, cs.b);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         checkShapeForZip(a, b);
 
@@ -2638,9 +2631,9 @@ public final class Matrices {
      */
     public static <E extends Exception> DoubleMatrix zipToDouble(final IntMatrix a, final IntMatrix b, final IntMatrix c,
             final Throwables.IntTriFunction<Double, E> zipFunction) throws IllegalArgumentException, E {
-        N.checkArgNotNull(a, "a");
-        N.checkArgNotNull(b, "b");
-        N.checkArgNotNull(c, "c");
+        N.checkArgNotNull(a, cs.a);
+        N.checkArgNotNull(b, cs.b);
+        N.checkArgNotNull(c, cs.c);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         checkShapeForZip(a, b, c);
 
@@ -2968,8 +2961,8 @@ public final class Matrices {
      * @see LongMatrix#zipWith(LongMatrix, Throwables.LongBinaryOperator)
      */
     public static <E extends Exception> LongMatrix zip(final LongMatrix a, final LongMatrix b, final Throwables.LongBinaryOperator<E> zipFunction) throws E {
-        N.checkArgNotNull(a, "a");
-        N.checkArgNotNull(b, "b");
+        N.checkArgNotNull(a, cs.a);
+        N.checkArgNotNull(b, cs.b);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
 
         return a.zipWith(b, zipFunction);
@@ -3016,9 +3009,9 @@ public final class Matrices {
      */
     public static <E extends Exception> LongMatrix zip(final LongMatrix a, final LongMatrix b, final LongMatrix c,
             final Throwables.LongTernaryOperator<E> zipFunction) throws E {
-        N.checkArgNotNull(a, "a");
-        N.checkArgNotNull(b, "b");
-        N.checkArgNotNull(c, "c");
+        N.checkArgNotNull(a, cs.a);
+        N.checkArgNotNull(b, cs.b);
+        N.checkArgNotNull(c, cs.c);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
 
         return a.zipWith(b, c, zipFunction);
@@ -3146,8 +3139,8 @@ public final class Matrices {
      */
     public static <E extends Exception> DoubleMatrix zipToDouble(final LongMatrix a, final LongMatrix b, final Throwables.LongBiFunction<Double, E> zipFunction)
             throws IllegalArgumentException, E {
-        N.checkArgNotNull(a, "a");
-        N.checkArgNotNull(b, "b");
+        N.checkArgNotNull(a, cs.a);
+        N.checkArgNotNull(b, cs.b);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         checkShapeForZip(a, b);
 
@@ -3206,9 +3199,9 @@ public final class Matrices {
      */
     public static <E extends Exception> DoubleMatrix zipToDouble(final LongMatrix a, final LongMatrix b, final LongMatrix c,
             final Throwables.LongTriFunction<Double, E> zipFunction) throws IllegalArgumentException, E {
-        N.checkArgNotNull(a, "a");
-        N.checkArgNotNull(b, "b");
-        N.checkArgNotNull(c, "c");
+        N.checkArgNotNull(a, cs.a);
+        N.checkArgNotNull(b, cs.b);
+        N.checkArgNotNull(c, cs.c);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         checkShapeForZip(a, b, c);
 
@@ -3535,8 +3528,8 @@ public final class Matrices {
      */
     public static <E extends Exception> DoubleMatrix zip(final DoubleMatrix a, final DoubleMatrix b, final Throwables.DoubleBinaryOperator<E> zipFunction)
             throws E {
-        N.checkArgNotNull(a, "a");
-        N.checkArgNotNull(b, "b");
+        N.checkArgNotNull(a, cs.a);
+        N.checkArgNotNull(b, cs.b);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
 
         return a.zipWith(b, zipFunction);
@@ -3584,9 +3577,9 @@ public final class Matrices {
      */
     public static <E extends Exception> DoubleMatrix zip(final DoubleMatrix a, final DoubleMatrix b, final DoubleMatrix c,
             final Throwables.DoubleTernaryOperator<E> zipFunction) throws E {
-        N.checkArgNotNull(a, "a");
-        N.checkArgNotNull(b, "b");
-        N.checkArgNotNull(c, "c");
+        N.checkArgNotNull(a, cs.a);
+        N.checkArgNotNull(b, cs.b);
+        N.checkArgNotNull(c, cs.c);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
 
         return a.zipWith(b, c, zipFunction);
@@ -3851,8 +3844,8 @@ public final class Matrices {
      */
     public static <A, B, E extends Exception> Matrix<A> zip(final Matrix<A> a, final Matrix<B> b,
             final Throwables.BiFunction<? super A, ? super B, A, E> zipFunction) throws E {
-        N.checkArgNotNull(a, "a");
-        N.checkArgNotNull(b, "b");
+        N.checkArgNotNull(a, cs.a);
+        N.checkArgNotNull(b, cs.b);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
 
         return a.zipWith(b, zipFunction);
@@ -3903,8 +3896,8 @@ public final class Matrices {
      */
     public static <A, B, R, E extends Exception> Matrix<R> zip(final Matrix<A> a, final Matrix<B> b,
             final Throwables.BiFunction<? super A, ? super B, R, E> zipFunction, final Class<R> targetElementType) throws E {
-        N.checkArgNotNull(a, "a");
-        N.checkArgNotNull(b, "b");
+        N.checkArgNotNull(a, cs.a);
+        N.checkArgNotNull(b, cs.b);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgNotNull(targetElementType, cs.targetElementType);
 
@@ -3957,9 +3950,9 @@ public final class Matrices {
      */
     public static <A, B, C, E extends Exception> Matrix<A> zip(final Matrix<A> a, final Matrix<B> b, final Matrix<C> c,
             final Throwables.TriFunction<? super A, ? super B, ? super C, A, E> zipFunction) throws E {
-        N.checkArgNotNull(a, "a");
-        N.checkArgNotNull(b, "b");
-        N.checkArgNotNull(c, "c");
+        N.checkArgNotNull(a, cs.a);
+        N.checkArgNotNull(b, cs.b);
+        N.checkArgNotNull(c, cs.c);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
 
         return a.zipWith(b, c, zipFunction);
@@ -4015,9 +4008,9 @@ public final class Matrices {
      */
     public static <A, B, C, R, E extends Exception> Matrix<R> zip(final Matrix<A> a, final Matrix<B> b, final Matrix<C> c,
             final Throwables.TriFunction<? super A, ? super B, ? super C, R, E> zipFunction, final Class<R> targetElementType) throws E {
-        N.checkArgNotNull(a, "a");
-        N.checkArgNotNull(b, "b");
-        N.checkArgNotNull(c, "c");
+        N.checkArgNotNull(a, cs.a);
+        N.checkArgNotNull(b, cs.b);
+        N.checkArgNotNull(c, cs.c);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgNotNull(targetElementType, cs.targetElementType);
 
@@ -4112,7 +4105,7 @@ public final class Matrices {
             final Class<T> elementType) throws IllegalArgumentException, E {
         N.checkArgNotNull(coll, cs.coll);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
-        N.checkArgNotNull(elementType, "elementType");
+        N.checkArgNotNull(elementType, cs.elementType);
         checkShapeForZip(coll);
 
         final Class<T> normalizedElementType = normalizeElementType(elementType);
@@ -4316,7 +4309,7 @@ public final class Matrices {
             final boolean shareIntermediateArray, final Class<T> inputElementType, final Class<R> targetElementType) throws IllegalArgumentException, E {
         N.checkArgNotNull(coll, cs.coll);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
-        N.checkArgNotNull(inputElementType, "inputElementType");
+        N.checkArgNotNull(inputElementType, cs.inputElementType);
         N.checkArgNotNull(targetElementType, cs.targetElementType);
         checkShapeForZip(coll);
 
@@ -4673,7 +4666,7 @@ public final class Matrices {
      *                                  {@code null} element
      */
     private static void checkMatricesNotEmptyAndNoNullElements(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> matrices) {
-        N.checkArgNotEmpty(matrices, "matrices");
+        N.checkArgNotEmpty(matrices, cs.matrices);
 
         int idx = 0;
         for (final AbstractMatrix<?, ?, ?, ?, ?> m : matrices) {

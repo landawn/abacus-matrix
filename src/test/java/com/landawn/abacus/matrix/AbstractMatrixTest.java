@@ -7,9 +7,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -4293,6 +4295,28 @@ class AbstractMatrixTest extends TestBase {
 
         assertEquals("Matrix stream element count cannot be negative: -1", negative.getMessage());
         assertEquals("Matrix stream too large to convert to array: 2147483648 elements", oversized.getMessage());
+    }
+
+    @Test
+    public void testEmptyPointStreamsSkipTheNonEmptyAxis() {
+        // This logical width requires no row arrays or element storage.
+        IntMatrix zeroRows = IntMatrix.empty().reshape(0, Integer.MAX_VALUE);
+        assertTimeoutPreemptively(Duration.ofSeconds(2), () -> {
+            assertEquals(0L, zeroRows.columnMajorPoints().count());
+            assertEquals(0L, zeroRows.columnMajorPoints(1, Integer.MAX_VALUE).count());
+        });
+        assertThrows(IndexOutOfBoundsException.class, () -> zeroRows.columnMajorPoints(-1, 0));
+        assertThrows(IndexOutOfBoundsException.class, () -> zeroRows.columnMajorPoints(2, 1));
+
+        IntMatrix zeroColumns = IntMatrix.wrap(new int[3][0]);
+        assertEquals(0L, zeroColumns.rowMajorPoints().count());
+        assertEquals(0L, zeroColumns.rowMajorPoints(1, 3).count());
+        assertThrows(IndexOutOfBoundsException.class, () -> zeroColumns.rowMajorPoints(0, 4));
+        assertThrows(IndexOutOfBoundsException.class, () -> zeroColumns.rowMajorPoints(2, 1));
+
+        // Streams of rows/columns still expose their empty inner streams.
+        assertEquals(3L, zeroColumns.rowPoints().count());
+        assertEquals(4L, zeroRows.columnPoints(0, 4).count());
     }
 
 }

@@ -8,8 +8,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -23,9 +25,29 @@ import com.landawn.abacus.util.BooleanList;
 import com.landawn.abacus.util.Sheet.Point;
 import com.landawn.abacus.util.Throwables;
 import com.landawn.abacus.util.u.OptionalBoolean;
+import com.landawn.abacus.util.stream.ObjIteratorEx;
 import com.landawn.abacus.util.stream.Stream;
 
 class BooleanMatrixTest extends TestBase {
+
+    @Test
+    public void testRepeatMatrix_emptyDimensionsDoNotTraverseRepeats() {
+        BooleanMatrix zeroRows = new BooleanMatrix(new boolean[0][], 2);
+        BooleanMatrix zeroColumns = BooleanMatrix.wrap(new boolean[2][0]);
+
+        assertTimeoutPreemptively(Duration.ofSeconds(2), () -> {
+            BooleanMatrix repeatedRows = zeroRows.repeatMatrix(Integer.MAX_VALUE, 1);
+            assertEquals(0, repeatedRows.rowCount());
+            assertEquals(2, repeatedRows.columnCount());
+
+            BooleanMatrix repeatedColumns = zeroColumns.repeatMatrix(1, Integer.MAX_VALUE);
+            assertEquals(2, repeatedColumns.rowCount());
+            assertEquals(0, repeatedColumns.columnCount());
+        });
+
+        assertThrows(IllegalArgumentException.class, () -> zeroRows.repeatMatrix(1, Integer.MAX_VALUE));
+        assertThrows(IllegalArgumentException.class, () -> zeroColumns.repeatMatrix(Integer.MAX_VALUE, 1));
+    }
 
     @Test
     public void testConstructor() {
@@ -5921,6 +5943,43 @@ class BooleanMatrixTest extends TestBase {
         assertFalse(m.get(1, 2));
         assertFalse(m.get(2, 1));
         assertTrue(m.get(2, 2));
+    }
+
+    @Test
+    public void testStreamIterators_nullArrayDestinationPreservesRemainingElements() {
+        BooleanMatrix matrix = BooleanMatrix.wrap(new boolean[][] { { true, false, true }, { false, true, false } });
+        ObjIteratorEx<Boolean> rowIterator = (ObjIteratorEx<Boolean>) matrix.rowMajorStream().iterator();
+        ObjIteratorEx<Boolean> columnIterator = (ObjIteratorEx<Boolean>) matrix.columnMajorStream().iterator();
+
+        assertEquals(Boolean.TRUE, rowIterator.next());
+        assertEquals(Boolean.TRUE, columnIterator.next());
+
+        assertThrows(NullPointerException.class, () -> rowIterator.toArray((Boolean[]) null));
+        assertThrows(NullPointerException.class, () -> columnIterator.toArray((Boolean[]) null));
+
+        assertArrayEquals(new Boolean[] { false, true, false, true, false }, rowIterator.toArray(new Boolean[0]));
+        assertArrayEquals(new Boolean[] { false, false, true, true, false }, columnIterator.toArray(new Boolean[0]));
+        assertFalse(rowIterator.hasNext());
+        assertFalse(columnIterator.hasNext());
+    }
+
+    @Test
+    public void testStreamIterators_incompatibleArrayPreservesCursorAtBoundary() {
+        BooleanMatrix matrix = BooleanMatrix.wrap(new boolean[][] { { true, false }, { false, true } });
+        ObjIteratorEx<Boolean> rowIterator = (ObjIteratorEx<Boolean>) matrix.rowMajorStream().iterator();
+        ObjIteratorEx<Boolean> columnIterator = (ObjIteratorEx<Boolean>) matrix.columnMajorStream().iterator();
+
+        assertEquals(Boolean.TRUE, rowIterator.next());
+        assertEquals(Boolean.TRUE, columnIterator.next());
+        assertThrows(ArrayStoreException.class, () -> rowIterator.toArray(new String[3]));
+        assertThrows(ArrayStoreException.class, () -> columnIterator.toArray(new String[3]));
+
+        assertEquals(Boolean.FALSE, rowIterator.next());
+        assertEquals(Boolean.FALSE, columnIterator.next());
+        assertArrayEquals(new Boolean[] { false, true }, rowIterator.toArray(new Boolean[0]));
+        assertArrayEquals(new Boolean[] { false, true }, columnIterator.toArray(new Boolean[0]));
+        assertFalse(rowIterator.hasNext());
+        assertFalse(columnIterator.hasNext());
     }
 
     // Exercise the custom object iterators used by horizontal and vertical boxed streams.

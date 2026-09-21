@@ -244,7 +244,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     AbstractMatrix(final A[] a, final Class<?> elementType, final int explicitColumnCount, final boolean rowsAreKnownDistinct) {
         N.checkArgNotNull(a, "Matrix array cannot be null");
         N.checkArgNotNull(elementType, "Element type cannot be null");
-        N.checkArgument(explicitColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", explicitColumnCount);
+        N.checkArgument(explicitColumnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.columnCount, explicitColumnCount);
 
         // The logical shape is cached, so retaining the caller's outer array would let a row
         // replacement silently invalidate every bounds and traversal invariant in this class.
@@ -409,8 +409,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative
      */
     protected static void checkNonNegativeShape(final int rowCount, final int columnCount) {
-        N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
-        N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
+        N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, cs.rowCount, rowCount);
+        N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.columnCount, columnCount);
     }
 
     /**
@@ -1019,8 +1019,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @see #reshapeAndPadToColumnCount(int)
      */
     public M reshape(final int newRowCount, final int newColumnCount) {
-        N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
-        N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
+        N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newRowCount, newRowCount);
+        N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newColumnCount, newColumnCount);
         checkNonNegativeShape(newRowCount, newColumnCount);
         final long newElementCount = (long) newRowCount * newColumnCount;
         N.checkArgument(newElementCount == elementCount, "New shape [{}x{}={}] must contain exactly the existing {} elements", newRowCount, newColumnCount,
@@ -1116,7 +1116,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *       to grow rows while truncating columns, or vice versa.</li>
      * </ul>
      *
-     * <p>The original matrix is never modified; a new matrix is always returned. Subclasses
+     * <p>The original matrix is never modified. The result has independent cell storage, although
+     * a primitive {@code 0 x 0} result may reuse its type's shared empty instance. Subclasses
      * additionally provide a {@code resize} overload that accepts an explicit default value for
      * the newly introduced cells.</p>
      *
@@ -1815,7 +1816,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * The main diagonal consists of elements where row index equals column index and therefore
      * contains {@code min(rowCount, columnCount)} positions for a rectangular matrix.
      *
-     * <p>The main diagonal runs from the upper-left corner to the lower-right corner.</p>
+     * <p>The main diagonal follows {@code (i, i)} until either matrix boundary is reached.
+     * It ends at the lower-right corner only when the matrix is square.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1842,7 +1844,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * The anti-diagonal starts at the upper-right corner and contains
      * {@code min(rowCount, columnCount)} positions.
      *
-     * <p>The anti-diagonal runs from the upper-right corner to the lower-left corner.</p>
+     * <p>The anti-diagonal follows {@code (i, columnCount - 1 - i)} until either matrix boundary
+     * is reached. It ends at the lower-left corner only when the matrix is square.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1864,7 +1867,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         return IntStream.range(0, diagonalLength()).mapToObj(i -> Point.of(i, columnCount - i - 1));
     }
 
-    /** Returns the number of elements in either corner-to-corner rectangular diagonal. */
+    /** Returns the number of elements in either diagonal, stopping at the first matrix boundary. */
     protected final int diagonalLength() {
         return N.min(rowCount, columnCount);
     }
@@ -1995,6 +1998,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     /**
      * Returns a stream of points for a range of rows in row-major order.
      * Points are generated row by row from left to right for the specified row range.
+     * A matrix with no columns produces an empty stream without traversing its rows.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2018,6 +2022,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     @SuppressWarnings("resource")
     public Stream<Point> rowMajorPoints(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
+
+        if (columnCount == 0) {
+            return Stream.empty();
+        }
 
         return IntStream.range(fromRowIndex, toRowIndex)
                 .flatMapToObj(rowIndex -> IntStream.range(0, columnCount).mapToObj(columnIndex -> Point.of(rowIndex, columnIndex)));
@@ -2051,6 +2059,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     /**
      * Returns a stream of points for a range of columns in column-major order.
      * Points are generated column by column from top to bottom for the specified column range.
+     * A matrix with no rows produces an empty stream without traversing its columns.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2074,6 +2083,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     @SuppressWarnings("resource")
     public Stream<Point> columnMajorPoints(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
+
+        if (rowCount == 0) {
+            return Stream.empty();
+        }
 
         return IntStream.range(fromColumnIndex, toColumnIndex)
                 .flatMapToObj(columnIndex -> IntStream.range(0, rowCount).mapToObj(rowIndex -> Point.of(rowIndex, columnIndex)));
@@ -2197,7 +2210,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Returns the {@code min(rowCount, columnCount)} elements along the main diagonal
      * (upper-left toward lower-right).
      *
-     * <p>The main diagonal runs from the upper-left corner to the lower-right corner.</p>
+     * <p>The main diagonal follows {@code (i, i)} until either matrix boundary is reached.
+     * It ends at the lower-right corner only when the matrix is square.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2220,7 +2234,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Returns the {@code min(rowCount, columnCount)} elements along the anti-diagonal
      * (upper-right toward lower-left).
      *
-     * <p>The anti-diagonal runs from the upper-right corner to the lower-left corner.</p>
+     * <p>The anti-diagonal follows {@code (i, columnCount - 1 - i)} until either matrix boundary
+     * is reached. It ends at the lower-left corner only when the matrix is square.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2533,7 +2548,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @see #println()
      */
     public void appendTo(final Appendable output) {
-        N.checkArgNotNull(output, "output");
+        N.checkArgNotNull(output, cs.output);
 
         try {
             if (rowCount == 0) {

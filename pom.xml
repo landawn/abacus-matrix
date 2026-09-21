@@ -46,14 +46,14 @@
 		<dependency>
 			<groupId>com.landawn.abacus</groupId>
 			<artifactId>abacus-common</artifactId>
-			<version>8.0.0</version>
+			<version>8.0.1</version>
 			<scope>provided</scope>
 		</dependency>
 
 		<dependency>
 			<groupId>com.landawn.abacus</groupId>
 			<artifactId>abacus-extra</artifactId>
-			<version>3.8.8</version>
+			<version>3.8.9</version>
 			<scope>provided</scope>
 		</dependency>
 

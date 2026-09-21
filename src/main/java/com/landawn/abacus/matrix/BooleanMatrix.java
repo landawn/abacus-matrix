@@ -159,7 +159,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     /**
      * Creates a {@code BooleanMatrix} that owns a defensive deep copy of the supplied two-dimensional array.
      *
-     * <p>For a non-empty input, unlike {@link #wrap(boolean[][])}, which wraps the caller's array without copying,
+     * <p>For a non-empty input, unlike {@link #wrap(boolean[][])}, which copies the outer array but shares the caller's rows,
      * this factory allocates a new outer array and clones every row. Subsequent modifications to {@code a}
      * (or its rows) are therefore <b>not</b> visible through the returned matrix, and vice versa. A zero-row
      * input is canonicalized to the shared empty matrix, so its outer-array identity is not retained.</p>
@@ -234,7 +234,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @throws IllegalArgumentException if {@code columnCount} is negative or the random source is {@code null}
      */
     public static BooleanMatrix randomRow(final int columnCount, final RandomGenerator randomGenerator) {
-        N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
+        N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.columnCount, columnCount);
 
         return random(1, columnCount, randomGenerator);
     }
@@ -274,9 +274,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @throws IllegalArgumentException if a dimension is negative or the random source is {@code null}
      */
     public static BooleanMatrix random(final int rowCount, final int columnCount, final RandomGenerator randomGenerator) {
-        N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, "rowCount", rowCount);
-        N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
-        N.checkArgNotNull(randomGenerator, "randomGenerator");
+        N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, cs.rowCount, rowCount);
+        N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.columnCount, columnCount);
+        N.checkArgNotNull(randomGenerator, cs.randomGenerator);
         checkNonNegativeShape(rowCount, columnCount);
 
         final boolean[][] a = new boolean[rowCount][columnCount];
@@ -319,7 +319,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @see #ofDiagonals(boolean[], boolean[])
      */
     public static BooleanMatrix ofMainDiagonal(final boolean[] mainDiagonal) {
-        N.checkArgNotNull(mainDiagonal, "mainDiagonal");
+        N.checkArgNotNull(mainDiagonal, cs.mainDiagonal);
 
         return ofDiagonals(mainDiagonal, null);
     }
@@ -353,7 +353,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @see #ofDiagonals(boolean[], boolean[])
      */
     public static BooleanMatrix ofAntiDiagonal(final boolean[] antiDiagonal) {
-        N.checkArgNotNull(antiDiagonal, "antiDiagonal");
+        N.checkArgNotNull(antiDiagonal, cs.antiDiagonal);
 
         return ofDiagonals(null, antiDiagonal);
     }
@@ -444,7 +444,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @see #boxed()
      */
     public static BooleanMatrix unbox(final Matrix<Boolean> x) {
-        N.checkArgNotNull(x, "x");
+        N.checkArgNotNull(x, cs.x);
 
         return x.mapToBoolean(value -> value != null && value);
     }
@@ -492,7 +492,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @see #get(int, int)
      */
     public boolean get(final Point point) { // NOSONAR
-        N.checkArgNotNull(point, "point");
+        N.checkArgNotNull(point, cs.point);
 
         return a[point.rowIndex()][point.columnIndex()];
     }
@@ -544,7 +544,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @see #set(int, int, boolean)
      */
     public void set(final Point point, final boolean value) {
-        N.checkArgNotNull(point, "point");
+        N.checkArgNotNull(point, cs.point);
 
         a[point.rowIndex()][point.columnIndex()] = value;
     }
@@ -786,7 +786,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @throws IllegalArgumentException if {@code row} is {@code null} or if {@code row.length} does not match the column count
      */
     public void setRow(final int rowIndex, final boolean[] row) throws IndexOutOfBoundsException, IllegalArgumentException {
-        N.checkArgNotNull(row, "row");
+        N.checkArgNotNull(row, cs.row);
         checkRowIndex(rowIndex);
         N.checkArgument(row.length == columnCount, MSG_ROW_LENGTH_MISMATCH, columnCount, row.length);
 
@@ -822,7 +822,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @throws IllegalArgumentException if {@code column} is {@code null} or if {@code column.length} does not match the row count
      */
     public void setColumn(final int columnIndex, final boolean[] column) throws IndexOutOfBoundsException, IllegalArgumentException {
-        N.checkArgNotNull(column, "column");
+        N.checkArgNotNull(column, cs.column);
         checkColumnIndex(columnIndex);
         N.checkArgument(column.length == rowCount, MSG_COLUMN_LENGTH_MISMATCH, rowCount, column.length);
         final boolean[] values = snapshotIfBackingRow(column);
@@ -954,7 +954,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * Sets the elements on the main diagonal (upper-left to lower-right).
      * The diagonal array must have exactly {@code min(rowCount, columnCount)} elements.
      *
-     * <p>This method sets the main diagonal elements at positions {@code (0,0), (1,1), (2,2), ...}.
+     * <p>This method sets the main diagonal elements at positions {@code (0,0), (1,1), (2,2), ...}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -978,7 +978,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     @Override
     public void setMainDiagonal(final boolean[] mainDiagonal) throws IllegalArgumentException {
-        N.checkArgNotNull(mainDiagonal, "mainDiagonal");
+        N.checkArgNotNull(mainDiagonal, cs.mainDiagonal);
         final int diagonalLength = diagonalLength();
         N.checkArgument(mainDiagonal.length == diagonalLength, MSG_DIAGONAL_LENGTH_MISMATCH, diagonalLength, mainDiagonal.length);
 
@@ -1094,7 +1094,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     @Override
     public void setAntiDiagonal(final boolean[] antiDiagonal) throws IllegalArgumentException {
-        N.checkArgNotNull(antiDiagonal, "antiDiagonal");
+        N.checkArgNotNull(antiDiagonal, cs.antiDiagonal);
         final int diagonalLength = diagonalLength();
         N.checkArgument(antiDiagonal.length == diagonalLength, MSG_DIAGONAL_LENGTH_MISMATCH, diagonalLength, antiDiagonal.length);
         final boolean[] values = snapshotIfBackingRow(antiDiagonal);
@@ -1144,7 +1144,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * This modifies the matrix directly.
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
-     * When this operation is not parallelized, elements are processed in first-occurrence row-major order;
+     * When this operation is not parallelized, elements are processed in row-major order;
      * when it is parallelized, the encounter order is unspecified.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -1322,7 +1322,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * The original matrix is not modified; a new matrix with transformed values is returned.
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
-     * This is the immutable counterpart to {@link #updateAll(Throwables.BooleanUnaryOperator)}.</p>
+     * This is the non-mutating counterpart to {@link #updateAll(Throwables.BooleanUnaryOperator)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1481,7 +1481,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     public void copyFrom(final int destRowIndex, final int destColumnIndex, final boolean[][] source)
             throws IndexOutOfBoundsException, IllegalArgumentException {
-        N.checkArgNotNull(source, "source");
+        N.checkArgNotNull(source, cs.source);
         if (destRowIndex < 0 || destRowIndex > rowCount) {
             throw new IndexOutOfBoundsException(formatMsg("destRowIndex({}) must be in [0, rowCount({})]", destRowIndex, rowCount));
         }
@@ -1574,7 +1574,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *
      * <p>This method is useful for extracting sub-matrices or working with specific regions
      * of a larger matrix. The copy is independent of the original matrix - modifications to
-     * either will not affect the other.
+     * either will not affect the other.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1630,7 +1630,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *       to grow rows while truncating columns, or vice versa.</li>
      * </ul>
      *
-     * <p>The original matrix is never modified; a new matrix is always returned.</p>
+     * <p>The original matrix is never modified; the result has independent cell storage.</p>
      *
      * <p><b>Comparison with {@link #pad(int, int, int, int)}:</b>
      * {@code resize} takes <em>absolute</em> target dimensions and may truncate existing content.
@@ -1696,7 +1696,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      *       to grow rows while truncating columns, or vice versa.</li>
      * </ul>
      *
-     * <p>The original matrix is never modified; a new matrix is always returned.</p>
+     * <p>The original matrix is never modified; the result has independent cell storage.</p>
      *
      * <p><b>Comparison with {@link #pad(int, int, int, int, boolean)}:</b>
      * {@code resize} takes <em>absolute</em> target dimensions and may truncate existing content.
@@ -1741,8 +1741,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @see #pad(int, int, int, int, boolean)
      */
     public BooleanMatrix resize(final int newRowCount, final int newColumnCount, final boolean defaultValue) throws IllegalArgumentException {
-        N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
-        N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
+        N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newRowCount, newRowCount);
+        N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newColumnCount, newColumnCount);
         checkNonNegativeShape(newRowCount, newColumnCount);
         if (newRowCount <= rowCount && newColumnCount <= columnCount) {
             return copyRegion(0, newRowCount, 0, newColumnCount);
@@ -1774,7 +1774,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * columns of padding to add on that edge. The original matrix occupies the interior starting
      * at row {@code padTop}, column {@code padLeft}.</p>
      *
-     * <p>Result dimensions:
+     * <p>Result dimensions:</p>
      * <ul>
      *   <li>Rows: {@code padTop + this.rowCount + padBottom}</li>
      *   <li>Columns: {@code padLeft + this.columnCount + padRight}</li>
@@ -1828,7 +1828,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * rows or columns of padding to add on that edge. The original matrix occupies the interior
      * starting at row {@code padTop}, column {@code padLeft}.</p>
      *
-     * <p>Result dimensions:
+     * <p>Result dimensions:</p>
      * <ul>
      *   <li>Rows: {@code padTop + this.rowCount + padBottom}</li>
      *   <li>Columns: {@code padLeft + this.columnCount + padRight}</li>
@@ -1873,10 +1873,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      */
     public BooleanMatrix pad(final int padTop, final int padBottom, final int padLeft, final int padRight, final boolean defaultValue)
             throws IllegalArgumentException {
-        N.checkArgument(padTop >= 0, MSG_NEGATIVE_DIMENSION, "padTop", padTop);
-        N.checkArgument(padBottom >= 0, MSG_NEGATIVE_DIMENSION, "padBottom", padBottom);
-        N.checkArgument(padLeft >= 0, MSG_NEGATIVE_DIMENSION, "padLeft", padLeft);
-        N.checkArgument(padRight >= 0, MSG_NEGATIVE_DIMENSION, "padRight", padRight);
+        N.checkArgument(padTop >= 0, MSG_NEGATIVE_DIMENSION, cs.padTop, padTop);
+        N.checkArgument(padBottom >= 0, MSG_NEGATIVE_DIMENSION, cs.padBottom, padBottom);
+        N.checkArgument(padLeft >= 0, MSG_NEGATIVE_DIMENSION, cs.padLeft, padLeft);
+        N.checkArgument(padRight >= 0, MSG_NEGATIVE_DIMENSION, cs.padRight, padRight);
 
         if (padTop == 0 && padBottom == 0 && padLeft == 0 && padRight == 0) {
             return copy();
@@ -2067,7 +2067,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * }</pre>
      *
      * @return a new matrix rotated 90 degrees clockwise (dimensions {@code columnCount × rowCount}),
-     *         an {@code N x 0} matrix becomes {@code 0 x N}, so the column count is preserved
+     *         an {@code N x 0} matrix becomes {@code 0 x N}, retaining {@code N} as the result's column count
      * @see #rotate180()
      * @see #rotate270()
      * @see #transpose()
@@ -2161,7 +2161,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * }</pre>
      *
      * @return a new matrix rotated 270 degrees clockwise (dimensions {@code columnCount × rowCount}),
-     *         an {@code N x 0} matrix becomes {@code 0 x N}, so the column count is preserved
+     *         an {@code N x 0} matrix becomes {@code 0 x N}, retaining {@code N} as the result's column count
      * @see #rotate90()
      * @see #rotate180()
      * @see #transpose()
@@ -2276,8 +2276,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     @SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG")
     @Override
     public BooleanMatrix reshapeAndPad(final int newRowCount, final int newColumnCount) {
-        N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
-        N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
+        N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newRowCount, newRowCount);
+        N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newColumnCount, newColumnCount);
         checkNonNegativeShape(newRowCount, newColumnCount);
         N.checkArgument((long) newRowCount * newColumnCount >= elementCount(), "New shape [{}x{}={}] is too small to hold all {} elements", newRowCount,
                 newColumnCount, (long) newRowCount * newColumnCount, elementCount());
@@ -2387,6 +2387,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * Repeats the entire matrix the specified number of times in both dimensions.
      * The matrix is repeated {@code rowRepeats} times vertically and {@code columnRepeats} times horizontally.
      *
+     * <p>Zero-row or zero-column matrices retain the multiplied dimensions, even though they contain no cells.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * // [[true, false]] with repeatMatrix(2, 3) becomes:
@@ -2428,6 +2430,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
         }
 
         final boolean[][] c = new boolean[rowCount * rowRepeats][columnCount * columnRepeats];
+
+        if (isEmpty()) {
+            return wrapResult(c, columnCount * columnRepeats);
+        }
 
         for (int i = 0; i < rowCount; i++) {
             for (int j = 0; j < columnRepeats; j++) {
@@ -3053,7 +3059,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * wide.mainDiagonalStream().toList();   // returns [true]
      * }</pre>
      *
-     * @return a {@code Stream<Boolean>} containing the diagonal elements from top-left to bottom-right,
+     * @return a {@code Stream<Boolean>} containing the diagonal elements from top-left toward the lower-right,
      *         or an empty stream if the matrix has no diagonal
      */
     @Override
@@ -3125,7 +3131,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * wide.antiDiagonalStream().toList();   // returns [true]
      * }</pre>
      *
-     * @return a {@code Stream<Boolean>} containing the anti-diagonal elements from top-right to bottom-left,
+     * @return a {@code Stream<Boolean>} containing the anti-diagonal elements from top-right toward the lower-left,
      *         or an empty stream if the matrix has no diagonal
      */
     @Override
@@ -3286,6 +3292,12 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
                 return remaining;
             }
 
+            /**
+             * {@inheritDoc}
+             *
+             * @throws NullPointerException if {@code c} is {@code null}; no elements are consumed
+             * @throws ArrayStoreException if a value cannot be stored in {@code c}; that value remains unconsumed
+             */
             @Override
             public <A> A[] toArray(A[] c) {
                 final int len = toArrayLength((long) (toRowIndex - i) * columnCount - j);
@@ -3295,7 +3307,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
                 }
 
                 for (int k = 0; k < len; k++) {
-                    c[k] = (A) (Boolean) a[i][j++];
+                    c[k] = (A) (Boolean) a[i][j];
+                    j++;
 
                     if (j >= columnCount) {
                         i++;
@@ -3424,6 +3437,12 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
                 return remaining;
             }
 
+            /**
+             * {@inheritDoc}
+             *
+             * @throws NullPointerException if {@code c} is {@code null}; no elements are consumed
+             * @throws ArrayStoreException if a value cannot be stored in {@code c}; that value remains unconsumed
+             */
             @Override
             public <A> A[] toArray(A[] c) {
                 final int len = toArrayLength((long) (toColumnIndex - j) * rowCount - i);
@@ -3433,7 +3452,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
                 }
 
                 for (int k = 0; k < len; k++) {
-                    c[k] = (A) (Boolean) a[i++][j];
+                    c[k] = (A) (Boolean) a[i][j];
+                    i++;
 
                     if (i >= rowCount) {
                         i = 0;
@@ -3592,7 +3612,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * }</pre>
      *
      * @return a {@code Stream<Stream<Boolean>>}, one inner stream per column in the matrix,
-     *         or an empty stream if the matrix is empty
+     *         with empty inner streams when the matrix has no rows
      */
     @Override
     public Stream<Stream<Boolean>> columnStreams() {
@@ -3626,7 +3646,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @return a {@code Stream<Stream<Boolean>>} for the specified column range,
-     *         or an empty stream if the matrix is empty
+     *         with empty inner streams when the matrix has no rows
      * @throws IndexOutOfBoundsException if {@code fromColumnIndex < 0}, {@code toColumnIndex > columnCount},
      *         or {@code fromColumnIndex > toColumnIndex}
      */
@@ -3727,8 +3747,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * thread-safe.</p>
      *
      * <p><b>Note:</b> This method is for side-effect operations only (like printing, collecting,
-     * or accumulating). For transformations that create new matrices, use {@link #map(Throwables.BooleanUnaryOperator)}
-     * or {@link #updateAll(Throwables.BooleanUnaryOperator)}.</p>
+     * or accumulating). Use {@link #map(Throwables.BooleanUnaryOperator)} to create a new matrix,
+     * or {@link #updateAll(Throwables.BooleanUnaryOperator)} to modify this matrix in place.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

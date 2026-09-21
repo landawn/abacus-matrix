@@ -6201,4 +6201,28 @@ class FloatMatrixTest extends TestBase {
         assertThrows(IllegalArgumentException.class, () -> FloatMatrix.random(2, -1));
     }
 
+    @Test
+    public void testRepeatMatrix_degenerateShapesPreserveDimensionsAndValidation() {
+        final FloatMatrix noRows = new FloatMatrix(new float[0][], 2);
+        final FloatMatrix noColumns = FloatMatrix.wrap(new float[][] { {}, {} });
+
+        // Large repeat factors must not cause repeated work when there are no cells to copy.
+        // Keep the counts bounded so this shape regression remains safe on older implementations.
+        final FloatMatrix repeatedRows = noRows.repeatMatrix(100_000, 3);
+        assertEquals(0, repeatedRows.rowCount());
+        assertEquals(6, repeatedRows.columnCount());
+
+        final FloatMatrix repeatedColumns = noColumns.repeatMatrix(3, 100_000);
+        assertEquals(6, repeatedColumns.rowCount());
+        assertEquals(0, repeatedColumns.columnCount());
+        for (int i = 0; i < repeatedColumns.rowCount(); i++) {
+            assertEquals(0, repeatedColumns.rowView(i).length);
+        }
+        assertSame(FloatMatrix.empty(), FloatMatrix.empty().repeatMatrix(100_000, 100_000));
+
+        assertThrows(IllegalArgumentException.class, () -> noRows.repeatMatrix(0, 1));
+        assertThrows(IllegalArgumentException.class, () -> noColumns.repeatMatrix(1, -1));
+        assertThrows(IllegalArgumentException.class, () -> noRows.repeatMatrix(1, Integer.MAX_VALUE));
+        assertThrows(IllegalArgumentException.class, () -> noColumns.repeatMatrix(Integer.MAX_VALUE, 1));
+    }
 }

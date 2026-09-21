@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -419,6 +420,53 @@ class MatricesTest extends TestBase {
         int[] columnSequential = Matrices.mapIndicesToInt(0, 50, 0, 1, (i, j) -> i * 100 + j, false).sorted().toArray();
         int[] columnParallel = Matrices.mapIndicesToInt(0, 50, 0, 1, (i, j) -> i * 100 + j, true).sorted().toArray();
         assertArrayEquals(columnSequential, columnParallel);
+    }
+
+    @Test
+    public void testEmptyIndexStreamsRetainRequestedExecutionMode() {
+        for (boolean inParallel : new boolean[] { false, true }) {
+            for (int[] shape : new int[][] { { 0, 0 }, { 0, 3 }, { 3, 0 } }) {
+                final boolean expectedParallel = inParallel && Matrices.IS_PARALLEL_STREAM_SUPPORTED;
+                final Throwables.IntBiFunction<Integer, RuntimeException> mapper = (i, j) -> {
+                    throw new AssertionError("An empty grid must not invoke its mapper");
+                };
+                final Throwables.IntBinaryOperator<RuntimeException> intMapper = (i, j) -> {
+                    throw new AssertionError("An empty grid must not invoke its mapper");
+                };
+
+                try (Stream<Integer> objects = Matrices.mapIndices(shape[0], shape[1], mapper, inParallel);
+                        Stream<Integer> objectRegion = Matrices.mapIndices(2, 2 + shape[0], 4, 4 + shape[1], mapper, inParallel);
+                        IntStream ints = Matrices.mapIndicesToInt(shape[0], shape[1], intMapper, inParallel);
+                        IntStream intRegion = Matrices.mapIndicesToInt(2, 2 + shape[0], 4, 4 + shape[1], intMapper, inParallel)) {
+                    assertEquals(expectedParallel, objects.isParallel());
+                    assertEquals(expectedParallel, objectRegion.isParallel());
+                    assertEquals(expectedParallel, ints.isParallel());
+                    assertEquals(expectedParallel, intRegion.isParallel());
+                    assertEquals(0L, objects.count());
+                    assertEquals(0L, objectRegion.count());
+                    assertEquals(0L, ints.count());
+                    assertEquals(0L, intRegion.count());
+                }
+
+                try (Stream<Integer> objects = Matrices.mapIndices(shape[0], shape[1], mapper, inParallel);
+                        Stream<Integer> objectRegion = Matrices.mapIndices(2, 2 + shape[0], 4, 4 + shape[1], mapper, inParallel);
+                        IntStream ints = Matrices.mapIndicesToInt(shape[0], shape[1], intMapper, inParallel);
+                        IntStream intRegion = Matrices.mapIndicesToInt(2, 2 + shape[0], 4, 4 + shape[1], intMapper, inParallel)) {
+                    final var objectIterator = objects.iterator();
+                    final var objectRegionIterator = objectRegion.iterator();
+                    final var intIterator = ints.iterator();
+                    final var intRegionIterator = intRegion.iterator();
+                    assertFalse(objectIterator.hasNext());
+                    assertFalse(objectRegionIterator.hasNext());
+                    assertFalse(intIterator.hasNext());
+                    assertFalse(intRegionIterator.hasNext());
+                    assertThrows(NoSuchElementException.class, objectIterator::next);
+                    assertThrows(NoSuchElementException.class, objectRegionIterator::next);
+                    assertThrows(NoSuchElementException.class, intIterator::nextInt);
+                    assertThrows(NoSuchElementException.class, intRegionIterator::nextInt);
+                }
+            }
+        }
     }
 
     @Test

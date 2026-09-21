@@ -8,8 +8,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,6 +30,25 @@ import com.landawn.abacus.util.stream.CharStream;
 import com.landawn.abacus.util.stream.Stream;
 
 class CharMatrixTest extends TestBase {
+
+    @Test
+    public void testRepeatMatrix_emptyDimensionsDoNotTraverseRepeats() {
+        CharMatrix zeroRows = new CharMatrix(new char[0][], 2);
+        CharMatrix zeroColumns = CharMatrix.wrap(new char[2][0]);
+
+        assertTimeoutPreemptively(Duration.ofSeconds(2), () -> {
+            CharMatrix repeatedRows = zeroRows.repeatMatrix(Integer.MAX_VALUE, 1);
+            assertEquals(0, repeatedRows.rowCount());
+            assertEquals(2, repeatedRows.columnCount());
+
+            CharMatrix repeatedColumns = zeroColumns.repeatMatrix(1, Integer.MAX_VALUE);
+            assertEquals(2, repeatedColumns.rowCount());
+            assertEquals(0, repeatedColumns.columnCount());
+        });
+
+        assertThrows(IllegalArgumentException.class, () -> zeroRows.repeatMatrix(1, Integer.MAX_VALUE));
+        assertThrows(IllegalArgumentException.class, () -> zeroColumns.repeatMatrix(Integer.MAX_VALUE, 1));
+    }
 
     @Test
     public void testConstructor() {

@@ -54,24 +54,24 @@
  *
  * <h2>Storage ownership and mutation</h2>
  *
- * <p>Public constructors validate the supplied array and then take a private snapshot of the <i>outer</i>
- * array while sharing its row arrays. Writing a cell through the caller's row is therefore visible through
+ * <p>Public constructors take a private snapshot of the <i>outer</i> array and validate its rows,
+ * while sharing the row arrays themselves. Writing a cell through the caller's row is therefore visible through
  * the matrix and vice versa, but replacing a whole row in either outer array is not.
  * {@link com.landawn.abacus.matrix.Matrix#wrap(Object[][])} does the same, as do the primitive
  * {@code wrap(...)} factories when the input has at least one row. A primitive {@code wrap(...)} factory
  * canonicalizes a zero-row input to its shared {@code 0 x 0} singleton, so the caller's empty outer-array
  * identity is not retained. Primitive {@code copyOf(...)} factories do the same for zero-row inputs and copy
- * every row of non-empty inputs. {@link com.landawn.abacus.matrix.Matrix#copyOf(Object[][])} always clones the
- * outer array and every row, including the outer array of a zero-row input. Use {@code copyOf(...)} to copy an
- * input array or {@link com.landawn.abacus.matrix.AbstractMatrix#copy()} to copy a matrix. For reference matrices,
+ * every row of non-empty inputs. {@link com.landawn.abacus.matrix.Matrix#copyOf(Object[][])} always creates an
+ * independent outer array and independently copies every row, including a new outer array for a zero-row input.
+ * Use {@code copyOf(...)} to copy an input array or {@link com.landawn.abacus.matrix.AbstractMatrix#copy()} to copy a matrix. For reference matrices,
  * these operations copy the array structure but not the referenced element objects.</p>
  *
  * <p>Rows must be rectangular <i>and</i> identity-distinct: no two logical rows may be the same array
  * object, because one physical row cannot represent two independently addressable logical rows. Construction
  * rejects a repeat with {@code IllegalArgumentException}, so {@code wrap(row, row)} throws while
- * {@code copyOf(row, row)} succeeds (it clones each row). Every logical coordinate therefore names exactly
- * one storage cell, and a value transformation visits each cell exactly once whether it runs sequentially
- * or in parallel.</p>
+ * {@code copyOf(row, row)} succeeds (it copies each row independently). Every logical coordinate therefore names
+ * exactly one storage cell, and a value transformation visits each cell exactly once on successful completion,
+ * whether it runs sequentially or in parallel.</p>
  *
  * <p>A caller-supplied array may still contain one of a matrix's live rows -- {@code m.setColumn(0, m.rowView(1))}
  * is legal -- so the writers that need it snapshot such a source before writing.</p>

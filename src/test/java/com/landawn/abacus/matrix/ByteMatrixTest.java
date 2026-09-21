@@ -8,8 +8,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -31,6 +33,25 @@ import com.landawn.abacus.util.stream.ObjIteratorEx;
 import com.landawn.abacus.util.stream.Stream;
 
 class ByteMatrixTest extends TestBase {
+
+    @Test
+    public void testRepeatMatrix_emptyDimensionsDoNotTraverseRepeats() {
+        ByteMatrix zeroRows = new ByteMatrix(new byte[0][], 2);
+        ByteMatrix zeroColumns = ByteMatrix.wrap(new byte[2][0]);
+
+        assertTimeoutPreemptively(Duration.ofSeconds(2), () -> {
+            ByteMatrix repeatedRows = zeroRows.repeatMatrix(Integer.MAX_VALUE, 1);
+            assertEquals(0, repeatedRows.rowCount());
+            assertEquals(2, repeatedRows.columnCount());
+
+            ByteMatrix repeatedColumns = zeroColumns.repeatMatrix(1, Integer.MAX_VALUE);
+            assertEquals(2, repeatedColumns.rowCount());
+            assertEquals(0, repeatedColumns.columnCount());
+        });
+
+        assertThrows(IllegalArgumentException.class, () -> zeroRows.repeatMatrix(1, Integer.MAX_VALUE));
+        assertThrows(IllegalArgumentException.class, () -> zeroColumns.repeatMatrix(Integer.MAX_VALUE, 1));
+    }
 
     @Test
     public void testConstructor() {

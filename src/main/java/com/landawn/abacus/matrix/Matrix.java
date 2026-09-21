@@ -59,6 +59,10 @@ import com.landawn.abacus.util.stream.Stream;
  * runtime component types and may be narrower than the static {@code T} because Java arrays are
  * covariant.</p>
  *
+ * <p>Primitive scalar class tokens, such as {@code int.class}, are normalized to their wrapper
+ * classes. Array-valued element types, including primitive array types such as {@code int[].class},
+ * retain their exact runtime type.</p>
+ *
  * @param <T> the element type stored in the matrix
  * @see IntMatrix
  * @see LongMatrix
@@ -75,10 +79,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     @SuppressWarnings("deprecation")
     private static final Matrix<Object> EMPTY_MATRIX = new Matrix<>(new Object[0][0]);
 
-    /** The runtime type of each row array, used for type-compatible result allocation. */
+    /** The outer array's runtime component type, used for type-compatible result allocation. */
     final Class<T[]> arrayType;
 
-    /** The runtime component type accepted by the backing row arrays. */
+    /** The runtime element type used for result rows; legacy backing rows may have narrower types. */
     final Class<T> elementType;
 
     /**
@@ -86,7 +90,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p>The outer array is shallow-copied; its row arrays remain live. Cell changes are visible
      * in both directions, while replacing an entry in the caller's outer array is not.</p>
-    
+     *
      * <p><b>Runtime-type constraint:</b> Java's covariant arrays permit the static {@code T} to be
      * broader than the rows' runtime component type. Such a matrix may reject an otherwise legal
      * {@code T} value with {@link ArrayStoreException}. Prefer
@@ -203,7 +207,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
     @SuppressWarnings("unchecked")
     private static <T> Class<T> normalizeElementType(final Class<T> elementType) {
-        N.checkArgNotNull(elementType, "elementType");
+        N.checkArgNotNull(elementType, cs.elementType);
         // Only a primitive SCALAR has a wrapper here. ClassUtil.wrap also rewrites primitive array
         // types (int[] -> Integer[]), which would break Matrix<int[]>: its rows really are int[][],
         // so a wrapped element type would no longer match the backing storage.
@@ -294,7 +298,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     @SuppressWarnings("unchecked")
     public static <T> Matrix<T> empty(final Class<T> elementType, final int columnCount) {
         final Class<T> normalizedType = normalizeElementType(elementType);
-        N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, "columnCount", columnCount);
+        N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.columnCount, columnCount);
 
         if (columnCount == 0 && normalizedType == Object.class) {
             return (Matrix<T>) EMPTY_MATRIX;
@@ -310,7 +314,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p>The matrix retains the provided row arrays but snapshots the outer array. Cell mutations
      * remain visible in both directions; replacing or reordering entries in the caller's outer
      * array does not affect the matrix.</p>
-    
+     *
      * <p><b>Runtime-type constraint:</b> the writable type is the supplied arrays' runtime
      * component type, which Java array covariance may make narrower than {@code T}. Prefer
      * {@link #wrap(Class, Object[][])} for writable matrices.</p>
@@ -356,8 +360,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param elementType the exact runtime element type
      * @param a the rectangular, identity-distinct rows to wrap
      * @return a matrix with uniform exact row storage
-     * @throws IllegalArgumentException if validation fails or any outer/row runtime component type
-     *         is not exactly {@code elementType}
+     * @throws IllegalArgumentException if an argument or row is {@code null}, rows have different lengths,
+     *         two entries are the same row array, or any outer/row runtime element type differs from
+     *         {@code elementType} after primitive scalar normalization
      * @see #copyOf(Class, Object[][])
      */
     @SafeVarargs
@@ -386,7 +391,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Matrix.copyOf(new String[] {"a"}, new String[] {"b", "c"}); // throws IllegalArgumentException (not rectangular)
      * }</pre>
      *
-     * <p>Because every row is cloned, an input that repeats the same row array is accepted here,
+     * <p>Because every row is copied independently, an input that repeats the same row array is accepted here,
      * while {@code wrap(...)} would reject it.</p>
      *
      * @param <T> the type of elements in the matrix
@@ -484,13 +489,14 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     @Deprecated
     public static <T> Matrix<T> ofMainDiagonal(final T[] mainDiagonal) {
-        N.checkArgNotNull(mainDiagonal, "mainDiagonal");
+        N.checkArgNotNull(mainDiagonal, cs.mainDiagonal);
 
         return ofDiagonals(mainDiagonal, null);
     }
 
     /**
      * Creates a square matrix with the supplied main diagonal and exact runtime element type.
+     * All off-diagonal cells are {@code null}; an empty diagonal produces a typed {@code 0 x 0} matrix.
      *
      * @param <T> the element type
      * @param elementType the exact runtime element type
@@ -499,7 +505,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws IllegalArgumentException if an argument is {@code null}
      */
     public static <T> Matrix<T> ofMainDiagonal(final Class<T> elementType, final T[] mainDiagonal) {
-        N.checkArgNotNull(mainDiagonal, "mainDiagonal");
+        N.checkArgNotNull(mainDiagonal, cs.mainDiagonal);
         return ofDiagonals(elementType, mainDiagonal, null);
     }
 
@@ -539,13 +545,15 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     @Deprecated
     public static <T> Matrix<T> ofAntiDiagonal(final T[] antiDiagonal) {
-        N.checkArgNotNull(antiDiagonal, "antiDiagonal");
+        N.checkArgNotNull(antiDiagonal, cs.antiDiagonal);
 
         return ofDiagonals(null, antiDiagonal);
     }
 
     /**
      * Creates a square matrix with the supplied anti-diagonal and exact runtime element type.
+     * Values run from the upper-right corner down and left. All other cells are {@code null}; an
+     * empty diagonal produces a typed {@code 0 x 0} matrix.
      *
      * @param <T> the element type
      * @param elementType the exact runtime element type
@@ -554,7 +562,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws IllegalArgumentException if an argument is {@code null}
      */
     public static <T> Matrix<T> ofAntiDiagonal(final Class<T> elementType, final T[] antiDiagonal) {
-        N.checkArgNotNull(antiDiagonal, "antiDiagonal");
+        N.checkArgNotNull(antiDiagonal, cs.antiDiagonal);
         return ofDiagonals(elementType, null, antiDiagonal);
     }
 
@@ -722,7 +730,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     @MayReturnNull
     public T get(final Point point) {
-        N.checkArgNotNull(point, "point");
+        N.checkArgNotNull(point, cs.point);
 
         return a[point.rowIndex()][point.columnIndex()];
     }
@@ -774,7 +782,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @see #set(int, int, Object)
      */
     public void set(final Point point, final T value) {
-        N.checkArgNotNull(point, "point");
+        N.checkArgNotNull(point, cs.point);
 
         a[point.rowIndex()][point.columnIndex()] = value;
     }
@@ -932,6 +940,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * The returned array is a new array, so replacing its slots does not affect this matrix;
      * however, the element references themselves are shared with the matrix. Contrast with
      * {@link #rowView(int)}, which returns the live internal row array.
+     * The copy retains that row's runtime component type, which may be narrower than this matrix's
+     * element type when it was constructed through a legacy wrapping overload.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1025,7 +1035,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *         the offending element are not rolled back.
      */
     public void setRow(final int rowIndex, final T[] row) throws IndexOutOfBoundsException, IllegalArgumentException {
-        N.checkArgNotNull(row, "row");
+        N.checkArgNotNull(row, cs.row);
         checkRowIndex(rowIndex);
         N.checkArgument(row.length == columnCount, MSG_ROW_LENGTH_MISMATCH, columnCount, row.length);
 
@@ -1065,7 +1075,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *         the offending element are not rolled back.
      */
     public void setColumn(final int columnIndex, final T[] column) throws IndexOutOfBoundsException, IllegalArgumentException {
-        N.checkArgNotNull(column, "column");
+        N.checkArgNotNull(column, cs.column);
         checkColumnIndex(columnIndex);
         N.checkArgument(column.length == rowCount, MSG_COLUMN_LENGTH_MISMATCH, rowCount, column.length);
         final T[] values = snapshotIfBackingRow(column);
@@ -1217,7 +1227,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     @Override
     public void setMainDiagonal(final T[] mainDiagonal) throws IllegalArgumentException {
-        N.checkArgNotNull(mainDiagonal, "mainDiagonal");
+        N.checkArgNotNull(mainDiagonal, cs.mainDiagonal);
         final int len = diagonalLength();
         N.checkArgument(N.len(mainDiagonal) == len, MSG_DIAGONAL_LENGTH_MISMATCH, len, N.len(mainDiagonal));
 
@@ -1268,7 +1278,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Returns a defensive (shallow) copy of the anti-diagonal elements (upper-right to lower-left).
      * A rectangular matrix contributes {@code min(rowCount, columnCount)} elements.
-     * The first element is from the top-right corner, the last from the bottom-left corner.
+     * The first element is from the top-right corner; subsequent elements move one row down and
+     * one column left until either edge is reached.
      * The returned array is new, so replacing its slots does not affect this matrix; element
      * references themselves are shared with the matrix.
      *
@@ -1303,7 +1314,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * have exactly {@code min(rowCount, columnCount)} elements.
      *
      * <p>This method sets the anti-diagonal (secondary diagonal) elements from
-     * top-right to bottom-left, at positions (0,n-1), (1,n-2), (2,n-3), etc.</p>
+     * the top-right corner down and left, at positions {@code (0, columnCount - 1)},
+     * {@code (1, columnCount - 2)}, and so on until either edge is reached.</p>
      *
      * <p>If the supplied array is one of this matrix's live backing rows (for example a value returned
      * by {@code rowView(int)}), it is snapshotted first, so the values read are the ones in place when
@@ -1330,7 +1342,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     @Override
     public void setAntiDiagonal(final T[] antiDiagonal) throws IllegalArgumentException {
-        N.checkArgNotNull(antiDiagonal, "antiDiagonal");
+        N.checkArgNotNull(antiDiagonal, cs.antiDiagonal);
         final int len = diagonalLength();
         N.checkArgument(N.len(antiDiagonal) == len, MSG_DIAGONAL_LENGTH_MISMATCH, len, N.len(antiDiagonal));
         final T[] values = snapshotIfBackingRow(antiDiagonal);
@@ -2065,7 +2077,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *         the offending element are not rolled back.
      */
     public void copyFrom(final int destRowIndex, final int destColumnIndex, final T[][] source) throws IndexOutOfBoundsException, IllegalArgumentException {
-        N.checkArgNotNull(source, "source");
+        N.checkArgNotNull(source, cs.source);
         if (destRowIndex < 0 || destRowIndex > rowCount) {
             throw new IndexOutOfBoundsException(formatMsg("destRowIndex({}) must be in [0, rowCount({})]", destRowIndex, rowCount));
         }
@@ -2298,8 +2310,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @see #pad(int, int, int, int, Object)
      */
     public Matrix<T> resize(final int newRowCount, final int newColumnCount, final T defaultValue) throws IllegalArgumentException {
-        N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
-        N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
+        N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newRowCount, newRowCount);
+        N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newColumnCount, newColumnCount);
         checkNonNegativeShape(newRowCount, newColumnCount);
 
         if (newRowCount <= rowCount && newColumnCount <= columnCount) {
@@ -2433,10 +2445,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @see #resize(int, int, Object)
      */
     public Matrix<T> pad(final int padTop, final int padBottom, final int padLeft, final int padRight, final T defaultValue) throws IllegalArgumentException {
-        N.checkArgument(padTop >= 0, MSG_NEGATIVE_DIMENSION, "padTop", padTop);
-        N.checkArgument(padBottom >= 0, MSG_NEGATIVE_DIMENSION, "padBottom", padBottom);
-        N.checkArgument(padLeft >= 0, MSG_NEGATIVE_DIMENSION, "padLeft", padLeft);
-        N.checkArgument(padRight >= 0, MSG_NEGATIVE_DIMENSION, "padRight", padRight);
+        N.checkArgument(padTop >= 0, MSG_NEGATIVE_DIMENSION, cs.padTop, padTop);
+        N.checkArgument(padBottom >= 0, MSG_NEGATIVE_DIMENSION, cs.padBottom, padBottom);
+        N.checkArgument(padLeft >= 0, MSG_NEGATIVE_DIMENSION, cs.padLeft, padLeft);
+        N.checkArgument(padRight >= 0, MSG_NEGATIVE_DIMENSION, cs.padRight, padRight);
 
         if (padTop == 0 && padBottom == 0 && padLeft == 0 && padRight == 0) {
             return copy();
@@ -2848,8 +2860,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     @SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG")
     @Override
     public Matrix<T> reshapeAndPad(final int newRowCount, final int newColumnCount) {
-        N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, "newRowCount", newRowCount);
-        N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, "newColumnCount", newColumnCount);
+        N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newRowCount, newRowCount);
+        N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newColumnCount, newColumnCount);
         checkNonNegativeShape(newRowCount, newColumnCount);
         N.checkArgument((long) newRowCount * newColumnCount >= elementCount(), "New shape [{}x{}={}] is too small to hold all {} elements", newRowCount,
                 newColumnCount, (long) newRowCount * newColumnCount, elementCount());
@@ -2960,6 +2972,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Repeats the entire matrix as a repeated pattern by the specified number of times.
      * The matrix is repeated as a whole block rowRepeats times vertically and columnRepeats times horizontally.
+     * An empty dimension remains zero, while the other dimension is multiplied by its repeat count.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2999,6 +3012,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
         for (int i = 0, len = c.length; i < len; i++) {
             c[i] = newIndependentRow(elementType, columnCount * columnRepeats);
+        }
+
+        if (isEmpty()) {
+            return newResult(c, elementType, columnCount * columnRepeats);
         }
 
         for (int i = 0; i < rowCount; i++) {
@@ -3685,6 +3702,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
                 return remaining;
             }
 
+            /**
+             * {@inheritDoc}
+             *
+             * @throws NullPointerException if {@code c} is {@code null}; no elements are consumed
+             * @throws ArrayStoreException if a remaining element cannot be stored in {@code c};
+             *         elements copied before the failure remain consumed
+             */
             @Override
             public <A> A[] toArray(A[] c) {
                 // count() is terminal for ObjIteratorEx, so computing the destination size must
@@ -3696,9 +3720,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
                 }
 
                 for (int k = 0; k < len; k++) {
-                    c[k] = (A) a[i][j++];
+                    c[k] = (A) a[i][j];
 
-                    if (j >= columnCount) {
+                    if (++j >= columnCount) {
                         i++;
                         j = 0;
                     }
@@ -3812,6 +3836,16 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
                 return remaining;
             }
 
+            /**
+             * {@inheritDoc}
+             *
+             * <p>If the destination is a live backing row, all remaining values are collected before
+             * writing to it so that an earlier write cannot change a later source value.</p>
+             *
+             * @throws NullPointerException if {@code c} is {@code null}; no elements are consumed
+             * @throws ArrayStoreException if a remaining element cannot be stored in {@code c};
+             *         the iterator and destination may be partially consumed or modified
+             */
             @Override
             public <A> A[] toArray(A[] c) {
                 // count() is terminal for ObjIteratorEx, so computing the destination size must
@@ -3820,12 +3854,18 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
                 if (c.length < len) {
                     c = N.copyOf(c, len);
+                } else {
+                    for (final T[] row : a) {
+                        if (row == c) {
+                            return super.toArray(c);
+                        }
+                    }
                 }
 
                 for (int k = 0; k < len; k++) {
-                    c[k] = (A) a[i++][j];
+                    c[k] = (A) a[i][j];
 
-                    if (i >= rowCount) {
+                    if (++i >= rowCount) {
                         i = 0;
                         j++;
                     }
@@ -4192,7 +4232,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @see #toTransposedDataset(Collection)
      */
     public Dataset toDataset(final Collection<String> columnNames) throws IllegalArgumentException {
-        N.checkArgNotNull(columnNames, "columnNames");
+        N.checkArgNotNull(columnNames, cs.columnNames);
         N.checkArgument(columnNames.size() == columnCount, "The size({}) of specified columnNames and column count({}) of this Matrix are not equal",
                 columnNames.size(), columnCount);
         N.checkArgument(rowCount == 0 || columnCount > 0, "Cannot convert a matrix with rows but zero columns to a row dataset");
@@ -4256,7 +4296,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @see #toDataset(Collection)
      */
     public Dataset toTransposedDataset(final Collection<String> columnNames) throws IllegalArgumentException {
-        N.checkArgNotNull(columnNames, "columnNames");
+        N.checkArgNotNull(columnNames, cs.columnNames);
         N.checkArgument(columnNames.size() == rowCount, "The size({}) of specified columnNames and row count({}) of this Matrix are not equal",
                 columnNames.size(), rowCount);
         // Mirror of the guard in toDataset: a dataset with no columns cannot encode a non-zero

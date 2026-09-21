@@ -1133,6 +1133,31 @@ class MatrixTest extends TestBase {
     }
 
     @Test
+    public void testRepeatMatrixWithEmptyDimensionsSkipsUnusedRepeats() {
+        Matrix<Number> zeroRows = Matrix.empty(Number.class, 1);
+        Matrix<Number> zeroColumns = Matrix.wrap(Number.class, new Number[0], new Number[0]);
+
+        Assertions.assertTimeout(java.time.Duration.ofSeconds(5), () -> {
+            Matrix<Number> wide = zeroRows.repeatMatrix(Integer.MAX_VALUE, Integer.MAX_VALUE);
+            assertEquals(0, wide.rowCount());
+            assertEquals(Integer.MAX_VALUE, wide.columnCount());
+            assertEquals(Number.class, wide.elementType);
+
+            Matrix<Number> narrow = zeroColumns.repeatMatrix(1, Integer.MAX_VALUE);
+            assertEquals(2, narrow.rowCount());
+            assertEquals(0, narrow.columnCount());
+            assertEquals(Number.class, narrow.elementType);
+            assertNotSame(narrow.rowView(0), narrow.rowView(1));
+            assertNotSame(zeroColumns.rowView(0), narrow.rowView(0));
+        });
+
+        assertThrows(IllegalArgumentException.class, () -> zeroRows.repeatMatrix(0, 1));
+        assertThrows(IllegalArgumentException.class, () -> zeroColumns.repeatMatrix(1, 0));
+        assertThrows(IllegalArgumentException.class, () -> Matrix.empty(Number.class, 2).repeatMatrix(1, Integer.MAX_VALUE));
+        assertThrows(IllegalArgumentException.class, () -> zeroColumns.repeatMatrix(Integer.MAX_VALUE, 1));
+    }
+
+    @Test
     public void testFlatten() {
         Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 } });
 
@@ -1731,6 +1756,99 @@ class MatrixTest extends TestBase {
 
         Assertions.assertSame(destination, array);
         Assertions.assertArrayEquals(new Integer[] { 1, 2, 3, 4, null, -1 }, array);
+    }
+
+    @Test
+    public void testRowMajorIteratorNullArrayRetainsInheritedContract() {
+        Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[] { 1, 2 }, new Integer[] { 3, 4 });
+
+        try (Stream<Integer> stream = matrix.rowMajorStream()) {
+            ObjIteratorEx<Integer> iterator = (ObjIteratorEx<Integer>) stream.iterator();
+            assertEquals(1, iterator.next());
+
+            assertThrows(NullPointerException.class, () -> iterator.toArray((Integer[]) null));
+            assertArrayEquals(new Integer[] { 2, 3, 4 }, iterator.toArray(new Integer[0]));
+            assertFalse(iterator.hasNext());
+            assertThrows(NullPointerException.class, () -> iterator.toArray((Integer[]) null));
+        }
+    }
+
+    @Test
+    public void testRowMajorIteratorArrayStoreFailureKeepsValidCursor() {
+        Matrix<Number> matrix = Matrix.wrap(Number.class, new Number[] { 1 }, new Number[] { 2.5d }, new Number[] { 3 });
+
+        try (Stream<Number> stream = matrix.rowMajorStream()) {
+            ObjIteratorEx<Number> iterator = (ObjIteratorEx<Number>) stream.iterator();
+            Integer[] destination = new Integer[3];
+
+            assertThrows(ArrayStoreException.class, () -> iterator.toArray(destination));
+            assertEquals(1, destination[0]);
+            assertTrue(iterator.hasNext());
+            assertEquals(2.5d, iterator.next());
+            assertEquals(3, iterator.next());
+            assertFalse(iterator.hasNext());
+        }
+    }
+
+    @Test
+    public void testColumnMajorIteratorArrayStoreFailureKeepsValidCursor() {
+        Matrix<Number> matrix = Matrix.wrap(Number.class, new Number[] { 1, 2.5d, 3 });
+
+        try (Stream<Number> stream = matrix.columnMajorStream()) {
+            ObjIteratorEx<Number> iterator = (ObjIteratorEx<Number>) stream.iterator();
+            Integer[] destination = new Integer[3];
+
+            assertThrows(ArrayStoreException.class, () -> iterator.toArray(destination));
+            assertEquals(1, destination[0]);
+            assertTrue(iterator.hasNext());
+            assertEquals(2.5d, iterator.next());
+            assertEquals(3, iterator.next());
+            assertFalse(iterator.hasNext());
+        }
+    }
+
+    @Test
+    public void testColumnMajorIteratorToArraySnapshotsAliasedDestination() {
+        Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[] { 1, 2, 3 }, new Integer[] { 4, 5, 6 });
+        Integer[] destination = matrix.rowView(1);
+
+        try (Stream<Integer> stream = matrix.columnMajorStream(0, 1)) {
+            ObjIteratorEx<Integer> iterator = (ObjIteratorEx<Integer>) stream.iterator();
+
+            Assertions.assertSame(destination, iterator.toArray(destination));
+            assertArrayEquals(new Integer[] { 1, 4, null }, destination);
+            assertFalse(iterator.hasNext());
+        }
+    }
+
+    @Test
+    public void testColumnMajorIteratorToArraySnapshotsAliasedDestinationAfterAdvance() {
+        Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[] { 1, 2, 3, 4 }, new Integer[] { 5, 6, 7, 8 });
+        Integer[] destination = matrix.rowView(1);
+
+        try (Stream<Integer> stream = matrix.columnMajorStream(0, 3)) {
+            ObjIteratorEx<Integer> iterator = (ObjIteratorEx<Integer>) stream.iterator();
+            iterator.advance(2);
+
+            Assertions.assertSame(destination, iterator.toArray(destination));
+            assertArrayEquals(new Integer[] { 2, 6, 3, 7 }, destination);
+            assertFalse(iterator.hasNext());
+        }
+    }
+
+    @Test
+    public void testColumnMajorIteratorNullArrayRetainsInheritedContract() {
+        Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[] { 1, 2 }, new Integer[] { 3, 4 });
+
+        try (Stream<Integer> stream = matrix.columnMajorStream()) {
+            ObjIteratorEx<Integer> iterator = (ObjIteratorEx<Integer>) stream.iterator();
+            assertEquals(1, iterator.next());
+
+            assertThrows(NullPointerException.class, () -> iterator.toArray((Integer[]) null));
+            assertArrayEquals(new Integer[] { 3, 2, 4 }, iterator.toArray(new Integer[0]));
+            assertFalse(iterator.hasNext());
+            assertThrows(NullPointerException.class, () -> iterator.toArray((Integer[]) null));
+        }
     }
 
     @Test
