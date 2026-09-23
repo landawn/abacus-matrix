@@ -6504,4 +6504,62 @@ class DoubleMatrixTest extends TestBase {
         assertThrows(IllegalArgumentException.class, () -> noRows.repeatMatrix(1, Integer.MAX_VALUE));
         assertThrows(IllegalArgumentException.class, () -> noColumns.repeatMatrix(Integer.MAX_VALUE, 1));
     }
+
+    @Test
+    public void testWrapAndConstructor_copyOuterArrayButShareRows() {
+        // Pins the documented contract (class doc, wrap @return, copyOf prose): wrap and the constructor
+        // snapshot the caller's OUTER array, so replacing a row there is not visible, while the row
+        // arrays themselves stay shared, so cell writes are visible in both directions.
+        final double[][] data = { { 1.0, 2.0 }, { 3.0, 4.0 } };
+        final DoubleMatrix wrapped = DoubleMatrix.wrap(data);
+        final DoubleMatrix constructed = new DoubleMatrix(data);
+
+        data[0] = new double[] { 9.0, 9.0 };
+        assertEquals(1.0, wrapped.get(0, 0));
+        assertEquals(1.0, constructed.get(0, 0));
+
+        data[1][0] = 30.0;
+        assertEquals(30.0, wrapped.get(1, 0));
+        assertEquals(30.0, constructed.get(1, 0));
+        assertSame(data[1], wrapped.rowView(1));
+
+        wrapped.set(1, 1, 40.0);
+        assertEquals(40.0, data[1][1]);
+
+        // copyOf, by contrast, shares nothing with the caller.
+        final DoubleMatrix copied = DoubleMatrix.copyOf(data);
+        data[1][1] = -1.0;
+        assertEquals(40.0, copied.get(1, 1));
+        assertNotSame(data[1], copied.rowView(1));
+    }
+
+    @Test
+    public void testMatrixMultiply_parallelAndSequentialAreBitwiseIdentical() {
+        // Every path accumulates each cell from +0.0 in ascending k order, so forcing the parallel
+        // path must not change a single bit of an FP result whose value depends on summation order.
+        final int[][] shapes = { { 3, 7, 5 }, { 7, 3, 5 }, { 5, 7, 3 }, { 9, 1, 9 }, { 20, 30, 40 }, { 40, 30, 20 } };
+        final java.util.Random random = new java.util.Random(42);
+
+        for (final int[] shape : shapes) {
+            final DoubleMatrix left = DoubleMatrix.random(shape[0], shape[1], random).map(x -> x * 1e6 - 5e5);
+            final DoubleMatrix right = DoubleMatrix.random(shape[1], shape[2], random).map(x -> x * 1e-3 - 5e-4);
+            final DoubleMatrix[] results = new DoubleMatrix[2];
+
+            Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> results[0] = left.matrixMultiply(right));
+            Matrices.runWithParallelMode(ParallelMode.FORCE_ON, () -> results[1] = left.matrixMultiply(right));
+
+            for (int i = 0; i < shape[0]; i++) {
+                for (int j = 0; j < shape[2]; j++) {
+                    double expected = 0.0;
+
+                    for (int k = 0; k < shape[1]; k++) {
+                        expected += left.get(i, k) * right.get(k, j);
+                    }
+
+                    assertEquals(Double.doubleToRawLongBits(expected), Double.doubleToRawLongBits(results[0].get(i, j)));
+                    assertEquals(Double.doubleToRawLongBits(expected), Double.doubleToRawLongBits(results[1].get(i, j)));
+                }
+            }
+        }
+    }
 }

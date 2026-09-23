@@ -70,7 +70,8 @@ import com.landawn.abacus.util.stream.Stream;
  *
  * <p>Primitive scalar class tokens, such as {@code int.class}, are normalized to their wrapper
  * classes. Array-valued element types, including primitive array types such as {@code int[].class},
- * retain their exact runtime type.</p>
+ * retain their exact runtime type. {@code void.class} is not a valid element type: every method that
+ * accepts an element-type token rejects it with {@link IllegalArgumentException}.</p>
  *
  * @param <T> the element type stored in the matrix
  * @see IntMatrix
@@ -218,6 +219,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     @SuppressWarnings("unchecked")
     private static <T> Class<T> normalizeElementType(final Class<T> elementType) {
         N.checkArgNotNull(elementType, cs.elementType);
+        // void.class is primitive but ClassUtil.wrap leaves it unchanged and no array of it can exist, so
+        // without this check it fails deep inside array allocation with a message-less exception.
+        N.checkArgument(elementType != void.class, "Element type cannot be void.class");
         // Only a primitive SCALAR has a wrapper here. ClassUtil.wrap also rewrites primitive array
         // types (int[] -> Integer[]), which would break Matrix<int[]>: its rows really are int[][],
         // so a wrapped element type would no longer match the backing storage.
@@ -283,7 +287,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     }
 
     /**
-     * Creates a typed {@code 0 x 0} matrix.
+     * Returns a typed {@code 0 x 0} matrix. For {@code Object.class} this is the shared instance
+     * returned by {@link #empty()}; for any other type a new matrix is created.
      *
      * @param <T> the element type
      * @param elementType the exact runtime element type
@@ -295,8 +300,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     }
 
     /**
-     * Creates a typed matrix with zero rows and the specified logical column count. The column
-     * count is stored explicitly because a zero-length outer array cannot encode it.
+     * Returns a typed matrix with zero rows and the specified logical column count. The column
+     * count is stored explicitly because a zero-length outer array cannot encode it. For
+     * {@code Object.class} with {@code columnCount == 0} this is the shared instance returned by
+     * {@link #empty()}; every other combination creates a new matrix.
      *
      * @param <T> the element type
      * @param elementType the exact runtime element type
@@ -1707,13 +1714,14 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             throws IllegalArgumentException, E {
         N.checkArgNotNull(mapper, cs.mapper);
         N.checkArgNotNull(targetElementType, cs.targetElementType);
+        final Class<R> resultElementType = normalizeElementType(targetElementType);
 
-        final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
+        final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, resultElementType);
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return newResult(result, normalizeElementType(targetElementType), columnCount);
+        return newResult(result, resultElementType, columnCount);
     }
 
     /**
@@ -2226,7 +2234,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             N.copy(a[i], fromColumnIndex, c[i - fromRowIndex], 0, resultColumnCount);
         }
 
-        return new Matrix<>(c, elementType, resultColumnCount);
+        return newResult(c, elementType, resultColumnCount);
     }
 
     /**
@@ -3324,7 +3332,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             N.copy(other.a[i], 0, c[i], columnCount, other.columnCount);
         }
 
-        return new Matrix<>(c, resultElementType, (int) mergedColumnCount);
+        return newResult(c, resultElementType, (int) mergedColumnCount);
     }
 
     private void checkStackElementType(final Class<T> resultElementType, final Matrix<T> other) {
@@ -3410,14 +3418,16 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgNotNull(targetElementType, cs.targetElementType);
 
+        final Class<R> resultElementType = normalizeElementType(targetElementType);
+
         final B[][] b = other.a;
-        final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
+        final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, resultElementType);
 
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.apply(a[i][j], b[i][j]);
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return newResult(result, normalizeElementType(targetElementType), columnCount);
+        return newResult(result, resultElementType, columnCount);
     }
 
     /**
@@ -3446,8 +3456,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param third the third matrix to zip with (must have the same dimensions, must not be {@code null})
      * @param zipFunction the function to apply to corresponding elements (must not be {@code null})
      * @return a new matrix with the results of the zip function
-     * @throws IllegalArgumentException if {@code other} or {@code third} is {@code null}, if any of the
-     *         matrices have different shapes, or if {@code zipFunction} is {@code null}
+     * @throws IllegalArgumentException if {@code other} is {@code null} or its shape differs from this matrix's shape,
+     *         if {@code third} is {@code null} or its shape differs from this matrix's shape,
+     *         or if {@code zipFunction} is {@code null}
      * @throws ArrayStoreException if {@code zipFunction} returns a value that is not assignable to this matrix's runtime element type
      *         (use {@link #zipWith(Matrix, Matrix, Throwables.TriFunction, Class)} with an explicit target type to avoid this)
      * @throws E if the zip function throws an exception
@@ -3488,8 +3499,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param zipFunction the function to apply to corresponding elements (must not be {@code null})
      * @param targetElementType the class of the result element type (must not be {@code null})
      * @return a new matrix with the results of the zip function
-     * @throws IllegalArgumentException if {@code other} or {@code third} is {@code null}, if any of the
-     *         matrices have different shapes, or if {@code zipFunction} or {@code targetElementType} is {@code null}
+     * @throws IllegalArgumentException if {@code other} is {@code null} or its shape differs from this matrix's shape,
+     *         if {@code third} is {@code null} or its shape differs from this matrix's shape,
+     *         or if {@code zipFunction} or {@code targetElementType} is {@code null}
      * @throws E if the zip function throws an exception
      */
     public <B, C, R, E extends Exception> Matrix<R> zipWith(final Matrix<B> other, final Matrix<C> third,
@@ -3499,15 +3511,17 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgNotNull(targetElementType, cs.targetElementType);
 
+        final Class<R> resultElementType = normalizeElementType(targetElementType);
+
         final B[][] b = other.a;
         final C[][] c = third.a;
-        final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
+        final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, resultElementType);
 
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.apply(a[i][j], b[i][j], c[i][j]);
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return newResult(result, normalizeElementType(targetElementType), columnCount);
+        return newResult(result, resultElementType, columnCount);
     }
 
     private void checkZipShape(final Matrix<?> other) {
@@ -3516,11 +3530,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
                 other.rowCount, other.columnCount);
     }
 
+    // Validates each operand fully (null, then shape) before the next, in signature order, with a
+    // separate message per operand -- the same order and wording as the primitive zipWith(other, third, fn).
     private void checkZipShape(final Matrix<?> other, final Matrix<?> third) {
-        N.checkArgNotNull(other, cs.other);
+        checkZipShape(other);
         N.checkArgNotNull(third, cs.third);
-        N.checkArgument(Matrices.isSameShape(this, other, third), "Cannot zip matrices with different shapes: this is {}x{}, other is {}x{}, third is {}x{}",
-                rowCount, columnCount, other.rowCount, other.columnCount, third.rowCount, third.columnCount);
+        N.checkArgument(Matrices.isSameShape(this, third), "Cannot zip matrices with different shapes: this is {}x{} but third is {}x{}", rowCount, columnCount,
+                third.rowCount, third.columnCount);
     }
 
     /**

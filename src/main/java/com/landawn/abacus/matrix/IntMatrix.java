@@ -15,7 +15,6 @@
 package com.landawn.abacus.matrix;
 
 import java.util.NoSuchElementException;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.random.RandomGenerator;
 
 import com.landawn.abacus.util.Array;
@@ -114,7 +113,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @return the shared empty matrix when the result is {@code 0 x 0}, otherwise a new matrix
      */
     static IntMatrix wrapResult(final int[][] a, final int columnCount) {
-        // Every wrapResult(...) call site passes an array this class just allocated, so the rows are
+        // Every wrapResult(...) call site (here, in Matrix and in Matrices) passes freshly allocated rows, so they are
         // identity-distinct by construction and the duplicate-row scan can be skipped.
         return a.length == 0 && columnCount == 0 ? EMPTY_INT_MATRIX : new IntMatrix(a, columnCount, true);
     }
@@ -400,7 +399,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @see #random(int, int)
      */
     public static IntMatrix randomRow(final int columnCount) throws IllegalArgumentException {
-        return randomRow(columnCount, ThreadLocalRandom.current());
+        return randomRow(columnCount, defaultRandomGenerator());
     }
 
     /**
@@ -439,7 +438,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative
      */
     public static IntMatrix random(final int rowCount, final int columnCount) throws IllegalArgumentException {
-        return random(rowCount, columnCount, ThreadLocalRandom.current());
+        return random(rowCount, columnCount, defaultRandomGenerator());
     }
 
     /**
@@ -3143,8 +3142,10 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
 
     /**
      * Multiplies this matrix by {@code other} using {@code long} products and accumulators.
-     * The widened result avoids all per-product {@code int} overflow, but a sufficiently long dot
-     * product can still overflow {@code long} and wrap. Use {@link #matrixMultiplyWidenedExact(IntMatrix)}
+     * The widened result avoids all per-product {@code int} overflow (every single product fits in a
+     * {@code long}), but the accumulated dot product can still overflow {@code long} and wrap &mdash; two
+     * terms are enough: {@code [[Integer.MIN_VALUE, Integer.MIN_VALUE]]} times its transpose is
+     * 2<sup>63</sup>, which wraps to {@code Long.MIN_VALUE}. Use {@link #matrixMultiplyWidenedExact(IntMatrix)}
      * when that overflow must be reported.
      *
      * @param other the right-hand matrix

@@ -4319,4 +4319,260 @@ class AbstractMatrixTest extends TestBase {
         assertEquals(4L, zeroRows.columnPoints(0, 4).count());
     }
 
+    /** One {@code rowCount x columnCount} matrix of each of the nine concrete types. */
+    @SuppressWarnings("deprecation")
+    private static List<AbstractMatrix<?, ?, ?, ?, ?>> allNineTypes(final int rowCount, final int columnCount) {
+        // copyRows(0, rowCount) keeps the logical column count even when rowCount == 0.
+        final int backingRows = Math.max(rowCount, 1);
+        final List<AbstractMatrix<?, ?, ?, ?, ?>> result = new ArrayList<>();
+        result.add(BooleanMatrix.wrap(new boolean[backingRows][columnCount]).copyRows(0, rowCount));
+        result.add(ByteMatrix.wrap(new byte[backingRows][columnCount]).copyRows(0, rowCount));
+        result.add(CharMatrix.wrap(new char[backingRows][columnCount]).copyRows(0, rowCount));
+        result.add(ShortMatrix.wrap(new short[backingRows][columnCount]).copyRows(0, rowCount));
+        result.add(IntMatrix.wrap(new int[backingRows][columnCount]).copyRows(0, rowCount));
+        result.add(LongMatrix.wrap(new long[backingRows][columnCount]).copyRows(0, rowCount));
+        result.add(FloatMatrix.wrap(new float[backingRows][columnCount]).copyRows(0, rowCount));
+        result.add(DoubleMatrix.wrap(new double[backingRows][columnCount]).copyRows(0, rowCount));
+        result.add(Matrix.wrap(Integer.class, new Integer[backingRows][columnCount]).copyRows(0, rowCount));
+        return result;
+    }
+
+    private static void assertShape(final String context, final AbstractMatrix<?, ?, ?, ?, ?> matrix, final int rowCount, final int columnCount) {
+        assertEquals(rowCount + "x" + columnCount, matrix.rowCount() + "x" + matrix.columnCount(), context);
+    }
+
+    // The package overview promises that N x 0 and 0 x N shapes are preserved by every operation and that
+    // shape transformations return a separate matrix. Pin that contract for all nine concrete types.
+    @Test
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void testPackageContract_DegenerateShapesPreservedAcrossAllNineTypes() throws Exception {
+        for (final int[] shape : new int[][] { { 0, 3 }, { 3, 0 } }) {
+            final int r = shape[0];
+            final int c = shape[1];
+
+            for (final AbstractMatrix m : allNineTypes(r, c)) {
+                final String ctx = m.getClass().getSimpleName() + " " + r + "x" + c;
+                assertShape(ctx, m, r, c);
+
+                final List<AbstractMatrix> results = new ArrayList<>();
+                results.add(m.transpose());
+                results.add(m.rotate90());
+                results.add(m.rotate270());
+                assertShape(ctx + " transpose", results.get(0), c, r);
+                assertShape(ctx + " rotate90", results.get(1), c, r);
+                assertShape(ctx + " rotate270", results.get(2), c, r);
+
+                final AbstractMatrix[] sameShape = { m.rotate180(), m.flipHorizontally(), m.flipVertically(), m.copy(), m.copyRows(0, r),
+                        m.copyColumns(0, c), m.copyRegion(0, r, 0, c), m.resize(r, c), m.pad(0, 0, 0, 0), m.repeatElements(1, 1), m.repeatMatrix(1, 1),
+                        m.reshape(r, c) };
+
+                for (final AbstractMatrix x : sameShape) {
+                    assertShape(ctx, x, r, c);
+                    results.add(x);
+                }
+
+                for (final AbstractMatrix x : results) {
+                    assertNotSame(m, x, ctx + ": a non-0x0 result must be a separate matrix");
+                }
+
+                assertShape(ctx + " copyRows(0, 0)", m.copyRows(0, 0), 0, c);
+                assertShape(ctx + " copyColumns(0, 0)", m.copyColumns(0, 0), r, 0);
+                assertShape(ctx + " resize(2, 4)", m.resize(2, 4), 2, 4);
+                assertShape(ctx + " pad", m.pad(1, 2, 3, 4), r + 3, c + 7);
+                assertShape(ctx + " repeatElements", m.repeatElements(2, 3), 2 * r, 3 * c);
+                assertShape(ctx + " repeatMatrix", m.repeatMatrix(2, 3), 2 * r, 3 * c);
+                assertShape(ctx + " stackVertically", m.stackVertically(m), 2 * r, c);
+                assertShape(ctx + " stackHorizontally", m.stackHorizontally(m), r, 2 * c);
+                assertShape(ctx + " reshapeAndPad", m.reshapeAndPad(0, 2), 0, 2);
+                assertShape(ctx + " reshapeAndPadToColumnCount", m.reshapeAndPadToColumnCount(2), 0, 2);
+
+                assertEquals(r, ((Stream) m.rowStreams()).count(), ctx + " rowStreams");
+                assertEquals(c, ((Stream) m.columnStreams()).count(), ctx + " columnStreams");
+
+                // A zero-row matrix does not invoke the action; N x 0 invokes it once with an empty array.
+                final AtomicInteger calls = new AtomicInteger();
+                final int[] lastLength = { -1 };
+                m.mutateViaFlatArray(flat -> {
+                    calls.incrementAndGet();
+                    lastLength[0] = java.lang.reflect.Array.getLength(flat);
+                });
+                assertEquals(r == 0 ? 0 : 1, calls.get(), ctx + " mutateViaFlatArray calls");
+                if (r > 0) {
+                    assertEquals(0, lastLength[0], ctx + " mutateViaFlatArray length");
+                }
+
+                // appendTo and println share one rendering: "[]" for zero rows, one "[]" per row for N x 0.
+                final StringBuilder sb = new StringBuilder();
+                m.appendTo(sb);
+                assertEquals(r == 0 ? "[]" : "[]\n[]\n[]", sb.toString(), ctx + " appendTo");
+                assertEquals(m.toMultilineString(), sb.toString(), ctx + " appendTo vs toMultilineString");
+            }
+        }
+    }
+
+    // appendTo streams elements through appendElementForOutput while println uses each subclass's own
+    // toMultilineString(); the class documentation says both produce the same rendering.
+    @Test
+    public void testAppendTo_MatchesPrintlnRenderingForEveryType() {
+        final List<AbstractMatrix<?, ?, ?, ?, ?>> matrices = List.of(BooleanMatrix.wrap(new boolean[][] { { true, false } }),
+                ByteMatrix.wrap(new byte[][] { { Byte.MIN_VALUE, Byte.MAX_VALUE } }), CharMatrix.wrap(new char[][] { { 'a', '\n', '\'', (char) 0 } }),
+                ShortMatrix.wrap(new short[][] { { Short.MIN_VALUE } }), IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } }),
+                LongMatrix.wrap(new long[][] { { Long.MIN_VALUE, Long.MAX_VALUE } }),
+                FloatMatrix.wrap(new float[][] { { Float.NaN, -0.0f, 0.1f, 1e10f } }),
+                DoubleMatrix.wrap(new double[][] { { Double.NaN, -0.0, 1e-10, Double.NEGATIVE_INFINITY } }),
+                Matrix.wrap(Object.class, new Object[][] { { null, "x", new int[] { 1, 2 } } }));
+
+        for (final AbstractMatrix<?, ?, ?, ?, ?> m : matrices) {
+            final StringBuilder sb = new StringBuilder();
+            m.appendTo(sb);
+            assertEquals(m.toMultilineString(), sb.toString(), m.getClass().getSimpleName());
+        }
+
+        assertEquals("['a', '\\n', '\\'']", CharMatrix.wrap(new char[][] { { 'a', '\n', '\'' } }).toMultilineString());
+        assertEquals("[null, x]", Matrix.wrap(String.class, new String[][] { { null, "x" } }).toMultilineString());
+    }
+
+    // Family convention: every non-boolean primitive matrix (CharMatrix included) converts to the int, long,
+    // float and double matrix types except its own; no class offers a byte/char/short/boolean conversion.
+    @Test
+    public void testFamilyConventions_PrimitiveConversionTable() throws Exception {
+        final List<Class<?>> nonBoolean = List.of(ByteMatrix.class, CharMatrix.class, ShortMatrix.class, IntMatrix.class, LongMatrix.class,
+                FloatMatrix.class, DoubleMatrix.class);
+        final List<Class<?>> provided = List.of(IntMatrix.class, LongMatrix.class, FloatMatrix.class, DoubleMatrix.class);
+        final List<String> omitted = List.of("toByteMatrix", "toCharMatrix", "toShortMatrix", "toBooleanMatrix");
+
+        for (final Class<?> source : nonBoolean) {
+            for (final Class<?> target : provided) {
+                final String name = "to" + target.getSimpleName();
+
+                if (target == source) {
+                    assertThrows(NoSuchMethodException.class, () -> source.getMethod(name), source.getSimpleName() + "." + name);
+                } else {
+                    assertEquals(target, source.getMethod(name).getReturnType(), source.getSimpleName() + "." + name);
+                }
+            }
+        }
+
+        for (final Class<?> source : List.of(BooleanMatrix.class, ByteMatrix.class, CharMatrix.class, ShortMatrix.class, IntMatrix.class,
+                LongMatrix.class, FloatMatrix.class, DoubleMatrix.class, Matrix.class)) {
+            for (final java.lang.reflect.Method method : source.getMethods()) {
+                assertFalse(omitted.contains(method.getName()), source.getSimpleName() + "." + method.getName());
+
+                if (source == BooleanMatrix.class) {
+                    assertFalse(method.getName().matches("to[A-Z][a-z]+Matrix"), "BooleanMatrix." + method.getName());
+                }
+            }
+        }
+
+        // The provided conversions are plain Java casts, so narrowing ones may lose information.
+        assertEquals(-1, LongMatrix.wrap(new long[][] { { Long.MAX_VALUE } }).toIntMatrix().get(0, 0));
+        assertEquals(-2L, DoubleMatrix.wrap(new double[][] { { -2.9 } }).toLongMatrix().get(0, 0));
+
+        // The documented route to an omitted target type.
+        final ByteMatrix bytes = IntMatrix.wrap(new int[][] { { 1, 300 } }).boxed().mapToByte(Integer::byteValue);
+        assertEquals(ByteMatrix.wrap(new byte[][] { { 1, 44 } }), bytes);
+    }
+
+    // Family convention: the static Matrices zip helpers exist only for ByteMatrix, IntMatrix, LongMatrix,
+    // DoubleMatrix and Matrix; BooleanMatrix, CharMatrix, ShortMatrix and FloatMatrix offer zipWith only.
+    @Test
+    public void testFamilyConventions_StaticZipCounterpartsCoverOnlyByteIntLongDoubleAndMatrix() {
+        final java.util.Set<Class<?>> zipOperandTypes = new java.util.HashSet<>();
+
+        for (final java.lang.reflect.Method method : Matrices.class.getMethods()) {
+            if (!method.getName().startsWith("zip")) {
+                continue;
+            }
+
+            for (final java.lang.reflect.Type type : method.getGenericParameterTypes()) {
+                java.lang.reflect.Type operand = type;
+
+                if (type instanceof java.lang.reflect.ParameterizedType p && p.getRawType() == java.util.Collection.class) {
+                    operand = p.getActualTypeArguments()[0];
+                }
+
+                if (operand instanceof java.lang.reflect.ParameterizedType p) {
+                    operand = p.getRawType();
+                }
+
+                if (operand instanceof Class<?> cls && AbstractMatrix.class.isAssignableFrom(cls)) {
+                    zipOperandTypes.add(cls);
+                }
+            }
+        }
+
+        assertEquals(java.util.Set.of(ByteMatrix.class, IntMatrix.class, LongMatrix.class, DoubleMatrix.class, Matrix.class), zipOperandTypes);
+
+        for (final Class<?> cls : List.of(BooleanMatrix.class, CharMatrix.class, ShortMatrix.class, FloatMatrix.class)) {
+            assertTrue(java.util.Arrays.stream(cls.getMethods()).filter(m -> m.getName().equals("zipWith")).count() >= 2, cls.getSimpleName());
+        }
+    }
+
+    // Package overview: wrap(row, row) is rejected because rows must be identity-distinct, copyOf(row, row)
+    // copies each row; a primitive zero-row wrap/copyOf yields the shared 0 x 0 instance, while
+    // Matrix.copyOf always allocates; copyFrom modifies the receiver and skips null source rows.
+    @Test
+    public void testPackageContract_FactoryStorageOwnershipAcrossTypes() {
+        final boolean[] z = new boolean[2];
+        final byte[] y = new byte[2];
+        final char[] ch = new char[2];
+        final short[] s = new short[2];
+        final int[] i = new int[2];
+        final long[] l = new long[2];
+        final float[] f = new float[2];
+        final double[] d = new double[2];
+        final String[] o = new String[2];
+
+        assertThrows(IllegalArgumentException.class, () -> BooleanMatrix.wrap(z, z));
+        assertThrows(IllegalArgumentException.class, () -> ByteMatrix.wrap(y, y));
+        assertThrows(IllegalArgumentException.class, () -> CharMatrix.wrap(ch, ch));
+        assertThrows(IllegalArgumentException.class, () -> ShortMatrix.wrap(s, s));
+        assertThrows(IllegalArgumentException.class, () -> IntMatrix.wrap(i, i));
+        assertThrows(IllegalArgumentException.class, () -> LongMatrix.wrap(l, l));
+        assertThrows(IllegalArgumentException.class, () -> FloatMatrix.wrap(f, f));
+        assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.wrap(d, d));
+        assertThrows(IllegalArgumentException.class, () -> Matrix.wrap(String.class, o, o));
+
+        assertEquals(2, BooleanMatrix.copyOf(z, z).rowCount());
+        assertEquals(2, ByteMatrix.copyOf(y, y).rowCount());
+        assertEquals(2, CharMatrix.copyOf(ch, ch).rowCount());
+        assertEquals(2, ShortMatrix.copyOf(s, s).rowCount());
+        assertEquals(2, IntMatrix.copyOf(i, i).rowCount());
+        assertEquals(2, LongMatrix.copyOf(l, l).rowCount());
+        assertEquals(2, FloatMatrix.copyOf(f, f).rowCount());
+        assertEquals(2, DoubleMatrix.copyOf(d, d).rowCount());
+        assertEquals(2, Matrix.copyOf(String.class, o, o).rowCount());
+
+        assertSame(IntMatrix.empty(), IntMatrix.wrap(new int[0][]));
+        assertSame(IntMatrix.empty(), IntMatrix.copyOf(new int[0][]));
+        assertSame(CharMatrix.empty(), CharMatrix.wrap(new char[0][]));
+        assertSame(BooleanMatrix.empty(), BooleanMatrix.copyOf(new boolean[0][]));
+
+        final String[][] zeroRows = new String[0][];
+        final Matrix<String> copied = Matrix.copyOf(String.class, zeroRows);
+        assertNotSame(Matrix.empty(), copied);
+        assertShape("Matrix.copyOf zero rows", copied, 0, 0);
+
+        final String[][] source = { { "a" }, { "b" } };
+        final Matrix<String> wrapped = Matrix.wrap(String.class, source);
+        source[0][0] = "z";
+        source[1] = new String[] { "q" };
+        assertEquals("z", wrapped.get(0, 0)); // row storage shared
+        assertEquals("b", wrapped.get(1, 0)); // outer array snapshotted
+
+        final IntMatrix target = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
+        target.copyFrom(new int[][] { null, { 7, 8 } });
+        assertEquals(IntMatrix.wrap(new int[][] { { 1, 2 }, { 7, 8 } }), target);
+    }
+
+    @Test
+    public void testReshapeAndPadToColumnCount_PadsWithEachTypesDefaultValue() {
+        assertEquals(CharMatrix.wrap(new char[][] { { 'a', 'b' }, { 'c', (char) 0 } }),
+                CharMatrix.wrap(new char[][] { { 'a', 'b', 'c' } }).reshapeAndPadToColumnCount(2));
+        assertEquals(BooleanMatrix.wrap(new boolean[][] { { true, true }, { true, false } }),
+                BooleanMatrix.wrap(new boolean[][] { { true, true, true } }).reshapeAndPadToColumnCount(2));
+        assertEquals(Matrix.wrap(String.class, new String[][] { { "a", "b" }, { "c", null } }),
+                Matrix.wrap(String.class, new String[][] { { "a", "b", "c" } }).reshapeAndPadToColumnCount(2));
+    }
+
 }

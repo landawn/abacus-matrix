@@ -7812,4 +7812,71 @@ class MatrixTest extends TestBase {
             assertTrue(matrix.elementType().isArray());
         }
     }
+
+    // void.class is a primitive token with no wrapper and no possible array, so it used to fail deep inside array
+    // allocation with an IllegalArgumentException whose message was "null" (or a misleading "exact element type"
+    // mismatch). Every element-type entry point now rejects it up front with a descriptive message.
+    @Test
+    public void testElementTypeVoid_RejectedWithDescriptiveMessage() {
+        final Matrix<Integer> m = Matrix.wrap(Integer.class, new Integer[][] { { 1, 2 }, { 3, 4 } });
+        final List<org.junit.jupiter.api.function.Executable> calls = List.of( //
+                () -> Matrix.empty(void.class), //
+                () -> Matrix.empty(void.class, 2), //
+                () -> Matrix.wrap(void.class, new Void[0][0]), //
+                () -> new Matrix<>(void.class, new Void[0][0]), //
+                () -> Matrix.copyOf(void.class, new Void[][] { { null } }), //
+                () -> Matrix.ofMainDiagonal(void.class, new Void[] { null }), //
+                () -> Matrix.ofAntiDiagonal(void.class, new Void[] { null }), //
+                () -> Matrix.ofDiagonals(void.class, new Void[] { null }, null), //
+                () -> m.map(x -> null, void.class), //
+                () -> m.zipWith(m, (x, y) -> null, void.class), //
+                () -> m.zipWith(m, m, (x, y, z) -> null, void.class));
+
+        for (final org.junit.jupiter.api.function.Executable call : calls) {
+            final IllegalArgumentException e = assertThrows(IllegalArgumentException.class, call);
+            assertNotNull(e.getMessage());
+            assertTrue(e.getMessage().contains("void"), e.getMessage());
+        }
+    }
+
+    @Test
+    public void testEmptyWithClassToken_SharedInstanceOnlyForObjectZeroColumns() {
+        assertTrue(Matrix.empty(Object.class) == Matrix.empty());
+        assertTrue(Matrix.empty(Object.class, 0) == Matrix.empty());
+
+        final Matrix<Object> objectZeroByTwo = Matrix.empty(Object.class, 2);
+        assertNotSame(Matrix.empty(), objectZeroByTwo);
+        assertEquals(2, objectZeroByTwo.columnCount());
+
+        final Matrix<String> strings = Matrix.empty(String.class);
+        assertNotSame(Matrix.empty(), strings);
+        assertNotSame(strings, Matrix.empty(String.class));
+        assertEquals(String.class, strings.elementType());
+    }
+
+    // copyRegion and stackHorizontally now build their result through newResult (skipping the duplicate-row
+    // scan) like every other result-producing method; pin that the rows are still independent and exactly typed.
+    @Test
+    public void testCopyRegionAndStackHorizontally_ResultRowsIndependentAndExactlyTyped() {
+        final Matrix<Number> legacy = Matrix.wrap(new Number[][] { new Integer[] { 1, 2 }, new Integer[] { 3, 4 }, new Integer[] { 5, 6 } });
+
+        final Matrix<Number> zeroWidth = legacy.copyRegion(0, 3, 1, 1);
+        assertEquals(3, zeroWidth.rowCount());
+        assertEquals(0, zeroWidth.columnCount());
+        assertNotSame(zeroWidth.rowView(0), zeroWidth.rowView(1));
+        assertNotSame(zeroWidth.rowView(1), zeroWidth.rowView(2));
+
+        final Matrix<Number> region = legacy.copyRegion(1, 3, 0, 2);
+        assertEquals(Number[].class, region.rowView(0).getClass());
+        region.set(0, 0, 2.5d);
+        assertEquals(3, legacy.get(1, 0));
+
+        final Matrix<Number> stacked = legacy.stackHorizontally(legacy, Number.class);
+        assertEquals(4, stacked.columnCount());
+        assertNotSame(stacked.rowView(0), stacked.rowView(1));
+        assertEquals(Number[].class, stacked.rowView(2).getClass());
+        stacked.set(2, 3, 7.5d);
+        assertArrayEquals(new Number[] { 5, 6, 5, 7.5d }, stacked.rowCopy(2));
+        assertArrayEquals(new Number[] { 5, 6 }, legacy.rowCopy(2));
+    }
 }

@@ -478,7 +478,8 @@ public final class Matrices {
      *
      * <p>This utility method constructs a properly typed two-dimensional array at runtime, handling the
      * complexity of creating generic arrays in Java. The method automatically wraps primitive
-     * types to their corresponding wrapper classes (e.g., {@code int} becomes {@code Integer}).</p>
+     * types to their corresponding wrapper classes (e.g., {@code int} becomes {@code Integer}).
+     * {@code void.class} has no wrapper and is rejected with an {@code IllegalArgumentException}.</p>
      *
      * <p>The resulting array is fully initialized with all row arrays allocated. Each element
      * is initialized to {@code null} (the default value for reference types, including primitive
@@ -500,6 +501,7 @@ public final class Matrices {
      * // empty.length == 0; the requested column count is meaningful to a shape-aware caller
      *
      * Matrices.newMatrixArray(2, 3, null);                 // throws IllegalArgumentException (null type)
+     * Matrices.newMatrixArray(2, 3, void.class);           // throws IllegalArgumentException (void has no wrapper)
      * Matrices.newMatrixArray(-1, 3, String.class);        // throws IllegalArgumentException (negative rowCount)
      * }</pre>
      *
@@ -507,9 +509,10 @@ public final class Matrices {
      * @param rowCount the number of rows in the two-dimensional array, must be non-negative
      * @param columnCount the number of columns in each row, must be non-negative
      * @param targetElementType the class of the element type; primitive types will be auto-wrapped, must not be {@code null}
+     *        or {@code void.class}
      * @return a new two-dimensional array of type {@code T[][]} with the specified dimensions, never {@code null}
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative, or if
-     *         {@code targetElementType} is {@code null}
+     *         {@code targetElementType} is {@code null} or {@code void.class}
      */
     public static <T> T[][] newMatrixArray(final int rowCount, final int columnCount, final Class<T> targetElementType) throws IllegalArgumentException {
         AbstractMatrix.checkNonNegativeShape(rowCount, columnCount);
@@ -537,12 +540,19 @@ public final class Matrices {
      * {@code Integer[]}), which would make a {@code Matrix<int[]>}'s declared element type disagree with
      * its real {@code int[][]} storage. Only scalars have a wrapper worth applying here.</p>
      *
+     * <p>{@code void.class} is rejected: it reports itself as primitive but has no wrapper, so no array
+     * can be allocated for it and reflection would otherwise fail with a message-less exception.</p>
+     *
      * @param <T> the element type
      * @param elementType the requested element type; must not be {@code null}
      * @return the wrapper type for a primitive scalar, otherwise {@code elementType}
+     * @throws IllegalArgumentException if {@code elementType} is {@code void.class}
      */
     @SuppressWarnings("unchecked")
-    private static <T> Class<T> normalizeElementType(final Class<T> elementType) {
+    private static <T> Class<T> normalizeElementType(final Class<T> elementType) throws IllegalArgumentException {
+        // Same message as Matrix's element-type entry points, so every void.class rejection reads alike.
+        N.checkArgument(elementType != void.class, "Element type cannot be void.class");
+
         return elementType.isPrimitive() ? (Class<T>) ClassUtil.wrap(elementType) : elementType;
     }
 
@@ -1300,7 +1310,7 @@ public final class Matrices {
      * @see #stackHorizontally(Collection)
      */
     public static <M extends AbstractMatrix<?, ?, ?, ?, M>> M stackVertically(final Collection<? extends M> matrices) throws IllegalArgumentException {
-        checkMatricesNotEmptyAndNoNullElements(matrices);
+        checkMatricesNotEmptyAndNoNullElements(matrices, cs.matrices);
         return stack(matrices, true);
     }
 
@@ -1347,7 +1357,7 @@ public final class Matrices {
      * @see #stackVertically(Collection)
      */
     public static <M extends AbstractMatrix<?, ?, ?, ?, M>> M stackHorizontally(final Collection<? extends M> matrices) throws IllegalArgumentException {
-        checkMatricesNotEmptyAndNoNullElements(matrices);
+        checkMatricesNotEmptyAndNoNullElements(matrices, cs.matrices);
         return stack(matrices, false);
     }
 
@@ -4302,10 +4312,10 @@ public final class Matrices {
         checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgNotNull(inputElementType, cs.inputElementType);
-        N.checkArgNotNull(targetElementType, cs.targetElementType);
-
         final Class<T> normalizedInputType = normalizeElementType(inputElementType);
+        N.checkArgNotNull(targetElementType, cs.targetElementType);
         final Class<R> normalizedTargetType = normalizeElementType(targetElementType);
+
         final int size = coll.size();
         final Matrix<T>[] matrices = coll.toArray(new Matrix[size]);
         checkCompatibleElementTypes(matrices, normalizedInputType);
@@ -4631,7 +4641,7 @@ public final class Matrices {
      *                                  {@code null} element, or contains matrices of different shapes
      */
     private static void checkShapeForZip(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> coll) throws IllegalArgumentException {
-        checkMatricesNotEmptyAndNoNullElements(coll);
+        checkMatricesNotEmptyAndNoNullElements(coll, cs.coll);
 
         final Iterator<? extends AbstractMatrix<?, ?, ?, ?, ?>> iterator = coll.iterator();
         final AbstractMatrix<?, ?, ?, ?, ?> first = iterator.next();
@@ -4650,12 +4660,13 @@ public final class Matrices {
      * Verifies that a matrix collection is non-empty and contains no {@code null} elements.
      *
      * @param matrices the collection to validate; must not be {@code null}
+     * @param argName the caller's parameter name, reported if {@code matrices} is {@code null} or empty
      * @throws IllegalArgumentException if {@code matrices} is {@code null}, empty, or contains a
      *                                  {@code null} element
      */
-    private static void checkMatricesNotEmptyAndNoNullElements(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> matrices)
+    private static void checkMatricesNotEmptyAndNoNullElements(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> matrices, final String argName)
             throws IllegalArgumentException {
-        N.checkArgNotEmpty(matrices, cs.matrices);
+        N.checkArgNotEmpty(matrices, argName);
 
         int idx = 0;
         for (final AbstractMatrix<?, ?, ?, ?, ?> m : matrices) {

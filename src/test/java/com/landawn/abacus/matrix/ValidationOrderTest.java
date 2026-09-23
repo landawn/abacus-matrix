@@ -1,5 +1,6 @@
 package com.landawn.abacus.matrix;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -108,5 +109,26 @@ class ValidationOrderTest extends TestBase {
 
         final IllegalArgumentException e5 = assertThrows(IllegalArgumentException.class, () -> Matrices.zip(a, mismatched, null, (x, y, z) -> x));
         assertTrue(e5.getMessage().contains("second is 1x1"), e5.getMessage());
+    }
+
+    @Test
+    void genericThreeMatrixZipValidatesEachOperandInArgumentOrderLikePrimitives() {
+        final Matrix<Integer> a = Matrix.wrap(Integer.class, new Integer[][] { { 1, 2 } });
+        final Matrix<Integer> mismatched = Matrix.wrap(Integer.class, new Integer[][] { { 1 } });
+
+        // other's shape is reported before a null third (previously the null third was reported first)
+        final IllegalArgumentException e1 = assertThrows(IllegalArgumentException.class, () -> a.zipWith(mismatched, null, (x, y, z) -> x));
+        assertTrue(e1.getMessage().contains("but other is 1x1"), e1.getMessage());
+
+        final IllegalArgumentException e1Typed = assertThrows(IllegalArgumentException.class,
+                () -> a.zipWith(mismatched, null, (x, y, z) -> x, Integer.class));
+        assertTrue(e1Typed.getMessage().contains("but other is 1x1"), e1Typed.getMessage());
+
+        // third's shape is reported on its own, in the same wording as the primitive variants
+        final IllegalArgumentException e2 = assertThrows(IllegalArgumentException.class, () -> a.zipWith(a, mismatched, (x, y, z) -> x));
+        assertEquals("Cannot zip matrices with different shapes: this is 1x2 but third is 1x1", e2.getMessage());
+
+        final IllegalArgumentException e3 = assertThrows(IllegalArgumentException.class, () -> a.zipWith(a, null, (x, y, z) -> x));
+        assertTrue(e3.getMessage().contains("third"), e3.getMessage());
     }
 }

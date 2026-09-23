@@ -57,11 +57,11 @@
  * <p>Public constructors take a private snapshot of the <i>outer</i> array and validate its rows,
  * while sharing the row arrays themselves. Writing a cell through the caller's row is therefore visible through
  * the matrix and vice versa, but replacing a whole row in either outer array is not.
- * {@link com.landawn.abacus.matrix.Matrix#wrap(Object[][])} does the same, as do the primitive
+ * {@link com.landawn.abacus.matrix.Matrix#wrap(Class, Object[][])} does the same, as do the primitive
  * {@code wrap(...)} factories when the input has at least one row. A primitive {@code wrap(...)} factory
  * canonicalizes a zero-row input to its shared {@code 0 x 0} singleton, so the caller's empty outer-array
  * identity is not retained. Primitive {@code copyOf(...)} factories do the same for zero-row inputs and copy
- * every row of non-empty inputs. {@link com.landawn.abacus.matrix.Matrix#copyOf(Object[][])} always creates an
+ * every row of non-empty inputs. {@link com.landawn.abacus.matrix.Matrix#copyOf(Class, Object[][])} always creates an
  * independent outer array and independently copies every row, including a new outer array for a zero-row input.
  * Use {@code copyOf(...)} to copy an input array or {@link com.landawn.abacus.matrix.AbstractMatrix#copy()} to copy a matrix. For reference matrices,
  * these operations copy the array structure but not the referenced element objects.</p>
@@ -82,7 +82,7 @@
  * {@link com.landawn.abacus.matrix.AbstractMatrix#flatten()}, return independent containers.</p>
  *
  * <p>On a matrix instance, methods named {@code set*}, {@code update*}, {@code fill}, {@code replaceIf},
- * or ending in {@code InPlace} modify the receiver. The specialized {@code mutateViaFlatArray} operation lets
+ * {@code copyFrom}, or ending in {@code InPlace} modify the receiver. The specialized {@code mutateViaFlatArray} operation lets
  * its action modify the matrix through a temporary flattened array. Shape transformations whose names do not
  * end in {@code InPlace}, arithmetic operations, {@code map}, {@code zipWith}, and {@code copy} leave the
  * receiver unchanged and return a separate matrix instead, except that a degenerate empty result may be the

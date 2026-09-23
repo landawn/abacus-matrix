@@ -6379,6 +6379,22 @@ class ByteMatrixTest extends TestBase {
     }
 
     @Test
+    public void testMatrixMultiplyWidened_DotProductBeyondIntRangeIsExact() {
+        // 140000 * (-128 * -128) = 2_293_760_000 > Integer.MAX_VALUE: the documented long result must not wrap.
+        final int n = 140_000;
+        final byte[] row = new byte[n];
+        java.util.Arrays.fill(row, Byte.MIN_VALUE);
+        final ByteMatrix left = ByteMatrix.wrap(new byte[][] { row });
+        final ByteMatrix right = left.transpose();
+
+        assertEquals(2_293_760_000L, left.matrixMultiplyWidened(right).get(0, 0));
+
+        final ArithmeticException overflow = assertThrows(ArithmeticException.class, () -> left.matrixMultiplyExact(right));
+        assertEquals("byte overflow: 2293760000", overflow.getMessage());
+        assertEquals((byte) 2_293_760_000L, left.matrixMultiply(right).get(0, 0));
+    }
+
+    @Test
     public void testZeroRowResultMethodsPreserveLogicalColumnCount() {
         ByteMatrix matrix = new ByteMatrix(new byte[0][], 3);
         ByteMatrix other = new ByteMatrix(new byte[0][], 3);

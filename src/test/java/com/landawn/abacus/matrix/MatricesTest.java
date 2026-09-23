@@ -5239,6 +5239,87 @@ class MatricesTest extends TestBase {
         }
     }
 
+    /** Shared with Matrix's element-type entry points so every void.class rejection reads alike. */
+    private static final String VOID_ELEMENT_TYPE_MESSAGE = "Element type cannot be void.class";
+
+    @Test
+    public void testNewMatrixArray_VoidClass_ThrowsIaeWithExplicitMessage() {
+        // void.class reports isPrimitive() but has no wrapper; reflection used to fail with a null message.
+        final IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> Matrices.newMatrixArray(2, 3, void.class));
+        assertEquals(VOID_ELEMENT_TYPE_MESSAGE, e.getMessage());
+
+        final IllegalArgumentException empty = assertThrows(IllegalArgumentException.class, () -> Matrices.newMatrixArray(0, 0, void.class));
+        assertEquals(VOID_ELEMENT_TYPE_MESSAGE, empty.getMessage());
+
+        // Validation order: shape first, then null, then void.
+        assertEquals("rowCount cannot be negative: -1",
+                assertThrows(IllegalArgumentException.class, () -> Matrices.newMatrixArray(-1, 3, void.class)).getMessage());
+    }
+
+    @Test
+    public void testZipToObj_VoidTargetElementType_ThrowsIaeWithExplicitMessage() {
+        final String expected = VOID_ELEMENT_TYPE_MESSAGE;
+
+        // The primitive mapToObj variants allocate through newMatrixArray and pick up the same message.
+        assertEquals(expected, assertThrows(IllegalArgumentException.class, () -> intMatrix1.mapToObj(x -> null, void.class)).getMessage());
+
+        assertEquals(expected, assertThrows(IllegalArgumentException.class,
+                () -> Matrices.zipToObj(Arrays.asList(byteMatrix1, byteMatrix2), arr -> null, void.class)).getMessage());
+        assertEquals(expected, assertThrows(IllegalArgumentException.class,
+                () -> Matrices.zipToObj(Arrays.asList(intMatrix1, intMatrix2), arr -> null, false, void.class)).getMessage());
+        assertEquals(expected, assertThrows(IllegalArgumentException.class,
+                () -> Matrices.zipToObj(Arrays.asList(longMatrix1, longMatrix2), arr -> null, void.class)).getMessage());
+        assertEquals(expected, assertThrows(IllegalArgumentException.class,
+                () -> Matrices.zipToObj(Arrays.asList(doubleMatrix1, doubleMatrix2), arr -> null, true, void.class)).getMessage());
+        assertEquals(expected, assertThrows(IllegalArgumentException.class,
+                () -> Matrices.zip(stringMatrix1, stringMatrix2, (a, b) -> null, void.class)).getMessage());
+        assertEquals(expected, assertThrows(IllegalArgumentException.class,
+                () -> Matrices.zip(stringMatrix1, stringMatrix2, stringMatrix3, (a, b, c) -> null, void.class)).getMessage());
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @Test
+    public void testMatrixCollectionZip_VoidElementTypes_ThrowIaeWithExplicitMessage() {
+        final Class voidType = void.class;
+        final List<Matrix<String>> nonEmpty = Arrays.asList(stringMatrix1, stringMatrix2);
+        // Empty inputs skip the element-type compatibility check, so they used to reach reflection.
+        final List<Matrix<String>> empty = Arrays.asList(Matrix.empty(String.class, 2), Matrix.empty(String.class, 2));
+
+        for (final List<Matrix<String>> coll : Arrays.asList(nonEmpty, empty)) {
+            assertEquals(VOID_ELEMENT_TYPE_MESSAGE, assertThrows(IllegalArgumentException.class,
+                    () -> Matrices.zip(coll, (Throwables.BinaryOperator<String, RuntimeException>) (a, b) -> a, voidType)).getMessage());
+            assertEquals(VOID_ELEMENT_TYPE_MESSAGE,
+                    assertThrows(IllegalArgumentException.class, () -> Matrices.zip(coll, arr -> "x", false, voidType, String.class)).getMessage());
+            assertEquals(VOID_ELEMENT_TYPE_MESSAGE,
+                    assertThrows(IllegalArgumentException.class, () -> Matrices.zip(coll, arr -> null, String.class, voidType)).getMessage());
+        }
+
+        // Arguments are validated in signature order: an invalid inputElementType is reported before a null targetElementType.
+        assertEquals(VOID_ELEMENT_TYPE_MESSAGE,
+                assertThrows(IllegalArgumentException.class, () -> Matrices.zip(nonEmpty, arr -> "x", true, voidType, (Class) null)).getMessage());
+    }
+
+    @Test
+    public void testCollectionZip_EmptyCollection_ReportsCollParameterName() {
+        // The null check already named 'coll'; the empty check used to name a non-existent 'matrices' parameter.
+        final String expected = "'coll' cannot be null or empty";
+
+        assertEquals(expected,
+                assertThrows(IllegalArgumentException.class, () -> Matrices.zip(Collections.<IntMatrix> emptyList(), (a, b) -> a + b)).getMessage());
+        assertEquals(expected,
+                assertThrows(IllegalArgumentException.class, () -> Matrices.zipToLong(Collections.<IntMatrix> emptyList(), arr -> 0L)).getMessage());
+        assertEquals(expected, assertThrows(IllegalArgumentException.class,
+                () -> Matrices.zipToObj(Collections.<ByteMatrix> emptyList(), arr -> 0, Integer.class)).getMessage());
+        assertEquals(expected, assertThrows(IllegalArgumentException.class,
+                () -> Matrices.zip(Collections.<Matrix<String>> emptyList(), (a, b) -> a, String.class)).getMessage());
+
+        // The n-ary stacking helpers really do name their parameter 'matrices'.
+        assertEquals("'matrices' cannot be null or empty",
+                assertThrows(IllegalArgumentException.class, () -> Matrices.stackVertically(Collections.<IntMatrix> emptyList())).getMessage());
+        assertEquals("'matrices' cannot be null or empty",
+                assertThrows(IllegalArgumentException.class, () -> Matrices.stackHorizontally(Collections.<IntMatrix> emptyList())).getMessage());
+    }
+
     private interface ABase {
         // Marker interface for common-type tie-break regression coverage.
     }

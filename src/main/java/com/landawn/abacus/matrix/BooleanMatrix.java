@@ -101,7 +101,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     }
 
     static BooleanMatrix wrapResult(final boolean[][] a, final int columnCount) {
-        // Every wrapResult(...) call site passes an array this class just allocated, so the rows are
+        // Every wrapResult(...) call site (here, in Matrix and in Matrices) passes freshly allocated rows, so they are
         // identity-distinct by construction and the duplicate-row scan can be skipped.
         return a.length == 0 && columnCount == 0 ? EMPTY_BOOLEAN_MATRIX : new BooleanMatrix(a, columnCount, true);
     }
@@ -3339,7 +3339,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * the leftmost column and proceeding to the rightmost column.
      *
      * <p>This method provides an alternative way to iterate through matrix
-     * elements compared to the row-major order of rowMajorStream(). Because there is no primitive
+     * elements compared to the row-major order of {@link #rowMajorStream()}. Because there is no primitive
      * {@code BooleanStream}, this returns a {@code Stream<Boolean>} with boxed values.</p>
      *
      * <p><b>Usage Examples:</b></p>
@@ -3511,7 +3511,9 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * BooleanMatrix.empty().rowStreams().count();   // returns 0 (empty stream)
      * }</pre>
      *
-     * @return a {@code Stream<Stream<Boolean>>}, one inner stream per row in the matrix
+     * @return a {@code Stream<Stream<Boolean>>}, one inner stream per row in the matrix,
+     *         or an empty stream when there are no rows (an {@code N x 0} matrix still yields one
+     *         empty stream per row)
      * @see #rowMajorStream(int, int)
      */
     @Override

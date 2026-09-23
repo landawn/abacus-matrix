@@ -6667,4 +6667,60 @@ class IntMatrixTest extends TestBase {
         assertThrows(IllegalArgumentException.class, () -> noRows.repeatMatrix(1, Integer.MAX_VALUE));
         assertThrows(IllegalArgumentException.class, () -> noColumns.repeatMatrix(Integer.MAX_VALUE, 1));
     }
+
+    @Test
+    public void testMatrixMultiplyWidened_TwoMinValueTerms_WrapsLong() {
+        // Documented: every single int*int product fits in a long, but two terms already overflow it.
+        final IntMatrix mins = IntMatrix.wrap(new int[][] { { Integer.MIN_VALUE, Integer.MIN_VALUE } });
+        final IntMatrix minsColumn = mins.transpose();
+
+        assertEquals(Long.MIN_VALUE, mins.matrixMultiplyWidened(minsColumn).get(0, 0));
+        assertThrows(ArithmeticException.class, () -> mins.matrixMultiplyWidenedExact(minsColumn));
+        assertThrows(ArithmeticException.class, () -> mins.matrixMultiplyExact(minsColumn));
+
+        // A single extreme product is representable in long (2^62) but not in int.
+        final IntMatrix min = IntMatrix.wrap(new int[][] { { Integer.MIN_VALUE } });
+        assertEquals(1L << 62, min.matrixMultiplyWidened(min).get(0, 0));
+        assertEquals(1L << 62, min.matrixMultiplyWidenedExact(min).get(0, 0));
+        assertThrows(ArithmeticException.class, () -> min.matrixMultiplyExact(min));
+    }
+
+    @Test
+    public void testMatrixMultiplyExact_CancellingIntermediateSumsAccepted() {
+        // Documented example: the partial sum 4000000000 exceeds int, but the finished cell fits.
+        final IntMatrix row = IntMatrix.wrap(new int[][] { { 2_000_000_000, 2_000_000_000, -2_000_000_000 } });
+        final IntMatrix ones = IntMatrix.wrap(new int[][] { { 1 }, { 1 }, { 1 } });
+
+        assertEquals(IntMatrix.wrap(new int[][] { { 2_000_000_000 } }), row.matrixMultiplyExact(ones));
+        assertEquals(row.matrixMultiply(ones), row.matrixMultiplyExact(ones));
+    }
+
+    @Test
+    public void testRange_IntegerBoundsAndExtremeSteps() {
+        final int max = Integer.MAX_VALUE;
+        final int min = Integer.MIN_VALUE;
+
+        // Endpoints at the int bounds must not overflow the stepping loop.
+        assertArrayEquals(new int[] { max - 2, max - 1 }, IntMatrix.range(max - 2, max).rowView(0));
+        assertArrayEquals(new int[] { max - 1, max }, IntMatrix.rangeClosed(max - 1, max).rowView(0));
+        assertArrayEquals(new int[] { min, min + 1 }, IntMatrix.rangeClosed(min, min + 1).rowView(0));
+        assertArrayEquals(new int[] { max - 4, max - 2, max }, IntMatrix.rangeClosed(max - 4, max, 2).rowView(0));
+        assertArrayEquals(new int[] { min + 4, min + 2, min }, IntMatrix.rangeClosed(min + 4, min, -2).rowView(0));
+        assertArrayEquals(new int[] { max }, IntMatrix.rangeClosed(max, max, min).rowView(0));
+
+        // Extreme steps: the next value would overflow int, so iteration stops.
+        assertArrayEquals(new int[] { min, -1, max - 1 }, IntMatrix.range(min, max, max).rowView(0));
+        assertArrayEquals(new int[] { min, -1, max - 1 }, IntMatrix.rangeClosed(min, max, max).rowView(0));
+        assertArrayEquals(new int[] { max, -1 }, IntMatrix.range(max, min, min).rowView(0));
+        assertArrayEquals(new int[] { max, -1 }, IntMatrix.rangeClosed(max, min, min).rowView(0));
+        assertEquals(0, IntMatrix.range(0, 10, min).columnCount());
+        assertEquals(1, IntMatrix.range(0, 10, min).rowCount());
+
+        // More than Integer.MAX_VALUE elements is rejected with IllegalArgumentException, not wrapped.
+        assertThrows(IllegalArgumentException.class, () -> IntMatrix.range(min, max));
+        assertThrows(IllegalArgumentException.class, () -> IntMatrix.rangeClosed(0, max));
+        assertThrows(IllegalArgumentException.class, () -> IntMatrix.rangeClosed(min, max, 1));
+        assertThrows(IllegalArgumentException.class, () -> IntMatrix.range(max, min, -1));
+        assertThrows(IllegalArgumentException.class, () -> IntMatrix.rangeClosed(min, max, 2));
+    }
 }

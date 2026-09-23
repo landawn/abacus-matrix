@@ -66,18 +66,24 @@ import com.landawn.abacus.util.stream.Stream;
  *
  * <p><b>Element-wise zipping:</b> the instance {@code zipWith} methods combine this matrix with one or two
  * others of compatible shape and, for {@link Matrix}, an optional target element type. Their static
- * counterparts live in {@link Matrices}: {@code Matrices.zip} combines two, three, or a collection of
- * same-typed matrices, while {@code Matrices.zipToInt}, {@code zipToLong}, {@code zipToDouble}, and
- * {@code zipToObj} produce a differently typed result. Use the instance {@code zipWith} for fluent
- * two- or three-matrix combinations (including {@link Matrix}'s target-type overloads), and the
- * {@link Matrices} helpers when combining a collection or using a primitive cross-type specialization.</p>
+ * counterparts live in {@link Matrices} and exist only for {@link ByteMatrix}, {@link IntMatrix},
+ * {@link LongMatrix}, {@link DoubleMatrix}, and {@link Matrix} ({@link BooleanMatrix}, {@link CharMatrix},
+ * {@link ShortMatrix}, and {@link FloatMatrix} offer {@code zipWith} only): {@code Matrices.zip} combines
+ * two, three, or a collection of such matrices, while {@code Matrices.zipToInt}, {@code zipToLong},
+ * {@code zipToDouble}, and {@code zipToObj} produce a differently typed result. Use the instance
+ * {@code zipWith} for fluent two- or three-matrix combinations (including {@link Matrix}'s target-type
+ * overloads), and the {@link Matrices} helpers when combining a collection or using a primitive
+ * cross-type specialization.</p>
  *
- * <p><b>Primitive conversions:</b> each numeric matrix converts to the {@code int}, {@code long},
- * {@code float}, and {@code double} matrix types (every such type except its own) through
- * {@code toIntMatrix}, {@code toLongMatrix}, {@code toFloatMatrix}, and {@code toDoubleMatrix}.
- * Conversions targeting the narrower {@code byte}, {@code char}, and {@code short} types, or
- * {@code boolean}, are intentionally omitted (they would be lossy or ill-defined); obtain those with an
- * explicit {@code map}/{@code mapToObj} step or by constructing the target matrix directly.</p>
+ * <p><b>Primitive conversions:</b> each non-boolean primitive matrix (including {@link CharMatrix})
+ * converts to the {@code int}, {@code long}, {@code float}, and {@code double} matrix types (every such
+ * type except its own) through {@code toIntMatrix}, {@code toLongMatrix}, {@code toFloatMatrix}, and
+ * {@code toDoubleMatrix}. These use Java primitive conversion casts, so a narrowing one (for example
+ * {@code LongMatrix.toIntMatrix()} or {@code DoubleMatrix.toLongMatrix()}) may lose information.
+ * Conversions targeting {@code byte}, {@code char}, {@code short}, or {@code boolean} are intentionally
+ * omitted; obtain those through {@link Matrix}'s {@code mapToByte}, {@code mapToChar}, {@code mapToShort},
+ * or {@code mapToBoolean} (for example {@code m.boxed().mapToByte(...)}), or by constructing the target
+ * matrix directly.</p>
  *
  * @param <A> the array type used for internal row storage (for example {@code int[]}, {@code double[]}, or {@code Object[]})
  * @param <PL> the flattened list type returned by {@link #flatten()} (for example {@code IntList} or {@code List<T>})
@@ -100,6 +106,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Returns the current thread's non-cryptographic default generator for convenience random factories.
      * Callers that need reproducibility or stronger randomness should use an overload accepting a
      * {@link RandomGenerator}.
+     *
+     * @return {@link ThreadLocalRandom#current()}, the calling thread's generator
      */
     protected static RandomGenerator defaultRandomGenerator() {
         return ThreadLocalRandom.current();
@@ -1069,7 +1077,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * The number of rows is automatically calculated based on the total element count.
      * Elements are taken in row-major order from the original matrix and placed into the
      * new shape. If the total element count is not evenly divisible by the new column count,
-     * the last row will be padded with default values ({@code 0} for numeric types, {@code false} for boolean, {@code null} for objects).
+     * the last row will be padded with default values ({@code 0} for numeric types, {@code false} for boolean,
+     * {@code '\0'} for char, {@code null} for objects).
      * The original matrix is not modified.
      *
      * <p>The new row count is calculated as: {@code ceiling(elementCount / newColumnCount)}</p>
@@ -1875,7 +1884,11 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         return IntStream.range(0, diagonalLength()).mapToObj(i -> Point.of(i, columnCount - i - 1));
     }
 
-    /** Returns the number of elements in either diagonal, stopping at the first matrix boundary. */
+    /**
+     * Returns the number of elements in either diagonal, stopping at the first matrix boundary.
+     *
+     * @return {@code min(rowCount, columnCount)}
+     */
     protected final int diagonalLength() {
         return N.min(rowCount, columnCount);
     }

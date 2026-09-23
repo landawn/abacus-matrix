@@ -6366,6 +6366,21 @@ class BooleanMatrixTest extends TestBase {
         assertFalse(columns.hasNext());
     }
 
+    @Test
+    public void testRowStreams_Nx0YieldsOneEmptyStreamPerRow_0xNYieldsNoStreams() {
+        final List<List<Boolean>> nx0Rows = BooleanMatrix.wrap(new boolean[3][0]).rowStreams().map(Stream::toList).toList();
+        assertEquals(3, nx0Rows.size());
+        nx0Rows.forEach(row -> assertTrue(row.isEmpty()));
+
+        assertEquals(0, new BooleanMatrix(new boolean[0][], 3).rowStreams().count());
+        assertEquals(0, BooleanMatrix.empty().rowStreams().count());
+
+        final List<List<Boolean>> zeroRowColumns = new BooleanMatrix(new boolean[0][], 3).columnStreams().map(Stream::toList).toList();
+        assertEquals(3, zeroRowColumns.size());
+        zeroRowColumns.forEach(column -> assertTrue(column.isEmpty()));
+        assertEquals(0, BooleanMatrix.wrap(new boolean[3][0]).columnStreams().count());
+    }
+
     private static void assertShape(final int expectedRows, final int expectedColumns, final AbstractMatrix<?, ?, ?, ?, ?> matrix) {
         assertEquals(expectedRows, matrix.rowCount());
         assertEquals(expectedColumns, matrix.columnCount());

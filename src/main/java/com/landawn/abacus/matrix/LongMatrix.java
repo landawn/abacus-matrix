@@ -35,15 +35,15 @@ import com.landawn.abacus.util.stream.Stream;
  * Matrix implementation backed by a rectangular {@code long[][]}.
  *
  * <p>This type specializes {@link AbstractMatrix} for {@code long} values while keeping the data in a
- * validated backing array. The constructor and {@link #wrap(long[]...)} wrap the supplied storage
- * directly. {@link #copyOf(long[]...)}, conversions, and mapping operations do not share mutable cell
+ * validated backing array. The constructor and {@link #wrap(long[]...)} copy the outer array but share
+ * its row arrays. {@link #copyOf(long[]...)}, conversions, and mapping operations do not share mutable cell
  * storage with a non-empty source; operations producing a {@code 0 x 0} matrix return the shared empty
  * singleton, while {@code 0 x N} and {@code N x 0} results keep their shape.</p>
  *
  * <p>Cells introduced by growth or reshaping default to {@code 0L} unless an overload accepts an
  * explicit fill value. Arithmetic operations (e.g. {@link #add(LongMatrix)}, {@link #subtract(LongMatrix)},
  * {@link #matrixMultiply(LongMatrix)}) follow standard Java {@code long} semantics: overflow silently wraps
- * around modulo 2<sup>64</sup>.</p>
+ * around modulo 2<sup>64</sup>. Use the corresponding {@code *Exact} methods to report overflow.</p>
  *
  * <p><b>Aggregations:</b> this class does not provide dedicated reduction methods such as
  * {@code sum()}, {@code min()}, {@code max()} or {@code average()}. Compute such aggregations
@@ -110,7 +110,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @return the shared empty matrix when the result is {@code 0 x 0}, otherwise a new matrix
      */
     static LongMatrix wrapResult(final long[][] a, final int columnCount) {
-        // Every wrapResult(...) call site passes an array this class just allocated, so the rows are
+        // Every wrapResult(...) call site (here, in Matrix and in Matrices) passes freshly allocated rows, so they are
         // identity-distinct by construction and the duplicate-row scan can be skipped.
         return a.length == 0 && columnCount == 0 ? EMPTY_LONG_MATRIX : new LongMatrix(a, columnCount, true);
     }
@@ -152,7 +152,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * }</pre>
      *
      * @param a the two-dimensional long array to wrap, or empty for an empty matrix; must not be {@code null}
-     * @return a new {@code LongMatrix} backed by {@code a}, or the shared empty matrix if {@code a} is empty
+     * @return a new {@code LongMatrix} sharing {@code a}'s rows, or the shared empty matrix if {@code a} is empty
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular), or if two positions reference the same row array
      */
@@ -164,7 +164,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     /**
      * Creates a {@code LongMatrix} from the supplied two-dimensional array.
      *
-     * <p>For a non-empty input, unlike {@link #wrap(long[][])}, which wraps the caller's array without copying, this factory clones
+     * <p>For a non-empty input, unlike {@link #wrap(long[][])}, which copies the outer array but shares the caller's rows, this factory clones
      * every row and stores those clones in a newly allocated outer array. Subsequent modifications to {@code a} (or its rows)
      * are therefore <b>not</b> visible through the returned matrix, and vice versa. A zero-row input is canonicalized to the
      * shared empty matrix, so the identity of the supplied outer array is not retained.</p>
@@ -1268,8 +1268,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * This modifies the matrix directly.
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
-     * When this operation is not parallelized, distinct backing rows and their elements are processed in
-     * first-occurrence row-major order; when it is parallelized, the encounter order is unspecified.</p>
+     * When this operation is not parallelized, elements are processed in row-major order; when it is
+     * parallelized, the encounter order is unspecified.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2816,7 +2816,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     public LongMatrix addExact(final LongMatrix other) throws IllegalArgumentException, ArithmeticException {
         N.checkArgNotNull(other, cs.other);
-        checkSameShape(other);
+        N.checkArgument(isSameShape(other), "Cannot add matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
+                other.rowCount, other.columnCount);
+
         final long[][] result = new long[rowCount][columnCount];
 
         for (int i = 0; i < rowCount; i++) {
@@ -2896,7 +2898,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      */
     public LongMatrix subtractExact(final LongMatrix other) throws IllegalArgumentException, ArithmeticException {
         N.checkArgNotNull(other, cs.other);
-        checkSameShape(other);
+        N.checkArgument(isSameShape(other), "Cannot subtract matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
+                other.rowCount, other.columnCount);
+
         final long[][] result = new long[rowCount][columnCount];
 
         for (int i = 0; i < rowCount; i++) {
@@ -2984,10 +2988,18 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * Computes the matrix product with checked multiplication and accumulation. This method is
      * deliberately sequential so the first reported overflow is deterministic.
      *
+     * <p>Each dot product is accumulated left to right (ascending {@code k}) with
+     * {@link Math#multiplyExact(long, long)} and {@link Math#addExact(long, long)}. There is no wider
+     * accumulator, so an exception is thrown as soon as any single product or any intermediate sum
+     * leaves the {@code long} range, even if later terms would bring the sum back into range: the
+     * product of {@code [[Long.MAX_VALUE, 1, -1]]} and {@code [[1], [1], [1]]} throws although the
+     * mathematical result is {@code Long.MAX_VALUE}.</p>
+     *
      * @param other the right operand; must be non-{@code null} and dimensionally compatible
      * @return the exact matrix product
      * @throws IllegalArgumentException if {@code other} is {@code null} or dimensions are incompatible
-     * @throws ArithmeticException if a product or accumulated dot-product sum overflows {@code long}
+     * @throws ArithmeticException if a product or an intermediate dot-product sum overflows {@code long}
+     * @see #matrixMultiply(LongMatrix)
      */
     public LongMatrix matrixMultiplyExact(final LongMatrix other) throws IllegalArgumentException, ArithmeticException {
         N.checkArgNotNull(other, cs.other);

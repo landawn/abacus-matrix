@@ -15,7 +15,6 @@
 package com.landawn.abacus.matrix;
 
 import java.util.NoSuchElementException;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.random.RandomGenerator;
 
 import com.landawn.abacus.util.Array;
@@ -122,7 +121,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @return the shared empty matrix when the result is {@code 0 x 0}, otherwise a new matrix
      */
     static ShortMatrix wrapResult(final short[][] a, final int columnCount) {
-        // Every wrapResult(...) call site passes an array this class just allocated, so the rows are
+        // Every wrapResult(...) call site (here, in Matrix and in Matrices) passes freshly allocated rows, so they are
         // identity-distinct by construction and the duplicate-row scan can be skipped.
         return a.length == 0 && columnCount == 0 ? EMPTY_SHORT_MATRIX : new ShortMatrix(a, columnCount, true);
     }
@@ -239,14 +238,14 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @see #random(int, int)
      */
     public static ShortMatrix randomRow(final int columnCount) throws IllegalArgumentException {
-        return randomRow(columnCount, ThreadLocalRandom.current());
+        return randomRow(columnCount, defaultRandomGenerator());
     }
 
     /**
      * Creates a one-row matrix using the supplied source of randomness.
      *
      * @param columnCount the number of columns; must be non-negative
-     * @param randomGenerator the source of randomness
+     * @param randomGenerator the source of randomness; must not be {@code null}
      * @return a new {@code 1 x columnCount} matrix
      * @throws IllegalArgumentException if {@code columnCount} is negative or {@code randomGenerator} is {@code null}
      */
@@ -278,7 +277,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative
      */
     public static ShortMatrix random(final int rowCount, final int columnCount) throws IllegalArgumentException {
-        return random(rowCount, columnCount, ThreadLocalRandom.current());
+        return random(rowCount, columnCount, defaultRandomGenerator());
     }
 
     /**
@@ -288,7 +287,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param rowCount the number of rows; must be non-negative
      * @param columnCount the number of columns; must be non-negative
-     * @param randomGenerator the source of randomness
+     * @param randomGenerator the source of randomness; must not be {@code null}
      * @return a new matrix with the requested shape, including {@code 0 x columnCount}
      * @throws IllegalArgumentException if either dimension is negative or {@code randomGenerator} is {@code null}
      */
@@ -2844,7 +2843,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p><b>Overflow:</b> each partial product is computed with Java numeric promotion to {@code int}
      * and accumulated into a {@code short} cell, so intermediate sums wrap modulo 65536 and the final
      * result is always in the short range {@code [-32768, 32767]}. For inputs that may overflow,
-     * widen via {@link #toIntMatrix()} (or {@link #toLongMatrix()}) and multiply there.
+     * widen via {@link #toLongMatrix()} and multiply there, which is exact for every short input.
+     * Widening via {@link #toIntMatrix()} is not enough: two terms of {@code (-32768) * (-32768)} already sum
+     * to 2<sup>31</sup>, which overflows {@code int}.
      * To keep the wider intermediate value instead, use {@link #matrixMultiplyWidened(ShortMatrix)};
      * to be told about an overflow rather than silently wrapping, use
      * {@link #matrixMultiplyExact(ShortMatrix)}.</p>

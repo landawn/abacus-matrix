@@ -6225,4 +6225,32 @@ class FloatMatrixTest extends TestBase {
         assertThrows(IllegalArgumentException.class, () -> noRows.repeatMatrix(1, Integer.MAX_VALUE));
         assertThrows(IllegalArgumentException.class, () -> noColumns.repeatMatrix(Integer.MAX_VALUE, 1));
     }
+
+    @Test
+    public void testWrapAndConstructor_copyOuterArrayButShareRows() {
+        final float[][] data = { { 1.0f, 2.0f }, { 3.0f, 4.0f } };
+        final float[] originalRow0 = data[0];
+        final FloatMatrix wrapped = FloatMatrix.wrap(data);
+        final FloatMatrix constructed = new FloatMatrix(data);
+
+        // Cell writes through a shared row are visible in both directions.
+        data[0][1] = 9.0f;
+        assertEquals(9.0f, wrapped.get(0, 1));
+        assertEquals(9.0f, constructed.get(0, 1));
+        wrapped.set(1, 0, 7.0f);
+        assertEquals(7.0f, data[1][0]);
+
+        // The outer array is copied, so replacing a row slot in the caller's array is not visible.
+        data[0] = new float[] { 100.0f, 200.0f };
+        assertSame(originalRow0, wrapped.rowView(0));
+        assertEquals(1.0f, wrapped.get(0, 0));
+        assertEquals(1.0f, constructed.get(0, 0));
+
+        // copyOf clones the rows as well, so even cell writes are not shared.
+        final float[][] source = { { 1.0f, 2.0f } };
+        final FloatMatrix copied = FloatMatrix.copyOf(source);
+        source[0][0] = 5.0f;
+        assertEquals(1.0f, copied.get(0, 0));
+        assertNotSame(source[0], copied.rowView(0));
+    }
 }

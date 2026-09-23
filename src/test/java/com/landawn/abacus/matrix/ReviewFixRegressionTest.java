@@ -421,9 +421,14 @@ class ReviewFixRegressionTest extends TestBase {
 
         // One input on its own is below the threshold...
         assertEquals((long) side * side * size, first.elementCount() * size);
-        assertFalse(Matrices.shouldRunInParallel(first));
-        // ...but the work actually performed spans all `size` inputs and does reach it.
-        assertTrue(Matrices.shouldRunInParallel(first, first.elementCount() * size));
+        // The threshold only applies in AUTO mode; pin it explicitly instead of relying on the mode the
+        // current thread happens to be in (the per-thread default is FORCE_OFF, so this test used to pass
+        // only when an earlier test class had left the thread in AUTO).
+        Matrices.runWithParallelMode(ParallelMode.AUTO, () -> {
+            assertFalse(Matrices.shouldRunInParallel(first));
+            // ...but the work actually performed spans all `size` inputs and does reach it.
+            assertTrue(Matrices.shouldRunInParallel(first, first.elementCount() * size));
+        });
 
         final Set<Thread> autoThreads = ConcurrentHashMap.newKeySet();
         final AtomicReference<IntMatrix> sum = new AtomicReference<>();
@@ -449,6 +454,14 @@ class ReviewFixRegressionTest extends TestBase {
             return x + y;
         }));
         if (forcedThreads.size() > 1) {
+            // A parallel run on a loaded machine can still finish on one thread by chance, so give AUTO a
+            // few attempts: a sequential decision would never use a second thread in any of them.
+            for (int attempt = 0; attempt < 10 && autoThreads.size() <= 1; attempt++) {
+                Matrices.runWithParallelMode(ParallelMode.AUTO, () -> Matrices.zip(inputs, (x, y) -> {
+                    autoThreads.add(Thread.currentThread());
+                    return x + y;
+                }));
+            }
             assertTrue(autoThreads.size() > 1, "AUTO should parallelize once the combined work reaches the threshold");
         }
     }

@@ -6407,4 +6407,120 @@ class LongMatrixTest extends TestBase {
         assertThrows(IllegalArgumentException.class, () -> noRows.repeatMatrix(1, Integer.MAX_VALUE));
         assertThrows(IllegalArgumentException.class, () -> noColumns.repeatMatrix(Integer.MAX_VALUE, 1));
     }
+
+    @Test
+    public void testWrapAndConstructor_copyOuterArrayButShareRows() {
+        final long[][] wrapped = { { 1L, 2L }, { 3L, 4L } };
+        final LongMatrix viaWrap = LongMatrix.wrap(wrapped);
+        final long[][] constructed = { { 1L, 2L }, { 3L, 4L } };
+        final LongMatrix viaConstructor = new LongMatrix(constructed);
+
+        // A cell write through a caller-held row is visible through the matrix (rows are shared) ...
+        wrapped[0][0] = 10L;
+        constructed[0][0] = 10L;
+        assertEquals(10L, viaWrap.get(0, 0));
+        assertEquals(10L, viaConstructor.get(0, 0));
+        assertSame(wrapped[1], viaWrap.rowView(1));
+        assertSame(constructed[1], viaConstructor.rowView(1));
+
+        // ... but replacing a slot of the caller's outer array is not (the outer array is copied).
+        wrapped[1] = new long[] { 99L, 99L };
+        constructed[1] = new long[] { 99L, 99L };
+        assertEquals(3L, viaWrap.get(1, 0));
+        assertEquals(3L, viaConstructor.get(1, 0));
+
+        // copyOf shares neither the outer array nor the rows.
+        final long[][] copied = { { 1L, 2L } };
+        final LongMatrix viaCopyOf = LongMatrix.copyOf(copied);
+        copied[0][0] = 10L;
+        assertEquals(1L, viaCopyOf.get(0, 0));
+    }
+
+    @Test
+    public void testAddExactSubtractExact_shapeMismatchMessageMatchesAddAndSubtract() {
+        final LongMatrix noRows = new LongMatrix(new long[0][], 3);
+        final LongMatrix noColumns = LongMatrix.wrap(new long[][] { {}, {} });
+
+        final IllegalArgumentException addExact = assertThrows(IllegalArgumentException.class, () -> noRows.addExact(noColumns));
+        final IllegalArgumentException add = assertThrows(IllegalArgumentException.class, () -> noRows.add(noColumns));
+        assertEquals(add.getMessage(), addExact.getMessage());
+        assertTrue(addExact.getMessage().startsWith("Cannot add matrices with different shapes"), addExact.getMessage());
+
+        final IllegalArgumentException subtractExact = assertThrows(IllegalArgumentException.class, () -> noRows.subtractExact(noColumns));
+        final IllegalArgumentException subtract = assertThrows(IllegalArgumentException.class, () -> noRows.subtract(noColumns));
+        assertEquals(subtract.getMessage(), subtractExact.getMessage());
+        assertTrue(subtractExact.getMessage().startsWith("Cannot subtract matrices with different shapes"), subtractExact.getMessage());
+
+        assertThrows(IllegalArgumentException.class, () -> noRows.addExact(null));
+        assertThrows(IllegalArgumentException.class, () -> noRows.subtractExact(null));
+    }
+
+    @Test
+    public void testAddExactSubtractExact_degenerateShapesAndOverflow() {
+        final LongMatrix noRows = new LongMatrix(new long[0][], 3);
+        assertEquals(0, noRows.addExact(noRows).rowCount());
+        assertEquals(3, noRows.addExact(noRows).columnCount());
+        assertEquals(3, noRows.subtractExact(noRows).columnCount());
+
+        final LongMatrix noColumns = LongMatrix.wrap(new long[][] { {}, {} });
+        assertEquals(2, noColumns.addExact(noColumns).rowCount());
+        assertEquals(0, noColumns.subtractExact(noColumns).columnCount());
+        assertSame(LongMatrix.empty(), LongMatrix.empty().addExact(LongMatrix.empty()));
+
+        final LongMatrix max = LongMatrix.wrap(new long[][] { { Long.MAX_VALUE, 0L } });
+        final LongMatrix one = LongMatrix.wrap(new long[][] { { 1L, 1L } });
+        assertThrows(ArithmeticException.class, () -> max.addExact(one));
+        assertEquals(Long.MAX_VALUE - 1, max.subtractExact(one).get(0, 0));
+        assertThrows(ArithmeticException.class, () -> LongMatrix.wrap(new long[][] { { Long.MIN_VALUE, 0L } }).subtractExact(one));
+        // the inputs are never modified, even when an overflow is reported
+        assertEquals(Long.MAX_VALUE, max.get(0, 0));
+    }
+
+    @Test
+    public void testMatrixMultiplyExact_intermediateOverflowThrowsEvenWhenTermsCancel() {
+        final LongMatrix column = LongMatrix.wrap(new long[][] { { 1L }, { 1L }, { 1L } });
+
+        // The documented limitation: the running sum MAX + 1 overflows before the -1 term cancels it.
+        final LongMatrix cancellingSum = LongMatrix.wrap(new long[][] { { Long.MAX_VALUE, 1L, -1L } });
+        assertThrows(ArithmeticException.class, () -> cancellingSum.matrixMultiplyExact(column));
+        assertEquals(Long.MAX_VALUE, cancellingSum.matrixMultiply(column).get(0, 0));
+
+        // The same terms in an order that never leaves the long range succeed.
+        final LongMatrix reordered = LongMatrix.wrap(new long[][] { { Long.MAX_VALUE, -1L, 1L } });
+        assertEquals(Long.MAX_VALUE, reordered.matrixMultiplyExact(column).get(0, 0));
+
+        // A single overflowing product throws even if a later product would cancel it.
+        final LongMatrix bigTerms = LongMatrix.wrap(new long[][] { { 1L << 62, -(1L << 62) } });
+        final LongMatrix fours = LongMatrix.wrap(new long[][] { { 4L }, { 4L } });
+        assertThrows(ArithmeticException.class, () -> bigTerms.matrixMultiplyExact(fours));
+
+        // Degenerate shapes keep the exact product's shape.
+        final LongMatrix nx0 = LongMatrix.wrap(new long[][] { {}, {} });
+        final LongMatrix zx3 = new LongMatrix(new long[0][], 3);
+        final LongMatrix product = nx0.matrixMultiplyExact(zx3);
+        assertEquals(2, product.rowCount());
+        assertEquals(3, product.columnCount());
+        assertEquals(nx0.matrixMultiply(zx3), product);
+    }
+
+    @Test
+    public void testRange_longBoundaryEdgeCases() {
+        assertArrayEquals(new long[] { Long.MAX_VALUE - 1, Long.MAX_VALUE }, LongMatrix.rangeClosed(Long.MAX_VALUE - 1, Long.MAX_VALUE).rowView(0));
+        assertArrayEquals(new long[] { Long.MAX_VALUE - 2 }, LongMatrix.range(Long.MAX_VALUE - 2, Long.MAX_VALUE, 5L).rowView(0));
+        assertArrayEquals(new long[] { 0L, Long.MAX_VALUE }, LongMatrix.rangeClosed(0L, Long.MAX_VALUE, Long.MAX_VALUE).rowView(0));
+        assertArrayEquals(new long[] { Long.MIN_VALUE, -1L, Long.MAX_VALUE - 1 },
+                LongMatrix.rangeClosed(Long.MIN_VALUE, Long.MAX_VALUE, Long.MAX_VALUE).rowView(0));
+        assertArrayEquals(new long[] { Long.MAX_VALUE, -1L }, LongMatrix.range(Long.MAX_VALUE, Long.MIN_VALUE, Long.MIN_VALUE).rowView(0));
+        assertArrayEquals(new long[] { Long.MIN_VALUE + 2, Long.MIN_VALUE + 1, Long.MIN_VALUE },
+                LongMatrix.rangeClosed(Long.MIN_VALUE + 2, Long.MIN_VALUE, -1L).rowView(0));
+
+        final LongMatrix wrongDirection = LongMatrix.rangeClosed(Long.MIN_VALUE, Long.MAX_VALUE, -1L);
+        assertEquals(1, wrongDirection.rowCount());
+        assertEquals(0, wrongDirection.columnCount());
+
+        assertThrows(IllegalArgumentException.class, () -> LongMatrix.range(Long.MIN_VALUE, Long.MAX_VALUE));
+        assertThrows(IllegalArgumentException.class, () -> LongMatrix.rangeClosed(0L, Integer.MAX_VALUE));
+        assertThrows(IllegalArgumentException.class, () -> LongMatrix.range(0L, Long.MAX_VALUE, 2L));
+        assertThrows(IllegalArgumentException.class, () -> LongMatrix.rangeClosed(Long.MIN_VALUE, Long.MAX_VALUE, 1L));
+    }
 }

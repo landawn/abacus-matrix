@@ -108,7 +108,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     }
 
     static CharMatrix wrapResult(final char[][] a, final int columnCount) {
-        // Every wrapResult(...) call site passes an array this class just allocated, so the rows are
+        // Every wrapResult(...) call site (here, in Matrix and in Matrices) passes freshly allocated rows, so they are
         // identity-distinct by construction and the duplicate-row scan can be skipped.
         return a.length == 0 && columnCount == 0 ? EMPTY_CHAR_MATRIX : new CharMatrix(a, columnCount, true);
     }
@@ -2797,7 +2797,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p><b>Overflow:</b> each accumulation step is performed with {@code char +=}, which promotes to
      * {@code int} for the multiply-add and then casts the running sum back to {@code char}, so any
      * intermediate or final value outside {@code [0, 65535]} wraps modulo {@code 65536}. For inputs
-     * that may overflow, convert to int first via {@link #toIntMatrix()} and multiply there.</p>
+     * that may overflow, convert to long first via {@link #toLongMatrix()} and multiply there; a
+     * {@code long} product of {@code char} values cannot overflow. Converting via {@link #toIntMatrix()}
+     * is not enough, because a single product of two code units above {@code 46340} already exceeds
+     * {@link Integer#MAX_VALUE}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

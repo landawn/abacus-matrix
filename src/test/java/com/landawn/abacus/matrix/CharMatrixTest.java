@@ -1010,6 +1010,23 @@ class CharMatrixTest extends TestBase {
     }
 
     @Test
+    public void testMatrixMultiply_overflowAdvice_longIsExactButIntOverflows() {
+        // Pins the matrixMultiply javadoc: the char product wraps modulo 65536, widening via toLongMatrix()
+        // gives the exact product, and toIntMatrix() is NOT enough (a single product above 46340^2 overflows int).
+        CharMatrix left = CharMatrix.wrap(new char[][] { { (char) 50000, (char) 65535 } });
+        CharMatrix right = CharMatrix.wrap(new char[][] { { (char) 50000 }, { (char) 65535 } });
+        long exact = 50000L * 50000L + 65535L * 65535L;
+
+        assertEquals((char) (exact & 0xFFFF), left.matrixMultiply(right).get(0, 0));
+        assertEquals(exact, left.toLongMatrix().matrixMultiply(right.toLongMatrix()).get(0, 0));
+        assertNotEquals(exact, (long) left.toIntMatrix().matrixMultiply(right.toIntMatrix()).get(0, 0));
+
+        CharMatrix single = CharMatrix.wrap(new char[][] { { (char) 46341 } });
+        assertTrue(single.toIntMatrix().matrixMultiply(single.toIntMatrix()).get(0, 0) < 0);
+        assertEquals(46341L * 46341L, single.toLongMatrix().matrixMultiply(single.toLongMatrix()).get(0, 0));
+    }
+
+    @Test
     public void testSubtract() {
         char[][] a = { { 'd', 'e' }, { 'f', 'g' } };
         char[][] b = { { 1, 2 }, { 3, 4 } };

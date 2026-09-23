@@ -114,7 +114,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     }
 
     static ByteMatrix wrapResult(final byte[][] a, final int columnCount) {
-        // Every wrapResult(...) call site passes an array this class just allocated, so the rows are
+        // Every wrapResult(...) call site (here, in Matrix and in Matrices) passes freshly allocated rows, so they are
         // identity-distinct by construction and the duplicate-row scan can be skipped.
         return a.length == 0 && columnCount == 0 ? EMPTY_BYTE_MATRIX : new ByteMatrix(a, columnCount, true);
     }
@@ -2695,6 +2695,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @throws IllegalArgumentException if {@code other} is {@code null}, or if the matrices have different shapes
      * @see #subtract(ByteMatrix)
      * @see #zipWith(ByteMatrix, Throwables.ByteBinaryOperator)
+     * @see #addWidened(ByteMatrix)
+     * @see #addExact(ByteMatrix)
      */
     public ByteMatrix add(final ByteMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, cs.other);
@@ -2801,6 +2803,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @throws IllegalArgumentException if {@code other} is {@code null}, or if the matrices have different shapes
      * @see #add(ByteMatrix)
      * @see #zipWith(ByteMatrix, Throwables.ByteBinaryOperator)
+     * @see #subtractWidened(ByteMatrix)
+     * @see #subtractExact(ByteMatrix)
      */
     public ByteMatrix subtract(final ByteMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, cs.other);
@@ -2908,6 +2912,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param other the matrix to multiply with; must not be {@code null}
      * @return a new {@code ByteMatrix} of shape {@code this.rowCount x other.columnCount} containing the matrix product
      * @throws IllegalArgumentException if {@code other} is {@code null} or {@code this.columnCount != other.rowCount}
+     * @see #matrixMultiplyWidened(ByteMatrix)
+     * @see #matrixMultiplyExact(ByteMatrix)
      */
     public ByteMatrix matrixMultiply(final ByteMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, cs.other);
@@ -2947,6 +2953,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
 
     /**
      * Computes the matrix product in {@code long} precision instead of narrowing each result to {@code byte}.
+     * A dot product of two {@code byte} vectors whose length is representable by Java arrays cannot
+     * overflow {@code long}, so every result cell is exact.
      *
      * @param other the right operand; must be non-{@code null} and dimensionally compatible
      * @return a {@link LongMatrix} containing the widened matrix product

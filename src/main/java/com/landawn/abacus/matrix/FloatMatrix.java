@@ -34,8 +34,8 @@ import com.landawn.abacus.util.stream.Stream;
  * Matrix implementation backed by a rectangular {@code float[][]}.
  *
  * <p>This type specializes {@link AbstractMatrix} for {@code float} values while keeping the data in
- * a validated backing array. The constructor and {@link #wrap(float[]...)} wrap the supplied storage
- * directly. {@link #copyOf(float[]...)}, conversions, and mapping operations do not share mutable
+ * a validated backing array. The constructor and {@link #wrap(float[]...)} copy the outer array but
+ * share its row arrays. {@link #copyOf(float[]...)}, conversions, and mapping operations do not share mutable
  * cell storage with a non-empty source; operations producing a {@code 0 x 0} matrix return the shared empty
  * singleton, while {@code 0 x N} and {@code N x 0} results keep their shape.</p>
  *
@@ -121,7 +121,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @return the shared empty matrix when the result is {@code 0 x 0}, otherwise a new matrix
      */
     static FloatMatrix wrapResult(final float[][] a, final int columnCount) {
-        // Every wrapResult(...) call site passes an array this class just allocated, so the rows are
+        // Every wrapResult(...) call site (here, in Matrix and in Matrices) passes freshly allocated rows, so they are
         // identity-distinct by construction and the duplicate-row scan can be skipped.
         return a.length == 0 && columnCount == 0 ? EMPTY_FLOAT_MATRIX : new FloatMatrix(a, columnCount, true);
     }
@@ -163,7 +163,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * }</pre>
      *
      * @param a the two-dimensional float array to wrap, or empty for an empty matrix; must not be {@code null}
-     * @return a new {@code FloatMatrix} backed by {@code a}, or the shared empty matrix if {@code a} is empty
+     * @return a new {@code FloatMatrix} sharing {@code a}'s rows, or the shared empty matrix if {@code a} is empty
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular), or if two positions reference the same row array
      */
@@ -175,7 +175,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     /**
      * Creates a {@code FloatMatrix} that owns a defensive deep copy of the supplied two-dimensional array.
      *
-     * <p>For a non-empty input, unlike {@link #wrap(float[][])}, which wraps the caller's array without copying,
+     * <p>For a non-empty input, unlike {@link #wrap(float[][])}, which copies the outer array but shares the caller's rows,
      * this factory allocates a new outer array and clones every row. Subsequent modifications to {@code a} (or its rows)
      * are therefore <b>not</b> visible through the returned matrix, and vice versa. A zero-row input is canonicalized to the shared
      * empty matrix, so its outer-array identity is not retained.</p>
@@ -1195,7 +1195,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * This modifies the matrix directly.
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
-     * When this operation is not parallelized, elements are processed in first-occurrence row-major order;
+     * When this operation is not parallelized, elements are processed in row-major order;
      * when it is parallelized, the encounter order is unspecified.</p>
      *
      * <p><b>Usage Examples:</b></p>

@@ -6621,6 +6621,28 @@ class ShortMatrixTest extends TestBase {
     }
 
     @Test
+    public void testRandomGeneratorOverloads_nullGeneratorRejectedAfterDimensionChecks() {
+        assertThrows(IllegalArgumentException.class, () -> ShortMatrix.randomRow(2, (java.util.random.RandomGenerator) null));
+        assertThrows(IllegalArgumentException.class, () -> ShortMatrix.randomRow(0, (java.util.random.RandomGenerator) null));
+
+        IllegalArgumentException negativeRowColumns = assertThrows(IllegalArgumentException.class,
+                () -> ShortMatrix.randomRow(-1, (java.util.random.RandomGenerator) null));
+        assertTrue(negativeRowColumns.getMessage().contains("columnCount"), negativeRowColumns.getMessage());
+
+        IllegalArgumentException negativeRows = assertThrows(IllegalArgumentException.class,
+                () -> ShortMatrix.random(-1, 2, (java.util.random.RandomGenerator) null));
+        assertTrue(negativeRows.getMessage().contains("rowCount"), negativeRows.getMessage());
+
+        // The convenience overloads delegate to the default generator and keep the requested shape.
+        ShortMatrix row = ShortMatrix.randomRow(3);
+        assertEquals(1, row.rowCount());
+        assertEquals(3, row.columnCount());
+        ShortMatrix zeroByTwo = ShortMatrix.random(0, 2);
+        assertEquals(0, zeroByTwo.rowCount());
+        assertEquals(2, zeroByTwo.columnCount());
+    }
+
+    @Test
     public void testExactAndWidenedArithmetic() {
         ShortMatrix max = ShortMatrix.wrap(new short[][] { { Short.MAX_VALUE } });
         ShortMatrix one = ShortMatrix.wrap(new short[][] { { 1 } });
@@ -6689,6 +6711,18 @@ class ShortMatrixTest extends TestBase {
         assertFalse(firstColumn.hasNext());
         assertEquals(1L, columns.count());
         assertFalse(columns.hasNext());
+    }
+
+    // Pins the matrixMultiply overflow advice: widening to int is NOT enough (two MIN*MIN terms sum to 2^31),
+    // while widening to long is exact.
+    @Test
+    public void testMatrixMultiply_overflowAdvice_longIsExactButIntOverflows() {
+        ShortMatrix row = ShortMatrix.wrap(new short[][] { { Short.MIN_VALUE, Short.MIN_VALUE } });
+        ShortMatrix column = ShortMatrix.wrap(new short[][] { { Short.MIN_VALUE }, { Short.MIN_VALUE } });
+
+        assertEquals(1L << 31, row.toLongMatrix().matrixMultiply(column.toLongMatrix()).get(0, 0));
+        assertEquals(Integer.MIN_VALUE, row.toIntMatrix().matrixMultiply(column.toIntMatrix()).get(0, 0));
+        assertEquals((short) 0, row.matrixMultiply(column).get(0, 0));
     }
 
 }
