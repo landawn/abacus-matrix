@@ -100,7 +100,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular), or if two positions reference the same row array
      */
-    public DoubleMatrix(final double[][] a) {
+    public DoubleMatrix(final double[][] a) throws IllegalArgumentException {
         super(N.checkArgNotNull(a, "Matrix array cannot be null"), double.class);
     }
 
@@ -173,7 +173,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular), or if two positions reference the same row array
      */
-    public static DoubleMatrix wrap(final double[]... a) {
+    public static DoubleMatrix wrap(final double[]... a) throws IllegalArgumentException {
         N.checkArgNotNull(a, "Matrix array cannot be null");
         return a.length == 0 ? EMPTY_DOUBLE_MATRIX : new DoubleMatrix(a);
     }
@@ -207,7 +207,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @see #wrap(double[][])
      * @see #copy()
      */
-    public static DoubleMatrix copyOf(final double[]... a) {
+    public static DoubleMatrix copyOf(final double[]... a) throws IllegalArgumentException {
         N.checkArgNotNull(a, "Matrix array cannot be null");
 
         if (a.length == 0) {
@@ -244,7 +244,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row is {@code null}, or if rows have different lengths (non-rectangular array)
      * @see IntMatrix#toDoubleMatrix()
      */
-    public static DoubleMatrix from(final int[]... a) {
+    public static DoubleMatrix from(final int[]... a) throws IllegalArgumentException {
         N.checkArgNotNull(a, "Matrix array cannot be null");
 
         if (a.length == 0) {
@@ -305,7 +305,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row is {@code null}, or if rows have different lengths (non-rectangular array)
      * @see LongMatrix#toDoubleMatrix()
      */
-    public static DoubleMatrix from(final long[]... a) {
+    public static DoubleMatrix from(final long[]... a) throws IllegalArgumentException {
         N.checkArgNotNull(a, "Matrix array cannot be null");
 
         if (a.length == 0) {
@@ -364,7 +364,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row is {@code null}, or if rows have different lengths (non-rectangular array)
      * @see FloatMatrix#toDoubleMatrix()
      */
-    public static DoubleMatrix from(final float[]... a) {
+    public static DoubleMatrix from(final float[]... a) throws IllegalArgumentException {
         N.checkArgNotNull(a, "Matrix array cannot be null");
 
         if (a.length == 0) {
@@ -415,7 +415,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws IllegalArgumentException if {@code columnCount} is negative
      * @see #random(int, int)
      */
-    public static DoubleMatrix randomRow(final int columnCount) {
+    public static DoubleMatrix randomRow(final int columnCount) throws IllegalArgumentException {
         return randomRow(columnCount, defaultRandomGenerator());
     }
 
@@ -426,9 +426,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param columnCount the number of columns; must be non-negative
      * @param randomGenerator the random source; must not be {@code null}
      * @return the generated single-row matrix
-     * @throws IllegalArgumentException if {@code columnCount} is negative or the random source is {@code null}
+     * @throws IllegalArgumentException if {@code columnCount} is negative, or if {@code randomGenerator} is {@code null}
      */
-    public static DoubleMatrix randomRow(final int columnCount, final RandomGenerator randomGenerator) {
+    public static DoubleMatrix randomRow(final int columnCount, final RandomGenerator randomGenerator) throws IllegalArgumentException {
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.columnCount, columnCount);
         N.checkArgNotNull(randomGenerator, cs.randomGenerator);
         return random(1, columnCount, randomGenerator);
@@ -454,7 +454,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @return a new {@code DoubleMatrix} of dimensions {@code rowCount x columnCount} filled with random values in {@code [0.0, 1.0)}
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative
      */
-    public static DoubleMatrix random(final int rowCount, final int columnCount) {
+    public static DoubleMatrix random(final int rowCount, final int columnCount) throws IllegalArgumentException {
         return random(rowCount, columnCount, defaultRandomGenerator());
     }
 
@@ -467,9 +467,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param randomGenerator the random source; must not be {@code null}
      * @return the generated matrix
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
-     *         or if the random source is {@code null}
+     *         or if {@code randomGenerator} is {@code null}
      */
-    public static DoubleMatrix random(final int rowCount, final int columnCount, final RandomGenerator randomGenerator) {
+    public static DoubleMatrix random(final int rowCount, final int columnCount, final RandomGenerator randomGenerator) throws IllegalArgumentException {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, cs.rowCount, rowCount);
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.columnCount, columnCount);
         N.checkArgNotNull(randomGenerator, cs.randomGenerator);
@@ -514,7 +514,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @see #ofAntiDiagonal(double[])
      * @see #ofDiagonals(double[], double[])
      */
-    public static DoubleMatrix ofMainDiagonal(final double[] mainDiagonal) {
+    public static DoubleMatrix ofMainDiagonal(final double[] mainDiagonal) throws IllegalArgumentException {
         N.checkArgNotNull(mainDiagonal, cs.mainDiagonal);
 
         return ofDiagonals(mainDiagonal, null);
@@ -548,7 +548,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @see #ofMainDiagonal(double[])
      * @see #ofDiagonals(double[], double[])
      */
-    public static DoubleMatrix ofAntiDiagonal(final double[] antiDiagonal) {
+    public static DoubleMatrix ofAntiDiagonal(final double[] antiDiagonal) throws IllegalArgumentException {
         N.checkArgNotNull(antiDiagonal, cs.antiDiagonal);
 
         return ofDiagonals(null, antiDiagonal);
@@ -639,7 +639,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws IllegalArgumentException if {@code x} is {@code null}
      * @see #boxed()
      */
-    public static DoubleMatrix unbox(final Matrix<Double> x) {
+    public static DoubleMatrix unbox(final Matrix<Double> x) throws IllegalArgumentException {
         N.checkArgNotNull(x, cs.x);
 
         return x.mapToDouble(value -> value == null ? 0d : value);
@@ -663,7 +663,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @return the element at position {@code (rowIndex, columnIndex)}
      * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
-    public double get(final int rowIndex, final int columnIndex) {
+    public double get(final int rowIndex, final int columnIndex) throws ArrayIndexOutOfBoundsException {
         return a[rowIndex][columnIndex];
     }
 
@@ -687,7 +687,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
      * @see #get(int, int)
      */
-    public double get(final Point point) {
+    public double get(final Point point) throws IllegalArgumentException, ArrayIndexOutOfBoundsException {
         N.checkArgNotNull(point, cs.point);
 
         return a[point.rowIndex()][point.columnIndex()];
@@ -712,7 +712,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param value the new value to set at the specified position
      * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
-    public void set(final int rowIndex, final int columnIndex, final double value) {
+    public void set(final int rowIndex, final int columnIndex, final double value) throws ArrayIndexOutOfBoundsException {
         a[rowIndex][columnIndex] = value;
     }
 
@@ -736,7 +736,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
      * @see #set(int, int, double)
      */
-    public void set(final Point point, final double value) {
+    public void set(final Point point, final double value) throws IllegalArgumentException, ArrayIndexOutOfBoundsException {
         N.checkArgNotNull(point, cs.point);
 
         a[point.rowIndex()][point.columnIndex()] = value;
@@ -764,7 +764,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *         or empty if {@code rowIndex == 0}
      * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
-    public OptionalDouble valueAbove(final int rowIndex, final int columnIndex) {
+    public OptionalDouble valueAbove(final int rowIndex, final int columnIndex) throws IndexOutOfBoundsException {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return rowIndex == 0 ? OptionalDouble.empty() : OptionalDouble.of(a[rowIndex - 1][columnIndex]);
@@ -792,7 +792,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *         or empty if {@code rowIndex == rowCount - 1}
      * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
-    public OptionalDouble valueBelow(final int rowIndex, final int columnIndex) {
+    public OptionalDouble valueBelow(final int rowIndex, final int columnIndex) throws IndexOutOfBoundsException {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return rowIndex == rowCount - 1 ? OptionalDouble.empty() : OptionalDouble.of(a[rowIndex + 1][columnIndex]);
@@ -820,7 +820,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *         or empty if {@code columnIndex == 0}
      * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
-    public OptionalDouble valueLeft(final int rowIndex, final int columnIndex) {
+    public OptionalDouble valueLeft(final int rowIndex, final int columnIndex) throws IndexOutOfBoundsException {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return columnIndex == 0 ? OptionalDouble.empty() : OptionalDouble.of(a[rowIndex][columnIndex - 1]);
@@ -848,7 +848,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *         or empty if {@code columnIndex == columnCount - 1}
      * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
-    public OptionalDouble valueRight(final int rowIndex, final int columnIndex) {
+    public OptionalDouble valueRight(final int rowIndex, final int columnIndex) throws IndexOutOfBoundsException {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return columnIndex == columnCount - 1 ? OptionalDouble.empty() : OptionalDouble.of(a[rowIndex][columnIndex + 1]);
@@ -983,8 +983,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws IllegalArgumentException if {@code row} is {@code null} or if {@code row.length != columnCount}
      */
     public void setRow(final int rowIndex, final double[] row) throws IndexOutOfBoundsException, IllegalArgumentException {
-        N.checkArgNotNull(row, cs.row);
         checkRowIndex(rowIndex);
+        N.checkArgNotNull(row, cs.row);
         N.checkArgument(row.length == columnCount, MSG_ROW_LENGTH_MISMATCH, columnCount, row.length);
 
         N.copy(row, 0, a[rowIndex], 0, columnCount);
@@ -1019,8 +1019,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws IllegalArgumentException if {@code column} is {@code null} or if {@code column.length != rowCount}
      */
     public void setColumn(final int columnIndex, final double[] column) throws IndexOutOfBoundsException, IllegalArgumentException {
-        N.checkArgNotNull(column, cs.column);
         checkColumnIndex(columnIndex);
+        N.checkArgNotNull(column, cs.column);
         N.checkArgument(column.length == rowCount, MSG_COLUMN_LENGTH_MISMATCH, rowCount, column.length);
         final double[] values = snapshotIfBackingRow(column);
 
@@ -1059,9 +1059,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     public <E extends Exception> void updateRow(final int rowIndex, final Throwables.DoubleUnaryOperator<E> operator)
             throws IndexOutOfBoundsException, IllegalArgumentException, E {
-        N.checkArgNotNull(operator, cs.operator);
-
         checkRowIndex(rowIndex);
+        N.checkArgNotNull(operator, cs.operator);
 
         final double[] row = a[rowIndex];
 
@@ -1099,9 +1098,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.DoubleUnaryOperator<E> operator)
             throws IndexOutOfBoundsException, IllegalArgumentException, E {
-        N.checkArgNotNull(operator, cs.operator);
-
         checkColumnIndex(columnIndex);
+        N.checkArgNotNull(operator, cs.operator);
 
         for (final double[] row : a) {
             row[columnIndex] = operator.applyAsDouble(row[columnIndex]);
@@ -1382,7 +1380,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws NullPointerException if {@code mapper} returns {@code null} for any position
      * @throws E if the mapper throws an exception
      */
-    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Double, E> mapper) throws IllegalArgumentException, E {
+    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Double, E> mapper)
+            throws IllegalArgumentException, NullPointerException, E {
         N.checkArgNotNull(mapper, cs.mapper);
 
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
@@ -1426,7 +1425,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws IllegalArgumentException if {@code predicate} is {@code null}
      * @throws E if the predicate throws an exception
      */
-    public <E extends Exception> void replaceIf(final Throwables.DoublePredicate<E> predicate, final double newValue) throws E {
+    public <E extends Exception> void replaceIf(final Throwables.DoublePredicate<E> predicate, final double newValue) throws IllegalArgumentException, E {
         N.checkArgNotNull(predicate, cs.predicate);
 
         if (Matrices.shouldRunInParallel(this)) {
@@ -1478,7 +1477,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws IllegalArgumentException if {@code predicate} is {@code null}
      * @throws E if the predicate throws an exception
      */
-    public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final double newValue) throws E {
+    public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final double newValue) throws IllegalArgumentException, E {
         N.checkArgNotNull(predicate, cs.predicate);
 
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
@@ -1516,7 +1515,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws E if the function throws an exception
      * @see #updateAll(Throwables.DoubleUnaryOperator)
      */
-    public <E extends Exception> DoubleMatrix map(final Throwables.DoubleUnaryOperator<E> mapper) throws E {
+    public <E extends Exception> DoubleMatrix map(final Throwables.DoubleUnaryOperator<E> mapper) throws IllegalArgumentException, E {
         N.checkArgNotNull(mapper, cs.mapper);
 
         final double[][] result = new double[rowCount][columnCount];
@@ -1551,7 +1550,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws E if the function throws an exception
      * @see #toIntMatrix()
      */
-    public <E extends Exception> IntMatrix mapToInt(final Throwables.DoubleToIntFunction<E> mapper) throws E {
+    public <E extends Exception> IntMatrix mapToInt(final Throwables.DoubleToIntFunction<E> mapper) throws IllegalArgumentException, E {
         N.checkArgNotNull(mapper, cs.mapper);
 
         final int[][] result = new int[rowCount][columnCount];
@@ -1586,7 +1585,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws E if the function throws an exception
      * @see #toLongMatrix()
      */
-    public <E extends Exception> LongMatrix mapToLong(final Throwables.DoubleToLongFunction<E> mapper) throws E {
+    public <E extends Exception> LongMatrix mapToLong(final Throwables.DoubleToLongFunction<E> mapper) throws IllegalArgumentException, E {
         N.checkArgNotNull(mapper, cs.mapper);
 
         final long[][] result = new long[rowCount][columnCount];
@@ -1623,7 +1622,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null}
      * @throws E if the function throws an exception
      */
-    public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.DoubleFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E {
+    public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.DoubleFunction<? extends R, E> mapper, final Class<R> targetElementType)
+            throws IllegalArgumentException, E {
         N.checkArgNotNull(mapper, cs.mapper);
         N.checkArgNotNull(targetElementType, cs.targetElementType);
 
@@ -1689,7 +1689,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws IllegalArgumentException if {@code source} is {@code null}
      * @see #copyFrom(int, int, double[][])
      */
-    public void copyFrom(final double[][] source) {
+    public void copyFrom(final double[][] source) throws IllegalArgumentException {
         copyFrom(0, 0, source);
     }
 
@@ -1724,13 +1724,13 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      */
     public void copyFrom(final int destRowIndex, final int destColumnIndex, final double[][] source)
             throws IndexOutOfBoundsException, IllegalArgumentException {
-        N.checkArgNotNull(source, cs.source);
         if (destRowIndex < 0 || destRowIndex > rowCount) {
             throw new IndexOutOfBoundsException(formatMsg("destRowIndex({}) must be in [0, rowCount({})]", destRowIndex, rowCount));
         }
         if (destColumnIndex < 0 || destColumnIndex > columnCount) {
             throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be in [0, columnCount({})]", destColumnIndex, columnCount));
         }
+        N.checkArgNotNull(source, cs.source);
         final double[][] sourceSnapshot = snapshotRowsIfBackingRows(source);
 
         for (int i = 0, minLen = N.min(rowCount - destRowIndex, sourceSnapshot.length); i < minLen; i++) {
@@ -1829,9 +1829,9 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @return a new {@code DoubleMatrix} containing the specified submatrix
-     * @throws IndexOutOfBoundsException if any range is invalid (e.g. {@code fromRowIndex < 0},
-     *         {@code toRowIndex > rowCount}, {@code fromColumnIndex < 0}, {@code toColumnIndex > columnCount},
-     *         or {@code from > to} for either range)
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount},
+     *         {@code fromRowIndex > toRowIndex}, {@code fromColumnIndex < 0},
+     *         {@code toColumnIndex > columnCount}, or {@code fromColumnIndex > toColumnIndex}
      */
     @Override
     public DoubleMatrix copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex)
@@ -1904,7 +1904,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @see #pad(int, int, int, int)
      */
     @Override
-    public DoubleMatrix resize(final int newRowCount, final int newColumnCount) {
+    public DoubleMatrix resize(final int newRowCount, final int newColumnCount) throws IllegalArgumentException {
         return resize(newRowCount, newColumnCount, 0);
     }
 
@@ -2039,7 +2039,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @see #resize(int, int)
      */
     @Override
-    public DoubleMatrix pad(final int padTop, final int padBottom, final int padLeft, final int padRight) {
+    public DoubleMatrix pad(final int padTop, final int padBottom, final int padLeft, final int padRight) throws IllegalArgumentException {
         return pad(padTop, padBottom, padLeft, padRight, 0);
     }
 
@@ -2100,19 +2100,18 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
         N.checkArgument(padLeft >= 0, MSG_NEGATIVE_DIMENSION, cs.padLeft, padLeft);
         N.checkArgument(padRight >= 0, MSG_NEGATIVE_DIMENSION, cs.padRight, padRight);
 
+        if ((long) padTop + rowCount + padBottom > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("Result row count overflow: " + padTop + " + " + rowCount + " + " + padBottom + " exceeds Integer.MAX_VALUE");
+        }
+
+        if ((long) padLeft + columnCount + padRight > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException(
+                    "Result column count overflow: " + padLeft + " + " + columnCount + " + " + padRight + " exceeds Integer.MAX_VALUE");
+        }
+
         if (padTop == 0 && padBottom == 0 && padLeft == 0 && padRight == 0) {
             return copy();
         } else {
-            if ((long) padTop + rowCount + padBottom > Integer.MAX_VALUE) {
-                throw new IllegalArgumentException(
-                        "Result row count overflow: " + padTop + " + " + rowCount + " + " + padBottom + " exceeds Integer.MAX_VALUE");
-            }
-
-            if ((long) padLeft + columnCount + padRight > Integer.MAX_VALUE) {
-                throw new IllegalArgumentException(
-                        "Result column count overflow: " + padLeft + " + " + columnCount + " + " + padRight + " exceeds Integer.MAX_VALUE");
-            }
-
             final int newRowCount = padTop + rowCount + padBottom;
             final int newColumnCount = padLeft + columnCount + padRight;
             checkNonNegativeShape(newRowCount, newColumnCount);
@@ -2473,7 +2472,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *         {@code (long) newRowCount * newColumnCount} is too small to hold every existing element
      */
     @Override
-    public DoubleMatrix reshapeAndPad(final int newRowCount, final int newColumnCount) {
+    public DoubleMatrix reshapeAndPad(final int newRowCount, final int newColumnCount) throws IllegalArgumentException {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newRowCount, newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newColumnCount, newColumnCount);
         checkNonNegativeShape(newRowCount, newColumnCount);
@@ -2549,16 +2548,16 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     public DoubleMatrix repeatElements(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
 
-        if (rowRepeats == 1 && columnRepeats == 1) {
-            return copy();
-        }
-
         // Check for overflow before allocation
         if ((long) rowCount * rowRepeats > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("Result row count overflow: " + rowCount + " * " + rowRepeats + " exceeds Integer.MAX_VALUE");
         }
         if ((long) columnCount * columnRepeats > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("Result column count overflow: " + columnCount + " * " + columnRepeats + " exceeds Integer.MAX_VALUE");
+        }
+
+        if (rowRepeats == 1 && columnRepeats == 1) {
+            return copy();
         }
 
         final double[][] c = new double[rowCount * rowRepeats][columnCount * columnRepeats];
@@ -2613,16 +2612,16 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     public DoubleMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
 
-        if (rowRepeats == 1 && columnRepeats == 1) {
-            return copy();
-        }
-
         // Check for overflow before allocation
         if ((long) rowCount * rowRepeats > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("Result row count overflow: " + rowCount + " * " + rowRepeats + " exceeds Integer.MAX_VALUE");
         }
         if ((long) columnCount * columnRepeats > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("Result column count overflow: " + columnCount + " * " + columnRepeats + " exceeds Integer.MAX_VALUE");
+        }
+
+        if (rowRepeats == 1 && columnRepeats == 1) {
+            return copy();
         }
 
         final double[][] c = new double[rowCount * rowRepeats][columnCount * columnRepeats];
@@ -2666,7 +2665,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @see #rowMajorStream()
      */
     @Override
-    public DoubleList flatten() {
+    public DoubleList flatten() throws IllegalStateException {
         // Check for overflow before allocation
         if ((long) rowCount * columnCount > Integer.MAX_VALUE) {
             throw new IllegalStateException("Matrix too large to flatten: " + rowCount + " x " + columnCount);
@@ -2717,7 +2716,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @see Arrays#mutateViaFlatArray(double[][], Throwables.Consumer)
      */
     @Override
-    public <E extends Exception> void mutateViaFlatArray(final Throwables.Consumer<? super double[], E> action) throws E {
+    public <E extends Exception> void mutateViaFlatArray(final Throwables.Consumer<? super double[], E> action)
+            throws IllegalArgumentException, ArithmeticException, E {
         N.checkArgNotNull(action, cs.action);
 
         Arrays.mutateViaFlatArray(a, action);
@@ -3208,17 +3208,17 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *                    element from this matrix as first argument and the element from
      *                    {@code other} as second argument
      * @return a new {@code DoubleMatrix} with the results of the element-wise operation
-     * @throws IllegalArgumentException if {@code other} or {@code zipFunction} is {@code null},
-     *         or if the matrices have different shapes
+     * @throws IllegalArgumentException if {@code other} is {@code null}, if its shape differs from this matrix's shape,
+     *         or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception
      * @see #zipWith(DoubleMatrix, DoubleMatrix, Throwables.DoubleTernaryOperator)
      */
     public <E extends Exception> DoubleMatrix zipWith(final DoubleMatrix other, final Throwables.DoubleBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
         N.checkArgNotNull(other, cs.other);
-        N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgument(isSameShape(other), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
 
         final double[][] otherData = other.a;
         final double[][] result = new double[rowCount][columnCount];
@@ -3263,18 +3263,21 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *                    {@code other} as second argument, and the element from {@code third}
      *                    as third argument
      * @return a new {@code DoubleMatrix} with the results of the element-wise operation
-     * @throws IllegalArgumentException if any of {@code other}, {@code third}, or {@code zipFunction}
-     *         is {@code null}, or if any of the matrices have different shapes
+     * @throws IllegalArgumentException if {@code other} is {@code null} or its shape differs from this matrix's shape,
+     *         if {@code third} is {@code null} or its shape differs from this matrix's shape,
+     *         or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception
      * @see #zipWith(DoubleMatrix, Throwables.DoubleBinaryOperator)
      */
     public <E extends Exception> DoubleMatrix zipWith(final DoubleMatrix other, final DoubleMatrix third, final Throwables.DoubleTernaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
         N.checkArgNotNull(other, cs.other);
+        N.checkArgument(isSameShape(other), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
+                other.rowCount, other.columnCount);
         N.checkArgNotNull(third, cs.third);
+        N.checkArgument(isSameShape(third), "Cannot zip matrices with different shapes: this is {}x{} but third is {}x{}", rowCount, columnCount,
+                third.rowCount, third.columnCount);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
-        N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: this is {}x{}, other is {}x{}, third is {}x{}",
-                rowCount, columnCount, other.rowCount, other.columnCount, third.rowCount, third.columnCount);
 
         final double[][] otherData = other.a;
         final double[][] thirdData = third.a;
@@ -3931,7 +3934,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @throws E if the action throws an exception
      * @see #forEach(int, int, int, int, Throwables.DoubleConsumer)
      */
-    public <E extends Exception> void forEach(final Throwables.DoubleConsumer<E> action) throws E {
+    public <E extends Exception> void forEach(final Throwables.DoubleConsumer<E> action) throws IllegalArgumentException, E {
         N.checkArgNotNull(action, cs.action);
 
         forEach(0, rowCount, 0, columnCount, action);
@@ -3968,16 +3971,17 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @param action the action to perform on each element; must not be {@code null}
-     * @throws IndexOutOfBoundsException if any index is out of bounds
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount},
+     *         {@code fromRowIndex > toRowIndex}, {@code fromColumnIndex < 0},
+     *         {@code toColumnIndex > columnCount}, or {@code fromColumnIndex > toColumnIndex}
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the action throws an exception
      */
     public <E extends Exception> void forEach(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
-            final Throwables.DoubleConsumer<E> action) throws IndexOutOfBoundsException, E {
-        N.checkArgNotNull(action, cs.action);
-
+            final Throwables.DoubleConsumer<E> action) throws IndexOutOfBoundsException, IllegalArgumentException, E {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
+        N.checkArgNotNull(action, cs.action);
 
         if (Matrices.shouldRunInParallel(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
             final Throwables.IntBiConsumer<E> elementAction = (i, j) -> action.accept(a[i][j]);

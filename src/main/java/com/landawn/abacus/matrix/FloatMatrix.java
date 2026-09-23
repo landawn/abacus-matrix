@@ -98,7 +98,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular), or if two positions reference the same row array
      */
-    public FloatMatrix(final float[][] a) {
+    public FloatMatrix(final float[][] a) throws IllegalArgumentException {
         super(N.checkArgNotNull(a, "Matrix array cannot be null"), float.class);
     }
 
@@ -167,7 +167,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular), or if two positions reference the same row array
      */
-    public static FloatMatrix wrap(final float[]... a) {
+    public static FloatMatrix wrap(final float[]... a) throws IllegalArgumentException {
         N.checkArgNotNull(a, "Matrix array cannot be null");
         return a.length == 0 ? EMPTY_FLOAT_MATRIX : new FloatMatrix(a);
     }
@@ -201,7 +201,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @see #wrap(float[][])
      * @see #copy()
      */
-    public static FloatMatrix copyOf(final float[]... a) {
+    public static FloatMatrix copyOf(final float[]... a) throws IllegalArgumentException {
         N.checkArgNotNull(a, "Matrix array cannot be null");
 
         if (a.length == 0) {
@@ -248,7 +248,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row is {@code null}, or if rows have different lengths (non-rectangular array)
      * @see IntMatrix#toFloatMatrix()
      */
-    public static FloatMatrix from(final int[]... a) {
+    public static FloatMatrix from(final int[]... a) throws IllegalArgumentException {
         N.checkArgNotNull(a, "Matrix array cannot be null");
 
         if (a.length == 0) {
@@ -299,7 +299,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IllegalArgumentException if {@code columnCount} is negative
      * @see #random(int, int)
      */
-    public static FloatMatrix randomRow(final int columnCount) {
+    public static FloatMatrix randomRow(final int columnCount) throws IllegalArgumentException {
         return randomRow(columnCount, defaultRandomGenerator());
     }
 
@@ -310,9 +310,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param columnCount the number of columns; must be non-negative
      * @param randomGenerator the random source; must not be {@code null}
      * @return the generated single-row matrix
-     * @throws IllegalArgumentException if {@code columnCount} is negative or the random source is {@code null}
+     * @throws IllegalArgumentException if {@code columnCount} is negative, or if {@code randomGenerator} is {@code null}
      */
-    public static FloatMatrix randomRow(final int columnCount, final RandomGenerator randomGenerator) {
+    public static FloatMatrix randomRow(final int columnCount, final RandomGenerator randomGenerator) throws IllegalArgumentException {
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.columnCount, columnCount);
         N.checkArgNotNull(randomGenerator, cs.randomGenerator);
         return random(1, columnCount, randomGenerator);
@@ -338,7 +338,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @return a new {@code FloatMatrix} of dimensions {@code rowCount x columnCount} filled with random values in {@code [0.0f, 1.0f)}
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative
      */
-    public static FloatMatrix random(final int rowCount, final int columnCount) {
+    public static FloatMatrix random(final int rowCount, final int columnCount) throws IllegalArgumentException {
         return random(rowCount, columnCount, defaultRandomGenerator());
     }
 
@@ -351,9 +351,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param randomGenerator the random source; must not be {@code null}
      * @return the generated matrix
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative,
-     *         or if the random source is {@code null}
+     *         or if {@code randomGenerator} is {@code null}
      */
-    public static FloatMatrix random(final int rowCount, final int columnCount, final RandomGenerator randomGenerator) {
+    public static FloatMatrix random(final int rowCount, final int columnCount, final RandomGenerator randomGenerator) throws IllegalArgumentException {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, cs.rowCount, rowCount);
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.columnCount, columnCount);
         N.checkArgNotNull(randomGenerator, cs.randomGenerator);
@@ -398,7 +398,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @see #ofAntiDiagonal(float[])
      * @see #ofDiagonals(float[], float[])
      */
-    public static FloatMatrix ofMainDiagonal(final float[] mainDiagonal) {
+    public static FloatMatrix ofMainDiagonal(final float[] mainDiagonal) throws IllegalArgumentException {
         N.checkArgNotNull(mainDiagonal, cs.mainDiagonal);
 
         return ofDiagonals(mainDiagonal, null);
@@ -432,7 +432,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @see #ofMainDiagonal(float[])
      * @see #ofDiagonals(float[], float[])
      */
-    public static FloatMatrix ofAntiDiagonal(final float[] antiDiagonal) {
+    public static FloatMatrix ofAntiDiagonal(final float[] antiDiagonal) throws IllegalArgumentException {
         N.checkArgNotNull(antiDiagonal, cs.antiDiagonal);
 
         return ofDiagonals(null, antiDiagonal);
@@ -521,7 +521,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IllegalArgumentException if {@code x} is {@code null}
      * @see #boxed()
      */
-    public static FloatMatrix unbox(final Matrix<Float> x) {
+    public static FloatMatrix unbox(final Matrix<Float> x) throws IllegalArgumentException {
         N.checkArgNotNull(x, cs.x);
 
         return x.mapToFloat(value -> value == null ? 0f : value);
@@ -545,7 +545,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @return the element at position {@code (rowIndex, columnIndex)}
      * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
-    public float get(final int rowIndex, final int columnIndex) {
+    public float get(final int rowIndex, final int columnIndex) throws ArrayIndexOutOfBoundsException {
         return a[rowIndex][columnIndex];
     }
 
@@ -569,7 +569,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
      * @see #get(int, int)
      */
-    public float get(final Point point) {
+    public float get(final Point point) throws IllegalArgumentException, ArrayIndexOutOfBoundsException {
         N.checkArgNotNull(point, cs.point);
 
         return a[point.rowIndex()][point.columnIndex()];
@@ -594,7 +594,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param value the new value to set at the specified position
      * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
-    public void set(final int rowIndex, final int columnIndex, final float value) {
+    public void set(final int rowIndex, final int columnIndex, final float value) throws ArrayIndexOutOfBoundsException {
         a[rowIndex][columnIndex] = value;
     }
 
@@ -618,7 +618,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
      * @see #set(int, int, float)
      */
-    public void set(final Point point, final float value) {
+    public void set(final Point point, final float value) throws IllegalArgumentException, ArrayIndexOutOfBoundsException {
         N.checkArgNotNull(point, cs.point);
 
         a[point.rowIndex()][point.columnIndex()] = value;
@@ -646,7 +646,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *         or empty if {@code rowIndex == 0}
      * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
-    public OptionalFloat valueAbove(final int rowIndex, final int columnIndex) {
+    public OptionalFloat valueAbove(final int rowIndex, final int columnIndex) throws IndexOutOfBoundsException {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return rowIndex == 0 ? OptionalFloat.empty() : OptionalFloat.of(a[rowIndex - 1][columnIndex]);
@@ -674,7 +674,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *         or empty if {@code rowIndex == rowCount - 1}
      * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
-    public OptionalFloat valueBelow(final int rowIndex, final int columnIndex) {
+    public OptionalFloat valueBelow(final int rowIndex, final int columnIndex) throws IndexOutOfBoundsException {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return rowIndex == rowCount - 1 ? OptionalFloat.empty() : OptionalFloat.of(a[rowIndex + 1][columnIndex]);
@@ -702,7 +702,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *         or empty if {@code columnIndex == 0}
      * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
-    public OptionalFloat valueLeft(final int rowIndex, final int columnIndex) {
+    public OptionalFloat valueLeft(final int rowIndex, final int columnIndex) throws IndexOutOfBoundsException {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return columnIndex == 0 ? OptionalFloat.empty() : OptionalFloat.of(a[rowIndex][columnIndex - 1]);
@@ -730,7 +730,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *         or empty if {@code columnIndex == columnCount - 1}
      * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
      */
-    public OptionalFloat valueRight(final int rowIndex, final int columnIndex) {
+    public OptionalFloat valueRight(final int rowIndex, final int columnIndex) throws IndexOutOfBoundsException {
         checkRowColumnIndex(rowIndex, columnIndex);
 
         return columnIndex == columnCount - 1 ? OptionalFloat.empty() : OptionalFloat.of(a[rowIndex][columnIndex + 1]);
@@ -865,8 +865,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IllegalArgumentException if {@code row} is {@code null} or if {@code row.length != columnCount}
      */
     public void setRow(final int rowIndex, final float[] row) throws IndexOutOfBoundsException, IllegalArgumentException {
-        N.checkArgNotNull(row, cs.row);
         checkRowIndex(rowIndex);
+        N.checkArgNotNull(row, cs.row);
         N.checkArgument(row.length == columnCount, MSG_ROW_LENGTH_MISMATCH, columnCount, row.length);
 
         N.copy(row, 0, a[rowIndex], 0, columnCount);
@@ -901,8 +901,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IllegalArgumentException if {@code column} is {@code null} or if {@code column.length != rowCount}
      */
     public void setColumn(final int columnIndex, final float[] column) throws IndexOutOfBoundsException, IllegalArgumentException {
-        N.checkArgNotNull(column, cs.column);
         checkColumnIndex(columnIndex);
+        N.checkArgNotNull(column, cs.column);
         N.checkArgument(column.length == rowCount, MSG_COLUMN_LENGTH_MISMATCH, rowCount, column.length);
         final float[] values = snapshotIfBackingRow(column);
 
@@ -941,9 +941,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     public <E extends Exception> void updateRow(final int rowIndex, final Throwables.FloatUnaryOperator<E> operator)
             throws IndexOutOfBoundsException, IllegalArgumentException, E {
-        N.checkArgNotNull(operator, cs.operator);
-
         checkRowIndex(rowIndex);
+        N.checkArgNotNull(operator, cs.operator);
 
         final float[] row = a[rowIndex];
 
@@ -981,9 +980,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      */
     public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.FloatUnaryOperator<E> operator)
             throws IndexOutOfBoundsException, IllegalArgumentException, E {
-        N.checkArgNotNull(operator, cs.operator);
-
         checkColumnIndex(columnIndex);
+        N.checkArgNotNull(operator, cs.operator);
 
         for (final float[] row : a) {
             row[columnIndex] = operator.applyAsFloat(row[columnIndex]);
@@ -1264,7 +1262,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws NullPointerException if {@code mapper} returns {@code null} for any position
      * @throws E if the mapper throws an exception
      */
-    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Float, E> mapper) throws IllegalArgumentException, E {
+    public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Float, E> mapper)
+            throws IllegalArgumentException, NullPointerException, E {
         N.checkArgNotNull(mapper, cs.mapper);
 
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
@@ -1308,7 +1307,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IllegalArgumentException if {@code predicate} is {@code null}
      * @throws E if the predicate throws an exception
      */
-    public <E extends Exception> void replaceIf(final Throwables.FloatPredicate<E> predicate, final float newValue) throws E {
+    public <E extends Exception> void replaceIf(final Throwables.FloatPredicate<E> predicate, final float newValue) throws IllegalArgumentException, E {
         N.checkArgNotNull(predicate, cs.predicate);
 
         if (Matrices.shouldRunInParallel(this)) {
@@ -1360,7 +1359,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IllegalArgumentException if {@code predicate} is {@code null}
      * @throws E if the predicate throws an exception
      */
-    public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final float newValue) throws E {
+    public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final float newValue) throws IllegalArgumentException, E {
         N.checkArgNotNull(predicate, cs.predicate);
 
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
@@ -1398,7 +1397,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws E if the function throws an exception
      * @see #updateAll(Throwables.FloatUnaryOperator)
      */
-    public <E extends Exception> FloatMatrix map(final Throwables.FloatUnaryOperator<E> mapper) throws E {
+    public <E extends Exception> FloatMatrix map(final Throwables.FloatUnaryOperator<E> mapper) throws IllegalArgumentException, E {
         N.checkArgNotNull(mapper, cs.mapper);
 
         final float[][] result = new float[rowCount][columnCount];
@@ -1431,7 +1430,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws E if the function throws an exception
      * @see #toIntMatrix()
      */
-    public <E extends Exception> IntMatrix mapToInt(final Throwables.FloatToIntFunction<E> mapper) throws E {
+    public <E extends Exception> IntMatrix mapToInt(final Throwables.FloatToIntFunction<E> mapper) throws IllegalArgumentException, E {
         N.checkArgNotNull(mapper, cs.mapper);
 
         final int[][] result = new int[rowCount][columnCount];
@@ -1464,7 +1463,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws E if the function throws an exception
      * @see #toLongMatrix()
      */
-    public <E extends Exception> LongMatrix mapToLong(final Throwables.FloatToLongFunction<E> mapper) throws E {
+    public <E extends Exception> LongMatrix mapToLong(final Throwables.FloatToLongFunction<E> mapper) throws IllegalArgumentException, E {
         N.checkArgNotNull(mapper, cs.mapper);
 
         final long[][] result = new long[rowCount][columnCount];
@@ -1497,7 +1496,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws E if the function throws an exception
      * @see #toDoubleMatrix()
      */
-    public <E extends Exception> DoubleMatrix mapToDouble(final Throwables.FloatToDoubleFunction<E> mapper) throws E {
+    public <E extends Exception> DoubleMatrix mapToDouble(final Throwables.FloatToDoubleFunction<E> mapper) throws IllegalArgumentException, E {
         N.checkArgNotNull(mapper, cs.mapper);
 
         final double[][] result = new double[rowCount][columnCount];
@@ -1534,7 +1533,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null}
      * @throws E if the function throws an exception
      */
-    public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.FloatFunction<? extends R, E> mapper, final Class<R> targetElementType) throws E {
+    public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.FloatFunction<? extends R, E> mapper, final Class<R> targetElementType)
+            throws IllegalArgumentException, E {
         N.checkArgNotNull(mapper, cs.mapper);
         N.checkArgNotNull(targetElementType, cs.targetElementType);
 
@@ -1600,7 +1600,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IllegalArgumentException if {@code source} is {@code null}
      * @see #copyFrom(int, int, float[][])
      */
-    public void copyFrom(final float[][] source) {
+    public void copyFrom(final float[][] source) throws IllegalArgumentException {
         copyFrom(0, 0, source);
     }
 
@@ -1634,13 +1634,13 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws IllegalArgumentException if {@code source} is {@code null}
      */
     public void copyFrom(final int destRowIndex, final int destColumnIndex, final float[][] source) throws IndexOutOfBoundsException, IllegalArgumentException {
-        N.checkArgNotNull(source, cs.source);
         if (destRowIndex < 0 || destRowIndex > rowCount) {
             throw new IndexOutOfBoundsException(formatMsg("destRowIndex({}) must be in [0, rowCount({})]", destRowIndex, rowCount));
         }
         if (destColumnIndex < 0 || destColumnIndex > columnCount) {
             throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be in [0, columnCount({})]", destColumnIndex, columnCount));
         }
+        N.checkArgNotNull(source, cs.source);
         final float[][] sourceSnapshot = snapshotRowsIfBackingRows(source);
 
         for (int i = 0, minLen = N.min(rowCount - destRowIndex, sourceSnapshot.length); i < minLen; i++) {
@@ -1739,9 +1739,9 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @return a new {@code FloatMatrix} containing the specified submatrix
-     * @throws IndexOutOfBoundsException if any range is invalid (e.g. {@code fromRowIndex < 0},
-     *         {@code toRowIndex > rowCount}, {@code fromColumnIndex < 0}, {@code toColumnIndex > columnCount},
-     *         or {@code from > to} for either range)
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount},
+     *         {@code fromRowIndex > toRowIndex}, {@code fromColumnIndex < 0},
+     *         {@code toColumnIndex > columnCount}, or {@code fromColumnIndex > toColumnIndex}
      */
     @Override
     public FloatMatrix copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex)
@@ -1814,7 +1814,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @see #pad(int, int, int, int)
      */
     @Override
-    public FloatMatrix resize(final int newRowCount, final int newColumnCount) {
+    public FloatMatrix resize(final int newRowCount, final int newColumnCount) throws IllegalArgumentException {
         return resize(newRowCount, newColumnCount, 0);
     }
 
@@ -1949,7 +1949,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @see #resize(int, int)
      */
     @Override
-    public FloatMatrix pad(final int padTop, final int padBottom, final int padLeft, final int padRight) {
+    public FloatMatrix pad(final int padTop, final int padBottom, final int padLeft, final int padRight) throws IllegalArgumentException {
         return pad(padTop, padBottom, padLeft, padRight, 0);
     }
 
@@ -2010,19 +2010,18 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
         N.checkArgument(padLeft >= 0, MSG_NEGATIVE_DIMENSION, cs.padLeft, padLeft);
         N.checkArgument(padRight >= 0, MSG_NEGATIVE_DIMENSION, cs.padRight, padRight);
 
+        if ((long) padTop + rowCount + padBottom > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("Result row count overflow: " + padTop + " + " + rowCount + " + " + padBottom + " exceeds Integer.MAX_VALUE");
+        }
+
+        if ((long) padLeft + columnCount + padRight > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException(
+                    "Result column count overflow: " + padLeft + " + " + columnCount + " + " + padRight + " exceeds Integer.MAX_VALUE");
+        }
+
         if (padTop == 0 && padBottom == 0 && padLeft == 0 && padRight == 0) {
             return copy();
         } else {
-            if ((long) padTop + rowCount + padBottom > Integer.MAX_VALUE) {
-                throw new IllegalArgumentException(
-                        "Result row count overflow: " + padTop + " + " + rowCount + " + " + padBottom + " exceeds Integer.MAX_VALUE");
-            }
-
-            if ((long) padLeft + columnCount + padRight > Integer.MAX_VALUE) {
-                throw new IllegalArgumentException(
-                        "Result column count overflow: " + padLeft + " + " + columnCount + " + " + padRight + " exceeds Integer.MAX_VALUE");
-            }
-
             final int newRowCount = padTop + rowCount + padBottom;
             final int newColumnCount = padLeft + columnCount + padRight;
             checkNonNegativeShape(newRowCount, newColumnCount);
@@ -2382,7 +2381,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *         {@code (long) newRowCount * newColumnCount} is too small to hold every existing element
      */
     @Override
-    public FloatMatrix reshapeAndPad(final int newRowCount, final int newColumnCount) {
+    public FloatMatrix reshapeAndPad(final int newRowCount, final int newColumnCount) throws IllegalArgumentException {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newRowCount, newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newColumnCount, newColumnCount);
         checkNonNegativeShape(newRowCount, newColumnCount);
@@ -2458,16 +2457,16 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     public FloatMatrix repeatElements(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
 
-        if (rowRepeats == 1 && columnRepeats == 1) {
-            return copy();
-        }
-
         // Check for overflow before allocation
         if ((long) rowCount * rowRepeats > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("Result row count overflow: " + rowCount + " * " + rowRepeats + " exceeds Integer.MAX_VALUE");
         }
         if ((long) columnCount * columnRepeats > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("Result column count overflow: " + columnCount + " * " + columnRepeats + " exceeds Integer.MAX_VALUE");
+        }
+
+        if (rowRepeats == 1 && columnRepeats == 1) {
+            return copy();
         }
 
         final float[][] c = new float[rowCount * rowRepeats][columnCount * columnRepeats];
@@ -2522,16 +2521,16 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     public FloatMatrix repeatMatrix(final int rowRepeats, final int columnRepeats) throws IllegalArgumentException {
         N.checkArgument(rowRepeats > 0 && columnRepeats > 0, MSG_REPEATS_NOT_POSITIVE, rowRepeats, columnRepeats);
 
-        if (rowRepeats == 1 && columnRepeats == 1) {
-            return copy();
-        }
-
         // Check for overflow before allocation
         if ((long) rowCount * rowRepeats > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("Result row count overflow: " + rowCount + " * " + rowRepeats + " exceeds Integer.MAX_VALUE");
         }
         if ((long) columnCount * columnRepeats > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("Result column count overflow: " + columnCount + " * " + columnRepeats + " exceeds Integer.MAX_VALUE");
+        }
+
+        if (rowRepeats == 1 && columnRepeats == 1) {
+            return copy();
         }
 
         final float[][] c = new float[rowCount * rowRepeats][columnCount * columnRepeats];
@@ -2575,7 +2574,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @see #rowMajorStream()
      */
     @Override
-    public FloatList flatten() {
+    public FloatList flatten() throws IllegalStateException {
         // Check for overflow before allocation
         if ((long) rowCount * columnCount > Integer.MAX_VALUE) {
             throw new IllegalStateException("Matrix too large to flatten: " + rowCount + " x " + columnCount);
@@ -2626,7 +2625,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @see Arrays#mutateViaFlatArray(float[][], Throwables.Consumer)
      */
     @Override
-    public <E extends Exception> void mutateViaFlatArray(final Throwables.Consumer<? super float[], E> action) throws E {
+    public <E extends Exception> void mutateViaFlatArray(final Throwables.Consumer<? super float[], E> action)
+            throws IllegalArgumentException, ArithmeticException, E {
         N.checkArgNotNull(action, cs.action);
 
         Arrays.mutateViaFlatArray(a, action);
@@ -3103,17 +3103,17 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *                    element from this matrix as first argument and the element from
      *                    {@code other} as second argument
      * @return a new {@code FloatMatrix} with the results of the element-wise operation
-     * @throws IllegalArgumentException if {@code other} or {@code zipFunction} is {@code null},
-     *         or if the matrices have different shapes
+     * @throws IllegalArgumentException if {@code other} is {@code null}, if its shape differs from this matrix's shape,
+     *         or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception
      * @see #zipWith(FloatMatrix, FloatMatrix, Throwables.FloatTernaryOperator)
      */
     public <E extends Exception> FloatMatrix zipWith(final FloatMatrix other, final Throwables.FloatBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
         N.checkArgNotNull(other, cs.other);
-        N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgument(isSameShape(other), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
+        N.checkArgNotNull(zipFunction, cs.zipFunction);
 
         final float[][] secondMatrix = other.a;
         final float[][] result = new float[rowCount][columnCount];
@@ -3158,18 +3158,21 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *                    {@code other} as second argument, and the element from {@code third}
      *                    as third argument
      * @return a new {@code FloatMatrix} with the results of the element-wise operation
-     * @throws IllegalArgumentException if any of {@code other}, {@code third}, or {@code zipFunction}
-     *         is {@code null}, or if any of the matrices have different shapes
+     * @throws IllegalArgumentException if {@code other} is {@code null} or its shape differs from this matrix's shape,
+     *         if {@code third} is {@code null} or its shape differs from this matrix's shape,
+     *         or if {@code zipFunction} is {@code null}
      * @throws E if the zip function throws an exception
      * @see #zipWith(FloatMatrix, Throwables.FloatBinaryOperator)
      */
     public <E extends Exception> FloatMatrix zipWith(final FloatMatrix other, final FloatMatrix third, final Throwables.FloatTernaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
         N.checkArgNotNull(other, cs.other);
+        N.checkArgument(isSameShape(other), "Cannot zip matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
+                other.rowCount, other.columnCount);
         N.checkArgNotNull(third, cs.third);
+        N.checkArgument(isSameShape(third), "Cannot zip matrices with different shapes: this is {}x{} but third is {}x{}", rowCount, columnCount,
+                third.rowCount, third.columnCount);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
-        N.checkArgument(isSameShape(other) && isSameShape(third), "Cannot zip matrices with different shapes: this is {}x{}, other is {}x{}, third is {}x{}",
-                rowCount, columnCount, other.rowCount, other.columnCount, third.rowCount, third.columnCount);
 
         final float[][] secondMatrix = other.a;
         final float[][] thirdMatrix = third.a;
@@ -3826,7 +3829,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @throws E if the action throws an exception
      * @see #forEach(int, int, int, int, Throwables.FloatConsumer)
      */
-    public <E extends Exception> void forEach(final Throwables.FloatConsumer<E> action) throws E {
+    public <E extends Exception> void forEach(final Throwables.FloatConsumer<E> action) throws IllegalArgumentException, E {
         N.checkArgNotNull(action, cs.action);
 
         forEach(0, rowCount, 0, columnCount, action);
@@ -3863,16 +3866,17 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @param action the action to perform on each element; must not be {@code null}
-     * @throws IndexOutOfBoundsException if any index is out of bounds
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount},
+     *         {@code fromRowIndex > toRowIndex}, {@code fromColumnIndex < 0},
+     *         {@code toColumnIndex > columnCount}, or {@code fromColumnIndex > toColumnIndex}
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if the action throws an exception
      */
     public <E extends Exception> void forEach(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
-            final Throwables.FloatConsumer<E> action) throws IndexOutOfBoundsException, E {
-        N.checkArgNotNull(action, cs.action);
-
+            final Throwables.FloatConsumer<E> action) throws IndexOutOfBoundsException, IllegalArgumentException, E {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
+        N.checkArgNotNull(action, cs.action);
 
         if (Matrices.shouldRunInParallel(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
             final Throwables.IntBiConsumer<E> elementAction = (i, j) -> action.accept(a[i][j]);
