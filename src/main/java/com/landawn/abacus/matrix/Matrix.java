@@ -53,6 +53,15 @@ import com.landawn.abacus.util.stream.Stream;
  * ({@code null} equal only to {@code null}; array-typed elements are compared and hashed deeply
  * by content), not reference identity.</p>
  *
+ * <p>This class never dereferences or unboxes an element itself: {@link #toString()},
+ * {@code println()}, {@code appendTo(Appendable)}, {@link #flatten()}, the streams and the
+ * {@code Dataset} conversions all accept {@code null} elements. Caller-supplied functions (mappers,
+ * operators, predicates, actions and zip functions) receive {@code null} elements unchanged, so a
+ * function that dereferences or unboxes its argument must handle {@code null} itself; any exception
+ * it throws, including {@link NullPointerException}, propagates to the caller. A {@code null}
+ * returned by an object-valued function (for example in {@code map}, {@code updateAll} or
+ * {@code zipWith}) is stored as a {@code null} element; it is never unboxed.</p>
+ *
  * <p>Prefer the overloads that take an explicit {@link Class} token. They establish an exact,
  * uniform runtime component type for every row. The older token-free construction methods are
  * retained for migration, but their writable element type is constrained by the supplied arrays'

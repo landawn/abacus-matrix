@@ -1449,6 +1449,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * IntMatrix.empty().updateAll((i, j) -> i);                                     // no-op on empty matrix
      * matrix.updateAll((Throwables.IntBiFunction<Integer, RuntimeException>) null); // throws IllegalArgumentException
+     * matrix.updateAll((i, j) -> (Integer) null);                                   // throws NullPointerException (null auto-unboxing)
      * }</pre>
      *
      * @param <E> the type of exception that the mapper may throw

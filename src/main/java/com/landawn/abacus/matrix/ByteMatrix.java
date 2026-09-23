@@ -486,7 +486,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
 
     /**
      * Creates a square matrix from the specified main diagonal and anti-diagonal elements.
-     * All other elements are set to zero. If both arrays are non-empty, they must have the same length.
+     * All other elements are set to zero. At least one array must be non-{@code null}; if both arrays
+     * contain elements, they must have the same length.
      * The resulting matrix has dimensions n×n where n is the length of the non-empty diagonal array.
      * When both diagonals are provided and they overlap (at the center element of odd-sized matrices),
      * the main diagonal value takes precedence.
@@ -1307,6 +1308,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * ByteMatrix.empty().updateAll((i, j) -> (byte) 9);                            // no-op on empty matrix
      * matrix.updateAll((Throwables.IntBiFunction<Byte, RuntimeException>) null);   // throws IllegalArgumentException
+     * matrix.updateAll((i, j) -> (Byte) null);                                     // throws NullPointerException (null auto-unboxing)
      * }</pre>
      *
      * @param <E> the type of exception that the mapper may throw

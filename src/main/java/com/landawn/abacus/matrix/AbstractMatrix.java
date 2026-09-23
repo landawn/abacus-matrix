@@ -2656,8 +2656,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * This abstract method must be implemented by concrete subclasses to return the length
      * of their specific array type (e.g., {@code int[]}, {@code double[]}, or {@code Object[]}).
      *
-     * @param row the row array whose length is to be determined
-     * @return the length of the array
+     * @param row the row array whose length is to be determined; may be {@code null}
+     * @return the length of the array, or {@code 0} if {@code row} is {@code null}
      */
     protected abstract int length(A row);
 

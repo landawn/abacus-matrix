@@ -1330,6 +1330,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * LongMatrix.empty().updateAll((i, j) -> (long) i);                          // no-op on empty matrix
      * matrix.updateAll((Throwables.IntBiFunction<Long, RuntimeException>) null); // throws IllegalArgumentException
+     * matrix.updateAll((i, j) -> (Long) null);                                   // throws NullPointerException (null auto-unboxing)
      * }</pre>
      *
      * @param <E> the type of exception that the mapper may throw

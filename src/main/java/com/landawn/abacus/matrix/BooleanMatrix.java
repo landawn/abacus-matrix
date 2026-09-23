@@ -360,8 +360,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
 
     /**
      * Creates a square matrix from the specified main diagonal and anti-diagonal elements.
-     * All other elements are set to {@code false}. If both arrays are non-empty, they must have the
-     * same length. The resulting matrix has dimensions {@code n × n} where {@code n} is the length
+     * All other elements are set to {@code false}. At least one array must be non-{@code null}; if both
+     * arrays contain elements, they must have the same length. The resulting matrix has dimensions {@code n × n} where {@code n} is the length
      * of the non-empty diagonal array. When both diagonals are provided and they overlap (at the
      * center element of an odd-sized matrix), the main diagonal value takes precedence.
      *
@@ -1207,6 +1207,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * matrix.get(0, 1);                               // returns false
      *
      * matrix.updateAll((Throwables.IntBiFunction<Boolean, RuntimeException>) null); // throws IllegalArgumentException (null mapper)
+     * matrix.updateAll((i, j) -> (Boolean) null);                                   // throws NullPointerException (null auto-unboxing)
      * }</pre>
      *
      * @param <E> the type of exception that the mapper may throw
@@ -1379,7 +1380,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * @param <R> the type of elements in the resulting matrix
      * @param <E> the type of exception that the function may throw
      * @param mapper the function to convert boolean values to type {@code R}
-     * @param targetElementType the {@code Class} object for type {@code R}; used to create the result's backing array
+     * @param targetElementType the {@code Class} object for type {@code R} (used to allocate the
+     *        {@code R[][]} backing array); must not be {@code null}
      * @return a new {@code Matrix<R>} containing the converted values
      * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null}
      * @throws E if the function throws an exception

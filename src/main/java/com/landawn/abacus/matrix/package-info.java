@@ -88,6 +88,28 @@
  * receiver unchanged and return a separate matrix instead, except that a degenerate empty result may be the
  * shared empty instance of the returned matrix type. Matrix instances are mutable and are not thread-safe.</p>
  *
+ * <h2>Null handling</h2>
+ *
+ * <p>A {@code null} argument that a method does not accept is rejected with {@code IllegalArgumentException}
+ * rather than {@code NullPointerException}. The same applies to a {@code null} element of an array or collection
+ * argument that must be null-free, such as a {@code null} row passed to a constructor or factory, or a
+ * {@code null} matrix in a collection passed to the {@link com.landawn.abacus.matrix.Matrices} stacking and
+ * zipping helpers.</p>
+ *
+ * <p>Some parameters deliberately accept {@code null}, and their documentation says so. {@code equals(null)}
+ * returns {@code false}. {@code ofDiagonals(...)} accepts a {@code null} for one of its two diagonals.
+ * {@code copyFrom(...)} skips {@code null} rows of its source.
+ * {@link com.landawn.abacus.matrix.Matrices#isSameShape(java.util.Collection)} returns {@code true} for a
+ * {@code null} collection and {@code false} when the collection contains a {@code null} element. A
+ * {@link com.landawn.abacus.matrix.Matrix} stores {@code null} as an ordinary element value.</p>
+ *
+ * <p>{@code NullPointerException} is thrown when a caller-supplied function returns {@code null} and the
+ * result has to be unboxed to a primitive. This applies to the primitive {@code updateAll(...)} overloads
+ * whose mapper returns a boxed value and to {@code Matrices.zipToInt}, {@code zipToLong}, and
+ * {@code zipToDouble}. Each of these methods documents the exception. The element iterators of the
+ * object-valued streams also follow the inherited {@code toArray(A[])} contract and throw
+ * {@code NullPointerException} for a {@code null} target array.</p>
+ *
  * <h2>Traversal and parallel execution</h2>
  *
  * <p>Element streams are available in row-major and column-major order. Streams of individual rows or

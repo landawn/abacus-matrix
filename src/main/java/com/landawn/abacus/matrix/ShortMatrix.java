@@ -1284,6 +1284,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * ShortMatrix.empty().updateAll((i, j) -> (short) i);                             // no-op on empty matrix
      * matrix.updateAll((Throwables.IntBiFunction<Short, RuntimeException>) null);     // throws IllegalArgumentException
+     * matrix.updateAll((i, j) -> (Short) null);                                      // throws NullPointerException (null auto-unboxing)
      * }</pre>
      *
      * @param <E> the type of exception that the mapper may throw

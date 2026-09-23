@@ -556,7 +556,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
 
     /**
      * Creates a square matrix from the specified main diagonal and anti-diagonal elements.
-     * All other elements are set to zero. If both arrays are non-empty, they must have the same length.
+     * All other elements are set to zero. At least one array must be non-{@code null}; if both arrays
+     * contain elements, they must have the same length.
      * The resulting matrix has dimensions n×n where n is the length of the non-empty diagonal array.
      * When both diagonals are provided and they overlap (at the center element of odd-sized matrices),
      * the main diagonal value takes precedence.
@@ -1368,8 +1369,10 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      *
      * matrix.updateAll((i, j) -> i * 10.0 + j);      // position encoding: [[0.0, 1.0, 2.0], [10.0, 11.0, 12.0]]
      * matrix.get(1, 1);                              // returns 11.0
-     * DoubleMatrix.empty().updateAll((i, j) -> 1.0); // no-op on empty matrix (no exception)
-     * matrix.updateAll((i, j) -> (Double) null);     // throws NullPointerException (null auto-unboxing)
+     *
+     * DoubleMatrix.empty().updateAll((i, j) -> 1.0);                                // no-op on empty matrix (no exception)
+     * matrix.updateAll((Throwables.IntBiFunction<Double, RuntimeException>) null); // throws IllegalArgumentException
+     * matrix.updateAll((i, j) -> (Double) null);                                   // throws NullPointerException (null auto-unboxing)
      * }</pre>
      *
      * @param <E> the type of exception that the mapper may throw

@@ -458,7 +458,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
     /**
      * Creates a square matrix from the specified main diagonal and anti-diagonal elements.
-     * All other elements are set to zero (the null character U+0000). If both arrays are non-empty, they must have the same length.
+     * All other elements are set to zero (the null character U+0000). At least one array must be non-{@code null};
+     * if both arrays contain elements, they must have the same length.
      * The resulting matrix has dimensions n×n where n is the length of the non-empty diagonal array.
      * When both diagonals are provided and they overlap (at the center element of odd-sized matrices),
      * the main diagonal value takes precedence.
@@ -1291,6 +1292,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * CharMatrix.empty().updateAll((i, j) -> 'z');                                    // no-op on empty matrix
      * matrix.updateAll((Throwables.IntBiFunction<Character, RuntimeException>) null); // throws IllegalArgumentException
+     * matrix.updateAll((i, j) -> (Character) null);                                  // throws NullPointerException (null auto-unboxing)
      * }</pre>
      *
      * @param <E> the type of exception that the mapper may throw

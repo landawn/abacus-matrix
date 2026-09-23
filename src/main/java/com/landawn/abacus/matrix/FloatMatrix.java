@@ -440,7 +440,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
     /**
      * Creates a square matrix from the specified main diagonal and anti-diagonal elements.
-     * All other elements are set to zero. If both arrays are non-empty, they must have the same length.
+     * All other elements are set to zero. At least one array must be non-{@code null}; if both arrays
+     * contain elements, they must have the same length.
      * The resulting matrix has dimensions n×n where n is the length of the non-empty diagonal array.
      * When both diagonals are provided and they overlap (at the center element of odd-sized matrices),
      * the main diagonal value takes precedence.
@@ -1250,8 +1251,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      *
      * matrix.updateAll((i, j) -> i * 10.0f + j);     // position encoding: [[0.0f, 1.0f, 2.0f], [10.0f, 11.0f, 12.0f]]
      * matrix.get(1, 1);                              // returns 11.0f
-     * FloatMatrix.empty().updateAll((i, j) -> 1.0f); // no-op on empty matrix (no exception)
-     * matrix.updateAll((i, j) -> (Float) null);      // throws NullPointerException (null auto-unboxing)
+     *
+     * FloatMatrix.empty().updateAll((i, j) -> 1.0f);                               // no-op on empty matrix (no exception)
+     * matrix.updateAll((Throwables.IntBiFunction<Float, RuntimeException>) null); // throws IllegalArgumentException
+     * matrix.updateAll((i, j) -> (Float) null);                                   // throws NullPointerException (null auto-unboxing)
      * }</pre>
      *
      * @param <E> the type of exception that the mapper may throw
