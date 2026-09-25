@@ -61,7 +61,7 @@ import com.landawn.abacus.util.stream.Stream;
  */
 public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStream, Stream<LongStream>, LongMatrix> {
 
-    /** The shared {@code 0 x 0} long matrix returned by {@link #empty()} and zero-row factories. */
+    /** The shared {@code 0 x 0} long matrix returned by {@link #empty()} and factories producing a {@code 0 x 0} result. */
     private static final LongMatrix EMPTY_LONG_MATRIX = new LongMatrix(new long[0][0]);
 
     /**
@@ -91,25 +91,47 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         super(N.checkArgNotNull(a, "Matrix array cannot be null"), long.class);
     }
 
-    LongMatrix(final long[][] a, final int columnCount) {
+    /**
+     * Constructs a matrix with an explicit logical column count.
+     *
+     * @param a the row arrays to share; must be non-null, rectangular, and identity-distinct
+     * @param columnCount the non-negative logical column count
+     * @throws IllegalArgumentException if {@code a} or any row is {@code null}, {@code columnCount}
+     *         is negative, a row's length differs from {@code columnCount}, or two positions share a row array
+     */
+    LongMatrix(final long[][] a, final int columnCount) throws IllegalArgumentException {
         super(N.checkArgNotNull(a, "Matrix array cannot be null"), long.class, columnCount);
     }
 
-    private LongMatrix(final long[][] a, final int columnCount, final boolean rowsAreKnownDistinct) {
+    /**
+     * Constructs a matrix, optionally relying on the caller's guarantee that rows are distinct.
+     *
+     * @param a the non-null rectangular array whose rows are shared
+     * @param columnCount the non-negative logical column count
+     * @param rowsAreKnownDistinct whether the caller guarantees identity-distinct rows
+     * @throws IllegalArgumentException if {@code a} or any row is {@code null}, {@code columnCount}
+     *         is negative, a row's length differs from {@code columnCount}, or rows share an array
+     *         while {@code rowsAreKnownDistinct} is {@code false}
+     */
+    private LongMatrix(final long[][] a, final int columnCount, final boolean rowsAreKnownDistinct) throws IllegalArgumentException {
         super(N.checkArgNotNull(a, "Matrix array cannot be null"), long.class, columnCount, rowsAreKnownDistinct);
     }
 
     /**
      * Canonicalises a derived result: a genuinely {@code 0 x 0} result becomes the shared empty
-     * instance, while {@code 0 x N} and {@code N x 0} results keep their logical shape. Every
-     * result-producing method routes through here so the empty singleton and the degenerate
-     * shapes are handled in exactly one place.
+     * instance, while {@code 0 x N} and {@code N x 0} results keep their logical shape. Callers
+     * must supply identity-distinct rows; this helper skips the duplicate-row scan for these
+     * internally produced arrays.
      *
-     * @param a the backing rows of the result
+     * @param a the non-{@code null} backing rows of the result; row identities must be distinct
      * @param columnCount the result's logical column count
      * @return the shared empty matrix when the result is {@code 0 x 0}, otherwise a new matrix
+     * @throws IllegalArgumentException if {@code a} is {@code null}, {@code columnCount} is negative, or a row is {@code null}
+     *         or has a length different from {@code columnCount}
      */
-    static LongMatrix wrapResult(final long[][] a, final int columnCount) {
+    static LongMatrix wrapResult(final long[][] a, final int columnCount) throws IllegalArgumentException {
+        N.checkArgNotNull(a, cs.a);
+
         // Every wrapResult(...) call site (here, in Matrix and in Matrices) passes freshly allocated rows, so they are
         // identity-distinct by construction and the duplicate-row scan can be skipped.
         return a.length == 0 && columnCount == 0 ? EMPTY_LONG_MATRIX : new LongMatrix(a, columnCount, true);
@@ -195,6 +217,14 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
         if (a.length == 0) {
             return EMPTY_LONG_MATRIX;
+        }
+
+        N.checkArgument(a[0] != null, "Row 0 cannot be null");
+        final int columnCount = a[0].length;
+
+        for (int i = 1; i < a.length; i++) {
+            N.checkArgument(a[i] != null, "Row {} cannot be null", i);
+            N.checkArgument(a[i].length == columnCount, MSG_NOT_RECTANGULAR, columnCount, i, a[i].length);
         }
 
         final long[][] c = new long[a.length][];
@@ -292,8 +322,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param randomGenerator the random source; must not be {@code null}
      * @return the generated single-row matrix
      * @throws IllegalArgumentException if {@code columnCount} is negative, or if {@code randomGenerator} is {@code null}
+     * @throws RuntimeException if {@code randomGenerator} throws while generating a matrix element
      */
-    public static LongMatrix randomRow(final int columnCount, final RandomGenerator randomGenerator) throws IllegalArgumentException {
+    public static LongMatrix randomRow(final int columnCount, final RandomGenerator randomGenerator) throws IllegalArgumentException, RuntimeException {
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.columnCount, columnCount);
         N.checkArgNotNull(randomGenerator, cs.randomGenerator);
         return random(1, columnCount, randomGenerator);
@@ -332,8 +363,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param randomGenerator the random source; must not be {@code null}
      * @return the generated matrix
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative, or if {@code randomGenerator} is {@code null}
+     * @throws RuntimeException if {@code randomGenerator} throws while generating a matrix element
      */
-    public static LongMatrix random(final int rowCount, final int columnCount, final RandomGenerator randomGenerator) throws IllegalArgumentException {
+    public static LongMatrix random(final int rowCount, final int columnCount, final RandomGenerator randomGenerator)
+            throws IllegalArgumentException, RuntimeException {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, cs.rowCount, rowCount);
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.columnCount, columnCount);
         N.checkArgNotNull(randomGenerator, cs.randomGenerator);
@@ -612,7 +645,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
      * @return the element at position {@code (rowIndex, columnIndex)}
-     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount},
+     *         or {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     public long get(final int rowIndex, final int columnIndex) throws ArrayIndexOutOfBoundsException {
         return a[rowIndex][columnIndex];
@@ -635,7 +669,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param point the point containing row and column indices (must not be {@code null})
      * @return the long element at the specified point
      * @throws IllegalArgumentException if {@code point} is {@code null}
-     * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
+     * @throws ArrayIndexOutOfBoundsException if {@code point.rowIndex()} is outside {@code [0, rowCount)},
+     *         or {@code point.columnIndex()} is outside {@code [0, columnCount)}
      * @see #get(int, int)
      */
     public long get(final Point point) throws IllegalArgumentException, ArrayIndexOutOfBoundsException {
@@ -662,7 +697,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
      * @param value the value to set
-     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount},
+     *         or {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     public void set(final int rowIndex, final int columnIndex, final long value) throws ArrayIndexOutOfBoundsException {
         a[rowIndex][columnIndex] = value;
@@ -687,7 +723,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param point the point containing row and column indices (must not be {@code null})
      * @param value the new long value to set at the specified point
      * @throws IllegalArgumentException if {@code point} is {@code null}
-     * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
+     * @throws ArrayIndexOutOfBoundsException if {@code point.rowIndex()} is outside {@code [0, rowCount)},
+     *         or {@code point.columnIndex()} is outside {@code [0, columnCount)}
      * @see #set(int, int, long)
      */
     public void set(final Point point, final long value) throws IllegalArgumentException, ArrayIndexOutOfBoundsException {
@@ -716,7 +753,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param columnIndex the column index of the reference cell (0-based)
      * @return an {@link OptionalLong} containing the element at position {@code (rowIndex - 1, columnIndex)},
      *         or empty if {@code rowIndex == 0}
-     * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount},
+     *         or {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     public OptionalLong valueAbove(final int rowIndex, final int columnIndex) throws IndexOutOfBoundsException {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -744,7 +782,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param columnIndex the column index of the reference cell (0-based)
      * @return an {@link OptionalLong} containing the element at position {@code (rowIndex + 1, columnIndex)},
      *         or empty if {@code rowIndex == rowCount - 1}
-     * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount},
+     *         or {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     public OptionalLong valueBelow(final int rowIndex, final int columnIndex) throws IndexOutOfBoundsException {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -772,7 +811,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param columnIndex the column index of the reference cell (0-based)
      * @return an {@link OptionalLong} containing the element at position {@code (rowIndex, columnIndex - 1)},
      *         or empty if {@code columnIndex == 0}
-     * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount},
+     *         or {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     public OptionalLong valueLeft(final int rowIndex, final int columnIndex) throws IndexOutOfBoundsException {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -800,7 +840,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param columnIndex the column index of the reference cell (0-based)
      * @return an {@link OptionalLong} containing the element at position {@code (rowIndex, columnIndex + 1)},
      *         or empty if {@code columnIndex == columnCount - 1}
-     * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount},
+     *         or {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     public OptionalLong valueRight(final int rowIndex, final int columnIndex) throws IndexOutOfBoundsException {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -934,7 +975,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * @param rowIndex the index of the row to set (0-based)
      * @param row the array of values to copy into the row; must be non-{@code null} and of length {@code columnCount}
-     * @throws IndexOutOfBoundsException if {@code rowIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      * @throws IllegalArgumentException if {@code row} is {@code null} or if {@code row.length != columnCount}
      */
     public void setRow(final int rowIndex, final long[] row) throws IndexOutOfBoundsException, IllegalArgumentException {
@@ -971,7 +1012,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * @param columnIndex the index of the column to set (0-based)
      * @param column the array of values to copy into the column; must be non-{@code null} and of length {@code rowCount}
-     * @throws IndexOutOfBoundsException if {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      * @throws IllegalArgumentException if {@code column} is {@code null} or if {@code column.length != rowCount}
      */
     public void setColumn(final int columnIndex, final long[] column) throws IndexOutOfBoundsException, IllegalArgumentException {
@@ -992,6 +1033,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p>The operator is applied to each element in the specified row sequentially
      * from left to right (column {@code 0} to column {@code columnCount - 1}).</p>
      *
+     * <p>If the operator throws, updates already completed are retained; this method does not
+     * roll them back.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
@@ -1009,9 +1053,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param rowIndex the index of the row to update (0-based)
      * @param operator the operator to apply to each element in the row; receives the current
      *             element value and returns the new value
-     * @throws IndexOutOfBoundsException if {@code rowIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      * @throws IllegalArgumentException if {@code operator} is {@code null}
-     * @throws E if the operator throws an exception
+     * @throws E if {@code operator} throws while updating an element in the selected row
      */
     public <E extends Exception> void updateRow(final int rowIndex, final Throwables.LongUnaryOperator<E> operator)
             throws IndexOutOfBoundsException, IllegalArgumentException, E {
@@ -1032,6 +1076,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p>The operator is applied to each element in the specified column sequentially
      * from top to bottom (row {@code 0} to row {@code rowCount - 1}).</p>
      *
+     * <p>If the operator throws, updates already completed are retained; this method does not
+     * roll them back.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.wrap(new long[][] {{1L, 2L}, {3L, 4L}, {5L, 6L}});
@@ -1049,9 +1096,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param columnIndex the index of the column to update (0-based)
      * @param operator the operator to apply to each element in the column; receives the current
      *             element value and returns the new value
-     * @throws IndexOutOfBoundsException if {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      * @throws IllegalArgumentException if {@code operator} is {@code null}
-     * @throws E if the operator throws an exception
+     * @throws E if {@code operator} throws while updating an element in the selected column
      */
     public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.LongUnaryOperator<E> operator)
             throws IndexOutOfBoundsException, IllegalArgumentException, E {
@@ -1131,6 +1178,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     /**
      * Updates all {@code min(rowCount, columnCount)} main-diagonal values.
      *
+     * <p>If the operator throws, updates already completed are retained; this method does not
+     * roll them back.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.wrap(new long[][] {{1L, 2L}, {3L, 4L}});
@@ -1146,7 +1196,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param <E> the type of exception that the operator may throw
      * @param operator the operator to apply to each diagonal element; receives current element value and returns new value
      * @throws IllegalArgumentException if {@code operator} is {@code null}
-     * @throws E if the operator throws an exception
+     * @throws E if {@code operator} throws while updating a main-diagonal element
      */
     public <E extends Exception> void updateMainDiagonal(final Throwables.LongUnaryOperator<E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, cs.operator);
@@ -1236,6 +1286,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     /**
      * Updates all {@code min(rowCount, columnCount)} anti-diagonal values.
      *
+     * <p>If the operator throws, updates already completed are retained; this method does not
+     * roll them back.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.wrap(new long[][] {{1L, 2L}, {3L, 4L}});
@@ -1251,7 +1304,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param <E> the type of exception that the operator may throw
      * @param operator the operator to apply to each anti-diagonal element; receives current element value and returns new value
      * @throws IllegalArgumentException if {@code operator} is {@code null}
-     * @throws E if the operator throws an exception
+     * @throws E if {@code operator} throws while updating an anti-diagonal element
      */
     public <E extends Exception> void updateAntiDiagonal(final Throwables.LongUnaryOperator<E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, cs.operator);
@@ -1271,6 +1324,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * When this operation is not parallelized, elements are processed in row-major order; when it is
      * parallelized, the encounter order is unspecified.</p>
      *
+     * <p>If evaluating a callback or storing its result fails, completed updates are retained;
+     * this method does not roll them back. Sequential execution stops at the failing element in
+     * row-major order. With parallel execution, the set of completed updates is unspecified.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.wrap(new long[][] {{1L, 2L}, {3L, 4L}});
@@ -1289,7 +1346,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param operator the operator to apply to each element; receives the current element value
      *             and returns the new value
      * @throws IllegalArgumentException if {@code operator} is {@code null}
-     * @throws E if the operator throws an exception
+     * @throws E if {@code operator} throws while updating a matrix element
      */
     public <E extends Exception> void updateAll(final Throwables.LongUnaryOperator<E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, cs.operator);
@@ -1318,6 +1375,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * for that position. This is useful for initializing matrices based on position patterns or
      * mathematical formulas. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
      *
+     * <p>If evaluating a callback or storing its result fails, completed updates are retained;
+     * this method does not roll them back. Sequential execution stops at the failing element in
+     * row-major order. With parallel execution, the set of completed updates is unspecified.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.wrap(new long[][] {{0L, 0L, 0L}, {0L, 0L, 0L}});
@@ -1338,11 +1399,11 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *             the new value for that position; the returned {@code Long} is unboxed, so it
      *             must not be {@code null}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
-     * @throws NullPointerException if {@code mapper} returns {@code null} for any position
-     * @throws E if the mapper throws an exception
+     * @throws E if {@code mapper} throws while computing a value for a matrix position
+     * @throws NullPointerException if {@code mapper} returns {@code null} for a matrix position
      */
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Long, E> mapper)
-            throws IllegalArgumentException, NullPointerException, E {
+            throws IllegalArgumentException, E, NullPointerException {
         N.checkArgNotNull(mapper, cs.mapper);
 
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
@@ -1355,6 +1416,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * This modifies the matrix directly.
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.</p>
+     *
+     * <p>If evaluating a callback or storing its result fails, completed updates are retained;
+     * this method does not roll them back. Sequential execution stops at the failing element in
+     * row-major order. With parallel execution, the set of completed updates is unspecified.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1375,7 +1440,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *                  {@code true} will be replaced
      * @param newValue the value to use for replacing matching elements
      * @throws IllegalArgumentException if {@code predicate} is {@code null}
-     * @throws E if the predicate throws an exception
+     * @throws E if {@code predicate} throws while testing a matrix element
      */
     public <E extends Exception> void replaceIf(final Throwables.LongPredicate<E> predicate, final long newValue) throws IllegalArgumentException, E {
         N.checkArgNotNull(predicate, cs.predicate);
@@ -1408,6 +1473,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * <p>Nonmatching positions perform no write.</p>
      *
+     * <p>If evaluating a callback or storing its result fails, completed updates are retained;
+     * this method does not roll them back. Sequential execution stops at the failing element in
+     * row-major order. With parallel execution, the set of completed updates is unspecified.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}, {7L, 8L, 9L}});
@@ -1428,7 +1497,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *                  at positions for which this returns {@code true} will be replaced
      * @param newValue the value to use for replacing matching elements
      * @throws IllegalArgumentException if {@code predicate} is {@code null}
-     * @throws E if the predicate throws an exception
+     * @throws E if {@code predicate} throws while testing a matrix position
      */
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final long newValue) throws IllegalArgumentException, E {
         N.checkArgNotNull(predicate, cs.predicate);
@@ -1467,7 +1536,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *             and returns the transformed value
      * @return a new {@code LongMatrix} with transformed values
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
-     * @throws E if the function throws an exception
+     * @throws E if {@code mapper} throws while converting a matrix element
      * @see #updateAll(Throwables.LongUnaryOperator)
      */
     public <E extends Exception> LongMatrix map(final Throwables.LongUnaryOperator<E> mapper) throws IllegalArgumentException, E {
@@ -1503,7 +1572,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param mapper the function to convert long values to int
      * @return a new {@link IntMatrix} with the converted values
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
-     * @throws E if the function throws an exception
+     * @throws E if {@code mapper} throws while converting a matrix element
      * @see #toIntMatrix()
      */
     public <E extends Exception> IntMatrix mapToInt(final Throwables.LongToIntFunction<E> mapper) throws IllegalArgumentException, E {
@@ -1538,7 +1607,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param mapper the function to convert long values to double
      * @return a new {@link DoubleMatrix} with the converted values
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
-     * @throws E if the function throws an exception
+     * @throws E if {@code mapper} throws while converting a matrix element
      * @see #toDoubleMatrix()
      */
     public <E extends Exception> DoubleMatrix mapToDouble(final Throwables.LongToDoubleFunction<E> mapper) throws IllegalArgumentException, E {
@@ -1574,13 +1643,17 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param <E> the type of exception that the function may throw
      * @param mapper the function to convert long values to type {@code R}
      * @param targetElementType the {@code Class} object for type {@code R} (used to allocate the
-     *        {@code R[][]} backing array); must not be {@code null}
+     *        {@code R[][]} backing array); must not be {@code null} or {@code void.class},
+     *        and must have fewer than 254 array dimensions
      * @return a new {@link Matrix Matrix&lt;R&gt;} containing the mapped values
-     * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null}
-     * @throws E if the function throws an exception
+     * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null},
+     *         or {@code targetElementType} is {@code void.class} or an array type with at least 254 dimensions
+     * @throws E if {@code mapper} throws while converting a matrix element
+     * @throws ArrayStoreException if a non-null value returned by {@code mapper} is incompatible with
+     *         {@code targetElementType}, after a primitive scalar type is replaced by its wrapper type
      */
     public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.LongFunction<? extends R, E> mapper, final Class<R> targetElementType)
-            throws IllegalArgumentException, E {
+            throws IllegalArgumentException, E, ArrayStoreException {
         N.checkArgNotNull(mapper, cs.mapper);
         N.checkArgNotNull(targetElementType, cs.targetElementType);
 
@@ -2642,7 +2715,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param action the operation to apply to the temporary flattened array
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws ArithmeticException if the number of matrix elements exceeds {@link Integer#MAX_VALUE}
-     * @throws E if the operation throws an exception
+     * @throws E if {@code action} throws while processing the temporary flattened array
      * @see Arrays#mutateViaFlatArray(long[][], Throwables.Consumer)
      */
     @Override
@@ -2997,7 +3070,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * @param other the right operand; must be non-{@code null} and dimensionally compatible
      * @return the exact matrix product
-     * @throws IllegalArgumentException if {@code other} is {@code null} or dimensions are incompatible
+     * @throws IllegalArgumentException if {@code other} is {@code null} or {@code columnCount != other.rowCount}
      * @throws ArithmeticException if a product or an intermediate dot-product sum overflows {@code long}
      * @see #matrixMultiply(LongMatrix)
      */
@@ -3199,7 +3272,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @return a new {@code LongMatrix} with the results of the element-wise operation
      * @throws IllegalArgumentException if {@code other} is {@code null} or its shape differs from this matrix's shape,
      *         or if {@code zipFunction} is {@code null}
-     * @throws E if the zip function throws an exception
+     * @throws E if {@code zipFunction} throws while combining values at a matrix position
      * @see #zipWith(LongMatrix, LongMatrix, Throwables.LongTernaryOperator)
      */
     public <E extends Exception> LongMatrix zipWith(final LongMatrix other, final Throwables.LongBinaryOperator<E> zipFunction)
@@ -3258,7 +3331,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @throws IllegalArgumentException if {@code other} is {@code null} or its shape differs from this matrix's shape,
      *         if {@code third} is {@code null} or its shape differs from this matrix's shape,
      *         or if {@code zipFunction} is {@code null}
-     * @throws E if the zip function throws an exception
+     * @throws E if {@code zipFunction} throws while combining values at a matrix position
      * @see #zipWith(LongMatrix, Throwables.LongBinaryOperator)
      */
     public <E extends Exception> LongMatrix zipWith(final LongMatrix other, final LongMatrix third, final Throwables.LongTernaryOperator<E> zipFunction)
@@ -3284,6 +3357,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
     /**
      * Returns the {@code min(rowCount, columnCount)} main-diagonal elements.
+     *
+     * <p>The stream reads this matrix's live backing storage as elements are consumed; it does
+     * not snapshot cell values. Changes made before an element is read are visible in the traversal.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3314,8 +3390,14 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
                 return cursor < toIndex;
             }
 
+            /**
+             * Returns the next item in this iterator's traversal.
+             *
+             * @return the next item
+             * @throws NoSuchElementException if no items remain in this iterator
+             */
             @Override
-            public long nextLong() {
+            public long nextLong() throws NoSuchElementException {
                 if (cursor >= toIndex) {
                     throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                 }
@@ -3343,6 +3425,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
     /**
      * Returns the {@code min(rowCount, columnCount)} anti-diagonal elements, beginning at the upper-right corner.
+     *
+     * <p>The stream reads this matrix's live backing storage as elements are consumed; it does
+     * not snapshot cell values. Changes made before an element is read are visible in the traversal.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3373,8 +3458,14 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
                 return cursor < toIndex;
             }
 
+            /**
+             * Returns the next item in this iterator's traversal.
+             *
+             * @return the next item
+             * @throws NoSuchElementException if no items remain in this iterator
+             */
             @Override
-            public long nextLong() {
+            public long nextLong() throws NoSuchElementException {
                 if (cursor >= toIndex) {
                     throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                 }
@@ -3410,6 +3501,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * without concern for their row/column positions. The stream supports all
      * standard LongStream operations including sum, average, filter, map, etc.</p>
      *
+     * <p>The stream reads this matrix's live backing storage as elements are consumed; it does
+     * not snapshot cell values. Changes made before an element is read are visible in the traversal.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.wrap(new long[][] {{1L, 2L}, {3L, 4L}});
@@ -3435,6 +3529,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p>This method allows for efficient processing of a subset of matrix rows.
      * The stream maintains the row-major order, meaning all elements from one row
      * are streamed before moving to the next row.</p>
+     *
+     * <p>The stream reads this matrix's live backing storage as elements are consumed; it does
+     * not snapshot cell values. Changes made before an element is read are visible in the traversal.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3468,8 +3565,14 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
                 return i < toRowIndex;
             }
 
+            /**
+             * Returns the next item in this iterator's traversal.
+             *
+             * @return the next item
+             * @throws NoSuchElementException if no items remain in this iterator
+             */
             @Override
-            public long nextLong() {
+            public long nextLong() throws NoSuchElementException {
                 if (i >= toRowIndex) {
                     throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                 }
@@ -3507,8 +3610,14 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
                 return remaining;
             }
 
+            /**
+             * Consumes the remaining elements into an array.
+             *
+             * @return the remaining elements in traversal order
+             * @throws IllegalStateException if more than {@code Integer.MAX_VALUE} elements remain
+             */
             @Override
-            public long[] toArray() {
+            public long[] toArray() throws IllegalStateException {
                 final int len = toArrayLength((long) (toRowIndex - i) * columnCount - j);
                 final long[] c = new long[len];
                 int k = 0;
@@ -3537,6 +3646,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p>This method provides an alternative way to iterate through matrix
      * elements compared to the row-major order of {@link #rowMajorStream()}.</p>
      *
+     * <p>The stream reads this matrix's live backing storage as elements are consumed; it does
+     * not snapshot cell values. Changes made before an element is read are visible in the traversal.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.wrap(new long[][] {{1L, 2L}, {3L, 4L}});
@@ -3561,6 +3673,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * <p>This method allows for efficient processing of a
      * subset of matrix columns in column-major order.</p>
+     *
+     * <p>The stream reads this matrix's live backing storage as elements are consumed; it does
+     * not snapshot cell values. Changes made before an element is read are visible in the traversal.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3596,8 +3711,14 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
                 return j < toColumnIndex;
             }
 
+            /**
+             * Returns the next item in this iterator's traversal.
+             *
+             * @return the next item
+             * @throws NoSuchElementException if no items remain in this iterator
+             */
             @Override
-            public long nextLong() {
+            public long nextLong() throws NoSuchElementException {
                 if (j >= toColumnIndex) {
                     throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                 }
@@ -3636,8 +3757,14 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
                 return remaining;
             }
 
+            /**
+             * Consumes the remaining elements into an array.
+             *
+             * @return the remaining elements in traversal order
+             * @throws IllegalStateException if more than {@code Integer.MAX_VALUE} elements remain
+             */
             @Override
-            public long[] toArray() {
+            public long[] toArray() throws IllegalStateException {
                 final int len = toArrayLength((long) (toColumnIndex - j) * rowCount - i);
                 final long[] c = new long[len];
 
@@ -3665,6 +3792,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * <p>This yields one stream per row. To instead stream the elements of a single row as one
      * flat stream, use {@link #rowMajorStream(int, int) rowMajorStream(rowIndex, rowIndex + 1)}.</p>
+     *
+     * <p>Each inner stream binds to the backing row selected when that inner stream is produced.
+     * Later row swaps do not retarget an already produced row stream; cell changes in its backing
+     * row remain visible until the corresponding elements are consumed.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3694,6 +3825,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * <p>This method allows for processing a subset of rows while maintaining the
      * ability to work with complete rows as individual streams.</p>
+     *
+     * <p>Each inner stream binds to the backing row selected when that inner stream is produced.
+     * Later row swaps do not retarget an already produced row stream; cell changes in its backing
+     * row remain visible until the corresponding elements are consumed.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3726,8 +3861,14 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
                 return cursor < toIndex;
             }
 
+            /**
+             * Returns the next item in this iterator's traversal.
+             *
+             * @return the next item
+             * @throws NoSuchElementException if no items remain in this iterator
+             */
             @Override
-            public LongStream next() {
+            public LongStream next() throws NoSuchElementException {
                 if (cursor >= toIndex) {
                     throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                 }
@@ -3764,6 +3905,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * <p>This yields one stream per column. To instead stream the elements of a single column as one
      * flat stream, use {@link #columnMajorStream(int, int) columnMajorStream(columnIndex, columnIndex + 1)}.</p>
      *
+     * <p>Each inner stream reads its column from this matrix as it is consumed, so cell changes
+     * and row swaps made before an element is read are visible. No cell values are snapshotted.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * LongMatrix matrix = LongMatrix.wrap(new long[][] {{1L, 2L, 3L}, {4L, 5L, 6L}});
@@ -3791,6 +3935,9 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *
      * <p>This method allows for processing a subset of columns
      * while maintaining the ability to work with complete columns as individual streams.</p>
+     *
+     * <p>Each inner stream reads its column from this matrix as it is consumed, so cell changes
+     * and row swaps made before an element is read are visible. No cell values are snapshotted.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3824,8 +3971,14 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
                 return cursor < toIndex;
             }
 
+            /**
+             * Returns the next item in this iterator's traversal.
+             *
+             * @return the next item
+             * @throws NoSuchElementException if no items remain in this iterator
+             */
             @Override
-            public LongStream next() {
+            public LongStream next() throws NoSuchElementException {
                 if (cursor >= toIndex) {
                     throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                 }
@@ -3840,8 +3993,14 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
                         return cursor2 < toIndex2;
                     }
 
+                    /**
+                     * Returns the next item in this iterator's traversal.
+                     *
+                     * @return the next item
+                     * @throws NoSuchElementException if no items remain in this iterator
+                     */
                     @Override
-                    public long nextLong() {
+                    public long nextLong() throws NoSuchElementException {
                         if (cursor2 >= toIndex2) {
                             throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                         }
@@ -3933,7 +4092,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param <E> the type of exception that the action may throw
      * @param action the action to be performed for each element; receives each element value
      * @throws IllegalArgumentException if {@code action} is {@code null}
-     * @throws E if the action throws an exception
+     * @throws E if {@code action} throws while processing an element in the selected region
      * @see #forEach(int, int, int, int, Throwables.LongConsumer)
      */
     public <E extends Exception> void forEach(final Throwables.LongConsumer<E> action) throws IllegalArgumentException, E {
@@ -3978,7 +4137,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      *         {@code fromRowIndex > toRowIndex}, {@code fromColumnIndex < 0},
      *         {@code toColumnIndex > columnCount}, or {@code fromColumnIndex > toColumnIndex}
      * @throws IllegalArgumentException if {@code action} is {@code null}
-     * @throws E if the action throws an exception
+     * @throws E if {@code action} throws while processing an element in the selected region
      */
     public <E extends Exception> void forEach(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
             final Throwables.LongConsumer<E> action) throws IndexOutOfBoundsException, IllegalArgumentException, E {
@@ -4002,7 +4161,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
     /**
      * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1, 2]\n[3, 4]"}); a
-     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #appendTo(Appendable)}.
+     * zero-row matrix renders {@code "[]"}. Supplies the rendering for {@link #println()}.
      *
      * @return the formatted multi-line representation of this matrix
      */

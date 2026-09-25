@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -4573,6 +4574,110 @@ class AbstractMatrixTest extends TestBase {
                 BooleanMatrix.wrap(new boolean[][] { { true, true, true } }).reshapeAndPadToColumnCount(2));
         assertEquals(Matrix.wrap(String.class, new String[][] { { "a", "b" }, { "c", null } }),
                 Matrix.wrap(String.class, new String[][] { { "a", "b", "c" } }).reshapeAndPadToColumnCount(2));
+    }
+
+    @Test
+    public void testForEachIndices_SequentialFailureStopsTraversalAndPreservesCompletedWrites() {
+        Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
+            for (int variant = 0; variant < 4; variant++) {
+                final IntMatrix matrix = IntMatrix.wrap(new int[3][3]);
+                final List<Point> visited = new ArrayList<>();
+                final IOException failure = new IOException("stop after two positions");
+                final Throwables.IntBiConsumer<IOException> action = (row, column) -> {
+                    visited.add(Point.of(row, column));
+                    matrix.set(row, column, 9);
+                    if (visited.size() == 2) {
+                        throw failure;
+                    }
+                };
+                final int selectedVariant = variant;
+
+                assertSame(failure, assertThrows(IOException.class, () -> {
+                    switch (selectedVariant) {
+                        case 0 -> matrix.forEachIndices(action);
+                        case 1 -> matrix.forEachIndices(1, 3, 1, 3, action);
+                        case 2 -> matrix.forEachIndices((row, column, suppliedMatrix) -> {
+                            assertSame(matrix, suppliedMatrix);
+                            action.accept(row, column);
+                        });
+                        case 3 -> matrix.forEachIndices(1, 3, 1, 3, (row, column, suppliedMatrix) -> {
+                            assertSame(matrix, suppliedMatrix);
+                            action.accept(row, column);
+                        });
+                        default -> throw new AssertionError("unexpected variant");
+                    }
+                }));
+
+                if (variant % 2 == 0) {
+                    assertEquals(List.of(Point.of(0, 0), Point.of(0, 1)), visited);
+                    assertEquals(IntMatrix.wrap(new int[][] { { 9, 9, 0 }, { 0, 0, 0 }, { 0, 0, 0 } }), matrix);
+                } else {
+                    assertEquals(List.of(Point.of(1, 1), Point.of(1, 2)), visited);
+                    assertEquals(IntMatrix.wrap(new int[][] { { 0, 0, 0 }, { 0, 9, 9 }, { 0, 0, 0 } }), matrix);
+                }
+            }
+        });
+    }
+
+    @Test
+    public void testMutateViaFlatArray_FailureSkipsCopyBackWithoutRollingBackOtherReferences() {
+        final IOException failure = new IOException("do not copy back");
+        final IntMatrix integers = IntMatrix.wrap(new int[][] { { 1, 2 } });
+        assertSame(failure, assertThrows(IOException.class, () -> integers.mutateViaFlatArray(flat -> {
+            flat[0] = 99;
+            integers.set(0, 1, 7);
+            throw failure;
+        })));
+        assertEquals(IntMatrix.wrap(new int[][] { { 1, 7 } }), integers);
+
+        final StringBuilder first = new StringBuilder("first");
+        final StringBuilder second = new StringBuilder("second");
+        final Matrix<StringBuilder> objects = Matrix.wrap(StringBuilder.class, new StringBuilder[][] { { first, second } });
+        assertSame(failure, assertThrows(IOException.class, () -> objects.mutateViaFlatArray(flat -> {
+            flat[0].append(" changed");
+            flat[1] = new StringBuilder("replacement");
+            throw failure;
+        })));
+        assertSame(first, objects.get(0, 0));
+        assertEquals("first changed", objects.get(0, 0).toString());
+        assertSame(second, objects.get(0, 1));
+    }
+
+    @Test
+    public void testFormatMsg_RendersOnlyArgumentsWithMatchingPlaceholders() {
+        final IllegalStateException failure = new IllegalStateException("argument rendering failed");
+        final Object failingArgument = new Object() {
+            @Override
+            public String toString() {
+                throw failure;
+            }
+        };
+
+        // A diagnostic must not render surplus arguments or arguments of a null template.
+        Assertions.assertNull(AbstractMatrix.formatMsg(null, failingArgument));
+        assertEquals("literal", AbstractMatrix.formatMsg("literal", failingArgument));
+        assertEquals("value: 7", AbstractMatrix.formatMsg("value: {}", 7, failingArgument));
+        assertEquals("null / {}", AbstractMatrix.formatMsg("{} / {}", (Object) null));
+        assertSame(failure, assertThrows(IllegalStateException.class, () -> AbstractMatrix.formatMsg("value: {}", failingArgument)));
+    }
+
+    @Test
+    public void testRendering_PropagatesElementFailureWithoutWrappingOrDiscardingWrittenPrefix() {
+        final IllegalStateException failure = new IllegalStateException("element rendering failed");
+        final Object failingElement = new Object() {
+            @Override
+            public String toString() {
+                throw failure;
+            }
+        };
+        final Matrix<Object> matrix = Matrix.wrap(Object.class, new Object[][] { { "first", failingElement } });
+        final StringBuilder output = new StringBuilder();
+
+        // appendTo writes incrementally; println renders first and propagates the same element failure.
+        assertSame(failure, assertThrows(IllegalStateException.class, () -> matrix.appendTo(output)));
+        assertEquals("[first, ", output.toString());
+        assertSame(failure, assertThrows(IllegalStateException.class, matrix::toMultilineString));
+        assertSame(failure, assertThrows(IllegalStateException.class, matrix::println));
     }
 
 }

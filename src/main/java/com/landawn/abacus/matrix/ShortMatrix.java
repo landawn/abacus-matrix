@@ -78,7 +78,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     /**
      * Constructs a {@code ShortMatrix} that shares the supplied row arrays.
      *
-     * <p>The outer array is shallow-copied after validation. Element changes through a supplied row
+     * <p>The outer array is shallow-copied and its rows are validated. Element changes through a supplied row
      * remain visible through the matrix and vice versa, but replacing an entry in the caller's outer
      * array does not replace a matrix row. Call {@link #copy()} for independent cell storage.</p>
      *
@@ -102,25 +102,45 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
         super(N.checkArgNotNull(a, "Matrix array cannot be null"), short.class);
     }
 
-    ShortMatrix(final short[][] a, final int columnCount) {
+    /**
+     * Constructs a matrix with an explicit column count, including a matrix with no rows.
+     *
+     * @param a the rectangular, non-null array of distinct, non-null row arrays
+     * @param columnCount the non-negative logical column count
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if {@code columnCount} is negative,
+     *         if a row is {@code null} or its length differs from {@code columnCount}, or if two rows are the same array
+     */
+    ShortMatrix(final short[][] a, final int columnCount) throws IllegalArgumentException {
         super(N.checkArgNotNull(a, "Matrix array cannot be null"), short.class, columnCount);
     }
 
-    private ShortMatrix(final short[][] a, final int columnCount, final boolean rowsAreKnownDistinct) {
+    /**
+     * Constructs a matrix with an optional guarantee that its row arrays are distinct.
+     *
+     * @param a the rectangular, non-null array of non-null row arrays
+     * @param columnCount the non-negative logical column count
+     * @param rowsAreKnownDistinct whether callers guarantee that no row array is repeated
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if {@code columnCount} is negative,
+     *         if a row is {@code null} or its length differs from {@code columnCount}, or if rows are repeated
+     *         when {@code rowsAreKnownDistinct} is {@code false}
+     */
+    private ShortMatrix(final short[][] a, final int columnCount, final boolean rowsAreKnownDistinct) throws IllegalArgumentException {
         super(N.checkArgNotNull(a, "Matrix array cannot be null"), short.class, columnCount, rowsAreKnownDistinct);
     }
 
     /**
      * Canonicalises a derived result: a genuinely {@code 0 x 0} result becomes the shared empty
-     * instance, while {@code 0 x N} and {@code N x 0} results keep their logical shape. Every
-     * result-producing method routes through here so the empty singleton and the degenerate
-     * shapes are handled in exactly one place.
+     * instance, while {@code 0 x N} and {@code N x 0} results keep their logical shape.
      *
-     * @param a the backing rows of the result
+     * @param a the non-null rectangular result array with distinct, non-null rows
      * @param columnCount the result's logical column count
      * @return the shared empty matrix when the result is {@code 0 x 0}, otherwise a new matrix
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if {@code columnCount} is negative, if a row is {@code null},
+     *         or if a row length differs from {@code columnCount}
      */
-    static ShortMatrix wrapResult(final short[][] a, final int columnCount) {
+    static ShortMatrix wrapResult(final short[][] a, final int columnCount) throws IllegalArgumentException {
+        N.checkArgNotNull(a, cs.a);
+
         // Every wrapResult(...) call site (here, in Matrix and in Matrices) passes freshly allocated rows, so they are
         // identity-distinct by construction and the duplicate-row scan can be skipped.
         return a.length == 0 && columnCount == 0 ? EMPTY_SHORT_MATRIX : new ShortMatrix(a, columnCount, true);
@@ -209,6 +229,14 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             return EMPTY_SHORT_MATRIX;
         }
 
+        N.checkArgument(a[0] != null, "Row 0 cannot be null");
+        final int columnCount = a[0].length;
+
+        for (int i = 1; i < a.length; i++) {
+            N.checkArgument(a[i] != null, "Row {} cannot be null", i);
+            N.checkArgument(a[i].length == columnCount, MSG_NOT_RECTANGULAR, columnCount, i, a[i].length);
+        }
+
         final short[][] c = new short[a.length][];
 
         for (int i = 0, len = a.length; i < len; i++) {
@@ -248,8 +276,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param randomGenerator the source of randomness; must not be {@code null}
      * @return a new {@code 1 x columnCount} matrix
      * @throws IllegalArgumentException if {@code columnCount} is negative or {@code randomGenerator} is {@code null}
+     * @throws RuntimeException if {@code randomGenerator.nextInt(int)} fails while generating a matrix element
      */
-    public static ShortMatrix randomRow(final int columnCount, final RandomGenerator randomGenerator) throws IllegalArgumentException {
+    public static ShortMatrix randomRow(final int columnCount, final RandomGenerator randomGenerator) throws IllegalArgumentException, RuntimeException {
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.columnCount, columnCount);
         N.checkArgNotNull(randomGenerator, cs.randomGenerator);
 
@@ -290,8 +319,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param randomGenerator the source of randomness; must not be {@code null}
      * @return a new matrix with the requested shape, including {@code 0 x columnCount}
      * @throws IllegalArgumentException if either dimension is negative or {@code randomGenerator} is {@code null}
+     * @throws RuntimeException if {@code randomGenerator.nextInt(int)} fails while generating a matrix element
      */
-    public static ShortMatrix random(final int rowCount, final int columnCount, final RandomGenerator randomGenerator) throws IllegalArgumentException {
+    public static ShortMatrix random(final int rowCount, final int columnCount, final RandomGenerator randomGenerator)
+            throws IllegalArgumentException, RuntimeException {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, cs.rowCount, rowCount);
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.columnCount, columnCount);
         N.checkArgNotNull(randomGenerator, cs.randomGenerator);
@@ -568,7 +599,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
      * @return the element at position {@code (rowIndex, columnIndex)}
-     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount},
+     *         or if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     public short get(final int rowIndex, final int columnIndex) throws ArrayIndexOutOfBoundsException {
         return a[rowIndex][columnIndex];
@@ -590,7 +622,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param point the point containing row and column indices (must not be {@code null})
      * @return the short element at the specified point
      * @throws IllegalArgumentException if {@code point} is {@code null}
-     * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
+     * @throws ArrayIndexOutOfBoundsException if {@code point.rowIndex()} is outside {@code [0, rowCount)},
+     *         or if {@code point.columnIndex()} is outside {@code [0, columnCount)}
      * @see #get(int, int)
      */
     public short get(final Point point) throws IllegalArgumentException, ArrayIndexOutOfBoundsException {
@@ -616,7 +649,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
      * @param value the value to set
-     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount},
+     *         or if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     public void set(final int rowIndex, final int columnIndex, final short value) throws ArrayIndexOutOfBoundsException {
         a[rowIndex][columnIndex] = value;
@@ -640,7 +674,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param point the point containing row and column indices (must not be {@code null})
      * @param value the new short value to set at the specified point
      * @throws IllegalArgumentException if {@code point} is {@code null}
-     * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
+     * @throws ArrayIndexOutOfBoundsException if {@code point.rowIndex()} is outside {@code [0, rowCount)},
+     *         or if {@code point.columnIndex()} is outside {@code [0, columnCount)}
      * @see #set(int, int, short)
      */
     public void set(final Point point, final short value) throws IllegalArgumentException, ArrayIndexOutOfBoundsException {
@@ -669,7 +704,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param columnIndex the column index of the reference cell (0-based)
      * @return an {@link OptionalShort} containing the element at position {@code (rowIndex - 1, columnIndex)},
      *         or empty if {@code rowIndex == 0}
-     * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount},
+     *         or if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     public OptionalShort valueAbove(final int rowIndex, final int columnIndex) throws IndexOutOfBoundsException {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -697,7 +733,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param columnIndex the column index of the reference cell (0-based)
      * @return an {@link OptionalShort} containing the element at position {@code (rowIndex + 1, columnIndex)},
      *         or empty if {@code rowIndex == rowCount - 1}
-     * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount},
+     *         or if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     public OptionalShort valueBelow(final int rowIndex, final int columnIndex) throws IndexOutOfBoundsException {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -725,7 +762,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param columnIndex the column index of the reference cell (0-based)
      * @return an {@link OptionalShort} containing the element at position {@code (rowIndex, columnIndex - 1)},
      *         or empty if {@code columnIndex == 0}
-     * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount},
+     *         or if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     public OptionalShort valueLeft(final int rowIndex, final int columnIndex) throws IndexOutOfBoundsException {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -753,7 +791,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param columnIndex the column index of the reference cell (0-based)
      * @return an {@link OptionalShort} containing the element at position {@code (rowIndex, columnIndex + 1)},
      *         or empty if {@code columnIndex == columnCount - 1}
-     * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount},
+     *         or if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     public OptionalShort valueRight(final int rowIndex, final int columnIndex) throws IndexOutOfBoundsException {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -887,7 +926,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param rowIndex the index of the row to set (0-based)
      * @param row the array of values to copy into the row; must be non-{@code null} and of length {@code columnCount}
-     * @throws IndexOutOfBoundsException if {@code rowIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      * @throws IllegalArgumentException if {@code row} is {@code null} or if {@code row.length != columnCount}
      */
     public void setRow(final int rowIndex, final short[] row) throws IndexOutOfBoundsException, IllegalArgumentException {
@@ -924,7 +963,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * @param columnIndex the index of the column to set (0-based)
      * @param column the array of values to copy into the column; must be non-{@code null} and of length {@code rowCount}
-     * @throws IndexOutOfBoundsException if {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      * @throws IllegalArgumentException if {@code column} is {@code null} or if {@code column.length != rowCount}
      */
     public void setColumn(final int columnIndex, final short[] column) throws IndexOutOfBoundsException, IllegalArgumentException {
@@ -945,6 +984,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p>The operator is applied to each element in the specified row sequentially
      * from left to right (column {@code 0} to column {@code columnCount - 1}).</p>
      *
+     * <p>If {@code operator} throws, updates already completed are retained; this method does not
+     * roll back changes.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.wrap(new short[][] {{1, 2, 3}, {4, 5, 6}});
@@ -962,9 +1004,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param rowIndex the index of the row to update (0-based)
      * @param operator the operator to apply to each element in the row; receives the current
      *             element value and returns the new value
-     * @throws IndexOutOfBoundsException if {@code rowIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      * @throws IllegalArgumentException if {@code operator} is {@code null}
-     * @throws E if the operator throws an exception
+     * @throws E if {@code operator} throws while transforming a matrix element
      */
     public <E extends Exception> void updateRow(final int rowIndex, final Throwables.ShortUnaryOperator<E> operator)
             throws IndexOutOfBoundsException, IllegalArgumentException, E {
@@ -985,6 +1027,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p>The operator is applied to each element in the specified column sequentially
      * from top to bottom (row {@code 0} to row {@code rowCount - 1}).</p>
      *
+     * <p>If {@code operator} throws, updates already completed are retained; this method does not
+     * roll back changes.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.wrap(new short[][] {{1, 2}, {3, 4}, {5, 6}});
@@ -1002,9 +1047,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param columnIndex the index of the column to update (0-based)
      * @param operator the operator to apply to each element in the column; receives the current
      *             element value and returns the new value
-     * @throws IndexOutOfBoundsException if {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      * @throws IllegalArgumentException if {@code operator} is {@code null}
-     * @throws E if the operator throws an exception
+     * @throws E if {@code operator} throws while transforming a matrix element
      */
     public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.ShortUnaryOperator<E> operator)
             throws IndexOutOfBoundsException, IllegalArgumentException, E {
@@ -1069,7 +1114,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @param mainDiagonal the new values for the main diagonal; must be non-{@code null} and have the diagonal length
-     * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null} or has the wrong length
+     * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null} or its length differs from
+     *         {@code min(rowCount, columnCount)}
      */
     @Override
     public void setMainDiagonal(final short[] mainDiagonal) throws IllegalArgumentException {
@@ -1086,6 +1132,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * Updates the values on the main diagonal (upper-left to lower-right) by applying the specified operator.
      * Rectangular matrices update {@code min(rowCount, columnCount)} elements.
      *
+     * <p>If {@code operator} throws, updates already completed are retained; this method does not
+     * roll back changes.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.wrap(new short[][] {{1, 2}, {3, 4}});
@@ -1101,7 +1150,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param <E> the type of exception that the operator may throw
      * @param operator the operator to apply to each diagonal element; receives current element value and returns new value
      * @throws IllegalArgumentException if {@code operator} is {@code null}
-     * @throws E if the operator throws an exception
+     * @throws E if {@code operator} throws while transforming a matrix element
      */
     public <E extends Exception> void updateMainDiagonal(final Throwables.ShortUnaryOperator<E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, cs.operator);
@@ -1173,7 +1222,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * }</pre>
      *
      * @param antiDiagonal the new values for the anti-diagonal; must be non-{@code null} and have the diagonal length
-     * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null} or has the wrong length
+     * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null} or its length differs from
+     *         {@code min(rowCount, columnCount)}
      */
     @Override
     public void setAntiDiagonal(final short[] antiDiagonal) throws IllegalArgumentException {
@@ -1191,6 +1241,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * Updates the values on the anti-diagonal (upper-right to lower-left) by applying the specified operator.
      * Rectangular matrices update {@code min(rowCount, columnCount)} elements.
      *
+     * <p>If {@code operator} throws, updates already completed are retained; this method does not
+     * roll back changes.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.wrap(new short[][] {{1, 2}, {3, 4}});
@@ -1206,7 +1259,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param <E> the type of exception that the operator may throw
      * @param operator the operator to apply to each anti-diagonal element; receives current element value and returns new value
      * @throws IllegalArgumentException if {@code operator} is {@code null}
-     * @throws E if the operator throws an exception
+     * @throws E if {@code operator} throws while transforming a matrix element
      */
     public <E extends Exception> void updateAntiDiagonal(final Throwables.ShortUnaryOperator<E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, cs.operator);
@@ -1223,6 +1276,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
      * When this operation is not parallelized, elements are processed in row-major order; when it is
      * parallelized, the encounter order is unspecified.</p>
+     *
+     * <p>If {@code operator} throws, updates already completed are retained; this method does not
+     * roll back changes. Sequential traversal stops at the failing call. During parallel execution,
+     * other callbacks may already be running when a failure occurs.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1242,7 +1299,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param operator the operator to apply to each element; receives the current element value
      *             and returns the new value
      * @throws IllegalArgumentException if {@code operator} is {@code null}
-     * @throws E if the operator throws an exception
+     * @throws E if {@code operator} throws while transforming a matrix element
      */
     public <E extends Exception> void updateAll(final Throwables.ShortUnaryOperator<E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, cs.operator);
@@ -1271,6 +1328,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * for that position. This is useful for initializing matrices based on position patterns or
      * mathematical formulas. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
      *
+     * <p>If {@code mapper} throws, updates already completed are retained; this method does not
+     * roll back changes. Sequential traversal stops at the failing call. During parallel execution,
+     * other callbacks may already be running when a failure occurs.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.wrap(new short[][] {{0, 0, 0}, {0, 0, 0}});
@@ -1291,11 +1352,11 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *             the new value for that position; the returned {@code Short} is unboxed, so it
      *             must not be {@code null}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
+     * @throws E if {@code mapper} throws while mapping matrix coordinates
      * @throws NullPointerException if {@code mapper} returns {@code null} for any position
-     * @throws E if the mapper throws an exception
      */
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Short, E> mapper)
-            throws IllegalArgumentException, NullPointerException, E {
+            throws IllegalArgumentException, E, NullPointerException {
         N.checkArgNotNull(mapper, cs.mapper);
 
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
@@ -1308,6 +1369,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * This modifies the matrix directly.
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.</p>
+     *
+     * <p>If {@code predicate} throws, updates already completed are retained; this method does not
+     * roll back changes. Sequential traversal stops at the failing call. During parallel execution,
+     * other callbacks may already be running when a failure occurs.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1328,7 +1393,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *                  {@code true} will be replaced
      * @param newValue the value to use for replacing matching elements
      * @throws IllegalArgumentException if {@code predicate} is {@code null}
-     * @throws E if the predicate throws an exception
+     * @throws E if {@code predicate} throws while testing a matrix element
      */
     public <E extends Exception> void replaceIf(final Throwables.ShortPredicate<E> predicate, final short newValue) throws IllegalArgumentException, E {
         N.checkArgNotNull(predicate, cs.predicate);
@@ -1361,6 +1426,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * <p>Nonmatching positions perform no write.</p>
      *
+     * <p>If {@code predicate} throws, updates already completed are retained; this method does not
+     * roll back changes. Sequential traversal stops at the failing call. During parallel execution,
+     * other callbacks may already be running when a failure occurs.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.wrap(new short[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
@@ -1381,7 +1450,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *                  at positions for which this returns {@code true} will be replaced
      * @param newValue the value to use for replacing matching elements
      * @throws IllegalArgumentException if {@code predicate} is {@code null}
-     * @throws E if the predicate throws an exception
+     * @throws E if {@code predicate} throws while testing matrix coordinates
      */
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final short newValue) throws IllegalArgumentException, E {
         N.checkArgNotNull(predicate, cs.predicate);
@@ -1420,7 +1489,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *             and returns the transformed value
      * @return a new ShortMatrix with transformed values
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
-     * @throws E if the function throws an exception
+     * @throws E if {@code mapper} throws while mapping a matrix element
      * @see #updateAll(Throwables.ShortUnaryOperator)
      */
     public <E extends Exception> ShortMatrix map(final Throwables.ShortUnaryOperator<E> mapper) throws IllegalArgumentException, E {
@@ -1456,13 +1525,16 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param <E> the type of exception that the function may throw
      * @param mapper the function to convert short values to type {@code R}
      * @param targetElementType the {@code Class} object for type {@code R} (used to allocate the
-     *        {@code R[][]} backing array); must not be {@code null}
+     *        {@code R[][]} backing array); must not be {@code null} or {@code void.class}
      * @return a new {@link Matrix Matrix&lt;R&gt;} containing the mapped values
-     * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null}
-     * @throws E if the function throws an exception
+     * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null},
+     *         or if {@code targetElementType} is {@code void.class} or an array type with 254 or more dimensions
+     * @throws E if {@code mapper} throws while mapping a matrix element
+     * @throws ArrayStoreException if a mapped value cannot be stored in an array of {@code targetElementType}
+     *         (or its wrapper type for a primitive class)
      */
     public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.ShortFunction<? extends R, E> mapper, final Class<R> targetElementType)
-            throws IllegalArgumentException, E {
+            throws IllegalArgumentException, E, ArrayStoreException {
         N.checkArgNotNull(mapper, cs.mapper);
         N.checkArgNotNull(targetElementType, cs.targetElementType);
 
@@ -2510,7 +2582,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param action the operation to apply to the temporary flattened array
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws ArithmeticException if the number of matrix elements exceeds {@link Integer#MAX_VALUE}
-     * @throws E if the operation throws an exception
+     * @throws E if {@code action} throws while modifying the temporary flattened array
      * @see Arrays#mutateViaFlatArray(short[][], Throwables.Consumer)
      */
     @Override
@@ -3157,7 +3229,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @return a new {@code ShortMatrix} with the results of the element-wise operation
      * @throws IllegalArgumentException if {@code other} is {@code null} or its shape differs from this matrix's shape,
      *         or if {@code zipFunction} is {@code null}
-     * @throws E if the zip function throws an exception
+     * @throws E if {@code zipFunction} throws while combining corresponding matrix elements
      * @see #zipWith(ShortMatrix, ShortMatrix, Throwables.ShortTernaryOperator)
      */
     public <E extends Exception> ShortMatrix zipWith(final ShortMatrix other, final Throwables.ShortBinaryOperator<E> zipFunction)
@@ -3216,7 +3288,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @throws IllegalArgumentException if {@code other} is {@code null} or its shape differs from this matrix's shape,
      *         if {@code third} is {@code null} or its shape differs from this matrix's shape,
      *         or if {@code zipFunction} is {@code null}
-     * @throws E if the zip function throws an exception
+     * @throws E if {@code zipFunction} throws while combining corresponding matrix elements
      * @see #zipWith(ShortMatrix, Throwables.ShortBinaryOperator)
      */
     public <E extends Exception> ShortMatrix zipWith(final ShortMatrix other, final ShortMatrix third, final Throwables.ShortTernaryOperator<E> zipFunction)
@@ -3244,6 +3316,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * Returns a stream of elements on the main diagonal (upper-left to lower-right).
      * Rectangular matrices produce {@code min(rowCount, columnCount)} elements.
      *
+     * <p>The stream reads this matrix's live backing storage as elements are consumed; it does not
+     * snapshot cell values. Changes made before an element is read are visible in the traversal.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.wrap(new short[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
@@ -3268,8 +3343,13 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
                 return cursor < toIndex;
             }
 
+            /**
+             * {@inheritDoc}
+             *
+             * @throws NoSuchElementException if no elements remain in this iterator
+             */
             @Override
-            public short nextShort() {
+            public short nextShort() throws NoSuchElementException {
                 if (cursor >= toIndex) {
                     throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                 }
@@ -3300,6 +3380,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * Rectangular matrices produce {@code min(rowCount, columnCount)} elements, starting at the
      * top-right corner.
      *
+     * <p>The stream reads this matrix's live backing storage as elements are consumed; it does not
+     * snapshot cell values. Changes made before an element is read are visible in the traversal.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.wrap(new short[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
@@ -3324,8 +3407,13 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
                 return cursor < toIndex;
             }
 
+            /**
+             * {@inheritDoc}
+             *
+             * @throws NoSuchElementException if no elements remain in this iterator
+             */
             @Override
-            public short nextShort() {
+            public short nextShort() throws NoSuchElementException {
                 if (cursor >= toIndex) {
                     throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                 }
@@ -3361,6 +3449,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * without concern for their row/column positions. The stream supports all
      * standard ShortStream operations including sum, average, filter, map, etc.</p>
      *
+     * <p>The stream reads this matrix's live backing storage as elements are consumed; it does not
+     * snapshot cell values. Changes made before an element is read are visible in the traversal.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.wrap(new short[][] {{1, 2}, {3, 4}});
@@ -3386,6 +3477,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p>This method allows for efficient processing of a subset of matrix rows.
      * The stream maintains the row-major order, meaning all elements from one row
      * are streamed before moving to the next row.</p>
+     *
+     * <p>The stream reads this matrix's live backing storage as elements are consumed; it does not
+     * snapshot cell values. Changes made before an element is read are visible in the traversal.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3419,8 +3513,13 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
                 return i < toRowIndex;
             }
 
+            /**
+             * {@inheritDoc}
+             *
+             * @throws NoSuchElementException if no elements remain in this iterator
+             */
             @Override
-            public short nextShort() {
+            public short nextShort() throws NoSuchElementException {
                 if (i >= toRowIndex) {
                     throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                 }
@@ -3458,8 +3557,14 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
                 return result;
             }
 
+            /**
+             * {@inheritDoc}
+             *
+             * @throws IllegalStateException if the number of remaining elements exceeds {@link Integer#MAX_VALUE};
+             *         no elements are consumed
+             */
             @Override
-            public short[] toArray() {
+            public short[] toArray() throws IllegalStateException {
                 // count() is terminal and consumes the iterator, so sizing must not call it.
                 final int len = toArrayLength(remainingCount());
                 final short[] c = new short[len];
@@ -3493,6 +3598,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p>This method provides an alternative way to iterate through matrix
      * elements compared to the row-major order of {@link #rowMajorStream()}.</p>
      *
+     * <p>The stream reads this matrix's live backing storage as elements are consumed; it does not
+     * snapshot cell values. Changes made before an element is read are visible in the traversal.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.wrap(new short[][] {{1, 2}, {3, 4}});
@@ -3517,6 +3625,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * <p>This method allows for efficient processing of a
      * subset of matrix columns in column-major order.</p>
+     *
+     * <p>The stream reads this matrix's live backing storage as elements are consumed; it does not
+     * snapshot cell values. Changes made before an element is read are visible in the traversal.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3552,8 +3663,13 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
                 return j < toColumnIndex;
             }
 
+            /**
+             * {@inheritDoc}
+             *
+             * @throws NoSuchElementException if no elements remain in this iterator
+             */
             @Override
-            public short nextShort() {
+            public short nextShort() throws NoSuchElementException {
                 if (j >= toColumnIndex) {
                     throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                 }
@@ -3592,8 +3708,14 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
                 return result;
             }
 
+            /**
+             * {@inheritDoc}
+             *
+             * @throws IllegalStateException if the number of remaining elements exceeds {@link Integer#MAX_VALUE};
+             *         no elements are consumed
+             */
             @Override
-            public short[] toArray() {
+            public short[] toArray() throws IllegalStateException {
                 // count() is terminal and consumes the iterator, so sizing must not call it.
                 final int len = toArrayLength(remainingCount());
                 final short[] c = new short[len];
@@ -3627,6 +3749,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p>This yields one stream per row. To instead stream the elements of a single row as one
      * flat stream, use {@link #rowMajorStream(int, int) rowMajorStream(rowIndex, rowIndex + 1)}.</p>
      *
+     * <p>Each inner stream binds to the backing row selected when that inner stream is produced.
+     * Later row swaps do not retarget an already produced row stream; cell changes in its backing
+     * row remain visible.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.wrap(new short[][] {{1, 2}, {3, 4}, {5, 6}});
@@ -3655,6 +3781,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * <p>This method allows for processing a subset of rows while maintaining the
      * ability to work with complete rows as individual streams.</p>
+     *
+     * <p>Each inner stream binds to the backing row selected when that inner stream is produced.
+     * Later row swaps do not retarget an already produced row stream; cell changes in its backing
+     * row remain visible.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3687,8 +3817,13 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
                 return cursor < toIndex;
             }
 
+            /**
+             * {@inheritDoc}
+             *
+             * @throws NoSuchElementException if no elements remain in this iterator
+             */
             @Override
-            public ShortStream next() {
+            public ShortStream next() throws NoSuchElementException {
                 if (cursor >= toIndex) {
                     throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                 }
@@ -3725,6 +3860,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p>This yields one stream per column. To instead stream the elements of a single column as one
      * flat stream, use {@link #columnMajorStream(int, int) columnMajorStream(columnIndex, columnIndex + 1)}.</p>
      *
+     * <p>Each inner stream reads its column from this matrix as it is consumed, so later cell changes
+     * and row swaps are visible.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ShortMatrix matrix = ShortMatrix.wrap(new short[][] {{1, 2, 3}, {4, 5, 6}});
@@ -3752,6 +3890,9 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * <p>This method allows for processing a subset of columns
      * while maintaining the ability to work with complete columns as individual streams.</p>
+     *
+     * <p>Each inner stream reads its column from this matrix as it is consumed, so later cell changes
+     * and row swaps are visible.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3785,8 +3926,13 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
                 return cursor < toIndex;
             }
 
+            /**
+             * {@inheritDoc}
+             *
+             * @throws NoSuchElementException if no elements remain in this iterator
+             */
             @Override
-            public ShortStream next() {
+            public ShortStream next() throws NoSuchElementException {
                 if (cursor >= toIndex) {
                     throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                 }
@@ -3801,8 +3947,13 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
                         return cursor2 < toIndex2;
                     }
 
+                    /**
+                     * {@inheritDoc}
+                     *
+                     * @throws NoSuchElementException if no elements remain in this iterator
+                     */
                     @Override
-                    public short nextShort() {
+                    public short nextShort() throws NoSuchElementException {
                         if (cursor2 >= toIndex2) {
                             throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                         }
@@ -3846,7 +3997,15 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
         });
     }
 
-    private static short toShortExact(final long value) {
+    /**
+     * Narrows a value to {@code short} without overflow.
+     *
+     * @param value the value to narrow
+     * @return the value as a {@code short}
+     * @throws ArithmeticException if {@code value} is less than {@link Short#MIN_VALUE}
+     *         or greater than {@link Short#MAX_VALUE}
+     */
+    private static short toShortExact(final long value) throws ArithmeticException {
         if (value < Short.MIN_VALUE || value > Short.MAX_VALUE) {
             throw new ArithmeticException("short overflow: " + value);
         }
@@ -3873,8 +4032,11 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *
      * <p>The operation may be parallelized internally for large matrices to improve performance,
      * based on internal heuristics. If parallelized, the order of execution is not guaranteed,
-     * but all elements will be processed exactly once. If parallelized, {@code action} must be
-     * thread-safe.</p>
+     * but all elements are processed exactly once on successful completion. If parallelized,
+     * {@code action} must be thread-safe.</p>
+     *
+     * <p>If {@code action} throws, sequential traversal stops at the failing call. During parallel
+     * execution, other callbacks may already be running when a failure occurs.</p>
      *
      * <p><b>Note:</b> This method is for side-effect operations only (like printing, collecting,
      * or accumulating). Use {@link #map(Throwables.ShortUnaryOperator)} to create a new matrix,
@@ -3901,7 +4063,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @param <E> the type of exception that the action may throw
      * @param action the action to be performed for each element; receives each element value
      * @throws IllegalArgumentException if {@code action} is {@code null}
-     * @throws E if the action throws an exception
+     * @throws E if {@code action} throws while processing a matrix element
      * @see #forEach(int, int, int, int, Throwables.ShortConsumer)
      */
     public <E extends Exception> void forEach(final Throwables.ShortConsumer<E> action) throws IllegalArgumentException, E {
@@ -3917,8 +4079,11 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * <p>This method allows for processing a rectangular subset of the matrix.
      * The operation may be parallelized internally if the sub-matrix is large enough
      * to benefit from parallel processing; if parallelized, the order in which elements are
-     * visited is unspecified and the action must be thread-safe, but every element is still
-     * visited exactly once.</p>
+     * visited is unspecified and the action must be thread-safe, but every selected element is
+     * visited exactly once on successful completion.</p>
+     *
+     * <p>If {@code action} throws, sequential traversal stops at the failing call. During parallel
+     * execution, other callbacks may already be running when a failure occurs.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3946,7 +4111,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      *         {@code fromRowIndex > toRowIndex}, {@code fromColumnIndex < 0},
      *         {@code toColumnIndex > columnCount}, or {@code fromColumnIndex > toColumnIndex}
      * @throws IllegalArgumentException if {@code action} is {@code null}
-     * @throws E if the action throws an exception
+     * @throws E if {@code action} throws while processing a matrix element
      */
     public <E extends Exception> void forEach(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
             final Throwables.ShortConsumer<E> action) throws IndexOutOfBoundsException, IllegalArgumentException, E {
@@ -3970,7 +4135,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
 
     /**
      * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1, 2]\n[3, 4]"}); a
-     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #appendTo(Appendable)}.
+     * zero-row matrix renders {@code "[]"}. Supplies the rendering for {@link #println()}.
      *
      * @return the formatted multi-line representation of this matrix
      */

@@ -57,6 +57,41 @@ import com.landawn.abacus.util.stream.Stream;
 
 class MatricesTest extends TestBase {
 
+    @Test
+    void commonTypeInferenceRanksDistanceBeforeSpecificity() {
+        final java.io.Closeable closeable = () -> { };
+        final java.nio.channels.Channel channel = new java.nio.channels.Channel() {
+            @Override
+            public boolean isOpen() {
+                return true;
+            }
+
+            @Override
+            public void close() {
+                // No resources are owned by this inference fixture.
+            }
+        };
+        final Class<?> leftType = closeable.getClass();
+        final Class<?> rightType = channel.getClass();
+        assertTrue(java.io.Closeable.class.isAssignableFrom(leftType));
+        assertTrue(java.io.Closeable.class.isAssignableFrom(rightType));
+        assertEquals(Object.class, Matrices.resolveCommonAssignableType(leftType, rightType));
+        assertEquals(Object.class, Matrices.resolveCommonAssignableType(rightType, leftType));
+
+        final Matrix<Object> left = Matrix.wrap((Object[][]) java.lang.reflect.Array.newInstance(leftType, 1, 1));
+        final Matrix<Object> right = Matrix.wrap((Object[][]) java.lang.reflect.Array.newInstance(rightType, 1, 1));
+        left.set(0, 0, closeable);
+        right.set(0, 0, channel);
+
+        assertEquals(Object.class, left.stackVertically(right).elementType());
+        assertEquals(Object.class, left.stackHorizontally(right).elementType());
+        assertEquals(Object.class, Matrices.zip(List.of(left, right), (a, b) -> a).elementType());
+
+        final Matrix<java.io.Closeable> typedLeft = Matrix.copyOf(java.io.Closeable.class, new java.io.Closeable[][] { { closeable } });
+        final Matrix<java.io.Closeable> typedRight = Matrix.copyOf(java.io.Closeable.class, new java.io.Closeable[][] { { channel } });
+        assertEquals(java.io.Closeable.class, typedLeft.stackVertically(typedRight, java.io.Closeable.class).elementType());
+    }
+
     private ByteMatrix byteMatrix1;
     private ByteMatrix byteMatrix2;
     private ByteMatrix byteMatrix3;
@@ -500,8 +535,8 @@ class MatricesTest extends TestBase {
 
     @Test
     public void testCollectionStack_shapeMismatchAtNonAdjacentPosition_throwsIAE() {
-        // The mismatch surfaces inside the balanced-round pairing, a different path than the
-        // binary overloads, so put the bad matrix at a non-adjacent position (3rd of 4).
+        // Put the incompatible matrix beyond the first pair so collection validation must inspect
+        // every input, including the third of four matrices.
         IntMatrix row1 = IntMatrix.wrap(new int[][] { { 1, 2 } });
         IntMatrix row2 = IntMatrix.wrap(new int[][] { { 3, 4 } });
         IntMatrix badColumns = IntMatrix.wrap(new int[][] { { 5, 6, 7 } });
@@ -513,6 +548,25 @@ class MatricesTest extends TestBase {
         IntMatrix badRows = IntMatrix.wrap(new int[][] { { 5 } });
         IntMatrix column3 = IntMatrix.wrap(new int[][] { { 6 }, { 7 } });
         assertThrows(IllegalArgumentException.class, () -> Matrices.stackHorizontally(List.of(column1, column2, badRows, column3)));
+    }
+
+    @Test
+    public void testMixedStorageCollectionStackRejectsLaterShapeMismatchAndOverflow() {
+        final Matrix<Number> first = Matrix.wrap(new Integer[][] { { 1 } });
+        final Matrix<Number> second = Matrix.wrap(new Double[][] { { 2.0 } });
+        final Matrix<Number> badColumns = Matrix.wrap(new Long[][] { { 3L, 4L } });
+        final Matrix<Number> badRows = Matrix.wrap(new Float[][] { { 3f }, { 4f } });
+
+        assertThrows(IllegalArgumentException.class, () -> Matrices.stackVertically(List.of(first, second, badColumns)));
+        assertThrows(IllegalArgumentException.class, () -> Matrices.stackHorizontally(List.of(first, second, badRows)));
+
+        // Zero rows allow testing column-count overflow without allocating enormous arrays.
+        final Matrix<Object> almostFull = Matrix.<Object>wrap(new String[0][0]).resize(0, Integer.MAX_VALUE - 1);
+        final Matrix<Object> oneMore = Matrix.<Object>wrap(new Integer[0][0]).resize(0, 1);
+        final Matrix<Object> overflowing = Matrix.<Object>wrap(new Long[0][0]).resize(0, 1);
+        final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
+                () -> Matrices.stackHorizontally(List.of(almostFull, oneMore, overflowing)));
+        assertEquals("Merged column count overflow: 2147483647 + 1 = 2147483648", failure.getMessage());
     }
 
     @Test

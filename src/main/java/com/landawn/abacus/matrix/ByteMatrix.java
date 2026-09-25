@@ -105,15 +105,44 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         super(N.checkArgNotNull(a, "Matrix array cannot be null"), byte.class);
     }
 
-    ByteMatrix(final byte[][] a, final int columnCount) {
+    /**
+     * Constructs a matrix with an explicit column count, including a matrix with no rows.
+     *
+     * @param a the rectangular, non-null array of distinct, non-null row arrays
+     * @param columnCount the non-negative logical column count
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if {@code columnCount} is negative,
+     *         if a row is {@code null} or its length differs from {@code columnCount}, or if two rows are the same array
+     */
+    ByteMatrix(final byte[][] a, final int columnCount) throws IllegalArgumentException {
         super(N.checkArgNotNull(a, "Matrix array cannot be null"), byte.class, columnCount);
     }
 
-    private ByteMatrix(final byte[][] a, final int columnCount, final boolean rowsAreKnownDistinct) {
+    /**
+     * Constructs a matrix with an optional guarantee that its row arrays are distinct.
+     *
+     * @param a the rectangular, non-null array of non-null row arrays
+     * @param columnCount the non-negative logical column count
+     * @param rowsAreKnownDistinct whether callers guarantee that no row array is repeated
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if {@code columnCount} is negative,
+     *         if a row is {@code null} or its length differs from {@code columnCount}, or if rows are repeated
+     *         when {@code rowsAreKnownDistinct} is {@code false}
+     */
+    private ByteMatrix(final byte[][] a, final int columnCount, final boolean rowsAreKnownDistinct) throws IllegalArgumentException {
         super(N.checkArgNotNull(a, "Matrix array cannot be null"), byte.class, columnCount, rowsAreKnownDistinct);
     }
 
-    static ByteMatrix wrapResult(final byte[][] a, final int columnCount) {
+    /**
+     * Wraps a derived result whose row arrays are known to be distinct.
+     *
+     * @param a the non-null rectangular result array with distinct, non-null rows
+     * @param columnCount the non-negative logical column count
+     * @return the shared empty matrix for a {@code 0 x 0} result, otherwise a new matrix
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if {@code columnCount} is negative, if a row is {@code null},
+     *         or if a row length differs from {@code columnCount}
+     */
+    static ByteMatrix wrapResult(final byte[][] a, final int columnCount) throws IllegalArgumentException {
+        N.checkArgNotNull(a, cs.a);
+
         // Every wrapResult(...) call site (here, in Matrix and in Matrices) passes freshly allocated rows, so they are
         // identity-distinct by construction and the duplicate-row scan can be skipped.
         return a.length == 0 && columnCount == 0 ? EMPTY_BYTE_MATRIX : new ByteMatrix(a, columnCount, true);
@@ -205,6 +234,14 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
             return EMPTY_BYTE_MATRIX;
         }
 
+        N.checkArgument(a[0] != null, "Row 0 cannot be null");
+        final int columnCount = a[0].length;
+
+        for (int i = 1; i < a.length; i++) {
+            N.checkArgument(a[i] != null, "Row {} cannot be null", i);
+            N.checkArgument(a[i].length == columnCount, MSG_NOT_RECTANGULAR, columnCount, i, a[i].length);
+        }
+
         final byte[][] c = new byte[a.length][];
 
         for (int i = 0, len = a.length; i < len; i++) {
@@ -247,8 +284,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param randomGenerator the random source; must not be {@code null}
      * @return the generated single-row matrix
      * @throws IllegalArgumentException if {@code columnCount} is negative, or if {@code randomGenerator} is {@code null}
+     * @throws RuntimeException if {@code randomGenerator.nextInt(int)} fails while generating a matrix element
      */
-    public static ByteMatrix randomRow(final int columnCount, final RandomGenerator randomGenerator) throws IllegalArgumentException {
+    public static ByteMatrix randomRow(final int columnCount, final RandomGenerator randomGenerator) throws IllegalArgumentException, RuntimeException {
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.columnCount, columnCount);
 
         return random(1, columnCount, randomGenerator);
@@ -288,8 +326,10 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param randomGenerator the random source; must not be {@code null}
      * @return a matrix with the requested shape, including a shape-preserving {@code 0 x N} result
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative, or if {@code randomGenerator} is {@code null}
+     * @throws RuntimeException if {@code randomGenerator.nextInt(int)} fails while generating a matrix element
      */
-    public static ByteMatrix random(final int rowCount, final int columnCount, final RandomGenerator randomGenerator) throws IllegalArgumentException {
+    public static ByteMatrix random(final int rowCount, final int columnCount, final RandomGenerator randomGenerator)
+            throws IllegalArgumentException, RuntimeException {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, cs.rowCount, rowCount);
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.columnCount, columnCount);
         N.checkArgNotNull(randomGenerator, cs.randomGenerator);
@@ -589,7 +629,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
      * @return the byte element at position {@code (rowIndex, columnIndex)}
-     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount},
+     *         or if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     public byte get(final int rowIndex, final int columnIndex) throws ArrayIndexOutOfBoundsException {
         return a[rowIndex][columnIndex];
@@ -611,7 +652,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param point the point containing row and column indices (must not be {@code null})
      * @return the byte element at the specified point
      * @throws IllegalArgumentException if {@code point} is {@code null}
-     * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
+     * @throws ArrayIndexOutOfBoundsException if {@code point.rowIndex()} is outside {@code [0, rowCount)},
+     *         or if {@code point.columnIndex()} is outside {@code [0, columnCount)}
      * @see #get(int, int)
      */
     public byte get(final Point point) throws IllegalArgumentException, ArrayIndexOutOfBoundsException {
@@ -637,7 +679,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param rowIndex the row index (0-based)
      * @param columnIndex the column index (0-based)
      * @param value the new byte value to store at the specified position
-     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws ArrayIndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount},
+     *         or if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     public void set(final int rowIndex, final int columnIndex, final byte value) throws ArrayIndexOutOfBoundsException {
         a[rowIndex][columnIndex] = value;
@@ -661,7 +704,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param point the point containing row and column indices (must not be {@code null})
      * @param value the new byte value to set at the specified point
      * @throws IllegalArgumentException if {@code point} is {@code null}
-     * @throws ArrayIndexOutOfBoundsException if the point coordinates are out of bounds
+     * @throws ArrayIndexOutOfBoundsException if {@code point.rowIndex()} is outside {@code [0, rowCount)},
+     *         or if {@code point.columnIndex()} is outside {@code [0, columnCount)}
      * @see #set(int, int, byte)
      */
     public void set(final Point point, final byte value) throws IllegalArgumentException, ArrayIndexOutOfBoundsException {
@@ -690,7 +734,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param columnIndex the column index of the reference cell (0-based)
      * @return an {@link OptionalByte} containing the element at position {@code (rowIndex - 1, columnIndex)},
      *         or empty if {@code rowIndex == 0}
-     * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount},
+     *         or if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     public OptionalByte valueAbove(final int rowIndex, final int columnIndex) throws IndexOutOfBoundsException {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -718,7 +763,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param columnIndex the column index of the reference cell (0-based)
      * @return an {@link OptionalByte} containing the element at position {@code (rowIndex + 1, columnIndex)},
      *         or empty if {@code rowIndex == rowCount - 1}
-     * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount},
+     *         or if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     public OptionalByte valueBelow(final int rowIndex, final int columnIndex) throws IndexOutOfBoundsException {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -746,7 +792,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param columnIndex the column index of the reference cell (0-based)
      * @return an {@link OptionalByte} containing the element at position {@code (rowIndex, columnIndex - 1)},
      *         or empty if {@code columnIndex == 0}
-     * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount},
+     *         or if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     public OptionalByte valueLeft(final int rowIndex, final int columnIndex) throws IndexOutOfBoundsException {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -774,7 +821,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param columnIndex the column index of the reference cell (0-based)
      * @return an {@link OptionalByte} containing the element at position {@code (rowIndex, columnIndex + 1)},
      *         or empty if {@code columnIndex == columnCount - 1}
-     * @throws IndexOutOfBoundsException if {@code rowIndex} or {@code columnIndex} is out of bounds
+     * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount},
+     *         or if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      */
     public OptionalByte valueRight(final int rowIndex, final int columnIndex) throws IndexOutOfBoundsException {
         checkRowColumnIndex(rowIndex, columnIndex);
@@ -966,6 +1014,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p>The operator is applied to each element in the specified row sequentially
      * from left to right (column {@code 0} to column {@code columnCount - 1}).</p>
      *
+     * <p>If {@code operator} throws, updates already completed are retained; this method does not
+     * roll back changes.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.wrap(new byte[][] {{1, 2, 3}, {4, 5, 6}});
@@ -985,7 +1036,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *             element value and returns the new value
      * @throws IndexOutOfBoundsException if {@code rowIndex < 0} or {@code rowIndex >= rowCount}
      * @throws IllegalArgumentException if {@code operator} is {@code null}
-     * @throws E if the operator throws an exception
+     * @throws E if {@code operator} throws while transforming a matrix element
      */
     public <E extends Exception> void updateRow(final int rowIndex, final Throwables.ByteUnaryOperator<E> operator)
             throws IndexOutOfBoundsException, IllegalArgumentException, E {
@@ -1006,6 +1057,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p>The operator is applied to each element in the specified column sequentially
      * from top to bottom (row {@code 0} to row {@code rowCount - 1}).</p>
      *
+     * <p>If {@code operator} throws, updates already completed are retained; this method does not
+     * roll back changes.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.wrap(new byte[][] {{1, 2, 3}, {4, 5, 6}});
@@ -1025,7 +1079,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *             element value and returns the new value
      * @throws IndexOutOfBoundsException if {@code columnIndex < 0} or {@code columnIndex >= columnCount}
      * @throws IllegalArgumentException if {@code operator} is {@code null}
-     * @throws E if the operator throws an exception
+     * @throws E if {@code operator} throws while transforming a matrix element
      */
     public <E extends Exception> void updateColumn(final int columnIndex, final Throwables.ByteUnaryOperator<E> operator)
             throws IndexOutOfBoundsException, IllegalArgumentException, E {
@@ -1090,7 +1144,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * }</pre>
      *
      * @param mainDiagonal the new values; length must equal {@code min(rowCount, columnCount)}
-     * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null} or has the wrong length
+     * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null} or its length differs from
+     *         {@code min(rowCount, columnCount)}
      */
     @Override
     public void setMainDiagonal(final byte[] mainDiagonal) throws IllegalArgumentException {
@@ -1107,6 +1162,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * Updates the values on the main diagonal (upper-left to lower-right) by applying the specified operator.
      * Rectangular matrices are supported; exactly {@code min(rowCount, columnCount)} cells are updated.
      *
+     * <p>If {@code operator} throws, updates already completed are retained; this method does not
+     * roll back changes.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.wrap(new byte[][] {{1, 2}, {3, 4}});
@@ -1122,7 +1180,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param <E> the type of exception that the operator may throw
      * @param operator the operator to apply to each diagonal element; receives current element value and returns new value
      * @throws IllegalArgumentException if {@code operator} is {@code null}
-     * @throws E if the operator throws an exception
+     * @throws E if {@code operator} throws while transforming a matrix element
      */
     public <E extends Exception> void updateMainDiagonal(final Throwables.ByteUnaryOperator<E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, cs.operator);
@@ -1193,7 +1251,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * }</pre>
      *
      * @param antiDiagonal the new values; length must equal {@code min(rowCount, columnCount)}
-     * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null} or has the wrong length
+     * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null} or its length differs from
+     *         {@code min(rowCount, columnCount)}
      */
     @Override
     public void setAntiDiagonal(final byte[] antiDiagonal) throws IllegalArgumentException {
@@ -1211,6 +1270,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * Updates the values on the anti-diagonal (upper-right to lower-left) by applying the specified operator.
      * Rectangular matrices are supported; exactly {@code min(rowCount, columnCount)} cells are updated.
      *
+     * <p>If {@code operator} throws, updates already completed are retained; this method does not
+     * roll back changes.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.wrap(new byte[][] {{1, 2}, {3, 4}});
@@ -1226,7 +1288,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param <E> the type of exception that the operator may throw
      * @param operator the operator to apply to each anti-diagonal element; receives current element value and returns new value
      * @throws IllegalArgumentException if {@code operator} is {@code null}
-     * @throws E if the operator throws an exception
+     * @throws E if {@code operator} throws while transforming a matrix element
      */
     public <E extends Exception> void updateAntiDiagonal(final Throwables.ByteUnaryOperator<E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, cs.operator);
@@ -1245,6 +1307,10 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
      * When this operation is not parallelized, elements are processed in row-major order; when it is
      * parallelized, the encounter order is unspecified.</p>
+     *
+     * <p>If {@code operator} throws, updates already completed are retained; this method does not
+     * roll back changes. Sequential traversal stops at the failing call. During parallel execution,
+     * other callbacks may already be running when a failure occurs.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1266,7 +1332,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param operator the operator to apply to each element; receives the current element value
      *             and returns the new value
      * @throws IllegalArgumentException if {@code operator} is {@code null}
-     * @throws E if the operator throws an exception
+     * @throws E if {@code operator} throws while transforming a matrix element
      */
     public <E extends Exception> void updateAll(final Throwables.ByteUnaryOperator<E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, cs.operator);
@@ -1295,6 +1361,10 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * for that position. This is useful for initializing matrices based on position patterns or
      * mathematical formulas. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
      *
+     * <p>If {@code mapper} throws, updates already completed are retained; this method does not
+     * roll back changes. Sequential traversal stops at the failing call. During parallel execution,
+     * other callbacks may already be running when a failure occurs.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.wrap(new byte[][] {{0, 0}, {0, 0}});
@@ -1316,11 +1386,11 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *             the new value for that position; the returned {@code Byte} is unboxed, so it
      *             must not be {@code null}
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
+     * @throws E if {@code mapper} throws while mapping matrix coordinates
      * @throws NullPointerException if {@code mapper} returns {@code null} for any position
-     * @throws E if the mapper throws an exception
      */
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends Byte, E> mapper)
-            throws IllegalArgumentException, NullPointerException, E {
+            throws IllegalArgumentException, E, NullPointerException {
         N.checkArgNotNull(mapper, cs.mapper);
 
         final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
@@ -1333,6 +1403,10 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * This modifies the matrix directly.
      *
      * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.</p>
+     *
+     * <p>If {@code predicate} throws, updates already completed are retained; this method does not
+     * roll back changes. Sequential traversal stops at the failing call. During parallel execution,
+     * other callbacks may already be running when a failure occurs.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1353,7 +1427,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *                  {@code true} will be replaced
      * @param newValue the value to use for replacing matching elements
      * @throws IllegalArgumentException if {@code predicate} is {@code null}
-     * @throws E if the predicate throws an exception
+     * @throws E if {@code predicate} throws while testing a matrix element
      */
     public <E extends Exception> void replaceIf(final Throwables.BytePredicate<E> predicate, final byte newValue) throws IllegalArgumentException, E {
         N.checkArgNotNull(predicate, cs.predicate);
@@ -1386,6 +1460,10 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * <p>Nonmatching positions perform no write.</p>
      *
+     * <p>If {@code predicate} throws, updates already completed are retained; this method does not
+     * roll back changes. Sequential traversal stops at the failing call. During parallel execution,
+     * other callbacks may already be running when a failure occurs.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.wrap(new byte[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
@@ -1406,7 +1484,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *                  at positions for which this returns {@code true} will be replaced
      * @param newValue the value to use for replacing matching elements
      * @throws IllegalArgumentException if {@code predicate} is {@code null}
-     * @throws E if the predicate throws an exception
+     * @throws E if {@code predicate} throws while testing matrix coordinates
      */
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final byte newValue) throws IllegalArgumentException, E {
         N.checkArgNotNull(predicate, cs.predicate);
@@ -1446,7 +1524,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *             and returns the transformed value
      * @return a new ByteMatrix with transformed values
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
-     * @throws E if the function throws an exception
+     * @throws E if {@code mapper} throws while mapping a matrix element
      * @see #updateAll(Throwables.ByteUnaryOperator)
      */
     public <E extends Exception> ByteMatrix map(final Throwables.ByteUnaryOperator<E> mapper) throws IllegalArgumentException, E {
@@ -1482,13 +1560,16 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param <E> the type of exception that the function may throw
      * @param mapper the function to convert byte values to type {@code R}
      * @param targetElementType the {@code Class} object for type {@code R} (used to allocate the
-     *        {@code R[][]} backing array); must not be {@code null}
+     *        {@code R[][]} backing array); must not be {@code null} or {@code void.class}
      * @return a new {@link Matrix Matrix&lt;R&gt;} containing the mapped values
-     * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null}
-     * @throws E if the function throws an exception
+     * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null},
+     *         or if {@code targetElementType} is {@code void.class} or an array type with 254 or more dimensions
+     * @throws E if {@code mapper} throws while mapping a matrix element
+     * @throws ArrayStoreException if a mapped value cannot be stored in an array of {@code targetElementType}
+     *         (or its wrapper type for a primitive class)
      */
     public <R, E extends Exception> Matrix<R> mapToObj(final Throwables.ByteFunction<? extends R, E> mapper, final Class<R> targetElementType)
-            throws IllegalArgumentException, E {
+            throws IllegalArgumentException, E, ArrayStoreException {
         N.checkArgNotNull(mapper, cs.mapper);
         N.checkArgNotNull(targetElementType, cs.targetElementType);
 
@@ -1694,9 +1775,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @return a new {@code ByteMatrix} containing the specified submatrix
-     * @throws IndexOutOfBoundsException if any range is invalid (e.g. {@code fromRowIndex < 0},
-     *         {@code toRowIndex > rowCount}, {@code fromColumnIndex < 0}, {@code toColumnIndex > columnCount},
-     *         or {@code from > to} for either range)
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount},
+     *         {@code fromRowIndex > toRowIndex}, {@code fromColumnIndex < 0},
+     *         {@code toColumnIndex > columnCount}, or {@code fromColumnIndex > toColumnIndex}
      */
     @Override
     public ByteMatrix copyRegion(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex)
@@ -2556,7 +2637,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param action the operation to apply to the temporary flattened array
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws ArithmeticException if the element count exceeds {@link Integer#MAX_VALUE}
-     * @throws E if the operation throws an exception
+     * @throws E if {@code action} throws while modifying the temporary flattened array
      * @see Arrays#mutateViaFlatArray(byte[][], Throwables.Consumer)
      */
     @Override
@@ -3019,7 +3100,15 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         return wrapResult(result, newColumnCount);
     }
 
-    private static byte toByteExact(final long value) {
+    /**
+     * Narrows a value to {@code byte} without overflow.
+     *
+     * @param value the value to narrow
+     * @return the value as a {@code byte}
+     * @throws ArithmeticException if {@code value} is less than {@link Byte#MIN_VALUE}
+     *         or greater than {@link Byte#MAX_VALUE}
+     */
+    private static byte toByteExact(final long value) throws ArithmeticException {
         if (value < Byte.MIN_VALUE || value > Byte.MAX_VALUE) {
             throw new ArithmeticException("byte overflow: " + value);
         }
@@ -3239,7 +3328,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @return a new {@code ByteMatrix} with the results of the element-wise operation
      * @throws IllegalArgumentException if {@code other} is {@code null}, if the matrices have different shapes,
      *         or if {@code zipFunction} is {@code null}
-     * @throws E if the zip function throws an exception
+     * @throws E if {@code zipFunction} throws while combining corresponding matrix elements
      * @see #zipWith(ByteMatrix, ByteMatrix, Throwables.ByteTernaryOperator)
      */
     public <E extends Exception> ByteMatrix zipWith(final ByteMatrix other, final Throwables.ByteBinaryOperator<E> zipFunction)
@@ -3298,7 +3387,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @throws IllegalArgumentException if {@code other} is {@code null} or its shape differs from this matrix's shape,
      *         if {@code third} is {@code null} or its shape differs from this matrix's shape,
      *         or if {@code zipFunction} is {@code null}
-     * @throws E if the zip function throws an exception
+     * @throws E if {@code zipFunction} throws while combining corresponding matrix elements
      * @see #zipWith(ByteMatrix, Throwables.ByteBinaryOperator)
      */
     public <E extends Exception> ByteMatrix zipWith(final ByteMatrix other, final ByteMatrix third, final Throwables.ByteTernaryOperator<E> zipFunction)
@@ -3325,6 +3414,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     /**
      * Returns a stream of elements on the main diagonal (upper-left to lower-right).
      * Rectangular matrices are supported; the stream length is {@code min(rowCount, columnCount)}.
+     *
+     * <p>The stream reads this matrix's live backing storage as elements are consumed; it does not
+     * snapshot cell values. Changes made before an element is read are visible in the traversal.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3356,8 +3448,13 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
                 return cursor < toIndex;
             }
 
+            /**
+             * {@inheritDoc}
+             *
+             * @throws NoSuchElementException if no elements remain in this iterator
+             */
             @Override
-            public byte nextByte() {
+            public byte nextByte() throws NoSuchElementException {
                 if (cursor >= toIndex) {
                     throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                 }
@@ -3386,6 +3483,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     /**
      * Returns a stream of elements on the anti-diagonal (upper-right to lower-left).
      * Rectangular matrices are supported; the stream length is {@code min(rowCount, columnCount)}.
+     *
+     * <p>The stream reads this matrix's live backing storage as elements are consumed; it does not
+     * snapshot cell values. Changes made before an element is read are visible in the traversal.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3417,8 +3517,13 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
                 return cursor < toIndex;
             }
 
+            /**
+             * {@inheritDoc}
+             *
+             * @throws NoSuchElementException if no elements remain in this iterator
+             */
             @Override
-            public byte nextByte() {
+            public byte nextByte() throws NoSuchElementException {
                 if (cursor >= toIndex) {
                     throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                 }
@@ -3454,6 +3559,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * without concern for their row/column positions. The stream supports all
      * standard ByteStream operations including sum, average, filter, map, etc.</p>
      *
+     * <p>The stream reads this matrix's live backing storage as elements are consumed; it does not
+     * snapshot cell values. Changes made before an element is read are visible in the traversal.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.wrap(new byte[][] {{1, 2}, {3, 4}});
@@ -3479,6 +3587,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p>This method allows for efficient processing of a subset of matrix rows.
      * The stream maintains the row-major order, meaning all elements from one row
      * are streamed before moving to the next row.</p>
+     *
+     * <p>The stream reads this matrix's live backing storage as elements are consumed; it does not
+     * snapshot cell values. Changes made before an element is read are visible in the traversal.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3512,8 +3623,13 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
                 return i < toRowIndex;
             }
 
+            /**
+             * {@inheritDoc}
+             *
+             * @throws NoSuchElementException if no elements remain in this iterator
+             */
             @Override
-            public byte nextByte() {
+            public byte nextByte() throws NoSuchElementException {
                 if (i >= toRowIndex) {
                     throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                 }
@@ -3551,8 +3667,14 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
                 return remaining;
             }
 
+            /**
+             * {@inheritDoc}
+             *
+             * @throws IllegalStateException if the number of remaining elements exceeds {@link Integer#MAX_VALUE};
+             *         no elements are consumed
+             */
             @Override
-            public byte[] toArray() {
+            public byte[] toArray() throws IllegalStateException {
                 final int len = toArrayLength((long) (toRowIndex - i) * columnCount - j);
                 final byte[] c = new byte[len];
                 int k = 0;
@@ -3581,6 +3703,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p>This method provides an alternative way to iterate through matrix
      * elements compared to the row-major order of {@link #rowMajorStream()}.</p>
      *
+     * <p>The stream reads this matrix's live backing storage as elements are consumed; it does not
+     * snapshot cell values. Changes made before an element is read are visible in the traversal.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.wrap(new byte[][] {{1, 2}, {3, 4}});
@@ -3605,6 +3730,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * <p>This method allows for efficient processing of a
      * subset of matrix columns in column-major order.</p>
+     *
+     * <p>The stream reads this matrix's live backing storage as elements are consumed; it does not
+     * snapshot cell values. Changes made before an element is read are visible in the traversal.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3640,8 +3768,13 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
                 return j < toColumnIndex;
             }
 
+            /**
+             * {@inheritDoc}
+             *
+             * @throws NoSuchElementException if no elements remain in this iterator
+             */
             @Override
-            public byte nextByte() {
+            public byte nextByte() throws NoSuchElementException {
                 if (j >= toColumnIndex) {
                     throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                 }
@@ -3680,8 +3813,14 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
                 return remaining;
             }
 
+            /**
+             * {@inheritDoc}
+             *
+             * @throws IllegalStateException if the number of remaining elements exceeds {@link Integer#MAX_VALUE};
+             *         no elements are consumed
+             */
             @Override
-            public byte[] toArray() {
+            public byte[] toArray() throws IllegalStateException {
                 final int len = toArrayLength((long) (toColumnIndex - j) * rowCount - i);
                 final byte[] c = new byte[len];
 
@@ -3709,6 +3848,10 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * <p>This yields one stream per row. To instead stream the elements of a single row as one
      * flat stream, use {@link #rowMajorStream(int, int) rowMajorStream(rowIndex, rowIndex + 1)}.</p>
+     *
+     * <p>Each inner stream binds to the backing row selected when that inner stream is produced.
+     * Later row swaps do not retarget an already produced row stream; cell changes in its backing
+     * row remain visible.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3738,6 +3881,10 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * <p>This method allows for processing a subset of rows while maintaining the
      * ability to work with complete rows as individual streams.</p>
+     *
+     * <p>Each inner stream binds to the backing row selected when that inner stream is produced.
+     * Later row swaps do not retarget an already produced row stream; cell changes in its backing
+     * row remain visible.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3770,8 +3917,13 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
                 return cursor < toIndex;
             }
 
+            /**
+             * {@inheritDoc}
+             *
+             * @throws NoSuchElementException if no elements remain in this iterator
+             */
             @Override
-            public ByteStream next() {
+            public ByteStream next() throws NoSuchElementException {
                 if (cursor >= toIndex) {
                     throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                 }
@@ -3808,6 +3960,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p>This yields one stream per column. To instead stream the elements of a single column as one
      * flat stream, use {@link #columnMajorStream(int, int) columnMajorStream(columnIndex, columnIndex + 1)}.</p>
      *
+     * <p>Each inner stream reads its column from this matrix as it is consumed, so later cell changes
+     * and row swaps are visible.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
      * ByteMatrix matrix = ByteMatrix.wrap(new byte[][] {{1, 2, 3}, {4, 5, 6}});
@@ -3835,6 +3990,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * <p>This method allows for processing a subset of columns
      * while maintaining the ability to work with complete columns as individual streams.</p>
+     *
+     * <p>Each inner stream reads its column from this matrix as it is consumed, so later cell changes
+     * and row swaps are visible.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3868,8 +4026,13 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
                 return cursor < toIndex;
             }
 
+            /**
+             * {@inheritDoc}
+             *
+             * @throws NoSuchElementException if no elements remain in this iterator
+             */
             @Override
-            public ByteStream next() {
+            public ByteStream next() throws NoSuchElementException {
                 if (cursor >= toIndex) {
                     throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                 }
@@ -3884,8 +4047,13 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
                         return cursor2 < toIndex2;
                     }
 
+                    /**
+                     * {@inheritDoc}
+                     *
+                     * @throws NoSuchElementException if no elements remain in this iterator
+                     */
                     @Override
-                    public byte nextByte() {
+                    public byte nextByte() throws NoSuchElementException {
                         if (cursor2 >= toIndex2) {
                             throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                         }
@@ -3948,8 +4116,11 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * <p>The operation may be parallelized internally for large matrices to improve performance,
      * based on internal heuristics. If parallelized, the order of execution is not guaranteed,
-     * but all elements will be processed exactly once. If parallelized, {@code action} must be
-     * thread-safe.</p>
+     * but all elements are processed exactly once on successful completion. If parallelized,
+     * {@code action} must be thread-safe.</p>
+     *
+     * <p>If {@code action} throws, sequential traversal stops at the failing call. During parallel
+     * execution, other callbacks may already be running when a failure occurs.</p>
      *
      * <p><b>Note:</b> This method is for side-effect operations only (like printing, collecting,
      * or accumulating). Use {@link #map(Throwables.ByteUnaryOperator)} to create a new matrix,
@@ -3976,7 +4147,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param <E> the type of exception that the action may throw
      * @param action the action to be performed for each element; receives each element value
      * @throws IllegalArgumentException if {@code action} is {@code null}
-     * @throws E if the action throws an exception
+     * @throws E if {@code action} throws while processing a matrix element
      * @see #forEach(int, int, int, int, Throwables.ByteConsumer)
      */
     public <E extends Exception> void forEach(final Throwables.ByteConsumer<E> action) throws IllegalArgumentException, E {
@@ -3992,8 +4163,11 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * <p>This method allows for processing a rectangular subset of the matrix.
      * The operation may be parallelized internally if the sub-matrix is large enough
      * to benefit from parallel processing; if parallelized, the order in which elements are
-     * visited is unspecified and the action must be thread-safe, but every element is still
-     * visited exactly once.</p>
+     * visited is unspecified and the action must be thread-safe, but every selected element is
+     * visited exactly once on successful completion.</p>
+     *
+     * <p>If {@code action} throws, sequential traversal stops at the failing call. During parallel
+     * execution, other callbacks may already be running when a failure occurs.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -4020,7 +4194,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount}, or {@code fromRowIndex > toRowIndex},
      *         or if {@code fromColumnIndex < 0}, {@code toColumnIndex > columnCount}, or {@code fromColumnIndex > toColumnIndex}
      * @throws IllegalArgumentException if {@code action} is {@code null}
-     * @throws E if the action throws an exception
+     * @throws E if {@code action} throws while processing a matrix element
      */
     public <E extends Exception> void forEach(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
             final Throwables.ByteConsumer<E> action) throws IndexOutOfBoundsException, IllegalArgumentException, E {
@@ -4044,7 +4218,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
 
     /**
      * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1, 2]\n[3, 4]"}); a
-     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #appendTo(Appendable)}.
+     * zero-row matrix renders {@code "[]"}. Supplies the rendering for {@link #println()}.
      *
      * @return the formatted multi-line representation of this matrix
      */

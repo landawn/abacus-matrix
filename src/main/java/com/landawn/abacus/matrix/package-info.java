@@ -90,7 +90,7 @@
  *
  * <h2>Null handling</h2>
  *
- * <p>A {@code null} argument that a method does not accept is rejected with {@code IllegalArgumentException}
+ * <p>The public matrix operations reject a {@code null} argument they do not accept with {@code IllegalArgumentException}
  * rather than {@code NullPointerException}. The same applies to a {@code null} element of an array or collection
  * argument that must be null-free, such as a {@code null} row passed to a constructor or factory, or a
  * {@code null} matrix in a collection passed to the {@link com.landawn.abacus.matrix.Matrices} stacking and
@@ -108,7 +108,10 @@
  * whose mapper returns a boxed value and to {@code Matrices.zipToInt}, {@code zipToLong}, and
  * {@code zipToDouble}. Each of these methods documents the exception. The element iterators of the
  * object-valued streams also follow the inherited {@code toArray(A[])} contract and throw
- * {@code NullPointerException} for a {@code null} target array.</p>
+ * {@code NullPointerException} for a {@code null} target array. Enum methods such as
+ * {@link com.landawn.abacus.matrix.ParallelMode#valueOf(String)} retain their standard Java null handling.
+ * A {@code NullPointerException} thrown by a caller-supplied callback or output destination is not
+ * converted into an argument-validation exception.</p>
  *
  * <h2>Traversal and parallel execution</h2>
  *

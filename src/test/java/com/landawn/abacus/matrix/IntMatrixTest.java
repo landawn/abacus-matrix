@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -6723,4 +6724,151 @@ class IntMatrixTest extends TestBase {
         assertThrows(IllegalArgumentException.class, () -> IntMatrix.range(max, min, -1));
         assertThrows(IllegalArgumentException.class, () -> IntMatrix.rangeClosed(min, max, 2));
     }
+
+    @Test
+    public void testInPlaceCallbacksRetainCompletedUpdatesWhenTheyThrow() {
+        final IllegalStateException failure = new IllegalStateException("stop at the second element");
+        final Throwables.IntUnaryOperator<RuntimeException> operator = value -> {
+            if (value == 2) {
+                throw failure;
+            }
+            return value * 10;
+        };
+        final List<Throwables.Consumer<IntMatrix, RuntimeException>> updates = List.of(
+                m -> m.updateRow(0, operator),
+                m -> m.updateColumn(0, operator),
+                m -> m.updateMainDiagonal(operator),
+                m -> m.updateAntiDiagonal(operator),
+                m -> m.updateAll(operator),
+                m -> m.updateAll((i, j) -> operator.applyAsInt(m.get(i, j))),
+                m -> m.replaceIf(value -> operator.applyAsInt(value) > 0, 10),
+                m -> m.replaceIf((i, j) -> operator.applyAsInt(m.get(i, j)) > 0, 10));
+
+        Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
+            for (int operation = 0; operation < updates.size(); operation++) {
+                final IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 1 }, { 2, 2, 2 }, { 1, 2, 1 } });
+                final Throwables.Consumer<IntMatrix, RuntimeException> update = updates.get(operation);
+                assertSame(failure, assertThrows(IllegalStateException.class, () -> update.accept(m)));
+                final int[][] expected = { { 1, 2, 1 }, { 2, 2, 2 }, { 1, 2, 1 } };
+                expected[0][operation == 3 ? 2 : 0] = 10;
+                assertEquals(IntMatrix.wrap(expected), m, "operation " + operation);
+            }
+        });
+    }
+
+    @Test
+    public void testStreamsObserveLiveValuesAndRowStreamsKeepTheirSelectedBackingRow() {
+        final IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
+        try (var rowStreams = m.rowStreams(0, 2);
+                var columnStreams = m.columnStreams(0, 2);
+                var rowMajor = m.rowMajorStream(0, 2);
+                var columnMajor = m.columnMajorStream(0, 2);
+                var mainDiagonal = m.mainDiagonalStream();
+                var antiDiagonal = m.antiDiagonalStream()) {
+            final var rows = rowStreams.iterator();
+            final var columns = columnStreams.iterator();
+            try (var selectedRow = rows.next(); var selectedColumn = columns.next()) {
+                m.flipVerticallyInPlace();
+                m.set(1, 0, 9);
+                assertArrayEquals(new int[] { 9, 2 }, selectedRow.toArray());
+                assertArrayEquals(new int[] { 3, 9 }, selectedColumn.toArray());
+                assertArrayEquals(new int[] { 3, 4, 9, 2 }, rowMajor.toArray());
+                assertArrayEquals(new int[] { 3, 9, 4, 2 }, columnMajor.toArray());
+                assertArrayEquals(new int[] { 3, 2 }, mainDiagonal.toArray());
+                assertArrayEquals(new int[] { 4, 9 }, antiDiagonal.toArray());
+            }
+            try (var nextRow = rows.next(); var nextColumn = columns.next()) {
+                assertArrayEquals(new int[] { 9, 2 }, nextRow.toArray());
+                assertArrayEquals(new int[] { 4, 2 }, nextColumn.toArray());
+            }
+        }
+    }
+
+    @Test
+    public void testForEachStopsAtTheFailingElementInSequentialMode() {
+        final IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+        final IllegalStateException failure = new IllegalStateException("stop at the second element");
+        Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
+            for (final boolean selectedRegion : new boolean[] { false, true }) {
+                final List<Integer> visited = new java.util.ArrayList<>();
+                final Throwables.IntConsumer<RuntimeException> action = value -> {
+                    visited.add(value);
+                    if (visited.size() == 2) {
+                        throw failure;
+                    }
+                };
+                assertSame(failure, assertThrows(IllegalStateException.class, () -> {
+                    if (selectedRegion) {
+                        matrix.forEach(0, 2, 1, 3, action);
+                    } else {
+                        matrix.forEach(action);
+                    }
+                }));
+                assertEquals(selectedRegion ? List.of(2, 3) : List.of(1, 2), visited);
+            }
+        });
+    }
+
+    @Test
+    public void testCopyOfValidationOrderAndIndependentEmptyRows() {
+        assertEquals("Row 0 cannot be null",
+                assertThrows(IllegalArgumentException.class, () -> IntMatrix.copyOf(null, new int[] { 1 })).getMessage());
+        assertEquals("Row 2 cannot be null",
+                assertThrows(IllegalArgumentException.class, () -> IntMatrix.copyOf(new int[] { 1 }, new int[] { 2 }, null)).getMessage());
+        assertEquals("Matrix must be rectangular: expected 1 columns per row, but row 1 has 2 columns",
+                assertThrows(IllegalArgumentException.class,
+                        () -> IntMatrix.copyOf(new int[] { 1 }, new int[] { 2, 3 }, null)).getMessage());
+
+        final int[] emptyRow = new int[0];
+        final IntMatrix copied = IntMatrix.copyOf(emptyRow, emptyRow);
+        assertEquals(2, copied.rowCount());
+        assertEquals(0, copied.columnCount());
+        assertNotSame(emptyRow, copied.rowView(0));
+        assertNotSame(emptyRow, copied.rowView(1));
+        assertNotSame(copied.rowView(0), copied.rowView(1));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testMapToObjArrayRankBoundaryAndPrimitiveTypeNormalization() {
+        // Two matrix dimensions leave room for at most 253 dimensions in each element's type.
+        final Object highestRankValue = java.lang.reflect.Array.newInstance(Object.class, new int[253]);
+        final Class<Object> highestRankType = (Class<Object>) highestRankValue.getClass();
+        final Class<?> excessiveRankType = java.lang.reflect.Array.newInstance(Object.class, new int[254]).getClass();
+
+        for (final IntMatrix source : List.of(IntMatrix.empty(), new IntMatrix(new int[0][], 2),
+                IntMatrix.wrap(new int[2][0]), IntMatrix.wrap(new int[] { 1 }))) {
+            final AtomicInteger calls = new AtomicInteger();
+            for (final Class<?> invalidType : new Class<?>[] { void.class, excessiveRankType }) {
+                assertThrows(IllegalArgumentException.class, () -> source.mapToObj(value -> {
+                    calls.incrementAndGet();
+                    return null;
+                }, invalidType));
+            }
+            assertEquals(0, calls.get(), "invalid target types must be rejected before invoking the mapper");
+
+            final Matrix<Object> mapped = source.mapToObj(value -> {
+                calls.incrementAndGet();
+                return highestRankValue;
+            }, highestRankType);
+            assertEquals(source.rowCount(), mapped.rowCount());
+            assertEquals(source.columnCount(), mapped.columnCount());
+            assertSame(highestRankType, mapped.elementType());
+            assertEquals(source.rowCount() * source.columnCount(), calls.get());
+            if (!source.isEmpty()) {
+                assertSame(highestRankValue, mapped.get(0, 0));
+            }
+        }
+
+        final IntMatrix source = IntMatrix.wrap(new int[] { 1 });
+        final Matrix<Integer> scalars = source.mapToObj(value -> value, int.class);
+        assertSame(Integer.class, scalars.elementType());
+        assertEquals((int) 1, scalars.get(0, 0).intValue());
+
+        final int[] arrayValue = { 1, 2 };
+        final Matrix<int[]> arrays = source.mapToObj(value -> arrayValue, int[].class);
+        assertSame(int[].class, arrays.elementType());
+        assertSame(arrayValue, arrays.get(0, 0));
+    }
+
 }

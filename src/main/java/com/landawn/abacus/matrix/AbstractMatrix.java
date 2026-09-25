@@ -261,23 +261,19 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
         // The logical shape is cached, so retaining the caller's outer array would let a row
         // replacement silently invalidate every bounds and traversal invariant in this class.
-        this.a = a.clone();
-        this.elementType = elementType;
-        rowCount = this.a.length;
-
-        columnCount = explicitColumnCount;
+        final A[] validatedRows = a.clone();
 
         // Fewer than two rows cannot contain a duplicate, so the map is never worth allocating there.
-        final Map<A, Integer> seenRows = rowsAreKnownDistinct || this.a.length < 2 ? null : new IdentityHashMap<>(this.a.length);
+        final Map<A, Integer> seenRows = rowsAreKnownDistinct || validatedRows.length < 2 ? null : new IdentityHashMap<>(validatedRows.length);
 
         // Validate the snapshot, not the caller's array: a concurrent write to `a` between the
         // clone above and this loop would otherwise let an invalid row reach `this.a` unchecked.
-        for (int i = 0; i < this.a.length; i++) {
-            final A row = this.a[i];
+        for (int i = 0; i < validatedRows.length; i++) {
+            final A row = validatedRows[i];
             N.checkArgument(row != null, "Row {} cannot be null", i);
 
-            if (length(row) != columnCount) {
-                throw new IllegalArgumentException(formatMsg(MSG_NOT_RECTANGULAR, columnCount, i, length(row)));
+            if (length(row) != explicitColumnCount) {
+                throw new IllegalArgumentException(formatMsg(MSG_NOT_RECTANGULAR, explicitColumnCount, i, length(row)));
             }
 
             if (seenRows != null) {
@@ -291,10 +287,22 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
             }
         }
 
+        this.a = validatedRows;
+        this.elementType = elementType;
+        rowCount = validatedRows.length;
+        columnCount = explicitColumnCount;
         elementCount = (long) columnCount * rowCount;
     }
 
-    private static int inferColumnCount(final Object[] rows) {
+    /**
+     * Determines the logical column count from the first row, or returns zero for no rows.
+     *
+     * @param rows the outer array whose first row supplies the column count
+     * @return the first row's length, or zero if {@code rows} is empty
+     * @throws IllegalArgumentException if {@code rows} is {@code null}, or its first row is
+     *         {@code null} or is not an array
+     */
+    private static int inferColumnCount(final Object[] rows) throws IllegalArgumentException {
         N.checkArgNotNull(rows, "Matrix array cannot be null");
 
         if (rows.length == 0) {
@@ -328,12 +336,20 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * row references, including {@code null}, are preserved. The supplied array and this matrix are
      * not modified.
      *
-     * @param source the source row array; must not be {@code null}, but may contain {@code null} rows
+     * @param source the source row array; may contain {@code null} rows, and may itself be
+     *        {@code null} only when this matrix has no rows
      * @return {@code source} if none of its rows aliases this matrix, otherwise a copy with each
      *         aliased row replaced by an independent snapshot
+     * @throws IllegalArgumentException if {@code source} is {@code null} and this matrix has at least one row
      */
-    final A[] snapshotRowsIfBackingRows(final A[] source) {
-        if (a.length == 0 || source.length == 0) {
+    final A[] snapshotRowsIfBackingRows(final A[] source) throws IllegalArgumentException {
+        if (a.length == 0) {
+            return source;
+        }
+
+        N.checkArgNotNull(source, cs.source);
+
+        if (source.length == 0) {
             return source;
         }
 
@@ -453,8 +469,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *         {@code null}, or if {@code args} is {@code null} or empty. Surplus placeholders that
      *         have no corresponding argument are left in the result as-is, and surplus arguments
      *         beyond the placeholder count are ignored.
+     * @throws RuntimeException if an argument's {@code toString()} method throws while replacing a placeholder
      */
-    protected static String formatMsg(final String template, final Object... args) {
+    protected static String formatMsg(final String template, final Object... args) throws RuntimeException {
         if (template == null || args == null || args.length == 0) {
             return template;
         }
@@ -1034,7 +1051,6 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     public M reshape(final int newRowCount, final int newColumnCount) throws IllegalArgumentException {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newRowCount, newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newColumnCount, newColumnCount);
-        checkNonNegativeShape(newRowCount, newColumnCount);
         final long newElementCount = (long) newRowCount * newColumnCount;
         N.checkArgument(newElementCount == elementCount, "New shape [{}x{}={}] must contain exactly the existing {} elements", newRowCount, newColumnCount,
                 newElementCount, elementCount);
@@ -1376,9 +1392,11 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @return a new matrix with combined rows and the same column count
      * @throws IllegalArgumentException if {@code other} is {@code null}, has a different column count,
      *         or the merged row count would overflow {@code Integer.MAX_VALUE}
+     * @throws SecurityException for an object matrix if a security manager denies reflective access
+     *         while inferring a common element type
      * @see #stackHorizontally(AbstractMatrix)
      */
-    public abstract M stackVertically(M other) throws IllegalArgumentException;
+    public abstract M stackVertically(M other) throws IllegalArgumentException, SecurityException;
 
     /**
      * Horizontally stacks this matrix with the specified matrix.
@@ -1403,9 +1421,11 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @return a new matrix with combined columns and the same row count
      * @throws IllegalArgumentException if {@code other} is {@code null}, has a different row count,
      *         or the merged column count would overflow {@code Integer.MAX_VALUE}
+     * @throws SecurityException for an object matrix if a security manager denies reflective access
+     *         while inferring a common element type
      * @see #stackVertically(AbstractMatrix)
      */
-    public abstract M stackHorizontally(M other) throws IllegalArgumentException;
+    public abstract M stackHorizontally(M other) throws IllegalArgumentException, SecurityException;
 
     /**
      * Flattens this matrix into a one-dimensional list.
@@ -1446,7 +1466,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * <p><b>&#9888;&#65039; Unsafe API boundary:</b> the supplied action receives a mutable temporary array whose
      * contents can replace matrix state. Copy-back proceeds in row-major order and is skipped entirely if the
-     * action throws, so a failed action leaves the matrix unchanged.</p>
+     * action throws. Direct changes made by the action through other references to the matrix are not
+     * rolled back. For object matrices, the temporary array shares element references, so mutations
+     * to those objects are also visible even if the action throws.</p>
      *
      * <p>A zero-row matrix does not invoke {@code action}. A matrix with one or more rows but zero columns invokes
      * {@code action} once with a zero-length array.</p>
@@ -1475,19 +1497,21 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws ArithmeticException if {@code elementCount()} exceeds {@code Integer.MAX_VALUE} and therefore
      *         cannot be represented by one Java array
-     * @throws E if the operation throws an exception
+     * @throws E if {@code action.accept} throws while operating on the flattened array
+     * @throws ArrayStoreException for an object matrix if a modified value cannot be copied back
+     *         into its backing row's runtime component type
      */
     public abstract <E extends Exception> void mutateViaFlatArray(Throwables.Consumer<? super A, E> action)
-            throws IllegalArgumentException, ArithmeticException, E;
+            throws IllegalArgumentException, ArithmeticException, E, ArrayStoreException;
 
     /**
      * Performs the specified action for each element position in the matrix.
      * The action receives the row and column indices for each element.
      * Elements are processed in row-major order (row by row from left to right) when executed sequentially.
      * For large matrices the operation may be automatically parallelized, in which case the order in which
-     * positions are visited is unspecified and the supplied action must be thread-safe; every position is
-     * still visited exactly once; because every logical row owns its storage, no two positions can write to the
-     * same cell.
+     * positions are visited is unspecified and the supplied action must be thread-safe. Every position is
+     * visited exactly once on successful completion. Distinct coordinates have independent cell storage,
+     * but actions that write to shared cells or shared mutable objects must coordinate those writes.
      *
      * <p>This method is useful when you need to access matrix positions without caring about
      * the actual element values, or when the element access logic is handled inside the action.</p>
@@ -1515,7 +1539,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param <E> the type of exception that the action might throw
      * @param action the action to perform for each position, receives (rowIndex, columnIndex)
      * @throws IllegalArgumentException if {@code action} is {@code null}
-     * @throws E if the action throws an exception
+     * @throws E if {@code action.accept} throws for a visited matrix position
      */
     public <E extends Exception> void forEachIndices(final Throwables.IntBiConsumer<E> action) throws IllegalArgumentException, E {
         N.checkArgNotNull(action, cs.action);
@@ -1536,9 +1560,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * The action receives the row and column indices for each element in the region.
      * Elements are processed in row-major order within the specified region when executed sequentially.
      * For large regions the operation may be automatically parallelized, in which case the order in which
-     * positions are visited is unspecified and the supplied action must be thread-safe; every position is
-     * still visited exactly once; because every logical row owns its storage, no two positions can write to the
-     * same cell.
+     * positions are visited is unspecified and the supplied action must be thread-safe. Every position is
+     * visited exactly once on successful completion. Distinct coordinates have independent cell storage,
+     * but actions that write to shared cells or shared mutable objects must coordinate those writes.
      *
      * <p>This allows selective processing of matrix subregions without creating a copy.</p>
      *
@@ -1572,7 +1596,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *         {@code fromRowIndex > toRowIndex}, {@code fromColumnIndex < 0},
      *         {@code toColumnIndex > columnCount}, or {@code fromColumnIndex > toColumnIndex}
      * @throws IllegalArgumentException if {@code action} is {@code null}
-     * @throws E if the action throws an exception
+     * @throws E if {@code action.accept} throws for a visited position in the requested region
      */
     public <E extends Exception> void forEachIndices(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
             final Throwables.IntBiConsumer<E> action) throws IndexOutOfBoundsException, IllegalArgumentException, E {
@@ -1596,9 +1620,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * The action receives the row index, column index, and the matrix instance.
      * Elements are processed in row-major order (row by row from left to right) when executed sequentially.
      * For large matrices the operation may be automatically parallelized, in which case the order in which
-     * positions are visited is unspecified and the supplied action must be thread-safe; every position is
-     * still visited exactly once; because every logical row owns its storage, no two positions can write to the
-     * same cell.
+     * positions are visited is unspecified and the supplied action must be thread-safe. Every position is
+     * visited exactly once on successful completion. Distinct coordinates have independent cell storage,
+     * but actions that write to shared cells or shared mutable objects must coordinate those writes.
      *
      * <p>This variant is useful when the action needs access to matrix elements or methods,
      * allowing you to read/write values or use matrix operations within the action.</p>
@@ -1624,7 +1648,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param <E> the type of exception that the action might throw
      * @param action the action to perform, receiving (rowIndex, columnIndex, matrix)
      * @throws IllegalArgumentException if {@code action} is {@code null}
-     * @throws E if the action throws an exception
+     * @throws E if {@code action.accept} throws for a visited matrix position
      */
     public <E extends Exception> void forEachIndices(final Throwables.BiIntObjConsumer<M, E> action) throws IllegalArgumentException, E {
         N.checkArgNotNull(action, cs.action);
@@ -1648,9 +1672,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * The action receives the row index, column index, and the matrix instance for each position in the region.
      * Elements are processed in row-major order within the specified region when executed sequentially.
      * For large regions the operation may be automatically parallelized, in which case the order in which
-     * positions are visited is unspecified and the supplied action must be thread-safe; every position is
-     * still visited exactly once; because every logical row owns its storage, no two positions can write to the
-     * same cell.
+     * positions are visited is unspecified and the supplied action must be thread-safe. Every position is
+     * visited exactly once on successful completion. Distinct coordinates have independent cell storage,
+     * but actions that write to shared cells or shared mutable objects must coordinate those writes.
      *
      * <p>This combines region-based iteration with matrix access, allowing you to process
      * a subregion while having access to the entire matrix.</p>
@@ -1684,7 +1708,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *         {@code fromRowIndex > toRowIndex}, {@code fromColumnIndex < 0},
      *         {@code toColumnIndex > columnCount}, or {@code fromColumnIndex > toColumnIndex}
      * @throws IllegalArgumentException if {@code action} is {@code null}
-     * @throws E if the action throws an exception
+     * @throws E if {@code action.accept} throws for a visited position in the requested region
      */
     public <E extends Exception> void forEachIndices(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
             final Throwables.BiIntObjConsumer<M, E> action) throws IndexOutOfBoundsException, IllegalArgumentException, E {
@@ -1938,9 +1962,12 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * @param mainDiagonal the new values for the main diagonal; must be non-{@code null} and have length
      *        {@code min(rowCount, columnCount)}
-     * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null} or has the wrong length
+     * @throws IllegalArgumentException if {@code mainDiagonal} is {@code null} or its length is not
+     *         {@code min(rowCount(), columnCount())}
+     * @throws ArrayStoreException for an object matrix if a supplied value is incompatible with
+     *         its destination row's runtime component type
      */
-    public abstract void setMainDiagonal(A mainDiagonal) throws IllegalArgumentException;
+    public abstract void setMainDiagonal(A mainDiagonal) throws IllegalArgumentException, ArrayStoreException;
 
     /**
      * Returns a copy of the anti-diagonal elements (upper-right to lower-left) as the matrix's
@@ -1987,9 +2014,12 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *
      * @param antiDiagonal the new values for the anti-diagonal; must be non-{@code null} and have length
      *        {@code min(rowCount, columnCount)}
-     * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null} or has the wrong length
+     * @throws IllegalArgumentException if {@code antiDiagonal} is {@code null} or its length is not
+     *         {@code min(rowCount(), columnCount())}
+     * @throws ArrayStoreException for an object matrix if a supplied value is incompatible with
+     *         its destination row's runtime component type
      */
-    public abstract void setAntiDiagonal(A antiDiagonal) throws IllegalArgumentException;
+    public abstract void setAntiDiagonal(A antiDiagonal) throws IllegalArgumentException, ArrayStoreException;
 
     /**
      * Returns a stream of all points in the matrix in row-major order.
@@ -2508,7 +2538,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param <E> the type of exception that the action might throw
      * @param action the consumer action to perform on this matrix
      * @throws IllegalArgumentException if {@code action} is {@code null}
-     * @throws E if the action throws an exception
+     * @throws E if {@code action.accept(this)} throws
      */
     public <E extends Exception> void accept(final Throwables.Consumer<? super M, E> action) throws IllegalArgumentException, E {
         N.checkArgNotNull(action, cs.action);
@@ -2540,7 +2570,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param mapper the function to apply to this matrix
      * @return the result of applying the function to this matrix
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
-     * @throws E if the function throws an exception
+     * @throws E if {@code mapper.apply(this)} throws
      */
     public <R, E extends Exception> R apply(final Throwables.Function<? super M, R, E> mapper) throws IllegalArgumentException, E {
         N.checkArgNotNull(mapper, cs.mapper);
@@ -2566,9 +2596,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @param output the destination to append the rendering to; must not be {@code null}
      * @throws IllegalArgumentException if {@code output} is {@code null}
      * @throws UncheckedIOException if {@code output} throws an {@link IOException} while appending
+     * @throws RuntimeException if rendering an element or calling {@code output.append} throws an unchecked exception
      * @see #println()
      */
-    public void appendTo(final Appendable output) throws IllegalArgumentException, UncheckedIOException {
+    public void appendTo(final Appendable output) throws IllegalArgumentException, UncheckedIOException, RuntimeException {
         N.checkArgNotNull(output, cs.output);
 
         try {
@@ -2607,11 +2638,14 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Appends one rendered element for {@link #appendTo(Appendable)}. Subclasses may override when
      * their textual contract is not the element's ordinary string form (for example escaped chars).
      *
-     * @param output the destination
+     * @param output the non-{@code null} destination
      * @param value the boxed element value, possibly {@code null}
-     * @throws IOException if the destination rejects the append
+     * @throws IllegalArgumentException if {@code output} is {@code null}
+     * @throws RuntimeException if rendering {@code value} or calling {@code output.append} throws an unchecked exception
+     * @throws IOException if {@code output.append} throws an I/O exception
      */
-    protected void appendElementForOutput(final Appendable output, final Object value) throws IOException {
+    protected void appendElementForOutput(final Appendable output, final Object value) throws IllegalArgumentException, RuntimeException, IOException {
+        N.checkArgNotNull(output, cs.output);
         output.append(N.toString(value));
     }
 
@@ -2650,19 +2684,21 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * rowsNoCols.println();                                    // prints "[]\n[]" (two empty rows)
      * }</pre>
      *
+     * @throws RuntimeException if rendering an element or writing to {@code System.out} throws an unchecked exception
      * @see #appendTo(Appendable)
      */
-    public void println() {
+    public void println() throws RuntimeException {
         N.println(toMultilineString());
     }
 
     /**
      * Renders this matrix as a multi-line string (one row per line, e.g. {@code "[1, 2]\n[3, 4]"}); a
-     * zero-row matrix renders {@code "[]"}. Backs {@link #println()} and {@link #appendTo(Appendable)}.
+     * zero-row matrix renders {@code "[]"}. Supplies the rendering for {@link #println()}.
      *
      * @return the formatted multi-line representation of this matrix
+     * @throws RuntimeException if rendering an element invokes a {@code toString()} method that throws
      */
-    abstract String toMultilineString();
+    abstract String toMultilineString() throws RuntimeException;
 
     /**
      * Returns the length of the given row array.

@@ -125,6 +125,9 @@ final class cs { // NOSONAR
     /** Parameter name for the third matrix operand. */
     static final String third = "third";
 
+    /** Parameter name for an element value. */
+    static final String value = "value";
+
     /** Parameter name for a matrix to unbox. */
     static final String x = "x";
 

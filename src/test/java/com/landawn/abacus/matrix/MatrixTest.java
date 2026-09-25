@@ -36,6 +36,138 @@ import com.landawn.abacus.util.stream.Stream;
 class MatrixTest extends TestBase {
 
     @Test
+    void streamsObserveLiveValuesWhileProducedRowStreamsKeepTheirBackingRow() {
+        final Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } });
+        try (var rowStreams = matrix.rowStreams(0, 2);
+                var columnStreams = matrix.columnStreams(0, 2);
+                var rowMajor = matrix.rowMajorStream(0, 2);
+                var columnMajor = matrix.columnMajorStream(0, 2);
+                var mainDiagonal = matrix.mainDiagonalStream();
+                var antiDiagonal = matrix.antiDiagonalStream()) {
+            final var rows = rowStreams.iterator();
+            final var columns = columnStreams.iterator();
+            try (var selectedRow = rows.next(); var selectedColumn = columns.next()) {
+                matrix.flipVerticallyInPlace();
+                matrix.set(1, 0, 9);
+                assertEquals(List.of(9, 2), selectedRow.toList());
+                assertEquals(List.of(3, 9), selectedColumn.toList());
+                assertEquals(List.of(3, 4, 9, 2), rowMajor.toList());
+                assertEquals(List.of(3, 9, 4, 2), columnMajor.toList());
+                assertEquals(List.of(3, 2), mainDiagonal.toList());
+                assertEquals(List.of(4, 9), antiDiagonal.toList());
+            }
+            try (var nextRow = rows.next(); var nextColumn = columns.next()) {
+                assertEquals(List.of(9, 2), nextRow.toList());
+                assertEquals(List.of(4, 2), nextColumn.toList());
+            }
+        }
+    }
+
+    @Test
+    void indexedUpdateStopsAtFailingCallbackWithoutRollingBackEarlierWrites() {
+        Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
+            final Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 } });
+            final IllegalStateException failure = new IllegalStateException("stop");
+            final List<Integer> visitedColumns = new ArrayList<>();
+
+            Assertions.assertSame(failure, assertThrows(IllegalStateException.class, () -> matrix.updateAll((i, j) -> {
+                visitedColumns.add(j);
+                if (j == 1) {
+                    throw failure;
+                }
+                return 10;
+            })));
+
+            assertEquals(List.of(0, 1), visitedColumns);
+            assertArrayEquals(new Integer[] { 10, 2, 3 }, matrix.rowCopy(0));
+        });
+    }
+
+    @Test
+    void replacementPredicatesMayStopBeforeVisitingEveryCell() {
+        Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
+            final Matrix<Integer> byValue = Matrix.wrap(new Integer[][] { { 1, 2, 3 } });
+            final Matrix<Integer> byPosition = byValue.copy();
+            final IllegalStateException failure = new IllegalStateException("stop");
+            final List<Integer> visitedValues = new ArrayList<>();
+            final List<Integer> visitedColumns = new ArrayList<>();
+
+            Assertions.assertSame(failure, assertThrows(IllegalStateException.class, () -> byValue.replaceIf(value -> {
+                visitedValues.add(value);
+                if (value == 2) {
+                    throw failure;
+                }
+                return true;
+            }, 10)));
+            Assertions.assertSame(failure, assertThrows(IllegalStateException.class, () -> byPosition.replaceIf((i, j) -> {
+                visitedColumns.add(j);
+                if (j == 1) {
+                    throw failure;
+                }
+                return true;
+            }, 10)));
+
+            assertEquals(List.of(1, 2), visitedValues);
+            assertEquals(List.of(0, 1), visitedColumns);
+            assertArrayEquals(new Integer[] { 10, 2, 3 }, byValue.rowCopy(0));
+            assertArrayEquals(new Integer[] { 10, 2, 3 }, byPosition.rowCopy(0));
+        });
+    }
+
+    @Test
+    void elementActionsMayStopBeforeVisitingEveryCell() {
+        Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
+            final Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 } });
+            final IllegalStateException failure = new IllegalStateException("stop");
+            final List<Integer> visitedAll = new ArrayList<>();
+            final List<Integer> visitedRegion = new ArrayList<>();
+
+            Assertions.assertSame(failure, assertThrows(IllegalStateException.class, () -> matrix.forEach(value -> {
+                visitedAll.add(value);
+                if (value == 2) {
+                    throw failure;
+                }
+            })));
+            Assertions.assertSame(failure, assertThrows(IllegalStateException.class, () -> matrix.forEach(0, 1, 0, 3, value -> {
+                visitedRegion.add(value);
+                if (value == 2) {
+                    throw failure;
+                }
+            })));
+
+            assertEquals(List.of(1, 2), visitedAll);
+            assertEquals(List.of(1, 2), visitedRegion);
+        });
+    }
+
+    @Test
+    void emptyColumnAndDiagonalCopiesHaveIndependentArrayIdentities() {
+        final Matrix<String> noRows = Matrix.empty(String.class, 3);
+        final Matrix<String> noColumns = Matrix.copyOf(String.class, new String[3][0]);
+
+        Assertions.assertAll(
+                () -> assertNotSame(noRows.columnCopy(1), noRows.columnCopy(1), "columnCopy must return a new empty array"),
+                () -> assertNotSame(noRows.mainDiagonalCopy(), noRows.mainDiagonalCopy(), "mainDiagonalCopy must return a new empty array"),
+                () -> assertNotSame(noRows.antiDiagonalCopy(), noRows.antiDiagonalCopy(), "antiDiagonalCopy must return a new empty array"),
+                () -> assertNotSame(noColumns.mainDiagonalCopy(), noColumns.mainDiagonalCopy(), "Nx0 main-diagonal copies must be distinct"),
+                () -> assertNotSame(noColumns.antiDiagonalCopy(), noColumns.antiDiagonalCopy(), "Nx0 anti-diagonal copies must be distinct"));
+
+        for (String[] copy : List.of(noRows.columnCopy(1), noRows.mainDiagonalCopy(), noRows.antiDiagonalCopy(),
+                noColumns.mainDiagonalCopy(), noColumns.antiDiagonalCopy())) {
+            assertEquals(0, copy.length);
+            assertEquals(String[].class, copy.getClass());
+        }
+
+        final Matrix<Object> objectElements = Matrix.empty(Object.class, 1);
+        final Matrix<String[]> arrayElements = Matrix.empty(String[].class, 1);
+        assertEquals(Object[].class, objectElements.columnCopy(0).getClass());
+        assertNotSame(objectElements.columnCopy(0), objectElements.columnCopy(0));
+        assertEquals(0, arrayElements.columnCopy(0).length);
+        assertEquals(String[][].class, arrayElements.columnCopy(0).getClass());
+        assertNotSame(arrayElements.columnCopy(0), arrayElements.columnCopy(0));
+    }
+
+    @Test
     public void testConstructor() {
         Integer[][] data = { { 1, 2, 3 }, { 4, 5, 6 } };
         Matrix<Integer> matrix = new Matrix<>(data);

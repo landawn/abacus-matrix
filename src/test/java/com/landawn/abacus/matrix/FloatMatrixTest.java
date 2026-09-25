@@ -6253,4 +6253,151 @@ class FloatMatrixTest extends TestBase {
         assertEquals(1.0f, copied.get(0, 0));
         assertNotSame(source[0], copied.rowView(0));
     }
+
+    @Test
+    public void testInPlaceCallbacksRetainCompletedUpdatesWhenTheyThrow() {
+        final IllegalStateException failure = new IllegalStateException("stop at the second element");
+        final Throwables.FloatUnaryOperator<RuntimeException> operator = value -> {
+            if (value == 2) {
+                throw failure;
+            }
+            return value * 10;
+        };
+        final List<Throwables.Consumer<FloatMatrix, RuntimeException>> updates = List.of(
+                m -> m.updateRow(0, operator),
+                m -> m.updateColumn(0, operator),
+                m -> m.updateMainDiagonal(operator),
+                m -> m.updateAntiDiagonal(operator),
+                m -> m.updateAll(operator),
+                m -> m.updateAll((i, j) -> operator.applyAsFloat(m.get(i, j))),
+                m -> m.replaceIf(value -> operator.applyAsFloat(value) > 0, 10),
+                m -> m.replaceIf((i, j) -> operator.applyAsFloat(m.get(i, j)) > 0, 10));
+
+        Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
+            for (int operation = 0; operation < updates.size(); operation++) {
+                final FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1, 2, 1 }, { 2, 2, 2 }, { 1, 2, 1 } });
+                final Throwables.Consumer<FloatMatrix, RuntimeException> update = updates.get(operation);
+                assertSame(failure, assertThrows(IllegalStateException.class, () -> update.accept(m)));
+                final float[][] expected = { { 1, 2, 1 }, { 2, 2, 2 }, { 1, 2, 1 } };
+                expected[0][operation == 3 ? 2 : 0] = 10;
+                assertEquals(FloatMatrix.wrap(expected), m, "operation " + operation);
+            }
+        });
+    }
+
+    @Test
+    public void testStreamsObserveLiveValuesAndRowStreamsKeepTheirSelectedBackingRow() {
+        final FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1, 2 }, { 3, 4 } });
+        try (var rowStreams = m.rowStreams(0, 2);
+                var columnStreams = m.columnStreams(0, 2);
+                var rowMajor = m.rowMajorStream(0, 2);
+                var columnMajor = m.columnMajorStream(0, 2);
+                var mainDiagonal = m.mainDiagonalStream();
+                var antiDiagonal = m.antiDiagonalStream()) {
+            final var rows = rowStreams.iterator();
+            final var columns = columnStreams.iterator();
+            try (var selectedRow = rows.next(); var selectedColumn = columns.next()) {
+                m.flipVerticallyInPlace();
+                m.set(1, 0, 9);
+                assertArrayEquals(new float[] { 9, 2 }, selectedRow.toArray());
+                assertArrayEquals(new float[] { 3, 9 }, selectedColumn.toArray());
+                assertArrayEquals(new float[] { 3, 4, 9, 2 }, rowMajor.toArray());
+                assertArrayEquals(new float[] { 3, 9, 4, 2 }, columnMajor.toArray());
+                assertArrayEquals(new float[] { 3, 2 }, mainDiagonal.toArray());
+                assertArrayEquals(new float[] { 4, 9 }, antiDiagonal.toArray());
+            }
+            try (var nextRow = rows.next(); var nextColumn = columns.next()) {
+                assertArrayEquals(new float[] { 9, 2 }, nextRow.toArray());
+                assertArrayEquals(new float[] { 4, 2 }, nextColumn.toArray());
+            }
+        }
+    }
+
+    @Test
+    public void testForEachStopsAtTheFailingElementInSequentialMode() {
+        final FloatMatrix matrix = FloatMatrix.wrap(new float[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+        final IllegalStateException failure = new IllegalStateException("stop at the second element");
+        Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
+            for (final boolean selectedRegion : new boolean[] { false, true }) {
+                final List<Float> visited = new java.util.ArrayList<>();
+                final Throwables.FloatConsumer<RuntimeException> action = value -> {
+                    visited.add(value);
+                    if (visited.size() == 2) {
+                        throw failure;
+                    }
+                };
+                assertSame(failure, assertThrows(IllegalStateException.class, () -> {
+                    if (selectedRegion) {
+                        matrix.forEach(0, 2, 1, 3, action);
+                    } else {
+                        matrix.forEach(action);
+                    }
+                }));
+                assertEquals(selectedRegion ? List.of(2f, 3f) : List.of(1f, 2f), visited);
+            }
+        });
+    }
+
+    @Test
+    public void testCopyOfValidationOrderAndIndependentEmptyRows() {
+        assertEquals("Row 0 cannot be null",
+                assertThrows(IllegalArgumentException.class, () -> FloatMatrix.copyOf(null, new float[] { 1 })).getMessage());
+        assertEquals("Row 2 cannot be null",
+                assertThrows(IllegalArgumentException.class, () -> FloatMatrix.copyOf(new float[] { 1 }, new float[] { 2 }, null)).getMessage());
+        assertEquals("Matrix must be rectangular: expected 1 columns per row, but row 1 has 2 columns",
+                assertThrows(IllegalArgumentException.class,
+                        () -> FloatMatrix.copyOf(new float[] { 1 }, new float[] { 2, 3 }, null)).getMessage());
+
+        final float[] emptyRow = new float[0];
+        final FloatMatrix copied = FloatMatrix.copyOf(emptyRow, emptyRow);
+        assertEquals(2, copied.rowCount());
+        assertEquals(0, copied.columnCount());
+        assertNotSame(emptyRow, copied.rowView(0));
+        assertNotSame(emptyRow, copied.rowView(1));
+        assertNotSame(copied.rowView(0), copied.rowView(1));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testMapToObjArrayRankBoundaryAndPrimitiveTypeNormalization() {
+        // Two matrix dimensions leave room for at most 253 dimensions in each element's type.
+        final Object highestRankValue = java.lang.reflect.Array.newInstance(Object.class, new int[253]);
+        final Class<Object> highestRankType = (Class<Object>) highestRankValue.getClass();
+        final Class<?> excessiveRankType = java.lang.reflect.Array.newInstance(Object.class, new int[254]).getClass();
+
+        for (final FloatMatrix source : List.of(FloatMatrix.empty(), new FloatMatrix(new float[0][], 2),
+                FloatMatrix.wrap(new float[2][0]), FloatMatrix.wrap(new float[] { 1 }))) {
+            final AtomicInteger calls = new AtomicInteger();
+            for (final Class<?> invalidType : new Class<?>[] { void.class, excessiveRankType }) {
+                assertThrows(IllegalArgumentException.class, () -> source.mapToObj(value -> {
+                    calls.incrementAndGet();
+                    return null;
+                }, invalidType));
+            }
+            assertEquals(0, calls.get(), "invalid target types must be rejected before invoking the mapper");
+
+            final Matrix<Object> mapped = source.mapToObj(value -> {
+                calls.incrementAndGet();
+                return highestRankValue;
+            }, highestRankType);
+            assertEquals(source.rowCount(), mapped.rowCount());
+            assertEquals(source.columnCount(), mapped.columnCount());
+            assertSame(highestRankType, mapped.elementType());
+            assertEquals(source.rowCount() * source.columnCount(), calls.get());
+            if (!source.isEmpty()) {
+                assertSame(highestRankValue, mapped.get(0, 0));
+            }
+        }
+
+        final FloatMatrix source = FloatMatrix.wrap(new float[] { 1 });
+        final Matrix<Float> scalars = source.mapToObj(value -> value, float.class);
+        assertSame(Float.class, scalars.elementType());
+        assertEquals((float) 1, scalars.get(0, 0).floatValue());
+
+        final int[] arrayValue = { 1, 2 };
+        final Matrix<int[]> arrays = source.mapToObj(value -> arrayValue, int[].class);
+        assertSame(int[].class, arrays.elementType());
+        assertSame(arrayValue, arrays.get(0, 0));
+    }
+
 }

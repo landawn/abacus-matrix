@@ -32,6 +32,149 @@ import com.landawn.abacus.util.stream.Stream;
 class CharMatrixTest extends TestBase {
 
     @Test
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public void testObjectMappingRuntimeArrayTypeAndStoreFailure() {
+        final CharMatrix source = CharMatrix.wrap(new char[] { 'a', 'a' });
+        final Matrix<Integer> boxed = source.mapToObj(value -> 7, int.class);
+        assertEquals(Integer.class, boxed.elementType());
+        assertEquals(Integer[].class, boxed.rowView(0).getClass());
+        assertArrayEquals(new Integer[] { 7, 7 }, boxed.rowCopy(0));
+
+        final Class<Number> narrowType = (Class) Integer.class;
+        final AtomicInteger calls = new AtomicInteger();
+        Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
+            assertThrows(ArrayStoreException.class, () -> source.mapToObj(value -> {
+                if (calls.incrementAndGet() == 1) {
+                    return Integer.valueOf(1);
+                }
+                return Double.valueOf(2);
+            }, narrowType));
+        });
+        assertEquals(2, calls.get());
+        assertArrayEquals(new char[] { 'a', 'a' }, source.rowCopy(0));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testObjectMappingArrayDimensionLimitBeforeInvokingMapper() {
+        Class<?> elementType = Object.class;
+        for (int i = 0; i < 253; i++) {
+            elementType = elementType.arrayType();
+        }
+        final Class<Object> largestElementType = (Class<Object>) elementType;
+        final Class<Object> tooDeep = (Class<Object>) elementType.arrayType();
+        final CharMatrix empty = new CharMatrix(new char[0][], 3);
+        final Matrix<Object> mapped = empty.mapToObj(value -> null, largestElementType);
+        assertEquals(0, mapped.rowCount());
+        assertEquals(3, mapped.columnCount());
+        assertEquals(largestElementType, mapped.elementType());
+
+        final AtomicInteger calls = new AtomicInteger();
+        assertThrows(IllegalArgumentException.class, () -> empty.mapToObj(value -> {
+            calls.incrementAndGet();
+            return null;
+        }, tooDeep));
+        assertThrows(IllegalArgumentException.class, () -> CharMatrix.wrap(new char[] { 'a' }).mapToObj(value -> {
+            calls.incrementAndGet();
+            return null;
+        }, tooDeep));
+        assertEquals(0, calls.get());
+    }
+
+    @Test
+    public void testDocumentedForEachStopsAfterCallbackFailure() throws Exception {
+        for (int operation = 0; operation < 2; operation++) {
+            final int selectedOperation = operation;
+            final CharMatrix matrix = CharMatrix.wrap(new char[2][3]);
+            final AtomicInteger calls = new AtomicInteger();
+            final IllegalStateException failure = new IllegalStateException("action failed");
+            final Throwables.CharConsumer<IllegalStateException> action = value -> {
+                if (calls.incrementAndGet() == 2) {
+                    throw failure;
+                }
+            };
+
+            assertSame(failure, assertThrows(IllegalStateException.class,
+                    () -> Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
+                        if (selectedOperation == 0) {
+                            matrix.forEach(action);
+                        } else {
+                            matrix.forEach(0, 2, 1, 3, action);
+                        }
+                    })));
+
+            assertEquals(2, calls.get(), "operation " + selectedOperation);
+        }
+    }
+
+    @Test
+    public void testDocumentedCallbackFailuresKeepCompletedUpdates() throws Exception {
+        for (int operation = 0; operation < 8; operation++) {
+            final int selectedOperation = operation;
+            final CharMatrix matrix = CharMatrix.wrap(new char[2][2]);
+            final AtomicInteger calls = new AtomicInteger();
+            final IllegalStateException failure = new IllegalStateException("callback failed");
+            final Throwables.CharUnaryOperator<IllegalStateException> operator = value -> {
+                if (calls.incrementAndGet() == 2) {
+                    throw failure;
+                }
+
+                return (char) 1;
+            };
+
+            assertSame(failure, assertThrows(IllegalStateException.class,
+                    () -> Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
+                        switch (selectedOperation) {
+                            case 0 -> matrix.updateRow(0, operator);
+                            case 1 -> matrix.updateColumn(0, operator);
+                            case 2 -> matrix.updateMainDiagonal(operator);
+                            case 3 -> matrix.updateAntiDiagonal(operator);
+                            case 4 -> matrix.updateAll(operator);
+                            case 5 -> matrix.updateAll((row, column) -> operator.applyAsChar((char) 0));
+                            case 6 -> matrix.replaceIf(value -> operator.applyAsChar(value) != 0, (char) 1);
+                            case 7 -> matrix.replaceIf((row, column) -> operator.applyAsChar((char) 0) != 0, (char) 1);
+                            default -> throw new AssertionError(selectedOperation);
+                        }
+                    })));
+
+            assertEquals(2, calls.get(), "operation " + selectedOperation);
+            assertArrayEquals(selectedOperation == 3 ? new char[] { (char) 0, (char) 1 } : new char[] { (char) 1, (char) 0 },
+                    matrix.rowCopy(0), "operation " + selectedOperation);
+            assertArrayEquals(new char[] { (char) 0, (char) 0 }, matrix.rowCopy(1), "operation " + selectedOperation);
+        }
+    }
+
+    @Test
+    public void testDocumentedStreamsReadLiveCellsAndPreserveProducedRowBinding() {
+        final CharMatrix matrix = CharMatrix.wrap(new char[][] { { 1, 2 }, { 3, 4 } });
+        final var row = matrix.rowStreams().iterator().next();
+        final var selectedRow = matrix.rowStreams(0, 1).iterator().next();
+        final var column = matrix.columnStreams().iterator().next();
+        final var selectedColumn = matrix.columnStreams(0, 1).iterator().next();
+        final var rowMajor = matrix.rowMajorStream();
+        final var selectedRowMajor = matrix.rowMajorStream(0, 1);
+        final var columnMajor = matrix.columnMajorStream();
+        final var selectedColumnMajor = matrix.columnMajorStream(0, 1);
+        final var mainDiagonal = matrix.mainDiagonalStream();
+        final var antiDiagonal = matrix.antiDiagonalStream();
+
+        matrix.flipVerticallyInPlace();
+        matrix.set(1, 0, (char) 9);
+        matrix.set(0, 1, (char) 8);
+
+        assertArrayEquals(new char[] { 9, 2 }, row.toArray());
+        assertArrayEquals(new char[] { 9, 2 }, selectedRow.toArray());
+        assertArrayEquals(new char[] { 3, 9 }, column.toArray());
+        assertArrayEquals(new char[] { 3, 9 }, selectedColumn.toArray());
+        assertArrayEquals(new char[] { 3, 8, 9, 2 }, rowMajor.toArray());
+        assertArrayEquals(new char[] { 3, 8 }, selectedRowMajor.toArray());
+        assertArrayEquals(new char[] { 3, 9, 8, 2 }, columnMajor.toArray());
+        assertArrayEquals(new char[] { 3, 9 }, selectedColumnMajor.toArray());
+        assertArrayEquals(new char[] { 3, 2 }, mainDiagonal.toArray());
+        assertArrayEquals(new char[] { 8, 9 }, antiDiagonal.toArray());
+    }
+
+    @Test
     public void testRepeatMatrix_emptyDimensionsDoNotTraverseRepeats() {
         CharMatrix zeroRows = new CharMatrix(new char[0][], 2);
         CharMatrix zeroColumns = CharMatrix.wrap(new char[2][0]);
