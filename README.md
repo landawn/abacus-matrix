@@ -70,7 +70,7 @@ build:
 <dependency>
     <groupId>com.landawn.abacus</groupId>
     <artifactId>abacus-common</artifactId>
-    <version>7.8.5</version>
+    <version>8.1.0</version>
 </dependency>
 ```
 
