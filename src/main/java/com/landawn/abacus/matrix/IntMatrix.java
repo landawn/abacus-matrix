@@ -579,8 +579,10 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * {@code [startInclusive, endInclusive]} stepped by {@code step}.
      * The step size can be positive (for ascending sequences) or negative (for descending sequences).
      * {@code endInclusive} is included only if it is reachable from {@code startInclusive} via {@code step};
-     * otherwise the last element is the reachable value nearest to {@code endInclusive} without stepping past it. If the step direction does not
-     * advance toward {@code endInclusive}, a {@code 1x0} matrix is returned.
+     * otherwise the last element is the reachable value nearest to {@code endInclusive} without stepping past it.
+     * Equal endpoints produce a {@code 1x1} matrix containing that endpoint for any nonzero step.
+     * If the endpoints differ and the step direction does not advance toward {@code endInclusive},
+     * a {@code 1x0} matrix is returned.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

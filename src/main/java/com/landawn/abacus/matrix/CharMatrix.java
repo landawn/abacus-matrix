@@ -407,8 +407,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * Creates a single-row {@code CharMatrix} containing the closed range
      * {@code [startInclusive, endInclusive]} stepped by {@code step}.
      * Supports both ascending (positive step) and descending (negative step) sequences.
-     * If the step direction does not advance from {@code startInclusive} toward {@code endInclusive},
-     * a {@code 1x0} matrix is returned.
+     * If the step direction does not advance from {@code startInclusive} toward a different {@code endInclusive},
+     * a {@code 1x0} matrix is returned. Equal bounds produce a single element for any nonzero step;
+     * a zero step is rejected even when the bounds are equal.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

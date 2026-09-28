@@ -557,6 +557,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     /**
      * Returns the specified row as a direct view backed by internal storage.
      * Changes to the returned array will modify this matrix.
+     * The view refers to the row array, not permanently to its index: after
+     * {@link #flipVerticallyInPlace()}, the same array occupies the reflected row index.
      *
      * <p><b>&#9888;&#65039; Unsafe API boundary:</b> the returned row is a mutable alias to internal storage. Prefer
      * {@link #rowCopy(int)} unless you intentionally need to mutate the matrix through the row view.</p>
@@ -1352,6 +1354,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Flips this matrix vertically in place (mirror across the horizontal axis).
      * Element at position {@code (i, j)} is moved to position {@code (rowCount - 1 - i, j)}.
      * This method modifies this matrix.
+     * Row arrays are reordered rather than their contents being copied, so existing row views
+     * retain their contents and refer to the reflected row positions afterward.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1508,7 +1512,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Performs the specified action for each element position in the matrix.
      * The action receives the row and column indices for each element.
      * Elements are processed in row-major order (row by row from left to right) when executed sequentially.
-     * For large matrices the operation may be automatically parallelized, in which case the order in which
+     * The current thread's parallel policy and runtime support determine whether the operation is
+     * parallelized (the default policy is sequential), in which case the order in which
      * positions are visited is unspecified and the supplied action must be thread-safe. Every position is
      * visited exactly once on successful completion. Distinct coordinates have independent cell storage,
      * but actions that write to shared cells or shared mutable objects must coordinate those writes.
@@ -1559,7 +1564,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Performs the specified action for each element position in the specified rectangular region of the matrix.
      * The action receives the row and column indices for each element in the region.
      * Elements are processed in row-major order within the specified region when executed sequentially.
-     * For large regions the operation may be automatically parallelized, in which case the order in which
+     * The current thread's parallel policy, region size, and runtime support determine whether the operation is
+     * parallelized (the default policy is sequential), in which case the order in which
      * positions are visited is unspecified and the supplied action must be thread-safe. Every position is
      * visited exactly once on successful completion. Distinct coordinates have independent cell storage,
      * but actions that write to shared cells or shared mutable objects must coordinate those writes.
@@ -1619,7 +1625,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Performs the specified action for each element position in the matrix, providing the matrix itself as a parameter.
      * The action receives the row index, column index, and the matrix instance.
      * Elements are processed in row-major order (row by row from left to right) when executed sequentially.
-     * For large matrices the operation may be automatically parallelized, in which case the order in which
+     * The current thread's parallel policy and runtime support determine whether the operation is
+     * parallelized (the default policy is sequential), in which case the order in which
      * positions are visited is unspecified and the supplied action must be thread-safe. Every position is
      * visited exactly once on successful completion. Distinct coordinates have independent cell storage,
      * but actions that write to shared cells or shared mutable objects must coordinate those writes.
@@ -1671,7 +1678,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Performs the specified action for each element position in the specified rectangular region, providing the matrix itself.
      * The action receives the row index, column index, and the matrix instance for each position in the region.
      * Elements are processed in row-major order within the specified region when executed sequentially.
-     * For large regions the operation may be automatically parallelized, in which case the order in which
+     * The current thread's parallel policy, region size, and runtime support determine whether the operation is
+     * parallelized (the default policy is sequential), in which case the order in which
      * positions are visited is unspecified and the supplied action must be thread-safe. Every position is
      * visited exactly once on successful completion. Distinct coordinates have independent cell storage,
      * but actions that write to shared cells or shared mutable objects must coordinate those writes.
@@ -2663,8 +2671,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *   <li>{@link CharMatrix} is the exception: each code unit is quoted and Java-escaped, so a row
      *       renders as {@code ['a', 'b']}, and a newline renders as a quoted two-character escape
      *       ({@code \n} between single quotes)</li>
-     *   <li>Object matrices display using the {@code toString()} method of elements, with a
-     *       {@code null} element rendered as {@code "null"}</li>
+     *   <li>Object matrices render elements using {@link N#toString(Object)}, which formats array-valued
+     *       elements by content and ordinary objects through their {@code toString()} method;
+     *       a {@code null} element is rendered as {@code "null"}</li>
      * </ul>
      *
      * <p>To capture the formatted rendering instead of printing it, use {@link #appendTo(Appendable)}.</p>

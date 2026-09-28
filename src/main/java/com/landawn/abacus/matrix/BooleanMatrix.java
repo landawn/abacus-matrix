@@ -2766,7 +2766,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * Counts the number of {@code true} elements in this matrix.
      *
      * <p>The result is a {@code long} because a matrix can contain up to
-     * {@code rowCount * columnCount} elements, a product that may exceed
+     * {@code (long) rowCount * columnCount} elements, a product that may exceed
      * {@link Integer#MAX_VALUE}. An {@code int} accumulator would silently
      * overflow for sufficiently large matrices.</p>
      *

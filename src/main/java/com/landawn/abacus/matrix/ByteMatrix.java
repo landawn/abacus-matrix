@@ -438,7 +438,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * {@code [startInclusive, endInclusive]} stepped by {@code step}.
      * Supports both ascending (positive step) and descending (negative step) sequences.
      * The end value is included only if it is reachable by stepping from start. If the step direction
-     * does not advance from {@code startInclusive} toward {@code endInclusive}, a {@code 1x0} matrix is returned.
+     * does not advance from {@code startInclusive} toward a different {@code endInclusive}, a {@code 1x0} matrix is returned.
+     * Equal bounds produce a single element for any nonzero step; a zero step is rejected even when the bounds are equal.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3429,7 +3430,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * nonSquare.mainDiagonalStream().toArray(); // returns [1, 5]
      * }</pre>
      *
-     * @return a ByteStream of main-diagonal elements, or an empty stream if this is the empty 0x0 matrix
+     * @return a ByteStream of main-diagonal elements, or an empty stream if either dimension is zero
      */
     @Override
     public ByteStream mainDiagonalStream() {
@@ -3498,7 +3499,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * nonSquare.antiDiagonalStream().toArray(); // returns [3, 5]
      * }</pre>
      *
-     * @return a ByteStream of anti-diagonal elements, or an empty stream if this is the empty 0x0 matrix
+     * @return a ByteStream of anti-diagonal elements, or an empty stream if either dimension is zero
      */
     @Override
     public ByteStream antiDiagonalStream() {

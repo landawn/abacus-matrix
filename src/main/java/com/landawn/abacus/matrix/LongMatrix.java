@@ -461,8 +461,10 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * {@code [startInclusive, endInclusive]} stepped by {@code step}.
      * The step size can be positive (for ascending sequences) or negative (for descending sequences).
      * {@code endInclusive} is included only if it is reachable from {@code startInclusive} via {@code step};
-     * otherwise the last element is the reachable value nearest to {@code endInclusive} without stepping past it. If the step direction does not
-     * advance toward {@code endInclusive}, a {@code 1x0} matrix is returned.
+     * otherwise the last element is the reachable value nearest to {@code endInclusive} without stepping past it.
+     * Equal endpoints produce a {@code 1x1} matrix containing that endpoint for any nonzero step.
+     * If the endpoints differ and the step direction does not advance toward {@code endInclusive},
+     * a {@code 1x0} matrix is returned.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -2291,7 +2293,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * }</pre>
      *
      * @return a new matrix rotated 90 degrees clockwise (dimensions {@code columnCount × rowCount}),
-     *         an {@code N x 0} matrix becomes {@code 0 x N}, so the column count is preserved
+     *         an {@code N x 0} matrix becomes {@code 0 x N}, retaining {@code N} as its logical column count
      * @see #rotate180()
      * @see #rotate270()
      * @see #transpose()
@@ -2375,7 +2377,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * }</pre>
      *
      * @return a new matrix rotated 270 degrees clockwise (dimensions {@code columnCount × rowCount}),
-     *         an {@code N x 0} matrix becomes {@code 0 x N}, so the column count is preserved
+     *         an {@code N x 0} matrix becomes {@code 0 x N}, retaining {@code N} as its logical column count
      * @see #rotate90()
      * @see #rotate180()
      * @see #transpose()

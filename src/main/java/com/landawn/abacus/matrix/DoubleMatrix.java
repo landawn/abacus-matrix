@@ -2360,7 +2360,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @return a new matrix rotated 90 degrees clockwise (dimensions {@code columnCount × rowCount}),
-     *         an {@code N x 0} matrix becomes {@code 0 x N}, so the column count is preserved
+     *         an {@code N x 0} matrix becomes {@code 0 x N}, retaining {@code N} as its logical column count
      * @see #rotate180()
      * @see #rotate270()
      * @see #transpose()
@@ -2444,7 +2444,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * }</pre>
      *
      * @return a new matrix rotated 270 degrees clockwise (dimensions {@code columnCount × rowCount}),
-     *         an {@code N x 0} matrix becomes {@code 0 x N}, so the column count is preserved
+     *         an {@code N x 0} matrix becomes {@code 0 x N}, retaining {@code N} as its logical column count
      * @see #rotate90()
      * @see #rotate180()
      * @see #transpose()

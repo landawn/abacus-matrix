@@ -416,7 +416,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * The step size can be positive (for ascending sequences) or negative (for descending sequences).
      * {@code endInclusive} is included only if it is reachable from {@code startInclusive} via {@code step};
      * otherwise the last element is the reachable value nearest to {@code endInclusive} without stepping past it.
-     * If the step direction does not advance toward {@code endInclusive}, a {@code 1x0} matrix is returned.
+     * If the bounds differ and the step direction does not advance toward {@code endInclusive}, a {@code 1x0} matrix is returned.
+     * Equal bounds produce a single element for any nonzero step; a zero step is rejected even when the bounds are equal.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
