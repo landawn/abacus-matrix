@@ -72,6 +72,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     /** The shared {@code 0 x 0} char matrix returned by {@link #empty()} and public empty-array factories. */
     private static final CharMatrix EMPTY_CHAR_MATRIX = new CharMatrix(new char[0][0]);
 
+    /** The uppercase hexadecimal digits used to escape a non-printable UTF-16 code unit as four digits. */
+    private static final String HEX_DIGITS = "0123456789ABCDEF";
+
     /**
      * Constructs a {@code CharMatrix} backed by the supplied two-dimensional array.
      *
@@ -237,7 +240,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
             c[i] = a[i] == null ? null : a[i].clone();
         }
 
-        return new CharMatrix(c);
+        return wrapResult(c, columnCount);
     }
 
     /**
@@ -1213,9 +1216,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * <p>This method sets the anti-diagonal (secondary diagonal) elements from
      * top-right toward the lower-left, beginning at {@code (0,columnCount-1)}.</p>
      *
-     * <p>If the supplied array is one of this matrix's live backing rows (for example a value returned
-     * by {@code rowView(int)}), it is snapshotted first, so the values read are the ones in place when
-     * this method was called.</p>
+     * <p>The supplied array may be one of this matrix's live backing rows (for example a value returned
+     * by {@code rowView(int)}); the values read are still the ones in place when this method was called.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1241,7 +1243,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
         N.checkArgNotNull(antiDiagonal, cs.antiDiagonal);
         final int diagonalLength = diagonalLength();
         N.checkArgument(antiDiagonal.length == diagonalLength, MSG_DIAGONAL_LENGTH_MISMATCH, diagonalLength, antiDiagonal.length);
-        final char[] values = snapshotIfBackingRow(antiDiagonal);
+        final char[] values = snapshotIfBackingRow(antiDiagonal, diagonalLength);
 
         for (int i = 0; i < diagonalLength; i++) {
             a[i][columnCount - i - 1] = values[i];
@@ -1564,7 +1566,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return new Matrix<>(result, targetElementType, columnCount);
+        return Matrix.newResult(result, targetElementType, columnCount);
     }
 
     /**
@@ -1632,8 +1634,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * The source array can extend beyond this matrix's bounds; only the overlapping region is copied.
      * The matrix is modified in-place. {@code null} rows in {@code source} are skipped (the
      * corresponding destination row is left unchanged). Elements outside the matrix bounds are ignored.
-     * Any source row that aliases this matrix's backing storage is snapshotted before copying, so
-     * overlapping copies read the source values as they were when this method was called.
+     * Source rows may be this matrix's own backing rows (for example arrays returned by {@code rowView(int)});
+     * overlapping copies still read every source value as it was when this method was called.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1667,7 +1669,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
             throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be in [0, columnCount({})]", destColumnIndex, columnCount));
         }
         N.checkArgNotNull(source, cs.source);
-        final char[][] sourceSnapshot = snapshotRowsIfBackingRows(source);
+
+        if (destRowIndex == rowCount || destColumnIndex == columnCount || source.length == 0) {
+            return;
+        }
+
+        final char[][] sourceSnapshot = snapshotRowsIfBackingRows(source, destRowIndex, destColumnIndex);
 
         for (int i = 0, minLen = N.min(rowCount - destRowIndex, sourceSnapshot.length); i < minLen; i++) {
             if (sourceSnapshot[i] != null) {
@@ -2967,7 +2974,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
             }
         }
 
-        return new Matrix<>(c, Character.class, columnCount);
+        return Matrix.newResult(c, Character.class, columnCount);
     }
 
     /**
@@ -3281,6 +3288,23 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
                 cursor = toIndex;
                 return remaining;
             }
+
+            @Override
+            public char[] toArray() {
+                final char[] result = new char[toIndex - cursor];
+
+                for (int i = 0; i < result.length; i++) {
+                    result[i] = a[cursor][cursor];
+                    cursor++;
+                }
+
+                return result;
+            }
+
+            @Override
+            public CharList toList() {
+                return CharList.of(toArray());
+            }
         });
     }
 
@@ -3352,6 +3376,23 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
                 cursor = toIndex;
                 return remaining;
             }
+
+            @Override
+            public char[] toArray() {
+                final char[] result = new char[toIndex - cursor];
+
+                for (int i = 0; i < result.length; i++) {
+                    result[i] = a[cursor][columnCount - cursor - 1];
+                    cursor++;
+                }
+
+                return result;
+            }
+
+            @Override
+            public CharList toList() {
+                return CharList.of(toArray());
+            }
         });
     }
 
@@ -3414,7 +3455,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     public CharStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
-        if (isEmpty()) {
+        if (fromRowIndex == toRowIndex || isEmpty()) {
             return CharStream.empty();
         }
 
@@ -3497,6 +3538,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
                 return c;
             }
+
+            @Override
+            public CharList toList() {
+                return CharList.of(toArray());
+            }
         });
     }
 
@@ -3559,7 +3605,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     public CharStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
-        if (isEmpty()) {
+        if (fromColumnIndex == toColumnIndex || isEmpty()) {
             return CharStream.empty();
         }
 
@@ -3639,6 +3685,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
                 return c;
             }
+
+            @Override
+            public CharList toList() {
+                return CharList.of(toArray());
+            }
         });
     }
 
@@ -3711,6 +3762,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     @Override
     public Stream<CharStream> rowStreams(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
+
+        if (fromRowIndex == toRowIndex) {
+            return Stream.empty();
+        }
 
         return Stream.of(new ObjIteratorEx<>() {
             private final int toIndex = toRowIndex;
@@ -3821,6 +3876,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     public Stream<CharStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
+        if (fromColumnIndex == toColumnIndex) {
+            return Stream.empty();
+        }
+
         return Stream.of(new ObjIteratorEx<>() {
             private final int toIndex = toColumnIndex;
             private int cursor = fromColumnIndex;
@@ -3879,6 +3938,22 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
                         final long remaining = toIndex2 - cursor2;
                         cursor2 = toIndex2;
                         return remaining;
+                    }
+
+                    @Override
+                    public char[] toArray() {
+                        final char[] result = new char[toIndex2 - cursor2];
+
+                        for (int i = 0; i < result.length; i++) {
+                            result[i] = a[cursor2++][columnIndex];
+                        }
+
+                        return result;
+                    }
+
+                    @Override
+                    public CharList toList() {
+                        return CharList.of(toArray());
                     }
                 });
             }
@@ -4149,13 +4224,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
                     // Render one UTF-16 code unit at a time. In particular, lone surrogates remain
                     // visible and valid surrogate pairs are never silently interpreted as code points.
                     output.append('\\').append('u');
-                    final String hex = Integer.toHexString(value).toUpperCase(java.util.Locale.ROOT);
-
-                    for (int i = hex.length(); i < 4; i++) {
-                        output.append('0');
-                    }
-
-                    output.append(hex);
+                    output.append(HEX_DIGITS.charAt(value >>> 12));
+                    output.append(HEX_DIGITS.charAt((value >>> 8) & 0xf));
+                    output.append(HEX_DIGITS.charAt((value >>> 4) & 0xf));
+                    output.append(HEX_DIGITS.charAt(value & 0xf));
                 }
         }
 

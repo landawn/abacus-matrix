@@ -120,8 +120,7 @@ class ValidationOrderTest extends TestBase {
         final IllegalArgumentException e1 = assertThrows(IllegalArgumentException.class, () -> a.zipWith(mismatched, null, (x, y, z) -> x));
         assertTrue(e1.getMessage().contains("but other is 1x1"), e1.getMessage());
 
-        final IllegalArgumentException e1Typed = assertThrows(IllegalArgumentException.class,
-                () -> a.zipWith(mismatched, null, (x, y, z) -> x, Integer.class));
+        final IllegalArgumentException e1Typed = assertThrows(IllegalArgumentException.class, () -> a.zipWith(mismatched, null, (x, y, z) -> x, Integer.class));
         assertTrue(e1Typed.getMessage().contains("but other is 1x1"), e1Typed.getMessage());
 
         // third's shape is reported on its own, in the same wording as the primitive variants

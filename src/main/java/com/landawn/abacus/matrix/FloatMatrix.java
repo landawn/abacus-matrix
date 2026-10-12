@@ -244,7 +244,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
             c[i] = a[i] == null ? null : a[i].clone();
         }
 
-        return new FloatMatrix(c);
+        return wrapResult(c, columnCount);
     }
 
     /**
@@ -306,7 +306,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
             }
         }
 
-        return new FloatMatrix(result);
+        return wrapResult(result, columnCount);
     }
 
     /**
@@ -530,7 +530,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
             }
         }
 
-        return new FloatMatrix(result);
+        return wrapResult(result, diagonalLength);
     }
 
     /**
@@ -1176,9 +1176,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * the top-right corner toward the lower-left, at positions {@code (i, columnCount - 1 - i)}
      * for {@code 0 <= i < min(rowCount, columnCount)}.</p>
      *
-     * <p>If the supplied array is one of this matrix's live backing rows (for example a value returned
-     * by {@code rowView(int)}), it is snapshotted first, so the values read are the ones in place when
-     * this method was called.</p>
+     * <p>The supplied array may be one of this matrix's live backing rows (for example a value returned
+     * by {@code rowView(int)}); the values read are still the ones in place when this method was called.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1200,7 +1199,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
         N.checkArgNotNull(antiDiagonal, cs.antiDiagonal);
         final int diagonalLength = diagonalLength();
         N.checkArgument(N.len(antiDiagonal) == diagonalLength, MSG_DIAGONAL_LENGTH_MISMATCH, diagonalLength, N.len(antiDiagonal));
-        final float[] values = snapshotIfBackingRow(antiDiagonal);
+        final float[] values = snapshotIfBackingRow(antiDiagonal, diagonalLength);
 
         for (int i = 0; i < diagonalLength; i++) {
             a[i][columnCount - i - 1] = values[i];
@@ -1619,7 +1618,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return new Matrix<>(result, targetElementType, columnCount);
+        return Matrix.newResult(result, targetElementType, columnCount);
     }
 
     /**
@@ -1686,8 +1685,8 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
      * The source array can extend beyond this matrix's bounds; only the overlapping region is copied.
      * The matrix is modified in-place. {@code null} rows in {@code source} are skipped (the
      * corresponding destination row is left unchanged). Elements outside the matrix bounds are ignored.
-     * Any source row that aliases this matrix's backing storage is snapshotted before copying, so
-     * overlapping copies read the source values as they were when this method was called.
+     * Source rows may be this matrix's own backing rows (for example arrays returned by {@code rowView(int)});
+     * overlapping copies still read every source value as it was when this method was called.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1717,7 +1716,12 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
             throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be in [0, columnCount({})]", destColumnIndex, columnCount));
         }
         N.checkArgNotNull(source, cs.source);
-        final float[][] sourceSnapshot = snapshotRowsIfBackingRows(source);
+
+        if (destRowIndex == rowCount || destColumnIndex == columnCount || source.length == 0) {
+            return;
+        }
+
+        final float[][] sourceSnapshot = snapshotRowsIfBackingRows(source, destRowIndex, destColumnIndex);
 
         for (int i = 0, minLen = N.min(rowCount - destRowIndex, sourceSnapshot.length); i < minLen; i++) {
             if (sourceSnapshot[i] != null) {
@@ -3023,7 +3027,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
             }
         }
 
-        return new Matrix<>(c, Float.class, columnCount);
+        return Matrix.newResult(c, Float.class, columnCount);
     }
 
     /**
@@ -3327,6 +3331,22 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
                 cursor = toIndex;
                 return remaining;
             }
+
+            @Override
+            public float[] toArray() {
+                final float[] result = new float[toIndex - cursor];
+
+                for (int i = 0; i < result.length; i++, cursor++) {
+                    result[i] = a[cursor][cursor];
+                }
+
+                return result;
+            }
+
+            @Override
+            public FloatList toList() {
+                return FloatList.of(toArray());
+            }
         });
     }
 
@@ -3398,6 +3418,22 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
                 cursor = toIndex;
                 return remaining;
             }
+
+            @Override
+            public float[] toArray() {
+                final float[] result = new float[toIndex - cursor];
+
+                for (int i = 0; i < result.length; i++, cursor++) {
+                    result[i] = a[cursor][columnCount - cursor - 1];
+                }
+
+                return result;
+            }
+
+            @Override
+            public FloatList toList() {
+                return FloatList.of(toArray());
+            }
         });
     }
 
@@ -3460,7 +3496,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     public FloatStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
-        if (isEmpty()) {
+        if (fromRowIndex == toRowIndex || isEmpty()) {
             return FloatStream.empty();
         }
 
@@ -3544,6 +3580,11 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
                 return c;
             }
+
+            @Override
+            public FloatList toList() {
+                return FloatList.of(toArray());
+            }
         });
     }
 
@@ -3606,7 +3647,7 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     public FloatStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
-        if (isEmpty()) {
+        if (fromColumnIndex == toColumnIndex || isEmpty()) {
             return FloatStream.empty();
         }
 
@@ -3687,6 +3728,11 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
 
                 return c;
             }
+
+            @Override
+            public FloatList toList() {
+                return FloatList.of(toArray());
+            }
         });
     }
 
@@ -3755,6 +3801,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     @Override
     public Stream<FloatStream> rowStreams(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
+
+        if (fromRowIndex == toRowIndex) {
+            return Stream.empty();
+        }
 
         return Stream.of(new ObjIteratorEx<>() {
             private final int toIndex = toRowIndex;
@@ -3862,6 +3912,10 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
     public Stream<FloatStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
+        if (fromColumnIndex == toColumnIndex) {
+            return Stream.empty();
+        }
+
         return Stream.of(new ObjIteratorEx<>() {
             private final int toIndex = toColumnIndex;
             private int cursor = fromColumnIndex;
@@ -3922,6 +3976,22 @@ public final class FloatMatrix extends AbstractMatrix<float[], FloatList, FloatS
                         final long remaining = toIndex2 - cursor2;
                         cursor2 = toIndex2;
                         return remaining;
+                    }
+
+                    @Override
+                    public float[] toArray() {
+                        final float[] result = new float[toIndex2 - cursor2];
+
+                        for (int i = 0; i < result.length; i++, cursor2++) {
+                            result[i] = a[cursor2][columnIndex];
+                        }
+
+                        return result;
+                    }
+
+                    @Override
+                    public FloatList toList() {
+                        return FloatList.of(toArray());
                     }
                 });
             }

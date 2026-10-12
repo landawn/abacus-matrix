@@ -94,14 +94,13 @@ class ShortMatrixTest extends TestBase {
                 }
             };
 
-            assertSame(failure, assertThrows(IllegalStateException.class,
-                    () -> Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
-                        if (selectedOperation == 0) {
-                            matrix.forEach(action);
-                        } else {
-                            matrix.forEach(0, 2, 1, 3, action);
-                        }
-                    })));
+            assertSame(failure, assertThrows(IllegalStateException.class, () -> Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
+                if (selectedOperation == 0) {
+                    matrix.forEach(action);
+                } else {
+                    matrix.forEach(0, 2, 1, 3, action);
+                }
+            })));
 
             assertEquals(2, calls.get(), "operation " + selectedOperation);
         }
@@ -122,24 +121,23 @@ class ShortMatrixTest extends TestBase {
                 return (short) 1;
             };
 
-            assertSame(failure, assertThrows(IllegalStateException.class,
-                    () -> Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
-                        switch (selectedOperation) {
-                            case 0 -> matrix.updateRow(0, operator);
-                            case 1 -> matrix.updateColumn(0, operator);
-                            case 2 -> matrix.updateMainDiagonal(operator);
-                            case 3 -> matrix.updateAntiDiagonal(operator);
-                            case 4 -> matrix.updateAll(operator);
-                            case 5 -> matrix.updateAll((row, column) -> operator.applyAsShort((short) 0));
-                            case 6 -> matrix.replaceIf(value -> operator.applyAsShort(value) != 0, (short) 1);
-                            case 7 -> matrix.replaceIf((row, column) -> operator.applyAsShort((short) 0) != 0, (short) 1);
-                            default -> throw new AssertionError(selectedOperation);
-                        }
-                    })));
+            assertSame(failure, assertThrows(IllegalStateException.class, () -> Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
+                switch (selectedOperation) {
+                    case 0 -> matrix.updateRow(0, operator);
+                    case 1 -> matrix.updateColumn(0, operator);
+                    case 2 -> matrix.updateMainDiagonal(operator);
+                    case 3 -> matrix.updateAntiDiagonal(operator);
+                    case 4 -> matrix.updateAll(operator);
+                    case 5 -> matrix.updateAll((row, column) -> operator.applyAsShort((short) 0));
+                    case 6 -> matrix.replaceIf(value -> operator.applyAsShort(value) != 0, (short) 1);
+                    case 7 -> matrix.replaceIf((row, column) -> operator.applyAsShort((short) 0) != 0, (short) 1);
+                    default -> throw new AssertionError(selectedOperation);
+                }
+            })));
 
             assertEquals(2, calls.get(), "operation " + selectedOperation);
-            assertArrayEquals(selectedOperation == 3 ? new short[] { (short) 0, (short) 1 } : new short[] { (short) 1, (short) 0 },
-                    matrix.rowCopy(0), "operation " + selectedOperation);
+            assertArrayEquals(selectedOperation == 3 ? new short[] { (short) 0, (short) 1 } : new short[] { (short) 1, (short) 0 }, matrix.rowCopy(0),
+                    "operation " + selectedOperation);
             assertArrayEquals(new short[] { (short) 0, (short) 0 }, matrix.rowCopy(1), "operation " + selectedOperation);
         }
     }
@@ -6759,8 +6757,7 @@ class ShortMatrixTest extends TestBase {
         ShortMatrix zeroByFive = ShortMatrix.random(0, 5, new java.util.Random(1L));
         assertEquals(0, zeroByFive.rowCount());
         assertEquals(5, zeroByFive.columnCount());
-        assertThrows(IllegalArgumentException.class,
-                () -> ShortMatrix.random(1, 1, (java.util.random.RandomGenerator) null));
+        assertThrows(IllegalArgumentException.class, () -> ShortMatrix.random(1, 1, (java.util.random.RandomGenerator) null));
     }
 
     @Test
@@ -6830,8 +6827,7 @@ class ShortMatrixTest extends TestBase {
         ShortMatrix zeroProduct = ShortMatrix.random(0, 2).matrixMultiply(ShortMatrix.wrap(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } }));
         assertEquals(0, zeroProduct.rowCount());
         assertEquals(3, zeroProduct.columnCount());
-        assertEquals(3, ShortMatrix.random(0, 2).matrixMultiplyWidened(ShortMatrix.wrap(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } }))
-                .columnCount());
+        assertEquals(3, ShortMatrix.random(0, 2).matrixMultiplyWidened(ShortMatrix.wrap(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } })).columnCount());
     }
 
     @Test

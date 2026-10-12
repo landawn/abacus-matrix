@@ -59,7 +59,8 @@ class MatricesTest extends TestBase {
 
     @Test
     void commonTypeInferenceRanksDistanceBeforeSpecificity() {
-        final java.io.Closeable closeable = () -> { };
+        final java.io.Closeable closeable = () -> {
+        };
         final java.nio.channels.Channel channel = new java.nio.channels.Channel() {
             @Override
             public boolean isOpen() {
@@ -470,9 +471,9 @@ class MatricesTest extends TestBase {
                 };
 
                 try (Stream<Integer> objects = Matrices.mapIndices(shape[0], shape[1], mapper, inParallel);
-                        Stream<Integer> objectRegion = Matrices.mapIndices(2, 2 + shape[0], 4, 4 + shape[1], mapper, inParallel);
-                        IntStream ints = Matrices.mapIndicesToInt(shape[0], shape[1], intMapper, inParallel);
-                        IntStream intRegion = Matrices.mapIndicesToInt(2, 2 + shape[0], 4, 4 + shape[1], intMapper, inParallel)) {
+                     Stream<Integer> objectRegion = Matrices.mapIndices(2, 2 + shape[0], 4, 4 + shape[1], mapper, inParallel);
+                     IntStream ints = Matrices.mapIndicesToInt(shape[0], shape[1], intMapper, inParallel);
+                     IntStream intRegion = Matrices.mapIndicesToInt(2, 2 + shape[0], 4, 4 + shape[1], intMapper, inParallel)) {
                     assertEquals(expectedParallel, objects.isParallel());
                     assertEquals(expectedParallel, objectRegion.isParallel());
                     assertEquals(expectedParallel, ints.isParallel());
@@ -484,9 +485,9 @@ class MatricesTest extends TestBase {
                 }
 
                 try (Stream<Integer> objects = Matrices.mapIndices(shape[0], shape[1], mapper, inParallel);
-                        Stream<Integer> objectRegion = Matrices.mapIndices(2, 2 + shape[0], 4, 4 + shape[1], mapper, inParallel);
-                        IntStream ints = Matrices.mapIndicesToInt(shape[0], shape[1], intMapper, inParallel);
-                        IntStream intRegion = Matrices.mapIndicesToInt(2, 2 + shape[0], 4, 4 + shape[1], intMapper, inParallel)) {
+                     Stream<Integer> objectRegion = Matrices.mapIndices(2, 2 + shape[0], 4, 4 + shape[1], mapper, inParallel);
+                     IntStream ints = Matrices.mapIndicesToInt(shape[0], shape[1], intMapper, inParallel);
+                     IntStream intRegion = Matrices.mapIndicesToInt(2, 2 + shape[0], 4, 4 + shape[1], intMapper, inParallel)) {
                     final var objectIterator = objects.iterator();
                     final var objectRegionIterator = objectRegion.iterator();
                     final var intIterator = ints.iterator();
@@ -561,9 +562,9 @@ class MatricesTest extends TestBase {
         assertThrows(IllegalArgumentException.class, () -> Matrices.stackHorizontally(List.of(first, second, badRows)));
 
         // Zero rows allow testing column-count overflow without allocating enormous arrays.
-        final Matrix<Object> almostFull = Matrix.<Object>wrap(new String[0][0]).resize(0, Integer.MAX_VALUE - 1);
-        final Matrix<Object> oneMore = Matrix.<Object>wrap(new Integer[0][0]).resize(0, 1);
-        final Matrix<Object> overflowing = Matrix.<Object>wrap(new Long[0][0]).resize(0, 1);
+        final Matrix<Object> almostFull = Matrix.<Object> wrap(new String[0][0]).resize(0, Integer.MAX_VALUE - 1);
+        final Matrix<Object> oneMore = Matrix.<Object> wrap(new Integer[0][0]).resize(0, 1);
+        final Matrix<Object> overflowing = Matrix.<Object> wrap(new Long[0][0]).resize(0, 1);
         final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
                 () -> Matrices.stackHorizontally(List.of(almostFull, oneMore, overflowing)));
         assertEquals("Merged column count overflow: 2147483647 + 1 = 2147483648", failure.getMessage());
@@ -5317,18 +5318,22 @@ class MatricesTest extends TestBase {
         // The primitive mapToObj variants allocate through newMatrixArray and pick up the same message.
         assertEquals(expected, assertThrows(IllegalArgumentException.class, () -> intMatrix1.mapToObj(x -> null, void.class)).getMessage());
 
-        assertEquals(expected, assertThrows(IllegalArgumentException.class,
-                () -> Matrices.zipToObj(Arrays.asList(byteMatrix1, byteMatrix2), arr -> null, void.class)).getMessage());
-        assertEquals(expected, assertThrows(IllegalArgumentException.class,
-                () -> Matrices.zipToObj(Arrays.asList(intMatrix1, intMatrix2), arr -> null, false, void.class)).getMessage());
-        assertEquals(expected, assertThrows(IllegalArgumentException.class,
-                () -> Matrices.zipToObj(Arrays.asList(longMatrix1, longMatrix2), arr -> null, void.class)).getMessage());
+        assertEquals(expected,
+                assertThrows(IllegalArgumentException.class, () -> Matrices.zipToObj(Arrays.asList(byteMatrix1, byteMatrix2), arr -> null, void.class))
+                        .getMessage());
+        assertEquals(expected,
+                assertThrows(IllegalArgumentException.class, () -> Matrices.zipToObj(Arrays.asList(intMatrix1, intMatrix2), arr -> null, false, void.class))
+                        .getMessage());
+        assertEquals(expected,
+                assertThrows(IllegalArgumentException.class, () -> Matrices.zipToObj(Arrays.asList(longMatrix1, longMatrix2), arr -> null, void.class))
+                        .getMessage());
         assertEquals(expected, assertThrows(IllegalArgumentException.class,
                 () -> Matrices.zipToObj(Arrays.asList(doubleMatrix1, doubleMatrix2), arr -> null, true, void.class)).getMessage());
-        assertEquals(expected, assertThrows(IllegalArgumentException.class,
-                () -> Matrices.zip(stringMatrix1, stringMatrix2, (a, b) -> null, void.class)).getMessage());
-        assertEquals(expected, assertThrows(IllegalArgumentException.class,
-                () -> Matrices.zip(stringMatrix1, stringMatrix2, stringMatrix3, (a, b, c) -> null, void.class)).getMessage());
+        assertEquals(expected,
+                assertThrows(IllegalArgumentException.class, () -> Matrices.zip(stringMatrix1, stringMatrix2, (a, b) -> null, void.class)).getMessage());
+        assertEquals(expected,
+                assertThrows(IllegalArgumentException.class, () -> Matrices.zip(stringMatrix1, stringMatrix2, stringMatrix3, (a, b, c) -> null, void.class))
+                        .getMessage());
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -5362,10 +5367,12 @@ class MatricesTest extends TestBase {
                 assertThrows(IllegalArgumentException.class, () -> Matrices.zip(Collections.<IntMatrix> emptyList(), (a, b) -> a + b)).getMessage());
         assertEquals(expected,
                 assertThrows(IllegalArgumentException.class, () -> Matrices.zipToLong(Collections.<IntMatrix> emptyList(), arr -> 0L)).getMessage());
-        assertEquals(expected, assertThrows(IllegalArgumentException.class,
-                () -> Matrices.zipToObj(Collections.<ByteMatrix> emptyList(), arr -> 0, Integer.class)).getMessage());
-        assertEquals(expected, assertThrows(IllegalArgumentException.class,
-                () -> Matrices.zip(Collections.<Matrix<String>> emptyList(), (a, b) -> a, String.class)).getMessage());
+        assertEquals(expected,
+                assertThrows(IllegalArgumentException.class, () -> Matrices.zipToObj(Collections.<ByteMatrix> emptyList(), arr -> 0, Integer.class))
+                        .getMessage());
+        assertEquals(expected,
+                assertThrows(IllegalArgumentException.class, () -> Matrices.zip(Collections.<Matrix<String>> emptyList(), (a, b) -> a, String.class))
+                        .getMessage());
 
         // The n-ary stacking helpers really do name their parameter 'matrices'.
         assertEquals("'matrices' cannot be null or empty",

@@ -17,11 +17,9 @@ package com.landawn.abacus.matrix;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.random.RandomGenerator;
 
@@ -321,8 +319,24 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @return {@code source}, or an independent copy when {@code source} is a live backing row
      */
     final A snapshotIfBackingRow(final A source) {
-        for (final A row : a) {
-            if (row == source) {
+        return snapshotIfBackingRow(source, rowCount);
+    }
+
+    /**
+     * Snapshots a source row only if it aliases a row in the prefix that the caller will modify.
+     * The caller supplies a validated exclusive row bound.
+     *
+     * @param source the candidate source row, possibly {@code null}
+     * @param toRowIndex the exclusive upper bound of the destination rows
+     * @return the original row, or an independent snapshot of an affected backing row
+     */
+    final A snapshotIfBackingRow(final A source, final int toRowIndex) {
+        if (source == null || length(source) != columnCount) {
+            return source;
+        }
+
+        for (int i = 0; i < toRowIndex; i++) {
+            if (a[i] == source) {
                 return cloneArray(source);
             }
         }
@@ -331,61 +345,83 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     }
 
     /**
-     * Returns an array whose rows can be read safely while this matrix is being modified. Rows that
-     * are also live backing rows of this matrix are replaced with independent snapshots; all other
-     * row references, including {@code null}, are preserved. The supplied array and this matrix are
-     * not modified.
+     * Prepares the source rows used by a bounded {@code copyFrom} operation. Only rows that will
+     * actually be read and that alias a destination row being written are snapshotted. Each
+     * snapshot contains only the prefix that can fit at the destination column; repeated source
+     * references share a single snapshot. Unused rows are not inspected or copied.
      *
-     * @param source the source row array; may contain {@code null} rows, and may itself be
-     *        {@code null} only when this matrix has no rows
-     * @return {@code source} if none of its rows aliases this matrix, otherwise a copy with each
-     *         aliased row replaced by an independent snapshot
-     * @throws IllegalArgumentException if {@code source} is {@code null} and this matrix has at least one row
+     * <p>The caller validates the destination indices before invoking this helper. A single-row
+     * copy needs no snapshot because the subsequent array copy handles overlap within that row.</p>
+     *
+     * @param source source rows, possibly containing {@code null}; may itself be {@code null} only
+     *        when this matrix has no rows
+     * @param destRowIndex validated destination row index, inclusive
+     * @param destColumnIndex validated destination column index, inclusive
+     * @return the original source when no snapshot is needed, otherwise an outer array containing
+     *         only the overlapping rows, with affected source prefixes snapshotted
+     * @throws IllegalArgumentException if source is {@code null} and this matrix has backing rows
      */
-    final A[] snapshotRowsIfBackingRows(final A[] source) throws IllegalArgumentException {
+    final A[] snapshotRowsIfBackingRows(final A[] source, final int destRowIndex, final int destColumnIndex) throws IllegalArgumentException {
         if (a.length == 0) {
             return source;
         }
 
         N.checkArgNotNull(source, cs.source);
+        final int copiedRows = Math.min(rowCount - destRowIndex, source.length);
+        final int copiedColumns = columnCount - destColumnIndex;
 
-        if (source.length == 0) {
+        if (copiedRows <= 1 || copiedColumns == 0) {
             return source;
         }
 
-        // Index the SOURCE, not this matrix: `source` is a caller-supplied block that is typically a
-        // handful of rows, while this matrix may have millions, and only the smaller side has to be
-        // in a lookup table. Indexing the matrix instead made copyFrom(0, 0, oneRow) allocate a table
-        // sized to the whole matrix.
-        final Set<A> sourceRows = Collections.newSetFromMap(new IdentityHashMap<>(source.length));
+        // Every backing row has exactly columnCount elements, so a block whose copied rows are all
+        // narrower, wider, or null -- the usual sub-block paste -- cannot alias this matrix and needs no table.
+        boolean mayAlias = false;
 
-        for (final A row : source) {
-            if (row != null) {
-                sourceRows.add(row);
+        for (int i = 0; i < copiedRows; i++) {
+            if (length(source[i]) == columnCount) {
+                mayAlias = true;
+                break;
             }
         }
 
-        final Set<A> aliasedRows = Collections.newSetFromMap(new IdentityHashMap<>());
-
-        for (final A row : a) {
-            if (sourceRows.contains(row)) {
-                aliasedRows.add(row);
-            }
-        }
-
-        if (aliasedRows.isEmpty()) {
+        if (!mayAlias) {
             return source;
         }
 
-        final A[] snapshot = source.clone();
+        // A row is at risk only if this copy writes to it. The table scales with the overlap,
+        // never with the unrelated rows of the matrix or an oversized source block.
+        final Map<A, A> snapshots = new IdentityHashMap<>(copiedRows);
 
-        for (int i = 0; i < snapshot.length; i++) {
-            if (aliasedRows.contains(snapshot[i])) {
-                snapshot[i] = cloneArray(snapshot[i]);
+        for (int i = 0; i < copiedRows; i++) {
+            if (source[i] != null && length(source[i]) > 0) {
+                final A destination = a[destRowIndex + i];
+                snapshots.put(destination, destination);
             }
         }
 
-        return snapshot;
+        A[] snapshot = null;
+
+        for (int i = 0; i < copiedRows; i++) {
+            final A row = source[i];
+            final A saved = snapshots.get(row);
+
+            if (saved != null) {
+                if (snapshot == null) {
+                    snapshot = java.util.Arrays.copyOf(source, copiedRows);
+                }
+
+                if (saved == row) {
+                    final A prefix = copyArrayPrefix(row, copiedColumns);
+                    snapshots.put(row, prefix);
+                    snapshot[i] = prefix;
+                } else {
+                    snapshot[i] = saved;
+                }
+            }
+        }
+
+        return snapshot == null ? source : snapshot;
     }
 
     /**
@@ -398,9 +434,24 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @throws NullPointerException if {@code source} is {@code null}
      * @throws IllegalArgumentException if {@code source} is not an array
      */
-    @SuppressWarnings("unchecked")
     private static <R> R cloneArray(final R source) throws NullPointerException, IllegalArgumentException {
-        final int length = java.lang.reflect.Array.getLength(source);
+        return copyArrayPrefix(source, java.lang.reflect.Array.getLength(source));
+    }
+
+    /**
+     * Returns a new array of the same runtime type as {@code source} holding its first {@code length}
+     * primitive values or element references. The supplied array is not modified.
+     *
+     * @param <R> the array type
+     * @param source the non-{@code null} array to copy from
+     * @param length the number of leading elements to copy; between zero and the length of {@code source}
+     * @return an independent array of length {@code length} containing the leading elements of {@code source}
+     * @throws NullPointerException if {@code source} is {@code null} or is not an array
+     * @throws NegativeArraySizeException if {@code length} is negative
+     * @throws IndexOutOfBoundsException if {@code length} exceeds the length of {@code source}
+     */
+    @SuppressWarnings("unchecked")
+    private static <R> R copyArrayPrefix(final R source, final int length) throws NullPointerException, NegativeArraySizeException, IndexOutOfBoundsException {
         final Object copy = java.lang.reflect.Array.newInstance(source.getClass().getComponentType(), length);
         System.arraycopy(source, 0, copy, 0, length);
         return (R) copy;
@@ -1912,8 +1963,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @return a stream of {@link Point} objects representing the anti-diagonal positions
      */
     public Stream<Point> antiDiagonalPoints() {
+        // Capture the column count rather than this matrix, so the lazy stream does not retain its rows.
+        final int columns = columnCount;
         //noinspection resource
-        return IntStream.range(0, diagonalLength()).mapToObj(i -> Point.of(i, columnCount - i - 1));
+        return IntStream.range(0, diagonalLength()).mapToObj(i -> Point.of(i, columns - i - 1));
     }
 
     /**
@@ -2086,8 +2139,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
             return Stream.empty();
         }
 
+        // Capture the column count rather than this matrix, so the lazy stream does not retain its rows.
+        final int columns = columnCount;
         return IntStream.range(fromRowIndex, toRowIndex)
-                .flatMapToObj(rowIndex -> IntStream.range(0, columnCount).mapToObj(columnIndex -> Point.of(rowIndex, columnIndex)));
+                .flatMapToObj(rowIndex -> IntStream.range(0, columns).mapToObj(columnIndex -> Point.of(rowIndex, columnIndex)));
     }
 
     /**
@@ -2147,8 +2202,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
             return Stream.empty();
         }
 
+        // Capture the row count rather than this matrix, so the lazy stream does not retain its rows.
+        final int rows = rowCount;
         return IntStream.range(fromColumnIndex, toColumnIndex)
-                .flatMapToObj(columnIndex -> IntStream.range(0, rowCount).mapToObj(rowIndex -> Point.of(rowIndex, columnIndex)));
+                .flatMapToObj(columnIndex -> IntStream.range(0, rows).mapToObj(rowIndex -> Point.of(rowIndex, columnIndex)));
     }
 
     /**
@@ -2204,8 +2261,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     public Stream<Stream<Point>> rowPoints(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
+        // Capture the column count rather than this matrix, so the lazy stream does not retain its rows.
+        final int columns = columnCount;
         return IntStream.range(fromRowIndex, toRowIndex)
-                .mapToObj(rowIndex -> IntStream.range(0, columnCount).mapToObj(columnIndex -> Point.of(rowIndex, columnIndex)));
+                .mapToObj(rowIndex -> IntStream.range(0, columns).mapToObj(columnIndex -> Point.of(rowIndex, columnIndex)));
     }
 
     /**
@@ -2261,8 +2320,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     public Stream<Stream<Point>> columnPoints(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
+        // Capture the row count rather than this matrix, so the lazy stream does not retain its rows.
+        final int rows = rowCount;
         return IntStream.range(fromColumnIndex, toColumnIndex)
-                .mapToObj(columnIndex -> IntStream.range(0, rowCount).mapToObj(rowIndex -> Point.of(rowIndex, columnIndex)));
+                .mapToObj(columnIndex -> IntStream.range(0, rows).mapToObj(rowIndex -> Point.of(rowIndex, columnIndex)));
     }
 
     /**

@@ -243,7 +243,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             c[i] = a[i] == null ? null : a[i].clone();
         }
 
-        return new ShortMatrix(c);
+        return wrapResult(c, columnCount);
     }
 
     /**
@@ -555,7 +555,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             }
         }
 
-        return new ShortMatrix(result);
+        return wrapResult(result, matrixSize);
     }
 
     /**
@@ -1206,9 +1206,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * top-right toward the lower-left, at positions {@code (i, columnCount - i - 1)}
      * for {@code 0 <= i < min(rowCount, columnCount)}.</p>
      *
-     * <p>If the supplied array is one of this matrix's live backing rows (for example a value returned
-     * by {@code rowView(int)}), it is snapshotted first, so the values read are the ones in place when
-     * this method was called.</p>
+     * <p>The supplied array may be one of this matrix's live backing rows (for example a value returned
+     * by {@code rowView(int)}); the values read are still the ones in place when this method was called.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1231,7 +1230,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
         N.checkArgNotNull(antiDiagonal, cs.antiDiagonal);
         final int diagonalLength = diagonalLength();
         N.checkArgument(antiDiagonal.length == diagonalLength, MSG_DIAGONAL_LENGTH_MISMATCH, diagonalLength, antiDiagonal.length);
-        final short[] values = snapshotIfBackingRow(antiDiagonal);
+        final short[] values = snapshotIfBackingRow(antiDiagonal, diagonalLength);
 
         for (int i = 0; i < diagonalLength; i++) {
             a[i][columnCount - i - 1] = values[i];
@@ -1544,7 +1543,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return new Matrix<>(result, targetElementType, columnCount);
+        return Matrix.newResult(result, targetElementType, columnCount);
     }
 
     /**
@@ -1611,8 +1610,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * The source array can extend beyond this matrix's bounds; only the overlapping region is copied.
      * The matrix is modified in-place. {@code null} rows in {@code source} are skipped (the
      * corresponding destination row is left unchanged). Elements outside the matrix bounds are ignored.
-     * Any source row that aliases this matrix's backing storage is snapshotted before copying, so
-     * overlapping copies read the source values as they were when this method was called.
+     * Source rows may be this matrix's own backing rows (for example arrays returned by {@code rowView(int)});
+     * overlapping copies still read every source value as it was when this method was called.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1643,7 +1642,12 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be in [0, columnCount({})]", destColumnIndex, columnCount));
         }
         N.checkArgNotNull(source, cs.source);
-        final short[][] sourceSnapshot = snapshotRowsIfBackingRows(source);
+
+        if (destRowIndex == rowCount || destColumnIndex == columnCount || source.length == 0) {
+            return;
+        }
+
+        final short[][] sourceSnapshot = snapshotRowsIfBackingRows(source, destRowIndex, destColumnIndex);
 
         for (int i = 0, minLen = N.min(rowCount - destRowIndex, sourceSnapshot.length); i < minLen; i++) {
             if (sourceSnapshot[i] != null) {
@@ -3023,16 +3027,48 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @throws ArithmeticException if any result cell cannot be represented as a {@code short}
      */
     public ShortMatrix matrixMultiplyExact(final ShortMatrix other) throws IllegalArgumentException, ArithmeticException {
-        final LongMatrix widened = matrixMultiplyWidened(other);
-        final short[][] result = new short[rowCount][other.columnCount];
+        N.checkArgNotNull(other, cs.other);
+        N.checkArgument(columnCount == other.rowCount,
+                "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
+                columnCount, other.rowCount, other.columnCount);
+
+        final int newColumnCount = other.columnCount;
+        final short[][] result = new short[rowCount][newColumnCount];
+
+        if (rowCount == 0 || newColumnCount == 0 || columnCount == 0) {
+            return wrapResult(result, newColumnCount);
+        }
+
+        // Reuse one widened row rather than retaining a full long matrix alongside the short result.
+        final long[] sums = new long[newColumnCount];
 
         for (int i = 0; i < rowCount; i++) {
-            for (int j = 0; j < other.columnCount; j++) {
-                result[i][j] = toShortExact(widened.get(i, j));
+            if (i > 0) {
+                N.fill(sums, 0L);
+            }
+
+            final short[] leftRow = a[i];
+
+            for (int k = 0; k < columnCount; k++) {
+                final long left = leftRow[k];
+                final short[] rightRow = other.a[k];
+
+                // Unchecked is safe: each product is at most 2^30 in magnitude and there are fewer than
+                // 2^31 terms, so a partial sum never exceeds 2^61 and cannot overflow long.
+                for (int j = 0; j < newColumnCount; j++) {
+                    sums[j] += left * rightRow[j];
+                }
+            }
+
+            final short[] resultRow = result[i];
+
+            for (int j = 0; j < newColumnCount; j++) {
+                // Check only complete dot products: out-of-range partial sums may still cancel.
+                resultRow[j] = toShortExact(sums[j]);
             }
         }
 
-        return wrapResult(result, other.columnCount);
+        return wrapResult(result, newColumnCount);
     }
 
     /**
@@ -3064,7 +3100,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             }
         }
 
-        return new Matrix<>(c, Short.class, columnCount);
+        return Matrix.newResult(c, Short.class, columnCount);
     }
 
     /**
@@ -3335,8 +3371,14 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      */
     @Override
     public ShortStream mainDiagonalStream() {
+        final int diagonalLength = diagonalLength();
+
+        if (diagonalLength == 0) {
+            return ShortStream.empty();
+        }
+
         return ShortStream.of(new ShortIteratorEx() {
-            private final int toIndex = diagonalLength();
+            private final int toIndex = diagonalLength;
             private int cursor = 0;
 
             @Override
@@ -3373,6 +3415,23 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
                 cursor = toIndex;
                 return result;
             }
+
+            @Override
+            public short[] toArray() {
+                final short[] result = new short[toIndex - cursor];
+
+                for (int i = 0; i < result.length; i++) {
+                    result[i] = a[cursor][cursor];
+                    cursor++;
+                }
+
+                return result;
+            }
+
+            @Override
+            public ShortList toList() {
+                return ShortList.of(toArray());
+            }
         });
     }
 
@@ -3399,8 +3458,14 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      */
     @Override
     public ShortStream antiDiagonalStream() {
+        final int diagonalLength = diagonalLength();
+
+        if (diagonalLength == 0) {
+            return ShortStream.empty();
+        }
+
         return ShortStream.of(new ShortIteratorEx() {
-            private final int toIndex = diagonalLength();
+            private final int toIndex = diagonalLength;
             private int cursor = 0;
 
             @Override
@@ -3438,6 +3503,23 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
                 final long result = toIndex - cursor; // NOSONAR
                 cursor = toIndex;
                 return result;
+            }
+
+            @Override
+            public short[] toArray() {
+                final short[] result = new short[toIndex - cursor];
+
+                for (int i = 0; i < result.length; i++) {
+                    result[i] = a[cursor][columnCount - cursor - 1];
+                    cursor++;
+                }
+
+                return result;
+            }
+
+            @Override
+            public ShortList toList() {
+                return ShortList.of(toArray());
             }
         });
     }
@@ -3501,7 +3583,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     public ShortStream rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
-        if (isEmpty()) {
+        if (fromRowIndex == toRowIndex || isEmpty()) {
             return ShortStream.empty();
         }
 
@@ -3589,6 +3671,11 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             private long remainingCount() {
                 return (long) (toRowIndex - i) * columnCount - j;
             }
+
+            @Override
+            public ShortList toList() {
+                return ShortList.of(toArray());
+            }
         });
     }
 
@@ -3651,7 +3738,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     public ShortStream columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
-        if (isEmpty()) {
+        if (fromColumnIndex == toColumnIndex || isEmpty()) {
             return ShortStream.empty();
         }
 
@@ -3736,6 +3823,11 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             private long remainingCount() {
                 return (long) (toColumnIndex - j) * rowCount - i;
             }
+
+            @Override
+            public ShortList toList() {
+                return ShortList.of(toArray());
+            }
         });
     }
 
@@ -3808,6 +3900,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     @Override
     public Stream<ShortStream> rowStreams(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
+
+        if (fromRowIndex == toRowIndex) {
+            return Stream.empty();
+        }
 
         return Stream.of(new ObjIteratorEx<>() {
             private final int toIndex = toRowIndex;
@@ -3918,6 +4014,10 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     public Stream<ShortStream> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
+        if (fromColumnIndex == toColumnIndex) {
+            return Stream.empty();
+        }
+
         return Stream.of(new ObjIteratorEx<>() {
             private final int toIndex = toColumnIndex;
             private int cursor = fromColumnIndex;
@@ -3976,6 +4076,22 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
                         final long result = toIndex2 - cursor2; // NOSONAR
                         cursor2 = toIndex2;
                         return result;
+                    }
+
+                    @Override
+                    public short[] toArray() {
+                        final short[] result = new short[toIndex2 - cursor2];
+
+                        for (int i = 0; i < result.length; i++) {
+                            result[i] = a[cursor2++][columnIndex];
+                        }
+
+                        return result;
+                    }
+
+                    @Override
+                    public ShortList toList() {
+                        return ShortList.of(toArray());
                     }
                 });
             }

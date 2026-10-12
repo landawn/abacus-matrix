@@ -97,14 +97,13 @@ class ByteMatrixTest extends TestBase {
                 }
             };
 
-            assertSame(failure, assertThrows(IllegalStateException.class,
-                    () -> Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
-                        if (selectedOperation == 0) {
-                            matrix.forEach(action);
-                        } else {
-                            matrix.forEach(0, 2, 1, 3, action);
-                        }
-                    })));
+            assertSame(failure, assertThrows(IllegalStateException.class, () -> Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
+                if (selectedOperation == 0) {
+                    matrix.forEach(action);
+                } else {
+                    matrix.forEach(0, 2, 1, 3, action);
+                }
+            })));
 
             assertEquals(2, calls.get(), "operation " + selectedOperation);
         }
@@ -125,24 +124,23 @@ class ByteMatrixTest extends TestBase {
                 return (byte) 1;
             };
 
-            assertSame(failure, assertThrows(IllegalStateException.class,
-                    () -> Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
-                        switch (selectedOperation) {
-                            case 0 -> matrix.updateRow(0, operator);
-                            case 1 -> matrix.updateColumn(0, operator);
-                            case 2 -> matrix.updateMainDiagonal(operator);
-                            case 3 -> matrix.updateAntiDiagonal(operator);
-                            case 4 -> matrix.updateAll(operator);
-                            case 5 -> matrix.updateAll((row, column) -> operator.applyAsByte((byte) 0));
-                            case 6 -> matrix.replaceIf(value -> operator.applyAsByte(value) != 0, (byte) 1);
-                            case 7 -> matrix.replaceIf((row, column) -> operator.applyAsByte((byte) 0) != 0, (byte) 1);
-                            default -> throw new AssertionError(selectedOperation);
-                        }
-                    })));
+            assertSame(failure, assertThrows(IllegalStateException.class, () -> Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
+                switch (selectedOperation) {
+                    case 0 -> matrix.updateRow(0, operator);
+                    case 1 -> matrix.updateColumn(0, operator);
+                    case 2 -> matrix.updateMainDiagonal(operator);
+                    case 3 -> matrix.updateAntiDiagonal(operator);
+                    case 4 -> matrix.updateAll(operator);
+                    case 5 -> matrix.updateAll((row, column) -> operator.applyAsByte((byte) 0));
+                    case 6 -> matrix.replaceIf(value -> operator.applyAsByte(value) != 0, (byte) 1);
+                    case 7 -> matrix.replaceIf((row, column) -> operator.applyAsByte((byte) 0) != 0, (byte) 1);
+                    default -> throw new AssertionError(selectedOperation);
+                }
+            })));
 
             assertEquals(2, calls.get(), "operation " + selectedOperation);
-            assertArrayEquals(selectedOperation == 3 ? new byte[] { (byte) 0, (byte) 1 } : new byte[] { (byte) 1, (byte) 0 },
-                    matrix.rowCopy(0), "operation " + selectedOperation);
+            assertArrayEquals(selectedOperation == 3 ? new byte[] { (byte) 0, (byte) 1 } : new byte[] { (byte) 1, (byte) 0 }, matrix.rowCopy(0),
+                    "operation " + selectedOperation);
             assertArrayEquals(new byte[] { (byte) 0, (byte) 0 }, matrix.rowCopy(1), "operation " + selectedOperation);
         }
     }
@@ -6509,7 +6507,8 @@ class ByteMatrixTest extends TestBase {
         ArithmeticException subtractOverflow = assertThrows(ArithmeticException.class, () -> maxAndMin.subtractExact(ones));
         assertEquals("byte overflow: -129", subtractOverflow.getMessage());
 
-        assertEquals(ByteMatrix.wrap(new byte[][] { { 3, 5 } }), ByteMatrix.wrap(new byte[][] { { 1, 2 } }).addExact(ByteMatrix.wrap(new byte[][] { { 2, 3 } })));
+        assertEquals(ByteMatrix.wrap(new byte[][] { { 3, 5 } }),
+                ByteMatrix.wrap(new byte[][] { { 1, 2 } }).addExact(ByteMatrix.wrap(new byte[][] { { 2, 3 } })));
 
         ByteMatrix left = ByteMatrix.wrap(new byte[][] { { Byte.MAX_VALUE, Byte.MAX_VALUE } });
         ByteMatrix right = ByteMatrix.wrap(new byte[][] { { Byte.MAX_VALUE }, { Byte.MAX_VALUE } });

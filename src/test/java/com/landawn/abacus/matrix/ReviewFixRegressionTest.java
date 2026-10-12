@@ -107,14 +107,12 @@ class ReviewFixRegressionTest extends TestBase {
         assertEquals(LongMatrix.wrap(new long[][] { { 11 } }),
                 LongMatrix.wrap(new long[][] { { 1, 2 } }).matrixMultiplyExact(LongMatrix.wrap(new long[][] { { 3 }, { 4 } })));
 
+        assertThrows(ArithmeticException.class, () -> LongMatrix.wrap(new long[][] { { Long.MAX_VALUE } }).addExact(one));
+        assertThrows(ArithmeticException.class, () -> LongMatrix.wrap(new long[][] { { Long.MIN_VALUE } }).subtractExact(one));
         assertThrows(ArithmeticException.class,
-                () -> LongMatrix.wrap(new long[][] { { Long.MAX_VALUE } }).addExact(one));
+                () -> LongMatrix.wrap(new long[][] { { Long.MAX_VALUE, 0 } }).matrixMultiplyExact(LongMatrix.wrap(new long[][] { { 2 }, { 0 } })));
         assertThrows(ArithmeticException.class,
-                () -> LongMatrix.wrap(new long[][] { { Long.MIN_VALUE } }).subtractExact(one));
-        assertThrows(ArithmeticException.class, () -> LongMatrix.wrap(new long[][] { { Long.MAX_VALUE, 0 } })
-                .matrixMultiplyExact(LongMatrix.wrap(new long[][] { { 2 }, { 0 } })));
-        assertThrows(ArithmeticException.class, () -> LongMatrix.wrap(new long[][] { { Long.MAX_VALUE, 1 } })
-                .matrixMultiplyExact(LongMatrix.wrap(new long[][] { { 1 }, { 1 } })));
+                () -> LongMatrix.wrap(new long[][] { { Long.MAX_VALUE, 1 } }).matrixMultiplyExact(LongMatrix.wrap(new long[][] { { 1 }, { 1 } })));
     }
 
     @Test
@@ -151,8 +149,7 @@ class ReviewFixRegressionTest extends TestBase {
         assertEquals(List.of("0,0"), mapped.limit(1).toList());
         assertEquals(1, calls.get());
 
-        assertEquals(List.of("0,0", "0,1", "1,0", "1,1", "2,0", "2,1"),
-                Matrices.mapIndices(3, 2, (i, j) -> i + "," + j, false).toList());
+        assertEquals(List.of("0,0", "0,1", "1,0", "1,1", "2,0", "2,1"), Matrices.mapIndices(3, 2, (i, j) -> i + "," + j, false).toList());
 
         AtomicInteger intCalls = new AtomicInteger();
         com.landawn.abacus.util.stream.IntStream ints = Matrices.mapIndicesToInt(3, 2, (i, j) -> {
@@ -163,8 +160,9 @@ class ReviewFixRegressionTest extends TestBase {
         assertArrayEquals(new int[] { 0 }, ints.limit(1).toArray());
         assertEquals(1, intCalls.get());
 
-        Stream<Integer> deferredFailure = Matrices.mapIndices(1, 1,
-                (Throwables.IntBiFunction<Integer, IOException>) (i, j) -> { throw new IOException("boom"); }, false);
+        Stream<Integer> deferredFailure = Matrices.mapIndices(1, 1, (Throwables.IntBiFunction<Integer, IOException>) (i, j) -> {
+            throw new IOException("boom");
+        }, false);
         assertThrows(RuntimeException.class, deferredFailure::toList);
     }
 
@@ -208,8 +206,7 @@ class ReviewFixRegressionTest extends TestBase {
         assertEquals("[1, 2]\n[3, 4]", output.toString());
         assertTrue(output.appendCalls > 1);
 
-        assertThrows(UncheckedIOException.class,
-                () -> LongMatrix.wrap(new long[][] { { 1 } }).appendTo(new CountingAppendable(true)));
+        assertThrows(UncheckedIOException.class, () -> LongMatrix.wrap(new long[][] { { 1 } }).appendTo(new CountingAppendable(true)));
     }
 
     @Test
@@ -350,8 +347,7 @@ class ReviewFixRegressionTest extends TestBase {
         assertThrows(ArithmeticException.class, () -> big.matrixMultiplyExact(big2));
 
         // Byte and Short already behaved this way; they must keep doing so.
-        assertEquals((byte) 0,
-                ByteMatrix.wrap(new byte[][] { { 100, 100 } }).matrixMultiplyExact(ByteMatrix.wrap(new byte[][] { { 1 }, { -1 } })).get(0, 0));
+        assertEquals((byte) 0, ByteMatrix.wrap(new byte[][] { { 100, 100 } }).matrixMultiplyExact(ByteMatrix.wrap(new byte[][] { { 1 }, { -1 } })).get(0, 0));
         assertEquals((short) 0,
                 ShortMatrix.wrap(new short[][] { { 30_000, 30_000 } }).matrixMultiplyExact(ShortMatrix.wrap(new short[][] { { 1 }, { -1 } })).get(0, 0));
     }

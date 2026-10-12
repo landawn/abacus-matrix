@@ -235,7 +235,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
             c[i] = a[i] == null ? null : a[i].clone();
         }
 
-        return new BooleanMatrix(c);
+        return wrapResult(c, columnCount);
     }
 
     /**
@@ -1124,9 +1124,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * top-right toward the lower-left, at positions {@code (0,columnCount-1)},
      * {@code (1,columnCount-2)}, and so on.</p>
      *
-     * <p>If the supplied array is one of this matrix's live backing rows (for example a value returned
-     * by {@code rowView(int)}), it is snapshotted first, so the values read are the ones in place when
-     * this method was called.</p>
+     * <p>The supplied array may be one of this matrix's live backing rows (for example a value returned
+     * by {@code rowView(int)}); the values read are still the ones in place when this method was called.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1154,7 +1153,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
         N.checkArgNotNull(antiDiagonal, cs.antiDiagonal);
         final int diagonalLength = diagonalLength();
         N.checkArgument(antiDiagonal.length == diagonalLength, MSG_DIAGONAL_LENGTH_MISMATCH, diagonalLength, antiDiagonal.length);
-        final boolean[] values = snapshotIfBackingRow(antiDiagonal);
+        final boolean[] values = snapshotIfBackingRow(antiDiagonal, diagonalLength);
 
         for (int i = 0; i < diagonalLength; i++) {
             a[i][columnCount - i - 1] = values[i];
@@ -1477,7 +1476,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
 
         Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
 
-        return new Matrix<>(result, targetElementType, columnCount);
+        return Matrix.newResult(result, targetElementType, columnCount);
     }
 
     /**
@@ -1539,8 +1538,8 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
      * The source array can extend beyond this matrix's bounds; only the overlapping region is copied.
      * The matrix is modified in-place. {@code null} rows in {@code source} are skipped (the
      * corresponding destination row is left unchanged). Elements outside the matrix bounds are ignored.
-     * Any source row that aliases this matrix's backing storage is snapshotted before copying, so
-     * overlapping copies read the source values as they were when this method was called.
+     * Source rows may be this matrix's own backing rows (for example arrays returned by {@code rowView(int)});
+     * overlapping copies still read every source value as it was when this method was called.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1571,7 +1570,12 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
             throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be in [0, columnCount({})]", destColumnIndex, columnCount));
         }
         N.checkArgNotNull(source, cs.source);
-        final boolean[][] sourceSnapshot = snapshotRowsIfBackingRows(source);
+
+        if (destRowIndex == rowCount || destColumnIndex == columnCount || source.length == 0) {
+            return;
+        }
+
+        final boolean[][] sourceSnapshot = snapshotRowsIfBackingRows(source, destRowIndex, destColumnIndex);
 
         for (int i = 0, minLen = N.min(rowCount - destRowIndex, sourceSnapshot.length); i < minLen; i++) {
             if (sourceSnapshot[i] != null) {
@@ -3003,7 +3007,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
             }
         }
 
-        return new Matrix<>(c, Boolean.class, columnCount);
+        return Matrix.newResult(c, Boolean.class, columnCount);
     }
 
     /**
@@ -3348,7 +3352,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     public Stream<Boolean> rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
-        if (isEmpty()) {
+        if (fromRowIndex == toRowIndex || isEmpty()) {
             return Stream.empty();
         }
 
@@ -3505,7 +3509,7 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     public Stream<Boolean> columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
-        if (isEmpty()) {
+        if (fromColumnIndex == toColumnIndex || isEmpty()) {
             return Stream.empty();
         }
 
@@ -3682,6 +3686,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     public Stream<Stream<Boolean>> rowStreams(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
+        if (fromRowIndex == toRowIndex) {
+            return Stream.empty();
+        }
+
         return Stream.of(new ObjIteratorEx<>() {
             private final int toIndex = toRowIndex;
             private int cursor = fromRowIndex;
@@ -3802,6 +3810,10 @@ public final class BooleanMatrix extends AbstractMatrix<boolean[], BooleanList, 
     @Override
     public Stream<Stream<Boolean>> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
+
+        if (fromColumnIndex == toColumnIndex) {
+            return Stream.empty();
+        }
 
         return Stream.of(new ObjIteratorEx<>() {
             private final int toIndex = toColumnIndex;

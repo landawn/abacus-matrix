@@ -39,14 +39,15 @@ class MatrixTest extends TestBase {
     void streamsObserveLiveValuesWhileProducedRowStreamsKeepTheirBackingRow() {
         final Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } });
         try (var rowStreams = matrix.rowStreams(0, 2);
-                var columnStreams = matrix.columnStreams(0, 2);
-                var rowMajor = matrix.rowMajorStream(0, 2);
-                var columnMajor = matrix.columnMajorStream(0, 2);
-                var mainDiagonal = matrix.mainDiagonalStream();
-                var antiDiagonal = matrix.antiDiagonalStream()) {
+             var columnStreams = matrix.columnStreams(0, 2);
+             var rowMajor = matrix.rowMajorStream(0, 2);
+             var columnMajor = matrix.columnMajorStream(0, 2);
+             var mainDiagonal = matrix.mainDiagonalStream();
+             var antiDiagonal = matrix.antiDiagonalStream()) {
             final var rows = rowStreams.iterator();
             final var columns = columnStreams.iterator();
-            try (var selectedRow = rows.next(); var selectedColumn = columns.next()) {
+            try (var selectedRow = rows.next();
+                 var selectedColumn = columns.next()) {
                 matrix.flipVerticallyInPlace();
                 matrix.set(1, 0, 9);
                 assertEquals(List.of(9, 2), selectedRow.toList());
@@ -56,7 +57,8 @@ class MatrixTest extends TestBase {
                 assertEquals(List.of(3, 2), mainDiagonal.toList());
                 assertEquals(List.of(4, 9), antiDiagonal.toList());
             }
-            try (var nextRow = rows.next(); var nextColumn = columns.next()) {
+            try (var nextRow = rows.next();
+                 var nextColumn = columns.next()) {
                 assertEquals(List.of(9, 2), nextRow.toList());
                 assertEquals(List.of(4, 2), nextColumn.toList());
             }
@@ -145,15 +147,14 @@ class MatrixTest extends TestBase {
         final Matrix<String> noRows = Matrix.empty(String.class, 3);
         final Matrix<String> noColumns = Matrix.copyOf(String.class, new String[3][0]);
 
-        Assertions.assertAll(
-                () -> assertNotSame(noRows.columnCopy(1), noRows.columnCopy(1), "columnCopy must return a new empty array"),
+        Assertions.assertAll(() -> assertNotSame(noRows.columnCopy(1), noRows.columnCopy(1), "columnCopy must return a new empty array"),
                 () -> assertNotSame(noRows.mainDiagonalCopy(), noRows.mainDiagonalCopy(), "mainDiagonalCopy must return a new empty array"),
                 () -> assertNotSame(noRows.antiDiagonalCopy(), noRows.antiDiagonalCopy(), "antiDiagonalCopy must return a new empty array"),
                 () -> assertNotSame(noColumns.mainDiagonalCopy(), noColumns.mainDiagonalCopy(), "Nx0 main-diagonal copies must be distinct"),
                 () -> assertNotSame(noColumns.antiDiagonalCopy(), noColumns.antiDiagonalCopy(), "Nx0 anti-diagonal copies must be distinct"));
 
-        for (String[] copy : List.of(noRows.columnCopy(1), noRows.mainDiagonalCopy(), noRows.antiDiagonalCopy(),
-                noColumns.mainDiagonalCopy(), noColumns.antiDiagonalCopy())) {
+        for (String[] copy : List.of(noRows.columnCopy(1), noRows.mainDiagonalCopy(), noRows.antiDiagonalCopy(), noColumns.mainDiagonalCopy(),
+                noColumns.antiDiagonalCopy())) {
             assertEquals(0, copy.length);
             assertEquals(String[].class, copy.getClass());
         }

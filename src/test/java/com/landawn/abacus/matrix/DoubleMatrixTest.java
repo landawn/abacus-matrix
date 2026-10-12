@@ -6346,8 +6346,7 @@ class DoubleMatrixTest extends TestBase {
         public void testDuplicateBackingRowsAreRejectedAtConstruction() {
             // One array cannot back two independently addressable logical rows, so wrap() rejects it.
             final double[] sharedRow = { 1.0, 2.0, 3.0 };
-            final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                    () -> DoubleMatrix.wrap(new double[][] { sharedRow, sharedRow }));
+            final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.wrap(new double[][] { sharedRow, sharedRow }));
             assertTrue(ex.getMessage().contains("independent storage"));
 
             // copyOf() clones each row, so the same values are accepted and stay independent.
@@ -6572,14 +6571,9 @@ class DoubleMatrixTest extends TestBase {
             }
             return value * 10;
         };
-        final List<Throwables.Consumer<DoubleMatrix, RuntimeException>> updates = List.of(
-                m -> m.updateRow(0, operator),
-                m -> m.updateColumn(0, operator),
-                m -> m.updateMainDiagonal(operator),
-                m -> m.updateAntiDiagonal(operator),
-                m -> m.updateAll(operator),
-                m -> m.updateAll((i, j) -> operator.applyAsDouble(m.get(i, j))),
-                m -> m.replaceIf(value -> operator.applyAsDouble(value) > 0, 10),
+        final List<Throwables.Consumer<DoubleMatrix, RuntimeException>> updates = List.of(m -> m.updateRow(0, operator), m -> m.updateColumn(0, operator),
+                m -> m.updateMainDiagonal(operator), m -> m.updateAntiDiagonal(operator), m -> m.updateAll(operator),
+                m -> m.updateAll((i, j) -> operator.applyAsDouble(m.get(i, j))), m -> m.replaceIf(value -> operator.applyAsDouble(value) > 0, 10),
                 m -> m.replaceIf((i, j) -> operator.applyAsDouble(m.get(i, j)) > 0, 10));
 
         Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
@@ -6598,14 +6592,15 @@ class DoubleMatrixTest extends TestBase {
     public void testStreamsObserveLiveValuesAndRowStreamsKeepTheirSelectedBackingRow() {
         final DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1, 2 }, { 3, 4 } });
         try (var rowStreams = m.rowStreams(0, 2);
-                var columnStreams = m.columnStreams(0, 2);
-                var rowMajor = m.rowMajorStream(0, 2);
-                var columnMajor = m.columnMajorStream(0, 2);
-                var mainDiagonal = m.mainDiagonalStream();
-                var antiDiagonal = m.antiDiagonalStream()) {
+             var columnStreams = m.columnStreams(0, 2);
+             var rowMajor = m.rowMajorStream(0, 2);
+             var columnMajor = m.columnMajorStream(0, 2);
+             var mainDiagonal = m.mainDiagonalStream();
+             var antiDiagonal = m.antiDiagonalStream()) {
             final var rows = rowStreams.iterator();
             final var columns = columnStreams.iterator();
-            try (var selectedRow = rows.next(); var selectedColumn = columns.next()) {
+            try (var selectedRow = rows.next();
+                 var selectedColumn = columns.next()) {
                 m.flipVerticallyInPlace();
                 m.set(1, 0, 9);
                 assertArrayEquals(new double[] { 9, 2 }, selectedRow.toArray());
@@ -6615,7 +6610,8 @@ class DoubleMatrixTest extends TestBase {
                 assertArrayEquals(new double[] { 3, 2 }, mainDiagonal.toArray());
                 assertArrayEquals(new double[] { 4, 9 }, antiDiagonal.toArray());
             }
-            try (var nextRow = rows.next(); var nextColumn = columns.next()) {
+            try (var nextRow = rows.next();
+                 var nextColumn = columns.next()) {
                 assertArrayEquals(new double[] { 9, 2 }, nextRow.toArray());
                 assertArrayEquals(new double[] { 4, 2 }, nextColumn.toArray());
             }
@@ -6649,13 +6645,11 @@ class DoubleMatrixTest extends TestBase {
 
     @Test
     public void testCopyOfValidationOrderAndIndependentEmptyRows() {
-        assertEquals("Row 0 cannot be null",
-                assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.copyOf(null, new double[] { 1 })).getMessage());
+        assertEquals("Row 0 cannot be null", assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.copyOf(null, new double[] { 1 })).getMessage());
         assertEquals("Row 2 cannot be null",
                 assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.copyOf(new double[] { 1 }, new double[] { 2 }, null)).getMessage());
         assertEquals("Matrix must be rectangular: expected 1 columns per row, but row 1 has 2 columns",
-                assertThrows(IllegalArgumentException.class,
-                        () -> DoubleMatrix.copyOf(new double[] { 1 }, new double[] { 2, 3 }, null)).getMessage());
+                assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.copyOf(new double[] { 1 }, new double[] { 2, 3 }, null)).getMessage());
 
         final double[] emptyRow = new double[0];
         final DoubleMatrix copied = DoubleMatrix.copyOf(emptyRow, emptyRow);
@@ -6674,8 +6668,8 @@ class DoubleMatrixTest extends TestBase {
         final Class<Object> highestRankType = (Class<Object>) highestRankValue.getClass();
         final Class<?> excessiveRankType = java.lang.reflect.Array.newInstance(Object.class, new int[254]).getClass();
 
-        for (final DoubleMatrix source : List.of(DoubleMatrix.empty(), new DoubleMatrix(new double[0][], 2),
-                DoubleMatrix.wrap(new double[2][0]), DoubleMatrix.wrap(new double[] { 1 }))) {
+        for (final DoubleMatrix source : List.of(DoubleMatrix.empty(), new DoubleMatrix(new double[0][], 2), DoubleMatrix.wrap(new double[2][0]),
+                DoubleMatrix.wrap(new double[] { 1 }))) {
             final AtomicInteger calls = new AtomicInteger();
             for (final Class<?> invalidType : new Class<?>[] { void.class, excessiveRankType }) {
                 assertThrows(IllegalArgumentException.class, () -> source.mapToObj(value -> {

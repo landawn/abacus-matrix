@@ -31,8 +31,7 @@ class PrimitiveNullReviewTest extends TestBase {
         final CharMatrix matrix = CharMatrix.empty();
         final String nullOutputMessage = assertThrows(IllegalArgumentException.class, () -> matrix.appendElementForOutput(null, 'a')).getMessage();
         assertEquals(nullOutputMessage, assertThrows(IllegalArgumentException.class, () -> matrix.appendElementForOutput(null, null)).getMessage());
-        assertEquals(nullOutputMessage,
-                assertThrows(IllegalArgumentException.class, () -> matrix.appendElementForOutput(null, "wrong type")).getMessage());
+        assertEquals(nullOutputMessage, assertThrows(IllegalArgumentException.class, () -> matrix.appendElementForOutput(null, "wrong type")).getMessage());
 
         final StringBuilder output = new StringBuilder("untouched");
         assertThrows(IllegalArgumentException.class, () -> matrix.appendElementForOutput(output, null));

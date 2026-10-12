@@ -93,14 +93,13 @@ class BooleanMatrixTest extends TestBase {
                 }
             };
 
-            assertSame(failure, assertThrows(IllegalStateException.class,
-                    () -> Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
-                        if (selectedOperation == 0) {
-                            matrix.forEach(action);
-                        } else {
-                            matrix.forEach(0, 2, 1, 3, action);
-                        }
-                    })));
+            assertSame(failure, assertThrows(IllegalStateException.class, () -> Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
+                if (selectedOperation == 0) {
+                    matrix.forEach(action);
+                } else {
+                    matrix.forEach(0, 2, 1, 3, action);
+                }
+            })));
 
             assertEquals(2, calls.get(), "operation " + selectedOperation);
         }
@@ -121,24 +120,23 @@ class BooleanMatrixTest extends TestBase {
                 return true;
             };
 
-            assertSame(failure, assertThrows(IllegalStateException.class,
-                    () -> Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
-                        switch (selectedOperation) {
-                            case 0 -> matrix.updateRow(0, operator);
-                            case 1 -> matrix.updateColumn(0, operator);
-                            case 2 -> matrix.updateMainDiagonal(operator);
-                            case 3 -> matrix.updateAntiDiagonal(operator);
-                            case 4 -> matrix.updateAll(operator);
-                            case 5 -> matrix.updateAll((row, column) -> operator.applyAsBoolean(false));
-                            case 6 -> matrix.replaceIf(value -> operator.applyAsBoolean(value), true);
-                            case 7 -> matrix.replaceIf((row, column) -> operator.applyAsBoolean(false), true);
-                            default -> throw new AssertionError(selectedOperation);
-                        }
-                    })));
+            assertSame(failure, assertThrows(IllegalStateException.class, () -> Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
+                switch (selectedOperation) {
+                    case 0 -> matrix.updateRow(0, operator);
+                    case 1 -> matrix.updateColumn(0, operator);
+                    case 2 -> matrix.updateMainDiagonal(operator);
+                    case 3 -> matrix.updateAntiDiagonal(operator);
+                    case 4 -> matrix.updateAll(operator);
+                    case 5 -> matrix.updateAll((row, column) -> operator.applyAsBoolean(false));
+                    case 6 -> matrix.replaceIf(value -> operator.applyAsBoolean(value), true);
+                    case 7 -> matrix.replaceIf((row, column) -> operator.applyAsBoolean(false), true);
+                    default -> throw new AssertionError(selectedOperation);
+                }
+            })));
 
             assertEquals(2, calls.get(), "operation " + selectedOperation);
-            assertArrayEquals(selectedOperation == 3 ? new boolean[] { false, true } : new boolean[] { true, false },
-                    matrix.rowCopy(0), "operation " + selectedOperation);
+            assertArrayEquals(selectedOperation == 3 ? new boolean[] { false, true } : new boolean[] { true, false }, matrix.rowCopy(0),
+                    "operation " + selectedOperation);
             assertArrayEquals(new boolean[] { false, false }, matrix.rowCopy(1), "operation " + selectedOperation);
         }
     }
@@ -6500,7 +6498,8 @@ class BooleanMatrixTest extends TestBase {
         assertFalse(rows.hasNext());
 
         com.landawn.abacus.util.stream.ObjIteratorEx<Stream<Boolean>> columns = (com.landawn.abacus.util.stream.ObjIteratorEx<Stream<Boolean>>) matrix
-                .columnStreams().iterator();
+                .columnStreams()
+                .iterator();
         Stream<Boolean> firstColumn = columns.next();
         com.landawn.abacus.util.stream.ObjIteratorEx<Boolean> columnValues = (com.landawn.abacus.util.stream.ObjIteratorEx<Boolean>) firstColumn.iterator();
         assertEquals(2, columnValues.count());

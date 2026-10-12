@@ -6133,8 +6133,7 @@ class FloatMatrixTest extends TestBase {
         public void testDuplicateBackingRowsAreRejectedAtConstruction() {
             // One array cannot back two independently addressable logical rows, so wrap() rejects it.
             final float[] sharedRow = { 1.0f, 2.0f, 3.0f };
-            final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                    () -> FloatMatrix.wrap(new float[][] { sharedRow, sharedRow }));
+            final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> FloatMatrix.wrap(new float[][] { sharedRow, sharedRow }));
             assertTrue(ex.getMessage().contains("independent storage"));
 
             // copyOf() clones each row, so the same values are accepted and stay independent.
@@ -6263,14 +6262,9 @@ class FloatMatrixTest extends TestBase {
             }
             return value * 10;
         };
-        final List<Throwables.Consumer<FloatMatrix, RuntimeException>> updates = List.of(
-                m -> m.updateRow(0, operator),
-                m -> m.updateColumn(0, operator),
-                m -> m.updateMainDiagonal(operator),
-                m -> m.updateAntiDiagonal(operator),
-                m -> m.updateAll(operator),
-                m -> m.updateAll((i, j) -> operator.applyAsFloat(m.get(i, j))),
-                m -> m.replaceIf(value -> operator.applyAsFloat(value) > 0, 10),
+        final List<Throwables.Consumer<FloatMatrix, RuntimeException>> updates = List.of(m -> m.updateRow(0, operator), m -> m.updateColumn(0, operator),
+                m -> m.updateMainDiagonal(operator), m -> m.updateAntiDiagonal(operator), m -> m.updateAll(operator),
+                m -> m.updateAll((i, j) -> operator.applyAsFloat(m.get(i, j))), m -> m.replaceIf(value -> operator.applyAsFloat(value) > 0, 10),
                 m -> m.replaceIf((i, j) -> operator.applyAsFloat(m.get(i, j)) > 0, 10));
 
         Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
@@ -6289,14 +6283,15 @@ class FloatMatrixTest extends TestBase {
     public void testStreamsObserveLiveValuesAndRowStreamsKeepTheirSelectedBackingRow() {
         final FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1, 2 }, { 3, 4 } });
         try (var rowStreams = m.rowStreams(0, 2);
-                var columnStreams = m.columnStreams(0, 2);
-                var rowMajor = m.rowMajorStream(0, 2);
-                var columnMajor = m.columnMajorStream(0, 2);
-                var mainDiagonal = m.mainDiagonalStream();
-                var antiDiagonal = m.antiDiagonalStream()) {
+             var columnStreams = m.columnStreams(0, 2);
+             var rowMajor = m.rowMajorStream(0, 2);
+             var columnMajor = m.columnMajorStream(0, 2);
+             var mainDiagonal = m.mainDiagonalStream();
+             var antiDiagonal = m.antiDiagonalStream()) {
             final var rows = rowStreams.iterator();
             final var columns = columnStreams.iterator();
-            try (var selectedRow = rows.next(); var selectedColumn = columns.next()) {
+            try (var selectedRow = rows.next();
+                 var selectedColumn = columns.next()) {
                 m.flipVerticallyInPlace();
                 m.set(1, 0, 9);
                 assertArrayEquals(new float[] { 9, 2 }, selectedRow.toArray());
@@ -6306,7 +6301,8 @@ class FloatMatrixTest extends TestBase {
                 assertArrayEquals(new float[] { 3, 2 }, mainDiagonal.toArray());
                 assertArrayEquals(new float[] { 4, 9 }, antiDiagonal.toArray());
             }
-            try (var nextRow = rows.next(); var nextColumn = columns.next()) {
+            try (var nextRow = rows.next();
+                 var nextColumn = columns.next()) {
                 assertArrayEquals(new float[] { 9, 2 }, nextRow.toArray());
                 assertArrayEquals(new float[] { 4, 2 }, nextColumn.toArray());
             }
@@ -6340,13 +6336,11 @@ class FloatMatrixTest extends TestBase {
 
     @Test
     public void testCopyOfValidationOrderAndIndependentEmptyRows() {
-        assertEquals("Row 0 cannot be null",
-                assertThrows(IllegalArgumentException.class, () -> FloatMatrix.copyOf(null, new float[] { 1 })).getMessage());
+        assertEquals("Row 0 cannot be null", assertThrows(IllegalArgumentException.class, () -> FloatMatrix.copyOf(null, new float[] { 1 })).getMessage());
         assertEquals("Row 2 cannot be null",
                 assertThrows(IllegalArgumentException.class, () -> FloatMatrix.copyOf(new float[] { 1 }, new float[] { 2 }, null)).getMessage());
         assertEquals("Matrix must be rectangular: expected 1 columns per row, but row 1 has 2 columns",
-                assertThrows(IllegalArgumentException.class,
-                        () -> FloatMatrix.copyOf(new float[] { 1 }, new float[] { 2, 3 }, null)).getMessage());
+                assertThrows(IllegalArgumentException.class, () -> FloatMatrix.copyOf(new float[] { 1 }, new float[] { 2, 3 }, null)).getMessage());
 
         final float[] emptyRow = new float[0];
         final FloatMatrix copied = FloatMatrix.copyOf(emptyRow, emptyRow);
@@ -6365,8 +6359,8 @@ class FloatMatrixTest extends TestBase {
         final Class<Object> highestRankType = (Class<Object>) highestRankValue.getClass();
         final Class<?> excessiveRankType = java.lang.reflect.Array.newInstance(Object.class, new int[254]).getClass();
 
-        for (final FloatMatrix source : List.of(FloatMatrix.empty(), new FloatMatrix(new float[0][], 2),
-                FloatMatrix.wrap(new float[2][0]), FloatMatrix.wrap(new float[] { 1 }))) {
+        for (final FloatMatrix source : List.of(FloatMatrix.empty(), new FloatMatrix(new float[0][], 2), FloatMatrix.wrap(new float[2][0]),
+                FloatMatrix.wrap(new float[] { 1 }))) {
             final AtomicInteger calls = new AtomicInteger();
             for (final Class<?> invalidType : new Class<?>[] { void.class, excessiveRankType }) {
                 assertThrows(IllegalArgumentException.class, () -> source.mapToObj(value -> {

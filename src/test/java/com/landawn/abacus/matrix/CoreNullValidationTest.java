@@ -14,17 +14,19 @@ class CoreNullValidationTest extends TestBase {
 
     @Test
     void rowSnapshotRejectsNullOnlyWhenThereAreBackingRows() {
-        assertNull(IntMatrix.empty().snapshotRowsIfBackingRows(null));
-        assertNull(IntMatrix.empty().resize(0, 3).snapshotRowsIfBackingRows(null));
+        assertNull(IntMatrix.empty().snapshotRowsIfBackingRows(null, 0, 0));
+        assertNull(IntMatrix.empty().resize(0, 3).snapshotRowsIfBackingRows(null, 0, 0));
 
         final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-                () -> IntMatrix.wrap(new int[] { 1 }).snapshotRowsIfBackingRows(null));
+                () -> IntMatrix.wrap(new int[] { 1 }).snapshotRowsIfBackingRows(null, 0, 0));
         assertTrue(failure.getMessage().contains(cs.source));
-        assertThrows(IllegalArgumentException.class, () -> IntMatrix.wrap(new int[0]).snapshotRowsIfBackingRows(null));
+        assertThrows(IllegalArgumentException.class, () -> IntMatrix.wrap(new int[0]).snapshotRowsIfBackingRows(null, 0, 0));
 
-        final IntMatrix matrix = IntMatrix.wrap(new int[] { 1 });
+        // Two destination rows, so the multi-row path (not the single-row shortcut) must hand back the
+        // original array when its null and foreign rows alias nothing.
+        final IntMatrix matrix = IntMatrix.wrap(new int[] { 1 }, new int[] { 3 });
         final int[][] rows = { null, new int[] { 2 } };
-        assertSame(rows, matrix.snapshotRowsIfBackingRows(rows));
+        assertSame(rows, matrix.snapshotRowsIfBackingRows(rows, 0, 0));
         assertNull(matrix.snapshotIfBackingRow(null));
     }
 
@@ -39,11 +41,9 @@ class CoreNullValidationTest extends TestBase {
             }
         };
 
-        final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-                () -> matrix.appendElementForOutput(null, value));
+        final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class, () -> matrix.appendElementForOutput(null, value));
         assertTrue(failure.getMessage().contains(cs.output));
-        assertSame(renderingFailure,
-                assertThrows(NullPointerException.class, () -> matrix.appendElementForOutput(new StringBuilder(), value)));
+        assertSame(renderingFailure, assertThrows(NullPointerException.class, () -> matrix.appendElementForOutput(new StringBuilder(), value)));
 
         final StringBuilder output = new StringBuilder();
         matrix.appendElementForOutput(output, null);

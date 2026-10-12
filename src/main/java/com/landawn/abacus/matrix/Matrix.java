@@ -178,8 +178,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p>Every caller passes a freshly allocated outer array whose rows were allocated by this library
      * -- {@code newIndependentRow(Class, int)}, a per-row {@code clone()},
-     * {@link Matrices#newMatrixArray(int, int, Class)}, or
-     * {@code java.lang.reflect.Array.newInstance(type, rows, columns)} -- so the rows are
+     * {@link Matrices#newMatrixArray(int, int, Class)},
+     * {@code java.lang.reflect.Array.newInstance(type, rows, columns)}, or a two-dimensional array
+     * creation expression such as the primitive {@code boxed()} methods'
+     * {@code new Integer[rowCount][columnCount]} -- so the rows are
      * identity-distinct by construction and the scan can only confirm what the allocation already
      * guarantees. Unlike the primitive variants' {@code wrapResult}, this does <b>not</b> canonicalise
      * a {@code 0 x 0} result to {@link #empty()}, because that singleton is {@code Object}-typed and
@@ -236,9 +238,15 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         this.elementType = explicitElementType == null ? (Class<T>) arrayType.getComponentType() : normalizeElementType(explicitElementType);
 
         // elementType and arrayType are used independently (rows are allocated from the first, outer
-        // arrays from the second), so a disagreement would corrupt every copy-producing method.
-        N.checkArgument(arrayType.getComponentType().isAssignableFrom(elementType), "Element type {} is not storable in backing rows of type {}",
-                elementType.getTypeName(), arrayType.getTypeName());
+        // arrays from the second), so a disagreement would corrupt every copy-producing method. Every
+        // derived result (newResult) and the package-private constructor pass through here, so the
+        // message (getTypeName() allocates for array types) is built only when the check fails. The
+        // public constructors use the two-argument constructor instead: their element type is either
+        // derived from the array or already proven exact by requireExactStorage.
+        if (!arrayType.getComponentType().isAssignableFrom(elementType)) {
+            throw new IllegalArgumentException(
+                    formatMsg("Element type {} is not storable in backing rows of type {}", elementType.getTypeName(), arrayType.getTypeName()));
+        }
     }
 
     /**
@@ -276,17 +284,21 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         N.checkArgNotNull(rows, "Matrix array cannot be null");
 
         final Class<?> actualElementType = rows.getClass().getComponentType().getComponentType();
-        N.checkArgument(actualElementType == normalizedType,
-                "Matrix outer array must have exact element type {} but has {}. Use copyOf(Class, Object[][]) to widen covariant input",
-                normalizedType.getTypeName(), actualElementType.getTypeName());
+        if (actualElementType != normalizedType) {
+            throw new IllegalArgumentException(
+                    formatMsg("Matrix outer array must have exact element type {} but has {}. Use copyOf(Class, Object[][]) to widen covariant input",
+                            normalizedType.getTypeName(), actualElementType.getTypeName()));
+        }
 
-        final Class<?> expectedRowType = N.newArray(normalizedType, 0).getClass();
+        final Class<?> expectedRowType = rows.getClass().getComponentType();
 
         for (int i = 0; i < rows.length; i++) {
             N.checkArgument(rows[i] != null, "Row {} cannot be null", i);
-            N.checkArgument(rows[i].getClass() == expectedRowType,
-                    "Row {} must have exact runtime type {} but has {}. Use copyOf(Class, Object[][]) to canonicalize covariant rows", i,
-                    expectedRowType.getTypeName(), rows[i].getClass().getTypeName());
+            if (rows[i].getClass() != expectedRowType) {
+                throw new IllegalArgumentException(
+                        formatMsg("Row {} must have exact runtime type {} but has {}. Use copyOf(Class, Object[][]) to canonicalize covariant rows", i,
+                                expectedRowType.getTypeName(), rows[i].getClass().getTypeName()));
+            }
         }
 
         return rows;
@@ -1401,9 +1413,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * the top-right corner down and left, at positions {@code (0, columnCount - 1)},
      * {@code (1, columnCount - 2)}, and so on until either edge is reached.</p>
      *
-     * <p>If the supplied array is one of this matrix's live backing rows (for example a value returned
-     * by {@code rowView(int)}), it is snapshotted first, so the values read are the ones in place when
-     * this method was called.</p>
+     * <p>The supplied array may be one of this matrix's live backing rows (for example a value returned
+     * by {@code rowView(int)}); the values read are still the ones in place when this method was called.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1429,7 +1440,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         N.checkArgNotNull(antiDiagonal, cs.antiDiagonal);
         final int len = diagonalLength();
         N.checkArgument(N.len(antiDiagonal) == len, MSG_DIAGONAL_LENGTH_MISMATCH, len, N.len(antiDiagonal));
-        final T[] values = snapshotIfBackingRow(antiDiagonal);
+        final T[] values = snapshotIfBackingRow(antiDiagonal, len);
 
         for (int i = 0; i < len; i++) {
             a[i][columnCount - i - 1] = values[i];
@@ -2135,8 +2146,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Copies as much data as will fit from the starting position.
      * If the source data extends beyond the matrix bounds, it is truncated.
      * Source rows that are {@code null} are skipped, leaving the corresponding destination row unchanged.
-     * Any source row that aliases this matrix's backing storage is snapshotted before copying, so
-     * overlapping copies read the source values as they were when this method was called.
+     * Source rows may be this matrix's own backing rows (for example arrays returned by {@code rowView(int)});
+     * overlapping copies still read every source value as it was when this method was called.
      *
      * <p>This method modifies the matrix in-place.</p>
      *
@@ -2171,7 +2182,12 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             throw new IndexOutOfBoundsException(formatMsg("destColumnIndex({}) must be in [0, columnCount({})]", destColumnIndex, columnCount));
         }
         N.checkArgNotNull(source, cs.source);
-        final T[][] sourceSnapshot = snapshotRowsIfBackingRows(source);
+
+        if (destRowIndex == rowCount || destColumnIndex == columnCount || source.length == 0) {
+            return;
+        }
+
+        final T[][] sourceSnapshot = snapshotRowsIfBackingRows(source, destRowIndex, destColumnIndex);
 
         for (int i = 0, minLen = N.min(rowCount - destRowIndex, sourceSnapshot.length); i < minLen; i++) {
             if (sourceSnapshot[i] != null) {
@@ -3145,13 +3161,17 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             throw new IllegalStateException("Matrix too large to flatten: " + rowCount + " x " + columnCount);
         }
 
-        final T[] c = N.newArray(elementType, rowCount * columnCount);
+        final List<T> result = new ArrayList<>(rowCount * columnCount);
 
-        for (int i = 0; i < rowCount; i++) {
-            N.copy(a[i], 0, c, i * columnCount, columnCount);
+        if (columnCount > 0) {
+            for (final T[] row : a) {
+                for (final T value : row) {
+                    result.add(value);
+                }
+            }
         }
 
-        return N.toList(c);
+        return result;
     }
 
     /**
@@ -3441,11 +3461,15 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @throws IllegalArgumentException if either matrix's runtime element type is not assignable to {@code resultElementType}
      */
     private void checkStackElementType(final Class<T> resultElementType, final Matrix<T> other) throws IllegalArgumentException {
-        N.checkArgument(resultElementType.isAssignableFrom(elementType), "Target element type {} cannot safely store this matrix's runtime element type {}",
-                resultElementType.getTypeName(), elementType.getTypeName());
-        N.checkArgument(resultElementType.isAssignableFrom(other.elementType),
-                "Target element type {} cannot safely store the other matrix's runtime element type {}", resultElementType.getTypeName(),
-                other.elementType.getTypeName());
+        if (!resultElementType.isAssignableFrom(elementType)) {
+            throw new IllegalArgumentException(formatMsg("Target element type {} cannot safely store this matrix's runtime element type {}",
+                    resultElementType.getTypeName(), elementType.getTypeName()));
+        }
+
+        if (!resultElementType.isAssignableFrom(other.elementType)) {
+            throw new IllegalArgumentException(formatMsg("Target element type {} cannot safely store the other matrix's runtime element type {}",
+                    resultElementType.getTypeName(), other.elementType.getTypeName()));
+        }
     }
 
     /**
@@ -3683,6 +3707,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     @Override
     public Stream<T> mainDiagonalStream() {
+        if (isEmpty()) {
+            return Stream.empty();
+        }
+
         return Stream.of(new ObjIteratorEx<>() {
             private final int toIndex = diagonalLength();
             private int cursor = 0;
@@ -3842,7 +3870,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     public Stream<T> rowMajorStream(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
-        if (isEmpty()) {
+        if (isEmpty() || fromRowIndex == toRowIndex) {
             return Stream.empty();
         }
 
@@ -3987,7 +4015,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     public Stream<T> columnMajorStream(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
-        if (isEmpty()) {
+        if (isEmpty() || fromColumnIndex == toColumnIndex) {
             return Stream.empty();
         }
 
@@ -4150,6 +4178,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     public Stream<Stream<T>> rowStreams(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
+        if (fromRowIndex == toRowIndex) {
+            return Stream.empty();
+        }
+
         return Stream.of(new ObjIteratorEx<>() {
             private final int toIndex = toRowIndex;
             private int cursor = fromRowIndex;
@@ -4245,6 +4277,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     @Override
     public Stream<Stream<T>> columnStreams(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
+
+        if (fromColumnIndex == toColumnIndex) {
+            return Stream.empty();
+        }
 
         return Stream.of(new ObjIteratorEx<>() {
             private final int toIndex = toColumnIndex;
@@ -4494,7 +4530,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             }
         }
 
-        return new RowDataset(newColumnNameList, newColumnList);
+        // fromOwnedColumns (@Internal in abacus-common) adopts these lists instead of copying them, so they
+        // must stay private to this call: every list was allocated above and none is touched after this line.
+        return RowDataset.fromOwnedColumns(newColumnNameList, newColumnList);
     }
 
     /**
@@ -4548,11 +4586,16 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         checkDatasetColumnNames(newColumnNameList);
         final List<List<Object>> newColumnList = new ArrayList<>(newColumnNameList.size());
 
-        for (int i = 0; i < rowCount; i++) {
-            newColumnList.add(new ArrayList<>(Array.asList(a[i])));
+        // Each matrix row becomes one column. Bulk-copy it rather than appending element by element: the
+        // array copies are about twice as fast as per-element appends once a row has more than a handful of
+        // elements, and a long row is the common shape for a transposed dataset (few columns, many values).
+        for (final T[] row : a) {
+            newColumnList.add(new ArrayList<>(Array.asList(row)));
         }
 
-        return new RowDataset(newColumnNameList, newColumnList);
+        // fromOwnedColumns (@Internal in abacus-common) adopts these lists instead of copying them, so they
+        // must stay private to this call: every list was allocated above and none is touched after this line.
+        return RowDataset.fromOwnedColumns(newColumnNameList, newColumnList);
     }
 
     /**

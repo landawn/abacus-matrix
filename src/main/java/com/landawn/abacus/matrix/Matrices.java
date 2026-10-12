@@ -2182,7 +2182,7 @@ public final class Matrices {
 
         forEachIndices(rowCount, columnCount, action, zipInParallel);
 
-        return new Matrix<>(result, null, columnCount);
+        return Matrix.newResult(result, normalizedTargetType, columnCount);
     }
 
     /**
@@ -3021,7 +3021,7 @@ public final class Matrices {
 
         forEachIndices(rowCount, columnCount, action, zipInParallel);
 
-        return new Matrix<>(result, null, columnCount);
+        return Matrix.newResult(result, normalizedTargetType, columnCount);
     }
 
     /**
@@ -3598,7 +3598,7 @@ public final class Matrices {
 
         forEachIndices(rowCount, columnCount, action, zipInParallel);
 
-        return new Matrix<>(result, null, columnCount);
+        return Matrix.newResult(result, normalizedTargetType, columnCount);
     }
 
     /**
@@ -3919,7 +3919,7 @@ public final class Matrices {
 
         forEachIndices(rowCount, columnCount, action, zipInParallel);
 
-        return new Matrix<>(result, null, columnCount);
+        return Matrix.newResult(result, normalizedTargetType, columnCount);
     }
 
     /**
@@ -4274,7 +4274,7 @@ public final class Matrices {
 
         forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size)));
 
-        return new Matrix<>(result, normalizedElementType, columnCount);
+        return Matrix.newResult(result, normalizedElementType, columnCount);
     }
 
     /**
@@ -4501,7 +4501,7 @@ public final class Matrices {
 
         forEachIndices(rowCount, columnCount, action, zipInParallel);
 
-        return new Matrix<>(result, normalizedTargetType, columnCount);
+        return Matrix.newResult(result, normalizedTargetType, columnCount);
     }
 
     /**

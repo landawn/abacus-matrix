@@ -3970,8 +3970,7 @@ class AbstractMatrixTest extends TestBase {
             assertTrue(ex.getMessage().contains("expected 2 columns per row"), ex.getMessage());
             assertTrue(ex.getMessage().contains("row 1"), ex.getMessage());
 
-            IllegalArgumentException explicit = assertThrows(IllegalArgumentException.class,
-                    () -> IntMatrix.wrap(new int[][] { { 1, 2 } }).reshape(1, 3));
+            IllegalArgumentException explicit = assertThrows(IllegalArgumentException.class, () -> IntMatrix.wrap(new int[][] { { 1, 2 } }).reshape(1, 3));
             assertFalse(explicit.getMessage().contains("{}"));
         }
 
@@ -4363,9 +4362,8 @@ class AbstractMatrixTest extends TestBase {
                 assertShape(ctx + " rotate90", results.get(1), c, r);
                 assertShape(ctx + " rotate270", results.get(2), c, r);
 
-                final AbstractMatrix[] sameShape = { m.rotate180(), m.flipHorizontally(), m.flipVertically(), m.copy(), m.copyRows(0, r),
-                        m.copyColumns(0, c), m.copyRegion(0, r, 0, c), m.resize(r, c), m.pad(0, 0, 0, 0), m.repeatElements(1, 1), m.repeatMatrix(1, 1),
-                        m.reshape(r, c) };
+                final AbstractMatrix[] sameShape = { m.rotate180(), m.flipHorizontally(), m.flipVertically(), m.copy(), m.copyRows(0, r), m.copyColumns(0, c),
+                        m.copyRegion(0, r, 0, c), m.resize(r, c), m.pad(0, 0, 0, 0), m.repeatElements(1, 1), m.repeatMatrix(1, 1), m.reshape(r, c) };
 
                 for (final AbstractMatrix x : sameShape) {
                     assertShape(ctx, x, r, c);
@@ -4418,8 +4416,7 @@ class AbstractMatrixTest extends TestBase {
         final List<AbstractMatrix<?, ?, ?, ?, ?>> matrices = List.of(BooleanMatrix.wrap(new boolean[][] { { true, false } }),
                 ByteMatrix.wrap(new byte[][] { { Byte.MIN_VALUE, Byte.MAX_VALUE } }), CharMatrix.wrap(new char[][] { { 'a', '\n', '\'', (char) 0 } }),
                 ShortMatrix.wrap(new short[][] { { Short.MIN_VALUE } }), IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } }),
-                LongMatrix.wrap(new long[][] { { Long.MIN_VALUE, Long.MAX_VALUE } }),
-                FloatMatrix.wrap(new float[][] { { Float.NaN, -0.0f, 0.1f, 1e10f } }),
+                LongMatrix.wrap(new long[][] { { Long.MIN_VALUE, Long.MAX_VALUE } }), FloatMatrix.wrap(new float[][] { { Float.NaN, -0.0f, 0.1f, 1e10f } }),
                 DoubleMatrix.wrap(new double[][] { { Double.NaN, -0.0, 1e-10, Double.NEGATIVE_INFINITY } }),
                 Matrix.wrap(Object.class, new Object[][] { { null, "x", new int[] { 1, 2 } } }));
 
@@ -4437,8 +4434,8 @@ class AbstractMatrixTest extends TestBase {
     // float and double matrix types except its own; no class offers a byte/char/short/boolean conversion.
     @Test
     public void testFamilyConventions_PrimitiveConversionTable() throws Exception {
-        final List<Class<?>> nonBoolean = List.of(ByteMatrix.class, CharMatrix.class, ShortMatrix.class, IntMatrix.class, LongMatrix.class,
-                FloatMatrix.class, DoubleMatrix.class);
+        final List<Class<?>> nonBoolean = List.of(ByteMatrix.class, CharMatrix.class, ShortMatrix.class, IntMatrix.class, LongMatrix.class, FloatMatrix.class,
+                DoubleMatrix.class);
         final List<Class<?>> provided = List.of(IntMatrix.class, LongMatrix.class, FloatMatrix.class, DoubleMatrix.class);
         final List<String> omitted = List.of("toByteMatrix", "toCharMatrix", "toShortMatrix", "toBooleanMatrix");
 
@@ -4454,8 +4451,8 @@ class AbstractMatrixTest extends TestBase {
             }
         }
 
-        for (final Class<?> source : List.of(BooleanMatrix.class, ByteMatrix.class, CharMatrix.class, ShortMatrix.class, IntMatrix.class,
-                LongMatrix.class, FloatMatrix.class, DoubleMatrix.class, Matrix.class)) {
+        for (final Class<?> source : List.of(BooleanMatrix.class, ByteMatrix.class, CharMatrix.class, ShortMatrix.class, IntMatrix.class, LongMatrix.class,
+                FloatMatrix.class, DoubleMatrix.class, Matrix.class)) {
             for (final java.lang.reflect.Method method : source.getMethods()) {
                 assertFalse(omitted.contains(method.getName()), source.getSimpleName() + "." + method.getName());
 

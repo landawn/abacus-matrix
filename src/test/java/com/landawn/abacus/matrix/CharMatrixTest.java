@@ -94,14 +94,13 @@ class CharMatrixTest extends TestBase {
                 }
             };
 
-            assertSame(failure, assertThrows(IllegalStateException.class,
-                    () -> Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
-                        if (selectedOperation == 0) {
-                            matrix.forEach(action);
-                        } else {
-                            matrix.forEach(0, 2, 1, 3, action);
-                        }
-                    })));
+            assertSame(failure, assertThrows(IllegalStateException.class, () -> Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
+                if (selectedOperation == 0) {
+                    matrix.forEach(action);
+                } else {
+                    matrix.forEach(0, 2, 1, 3, action);
+                }
+            })));
 
             assertEquals(2, calls.get(), "operation " + selectedOperation);
         }
@@ -122,24 +121,23 @@ class CharMatrixTest extends TestBase {
                 return (char) 1;
             };
 
-            assertSame(failure, assertThrows(IllegalStateException.class,
-                    () -> Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
-                        switch (selectedOperation) {
-                            case 0 -> matrix.updateRow(0, operator);
-                            case 1 -> matrix.updateColumn(0, operator);
-                            case 2 -> matrix.updateMainDiagonal(operator);
-                            case 3 -> matrix.updateAntiDiagonal(operator);
-                            case 4 -> matrix.updateAll(operator);
-                            case 5 -> matrix.updateAll((row, column) -> operator.applyAsChar((char) 0));
-                            case 6 -> matrix.replaceIf(value -> operator.applyAsChar(value) != 0, (char) 1);
-                            case 7 -> matrix.replaceIf((row, column) -> operator.applyAsChar((char) 0) != 0, (char) 1);
-                            default -> throw new AssertionError(selectedOperation);
-                        }
-                    })));
+            assertSame(failure, assertThrows(IllegalStateException.class, () -> Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
+                switch (selectedOperation) {
+                    case 0 -> matrix.updateRow(0, operator);
+                    case 1 -> matrix.updateColumn(0, operator);
+                    case 2 -> matrix.updateMainDiagonal(operator);
+                    case 3 -> matrix.updateAntiDiagonal(operator);
+                    case 4 -> matrix.updateAll(operator);
+                    case 5 -> matrix.updateAll((row, column) -> operator.applyAsChar((char) 0));
+                    case 6 -> matrix.replaceIf(value -> operator.applyAsChar(value) != 0, (char) 1);
+                    case 7 -> matrix.replaceIf((row, column) -> operator.applyAsChar((char) 0) != 0, (char) 1);
+                    default -> throw new AssertionError(selectedOperation);
+                }
+            })));
 
             assertEquals(2, calls.get(), "operation " + selectedOperation);
-            assertArrayEquals(selectedOperation == 3 ? new char[] { (char) 0, (char) 1 } : new char[] { (char) 1, (char) 0 },
-                    matrix.rowCopy(0), "operation " + selectedOperation);
+            assertArrayEquals(selectedOperation == 3 ? new char[] { (char) 0, (char) 1 } : new char[] { (char) 1, (char) 0 }, matrix.rowCopy(0),
+                    "operation " + selectedOperation);
             assertArrayEquals(new char[] { (char) 0, (char) 0 }, matrix.rowCopy(1), "operation " + selectedOperation);
         }
     }

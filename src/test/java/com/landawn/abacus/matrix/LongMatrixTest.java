@@ -6533,14 +6533,9 @@ class LongMatrixTest extends TestBase {
             }
             return value * 10;
         };
-        final List<Throwables.Consumer<LongMatrix, RuntimeException>> updates = List.of(
-                m -> m.updateRow(0, operator),
-                m -> m.updateColumn(0, operator),
-                m -> m.updateMainDiagonal(operator),
-                m -> m.updateAntiDiagonal(operator),
-                m -> m.updateAll(operator),
-                m -> m.updateAll((i, j) -> operator.applyAsLong(m.get(i, j))),
-                m -> m.replaceIf(value -> operator.applyAsLong(value) > 0, 10),
+        final List<Throwables.Consumer<LongMatrix, RuntimeException>> updates = List.of(m -> m.updateRow(0, operator), m -> m.updateColumn(0, operator),
+                m -> m.updateMainDiagonal(operator), m -> m.updateAntiDiagonal(operator), m -> m.updateAll(operator),
+                m -> m.updateAll((i, j) -> operator.applyAsLong(m.get(i, j))), m -> m.replaceIf(value -> operator.applyAsLong(value) > 0, 10),
                 m -> m.replaceIf((i, j) -> operator.applyAsLong(m.get(i, j)) > 0, 10));
 
         Matrices.runWithParallelMode(ParallelMode.FORCE_OFF, () -> {
@@ -6559,14 +6554,15 @@ class LongMatrixTest extends TestBase {
     public void testStreamsObserveLiveValuesAndRowStreamsKeepTheirSelectedBackingRow() {
         final LongMatrix m = LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } });
         try (var rowStreams = m.rowStreams(0, 2);
-                var columnStreams = m.columnStreams(0, 2);
-                var rowMajor = m.rowMajorStream(0, 2);
-                var columnMajor = m.columnMajorStream(0, 2);
-                var mainDiagonal = m.mainDiagonalStream();
-                var antiDiagonal = m.antiDiagonalStream()) {
+             var columnStreams = m.columnStreams(0, 2);
+             var rowMajor = m.rowMajorStream(0, 2);
+             var columnMajor = m.columnMajorStream(0, 2);
+             var mainDiagonal = m.mainDiagonalStream();
+             var antiDiagonal = m.antiDiagonalStream()) {
             final var rows = rowStreams.iterator();
             final var columns = columnStreams.iterator();
-            try (var selectedRow = rows.next(); var selectedColumn = columns.next()) {
+            try (var selectedRow = rows.next();
+                 var selectedColumn = columns.next()) {
                 m.flipVerticallyInPlace();
                 m.set(1, 0, 9);
                 assertArrayEquals(new long[] { 9, 2 }, selectedRow.toArray());
@@ -6576,7 +6572,8 @@ class LongMatrixTest extends TestBase {
                 assertArrayEquals(new long[] { 3, 2 }, mainDiagonal.toArray());
                 assertArrayEquals(new long[] { 4, 9 }, antiDiagonal.toArray());
             }
-            try (var nextRow = rows.next(); var nextColumn = columns.next()) {
+            try (var nextRow = rows.next();
+                 var nextColumn = columns.next()) {
                 assertArrayEquals(new long[] { 9, 2 }, nextRow.toArray());
                 assertArrayEquals(new long[] { 4, 2 }, nextColumn.toArray());
             }
@@ -6610,13 +6607,11 @@ class LongMatrixTest extends TestBase {
 
     @Test
     public void testCopyOfValidationOrderAndIndependentEmptyRows() {
-        assertEquals("Row 0 cannot be null",
-                assertThrows(IllegalArgumentException.class, () -> LongMatrix.copyOf(null, new long[] { 1 })).getMessage());
+        assertEquals("Row 0 cannot be null", assertThrows(IllegalArgumentException.class, () -> LongMatrix.copyOf(null, new long[] { 1 })).getMessage());
         assertEquals("Row 2 cannot be null",
                 assertThrows(IllegalArgumentException.class, () -> LongMatrix.copyOf(new long[] { 1 }, new long[] { 2 }, null)).getMessage());
         assertEquals("Matrix must be rectangular: expected 1 columns per row, but row 1 has 2 columns",
-                assertThrows(IllegalArgumentException.class,
-                        () -> LongMatrix.copyOf(new long[] { 1 }, new long[] { 2, 3 }, null)).getMessage());
+                assertThrows(IllegalArgumentException.class, () -> LongMatrix.copyOf(new long[] { 1 }, new long[] { 2, 3 }, null)).getMessage());
 
         final long[] emptyRow = new long[0];
         final LongMatrix copied = LongMatrix.copyOf(emptyRow, emptyRow);
@@ -6635,8 +6630,8 @@ class LongMatrixTest extends TestBase {
         final Class<Object> highestRankType = (Class<Object>) highestRankValue.getClass();
         final Class<?> excessiveRankType = java.lang.reflect.Array.newInstance(Object.class, new int[254]).getClass();
 
-        for (final LongMatrix source : List.of(LongMatrix.empty(), new LongMatrix(new long[0][], 2),
-                LongMatrix.wrap(new long[2][0]), LongMatrix.wrap(new long[] { 1 }))) {
+        for (final LongMatrix source : List.of(LongMatrix.empty(), new LongMatrix(new long[0][], 2), LongMatrix.wrap(new long[2][0]),
+                LongMatrix.wrap(new long[] { 1 }))) {
             final AtomicInteger calls = new AtomicInteger();
             for (final Class<?> invalidType : new Class<?>[] { void.class, excessiveRankType }) {
                 assertThrows(IllegalArgumentException.class, () -> source.mapToObj(value -> {
