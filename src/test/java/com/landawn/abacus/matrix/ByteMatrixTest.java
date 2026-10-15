@@ -13,15 +13,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.landawn.abacus.util.ByteList;
 import com.landawn.abacus.util.Sheet.Point;
@@ -803,6 +807,13 @@ class ByteMatrixTest extends MatrixTestSupport {
         @Test
         public void testDiagonal_WithBothNull() {
             assertThrows(IllegalArgumentException.class, () -> ByteMatrix.ofDiagonals(null, null));
+        }
+
+        @Test
+        public void testOfDiagonals_EmptyAndNullSidesPreserveEmptyShape() {
+            assertTrue(ByteMatrix.ofDiagonals(new byte[0], new byte[0]).isEmpty());
+            assertTrue(ByteMatrix.ofDiagonals(new byte[0], null).isEmpty());
+            assertTrue(ByteMatrix.ofDiagonals(null, new byte[0]).isEmpty());
         }
     }
 
@@ -2296,6 +2307,20 @@ class ByteMatrixTest extends MatrixTestSupport {
             assertEquals(2, m.get(1, 1));
         }
 
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testUpdateAll_ExplicitModesTransformEveryValue(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var matrix = ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 3 }, { (byte) 4, (byte) 5, (byte) 6 } });
+                matrix.updateAll(value -> (byte) (value + 10));
+                assertEquals(ByteMatrix.wrap(new byte[][] { { (byte) 11, (byte) 12, (byte) 13 }, { (byte) 14, (byte) 15, (byte) 16 } }), matrix);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
+        }
+
         @Test
         public void testByteMatrixUpdateAllNullOperator() {
             ByteMatrix matrix = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
@@ -2311,6 +2336,16 @@ class ByteMatrixTest extends MatrixTestSupport {
             assertThrows(IllegalArgumentException.class, () -> emptyLike.updateAntiDiagonal((Throwables.ByteUnaryOperator<RuntimeException>) null));
             assertThrows(IllegalArgumentException.class, () -> emptyLike.replaceIf((Throwables.BytePredicate<RuntimeException>) null, (byte) 0));
             assertThrows(IllegalArgumentException.class, () -> emptyLike.replaceIf((Throwables.IntBiPredicate<RuntimeException>) null, (byte) 0));
+        }
+
+        @Test
+        public void testUpdateAll_ZeroColumnsDoNotInvokeOperator() {
+            final var matrix = ByteMatrix.wrap(new byte[2][0]);
+            matrix.updateAll(value -> {
+                throw new AssertionError("No values should be visited");
+            });
+            assertEquals(2, matrix.rowCount());
+            assertEquals(0, matrix.columnCount());
         }
     }
 
@@ -2410,6 +2445,20 @@ class ByteMatrixTest extends MatrixTestSupport {
             assertEquals(1, m.get(0, 0));
             assertEquals(0, m.get(0, 1));
             assertEquals(1, m.get(1, 1));
+        }
+
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testReplaceIf_ExplicitModesReplaceOnlyMatchingValues(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var matrix = ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 3 }, { (byte) 4, (byte) 5, (byte) 6 } });
+                matrix.replaceIf(value -> value % 2 == 0, (byte) 9);
+                assertEquals(ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 9, (byte) 3 }, { (byte) 9, (byte) 5, (byte) 9 } }), matrix);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
         }
     }
 
@@ -2838,6 +2887,14 @@ class ByteMatrixTest extends MatrixTestSupport {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1 } });
             assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(-1, 0, new byte[][] { { 1 } }));
             assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(0, -1, new byte[][] { { 1 } }));
+        }
+
+        @ParameterizedTest
+        @CsvSource({ "-1, 0", "3, 0", "0, -1", "0, 3" })
+        public void testCopyFrom_RejectsOffsetsOutsideDestination(final int row, final int column) {
+            final var matrix = ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2 }, { (byte) 3, (byte) 4 } });
+            assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyFrom(row, column, new byte[][] { { (byte) 1 } }));
+            assertEquals(ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2 }, { (byte) 3, (byte) 4 } }), matrix);
         }
     }
 
@@ -3332,6 +3389,13 @@ class ByteMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testResize_GrowsRowsWhileTrimmingColumns() {
+            final var matrix = ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2 }, { (byte) 3, (byte) 4 } });
+            assertEquals(ByteMatrix.wrap(new byte[][] { { (byte) 1 }, { (byte) 3 }, { (byte) 9 } }), matrix.resize(3, 1, (byte) 9));
+            assertEquals(ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2 }, { (byte) 3, (byte) 4 } }), matrix);
+        }
+
+        @Test
         public void testResize_NegativeThrows() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1 } });
             assertThrows(IllegalArgumentException.class, () -> m.resize(-1, 1));
@@ -3490,9 +3554,31 @@ class ByteMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testPad_SingleAxisFillPreservesExistingValues() {
+            final var matrix = ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2 }, { (byte) 3, (byte) 4 } });
+            assertEquals(ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 9 }, { (byte) 3, (byte) 4, (byte) 9 } }),
+                    matrix.pad(0, 0, 0, 1, (byte) 9));
+            assertEquals(ByteMatrix.wrap(new byte[][] { { (byte) 9, (byte) 1, (byte) 2 }, { (byte) 9, (byte) 3, (byte) 4 } }),
+                    matrix.pad(0, 0, 1, 0, (byte) 9));
+            assertEquals(ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2 }, { (byte) 3, (byte) 4 }, { (byte) 9, (byte) 9 } }),
+                    matrix.pad(0, 1, 0, 0, (byte) 9));
+            final var copy = matrix.pad(0, 0, 0, 0, (byte) 9);
+            assertEquals(matrix, copy);
+            assertNotSame(matrix, copy);
+        }
+
+        @Test
         public void testPad_DirectionalWithNegativeValues() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
             assertThrows(IllegalArgumentException.class, () -> m.pad(-1, 1, 1, 1, (byte) 0));
+        }
+
+        @ParameterizedTest
+        @CsvSource({ "-1, 0, 0, 0", "0, -1, 0, 0", "0, 0, -1, 0", "0, 0, 0, -1", "2147483647, 0, 0, 0", "0, 0, 0, 2147483647" })
+        public void testPad_RejectsNegativeOrOverflowingDimensions(final int top, final int bottom, final int left, final int right) {
+            final var matrix = ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2 }, { (byte) 3, (byte) 4 } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.pad(top, bottom, left, right));
+            assertEquals(ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2 }, { (byte) 3, (byte) 4 } }), matrix);
         }
     }
 
@@ -3982,6 +4068,14 @@ class ByteMatrixTest extends MatrixTestSupport {
             assertEquals(2, reshaped.rowCount());
             assertEquals(2, reshaped.columnCount());
         }
+
+        @ParameterizedTest
+        @CsvSource({ "-1, 2", "2, -1", "1, 1" })
+        public void testReshapeAndPad_RejectsNegativeAndInsufficientShapes(final int rows, final int columns) {
+            final var matrix = ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2 }, { (byte) 3, (byte) 4 } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.reshapeAndPad(rows, columns));
+            assertEquals(ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2 }, { (byte) 3, (byte) 4 } }), matrix);
+        }
     }
 
     @Nested
@@ -4049,6 +4143,25 @@ class ByteMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testRepeatElements_UnitRepetitionReturnsIndependentMatrix() {
+            final var matrix = ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2 }, { (byte) 3, (byte) 4 } });
+            final var result = matrix.repeatElements(1, 1);
+            assertEquals(matrix, result);
+            assertNotSame(matrix, result);
+            result.set(0, 0, (byte) 0);
+            assertEquals((byte) 1, matrix.get(0, 0));
+        }
+
+        @Test
+        public void testRepeatElements_OnlyColumnsRepeated() {
+            final var matrix = ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 3 }, { (byte) 3, (byte) 1 } });
+            final var repeated = matrix.repeatElements(1, 2);
+            assertEquals(ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 1, (byte) 3, (byte) 3 }, { (byte) 3, (byte) 3, (byte) 1, (byte) 1 } }), repeated);
+            repeated.set(0, 0, (byte) 3);
+            assertEquals((byte) 1, matrix.get(0, 0));
+        }
+
+        @Test
         public void testRepeatElementsOverflow() {
             int largeSize = 50000;
             ByteMatrix m = ByteMatrix.wrap(new byte[largeSize][2]);
@@ -4083,6 +4196,13 @@ class ByteMatrixTest extends MatrixTestSupport {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1 } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(0, 1));
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(1, 0));
+        }
+
+        @ParameterizedTest
+        @CsvSource({ "2147483647, 1", "1, 2147483647" })
+        public void testRepeatElements_RejectsOverflowBeforeAllocation(final int rows, final int columns) {
+            final var matrix = ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2 }, { (byte) 3, (byte) 4 } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.repeatElements(rows, columns));
         }
     }
 
@@ -4151,6 +4271,25 @@ class ByteMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testRepeatMatrix_UnitRepetitionReturnsIndependentMatrix() {
+            final var matrix = ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2 }, { (byte) 3, (byte) 4 } });
+            final var result = matrix.repeatMatrix(1, 1);
+            assertEquals(matrix, result);
+            assertNotSame(matrix, result);
+            result.set(0, 0, (byte) 0);
+            assertEquals((byte) 1, matrix.get(0, 0));
+        }
+
+        @Test
+        public void testRepeatMatrix_OnlyColumnsRepeated() {
+            final var matrix = ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2 }, { (byte) 3, (byte) 4 } });
+            final var repeated = matrix.repeatMatrix(1, 2);
+            assertEquals(ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 1, (byte) 2 }, { (byte) 3, (byte) 4, (byte) 3, (byte) 4 } }), repeated);
+            repeated.set(0, 0, (byte) 3);
+            assertEquals((byte) 1, matrix.get(0, 0));
+        }
+
+        @Test
         public void testRepeatMatrix_Shape2By2_VerticalTileBoundary() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
             ByteMatrix result = m.repeatMatrix(2, 2);
@@ -4215,6 +4354,14 @@ class ByteMatrixTest extends MatrixTestSupport {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1 } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
             assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
+        }
+
+        @ParameterizedTest
+        @CsvSource({ "2147483647, 1", "1, 2147483647" })
+        public void testRepeatMatrix_RejectsOverflowBeforeAllocation(final int rows, final int columns) {
+            final var matrix = ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2 }, { (byte) 3, (byte) 4 } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.repeatMatrix(rows, columns));
+            assertEquals(ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2 }, { (byte) 3, (byte) 4 } }), matrix);
         }
     }
 
@@ -4525,6 +4672,14 @@ class ByteMatrixTest extends MatrixTestSupport {
             ByteMatrix m2 = ByteMatrix.wrap(new byte[][] { { 2 }, { 3 } });
             assertThrows(IllegalArgumentException.class, () -> m1.stackHorizontally(m2));
         }
+
+        @Test
+        public void testStackHorizontally_RejectsLogicalWidthOverflowWithoutAllocation() {
+            final var huge = ByteMatrix.wrap(new byte[0][0]).resize(0, Integer.MAX_VALUE);
+            final var extra = ByteMatrix.wrap(new byte[0][0]).resize(0, 1);
+            assertThrows(IllegalArgumentException.class, () -> huge.stackHorizontally(extra));
+            assertEquals(Integer.MAX_VALUE, huge.columnCount());
+        }
     }
 
     @Nested
@@ -4575,6 +4730,22 @@ class ByteMatrixTest extends MatrixTestSupport {
             assertEquals(8, result.get(0, 1));
             assertEquals(10, result.get(1, 0));
             assertEquals(12, result.get(1, 1));
+        }
+
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testAdd_ExplicitModesPreserveBothOperands(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var left = ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 3 }, { (byte) 4, (byte) 5, (byte) 6 } });
+                final var right = ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 3 }, { (byte) 4, (byte) 5, (byte) 6 } });
+                assertEquals(ByteMatrix.wrap(new byte[][] { { (byte) 2, (byte) 4, (byte) 6 }, { (byte) 8, (byte) 10, (byte) 12 } }), left.add(right));
+                assertEquals(ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 3 }, { (byte) 4, (byte) 5, (byte) 6 } }), left);
+                assertEquals(ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 3 }, { (byte) 4, (byte) 5, (byte) 6 } }), right);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
         }
 
         @Test
@@ -4640,6 +4811,34 @@ class ByteMatrixTest extends MatrixTestSupport {
             assertEquals(4, result.get(0, 1));
             assertEquals(4, result.get(1, 0));
             assertEquals(4, result.get(1, 1));
+        }
+
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testSubtract_ExplicitModesPreserveBothOperands(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var left = ByteMatrix.wrap(new byte[][] { { (byte) 7, (byte) 8, (byte) 9 }, { (byte) 10, (byte) 11, (byte) 12 } });
+                final var right = ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 3 }, { (byte) 4, (byte) 5, (byte) 6 } });
+                assertEquals(ByteMatrix.wrap(new byte[][] { { (byte) 6, (byte) 6, (byte) 6 }, { (byte) 6, (byte) 6, (byte) 6 } }), left.subtract(right));
+                assertEquals(ByteMatrix.wrap(new byte[][] { { (byte) 7, (byte) 8, (byte) 9 }, { (byte) 10, (byte) 11, (byte) 12 } }), left);
+                assertEquals(ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 3 }, { (byte) 4, (byte) 5, (byte) 6 } }), right);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
+        }
+    }
+
+    @Nested
+    class SubtractExactTests {
+
+        @Test
+        public void testSubtractExact_ValidRectangularOperandsPreserveValues() {
+            final var left = ByteMatrix.wrap(new byte[][] { { (byte) 7, (byte) 8, (byte) 9 }, { (byte) 10, (byte) 11, (byte) 12 } });
+            final var right = ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 3 }, { (byte) 4, (byte) 5, (byte) 6 } });
+            assertEquals(ByteMatrix.wrap(new byte[][] { { (byte) 6, (byte) 6, (byte) 6 }, { (byte) 6, (byte) 6, (byte) 6 } }), left.subtractExact(right));
+            assertEquals(ByteMatrix.wrap(new byte[][] { { (byte) 7, (byte) 8, (byte) 9 }, { (byte) 10, (byte) 11, (byte) 12 } }), left);
         }
     }
 
@@ -4727,6 +4926,25 @@ class ByteMatrixTest extends MatrixTestSupport {
             assertEquals(ParallelMode.FORCE_OFF, Matrices.getParallelMode());
         }
 
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testMatrixMultiply_ExplicitModesComputeRectangularProduct(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var left = ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2 }, { (byte) 3, (byte) 4 }, { (byte) 5, (byte) 6 } });
+                final var right = ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 3 }, { (byte) 4, (byte) 5, (byte) 6 } });
+                assertEquals(
+                        ByteMatrix.wrap(
+                                new byte[][] { { (byte) 9, (byte) 12, (byte) 15 }, { (byte) 19, (byte) 26, (byte) 33 }, { (byte) 29, (byte) 40, (byte) 51 } }),
+                        left.matrixMultiply(right));
+                assertEquals(ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2 }, { (byte) 3, (byte) 4 }, { (byte) 5, (byte) 6 } }), left);
+                assertEquals(ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 3 }, { (byte) 4, (byte) 5, (byte) 6 } }), right);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
+        }
+
         @Test
         public void testMatrixMultiply_EmptyProductReturnsCanonicalEmpty() {
             // Regression: matrixMultiply must build its result via ByteMatrix.wrap(result) (not the raw
@@ -4756,6 +4974,24 @@ class ByteMatrixTest extends MatrixTestSupport {
             final ArithmeticException overflow = assertThrows(ArithmeticException.class, () -> left.matrixMultiplyExact(right));
             assertEquals("byte overflow: 2293760000", overflow.getMessage());
             assertEquals((byte) 2_293_760_000L, left.matrixMultiply(right).get(0, 0));
+        }
+
+        @Test
+        public void testMatrixMultiplyWidened_RejectsIncompatibleInnerDimensions() {
+            final var left = ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2 } });
+            final var right = ByteMatrix.wrap(new byte[][] { { (byte) 3, (byte) 4 } });
+            assertThrows(IllegalArgumentException.class, () -> left.matrixMultiplyWidened(right));
+        }
+    }
+
+    @Nested
+    class MatrixMultiplyExactTests {
+
+        @Test
+        public void testMatrixMultiplyExact_RejectsIncompatibleInnerDimensions() {
+            final var left = ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2 } });
+            final var right = ByteMatrix.wrap(new byte[][] { { (byte) 3, (byte) 4 } });
+            assertThrows(IllegalArgumentException.class, () -> left.matrixMultiplyExact(right));
         }
     }
 
@@ -5228,6 +5464,37 @@ class ByteMatrixTest extends MatrixTestSupport {
             }
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testMainDiagonalStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = ByteMatrix
+                    .wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 3 }, { (byte) 4, (byte) 5, (byte) 6 }, { (byte) 7, (byte) 8, (byte) 9 } });
+            final byte[] expected = new byte[] { (byte) 1, (byte) 5, (byte) 9 };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.mainDiagonalStream()) {
+                final var iterator = (ByteIteratorEx) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextByte);
+            }
+        }
+
+        @Test
+        public void testMainDiagonalStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = ByteMatrix
+                    .wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 3 }, { (byte) 4, (byte) 5, (byte) 6 }, { (byte) 7, (byte) 8, (byte) 9 } });
+            try (var stream = matrix.mainDiagonalStream()) {
+                final var iterator = (ByteIteratorEx) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals((byte) 1, iterator.nextByte());
+                assertEquals(2, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextByte);
+            }
+        }
+
         @Test
         public void testMainDiagonalStream_Empty() {
             ByteMatrix empty = ByteMatrix.empty();
@@ -5298,6 +5565,37 @@ class ByteMatrixTest extends MatrixTestSupport {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             byte[] diag = m.antiDiagonalStream().toArray();
             assertArrayEquals(new byte[] { 3, 5, 7 }, diag);
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testAntiDiagonalStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = ByteMatrix
+                    .wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 3 }, { (byte) 4, (byte) 5, (byte) 6 }, { (byte) 7, (byte) 8, (byte) 9 } });
+            final byte[] expected = new byte[] { (byte) 3, (byte) 5, (byte) 7 };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.antiDiagonalStream()) {
+                final var iterator = (ByteIteratorEx) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextByte);
+            }
+        }
+
+        @Test
+        public void testAntiDiagonalStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = ByteMatrix
+                    .wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 3 }, { (byte) 4, (byte) 5, (byte) 6 }, { (byte) 7, (byte) 8, (byte) 9 } });
+            try (var stream = matrix.antiDiagonalStream()) {
+                final var iterator = (ByteIteratorEx) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals((byte) 3, iterator.nextByte());
+                assertEquals(2, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextByte);
+            }
         }
 
         @Test
@@ -5436,6 +5734,37 @@ class ByteMatrixTest extends MatrixTestSupport {
             assertThrows(java.util.NoSuchElementException.class, crossing::nextByte);
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testRowMajorStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = ByteMatrix
+                    .wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 3 }, { (byte) 4, (byte) 5, (byte) 6 }, { (byte) 7, (byte) 8, (byte) 9 } });
+            final byte[] expected = new byte[] { (byte) 1, (byte) 2, (byte) 3, (byte) 4, (byte) 5, (byte) 6, (byte) 7, (byte) 8, (byte) 9 };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.rowMajorStream()) {
+                final var iterator = (ByteIteratorEx) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextByte);
+            }
+        }
+
+        @Test
+        public void testRowMajorStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = ByteMatrix
+                    .wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 3 }, { (byte) 4, (byte) 5, (byte) 6 }, { (byte) 7, (byte) 8, (byte) 9 } });
+            try (var stream = matrix.rowMajorStream()) {
+                final var iterator = (ByteIteratorEx) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals((byte) 1, iterator.nextByte());
+                assertEquals(8, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextByte);
+            }
+        }
+
         @Test
         public void testRowMajorStreamSingleRowRange() {
             byte[][] a = { { 1, 2, 3 }, { 4, 5, 6 } };
@@ -5527,6 +5856,13 @@ class ByteMatrixTest extends MatrixTestSupport {
             noRows.columnStreams().forEach(column -> assertEquals(0L, column.count()));
             assertEquals(0L, noRows.mainDiagonalStream().count());
             assertEquals(0L, noRows.antiDiagonalStream().count());
+        }
+
+        @Test
+        public void testRowMajorStream_ZeroColumnsKeepLogicalRowRange() {
+            final var matrix = ByteMatrix.wrap(new byte[3][0]);
+            assertEquals(0, matrix.rowMajorStream(1, 3).count());
+            assertEquals(2, matrix.rowStreams(1, 3).count());
         }
 
         @Test
@@ -5631,6 +5967,37 @@ class ByteMatrixTest extends MatrixTestSupport {
             assertArrayEquals(new byte[] { 2, 5, 3, 6 }, elements);
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testColumnMajorStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = ByteMatrix
+                    .wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 3 }, { (byte) 4, (byte) 5, (byte) 6 }, { (byte) 7, (byte) 8, (byte) 9 } });
+            final byte[] expected = new byte[] { (byte) 1, (byte) 4, (byte) 7, (byte) 2, (byte) 5, (byte) 8, (byte) 3, (byte) 6, (byte) 9 };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.columnMajorStream()) {
+                final var iterator = (ByteIteratorEx) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextByte);
+            }
+        }
+
+        @Test
+        public void testColumnMajorStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = ByteMatrix
+                    .wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 3 }, { (byte) 4, (byte) 5, (byte) 6 }, { (byte) 7, (byte) 8, (byte) 9 } });
+            try (var stream = matrix.columnMajorStream()) {
+                final var iterator = (ByteIteratorEx) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals((byte) 1, iterator.nextByte());
+                assertEquals(8, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextByte);
+            }
+        }
+
         @Test
         public void testColumnMajorStreamSingleColumnRange() {
             byte[][] a = { { 1, 2, 3 }, { 4, 5, 6 } };
@@ -5677,6 +6044,13 @@ class ByteMatrixTest extends MatrixTestSupport {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
             byte[] col = m.columnMajorStream(0, 1).toArray();
             assertArrayEquals(new byte[] { 1, 3 }, col);
+        }
+
+        @Test
+        public void testColumnMajorStream_ZeroRowsKeepLogicalColumnRange() {
+            final var matrix = ByteMatrix.wrap(new byte[0][0]).resize(0, 3);
+            assertEquals(0, matrix.columnMajorStream(1, 3).count());
+            assertEquals(2, matrix.columnStreams(1, 3).count());
         }
 
         @Test
@@ -5841,6 +6215,30 @@ class ByteMatrixTest extends MatrixTestSupport {
             assertEquals(2, rows.size());
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 3, Long.MAX_VALUE })
+        public void testRowStreams_OuterCursorAdvanceCountAndExhaustion(final long amount) {
+            final var matrix = ByteMatrix
+                    .wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 3 }, { (byte) 4, (byte) 5, (byte) 6 }, { (byte) 7, (byte) 8, (byte) 9 } });
+            final byte[][] expected = { new byte[] { (byte) 1, (byte) 2, (byte) 3 }, new byte[] { (byte) 4, (byte) 5, (byte) 6 },
+                    new byte[] { (byte) 7, (byte) 8, (byte) 9 } };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.rowStreams()) {
+                final var iterator = (ObjIteratorEx<ByteStream>) stream.iterator();
+                iterator.advance(amount);
+                if (skipped < expected.length) {
+                    assertTrue(iterator.hasNext());
+                    try (var values = iterator.next()) {
+                        assertArrayEquals(expected[skipped], values.toArray());
+                    }
+                }
+                assertEquals(Math.max(0, expected.length - skipped - 1), iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
         @Test
         public void testRowStreamsRange_JavadocExampleRowMaxes() {
             // Pins the rowStreams(int, int) javadoc example: OptionalByte.orElse requires a byte argument.
@@ -5944,6 +6342,63 @@ class ByteMatrixTest extends MatrixTestSupport {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             List<byte[]> columnCount = m.columnStreams(0, 2).map(ByteStream::toArray).toList();
             assertEquals(2, columnCount.size());
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 3, Long.MAX_VALUE })
+        public void testColumnStreams_OuterCursorAdvanceCountAndExhaustion(final long amount) {
+            final var matrix = ByteMatrix
+                    .wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 3 }, { (byte) 4, (byte) 5, (byte) 6 }, { (byte) 7, (byte) 8, (byte) 9 } });
+            final byte[][] expected = { new byte[] { (byte) 1, (byte) 4, (byte) 7 }, new byte[] { (byte) 2, (byte) 5, (byte) 8 },
+                    new byte[] { (byte) 3, (byte) 6, (byte) 9 } };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.columnStreams()) {
+                final var iterator = (ObjIteratorEx<ByteStream>) stream.iterator();
+                iterator.advance(amount);
+                if (skipped < expected.length) {
+                    assertTrue(iterator.hasNext());
+                    try (var values = iterator.next()) {
+                        assertArrayEquals(expected[skipped], values.toArray());
+                    }
+                }
+                assertEquals(Math.max(0, expected.length - skipped - 1), iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 3, Long.MAX_VALUE })
+        public void testColumnStreams_InnerCursorAdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = ByteMatrix
+                    .wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 3 }, { (byte) 4, (byte) 5, (byte) 6 }, { (byte) 7, (byte) 8, (byte) 9 } });
+            final byte[] expected = new byte[] { (byte) 2, (byte) 5, (byte) 8 };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var columns = matrix.columnStreams(1, 2);
+                 var values = columns.iterator().next()) {
+                final var iterator = (ByteIteratorEx) values.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextByte);
+            }
+        }
+
+        @Test
+        public void testColumnStreams_InnerCountConsumesOnlyRemainingValues() {
+            final var matrix = ByteMatrix
+                    .wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 3 }, { (byte) 4, (byte) 5, (byte) 6 }, { (byte) 7, (byte) 8, (byte) 9 } });
+            try (var columns = matrix.columnStreams(1, 2);
+                 var values = columns.iterator().next()) {
+                final var iterator = (ByteIteratorEx) values.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals((byte) 2, iterator.nextByte());
+                assertEquals(2, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextByte);
+            }
         }
 
         @Test
@@ -6113,6 +6568,25 @@ class ByteMatrixTest extends MatrixTestSupport {
             assertEquals((byte) 9, values.get(3));
         }
 
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testForEach_ExplicitModesVisitSelectedRegionExactlyOnce(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var matrix = ByteMatrix
+                        .wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 3 }, { (byte) 4, (byte) 5, (byte) 6 }, { (byte) 7, (byte) 8, (byte) 9 } });
+                final var values = new ConcurrentLinkedQueue<Byte>();
+                matrix.forEach(0, 2, 1, 3, values::add);
+                assertEquals(List.of((byte) 2, (byte) 3, (byte) 5, (byte) 6).stream().sorted().toList(), values.stream().sorted().toList());
+                assertEquals(
+                        ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2, (byte) 3 }, { (byte) 4, (byte) 5, (byte) 6 }, { (byte) 7, (byte) 8, (byte) 9 } }),
+                        matrix);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
+        }
+
         @Test
         public void testForEachNullAction() {
             byte[][] a = { { 1, 2 }, { 3, 4 } };
@@ -6196,6 +6670,18 @@ class ByteMatrixTest extends MatrixTestSupport {
             ByteMatrix m2 = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
             assertEquals(m1.hashCode(), m2.hashCode());
         }
+
+        @Test
+        public void testHashCode_ZeroRowWidthsDistinguishShapes() {
+            final var empty = ByteMatrix.wrap(new byte[0][0]);
+            final var narrow = empty.resize(0, 4);
+            final var equal = empty.resize(0, 4);
+            final var wide = empty.resize(0, 5);
+            assertEquals(narrow, equal);
+            assertEquals(narrow.hashCode(), equal.hashCode());
+            assertNotEquals(narrow.hashCode(), wide.hashCode());
+            assertNotEquals(narrow.hashCode(), empty.hashCode());
+        }
     }
 
     @Nested
@@ -6241,6 +6727,14 @@ class ByteMatrixTest extends MatrixTestSupport {
         public void testEquals_DifferentType() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1 } });
             assertNotEquals(m, "string");
+        }
+
+        @Test
+        public void testEquals_DifferentRowCountsWithEqualColumnCounts() {
+            final var longer = ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2 }, { (byte) 3, (byte) 4 } });
+            final var shorter = ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2 } });
+            assertFalse(longer.equals(shorter));
+            assertFalse(shorter.equals(longer));
         }
 
         @Test

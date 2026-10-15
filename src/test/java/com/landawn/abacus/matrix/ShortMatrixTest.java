@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
@@ -12,19 +13,25 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import com.landawn.abacus.util.Sheet.Point;
 import com.landawn.abacus.util.Sheet;
 import com.landawn.abacus.util.ShortList;
 import com.landawn.abacus.util.Throwables;
+import com.landawn.abacus.util.stream.ObjIteratorEx;
 import com.landawn.abacus.util.stream.ShortIteratorEx;
 import com.landawn.abacus.util.stream.ShortStream;
 import com.landawn.abacus.util.stream.Stream;
@@ -766,6 +773,13 @@ class ShortMatrixTest extends MatrixTestSupport {
         @Test
         public void testDiagonal_WithBothNull() {
             assertThrows(IllegalArgumentException.class, () -> ShortMatrix.ofDiagonals(null, null));
+        }
+
+        @Test
+        public void testOfDiagonals_EmptyAndNullSidesPreserveEmptyShape() {
+            assertTrue(ShortMatrix.ofDiagonals(new short[0], new short[0]).isEmpty());
+            assertTrue(ShortMatrix.ofDiagonals(new short[0], null).isEmpty());
+            assertTrue(ShortMatrix.ofDiagonals(null, new short[0]).isEmpty());
         }
 
         @Test
@@ -2132,6 +2146,20 @@ class ShortMatrixTest extends MatrixTestSupport {
             assertEquals(11, m.get(1, 1));
         }
 
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testUpdateAll_ExplicitModesTransformEveryValue(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var matrix = ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2, (short) 3 }, { (short) 4, (short) 5, (short) 6 } });
+                matrix.updateAll(value -> (short) (value + 10));
+                assertEquals(ShortMatrix.wrap(new short[][] { { (short) 11, (short) 12, (short) 13 }, { (short) 14, (short) 15, (short) 16 } }), matrix);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
+        }
+
         @Test
         public void testShortMatrixUpdateAllNullOperator() {
             ShortMatrix matrix = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
@@ -2154,6 +2182,16 @@ class ShortMatrixTest extends MatrixTestSupport {
             ShortMatrix empty = ShortMatrix.empty();
             empty.updateAll(x -> (short) (x + 1));
             assertTrue(empty.isEmpty());
+        }
+
+        @Test
+        public void testUpdateAll_ZeroColumnsDoNotInvokeOperator() {
+            final var matrix = ShortMatrix.wrap(new short[2][0]);
+            matrix.updateAll(value -> {
+                throw new AssertionError("No values should be visited");
+            });
+            assertEquals(2, matrix.rowCount());
+            assertEquals(0, matrix.columnCount());
         }
 
         @Test
@@ -2280,6 +2318,20 @@ class ShortMatrixTest extends MatrixTestSupport {
             assertEquals(0, m.get(0, 0));
             assertEquals(2, m.get(0, 1));
             assertEquals(0, m.get(1, 1));
+        }
+
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testReplaceIf_ExplicitModesReplaceOnlyMatchingValues(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var matrix = ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2, (short) 3 }, { (short) 4, (short) 5, (short) 6 } });
+                matrix.replaceIf(value -> value % 2 == 0, (short) 9);
+                assertEquals(ShortMatrix.wrap(new short[][] { { (short) 1, (short) 9, (short) 3 }, { (short) 9, (short) 5, (short) 9 } }), matrix);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
         }
     }
 
@@ -2691,6 +2743,14 @@ class ShortMatrixTest extends MatrixTestSupport {
             short[][] patch = { { 1, 2 }, { 3, 4 } };
             assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(-1, 0, patch));
         }
+
+        @ParameterizedTest
+        @CsvSource({ "-1, 0", "3, 0", "0, -1", "0, 3" })
+        public void testCopyFrom_RejectsOffsetsOutsideDestination(final int row, final int column) {
+            final var matrix = ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2 }, { (short) 3, (short) 4 } });
+            assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyFrom(row, column, new short[][] { { (short) 1 } }));
+            assertEquals(ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2 }, { (short) 3, (short) 4 } }), matrix);
+        }
     }
 
     @Nested
@@ -3084,6 +3144,13 @@ class ShortMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testResize_GrowsRowsWhileTrimmingColumns() {
+            final var matrix = ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2 }, { (short) 3, (short) 4 } });
+            assertEquals(ShortMatrix.wrap(new short[][] { { (short) 1 }, { (short) 3 }, { (short) 9 } }), matrix.resize(3, 1, (short) 9));
+            assertEquals(ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2 }, { (short) 3, (short) 4 } }), matrix);
+        }
+
+        @Test
         public void testResize_WithNegativeDimensions() {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
             assertThrows(IllegalArgumentException.class, () -> m.resize(-1, 3, (short) 0));
@@ -3244,9 +3311,31 @@ class ShortMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testPad_SingleAxisFillPreservesExistingValues() {
+            final var matrix = ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2 }, { (short) 3, (short) 4 } });
+            assertEquals(ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2, (short) 9 }, { (short) 3, (short) 4, (short) 9 } }),
+                    matrix.pad(0, 0, 0, 1, (short) 9));
+            assertEquals(ShortMatrix.wrap(new short[][] { { (short) 9, (short) 1, (short) 2 }, { (short) 9, (short) 3, (short) 4 } }),
+                    matrix.pad(0, 0, 1, 0, (short) 9));
+            assertEquals(ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2 }, { (short) 3, (short) 4 }, { (short) 9, (short) 9 } }),
+                    matrix.pad(0, 1, 0, 0, (short) 9));
+            final var copy = matrix.pad(0, 0, 0, 0, (short) 9);
+            assertEquals(matrix, copy);
+            assertNotSame(matrix, copy);
+        }
+
+        @Test
         public void testPad_DirectionalWithNegativeValues() {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
             assertThrows(IllegalArgumentException.class, () -> m.pad(-1, 1, 1, 1, (short) 0));
+        }
+
+        @ParameterizedTest
+        @CsvSource({ "-1, 0, 0, 0", "0, -1, 0, 0", "0, 0, -1, 0", "0, 0, 0, -1", "2147483647, 0, 0, 0", "0, 0, 0, 2147483647" })
+        public void testPad_RejectsNegativeOrOverflowingDimensions(final int top, final int bottom, final int left, final int right) {
+            final var matrix = ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2 }, { (short) 3, (short) 4 } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.pad(top, bottom, left, right));
+            assertEquals(ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2 }, { (short) 3, (short) 4 } }), matrix);
         }
     }
 
@@ -3563,6 +3652,12 @@ class ShortMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testRotate90_TallRectangularValues() {
+            final var matrix = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
+            assertEquals(ShortMatrix.wrap(new short[][] { { (short) 5, (short) 3, (short) 1 }, { (short) 6, (short) 4, (short) 2 } }), matrix.rotate90());
+        }
+
+        @Test
         public void testRotate90_SingleRowEdgeCase() {
             ShortMatrix matrix = ShortMatrix.wrap(new short[][] { { 1, 2, 3 } });
             ShortMatrix rotated = matrix.rotate90();
@@ -3731,6 +3826,12 @@ class ShortMatrixTest extends MatrixTestSupport {
             assertEquals(4, rotated.get(0, 1));
             assertEquals(1, rotated.get(1, 0));
             assertEquals(3, rotated.get(1, 1));
+        }
+
+        @Test
+        public void testRotate270_TallRectangularValues() {
+            final var matrix = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
+            assertEquals(ShortMatrix.wrap(new short[][] { { (short) 2, (short) 4, (short) 6 }, { (short) 1, (short) 3, (short) 5 } }), matrix.rotate270());
         }
 
         @Test
@@ -3939,6 +4040,14 @@ class ShortMatrixTest extends MatrixTestSupport {
             assertEquals(0, m.rowCount());
             assertEquals(46_341, m.columnCount());
         }
+
+        @ParameterizedTest
+        @CsvSource({ "-1, 2", "2, -1", "1, 1" })
+        public void testReshapeAndPad_RejectsNegativeAndInsufficientShapes(final int rows, final int columns) {
+            final var matrix = ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2 }, { (short) 3, (short) 4 } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.reshapeAndPad(rows, columns));
+            assertEquals(ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2 }, { (short) 3, (short) 4 } }), matrix);
+        }
     }
 
     @Nested
@@ -4018,10 +4127,27 @@ class ShortMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testRepeatElements_UnitRepetitionReturnsIndependentMatrix() {
+            final var matrix = ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2 }, { (short) 3, (short) 4 } });
+            final var result = matrix.repeatElements(1, 1);
+            assertEquals(matrix, result);
+            assertNotSame(matrix, result);
+            result.set(0, 0, (short) 0);
+            assertEquals((short) 1, matrix.get(0, 0));
+        }
+
+        @Test
         public void testRepeatElements_InvalidArguments() {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(0, 1));
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(1, 0));
+        }
+
+        @ParameterizedTest
+        @CsvSource({ "2147483647, 1", "1, 2147483647" })
+        public void testRepeatElements_RejectsOverflowBeforeAllocation(final int rows, final int columns) {
+            final var matrix = ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2 }, { (short) 3, (short) 4 } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.repeatElements(rows, columns));
         }
     }
 
@@ -4112,6 +4238,16 @@ class ShortMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testRepeatMatrix_UnitRepetitionReturnsIndependentMatrix() {
+            final var matrix = ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2 }, { (short) 3, (short) 4 } });
+            final var result = matrix.repeatMatrix(1, 1);
+            assertEquals(matrix, result);
+            assertNotSame(matrix, result);
+            result.set(0, 0, (short) 0);
+            assertEquals((short) 1, matrix.get(0, 0));
+        }
+
+        @Test
         public void testRepeatMatrix_EmptyDimensionsDoNotTraverseRepeats() {
             ShortMatrix zeroRows = new ShortMatrix(new short[0][], 2);
             ShortMatrix zeroColumns = ShortMatrix.wrap(new short[2][0]);
@@ -4135,6 +4271,14 @@ class ShortMatrixTest extends MatrixTestSupport {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
             assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
+        }
+
+        @ParameterizedTest
+        @CsvSource({ "2147483647, 1", "1, 2147483647" })
+        public void testRepeatMatrix_RejectsOverflowBeforeAllocation(final int rows, final int columns) {
+            final var matrix = ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2 }, { (short) 3, (short) 4 } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.repeatMatrix(rows, columns));
+            assertEquals(ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2 }, { (short) 3, (short) 4 } }), matrix);
         }
     }
 
@@ -4564,6 +4708,14 @@ class ShortMatrixTest extends MatrixTestSupport {
             ShortMatrix m2 = ShortMatrix.wrap(new short[][] { { 2 }, { 3 } });
             assertThrows(IllegalArgumentException.class, () -> m1.stackHorizontally(m2));
         }
+
+        @Test
+        public void testStackHorizontally_RejectsLogicalWidthOverflowWithoutAllocation() {
+            final var huge = ShortMatrix.wrap(new short[0][0]).resize(0, Integer.MAX_VALUE);
+            final var extra = ShortMatrix.wrap(new short[0][0]).resize(0, 1);
+            assertThrows(IllegalArgumentException.class, () -> huge.stackHorizontally(extra));
+            assertEquals(Integer.MAX_VALUE, huge.columnCount());
+        }
     }
 
     @Nested
@@ -4655,6 +4807,22 @@ class ShortMatrixTest extends MatrixTestSupport {
             assertEquals(6, sum.get(0, 0));
             assertEquals(8, sum.get(0, 1));
             assertEquals(12, sum.get(1, 1));
+        }
+
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testAdd_ExplicitModesPreserveBothOperands(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var left = ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2, (short) 3 }, { (short) 4, (short) 5, (short) 6 } });
+                final var right = ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2, (short) 3 }, { (short) 4, (short) 5, (short) 6 } });
+                assertEquals(ShortMatrix.wrap(new short[][] { { (short) 2, (short) 4, (short) 6 }, { (short) 8, (short) 10, (short) 12 } }), left.add(right));
+                assertEquals(ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2, (short) 3 }, { (short) 4, (short) 5, (short) 6 } }), left);
+                assertEquals(ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2, (short) 3 }, { (short) 4, (short) 5, (short) 6 } }), right);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
         }
 
         @Test
@@ -4804,6 +4972,23 @@ class ShortMatrixTest extends MatrixTestSupport {
             assertEquals(4, diff.get(1, 1));
         }
 
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testSubtract_ExplicitModesPreserveBothOperands(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var left = ShortMatrix.wrap(new short[][] { { (short) 7, (short) 8, (short) 9 }, { (short) 10, (short) 11, (short) 12 } });
+                final var right = ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2, (short) 3 }, { (short) 4, (short) 5, (short) 6 } });
+                assertEquals(ShortMatrix.wrap(new short[][] { { (short) 6, (short) 6, (short) 6 }, { (short) 6, (short) 6, (short) 6 } }),
+                        left.subtract(right));
+                assertEquals(ShortMatrix.wrap(new short[][] { { (short) 7, (short) 8, (short) 9 }, { (short) 10, (short) 11, (short) 12 } }), left);
+                assertEquals(ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2, (short) 3 }, { (short) 4, (short) 5, (short) 6 } }), right);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
+        }
+
         @Test
         public void testSubtract_SingleElement() {
             ShortMatrix m1 = ShortMatrix.wrap(new short[][] { { 5 } });
@@ -4812,6 +4997,19 @@ class ShortMatrixTest extends MatrixTestSupport {
             assertEquals(1, diff.rowCount());
             assertEquals(1, diff.columnCount());
             assertEquals(2, diff.get(0, 0));
+        }
+    }
+
+    @Nested
+    class SubtractExactTests {
+
+        @Test
+        public void testSubtractExact_ValidRectangularOperandsPreserveValues() {
+            final var left = ShortMatrix.wrap(new short[][] { { (short) 7, (short) 8, (short) 9 }, { (short) 10, (short) 11, (short) 12 } });
+            final var right = ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2, (short) 3 }, { (short) 4, (short) 5, (short) 6 } });
+            assertEquals(ShortMatrix.wrap(new short[][] { { (short) 6, (short) 6, (short) 6 }, { (short) 6, (short) 6, (short) 6 } }),
+                    left.subtractExact(right));
+            assertEquals(ShortMatrix.wrap(new short[][] { { (short) 7, (short) 8, (short) 9 }, { (short) 10, (short) 11, (short) 12 } }), left);
         }
     }
 
@@ -4931,6 +5129,23 @@ class ShortMatrixTest extends MatrixTestSupport {
             assertArrayEquals(new short[] { 10, 11, 9, 15 }, product.rowCopy(1));
         }
 
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testMatrixMultiply_ExplicitModesComputeRectangularProduct(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var left = ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2 }, { (short) 3, (short) 4 }, { (short) 5, (short) 6 } });
+                final var right = ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2, (short) 3 }, { (short) 4, (short) 5, (short) 6 } });
+                assertEquals(ShortMatrix.wrap(new short[][] { { (short) 9, (short) 12, (short) 15 }, { (short) 19, (short) 26, (short) 33 },
+                        { (short) 29, (short) 40, (short) 51 } }), left.matrixMultiply(right));
+                assertEquals(ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2 }, { (short) 3, (short) 4 }, { (short) 5, (short) 6 } }), left);
+                assertEquals(ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2, (short) 3 }, { (short) 4, (short) 5, (short) 6 } }), right);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
+        }
+
         @Test
         public void testMatrixMultiply_EmptyProductPreservesShape() {
             ShortMatrix product = ShortMatrix.empty().matrixMultiply(ShortMatrix.empty());
@@ -4982,6 +5197,17 @@ class ShortMatrixTest extends MatrixTestSupport {
             assertEquals(1, product.rowCount());
             assertEquals(1, product.columnCount());
             assertEquals((short) -2, product.get(0, 0));
+        }
+    }
+
+    @Nested
+    class MatrixMultiplyWidenedTests {
+
+        @Test
+        public void testMatrixMultiplyWidened_RejectsIncompatibleInnerDimensions() {
+            final var left = ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2 } });
+            final var right = ShortMatrix.wrap(new short[][] { { (short) 3, (short) 4 } });
+            assertThrows(IllegalArgumentException.class, () -> left.matrixMultiplyWidened(right));
         }
     }
 
@@ -5653,6 +5879,37 @@ class ShortMatrixTest extends MatrixTestSupport {
             }
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testMainDiagonalStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = ShortMatrix
+                    .wrap(new short[][] { { (short) 1, (short) 2, (short) 3 }, { (short) 4, (short) 5, (short) 6 }, { (short) 7, (short) 8, (short) 9 } });
+            final short[] expected = new short[] { (short) 1, (short) 5, (short) 9 };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.mainDiagonalStream()) {
+                final var iterator = (ShortIteratorEx) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextShort);
+            }
+        }
+
+        @Test
+        public void testMainDiagonalStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = ShortMatrix
+                    .wrap(new short[][] { { (short) 1, (short) 2, (short) 3 }, { (short) 4, (short) 5, (short) 6 }, { (short) 7, (short) 8, (short) 9 } });
+            try (var stream = matrix.mainDiagonalStream()) {
+                final var iterator = (ShortIteratorEx) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals((short) 1, iterator.nextShort());
+                assertEquals(2, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextShort);
+            }
+        }
+
         @Test
         public void testMainDiagonalStream_Empty() {
             ShortMatrix empty = ShortMatrix.empty();
@@ -5729,6 +5986,37 @@ class ShortMatrixTest extends MatrixTestSupport {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 11, 12, 13 }, { 21, 22, 23 }, { 31, 32, 33 } });
             short[] antiDiag = m.antiDiagonalStream().toArray();
             assertArrayEquals(new short[] { 13, 22, 31 }, antiDiag);
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testAntiDiagonalStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = ShortMatrix
+                    .wrap(new short[][] { { (short) 1, (short) 2, (short) 3 }, { (short) 4, (short) 5, (short) 6 }, { (short) 7, (short) 8, (short) 9 } });
+            final short[] expected = new short[] { (short) 3, (short) 5, (short) 7 };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.antiDiagonalStream()) {
+                final var iterator = (ShortIteratorEx) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextShort);
+            }
+        }
+
+        @Test
+        public void testAntiDiagonalStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = ShortMatrix
+                    .wrap(new short[][] { { (short) 1, (short) 2, (short) 3 }, { (short) 4, (short) 5, (short) 6 }, { (short) 7, (short) 8, (short) 9 } });
+            try (var stream = matrix.antiDiagonalStream()) {
+                final var iterator = (ShortIteratorEx) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals((short) 3, iterator.nextShort());
+                assertEquals(2, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextShort);
+            }
         }
 
         @Test
@@ -5869,6 +6157,50 @@ class ShortMatrixTest extends MatrixTestSupport {
             assertThrows(java.util.NoSuchElementException.class, crossing::nextShort);
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testRowMajorStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = ShortMatrix
+                    .wrap(new short[][] { { (short) 1, (short) 2, (short) 3 }, { (short) 4, (short) 5, (short) 6 }, { (short) 7, (short) 8, (short) 9 } });
+            final short[] expected = new short[] { (short) 1, (short) 2, (short) 3, (short) 4, (short) 5, (short) 6, (short) 7, (short) 8, (short) 9 };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.rowMajorStream()) {
+                final var iterator = (ShortIteratorEx) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextShort);
+            }
+        }
+
+        @Test
+        public void testRowMajorStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = ShortMatrix
+                    .wrap(new short[][] { { (short) 1, (short) 2, (short) 3 }, { (short) 4, (short) 5, (short) 6 }, { (short) 7, (short) 8, (short) 9 } });
+            try (var stream = matrix.rowMajorStream()) {
+                final var iterator = (ShortIteratorEx) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals((short) 1, iterator.nextShort());
+                assertEquals(8, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextShort);
+            }
+        }
+
+        @Test
+        public void testRowMajorStream_NextTraversesAcrossRowBoundaries() {
+            final var matrix = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
+            final List<Short> values = new ArrayList<>();
+            try (var stream = matrix.rowMajorStream()) {
+                final var iterator = (ShortIteratorEx) stream.iterator();
+                while (iterator.hasNext()) {
+                    values.add(iterator.nextShort());
+                }
+                assertEquals(List.of((short) 1, (short) 2, (short) 3, (short) 4, (short) 5, (short) 6), values);
+            }
+        }
+
         @Test
         public void testRowMajorStreamSingleRowRange() {
             short[] row1 = matrix.rowMajorStream(1, 2).toArray();
@@ -5937,6 +6269,13 @@ class ShortMatrixTest extends MatrixTestSupport {
             noRows.columnStreams().forEach(column -> assertEquals(0L, column.count()));
             assertEquals(0L, noRows.mainDiagonalStream().count());
             assertEquals(0L, noRows.antiDiagonalStream().count());
+        }
+
+        @Test
+        public void testRowMajorStream_ZeroColumnsKeepLogicalRowRange() {
+            final var matrix = ShortMatrix.wrap(new short[3][0]);
+            assertEquals(0, matrix.rowMajorStream(1, 3).count());
+            assertEquals(2, matrix.rowStreams(1, 3).count());
         }
 
         @Test
@@ -6022,6 +6361,37 @@ class ShortMatrixTest extends MatrixTestSupport {
             assertArrayEquals(new short[] { 2, 5, 3, 6 }, result);
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testColumnMajorStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = ShortMatrix
+                    .wrap(new short[][] { { (short) 1, (short) 2, (short) 3 }, { (short) 4, (short) 5, (short) 6 }, { (short) 7, (short) 8, (short) 9 } });
+            final short[] expected = new short[] { (short) 1, (short) 4, (short) 7, (short) 2, (short) 5, (short) 8, (short) 3, (short) 6, (short) 9 };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.columnMajorStream()) {
+                final var iterator = (ShortIteratorEx) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextShort);
+            }
+        }
+
+        @Test
+        public void testColumnMajorStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = ShortMatrix
+                    .wrap(new short[][] { { (short) 1, (short) 2, (short) 3 }, { (short) 4, (short) 5, (short) 6 }, { (short) 7, (short) 8, (short) 9 } });
+            try (var stream = matrix.columnMajorStream()) {
+                final var iterator = (ShortIteratorEx) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals((short) 1, iterator.nextShort());
+                assertEquals(8, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextShort);
+            }
+        }
+
         @Test
         public void testColumnMajorStreamSingleColumnRange() {
             short[] col1 = matrix.columnMajorStream(1, 2).toArray();
@@ -6065,6 +6435,13 @@ class ShortMatrixTest extends MatrixTestSupport {
             ShortMatrix m = new ShortMatrix(arr);
             short[] result = m.columnMajorStream(1, 2).toArray();
             assertArrayEquals(new short[] { 2, 5 }, result);
+        }
+
+        @Test
+        public void testColumnMajorStream_ZeroRowsKeepLogicalColumnRange() {
+            final var matrix = ShortMatrix.wrap(new short[0][0]).resize(0, 3);
+            assertEquals(0, matrix.columnMajorStream(1, 3).count());
+            assertEquals(2, matrix.columnStreams(1, 3).count());
         }
 
         @Test
@@ -6190,6 +6567,30 @@ class ShortMatrixTest extends MatrixTestSupport {
             assertEquals(2, streams.count());
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 3, Long.MAX_VALUE })
+        public void testRowStreams_OuterCursorAdvanceCountAndExhaustion(final long amount) {
+            final var matrix = ShortMatrix
+                    .wrap(new short[][] { { (short) 1, (short) 2, (short) 3 }, { (short) 4, (short) 5, (short) 6 }, { (short) 7, (short) 8, (short) 9 } });
+            final short[][] expected = { new short[] { (short) 1, (short) 2, (short) 3 }, new short[] { (short) 4, (short) 5, (short) 6 },
+                    new short[] { (short) 7, (short) 8, (short) 9 } };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.rowStreams()) {
+                final var iterator = (ObjIteratorEx<ShortStream>) stream.iterator();
+                iterator.advance(amount);
+                if (skipped < expected.length) {
+                    assertTrue(iterator.hasNext());
+                    try (var values = iterator.next()) {
+                        assertArrayEquals(expected[skipped], values.toArray());
+                    }
+                }
+                assertEquals(Math.max(0, expected.length - skipped - 1), iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
         @Test
         public void testRowStreams_Empty() {
             ShortMatrix empty = ShortMatrix.empty();
@@ -6280,6 +6681,63 @@ class ShortMatrixTest extends MatrixTestSupport {
             ShortMatrix m = new ShortMatrix(arr);
             Stream<ShortStream> streams = m.columnStreams(1, 3);
             assertEquals(2, streams.count());
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 3, Long.MAX_VALUE })
+        public void testColumnStreams_OuterCursorAdvanceCountAndExhaustion(final long amount) {
+            final var matrix = ShortMatrix
+                    .wrap(new short[][] { { (short) 1, (short) 2, (short) 3 }, { (short) 4, (short) 5, (short) 6 }, { (short) 7, (short) 8, (short) 9 } });
+            final short[][] expected = { new short[] { (short) 1, (short) 4, (short) 7 }, new short[] { (short) 2, (short) 5, (short) 8 },
+                    new short[] { (short) 3, (short) 6, (short) 9 } };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.columnStreams()) {
+                final var iterator = (ObjIteratorEx<ShortStream>) stream.iterator();
+                iterator.advance(amount);
+                if (skipped < expected.length) {
+                    assertTrue(iterator.hasNext());
+                    try (var values = iterator.next()) {
+                        assertArrayEquals(expected[skipped], values.toArray());
+                    }
+                }
+                assertEquals(Math.max(0, expected.length - skipped - 1), iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 3, Long.MAX_VALUE })
+        public void testColumnStreams_InnerCursorAdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = ShortMatrix
+                    .wrap(new short[][] { { (short) 1, (short) 2, (short) 3 }, { (short) 4, (short) 5, (short) 6 }, { (short) 7, (short) 8, (short) 9 } });
+            final short[] expected = new short[] { (short) 2, (short) 5, (short) 8 };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var columns = matrix.columnStreams(1, 2);
+                 var values = columns.iterator().next()) {
+                final var iterator = (ShortIteratorEx) values.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextShort);
+            }
+        }
+
+        @Test
+        public void testColumnStreams_InnerCountConsumesOnlyRemainingValues() {
+            final var matrix = ShortMatrix
+                    .wrap(new short[][] { { (short) 1, (short) 2, (short) 3 }, { (short) 4, (short) 5, (short) 6 }, { (short) 7, (short) 8, (short) 9 } });
+            try (var columns = matrix.columnStreams(1, 2);
+                 var values = columns.iterator().next()) {
+                final var iterator = (ShortIteratorEx) values.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals((short) 2, iterator.nextShort());
+                assertEquals(2, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextShort);
+            }
         }
 
         @Test
@@ -6443,6 +6901,25 @@ class ShortMatrixTest extends MatrixTestSupport {
             assertEquals(10, sum[0]);
         }
 
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testForEach_ExplicitModesVisitSelectedRegionExactlyOnce(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var matrix = ShortMatrix
+                        .wrap(new short[][] { { (short) 1, (short) 2, (short) 3 }, { (short) 4, (short) 5, (short) 6 }, { (short) 7, (short) 8, (short) 9 } });
+                final var values = new ConcurrentLinkedQueue<Short>();
+                matrix.forEach(0, 2, 1, 3, values::add);
+                assertEquals(List.of((short) 2, (short) 3, (short) 5, (short) 6).stream().sorted().toList(), values.stream().sorted().toList());
+                assertEquals(ShortMatrix
+                        .wrap(new short[][] { { (short) 1, (short) 2, (short) 3 }, { (short) 4, (short) 5, (short) 6 }, { (short) 7, (short) 8, (short) 9 } }),
+                        matrix);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
+        }
+
         // Test various operations on empty matrix
         @Test
         public void testForEachNullAction() {
@@ -6548,6 +7025,18 @@ class ShortMatrixTest extends MatrixTestSupport {
             ShortMatrix empty2 = ShortMatrix.wrap(new short[0][0]);
             assertEquals(empty1.hashCode(), empty2.hashCode());
         }
+
+        @Test
+        public void testHashCode_ZeroRowWidthsDistinguishShapes() {
+            final var empty = ShortMatrix.wrap(new short[0][0]);
+            final var narrow = empty.resize(0, 4);
+            final var equal = empty.resize(0, 4);
+            final var wide = empty.resize(0, 5);
+            assertEquals(narrow, equal);
+            assertEquals(narrow.hashCode(), equal.hashCode());
+            assertNotEquals(narrow.hashCode(), wide.hashCode());
+            assertNotEquals(narrow.hashCode(), empty.hashCode());
+        }
     }
 
     @Nested
@@ -6611,6 +7100,14 @@ class ShortMatrixTest extends MatrixTestSupport {
             assertTrue(a1.equals(a1));
             assertNotEquals(a1, null);
             assertNotEquals(a1, "not a matrix");
+        }
+
+        @Test
+        public void testEquals_DifferentRowCountsWithEqualColumnCounts() {
+            final var longer = ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2 }, { (short) 3, (short) 4 } });
+            final var shorter = ShortMatrix.wrap(new short[][] { { (short) 1, (short) 2 } });
+            assertFalse(longer.equals(shorter));
+            assertFalse(shorter.equals(longer));
         }
 
         @Test

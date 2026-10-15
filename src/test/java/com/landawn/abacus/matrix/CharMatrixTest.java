@@ -14,19 +14,27 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.NoSuchElementException;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.landawn.abacus.util.CharList;
 import com.landawn.abacus.util.Sheet.Point;
 import com.landawn.abacus.util.Throwables;
 import com.landawn.abacus.util.stream.CharIteratorEx;
 import com.landawn.abacus.util.stream.CharStream;
+import com.landawn.abacus.util.stream.ObjIteratorEx;
 import com.landawn.abacus.util.stream.Stream;
 import com.landawn.abacus.util.u.OptionalChar;
 
@@ -825,6 +833,13 @@ class CharMatrixTest extends MatrixTestSupport {
         @Test
         public void testDiagonal_WithBothNull() {
             assertThrows(IllegalArgumentException.class, () -> CharMatrix.ofDiagonals(null, null));
+        }
+
+        @Test
+        public void testOfDiagonals_EmptyAndNullSidesPreserveEmptyShape() {
+            assertTrue(CharMatrix.ofDiagonals(new char[0], new char[0]).isEmpty());
+            assertTrue(CharMatrix.ofDiagonals(new char[0], null).isEmpty());
+            assertTrue(CharMatrix.ofDiagonals(null, new char[0]).isEmpty());
         }
     }
 
@@ -2448,6 +2463,20 @@ class CharMatrixTest extends MatrixTestSupport {
             assertEquals('l', matrix.get(2, 3));
         }
 
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testUpdateAll_ExplicitModesTransformEveryValue(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var matrix = CharMatrix.wrap(new char[][] { { (char) 1, (char) 2, (char) 3 }, { (char) 4, (char) 5, (char) 6 } });
+                matrix.updateAll(value -> (char) (value + 10));
+                assertEquals(CharMatrix.wrap(new char[][] { { (char) 11, (char) 12, (char) 13 }, { (char) 14, (char) 15, (char) 16 } }), matrix);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
+        }
+
         @Test
         public void testCharMatrixUpdateAllNullOperator() {
             CharMatrix matrix = CharMatrix.wrap(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
@@ -2463,6 +2492,16 @@ class CharMatrixTest extends MatrixTestSupport {
             assertThrows(IllegalArgumentException.class, () -> emptyLike.updateAntiDiagonal((Throwables.CharUnaryOperator<RuntimeException>) null));
             assertThrows(IllegalArgumentException.class, () -> emptyLike.replaceIf((Throwables.CharPredicate<RuntimeException>) null, 'x'));
             assertThrows(IllegalArgumentException.class, () -> emptyLike.replaceIf((Throwables.IntBiPredicate<RuntimeException>) null, 'x'));
+        }
+
+        @Test
+        public void testUpdateAll_ZeroColumnsDoNotInvokeOperator() {
+            final var matrix = CharMatrix.wrap(new char[2][0]);
+            matrix.updateAll(value -> {
+                throw new AssertionError("No values should be visited");
+            });
+            assertEquals(2, matrix.rowCount());
+            assertEquals(0, matrix.columnCount());
         }
     }
 
@@ -2582,6 +2621,20 @@ class CharMatrixTest extends MatrixTestSupport {
             assertEquals('x', m.get(0, 0));
             assertEquals('\0', m.get(0, 1));
             assertEquals('x', m.get(1, 1));
+        }
+
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testReplaceIf_ExplicitModesReplaceOnlyMatchingValues(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var matrix = CharMatrix.wrap(new char[][] { { (char) 1, (char) 2, (char) 3 }, { (char) 4, (char) 5, (char) 6 } });
+                matrix.replaceIf(value -> value % 2 == 0, (char) 9);
+                assertEquals(CharMatrix.wrap(new char[][] { { (char) 1, (char) 9, (char) 3 }, { (char) 9, (char) 5, (char) 9 } }), matrix);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
         }
     }
 
@@ -3029,6 +3082,14 @@ class CharMatrixTest extends MatrixTestSupport {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'a' } });
             assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(-1, 0, new char[][] { { 'b' } }));
             assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(0, -1, new char[][] { { 'b' } }));
+        }
+
+        @ParameterizedTest
+        @CsvSource({ "-1, 0", "3, 0", "0, -1", "0, 3" })
+        public void testCopyFrom_RejectsOffsetsOutsideDestination(final int row, final int column) {
+            final var matrix = CharMatrix.wrap(new char[][] { { (char) 1, (char) 2 }, { (char) 3, (char) 4 } });
+            assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyFrom(row, column, new char[][] { { (char) 1 } }));
+            assertEquals(CharMatrix.wrap(new char[][] { { (char) 1, (char) 2 }, { (char) 3, (char) 4 } }), matrix);
         }
     }
 
@@ -3521,6 +3582,13 @@ class CharMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testResize_GrowsRowsWhileTrimmingColumns() {
+            final var matrix = CharMatrix.wrap(new char[][] { { (char) 1, (char) 2 }, { (char) 3, (char) 4 } });
+            assertEquals(CharMatrix.wrap(new char[][] { { (char) 1 }, { (char) 3 }, { (char) 9 } }), matrix.resize(3, 1, (char) 9));
+            assertEquals(CharMatrix.wrap(new char[][] { { (char) 1, (char) 2 }, { (char) 3, (char) 4 } }), matrix);
+        }
+
+        @Test
         public void testResize_NegativeThrows() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'a' } });
             assertThrows(IllegalArgumentException.class, () -> m.resize(-1, 1));
@@ -3688,9 +3756,31 @@ class CharMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testPad_SingleAxisFillPreservesExistingValues() {
+            final var matrix = CharMatrix.wrap(new char[][] { { (char) 1, (char) 2 }, { (char) 3, (char) 4 } });
+            assertEquals(CharMatrix.wrap(new char[][] { { (char) 1, (char) 2, (char) 9 }, { (char) 3, (char) 4, (char) 9 } }),
+                    matrix.pad(0, 0, 0, 1, (char) 9));
+            assertEquals(CharMatrix.wrap(new char[][] { { (char) 9, (char) 1, (char) 2 }, { (char) 9, (char) 3, (char) 4 } }),
+                    matrix.pad(0, 0, 1, 0, (char) 9));
+            assertEquals(CharMatrix.wrap(new char[][] { { (char) 1, (char) 2 }, { (char) 3, (char) 4 }, { (char) 9, (char) 9 } }),
+                    matrix.pad(0, 1, 0, 0, (char) 9));
+            final var copy = matrix.pad(0, 0, 0, 0, (char) 9);
+            assertEquals(matrix, copy);
+            assertNotSame(matrix, copy);
+        }
+
+        @Test
         public void testPad_DirectionalWithNegativeValues() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'A', 'B' }, { 'C', 'D' } });
             assertThrows(IllegalArgumentException.class, () -> m.pad(-1, 1, 1, 1, '?'));
+        }
+
+        @ParameterizedTest
+        @CsvSource({ "-1, 0, 0, 0", "0, -1, 0, 0", "0, 0, -1, 0", "0, 0, 0, -1", "2147483647, 0, 0, 0", "0, 0, 0, 2147483647" })
+        public void testPad_RejectsNegativeOrOverflowingDimensions(final int top, final int bottom, final int left, final int right) {
+            final var matrix = CharMatrix.wrap(new char[][] { { (char) 1, (char) 2 }, { (char) 3, (char) 4 } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.pad(top, bottom, left, right));
+            assertEquals(CharMatrix.wrap(new char[][] { { (char) 1, (char) 2 }, { (char) 3, (char) 4 } }), matrix);
         }
     }
 
@@ -4275,6 +4365,14 @@ class CharMatrixTest extends MatrixTestSupport {
             assertEquals(2, reshaped.rowCount());
             assertEquals(2, reshaped.columnCount());
         }
+
+        @ParameterizedTest
+        @CsvSource({ "-1, 2", "2, -1", "1, 1" })
+        public void testReshapeAndPad_RejectsNegativeAndInsufficientShapes(final int rows, final int columns) {
+            final var matrix = CharMatrix.wrap(new char[][] { { (char) 1, (char) 2 }, { (char) 3, (char) 4 } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.reshapeAndPad(rows, columns));
+            assertEquals(CharMatrix.wrap(new char[][] { { (char) 1, (char) 2 }, { (char) 3, (char) 4 } }), matrix);
+        }
     }
 
     @Nested
@@ -4358,6 +4456,25 @@ class CharMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testRepeatElements_UnitRepetitionReturnsIndependentMatrix() {
+            final var matrix = CharMatrix.wrap(new char[][] { { (char) 1, (char) 2 }, { (char) 3, (char) 4 } });
+            final var result = matrix.repeatElements(1, 1);
+            assertEquals(matrix, result);
+            assertNotSame(matrix, result);
+            result.set(0, 0, (char) 0);
+            assertEquals((char) 1, matrix.get(0, 0));
+        }
+
+        @Test
+        public void testRepeatElements_OnlyColumnsRepeated() {
+            final var matrix = CharMatrix.wrap(new char[][] { { (char) 1, (char) 3 }, { (char) 3, (char) 1 } });
+            final var repeated = matrix.repeatElements(1, 2);
+            assertEquals(CharMatrix.wrap(new char[][] { { (char) 1, (char) 1, (char) 3, (char) 3 }, { (char) 3, (char) 3, (char) 1, (char) 1 } }), repeated);
+            repeated.set(0, 0, (char) 3);
+            assertEquals((char) 1, matrix.get(0, 0));
+        }
+
+        @Test
         public void testRepeatElementsOverflow() {
             int largeSize = 50000;
             CharMatrix m = CharMatrix.wrap(new char[largeSize][2]);
@@ -4392,6 +4509,13 @@ class CharMatrixTest extends MatrixTestSupport {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'a' } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(0, 1));
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(1, 0));
+        }
+
+        @ParameterizedTest
+        @CsvSource({ "2147483647, 1", "1, 2147483647" })
+        public void testRepeatElements_RejectsOverflowBeforeAllocation(final int rows, final int columns) {
+            final var matrix = CharMatrix.wrap(new char[][] { { (char) 1, (char) 2 }, { (char) 3, (char) 4 } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.repeatElements(rows, columns));
         }
     }
 
@@ -4476,6 +4600,25 @@ class CharMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testRepeatMatrix_UnitRepetitionReturnsIndependentMatrix() {
+            final var matrix = CharMatrix.wrap(new char[][] { { (char) 1, (char) 2 }, { (char) 3, (char) 4 } });
+            final var result = matrix.repeatMatrix(1, 1);
+            assertEquals(matrix, result);
+            assertNotSame(matrix, result);
+            result.set(0, 0, (char) 0);
+            assertEquals((char) 1, matrix.get(0, 0));
+        }
+
+        @Test
+        public void testRepeatMatrix_OnlyColumnsRepeated() {
+            final var matrix = CharMatrix.wrap(new char[][] { { (char) 1, (char) 2 }, { (char) 3, (char) 4 } });
+            final var repeated = matrix.repeatMatrix(1, 2);
+            assertEquals(CharMatrix.wrap(new char[][] { { (char) 1, (char) 2, (char) 1, (char) 2 }, { (char) 3, (char) 4, (char) 3, (char) 4 } }), repeated);
+            repeated.set(0, 0, (char) 3);
+            assertEquals((char) 1, matrix.get(0, 0));
+        }
+
+        @Test
         public void testRepeatMatrix_Shape2By2_VerticalTileBoundary() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
             CharMatrix result = m.repeatMatrix(2, 2);
@@ -4540,6 +4683,14 @@ class CharMatrixTest extends MatrixTestSupport {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'a' } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
             assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
+        }
+
+        @ParameterizedTest
+        @CsvSource({ "2147483647, 1", "1, 2147483647" })
+        public void testRepeatMatrix_RejectsOverflowBeforeAllocation(final int rows, final int columns) {
+            final var matrix = CharMatrix.wrap(new char[][] { { (char) 1, (char) 2 }, { (char) 3, (char) 4 } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.repeatMatrix(rows, columns));
+            assertEquals(CharMatrix.wrap(new char[][] { { (char) 1, (char) 2 }, { (char) 3, (char) 4 } }), matrix);
         }
     }
 
@@ -4876,6 +5027,14 @@ class CharMatrixTest extends MatrixTestSupport {
             CharMatrix m2 = CharMatrix.wrap(new char[][] { { 'b' }, { 'c' } });
             assertThrows(IllegalArgumentException.class, () -> m1.stackHorizontally(m2));
         }
+
+        @Test
+        public void testStackHorizontally_RejectsLogicalWidthOverflowWithoutAllocation() {
+            final var huge = CharMatrix.wrap(new char[0][0]).resize(0, Integer.MAX_VALUE);
+            final var extra = CharMatrix.wrap(new char[0][0]).resize(0, 1);
+            assertThrows(IllegalArgumentException.class, () -> huge.stackHorizontally(extra));
+            assertEquals(Integer.MAX_VALUE, huge.columnCount());
+        }
     }
 
     @Nested
@@ -4946,6 +5105,22 @@ class CharMatrixTest extends MatrixTestSupport {
             assertEquals('b', sum.get(0, 0));
             assertEquals('d', sum.get(0, 1));
         }
+
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testAdd_ExplicitModesPreserveBothOperands(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var left = CharMatrix.wrap(new char[][] { { (char) 1, (char) 2, (char) 3 }, { (char) 4, (char) 5, (char) 6 } });
+                final var right = CharMatrix.wrap(new char[][] { { (char) 1, (char) 2, (char) 3 }, { (char) 4, (char) 5, (char) 6 } });
+                assertEquals(CharMatrix.wrap(new char[][] { { (char) 2, (char) 4, (char) 6 }, { (char) 8, (char) 10, (char) 12 } }), left.add(right));
+                assertEquals(CharMatrix.wrap(new char[][] { { (char) 1, (char) 2, (char) 3 }, { (char) 4, (char) 5, (char) 6 } }), left);
+                assertEquals(CharMatrix.wrap(new char[][] { { (char) 1, (char) 2, (char) 3 }, { (char) 4, (char) 5, (char) 6 } }), right);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
+        }
     }
 
     @Nested
@@ -5009,6 +5184,22 @@ class CharMatrixTest extends MatrixTestSupport {
             // Result: [['c', 'c']] (d-1=99, e-2=99)
             assertEquals('c', diff.get(0, 0));
             assertEquals('c', diff.get(0, 1));
+        }
+
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testSubtract_ExplicitModesPreserveBothOperands(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var left = CharMatrix.wrap(new char[][] { { (char) 7, (char) 8, (char) 9 }, { (char) 10, (char) 11, (char) 12 } });
+                final var right = CharMatrix.wrap(new char[][] { { (char) 1, (char) 2, (char) 3 }, { (char) 4, (char) 5, (char) 6 } });
+                assertEquals(CharMatrix.wrap(new char[][] { { (char) 6, (char) 6, (char) 6 }, { (char) 6, (char) 6, (char) 6 } }), left.subtract(right));
+                assertEquals(CharMatrix.wrap(new char[][] { { (char) 7, (char) 8, (char) 9 }, { (char) 10, (char) 11, (char) 12 } }), left);
+                assertEquals(CharMatrix.wrap(new char[][] { { (char) 1, (char) 2, (char) 3 }, { (char) 4, (char) 5, (char) 6 } }), right);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
         }
     }
 
@@ -5090,6 +5281,25 @@ class CharMatrixTest extends MatrixTestSupport {
             assertEquals(16, product.get(0, 1));
             assertEquals(19, product.get(1, 0));
             assertEquals(28, product.get(1, 1));
+        }
+
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testMatrixMultiply_ExplicitModesComputeRectangularProduct(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var left = CharMatrix.wrap(new char[][] { { (char) 1, (char) 2 }, { (char) 3, (char) 4 }, { (char) 5, (char) 6 } });
+                final var right = CharMatrix.wrap(new char[][] { { (char) 1, (char) 2, (char) 3 }, { (char) 4, (char) 5, (char) 6 } });
+                assertEquals(
+                        CharMatrix.wrap(
+                                new char[][] { { (char) 9, (char) 12, (char) 15 }, { (char) 19, (char) 26, (char) 33 }, { (char) 29, (char) 40, (char) 51 } }),
+                        left.matrixMultiply(right));
+                assertEquals(CharMatrix.wrap(new char[][] { { (char) 1, (char) 2 }, { (char) 3, (char) 4 }, { (char) 5, (char) 6 } }), left);
+                assertEquals(CharMatrix.wrap(new char[][] { { (char) 1, (char) 2, (char) 3 }, { (char) 4, (char) 5, (char) 6 } }), right);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
         }
 
         @Test
@@ -5645,6 +5855,37 @@ class CharMatrixTest extends MatrixTestSupport {
             }
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testMainDiagonalStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = CharMatrix
+                    .wrap(new char[][] { { (char) 1, (char) 2, (char) 3 }, { (char) 4, (char) 5, (char) 6 }, { (char) 7, (char) 8, (char) 9 } });
+            final char[] expected = new char[] { (char) 1, (char) 5, (char) 9 };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.mainDiagonalStream()) {
+                final var iterator = (CharIteratorEx) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextChar);
+            }
+        }
+
+        @Test
+        public void testMainDiagonalStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = CharMatrix
+                    .wrap(new char[][] { { (char) 1, (char) 2, (char) 3 }, { (char) 4, (char) 5, (char) 6 }, { (char) 7, (char) 8, (char) 9 } });
+            try (var stream = matrix.mainDiagonalStream()) {
+                final var iterator = (CharIteratorEx) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals((char) 1, iterator.nextChar());
+                assertEquals(2, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextChar);
+            }
+        }
+
         @Test
         public void testMainDiagonalStream_Empty() {
             CharMatrix empty = CharMatrix.empty();
@@ -5715,6 +5956,37 @@ class CharMatrixTest extends MatrixTestSupport {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' }, { 'g', 'h', 'i' } });
             char[] diag = m.antiDiagonalStream().toArray();
             assertArrayEquals(new char[] { 'c', 'e', 'g' }, diag);
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testAntiDiagonalStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = CharMatrix
+                    .wrap(new char[][] { { (char) 1, (char) 2, (char) 3 }, { (char) 4, (char) 5, (char) 6 }, { (char) 7, (char) 8, (char) 9 } });
+            final char[] expected = new char[] { (char) 3, (char) 5, (char) 7 };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.antiDiagonalStream()) {
+                final var iterator = (CharIteratorEx) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextChar);
+            }
+        }
+
+        @Test
+        public void testAntiDiagonalStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = CharMatrix
+                    .wrap(new char[][] { { (char) 1, (char) 2, (char) 3 }, { (char) 4, (char) 5, (char) 6 }, { (char) 7, (char) 8, (char) 9 } });
+            try (var stream = matrix.antiDiagonalStream()) {
+                final var iterator = (CharIteratorEx) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals((char) 3, iterator.nextChar());
+                assertEquals(2, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextChar);
+            }
         }
 
         @Test
@@ -5872,6 +6144,37 @@ class CharMatrixTest extends MatrixTestSupport {
             assertThrows(java.util.NoSuchElementException.class, crossing::nextChar);
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testRowMajorStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = CharMatrix
+                    .wrap(new char[][] { { (char) 1, (char) 2, (char) 3 }, { (char) 4, (char) 5, (char) 6 }, { (char) 7, (char) 8, (char) 9 } });
+            final char[] expected = new char[] { (char) 1, (char) 2, (char) 3, (char) 4, (char) 5, (char) 6, (char) 7, (char) 8, (char) 9 };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.rowMajorStream()) {
+                final var iterator = (CharIteratorEx) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextChar);
+            }
+        }
+
+        @Test
+        public void testRowMajorStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = CharMatrix
+                    .wrap(new char[][] { { (char) 1, (char) 2, (char) 3 }, { (char) 4, (char) 5, (char) 6 }, { (char) 7, (char) 8, (char) 9 } });
+            try (var stream = matrix.rowMajorStream()) {
+                final var iterator = (CharIteratorEx) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals((char) 1, iterator.nextChar());
+                assertEquals(8, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextChar);
+            }
+        }
+
         @Test
         public void testRowMajorStreamSingleRowRange() {
             char[][] a = { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } };
@@ -5943,6 +6246,13 @@ class CharMatrixTest extends MatrixTestSupport {
             noRows.columnStreams().forEach(column -> assertEquals(0L, column.count()));
             assertEquals(0L, noRows.mainDiagonalStream().count());
             assertEquals(0L, noRows.antiDiagonalStream().count());
+        }
+
+        @Test
+        public void testRowMajorStream_ZeroColumnsKeepLogicalRowRange() {
+            final var matrix = CharMatrix.wrap(new char[3][0]);
+            assertEquals(0, matrix.rowMajorStream(1, 3).count());
+            assertEquals(2, matrix.rowStreams(1, 3).count());
         }
 
         @Test
@@ -6047,6 +6357,37 @@ class CharMatrixTest extends MatrixTestSupport {
             assertArrayEquals(new char[] { 'b', 'e', 'c', 'f' }, elements);
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testColumnMajorStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = CharMatrix
+                    .wrap(new char[][] { { (char) 1, (char) 2, (char) 3 }, { (char) 4, (char) 5, (char) 6 }, { (char) 7, (char) 8, (char) 9 } });
+            final char[] expected = new char[] { (char) 1, (char) 4, (char) 7, (char) 2, (char) 5, (char) 8, (char) 3, (char) 6, (char) 9 };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.columnMajorStream()) {
+                final var iterator = (CharIteratorEx) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextChar);
+            }
+        }
+
+        @Test
+        public void testColumnMajorStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = CharMatrix
+                    .wrap(new char[][] { { (char) 1, (char) 2, (char) 3 }, { (char) 4, (char) 5, (char) 6 }, { (char) 7, (char) 8, (char) 9 } });
+            try (var stream = matrix.columnMajorStream()) {
+                final var iterator = (CharIteratorEx) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals((char) 1, iterator.nextChar());
+                assertEquals(8, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextChar);
+            }
+        }
+
         @Test
         public void testColumnMajorStreamSingleColumnRange() {
             char[][] a = { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } };
@@ -6093,6 +6434,13 @@ class CharMatrixTest extends MatrixTestSupport {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
             char[] col = m.columnMajorStream(0, 1).toArray();
             assertArrayEquals(new char[] { 'a', 'c' }, col);
+        }
+
+        @Test
+        public void testColumnMajorStream_ZeroRowsKeepLogicalColumnRange() {
+            final var matrix = CharMatrix.wrap(new char[0][0]).resize(0, 3);
+            assertEquals(0, matrix.columnMajorStream(1, 3).count());
+            assertEquals(2, matrix.columnStreams(1, 3).count());
         }
 
         @Test
@@ -6222,6 +6570,30 @@ class CharMatrixTest extends MatrixTestSupport {
             assertEquals(2, rows.size());
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 3, Long.MAX_VALUE })
+        public void testRowStreams_OuterCursorAdvanceCountAndExhaustion(final long amount) {
+            final var matrix = CharMatrix
+                    .wrap(new char[][] { { (char) 1, (char) 2, (char) 3 }, { (char) 4, (char) 5, (char) 6 }, { (char) 7, (char) 8, (char) 9 } });
+            final char[][] expected = { new char[] { (char) 1, (char) 2, (char) 3 }, new char[] { (char) 4, (char) 5, (char) 6 },
+                    new char[] { (char) 7, (char) 8, (char) 9 } };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.rowStreams()) {
+                final var iterator = (ObjIteratorEx<CharStream>) stream.iterator();
+                iterator.advance(amount);
+                if (skipped < expected.length) {
+                    assertTrue(iterator.hasNext());
+                    try (var values = iterator.next()) {
+                        assertArrayEquals(expected[skipped], values.toArray());
+                    }
+                }
+                assertEquals(Math.max(0, expected.length - skipped - 1), iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
         @Test
         public void testRowStreams_Empty() {
             CharMatrix empty = CharMatrix.empty();
@@ -6317,6 +6689,63 @@ class CharMatrixTest extends MatrixTestSupport {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'a', 'b', 'c' }, { 'd', 'e', 'f' } });
             List<char[]> columnCount = m.columnStreams(0, 2).map(CharStream::toArray).toList();
             assertEquals(2, columnCount.size());
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 3, Long.MAX_VALUE })
+        public void testColumnStreams_OuterCursorAdvanceCountAndExhaustion(final long amount) {
+            final var matrix = CharMatrix
+                    .wrap(new char[][] { { (char) 1, (char) 2, (char) 3 }, { (char) 4, (char) 5, (char) 6 }, { (char) 7, (char) 8, (char) 9 } });
+            final char[][] expected = { new char[] { (char) 1, (char) 4, (char) 7 }, new char[] { (char) 2, (char) 5, (char) 8 },
+                    new char[] { (char) 3, (char) 6, (char) 9 } };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.columnStreams()) {
+                final var iterator = (ObjIteratorEx<CharStream>) stream.iterator();
+                iterator.advance(amount);
+                if (skipped < expected.length) {
+                    assertTrue(iterator.hasNext());
+                    try (var values = iterator.next()) {
+                        assertArrayEquals(expected[skipped], values.toArray());
+                    }
+                }
+                assertEquals(Math.max(0, expected.length - skipped - 1), iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 3, Long.MAX_VALUE })
+        public void testColumnStreams_InnerCursorAdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = CharMatrix
+                    .wrap(new char[][] { { (char) 1, (char) 2, (char) 3 }, { (char) 4, (char) 5, (char) 6 }, { (char) 7, (char) 8, (char) 9 } });
+            final char[] expected = new char[] { (char) 2, (char) 5, (char) 8 };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var columns = matrix.columnStreams(1, 2);
+                 var values = columns.iterator().next()) {
+                final var iterator = (CharIteratorEx) values.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextChar);
+            }
+        }
+
+        @Test
+        public void testColumnStreams_InnerCountConsumesOnlyRemainingValues() {
+            final var matrix = CharMatrix
+                    .wrap(new char[][] { { (char) 1, (char) 2, (char) 3 }, { (char) 4, (char) 5, (char) 6 }, { (char) 7, (char) 8, (char) 9 } });
+            try (var columns = matrix.columnStreams(1, 2);
+                 var values = columns.iterator().next()) {
+                final var iterator = (CharIteratorEx) values.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals((char) 2, iterator.nextChar());
+                assertEquals(2, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextChar);
+            }
         }
 
         @Test
@@ -6432,6 +6861,25 @@ class CharMatrixTest extends MatrixTestSupport {
             StringBuilder sb = new StringBuilder();
             m.forEach(val -> sb.append(val));
             assertEquals("abcd", sb.toString());
+        }
+
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testForEach_ExplicitModesVisitSelectedRegionExactlyOnce(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var matrix = CharMatrix
+                        .wrap(new char[][] { { (char) 1, (char) 2, (char) 3 }, { (char) 4, (char) 5, (char) 6 }, { (char) 7, (char) 8, (char) 9 } });
+                final var values = new ConcurrentLinkedQueue<Character>();
+                matrix.forEach(0, 2, 1, 3, values::add);
+                assertEquals(List.of((char) 2, (char) 3, (char) 5, (char) 6).stream().sorted().toList(), values.stream().sorted().toList());
+                assertEquals(
+                        CharMatrix.wrap(new char[][] { { (char) 1, (char) 2, (char) 3 }, { (char) 4, (char) 5, (char) 6 }, { (char) 7, (char) 8, (char) 9 } }),
+                        matrix);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
         }
 
         @Test
@@ -6556,6 +7004,18 @@ class CharMatrixTest extends MatrixTestSupport {
             CharMatrix m2 = CharMatrix.wrap(new char[][] { { 'a', 'b' }, { 'c', 'd' } });
             assertEquals(m1.hashCode(), m2.hashCode());
         }
+
+        @Test
+        public void testHashCode_ZeroRowWidthsDistinguishShapes() {
+            final var empty = CharMatrix.wrap(new char[0][0]);
+            final var narrow = empty.resize(0, 4);
+            final var equal = empty.resize(0, 4);
+            final var wide = empty.resize(0, 5);
+            assertEquals(narrow, equal);
+            assertEquals(narrow.hashCode(), equal.hashCode());
+            assertNotEquals(narrow.hashCode(), wide.hashCode());
+            assertNotEquals(narrow.hashCode(), empty.hashCode());
+        }
     }
 
     @Nested
@@ -6601,6 +7061,14 @@ class CharMatrixTest extends MatrixTestSupport {
         public void testEquals_DifferentType() {
             CharMatrix m = CharMatrix.wrap(new char[][] { { 'a' } });
             assertNotEquals(m, "string");
+        }
+
+        @Test
+        public void testEquals_DifferentRowCountsWithEqualColumnCounts() {
+            final var longer = CharMatrix.wrap(new char[][] { { (char) 1, (char) 2 }, { (char) 3, (char) 4 } });
+            final var shorter = CharMatrix.wrap(new char[][] { { (char) 1, (char) 2 } });
+            assertFalse(longer.equals(shorter));
+            assertFalse(shorter.equals(longer));
         }
 
         @Test

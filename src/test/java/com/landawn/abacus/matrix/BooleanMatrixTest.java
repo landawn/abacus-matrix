@@ -13,11 +13,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.landawn.abacus.util.BooleanList;
 import com.landawn.abacus.util.Sheet.Point;
@@ -507,6 +514,13 @@ class BooleanMatrixTest extends MatrixTestSupport {
         @Test
         public void testDiagonal_WithBothNull() {
             assertThrows(IllegalArgumentException.class, () -> BooleanMatrix.ofDiagonals(null, null));
+        }
+
+        @Test
+        public void testOfDiagonals_EmptyAndNullSidesPreserveEmptyShape() {
+            assertTrue(BooleanMatrix.ofDiagonals(new boolean[0], new boolean[0]).isEmpty());
+            assertTrue(BooleanMatrix.ofDiagonals(new boolean[0], null).isEmpty());
+            assertTrue(BooleanMatrix.ofDiagonals(null, new boolean[0]).isEmpty());
         }
     }
 
@@ -1975,6 +1989,20 @@ class BooleanMatrixTest extends MatrixTestSupport {
             assertFalse(m.get(1, 1));
         }
 
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testUpdateAll_ExplicitModesTransformEveryValue(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var matrix = BooleanMatrix.wrap(new boolean[][] { { true, true, false }, { true, true, false } });
+                matrix.updateAll(value -> !value);
+                assertEquals(BooleanMatrix.wrap(new boolean[][] { { false, false, true }, { false, false, true } }), matrix);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
+        }
+
         @Test
         public void testBooleanMatrixUpdateAllNullOperator() {
             BooleanMatrix matrix = BooleanMatrix.wrap(new boolean[][] { { true, false }, { false, true } });
@@ -1990,6 +2018,16 @@ class BooleanMatrixTest extends MatrixTestSupport {
             assertThrows(IllegalArgumentException.class, () -> emptyLike.updateAntiDiagonal((Throwables.BooleanUnaryOperator<RuntimeException>) null));
             assertThrows(IllegalArgumentException.class, () -> emptyLike.replaceIf((Throwables.BooleanPredicate<RuntimeException>) null, true));
             assertThrows(IllegalArgumentException.class, () -> emptyLike.replaceIf((Throwables.IntBiPredicate<RuntimeException>) null, true));
+        }
+
+        @Test
+        public void testUpdateAll_ZeroColumnsDoNotInvokeOperator() {
+            final var matrix = BooleanMatrix.wrap(new boolean[2][0]);
+            matrix.updateAll(value -> {
+                throw new AssertionError("No values should be visited");
+            });
+            assertEquals(2, matrix.rowCount());
+            assertEquals(0, matrix.columnCount());
         }
     }
 
@@ -2112,6 +2150,20 @@ class BooleanMatrixTest extends MatrixTestSupport {
             assertTrue(m.get(0, 0));
             assertFalse(m.get(0, 1));
             assertTrue(m.get(1, 1));
+        }
+
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testReplaceIf_ExplicitModesReplaceOnlyMatchingValues(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var matrix = BooleanMatrix.wrap(new boolean[][] { { true, true, false }, { true, true, false } });
+                matrix.replaceIf(value -> value, false);
+                assertEquals(BooleanMatrix.wrap(new boolean[2][3]), matrix);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
         }
     }
 
@@ -2548,6 +2600,14 @@ class BooleanMatrixTest extends MatrixTestSupport {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true } });
             assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(-1, 0, new boolean[][] { { true } }));
             assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(0, -1, new boolean[][] { { true } }));
+        }
+
+        @ParameterizedTest
+        @CsvSource({ "-1, 0", "3, 0", "0, -1", "0, 3" })
+        public void testCopyFrom_RejectsOffsetsOutsideDestination(final int row, final int column) {
+            final var matrix = BooleanMatrix.wrap(new boolean[][] { { true, true }, { false, true } });
+            assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyFrom(row, column, new boolean[][] { { true } }));
+            assertEquals(BooleanMatrix.wrap(new boolean[][] { { true, true }, { false, true } }), matrix);
         }
     }
 
@@ -3050,6 +3110,13 @@ class BooleanMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testResize_GrowsRowsWhileTrimmingColumns() {
+            final var matrix = BooleanMatrix.wrap(new boolean[][] { { true, true }, { false, true } });
+            assertEquals(BooleanMatrix.wrap(new boolean[][] { { true }, { false }, { true } }), matrix.resize(3, 1, true));
+            assertEquals(BooleanMatrix.wrap(new boolean[][] { { true, true }, { false, true } }), matrix);
+        }
+
+        @Test
         public void testResize_NegativeThrows() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true } });
             assertThrows(IllegalArgumentException.class, () -> m.resize(-1, 1));
@@ -3229,9 +3296,28 @@ class BooleanMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testPad_SingleAxisFillPreservesExistingValues() {
+            final var matrix = BooleanMatrix.wrap(new boolean[][] { { true, true }, { false, true } });
+            assertEquals(BooleanMatrix.wrap(new boolean[][] { { true, true, true }, { false, true, true } }), matrix.pad(0, 0, 0, 1, true));
+            assertEquals(BooleanMatrix.wrap(new boolean[][] { { true, true, true }, { true, false, true } }), matrix.pad(0, 0, 1, 0, true));
+            assertEquals(BooleanMatrix.wrap(new boolean[][] { { true, true }, { false, true }, { true, true } }), matrix.pad(0, 1, 0, 0, true));
+            final var copy = matrix.pad(0, 0, 0, 0, true);
+            assertEquals(matrix, copy);
+            assertNotSame(matrix, copy);
+        }
+
+        @Test
         public void testPad_DirectionalWithNegativeValues() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false }, { false, true } });
             assertThrows(IllegalArgumentException.class, () -> m.pad(-1, 1, 1, 1, false));
+        }
+
+        @ParameterizedTest
+        @CsvSource({ "-1, 0, 0, 0", "0, -1, 0, 0", "0, 0, -1, 0", "0, 0, 0, -1", "2147483647, 0, 0, 0", "0, 0, 0, 2147483647" })
+        public void testPad_RejectsNegativeOrOverflowingDimensions(final int top, final int bottom, final int left, final int right) {
+            final var matrix = BooleanMatrix.wrap(new boolean[][] { { true, true }, { false, true } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.pad(top, bottom, left, right));
+            assertEquals(BooleanMatrix.wrap(new boolean[][] { { true, true }, { false, true } }), matrix);
         }
     }
 
@@ -3779,6 +3865,14 @@ class BooleanMatrixTest extends MatrixTestSupport {
             assertEquals(2, reshaped.rowCount());
             assertEquals(2, reshaped.columnCount());
         }
+
+        @ParameterizedTest
+        @CsvSource({ "-1, 2", "2, -1", "1, 1" })
+        public void testReshapeAndPad_RejectsNegativeAndInsufficientShapes(final int rows, final int columns) {
+            final var matrix = BooleanMatrix.wrap(new boolean[][] { { true, true }, { false, true } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.reshapeAndPad(rows, columns));
+            assertEquals(BooleanMatrix.wrap(new boolean[][] { { true, true }, { false, true } }), matrix);
+        }
     }
 
     @Nested
@@ -3857,6 +3951,25 @@ class BooleanMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testRepeatElements_UnitRepetitionReturnsIndependentMatrix() {
+            final var matrix = BooleanMatrix.wrap(new boolean[][] { { true, true }, { false, true } });
+            final var result = matrix.repeatElements(1, 1);
+            assertEquals(matrix, result);
+            assertNotSame(matrix, result);
+            result.set(0, 0, false);
+            assertEquals(true, matrix.get(0, 0));
+        }
+
+        @Test
+        public void testRepeatElements_OnlyColumnsRepeated() {
+            final var matrix = BooleanMatrix.wrap(new boolean[][] { { true, false }, { false, true } });
+            final var repeated = matrix.repeatElements(1, 2);
+            assertEquals(BooleanMatrix.wrap(new boolean[][] { { true, true, false, false }, { false, false, true, true } }), repeated);
+            repeated.set(0, 0, false);
+            assertEquals(true, matrix.get(0, 0));
+        }
+
+        @Test
         public void testRepeatElementsOverflow() {
             // Create matrix that will overflow when repeated
             int largeSize = 50000;
@@ -3894,6 +4007,13 @@ class BooleanMatrixTest extends MatrixTestSupport {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(0, 1));
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(1, 0));
+        }
+
+        @ParameterizedTest
+        @CsvSource({ "2147483647, 1", "1, 2147483647" })
+        public void testRepeatElements_RejectsOverflowBeforeAllocation(final int rows, final int columns) {
+            final var matrix = BooleanMatrix.wrap(new boolean[][] { { true, true }, { false, true } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.repeatElements(rows, columns));
         }
     }
 
@@ -3947,6 +4067,25 @@ class BooleanMatrixTest extends MatrixTestSupport {
                     assertTrue(repeated.get(i, j));
                 }
             }
+        }
+
+        @Test
+        public void testRepeatMatrix_UnitRepetitionReturnsIndependentMatrix() {
+            final var matrix = BooleanMatrix.wrap(new boolean[][] { { true, true }, { false, true } });
+            final var result = matrix.repeatMatrix(1, 1);
+            assertEquals(matrix, result);
+            assertNotSame(matrix, result);
+            result.set(0, 0, false);
+            assertEquals(true, matrix.get(0, 0));
+        }
+
+        @Test
+        public void testRepeatMatrix_OnlyColumnsRepeated() {
+            final var matrix = BooleanMatrix.wrap(new boolean[][] { { true, true }, { false, true } });
+            final var repeated = matrix.repeatMatrix(1, 2);
+            assertEquals(BooleanMatrix.wrap(new boolean[][] { { true, true, true, true }, { false, true, false, true } }), repeated);
+            repeated.set(0, 0, false);
+            assertEquals(true, matrix.get(0, 0));
         }
 
         @Test
@@ -4028,6 +4167,14 @@ class BooleanMatrixTest extends MatrixTestSupport {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
             assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
+        }
+
+        @ParameterizedTest
+        @CsvSource({ "2147483647, 1", "1, 2147483647" })
+        public void testRepeatMatrix_RejectsOverflowBeforeAllocation(final int rows, final int columns) {
+            final var matrix = BooleanMatrix.wrap(new boolean[][] { { true, true }, { false, true } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.repeatMatrix(rows, columns));
+            assertEquals(BooleanMatrix.wrap(new boolean[][] { { true, true }, { false, true } }), matrix);
         }
     }
 
@@ -4620,6 +4767,14 @@ class BooleanMatrixTest extends MatrixTestSupport {
             BooleanMatrix m2 = BooleanMatrix.wrap(new boolean[][] { { false }, { true } });
             assertThrows(IllegalArgumentException.class, () -> m1.stackHorizontally(m2));
         }
+
+        @Test
+        public void testStackHorizontally_RejectsLogicalWidthOverflowWithoutAllocation() {
+            final var huge = BooleanMatrix.wrap(new boolean[0][0]).resize(0, Integer.MAX_VALUE);
+            final var extra = BooleanMatrix.wrap(new boolean[0][0]).resize(0, 1);
+            assertThrows(IllegalArgumentException.class, () -> huge.stackHorizontally(extra));
+            assertEquals(Integer.MAX_VALUE, huge.columnCount());
+        }
     }
 
     @Nested
@@ -4925,6 +5080,35 @@ class BooleanMatrixTest extends MatrixTestSupport {
             assertFalse(columns.hasNext());
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testMainDiagonalStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = BooleanMatrix.wrap(new boolean[][] { { true, true, false }, { true, true, false }, { true, true, false } });
+            final Boolean[] expected = new Boolean[] { true, true, false };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.mainDiagonalStream()) {
+                final var iterator = (ObjIteratorEx<Boolean>) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
+        @Test
+        public void testMainDiagonalStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = BooleanMatrix.wrap(new boolean[][] { { true, true, false }, { true, true, false }, { true, true, false } });
+            try (var stream = matrix.mainDiagonalStream()) {
+                final var iterator = (ObjIteratorEx<Boolean>) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals(true, iterator.next());
+                assertEquals(2, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
         @Test
         public void testMainDiagonalStream_Empty() {
             BooleanMatrix empty = BooleanMatrix.empty();
@@ -4993,6 +5177,35 @@ class BooleanMatrixTest extends MatrixTestSupport {
             assertTrue(diag.get(0));
             assertTrue(diag.get(1));
             assertTrue(diag.get(2));
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testAntiDiagonalStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = BooleanMatrix.wrap(new boolean[][] { { true, true, false }, { true, true, false }, { true, true, false } });
+            final Boolean[] expected = new Boolean[] { false, true, true };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.antiDiagonalStream()) {
+                final var iterator = (ObjIteratorEx<Boolean>) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
+        @Test
+        public void testAntiDiagonalStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = BooleanMatrix.wrap(new boolean[][] { { true, true, false }, { true, true, false }, { true, true, false } });
+            try (var stream = matrix.antiDiagonalStream()) {
+                final var iterator = (ObjIteratorEx<Boolean>) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals(false, iterator.next());
+                assertEquals(2, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
         }
 
         @Test
@@ -5119,6 +5332,35 @@ class BooleanMatrixTest extends MatrixTestSupport {
             assertThrows(java.util.NoSuchElementException.class, ex::next);
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testRowMajorStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = BooleanMatrix.wrap(new boolean[][] { { true, true, false }, { true, true, false }, { true, true, false } });
+            final Boolean[] expected = new Boolean[] { true, true, false, true, true, false, true, true, false };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.rowMajorStream()) {
+                final var iterator = (ObjIteratorEx<Boolean>) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
+        @Test
+        public void testRowMajorStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = BooleanMatrix.wrap(new boolean[][] { { true, true, false }, { true, true, false }, { true, true, false } });
+            try (var stream = matrix.rowMajorStream()) {
+                final var iterator = (ObjIteratorEx<Boolean>) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals(true, iterator.next());
+                assertEquals(8, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
         @Test
         public void testRowMajorStream_Empty() {
             BooleanMatrix empty = BooleanMatrix.empty();
@@ -5230,6 +5472,13 @@ class BooleanMatrixTest extends MatrixTestSupport {
             noRows.columnStreams().forEach(column -> assertEquals(0L, column.count()));
             assertEquals(0L, noRows.mainDiagonalStream().count());
             assertEquals(0L, noRows.antiDiagonalStream().count());
+        }
+
+        @Test
+        public void testRowMajorStream_ZeroColumnsKeepLogicalRowRange() {
+            final var matrix = BooleanMatrix.wrap(new boolean[3][0]);
+            assertEquals(0, matrix.rowMajorStream(1, 3).count());
+            assertEquals(2, matrix.rowStreams(1, 3).count());
         }
 
         @Test
@@ -5376,6 +5625,35 @@ class BooleanMatrixTest extends MatrixTestSupport {
             assertThrows(java.util.NoSuchElementException.class, ex::next);
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testColumnMajorStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = BooleanMatrix.wrap(new boolean[][] { { true, true, false }, { true, true, false }, { true, true, false } });
+            final Boolean[] expected = new Boolean[] { true, true, true, true, true, true, false, false, false };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.columnMajorStream()) {
+                final var iterator = (ObjIteratorEx<Boolean>) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
+        @Test
+        public void testColumnMajorStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = BooleanMatrix.wrap(new boolean[][] { { true, true, false }, { true, true, false }, { true, true, false } });
+            try (var stream = matrix.columnMajorStream()) {
+                final var iterator = (ObjIteratorEx<Boolean>) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals(true, iterator.next());
+                assertEquals(8, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
         @Test
         public void testColumnMajorStream_Empty() {
             BooleanMatrix empty = BooleanMatrix.empty();
@@ -5434,6 +5712,13 @@ class BooleanMatrixTest extends MatrixTestSupport {
 
             assertSame(destination, array);
             assertArrayEquals(new Boolean[] { Boolean.TRUE, Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, null, Boolean.TRUE }, array);
+        }
+
+        @Test
+        public void testColumnMajorStream_ZeroRowsKeepLogicalColumnRange() {
+            final var matrix = BooleanMatrix.wrap(new boolean[0][0]).resize(0, 3);
+            assertEquals(0, matrix.columnMajorStream(1, 3).count());
+            assertEquals(2, matrix.columnStreams(1, 3).count());
         }
 
         @Test
@@ -5570,6 +5855,28 @@ class BooleanMatrixTest extends MatrixTestSupport {
             assertEquals(2, rows.size());
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 3, Long.MAX_VALUE })
+        public void testRowStreams_OuterCursorAdvanceCountAndExhaustion(final long amount) {
+            final var matrix = BooleanMatrix.wrap(new boolean[][] { { true, true, false }, { true, true, false }, { true, true, false } });
+            final Boolean[][] expected = { new Boolean[] { true, true, false }, new Boolean[] { true, true, false }, new Boolean[] { true, true, false } };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.rowStreams()) {
+                final var iterator = (ObjIteratorEx<Stream<Boolean>>) stream.iterator();
+                iterator.advance(amount);
+                if (skipped < expected.length) {
+                    assertTrue(iterator.hasNext());
+                    try (var values = iterator.next()) {
+                        assertArrayEquals(expected[skipped], values.toArray());
+                    }
+                }
+                assertEquals(Math.max(0, expected.length - skipped - 1), iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
         @Test
         public void testRowStreams_Empty() {
             BooleanMatrix empty = BooleanMatrix.empty();
@@ -5683,6 +5990,59 @@ class BooleanMatrixTest extends MatrixTestSupport {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true, false, true }, { false, true, false } });
             List<List<Boolean>> columnCount = m.columnStreams(0, 2).map(Stream::toList).toList();
             assertEquals(2, columnCount.size());
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 3, Long.MAX_VALUE })
+        public void testColumnStreams_OuterCursorAdvanceCountAndExhaustion(final long amount) {
+            final var matrix = BooleanMatrix.wrap(new boolean[][] { { true, true, false }, { true, true, false }, { true, true, false } });
+            final Boolean[][] expected = { new Boolean[] { true, true, true }, new Boolean[] { true, true, true }, new Boolean[] { false, false, false } };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.columnStreams()) {
+                final var iterator = (ObjIteratorEx<Stream<Boolean>>) stream.iterator();
+                iterator.advance(amount);
+                if (skipped < expected.length) {
+                    assertTrue(iterator.hasNext());
+                    try (var values = iterator.next()) {
+                        assertArrayEquals(expected[skipped], values.toArray());
+                    }
+                }
+                assertEquals(Math.max(0, expected.length - skipped - 1), iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 3, Long.MAX_VALUE })
+        public void testColumnStreams_InnerCursorAdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = BooleanMatrix.wrap(new boolean[][] { { true, true, false }, { true, true, false }, { true, true, false } });
+            final Boolean[] expected = new Boolean[] { true, true, true };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var columns = matrix.columnStreams(1, 2);
+                 var values = columns.iterator().next()) {
+                final var iterator = (ObjIteratorEx<Boolean>) values.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
+        @Test
+        public void testColumnStreams_InnerCountConsumesOnlyRemainingValues() {
+            final var matrix = BooleanMatrix.wrap(new boolean[][] { { true, true, false }, { true, true, false }, { true, true, false } });
+            try (var columns = matrix.columnStreams(1, 2);
+                 var values = columns.iterator().next()) {
+                final var iterator = (ObjIteratorEx<Boolean>) values.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals(true, iterator.next());
+                assertEquals(2, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
         }
 
         @Test
@@ -5814,6 +6174,22 @@ class BooleanMatrixTest extends MatrixTestSupport {
             assertEquals(2, count.get());
         }
 
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testForEach_ExplicitModesVisitSelectedRegionExactlyOnce(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var matrix = BooleanMatrix.wrap(new boolean[][] { { true, true, false }, { true, true, false }, { true, true, false } });
+                final var values = new ConcurrentLinkedQueue<Boolean>();
+                matrix.forEach(0, 2, 1, 3, values::add);
+                assertEquals(List.of(true, false, true, false).stream().sorted().toList(), values.stream().sorted().toList());
+                assertEquals(BooleanMatrix.wrap(new boolean[][] { { true, true, false }, { true, true, false }, { true, true, false } }), matrix);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
+        }
+
         @Test
         public void testForEachNullAction() {
             boolean[][] arr = { { true, false }, { false, true } };
@@ -5930,6 +6306,18 @@ class BooleanMatrixTest extends MatrixTestSupport {
             BooleanMatrix m2 = BooleanMatrix.wrap(new boolean[][] { { true, false }, { false, true } });
             assertEquals(m1.hashCode(), m2.hashCode());
         }
+
+        @Test
+        public void testHashCode_ZeroRowWidthsDistinguishShapes() {
+            final var empty = BooleanMatrix.wrap(new boolean[0][0]);
+            final var narrow = empty.resize(0, 4);
+            final var equal = empty.resize(0, 4);
+            final var wide = empty.resize(0, 5);
+            assertEquals(narrow, equal);
+            assertEquals(narrow.hashCode(), equal.hashCode());
+            assertNotEquals(narrow.hashCode(), wide.hashCode());
+            assertNotEquals(narrow.hashCode(), empty.hashCode());
+        }
     }
 
     @Nested
@@ -5976,6 +6364,14 @@ class BooleanMatrixTest extends MatrixTestSupport {
         public void testEquals_DifferentType() {
             BooleanMatrix m = BooleanMatrix.wrap(new boolean[][] { { true } });
             assertNotEquals(m, "string");
+        }
+
+        @Test
+        public void testEquals_DifferentRowCountsWithEqualColumnCounts() {
+            final var longer = BooleanMatrix.wrap(new boolean[][] { { true, true }, { false, true } });
+            final var shorter = BooleanMatrix.wrap(new boolean[][] { { true, true } });
+            assertFalse(longer.equals(shorter));
+            assertFalse(shorter.equals(longer));
         }
 
         @Test

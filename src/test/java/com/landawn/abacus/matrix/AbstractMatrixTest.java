@@ -16,12 +16,16 @@ import java.io.Serializable;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import com.landawn.abacus.util.DoubleList;
 import com.landawn.abacus.util.IntList;
@@ -153,6 +157,11 @@ class AbstractMatrixTest extends MatrixTestSupport {
             assertThrows(IllegalArgumentException.class, () -> IntMatrix.wrap(backingArray));
             assertThrows(IllegalArgumentException.class, () -> new IntMatrix(backingArray));
         }
+
+        @Test
+        public void testConstructor_RejectsNegativeExplicitColumnCount() {
+            assertThrows(IllegalArgumentException.class, () -> IntMatrix.wrapResult(new int[0][], -1));
+        }
     }
 
     @Nested
@@ -219,6 +228,13 @@ class AbstractMatrixTest extends MatrixTestSupport {
             assertEquals("value: 7", AbstractMatrix.formatMsg("value: {}", 7, failingArgument));
             assertEquals("null / {}", AbstractMatrix.formatMsg("{} / {}", (Object) null));
             assertSame(failure, assertThrows(IllegalStateException.class, () -> AbstractMatrix.formatMsg("value: {}", failingArgument)));
+        }
+
+        @Test
+        public void testFormatMsg_NullTemplateOrArgumentsRemainUnchanged() {
+            assertNull(AbstractMatrix.formatMsg(null, "unused"));
+            assertEquals("value {}", AbstractMatrix.formatMsg("value {}", (Object[]) null));
+            assertEquals("value {}", AbstractMatrix.formatMsg("value {}"));
         }
     }
 
@@ -2946,6 +2962,57 @@ class AbstractMatrixTest extends MatrixTestSupport {
             });
         }
 
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testForEachIndices_RegionInExplicitModes(final ParallelMode mode) {
+            final var matrix = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+            final var visits = ConcurrentHashMap.<String> newKeySet();
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                matrix.forEachIndices(0, 2, 1, 3, (i, j) -> assertTrue(visits.add(i + "," + j)));
+                assertEquals(Set.of("0,1", "0,2", "1,1", "1,2"), visits);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
+        }
+
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testForEachIndices_MatrixArgumentInExplicitModes(final ParallelMode mode) {
+            final var matrix = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+            final var visits = ConcurrentHashMap.<String> newKeySet();
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                matrix.forEachIndices((i, j, original) -> {
+                    assertSame(matrix, original);
+                    assertTrue(visits.add(i + "," + j));
+                });
+                assertEquals(Set.of("0,0", "0,1", "0,2", "1,0", "1,1", "1,2"), visits);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
+        }
+
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testForEachIndices_RegionWithMatrixArgumentInExplicitModes(final ParallelMode mode) {
+            final var matrix = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+            final var visits = ConcurrentHashMap.<String> newKeySet();
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                matrix.forEachIndices(0, 2, 1, 3, (i, j, original) -> {
+                    assertSame(matrix, original);
+                    assertTrue(visits.add(i + "," + j));
+                });
+                assertEquals(Set.of("0,1", "0,2", "1,1", "1,2"), visits);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
+        }
+
         @Test
         public void testForEachNullAction() {
             IntMatrix matrix = createTestMatrix();
@@ -3250,6 +3317,13 @@ class AbstractMatrixTest extends MatrixTestSupport {
             // Returns stream of all 8 surrounding points for the center position
             List<Point> points = adjacent.toList();
             assertEquals(8, points.size());
+        }
+
+        @Test
+        public void testAdjacent8Points_EdgeMidpointsExcludeOutsideCoordinates() {
+            final var matrix = IntMatrix.wrap(new int[3][3]);
+            assertEquals(List.of(Point.of(0, 0), Point.of(0, 1), Point.of(1, 1), Point.of(2, 1), Point.of(2, 0)), matrix.adjacent8Points(1, 0).toList());
+            assertEquals(List.of(Point.of(0, 1), Point.of(0, 2), Point.of(2, 2), Point.of(2, 1), Point.of(1, 1)), matrix.adjacent8Points(1, 2).toList());
         }
     }
 

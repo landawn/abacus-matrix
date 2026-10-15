@@ -11,19 +11,28 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.landawn.abacus.util.FloatList;
 import com.landawn.abacus.util.Sheet.Point;
 import com.landawn.abacus.util.Sheet;
 import com.landawn.abacus.util.Throwables;
+import com.landawn.abacus.util.stream.FloatIteratorEx;
 import com.landawn.abacus.util.stream.FloatStream;
+import com.landawn.abacus.util.stream.ObjIteratorEx;
 import com.landawn.abacus.util.stream.Stream;
 import com.landawn.abacus.util.u.OptionalDouble;
 import com.landawn.abacus.util.u.OptionalFloat;
@@ -874,6 +883,13 @@ class FloatMatrixTest extends MatrixTestSupport {
             assertEquals(1, m.rowCount());
             assertEquals(1, m.columnCount());
             assertEquals(5.0f, m.get(0, 0)); // Main diagonal takes precedence
+        }
+
+        @Test
+        public void testOfDiagonals_EmptyAndNullSidesPreserveEmptyShape() {
+            assertTrue(FloatMatrix.ofDiagonals(new float[0], new float[0]).isEmpty());
+            assertTrue(FloatMatrix.ofDiagonals(new float[0], null).isEmpty());
+            assertTrue(FloatMatrix.ofDiagonals(null, new float[0]).isEmpty());
         }
     }
 
@@ -2241,6 +2257,20 @@ class FloatMatrixTest extends MatrixTestSupport {
             assertEquals(8.0f, matrix.get(1, 1));
         }
 
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testUpdateAll_ExplicitModesTransformEveryValue(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f } });
+                matrix.updateAll(value -> value + 10);
+                assertEquals(FloatMatrix.wrap(new float[][] { { 11.0f, 12.0f, 13.0f }, { 14.0f, 15.0f, 16.0f } }), matrix);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
+        }
+
         @Test
         public void testFloatMatrixUpdateAllNullOperator() {
             FloatMatrix matrix = FloatMatrix.wrap(new float[][] { { 1f, 2f }, { 3f, 4f } });
@@ -2256,6 +2286,16 @@ class FloatMatrixTest extends MatrixTestSupport {
             assertThrows(IllegalArgumentException.class, () -> emptyLike.updateAntiDiagonal((Throwables.FloatUnaryOperator<RuntimeException>) null));
             assertThrows(IllegalArgumentException.class, () -> emptyLike.replaceIf((Throwables.FloatPredicate<RuntimeException>) null, 0f));
             assertThrows(IllegalArgumentException.class, () -> emptyLike.replaceIf((Throwables.IntBiPredicate<RuntimeException>) null, 0f));
+        }
+
+        @Test
+        public void testUpdateAll_ZeroColumnsDoNotInvokeOperator() {
+            final var matrix = FloatMatrix.wrap(new float[2][0]);
+            matrix.updateAll(value -> {
+                throw new AssertionError("No values should be visited");
+            });
+            assertEquals(2, matrix.rowCount());
+            assertEquals(0, matrix.columnCount());
         }
     }
 
@@ -2353,6 +2393,20 @@ class FloatMatrixTest extends MatrixTestSupport {
             assertEquals(4.0f, matrix.get(1, 0));
             assertEquals(0.0f, matrix.get(1, 1));
             assertEquals(6.0f, matrix.get(1, 2));
+        }
+
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testReplaceIf_ExplicitModesReplaceOnlyMatchingValues(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f } });
+                matrix.replaceIf(value -> value % 2 == 0, 9.0f);
+                assertEquals(FloatMatrix.wrap(new float[][] { { 1.0f, 9.0f, 3.0f }, { 9.0f, 5.0f, 9.0f } }), matrix);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
         }
     }
 
@@ -2751,6 +2805,14 @@ class FloatMatrixTest extends MatrixTestSupport {
             float[][] patch = { { 1.0f, 2.0f }, { 3.0f, 4.0f } };
             assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(-1, 0, patch));
         }
+
+        @ParameterizedTest
+        @CsvSource({ "-1, 0", "3, 0", "0, -1", "0, 3" })
+        public void testCopyFrom_RejectsOffsetsOutsideDestination(final int row, final int column) {
+            final var matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
+            assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyFrom(row, column, new float[][] { { 1.0f } }));
+            assertEquals(FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } }), matrix);
+        }
     }
 
     @Nested
@@ -3073,6 +3135,13 @@ class FloatMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testResize_GrowsRowsWhileTrimmingColumns() {
+            final var matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
+            assertEquals(FloatMatrix.wrap(new float[][] { { 1.0f }, { 3.0f }, { 9.0f } }), matrix.resize(3, 1, 9.0f));
+            assertEquals(FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } }), matrix);
+        }
+
+        @Test
         public void testResize_GrowsWithNegativeZeroFill_PreservesNegativeZero() {
             // Resizing into a larger shape should fill new cells with the supplied default value.
             // -0.0f has a non-zero bit pattern, so it must propagate even though it equals +0.0f
@@ -3259,9 +3328,28 @@ class FloatMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testPad_SingleAxisFillPreservesExistingValues() {
+            final var matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
+            assertEquals(FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 9.0f }, { 3.0f, 4.0f, 9.0f } }), matrix.pad(0, 0, 0, 1, 9.0f));
+            assertEquals(FloatMatrix.wrap(new float[][] { { 9.0f, 1.0f, 2.0f }, { 9.0f, 3.0f, 4.0f } }), matrix.pad(0, 0, 1, 0, 9.0f));
+            assertEquals(FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f }, { 9.0f, 9.0f } }), matrix.pad(0, 1, 0, 0, 9.0f));
+            final var copy = matrix.pad(0, 0, 0, 0, 9.0f);
+            assertEquals(matrix, copy);
+            assertNotSame(matrix, copy);
+        }
+
+        @Test
         public void testPad_DirectionalWithNegativeValues() {
             FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             assertThrows(IllegalArgumentException.class, () -> m.pad(-1, 1, 1, 1, 0.0f));
+        }
+
+        @ParameterizedTest
+        @CsvSource({ "-1, 0, 0, 0", "0, -1, 0, 0", "0, 0, -1, 0", "0, 0, 0, -1", "2147483647, 0, 0, 0", "0, 0, 0, 2147483647" })
+        public void testPad_RejectsNegativeOrOverflowingDimensions(final int top, final int bottom, final int left, final int right) {
+            final var matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.pad(top, bottom, left, right));
+            assertEquals(FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } }), matrix);
         }
     }
 
@@ -3825,6 +3913,14 @@ class FloatMatrixTest extends MatrixTestSupport {
             assertArrayEquals(new float[] { 1.0f, 2.0f, 3.0f, 4.0f }, reshaped.rowCopy(0), DELTA);
             assertArrayEquals(new float[] { 5.0f, 6.0f, 0.0f, 0.0f }, reshaped.rowCopy(1), DELTA);
         }
+
+        @ParameterizedTest
+        @CsvSource({ "-1, 2", "2, -1", "1, 1" })
+        public void testReshapeAndPad_RejectsNegativeAndInsufficientShapes(final int rows, final int columns) {
+            final var matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.reshapeAndPad(rows, columns));
+            assertEquals(FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } }), matrix);
+        }
     }
 
     @Nested
@@ -3889,6 +3985,25 @@ class FloatMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testRepeatElements_UnitRepetitionReturnsIndependentMatrix() {
+            final var matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
+            final var result = matrix.repeatElements(1, 1);
+            assertEquals(matrix, result);
+            assertNotSame(matrix, result);
+            result.set(0, 0, 0.0f);
+            assertEquals(1.0f, matrix.get(0, 0));
+        }
+
+        @Test
+        public void testRepeatElements_OnlyColumnsRepeated() {
+            final var matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 3.0f }, { 3.0f, 1.0f } });
+            final var repeated = matrix.repeatElements(1, 2);
+            assertEquals(FloatMatrix.wrap(new float[][] { { 1.0f, 1.0f, 3.0f, 3.0f }, { 3.0f, 3.0f, 1.0f, 1.0f } }), repeated);
+            repeated.set(0, 0, 3.0f);
+            assertEquals(1.0f, matrix.get(0, 0));
+        }
+
+        @Test
         public void testRepeatElements_InvalidArguments() {
             FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(0, 1));
@@ -3899,6 +4014,13 @@ class FloatMatrixTest extends MatrixTestSupport {
         public void testRepeatElements_InvalidRepeats() {
             FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(0, 1));
+        }
+
+        @ParameterizedTest
+        @CsvSource({ "2147483647, 1", "1, 2147483647" })
+        public void testRepeatElements_RejectsOverflowBeforeAllocation(final int rows, final int columns) {
+            final var matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.repeatElements(rows, columns));
         }
     }
 
@@ -3992,6 +4114,25 @@ class FloatMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testRepeatMatrix_UnitRepetitionReturnsIndependentMatrix() {
+            final var matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
+            final var result = matrix.repeatMatrix(1, 1);
+            assertEquals(matrix, result);
+            assertNotSame(matrix, result);
+            result.set(0, 0, 0.0f);
+            assertEquals(1.0f, matrix.get(0, 0));
+        }
+
+        @Test
+        public void testRepeatMatrix_OnlyColumnsRepeated() {
+            final var matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
+            final var repeated = matrix.repeatMatrix(1, 2);
+            assertEquals(FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 1.0f, 2.0f }, { 3.0f, 4.0f, 3.0f, 4.0f } }), repeated);
+            repeated.set(0, 0, 3.0f);
+            assertEquals(1.0f, matrix.get(0, 0));
+        }
+
+        @Test
         public void testRepeatMatrix_InvalidArguments() {
             FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
@@ -4002,6 +4143,14 @@ class FloatMatrixTest extends MatrixTestSupport {
         public void testRepeatMatrix_InvalidRepeats() {
             FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
+        }
+
+        @ParameterizedTest
+        @CsvSource({ "2147483647, 1", "1, 2147483647" })
+        public void testRepeatMatrix_RejectsOverflowBeforeAllocation(final int rows, final int columns) {
+            final var matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.repeatMatrix(rows, columns));
+            assertEquals(FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } }), matrix);
         }
     }
 
@@ -4344,6 +4493,14 @@ class FloatMatrixTest extends MatrixTestSupport {
             assertArrayEquals(new float[] { 1.0f, 2.0f, 5.0f, 6.0f }, stacked.rowView(0));
             assertArrayEquals(new float[] { 3.0f, 4.0f, 7.0f, 8.0f }, stacked.rowView(1));
         }
+
+        @Test
+        public void testStackHorizontally_RejectsLogicalWidthOverflowWithoutAllocation() {
+            final var huge = FloatMatrix.wrap(new float[0][0]).resize(0, Integer.MAX_VALUE);
+            final var extra = FloatMatrix.wrap(new float[0][0]).resize(0, 1);
+            assertThrows(IllegalArgumentException.class, () -> huge.stackHorizontally(extra));
+            assertEquals(Integer.MAX_VALUE, huge.columnCount());
+        }
     }
 
     @Nested
@@ -4473,6 +4630,22 @@ class FloatMatrixTest extends MatrixTestSupport {
             assertEquals(12.0f, sum.get(1, 1));
         }
 
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testAdd_ExplicitModesPreserveBothOperands(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var left = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f } });
+                final var right = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f } });
+                assertEquals(FloatMatrix.wrap(new float[][] { { 2.0f, 4.0f, 6.0f }, { 8.0f, 10.0f, 12.0f } }), left.add(right));
+                assertEquals(FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f } }), left);
+                assertEquals(FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f } }), right);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
+        }
+
         @Test
         public void testNaNOperations() {
             FloatMatrix m = FloatMatrix.wrap(new float[][] { { Float.NaN, 2.0f }, { 3.0f, 4.0f } });
@@ -4584,6 +4757,22 @@ class FloatMatrixTest extends MatrixTestSupport {
             assertEquals(4.0f, diff.get(1, 0));
             assertEquals(4.0f, diff.get(1, 1));
         }
+
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testSubtract_ExplicitModesPreserveBothOperands(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var left = FloatMatrix.wrap(new float[][] { { 7.0f, 8.0f, 9.0f }, { 10.0f, 11.0f, 12.0f } });
+                final var right = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f } });
+                assertEquals(FloatMatrix.wrap(new float[][] { { 6.0f, 6.0f, 6.0f }, { 6.0f, 6.0f, 6.0f } }), left.subtract(right));
+                assertEquals(FloatMatrix.wrap(new float[][] { { 7.0f, 8.0f, 9.0f }, { 10.0f, 11.0f, 12.0f } }), left);
+                assertEquals(FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f } }), right);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
+        }
     }
 
     @Nested
@@ -4670,6 +4859,23 @@ class FloatMatrixTest extends MatrixTestSupport {
             assertEquals(22.0f, product.get(0, 1));
             assertEquals(43.0f, product.get(1, 0));
             assertEquals(50.0f, product.get(1, 1));
+        }
+
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testMatrixMultiply_ExplicitModesComputeRectangularProduct(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var left = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f }, { 5.0f, 6.0f } });
+                final var right = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f } });
+                assertEquals(FloatMatrix.wrap(new float[][] { { 9.0f, 12.0f, 15.0f }, { 19.0f, 26.0f, 33.0f }, { 29.0f, 40.0f, 51.0f } }),
+                        left.matrixMultiply(right));
+                assertEquals(FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f }, { 5.0f, 6.0f } }), left);
+                assertEquals(FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f } }), right);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
         }
 
         @Test
@@ -5055,6 +5261,35 @@ class FloatMatrixTest extends MatrixTestSupport {
             assertFalse(counting.hasNext());
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testMainDiagonalStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
+            final float[] expected = new float[] { 1.0f, 5.0f, 9.0f };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.mainDiagonalStream()) {
+                final var iterator = (FloatIteratorEx) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextFloat);
+            }
+        }
+
+        @Test
+        public void testMainDiagonalStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
+            try (var stream = matrix.mainDiagonalStream()) {
+                final var iterator = (FloatIteratorEx) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals(1.0f, iterator.nextFloat());
+                assertEquals(2, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextFloat);
+            }
+        }
+
         @Test
         public void testMainDiagonalStream_Empty() {
             FloatMatrix empty = FloatMatrix.empty();
@@ -5117,6 +5352,35 @@ class FloatMatrixTest extends MatrixTestSupport {
             FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             double sum = m.antiDiagonalStream().sum();
             assertEquals(5.0, sum, 0.0);
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testAntiDiagonalStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
+            final float[] expected = new float[] { 3.0f, 5.0f, 7.0f };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.antiDiagonalStream()) {
+                final var iterator = (FloatIteratorEx) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextFloat);
+            }
+        }
+
+        @Test
+        public void testAntiDiagonalStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
+            try (var stream = matrix.antiDiagonalStream()) {
+                final var iterator = (FloatIteratorEx) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals(3.0f, iterator.nextFloat());
+                assertEquals(2, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextFloat);
+            }
         }
 
         @Test
@@ -5285,6 +5549,35 @@ class FloatMatrixTest extends MatrixTestSupport {
             assertFalse(crossingCount.hasNext());
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testRowMajorStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
+            final float[] expected = new float[] { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.rowMajorStream()) {
+                final var iterator = (FloatIteratorEx) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextFloat);
+            }
+        }
+
+        @Test
+        public void testRowMajorStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
+            try (var stream = matrix.rowMajorStream()) {
+                final var iterator = (FloatIteratorEx) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals(1.0f, iterator.nextFloat());
+                assertEquals(8, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextFloat);
+            }
+        }
+
         @Test
         public void testRowMajorStreamSingleRowRange() {
             float[] row1 = matrix.rowMajorStream(1, 2).toArray();
@@ -5321,6 +5614,13 @@ class FloatMatrixTest extends MatrixTestSupport {
             FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             double sum = m.rowMajorStream(0, 1).sum();
             assertEquals(3.0, sum, 0.0);
+        }
+
+        @Test
+        public void testRowMajorStream_ZeroColumnsKeepLogicalRowRange() {
+            final var matrix = FloatMatrix.wrap(new float[3][0]);
+            assertEquals(0, matrix.rowMajorStream(1, 3).count());
+            assertEquals(2, matrix.rowStreams(1, 3).count());
         }
 
         @Test
@@ -5407,6 +5707,35 @@ class FloatMatrixTest extends MatrixTestSupport {
             assertEquals(16.0, sum, 0.0);
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testColumnMajorStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
+            final float[] expected = new float[] { 1.0f, 4.0f, 7.0f, 2.0f, 5.0f, 8.0f, 3.0f, 6.0f, 9.0f };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.columnMajorStream()) {
+                final var iterator = (FloatIteratorEx) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextFloat);
+            }
+        }
+
+        @Test
+        public void testColumnMajorStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
+            try (var stream = matrix.columnMajorStream()) {
+                final var iterator = (FloatIteratorEx) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals(1.0f, iterator.nextFloat());
+                assertEquals(8, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextFloat);
+            }
+        }
+
         @Test
         public void testColumnMajorStreamSingleColumnRange() {
             float[] col1 = matrix.columnMajorStream(1, 2).toArray();
@@ -5465,6 +5794,13 @@ class FloatMatrixTest extends MatrixTestSupport {
             afterFour.advance(4);
             assertEquals(5L, afterFour.count());
             assertFalse(afterFour.hasNext());
+        }
+
+        @Test
+        public void testColumnMajorStream_ZeroRowsKeepLogicalColumnRange() {
+            final var matrix = FloatMatrix.wrap(new float[0][0]).resize(0, 3);
+            assertEquals(0, matrix.columnMajorStream(1, 3).count());
+            assertEquals(2, matrix.columnStreams(1, 3).count());
         }
 
         @Test
@@ -5587,6 +5923,28 @@ class FloatMatrixTest extends MatrixTestSupport {
             }
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 3, Long.MAX_VALUE })
+        public void testRowStreams_OuterCursorAdvanceCountAndExhaustion(final long amount) {
+            final var matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
+            final float[][] expected = { new float[] { 1.0f, 2.0f, 3.0f }, new float[] { 4.0f, 5.0f, 6.0f }, new float[] { 7.0f, 8.0f, 9.0f } };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.rowStreams()) {
+                final var iterator = (ObjIteratorEx<FloatStream>) stream.iterator();
+                iterator.advance(amount);
+                if (skipped < expected.length) {
+                    assertTrue(iterator.hasNext());
+                    try (var values = iterator.next()) {
+                        assertArrayEquals(expected[skipped], values.toArray());
+                    }
+                }
+                assertEquals(Math.max(0, expected.length - skipped - 1), iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
         @Test
         public void testRowStreams_Empty() {
             FloatMatrix empty = FloatMatrix.empty();
@@ -5673,6 +6031,59 @@ class FloatMatrixTest extends MatrixTestSupport {
             FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f } });
             long count = m.columnStreams(1, 3).count();
             assertEquals(2, count);
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 3, Long.MAX_VALUE })
+        public void testColumnStreams_OuterCursorAdvanceCountAndExhaustion(final long amount) {
+            final var matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
+            final float[][] expected = { new float[] { 1.0f, 4.0f, 7.0f }, new float[] { 2.0f, 5.0f, 8.0f }, new float[] { 3.0f, 6.0f, 9.0f } };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.columnStreams()) {
+                final var iterator = (ObjIteratorEx<FloatStream>) stream.iterator();
+                iterator.advance(amount);
+                if (skipped < expected.length) {
+                    assertTrue(iterator.hasNext());
+                    try (var values = iterator.next()) {
+                        assertArrayEquals(expected[skipped], values.toArray());
+                    }
+                }
+                assertEquals(Math.max(0, expected.length - skipped - 1), iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 3, Long.MAX_VALUE })
+        public void testColumnStreams_InnerCursorAdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
+            final float[] expected = new float[] { 2.0f, 5.0f, 8.0f };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var columns = matrix.columnStreams(1, 2);
+                 var values = columns.iterator().next()) {
+                final var iterator = (FloatIteratorEx) values.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextFloat);
+            }
+        }
+
+        @Test
+        public void testColumnStreams_InnerCountConsumesOnlyRemainingValues() {
+            final var matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
+            try (var columns = matrix.columnStreams(1, 2);
+                 var values = columns.iterator().next()) {
+                final var iterator = (FloatIteratorEx) values.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals(2.0f, iterator.nextFloat());
+                assertEquals(2, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextFloat);
+            }
         }
 
         @Test
@@ -5827,6 +6238,22 @@ class FloatMatrixTest extends MatrixTestSupport {
             });
         }
 
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testForEach_ExplicitModesVisitSelectedRegionExactlyOnce(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
+                final var values = new ConcurrentLinkedQueue<Float>();
+                matrix.forEach(0, 2, 1, 3, values::add);
+                assertEquals(List.of(2.0f, 3.0f, 5.0f, 6.0f).stream().sorted().toList(), values.stream().sorted().toList());
+                assertEquals(FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } }), matrix);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
+        }
+
         // Test rowMajorStream iterator
         @Test
         public void testForEachNullAction() {
@@ -5927,6 +6354,18 @@ class FloatMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testHashCode_ZeroRowWidthsDistinguishShapes() {
+            final var empty = FloatMatrix.wrap(new float[0][0]);
+            final var narrow = empty.resize(0, 4);
+            final var equal = empty.resize(0, 4);
+            final var wide = empty.resize(0, 5);
+            assertEquals(narrow, equal);
+            assertEquals(narrow.hashCode(), equal.hashCode());
+            assertNotEquals(narrow.hashCode(), wide.hashCode());
+            assertNotEquals(narrow.hashCode(), empty.hashCode());
+        }
+
+        @Test
         public void testEqualsAndHashCode_NegativeZero_DistinctFromPositiveZero() {
             // FloatMatrix.equals/hashCode use Float.floatToIntBits semantics (per Javadoc),
             // so +0.0f and -0.0f are NOT equal, and the hash codes must differ accordingly.
@@ -5968,6 +6407,14 @@ class FloatMatrixTest extends MatrixTestSupport {
             FloatMatrix m1 = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             FloatMatrix m2 = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 5.0f } });
             assertNotEquals(m1, m2);
+        }
+
+        @Test
+        public void testEquals_DifferentRowCountsWithEqualColumnCounts() {
+            final var longer = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
+            final var shorter = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f } });
+            assertFalse(longer.equals(shorter));
+            assertFalse(shorter.equals(longer));
         }
 
         @Test

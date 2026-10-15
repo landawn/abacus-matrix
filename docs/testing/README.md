@@ -53,6 +53,10 @@ mvn clean test jacoco:report '-Djunit.jupiter.testmethod.order.default=org.junit
 
 See [the tool guide](../../tools/README.md) for preview/apply commands and audit limitations.
 
+## Coverage improvement
+
+A subsequent coverage pass reaches **100% of methods, 99.83% of lines, and 99.21% of branches**, with all 7,567 invocations passing in normal and randomized order. See the [coverage improvement record](coverage-improvement.md) for added scenarios, reproducible results, and the remaining gaps. The cleanup figures below are the historical results before that pass.
+
 ## Cleanup record
 
 The baseline test sources are from `fec223f1f78fe58a2a8d5307060bdfb2cbd52153`. Baseline coverage was measured using the same repaired JaCoCo wiring as the final suite. Every coverage run started with `clean` so execution data could not accumulate across runs.

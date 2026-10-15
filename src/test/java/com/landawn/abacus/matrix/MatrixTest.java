@@ -23,6 +23,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.landawn.abacus.util.Dataset;
 import com.landawn.abacus.util.Sheet.Point;
@@ -324,6 +327,11 @@ class MatrixTest extends MatrixTestSupport {
                 assertEquals(0, stream.count());
             }
         }
+
+        @Test
+        public void testEmpty_RejectsNegativeLogicalWidth() {
+            assertThrows(IllegalArgumentException.class, () -> Matrix.empty(String.class, -1));
+        }
     }
 
     @Nested
@@ -536,6 +544,11 @@ class MatrixTest extends MatrixTestSupport {
             assertEquals(4, calls[0]);
             assertEquals(List.of(11, 12, 11, 12), m.flatten());
             assertArrayEquals(new Integer[] { 1, 2 }, sharedRow);
+        }
+
+        @Test
+        public void testCopyOf_ExplicitTypeRejectsNullFirstRow() {
+            assertThrows(IllegalArgumentException.class, () -> Matrix.copyOf(String.class, new String[][] { null }));
         }
     }
 
@@ -850,6 +863,12 @@ class MatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testOfDiagonals_ExplicitTypeValidatesBothSources() {
+            assertThrows(IllegalArgumentException.class, () -> Matrix.ofDiagonals(String.class, null, null));
+            assertThrows(IllegalArgumentException.class, () -> Matrix.ofDiagonals(String.class, new String[] { "a" }, new String[] { "b", "c" }));
+        }
+
+        @Test
         public void testDiagonalWithEmptyMainDiagonalAndDifferentRuntimeType() {
             Number[] mainDiag = new Integer[0];
             Number[] antiDiag = new Double[] { 1.5, 2.5 };
@@ -869,6 +888,13 @@ class MatrixTest extends MatrixTestSupport {
             assertTrue(Matrix.ofDiagonals(null, new String[] {}).isEmpty());
 
             assertThrows(IllegalArgumentException.class, () -> Matrix.ofDiagonals(null, null));
+        }
+
+        @Test
+        public void testOfDiagonals_EmptyAndNullSidesPreserveEmptyShape() {
+            assertTrue(Matrix.ofDiagonals(new Integer[0], new Integer[0]).isEmpty());
+            assertTrue(Matrix.ofDiagonals(new Integer[0], null).isEmpty());
+            assertTrue(Matrix.ofDiagonals(null, new Integer[0]).isEmpty());
         }
 
         @Test
@@ -2814,6 +2840,16 @@ class MatrixTest extends MatrixTestSupport {
             assertEquals("C", m.get(1, 0));
             assertEquals("NULL", m.get(1, 1));
         }
+
+        @Test
+        public void testUpdateAll_ZeroColumnsDoNotInvokeOperator() {
+            final var matrix = Matrix.wrap(new Integer[2][0]);
+            matrix.updateAll(value -> {
+                throw new AssertionError("No values should be visited");
+            });
+            assertEquals(2, matrix.rowCount());
+            assertEquals(0, matrix.columnCount());
+        }
     }
 
     @Nested
@@ -3868,6 +3904,14 @@ class MatrixTest extends MatrixTestSupport {
             assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(-1, 0, new String[][] { { "b" } }));
             assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(0, -1, new String[][] { { "b" } }));
         }
+
+        @ParameterizedTest
+        @CsvSource({ "-1, 0", "3, 0", "0, -1", "0, 3" })
+        public void testCopyFrom_RejectsOffsetsOutsideDestination(final int row, final int column) {
+            final var matrix = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } });
+            assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyFrom(row, column, new Integer[][] { { 1 } }));
+            assertEquals(Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } }), matrix);
+        }
     }
 
     @Nested
@@ -4484,6 +4528,13 @@ class MatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testResize_GrowsRowsWhileTrimmingColumns() {
+            final var matrix = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } });
+            assertEquals(Matrix.wrap(new Integer[][] { { 1 }, { 3 }, { 9 } }), matrix.resize(3, 1, 9));
+            assertEquals(Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } }), matrix);
+        }
+
+        @Test
         public void testResize_NegativeThrows() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "a" } });
             assertThrows(IllegalArgumentException.class, () -> m.resize(-1, 1));
@@ -4652,9 +4703,28 @@ class MatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testPad_SingleAxisFillPreservesExistingValues() {
+            final var matrix = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } });
+            assertEquals(Matrix.wrap(new Integer[][] { { 1, 2, 9 }, { 3, 4, 9 } }), matrix.pad(0, 0, 0, 1, 9));
+            assertEquals(Matrix.wrap(new Integer[][] { { 9, 1, 2 }, { 9, 3, 4 } }), matrix.pad(0, 0, 1, 0, 9));
+            assertEquals(Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 }, { 9, 9 } }), matrix.pad(0, 1, 0, 0, 9));
+            final var copy = matrix.pad(0, 0, 0, 0, 9);
+            assertEquals(matrix, copy);
+            assertNotSame(matrix, copy);
+        }
+
+        @Test
         public void testPad_DirectionalWithNegativeValues() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" }, { "C", "D" } });
             assertThrows(IllegalArgumentException.class, () -> m.pad(-1, 1, 1, 1, "X"));
+        }
+
+        @ParameterizedTest
+        @CsvSource({ "-1, 0, 0, 0", "0, -1, 0, 0", "0, 0, -1, 0", "0, 0, 0, -1", "2147483647, 0, 0, 0", "0, 0, 0, 2147483647" })
+        public void testPad_RejectsNegativeOrOverflowingDimensions(final int top, final int bottom, final int left, final int right) {
+            final var matrix = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.pad(top, bottom, left, right));
+            assertEquals(Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } }), matrix);
         }
     }
 
@@ -5369,6 +5439,14 @@ class MatrixTest extends MatrixTestSupport {
             assertEquals("c", reshaped.get(1, 0));
             assertNull(reshaped.get(1, 1)); // Not enough elements, should be null
         }
+
+        @ParameterizedTest
+        @CsvSource({ "-1, 2", "2, -1", "1, 1" })
+        public void testReshapeAndPad_RejectsNegativeAndInsufficientShapes(final int rows, final int columns) {
+            final var matrix = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.reshapeAndPad(rows, columns));
+            assertEquals(Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } }), matrix);
+        }
     }
 
     @Nested
@@ -5474,6 +5552,16 @@ class MatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testRepeatElements_UnitRepetitionReturnsIndependentMatrix() {
+            final var matrix = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } });
+            final var result = matrix.repeatElements(1, 1);
+            assertEquals(matrix, result);
+            assertNotSame(matrix, result);
+            result.set(0, 0, 0);
+            assertEquals(1, matrix.get(0, 0));
+        }
+
+        @Test
         public void testRepeatElements_InvalidArguments() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(0, 1));
@@ -5485,6 +5573,13 @@ class MatrixTest extends MatrixTestSupport {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A" } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(0, 1));
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(1, 0));
+        }
+
+        @ParameterizedTest
+        @CsvSource({ "2147483647, 1", "1, 2147483647" })
+        public void testRepeatElements_RejectsOverflowBeforeAllocation(final int rows, final int columns) {
+            final var matrix = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.repeatElements(rows, columns));
         }
     }
 
@@ -5581,6 +5676,16 @@ class MatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testRepeatMatrix_UnitRepetitionReturnsIndependentMatrix() {
+            final var matrix = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } });
+            final var result = matrix.repeatMatrix(1, 1);
+            assertEquals(matrix, result);
+            assertNotSame(matrix, result);
+            result.set(0, 0, 0);
+            assertEquals(1, matrix.get(0, 0));
+        }
+
+        @Test
         public void testRepeatMatrixWithEmptyDimensionsSkipsUnusedRepeats() {
             Matrix<Number> zeroRows = Matrix.empty(Number.class, 1);
             Matrix<Number> zeroColumns = Matrix.wrap(Number.class, new Number[0], new Number[0]);
@@ -5617,6 +5722,14 @@ class MatrixTest extends MatrixTestSupport {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A" } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
             assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(1, 0));
+        }
+
+        @ParameterizedTest
+        @CsvSource({ "2147483647, 1", "1, 2147483647" })
+        public void testRepeatMatrix_RejectsOverflowBeforeAllocation(final int rows, final int columns) {
+            final var matrix = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.repeatMatrix(rows, columns));
+            assertEquals(Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } }), matrix);
         }
     }
 
@@ -6143,6 +6256,14 @@ class MatrixTest extends MatrixTestSupport {
             Matrix<String> m2 = Matrix.wrap(new String[][] { { "b" }, { "c" } });
             assertThrows(IllegalArgumentException.class, () -> m1.stackHorizontally(m2));
         }
+
+        @Test
+        public void testStackHorizontally_RejectsLogicalWidthOverflowWithoutAllocation() {
+            final var huge = Matrix.wrap(new Integer[0][0]).resize(0, Integer.MAX_VALUE);
+            final var extra = Matrix.wrap(new Integer[0][0]).resize(0, 1);
+            assertThrows(IllegalArgumentException.class, () -> huge.stackHorizontally(extra));
+            assertEquals(Integer.MAX_VALUE, huge.columnCount());
+        }
     }
 
     @Nested
@@ -6491,6 +6612,35 @@ class MatrixTest extends MatrixTestSupport {
             assertEquals(Arrays.asList("a", "e", "i"), result);
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testMainDiagonalStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+            final Integer[] expected = new Integer[] { 1, 5, 9 };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.mainDiagonalStream()) {
+                final var iterator = (ObjIteratorEx<Integer>) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
+        @Test
+        public void testMainDiagonalStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+            try (var stream = matrix.mainDiagonalStream()) {
+                final var iterator = (ObjIteratorEx<Integer>) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals(1, iterator.next());
+                assertEquals(2, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
         @Test
         public void testMainDiagonalStreamEmpty() {
             Matrix<Integer> matrix = Matrix.wrap(new Integer[0][0]);
@@ -6586,6 +6736,35 @@ class MatrixTest extends MatrixTestSupport {
             Matrix<String> m = new Matrix<>(arr);
             List<String> result = m.antiDiagonalStream().toList();
             assertEquals(Arrays.asList("c", "e", "g"), result);
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testAntiDiagonalStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+            final Integer[] expected = new Integer[] { 3, 5, 7 };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.antiDiagonalStream()) {
+                final var iterator = (ObjIteratorEx<Integer>) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
+        @Test
+        public void testAntiDiagonalStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+            try (var stream = matrix.antiDiagonalStream()) {
+                final var iterator = (ObjIteratorEx<Integer>) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals(3, iterator.next());
+                assertEquals(2, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
         }
 
         @Test
@@ -6742,6 +6921,35 @@ class MatrixTest extends MatrixTestSupport {
             assertEquals(Arrays.asList("c", "d", "e", "f"), result);
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testRowMajorStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+            final Integer[] expected = new Integer[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.rowMajorStream()) {
+                final var iterator = (ObjIteratorEx<Integer>) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
+        @Test
+        public void testRowMajorStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+            try (var stream = matrix.rowMajorStream()) {
+                final var iterator = (ObjIteratorEx<Integer>) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals(1, iterator.next());
+                assertEquals(8, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
         @Test
         public void testRowMajorStreamSingleRowRange() {
             Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
@@ -6830,6 +7038,13 @@ class MatrixTest extends MatrixTestSupport {
             Matrix<String> m = new Matrix<>(arr);
             List<String> result = m.rowMajorStream(1, 2).toList();
             assertEquals(Arrays.asList("d", "e", "f"), result);
+        }
+
+        @Test
+        public void testRowMajorStream_ZeroColumnsKeepLogicalRowRange() {
+            final var matrix = Matrix.wrap(new Integer[3][0]);
+            assertEquals(0, matrix.rowMajorStream(1, 3).count());
+            assertEquals(2, matrix.rowStreams(1, 3).count());
         }
 
         @Test
@@ -6987,6 +7202,35 @@ class MatrixTest extends MatrixTestSupport {
             assertEquals(Arrays.asList("b", "e", "c", "f"), result);
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testColumnMajorStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+            final Integer[] expected = new Integer[] { 1, 4, 7, 2, 5, 8, 3, 6, 9 };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.columnMajorStream()) {
+                final var iterator = (ObjIteratorEx<Integer>) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
+        @Test
+        public void testColumnMajorStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+            try (var stream = matrix.columnMajorStream()) {
+                final var iterator = (ObjIteratorEx<Integer>) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals(1, iterator.next());
+                assertEquals(8, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
         @Test
         public void testColumnMajorStreamSingleColumnRange() {
             Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
@@ -7073,6 +7317,13 @@ class MatrixTest extends MatrixTestSupport {
             Matrix<String> m = new Matrix<>(arr);
             List<String> result = m.columnMajorStream(1, 2).toList();
             assertEquals(Arrays.asList("b", "e"), result);
+        }
+
+        @Test
+        public void testColumnMajorStream_ZeroRowsKeepLogicalColumnRange() {
+            final var matrix = Matrix.wrap(new Integer[0][0]).resize(0, 3);
+            assertEquals(0, matrix.columnMajorStream(1, 3).count());
+            assertEquals(2, matrix.columnStreams(1, 3).count());
         }
 
         @Test
@@ -7214,6 +7465,28 @@ class MatrixTest extends MatrixTestSupport {
             assertEquals(2, streams.count());
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 3, Long.MAX_VALUE })
+        public void testRowStreams_OuterCursorAdvanceCountAndExhaustion(final long amount) {
+            final var matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+            final Integer[][] expected = { new Integer[] { 1, 2, 3 }, new Integer[] { 4, 5, 6 }, new Integer[] { 7, 8, 9 } };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.rowStreams()) {
+                final var iterator = (ObjIteratorEx<Stream<Integer>>) stream.iterator();
+                iterator.advance(amount);
+                if (skipped < expected.length) {
+                    assertTrue(iterator.hasNext());
+                    try (var values = iterator.next()) {
+                        assertArrayEquals(expected[skipped], values.toArray());
+                    }
+                }
+                assertEquals(Math.max(0, expected.length - skipped - 1), iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
         @Test
         public void testRowStreamsWithZeroColumnRows() {
             Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { {}, {}, {} });
@@ -7332,6 +7605,59 @@ class MatrixTest extends MatrixTestSupport {
             Matrix<String> m = new Matrix<>(arr);
             Stream<Stream<String>> streams = m.columnStreams(1, 3);
             assertEquals(2, streams.count());
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 3, Long.MAX_VALUE })
+        public void testColumnStreams_OuterCursorAdvanceCountAndExhaustion(final long amount) {
+            final var matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+            final Integer[][] expected = { new Integer[] { 1, 4, 7 }, new Integer[] { 2, 5, 8 }, new Integer[] { 3, 6, 9 } };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.columnStreams()) {
+                final var iterator = (ObjIteratorEx<Stream<Integer>>) stream.iterator();
+                iterator.advance(amount);
+                if (skipped < expected.length) {
+                    assertTrue(iterator.hasNext());
+                    try (var values = iterator.next()) {
+                        assertArrayEquals(expected[skipped], values.toArray());
+                    }
+                }
+                assertEquals(Math.max(0, expected.length - skipped - 1), iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 3, Long.MAX_VALUE })
+        public void testColumnStreams_InnerCursorAdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+            final Integer[] expected = new Integer[] { 2, 5, 8 };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var columns = matrix.columnStreams(1, 2);
+                 var values = columns.iterator().next()) {
+                final var iterator = (ObjIteratorEx<Integer>) values.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
+        @Test
+        public void testColumnStreams_InnerCountConsumesOnlyRemainingValues() {
+            final var matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+            try (var columns = matrix.columnStreams(1, 2);
+                 var values = columns.iterator().next()) {
+                final var iterator = (ObjIteratorEx<Integer>) values.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals(2, iterator.next());
+                assertEquals(2, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
         }
 
         @Test
@@ -7761,6 +8087,18 @@ class MatrixTest extends MatrixTestSupport {
             assertEquals(m1, m2); // equals is deep (content-based)
             assertEquals(m1.hashCode(), m2.hashCode()); // hashCode is consistently deep
         }
+
+        @Test
+        public void testHashCode_ZeroRowWidthsDistinguishShapes() {
+            final var empty = Matrix.wrap(new Integer[0][0]);
+            final var narrow = empty.resize(0, 4);
+            final var equal = empty.resize(0, 4);
+            final var wide = empty.resize(0, 5);
+            assertEquals(narrow, equal);
+            assertEquals(narrow.hashCode(), equal.hashCode());
+            assertNotEquals(narrow.hashCode(), wide.hashCode());
+            assertNotEquals(narrow.hashCode(), empty.hashCode());
+        }
     }
 
     @Nested
@@ -7827,6 +8165,14 @@ class MatrixTest extends MatrixTestSupport {
             Matrix<String> m1 = new Matrix<>(arr1);
             Matrix<String> m2 = new Matrix<>(arr2);
             assertNotEquals(m1, m2);
+        }
+
+        @Test
+        public void testEquals_DifferentRowCountsWithEqualColumnCounts() {
+            final var longer = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } });
+            final var shorter = Matrix.wrap(new Integer[][] { { 1, 2 } });
+            assertFalse(longer.equals(shorter));
+            assertFalse(shorter.equals(longer));
         }
 
         @Test

@@ -11,19 +11,25 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.landawn.abacus.util.DoubleList;
 import com.landawn.abacus.util.Sheet.Point;
 import com.landawn.abacus.util.Throwables;
+import com.landawn.abacus.util.stream.DoubleIteratorEx;
 import com.landawn.abacus.util.stream.DoubleStream;
+import com.landawn.abacus.util.stream.ObjIteratorEx;
 import com.landawn.abacus.util.stream.Stream;
 import com.landawn.abacus.util.u.OptionalDouble;
 import com.landawn.abacus.util.u;
@@ -976,6 +982,13 @@ class DoubleMatrixTest extends MatrixTestSupport {
             assertEquals(1, m.rowCount());
             assertEquals(1, m.columnCount());
             assertEquals(5.0, m.get(0, 0)); // Main diagonal takes precedence
+        }
+
+        @Test
+        public void testOfDiagonals_EmptyAndNullSidesPreserveEmptyShape() {
+            assertTrue(DoubleMatrix.ofDiagonals(new double[0], new double[0]).isEmpty());
+            assertTrue(DoubleMatrix.ofDiagonals(new double[0], null).isEmpty());
+            assertTrue(DoubleMatrix.ofDiagonals(null, new double[0]).isEmpty());
         }
     }
 
@@ -2377,6 +2390,20 @@ class DoubleMatrixTest extends MatrixTestSupport {
             assertEquals(8.0, matrix.get(1, 1));
         }
 
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testUpdateAll_ExplicitModesTransformEveryValue(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var matrix = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d, 3.0d }, { 4.0d, 5.0d, 6.0d } });
+                matrix.updateAll(value -> value + 10);
+                assertEquals(DoubleMatrix.wrap(new double[][] { { 11.0d, 12.0d, 13.0d }, { 14.0d, 15.0d, 16.0d } }), matrix);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
+        }
+
         @Test
         public void testDoubleMatrixUpdateAllNullOperator() {
             DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { 1d, 2d }, { 3d, 4d } });
@@ -2392,6 +2419,16 @@ class DoubleMatrixTest extends MatrixTestSupport {
             assertThrows(IllegalArgumentException.class, () -> emptyLike.updateAntiDiagonal((Throwables.DoubleUnaryOperator<RuntimeException>) null));
             assertThrows(IllegalArgumentException.class, () -> emptyLike.replaceIf((Throwables.DoublePredicate<RuntimeException>) null, 0d));
             assertThrows(IllegalArgumentException.class, () -> emptyLike.replaceIf((Throwables.IntBiPredicate<RuntimeException>) null, 0d));
+        }
+
+        @Test
+        public void testUpdateAll_ZeroColumnsDoNotInvokeOperator() {
+            final var matrix = DoubleMatrix.wrap(new double[2][0]);
+            matrix.updateAll(value -> {
+                throw new AssertionError("No values should be visited");
+            });
+            assertEquals(2, matrix.rowCount());
+            assertEquals(0, matrix.columnCount());
         }
     }
 
@@ -2515,6 +2552,20 @@ class DoubleMatrixTest extends MatrixTestSupport {
             assertEquals(-1.0, matrix.get(2, 0));
             assertEquals(8.0, matrix.get(2, 1));
             assertEquals(0.0, matrix.get(2, 2));
+        }
+
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testReplaceIf_ExplicitModesReplaceOnlyMatchingValues(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var matrix = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d, 3.0d }, { 4.0d, 5.0d, 6.0d } });
+                matrix.replaceIf(value -> value % 2 == 0, 9.0d);
+                assertEquals(DoubleMatrix.wrap(new double[][] { { 1.0d, 9.0d, 3.0d }, { 9.0d, 5.0d, 9.0d } }), matrix);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
         }
     }
 
@@ -3089,6 +3140,14 @@ class DoubleMatrixTest extends MatrixTestSupport {
             double[][] patch = { { 1.0, 2.0 }, { 3.0, 4.0 } };
             assertThrows(IndexOutOfBoundsException.class, () -> m.copyFrom(-1, 0, patch));
         }
+
+        @ParameterizedTest
+        @CsvSource({ "-1, 0", "3, 0", "0, -1", "0, 3" })
+        public void testCopyFrom_RejectsOffsetsOutsideDestination(final int row, final int column) {
+            final var matrix = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d }, { 3.0d, 4.0d } });
+            assertThrows(IndexOutOfBoundsException.class, () -> matrix.copyFrom(row, column, new double[][] { { 1.0d } }));
+            assertEquals(DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d }, { 3.0d, 4.0d } }), matrix);
+        }
     }
 
     @Nested
@@ -3422,6 +3481,13 @@ class DoubleMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testResize_GrowsRowsWhileTrimmingColumns() {
+            final var matrix = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d }, { 3.0d, 4.0d } });
+            assertEquals(DoubleMatrix.wrap(new double[][] { { 1.0d }, { 3.0d }, { 9.0d } }), matrix.resize(3, 1, 9.0d));
+            assertEquals(DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d }, { 3.0d, 4.0d } }), matrix);
+        }
+
+        @Test
         public void testResize_GrowsWithNegativeZeroFill_PreservesNegativeZero() {
             // -0.0 has a non-zero bit pattern, so the doubleToRawLongBits != 0 short-circuit in
             // resize(...) must fill new cells even though -0.0 == 0.0 under == comparison.
@@ -3583,9 +3649,28 @@ class DoubleMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testPad_SingleAxisFillPreservesExistingValues() {
+            final var matrix = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d }, { 3.0d, 4.0d } });
+            assertEquals(DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d, 9.0d }, { 3.0d, 4.0d, 9.0d } }), matrix.pad(0, 0, 0, 1, 9.0d));
+            assertEquals(DoubleMatrix.wrap(new double[][] { { 9.0d, 1.0d, 2.0d }, { 9.0d, 3.0d, 4.0d } }), matrix.pad(0, 0, 1, 0, 9.0d));
+            assertEquals(DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d }, { 3.0d, 4.0d }, { 9.0d, 9.0d } }), matrix.pad(0, 1, 0, 0, 9.0d));
+            final var copy = matrix.pad(0, 0, 0, 0, 9.0d);
+            assertEquals(matrix, copy);
+            assertNotSame(matrix, copy);
+        }
+
+        @Test
         public void testPad_DirectionalWithNegativeValues() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             assertThrows(IllegalArgumentException.class, () -> m.pad(-1, 1, 1, 1, 0.0));
+        }
+
+        @ParameterizedTest
+        @CsvSource({ "-1, 0, 0, 0", "0, -1, 0, 0", "0, 0, -1, 0", "0, 0, 0, -1", "2147483647, 0, 0, 0", "0, 0, 0, 2147483647" })
+        public void testPad_RejectsNegativeOrOverflowingDimensions(final int top, final int bottom, final int left, final int right) {
+            final var matrix = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d }, { 3.0d, 4.0d } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.pad(top, bottom, left, right));
+            assertEquals(DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d }, { 3.0d, 4.0d } }), matrix);
         }
     }
 
@@ -4170,6 +4255,14 @@ class DoubleMatrixTest extends MatrixTestSupport {
             assertEquals(4.0, reshaped.get(1, 0));
 
         }
+
+        @ParameterizedTest
+        @CsvSource({ "-1, 2", "2, -1", "1, 1" })
+        public void testReshapeAndPad_RejectsNegativeAndInsufficientShapes(final int rows, final int columns) {
+            final var matrix = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d }, { 3.0d, 4.0d } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.reshapeAndPad(rows, columns));
+            assertEquals(DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d }, { 3.0d, 4.0d } }), matrix);
+        }
     }
 
     @Nested
@@ -4246,6 +4339,16 @@ class DoubleMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testRepeatElements_UnitRepetitionReturnsIndependentMatrix() {
+            final var matrix = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d }, { 3.0d, 4.0d } });
+            final var result = matrix.repeatElements(1, 1);
+            assertEquals(matrix, result);
+            assertNotSame(matrix, result);
+            result.set(0, 0, 0.0d);
+            assertEquals(1.0d, matrix.get(0, 0));
+        }
+
+        @Test
         public void testRepeatElements_InvalidArguments() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(0, 1));
@@ -4256,6 +4359,13 @@ class DoubleMatrixTest extends MatrixTestSupport {
         public void testRepeatElements_InvalidRepeats() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatElements(0, 1));
+        }
+
+        @ParameterizedTest
+        @CsvSource({ "2147483647, 1", "1, 2147483647" })
+        public void testRepeatElements_RejectsOverflowBeforeAllocation(final int rows, final int columns) {
+            final var matrix = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d }, { 3.0d, 4.0d } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.repeatElements(rows, columns));
         }
     }
 
@@ -4359,6 +4469,25 @@ class DoubleMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testRepeatMatrix_UnitRepetitionReturnsIndependentMatrix() {
+            final var matrix = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d }, { 3.0d, 4.0d } });
+            final var result = matrix.repeatMatrix(1, 1);
+            assertEquals(matrix, result);
+            assertNotSame(matrix, result);
+            result.set(0, 0, 0.0d);
+            assertEquals(1.0d, matrix.get(0, 0));
+        }
+
+        @Test
+        public void testRepeatMatrix_OnlyColumnsRepeated() {
+            final var matrix = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d }, { 3.0d, 4.0d } });
+            final var repeated = matrix.repeatMatrix(1, 2);
+            assertEquals(DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d, 1.0d, 2.0d }, { 3.0d, 4.0d, 3.0d, 4.0d } }), repeated);
+            repeated.set(0, 0, 3.0d);
+            assertEquals(1.0d, matrix.get(0, 0));
+        }
+
+        @Test
         public void testRepeatMatrix_InvalidArguments() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
@@ -4369,6 +4498,14 @@ class DoubleMatrixTest extends MatrixTestSupport {
         public void testRepeatMatrix_InvalidRepeats() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 } });
             assertThrows(IllegalArgumentException.class, () -> m.repeatMatrix(0, 1));
+        }
+
+        @ParameterizedTest
+        @CsvSource({ "2147483647, 1", "1, 2147483647" })
+        public void testRepeatMatrix_RejectsOverflowBeforeAllocation(final int rows, final int columns) {
+            final var matrix = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d }, { 3.0d, 4.0d } });
+            assertThrows(IllegalArgumentException.class, () -> matrix.repeatMatrix(rows, columns));
+            assertEquals(DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d }, { 3.0d, 4.0d } }), matrix);
         }
     }
 
@@ -4674,6 +4811,14 @@ class DoubleMatrixTest extends MatrixTestSupport {
             assertArrayEquals(new double[] { 1.0, 2.0, 5.0 }, stacked.rowView(0));
             assertArrayEquals(new double[] { 3.0, 4.0, 6.0 }, stacked.rowView(1));
         }
+
+        @Test
+        public void testStackHorizontally_RejectsLogicalWidthOverflowWithoutAllocation() {
+            final var huge = DoubleMatrix.wrap(new double[0][0]).resize(0, Integer.MAX_VALUE);
+            final var extra = DoubleMatrix.wrap(new double[0][0]).resize(0, 1);
+            assertThrows(IllegalArgumentException.class, () -> huge.stackHorizontally(extra));
+            assertEquals(Integer.MAX_VALUE, huge.columnCount());
+        }
     }
 
     @Nested
@@ -4894,6 +5039,22 @@ class DoubleMatrixTest extends MatrixTestSupport {
             assertThrows(IllegalArgumentException.class, () -> m1.add(m2));
         }
 
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testAdd_ExplicitModesPreserveBothOperands(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var left = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d, 3.0d }, { 4.0d, 5.0d, 6.0d } });
+                final var right = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d, 3.0d }, { 4.0d, 5.0d, 6.0d } });
+                assertEquals(DoubleMatrix.wrap(new double[][] { { 2.0d, 4.0d, 6.0d }, { 8.0d, 10.0d, 12.0d } }), left.add(right));
+                assertEquals(DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d, 3.0d }, { 4.0d, 5.0d, 6.0d } }), left);
+                assertEquals(DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d, 3.0d }, { 4.0d, 5.0d, 6.0d } }), right);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
+        }
+
         // Test that long values convert to double (may lose precision for very large longs)
         @Test
         public void testSpecialDoubleValues_Infinity() {
@@ -4998,6 +5159,22 @@ class DoubleMatrixTest extends MatrixTestSupport {
             DoubleMatrix m1 = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 } });
             DoubleMatrix m2 = DoubleMatrix.wrap(new double[][] { { 3.0 } });
             assertThrows(IllegalArgumentException.class, () -> m1.subtract(m2));
+        }
+
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testSubtract_ExplicitModesPreserveBothOperands(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var left = DoubleMatrix.wrap(new double[][] { { 7.0d, 8.0d, 9.0d }, { 10.0d, 11.0d, 12.0d } });
+                final var right = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d, 3.0d }, { 4.0d, 5.0d, 6.0d } });
+                assertEquals(DoubleMatrix.wrap(new double[][] { { 6.0d, 6.0d, 6.0d }, { 6.0d, 6.0d, 6.0d } }), left.subtract(right));
+                assertEquals(DoubleMatrix.wrap(new double[][] { { 7.0d, 8.0d, 9.0d }, { 10.0d, 11.0d, 12.0d } }), left);
+                assertEquals(DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d, 3.0d }, { 4.0d, 5.0d, 6.0d } }), right);
+            } finally {
+                Matrices.setParallelMode(previous);
+            }
         }
     }
 
@@ -5112,6 +5289,23 @@ class DoubleMatrixTest extends MatrixTestSupport {
                         assertEquals(Double.doubleToRawLongBits(expected), Double.doubleToRawLongBits(results[1].get(i, j)));
                     }
                 }
+            }
+        }
+
+        @ParameterizedTest
+        @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
+        public void testMatrixMultiply_ExplicitModesComputeRectangularProduct(final ParallelMode mode) {
+            final ParallelMode previous = Matrices.getParallelMode();
+            Matrices.setParallelMode(mode);
+            try {
+                final var left = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d }, { 3.0d, 4.0d }, { 5.0d, 6.0d } });
+                final var right = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d, 3.0d }, { 4.0d, 5.0d, 6.0d } });
+                assertEquals(DoubleMatrix.wrap(new double[][] { { 9.0d, 12.0d, 15.0d }, { 19.0d, 26.0d, 33.0d }, { 29.0d, 40.0d, 51.0d } }),
+                        left.matrixMultiply(right));
+                assertEquals(DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d }, { 3.0d, 4.0d }, { 5.0d, 6.0d } }), left);
+                assertEquals(DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d, 3.0d }, { 4.0d, 5.0d, 6.0d } }), right);
+            } finally {
+                Matrices.setParallelMode(previous);
             }
         }
 
@@ -5456,6 +5650,35 @@ class DoubleMatrixTest extends MatrixTestSupport {
             assertEquals(5.0, sum, 0.0);
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testMainDiagonalStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d, 3.0d }, { 4.0d, 5.0d, 6.0d }, { 7.0d, 8.0d, 9.0d } });
+            final double[] expected = new double[] { 1.0d, 5.0d, 9.0d };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.mainDiagonalStream()) {
+                final var iterator = (DoubleIteratorEx) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextDouble);
+            }
+        }
+
+        @Test
+        public void testMainDiagonalStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d, 3.0d }, { 4.0d, 5.0d, 6.0d }, { 7.0d, 8.0d, 9.0d } });
+            try (var stream = matrix.mainDiagonalStream()) {
+                final var iterator = (DoubleIteratorEx) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals(1.0d, iterator.nextDouble());
+                assertEquals(2, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextDouble);
+            }
+        }
+
         @Test
         public void testMainDiagonalStream_Empty() {
             DoubleMatrix empty = DoubleMatrix.empty();
@@ -5518,6 +5741,35 @@ class DoubleMatrixTest extends MatrixTestSupport {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             double sum = m.antiDiagonalStream().sum();
             assertEquals(5.0, sum, 0.0);
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testAntiDiagonalStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d, 3.0d }, { 4.0d, 5.0d, 6.0d }, { 7.0d, 8.0d, 9.0d } });
+            final double[] expected = new double[] { 3.0d, 5.0d, 7.0d };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.antiDiagonalStream()) {
+                final var iterator = (DoubleIteratorEx) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextDouble);
+            }
+        }
+
+        @Test
+        public void testAntiDiagonalStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d, 3.0d }, { 4.0d, 5.0d, 6.0d }, { 7.0d, 8.0d, 9.0d } });
+            try (var stream = matrix.antiDiagonalStream()) {
+                final var iterator = (DoubleIteratorEx) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals(3.0d, iterator.nextDouble());
+                assertEquals(2, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextDouble);
+            }
         }
 
         @Test
@@ -5759,6 +6011,35 @@ class DoubleMatrixTest extends MatrixTestSupport {
             assertFalse(crossingCount.hasNext());
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testRowMajorStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d, 3.0d }, { 4.0d, 5.0d, 6.0d }, { 7.0d, 8.0d, 9.0d } });
+            final double[] expected = new double[] { 1.0d, 2.0d, 3.0d, 4.0d, 5.0d, 6.0d, 7.0d, 8.0d, 9.0d };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.rowMajorStream()) {
+                final var iterator = (DoubleIteratorEx) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextDouble);
+            }
+        }
+
+        @Test
+        public void testRowMajorStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d, 3.0d }, { 4.0d, 5.0d, 6.0d }, { 7.0d, 8.0d, 9.0d } });
+            try (var stream = matrix.rowMajorStream()) {
+                final var iterator = (DoubleIteratorEx) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals(1.0d, iterator.nextDouble());
+                assertEquals(8, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextDouble);
+            }
+        }
+
         @Test
         public void testRowMajorStream_Empty() {
             DoubleMatrix empty = DoubleMatrix.empty();
@@ -5794,6 +6075,13 @@ class DoubleMatrixTest extends MatrixTestSupport {
             assertArrayEquals(new double[] { 3.0, 4.0 }, row1);
             double rowSum = matrix.rowMajorStream(1, 2).sum();
             assertEquals(7.0, rowSum);
+        }
+
+        @Test
+        public void testRowMajorStream_ZeroColumnsKeepLogicalRowRange() {
+            final var matrix = DoubleMatrix.wrap(new double[3][0]);
+            assertEquals(0, matrix.rowMajorStream(1, 3).count());
+            assertEquals(2, matrix.rowStreams(1, 3).count());
         }
 
         @Test
@@ -5894,6 +6182,35 @@ class DoubleMatrixTest extends MatrixTestSupport {
             assertEquals(16.0, sum, 0.0);
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 2, 3, 8, 9, Long.MAX_VALUE })
+        public void testColumnMajorStream_AdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d, 3.0d }, { 4.0d, 5.0d, 6.0d }, { 7.0d, 8.0d, 9.0d } });
+            final double[] expected = new double[] { 1.0d, 4.0d, 7.0d, 2.0d, 5.0d, 8.0d, 3.0d, 6.0d, 9.0d };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.columnMajorStream()) {
+                final var iterator = (DoubleIteratorEx) stream.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextDouble);
+            }
+        }
+
+        @Test
+        public void testColumnMajorStream_CountConsumesOnlyRemainingValues() {
+            final var matrix = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d, 3.0d }, { 4.0d, 5.0d, 6.0d }, { 7.0d, 8.0d, 9.0d } });
+            try (var stream = matrix.columnMajorStream()) {
+                final var iterator = (DoubleIteratorEx) stream.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals(1.0d, iterator.nextDouble());
+                assertEquals(8, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextDouble);
+            }
+        }
+
         @Test
         public void testColumnMajorStream_Empty() {
             DoubleMatrix empty = DoubleMatrix.empty();
@@ -5927,6 +6244,13 @@ class DoubleMatrixTest extends MatrixTestSupport {
             DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             double[] column1 = matrix.columnMajorStream(1, 2).toArray();
             assertArrayEquals(new double[] { 2.0, 4.0 }, column1);
+        }
+
+        @Test
+        public void testColumnMajorStream_ZeroRowsKeepLogicalColumnRange() {
+            final var matrix = DoubleMatrix.wrap(new double[0][0]).resize(0, 3);
+            assertEquals(0, matrix.columnMajorStream(1, 3).count());
+            assertEquals(2, matrix.columnStreams(1, 3).count());
         }
 
         @Test
@@ -6047,6 +6371,28 @@ class DoubleMatrixTest extends MatrixTestSupport {
             }
         }
 
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 3, Long.MAX_VALUE })
+        public void testRowStreams_OuterCursorAdvanceCountAndExhaustion(final long amount) {
+            final var matrix = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d, 3.0d }, { 4.0d, 5.0d, 6.0d }, { 7.0d, 8.0d, 9.0d } });
+            final double[][] expected = { new double[] { 1.0d, 2.0d, 3.0d }, new double[] { 4.0d, 5.0d, 6.0d }, new double[] { 7.0d, 8.0d, 9.0d } };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.rowStreams()) {
+                final var iterator = (ObjIteratorEx<DoubleStream>) stream.iterator();
+                iterator.advance(amount);
+                if (skipped < expected.length) {
+                    assertTrue(iterator.hasNext());
+                    try (var values = iterator.next()) {
+                        assertArrayEquals(expected[skipped], values.toArray());
+                    }
+                }
+                assertEquals(Math.max(0, expected.length - skipped - 1), iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
         @Test
         public void testRowStreams_Empty() {
             DoubleMatrix empty = DoubleMatrix.empty();
@@ -6132,6 +6478,59 @@ class DoubleMatrixTest extends MatrixTestSupport {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0, 3.0 } });
             long count = m.columnStreams(1, 3).count();
             assertEquals(2, count);
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 3, Long.MAX_VALUE })
+        public void testColumnStreams_OuterCursorAdvanceCountAndExhaustion(final long amount) {
+            final var matrix = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d, 3.0d }, { 4.0d, 5.0d, 6.0d }, { 7.0d, 8.0d, 9.0d } });
+            final double[][] expected = { new double[] { 1.0d, 4.0d, 7.0d }, new double[] { 2.0d, 5.0d, 8.0d }, new double[] { 3.0d, 6.0d, 9.0d } };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var stream = matrix.columnStreams()) {
+                final var iterator = (ObjIteratorEx<DoubleStream>) stream.iterator();
+                iterator.advance(amount);
+                if (skipped < expected.length) {
+                    assertTrue(iterator.hasNext());
+                    try (var values = iterator.next()) {
+                        assertArrayEquals(expected[skipped], values.toArray());
+                    }
+                }
+                assertEquals(Math.max(0, expected.length - skipped - 1), iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::next);
+            }
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = { -1, 0, 1, 3, Long.MAX_VALUE })
+        public void testColumnStreams_InnerCursorAdvanceClampsToRemainingValues(final long amount) {
+            final var matrix = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d, 3.0d }, { 4.0d, 5.0d, 6.0d }, { 7.0d, 8.0d, 9.0d } });
+            final double[] expected = new double[] { 2.0d, 5.0d, 8.0d };
+            final int skipped = (int) Math.max(0, Math.min(amount, expected.length));
+            try (var columns = matrix.columnStreams(1, 2);
+                 var values = columns.iterator().next()) {
+                final var iterator = (DoubleIteratorEx) values.iterator();
+                iterator.advance(amount);
+                assertArrayEquals(Arrays.copyOfRange(expected, skipped, expected.length), iterator.toArray());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextDouble);
+            }
+        }
+
+        @Test
+        public void testColumnStreams_InnerCountConsumesOnlyRemainingValues() {
+            final var matrix = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d, 3.0d }, { 4.0d, 5.0d, 6.0d }, { 7.0d, 8.0d, 9.0d } });
+            try (var columns = matrix.columnStreams(1, 2);
+                 var values = columns.iterator().next()) {
+                final var iterator = (DoubleIteratorEx) values.iterator();
+                assertTrue(iterator.hasNext());
+                assertEquals(2.0d, iterator.nextDouble());
+                assertEquals(2, iterator.count());
+                assertEquals(0, iterator.count());
+                assertFalse(iterator.hasNext());
+                assertThrows(NoSuchElementException.class, iterator::nextDouble);
+            }
         }
 
         @Test
@@ -6410,6 +6809,18 @@ class DoubleMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testHashCode_ZeroRowWidthsDistinguishShapes() {
+            final var empty = DoubleMatrix.wrap(new double[0][0]);
+            final var narrow = empty.resize(0, 4);
+            final var equal = empty.resize(0, 4);
+            final var wide = empty.resize(0, 5);
+            assertEquals(narrow, equal);
+            assertEquals(narrow.hashCode(), equal.hashCode());
+            assertNotEquals(narrow.hashCode(), wide.hashCode());
+            assertNotEquals(narrow.hashCode(), empty.hashCode());
+        }
+
+        @Test
         public void testEqualsAndHashCode_NegativeZero_DistinctFromPositiveZero() {
             // DoubleMatrix.equals/hashCode use Double.doubleToLongBits semantics (per Javadoc),
             // so +0.0 and -0.0 are NOT equal, and the hash codes must differ accordingly.
@@ -6454,6 +6865,14 @@ class DoubleMatrixTest extends MatrixTestSupport {
             DoubleMatrix m1 = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             DoubleMatrix m2 = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 5.0 } });
             assertNotEquals(m1, m2);
+        }
+
+        @Test
+        public void testEquals_DifferentRowCountsWithEqualColumnCounts() {
+            final var longer = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d }, { 3.0d, 4.0d } });
+            final var shorter = DoubleMatrix.wrap(new double[][] { { 1.0d, 2.0d } });
+            assertFalse(longer.equals(shorter));
+            assertFalse(shorter.equals(longer));
         }
 
         @Test

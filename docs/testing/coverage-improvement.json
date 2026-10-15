@@ -1,0 +1,652 @@
+{
+  "date": "2026-10-15",
+  "baselineCommit": "95e951063f0b502e050194eda97e3024142abd9d",
+  "scope": {
+    "productionSourcesChanged": false,
+    "coverageExclusionsAdded": false,
+    "testDiscoveryChanged": false
+  },
+  "environment": {
+    "java": "25+37-LTS-3491",
+    "compilerRelease": 21,
+    "maven": "3.9.16",
+    "jacoco": "0.8.15",
+    "abacusCommon": "8.2.0"
+  },
+  "baseline": {
+    "testMethodDeclarations": 6627,
+    "testInvocations": 6658,
+    "counters": {
+      "INSTRUCTION": {
+        "missed": 3095,
+        "covered": 51636
+      },
+      "LINE": {
+        "missed": 436,
+        "covered": 7846
+      },
+      "COMPLEXITY": {
+        "missed": 582,
+        "covered": 3729
+      },
+      "METHOD": {
+        "missed": 75,
+        "covered": 1573
+      },
+      "BRANCH": {
+        "missed": 586,
+        "covered": 4734
+      },
+      "CLASS": {
+        "missed": 0,
+        "covered": 77
+      }
+    }
+  },
+  "normal": {
+    "command": "mvn clean test jacoco:report",
+    "testMethodDeclarations": 7001,
+    "testInvocations": 7567,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "counters": {
+      "INSTRUCTION": {
+        "missed": 125,
+        "covered": 54606
+      },
+      "BRANCH": {
+        "missed": 42,
+        "covered": 5278
+      },
+      "LINE": {
+        "missed": 14,
+        "covered": 8268
+      },
+      "COMPLEXITY": {
+        "missed": 42,
+        "covered": 4269
+      },
+      "METHOD": {
+        "missed": 0,
+        "covered": 1648
+      },
+      "CLASS": {
+        "missed": 0,
+        "covered": 77
+      }
+    }
+  },
+  "randomized": {
+    "command": "mvn clean test jacoco:report '-Djunit.jupiter.testmethod.order.default=org.junit.jupiter.api.MethodOrderer$Random' '-Djunit.jupiter.testclass.order.default=org.junit.jupiter.api.ClassOrderer$Random' '-Djunit.jupiter.execution.order.random.seed=20261015'",
+    "seed": 20261015,
+    "testInvocations": 7567,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "counters": {
+      "INSTRUCTION": {
+        "missed": 125,
+        "covered": 54606
+      },
+      "BRANCH": {
+        "missed": 42,
+        "covered": 5278
+      },
+      "LINE": {
+        "missed": 14,
+        "covered": 8268
+      },
+      "COMPLEXITY": {
+        "missed": 42,
+        "covered": 4269
+      },
+      "METHOD": {
+        "missed": 0,
+        "covered": 1648
+      },
+      "CLASS": {
+        "missed": 0,
+        "covered": 77
+      }
+    }
+  },
+  "comparison": {
+    "identicalFinalCounters": true,
+    "baselineCoverageRegressions": [],
+    "randomizedCoverageRegressions": []
+  },
+  "audits": {
+    "exactDuplicateGroups": 0,
+    "methodsWithoutAssertions": 0,
+    "organizationChangesRequired": 0,
+    "namingChangesRequired": 0,
+    "formattingChangesRequired": 0
+  },
+  "addedTestMethods": 374,
+  "remainingGapReasons": {
+    "copy_null_after_validation": "copyOf validates every row before cloning; a null row cannot reach the subsequent null-copy arm without racing input mutation.",
+    "oversized_flatten": "The guard needs a valid matrix containing more than Integer.MAX_VALUE cells. Constructors reject aliased rows; allocating billions of real cells is unsuitable for an ordinary unit suite.",
+    "oversized_stack_rows": "The instance stacking guard requires two actual backing arrays whose combined row count exceeds Integer.MAX_VALUE. Collection stacking overflow is covered using bounded-memory repeated references.",
+    "oversized_reshape_rows": "A reshaped row count beyond Integer.MAX_VALUE requires a valid source matrix containing more than Integer.MAX_VALUE cells.",
+    "row_major_chunk_invariant": "The remaining length ends at the selected final row boundary, so every copied chunk reaches the current row end. The false branch of the row-end check cannot occur.",
+    "class_lookup_never_null": "ClassUtil.forName returns a non-null Class or throws; its null result branches cannot occur. Exception and LinkageError detection fallback are tested.",
+    "sealed_hierarchy_exhaustive": "AbstractMatrix is sealed and all permitted concrete types are handled before this unsupported-type branch.",
+    "typed_stack_same_class": "The public stack generic bound requires one concrete matrix type. Different runtime matrix classes require heap pollution or a raw/unchecked call that violates that contract.",
+    "common_type_redundant_assignability": "A candidate found in both ancestry maps is assignable from both input types. The redundant negative checks and the continue bytecode reached only through the last check cannot execute.",
+    "common_type_antisymmetry": "Distinct Class objects cannot be assignable from one another in both directions. The final negative assignability guard is redundant.",
+    "single_class_inheritance": "Only a class has a superclass; single class inheritance and a fresh traversal map prevent a superclass from having been visited before its unique child.",
+    "string_builder_no_io_exception": "The escaping helper uses StringBuilder as its Appendable, whose append methods do not throw IOException.",
+    "always_throwing_call_probe": "The narrowing overflow test executes this Math.toIntExact call and asserts ArithmeticException. It always exits through a called method exception before a following JaCoCo probe, so JaCoCo reports the line missed."
+  },
+  "remainingGaps": [
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/LongMatrix.java",
+      "line": 233,
+      "missedInstructions": 2,
+      "coveredInstructions": 12,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "copy_null_after_validation"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/LongMatrix.java",
+      "line": 2677,
+      "missedInstructions": 0,
+      "coveredInstructions": 10,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "oversized_flatten"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/LongMatrix.java",
+      "line": 2678,
+      "missedInstructions": 9,
+      "coveredInstructions": 0,
+      "missedBranches": 0,
+      "coveredBranches": 0,
+      "reason": "oversized_flatten"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/LongMatrix.java",
+      "line": 2768,
+      "missedInstructions": 1,
+      "coveredInstructions": 16,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "oversized_stack_rows"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/LongMatrix.java",
+      "line": 3669,
+      "missedInstructions": 0,
+      "coveredInstructions": 6,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "row_major_chunk_invariant"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/BooleanMatrix.java",
+      "line": 235,
+      "missedInstructions": 2,
+      "coveredInstructions": 12,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "copy_null_after_validation"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/BooleanMatrix.java",
+      "line": 2562,
+      "missedInstructions": 0,
+      "coveredInstructions": 10,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "oversized_flatten"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/BooleanMatrix.java",
+      "line": 2563,
+      "missedInstructions": 9,
+      "coveredInstructions": 0,
+      "missedBranches": 0,
+      "coveredBranches": 0,
+      "reason": "oversized_flatten"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/BooleanMatrix.java",
+      "line": 2907,
+      "missedInstructions": 1,
+      "coveredInstructions": 16,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "oversized_stack_rows"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/FloatMatrix.java",
+      "line": 244,
+      "missedInstructions": 2,
+      "coveredInstructions": 12,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "copy_null_after_validation"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/FloatMatrix.java",
+      "line": 2659,
+      "missedInstructions": 0,
+      "coveredInstructions": 10,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "oversized_flatten"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/FloatMatrix.java",
+      "line": 2660,
+      "missedInstructions": 9,
+      "coveredInstructions": 0,
+      "missedBranches": 0,
+      "coveredBranches": 0,
+      "reason": "oversized_flatten"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/FloatMatrix.java",
+      "line": 2748,
+      "missedInstructions": 1,
+      "coveredInstructions": 16,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "oversized_stack_rows"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/FloatMatrix.java",
+      "line": 3575,
+      "missedInstructions": 0,
+      "coveredInstructions": 6,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "row_major_chunk_invariant"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/ByteMatrix.java",
+      "line": 248,
+      "missedInstructions": 2,
+      "coveredInstructions": 12,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "copy_null_after_validation"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/ByteMatrix.java",
+      "line": 2600,
+      "missedInstructions": 0,
+      "coveredInstructions": 10,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "oversized_flatten"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/ByteMatrix.java",
+      "line": 2601,
+      "missedInstructions": 9,
+      "coveredInstructions": 0,
+      "missedBranches": 0,
+      "coveredBranches": 0,
+      "reason": "oversized_flatten"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/ByteMatrix.java",
+      "line": 2689,
+      "missedInstructions": 1,
+      "coveredInstructions": 16,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "oversized_stack_rows"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/ByteMatrix.java",
+      "line": 3727,
+      "missedInstructions": 0,
+      "coveredInstructions": 6,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "row_major_chunk_invariant"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/Matrices.java",
+      "line": 99,
+      "missedInstructions": 0,
+      "coveredInstructions": 4,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "class_lookup_never_null"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/Matrices.java",
+      "line": 100,
+      "missedInstructions": 0,
+      "coveredInstructions": 2,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "class_lookup_never_null"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/Matrices.java",
+      "line": 1563,
+      "missedInstructions": 0,
+      "coveredInstructions": 6,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "sealed_hierarchy_exhaustive"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/Matrices.java",
+      "line": 1567,
+      "missedInstructions": 8,
+      "coveredInstructions": 0,
+      "missedBranches": 0,
+      "coveredBranches": 0,
+      "reason": "sealed_hierarchy_exhaustive"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/Matrices.java",
+      "line": 1587,
+      "missedInstructions": 0,
+      "coveredInstructions": 11,
+      "missedBranches": 1,
+      "coveredBranches": 5,
+      "reason": "typed_stack_same_class"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/Matrices.java",
+      "line": 4574,
+      "missedInstructions": 0,
+      "coveredInstructions": 10,
+      "missedBranches": 2,
+      "coveredBranches": 4,
+      "reason": "common_type_redundant_assignability"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/Matrices.java",
+      "line": 4575,
+      "missedInstructions": 1,
+      "coveredInstructions": 0,
+      "missedBranches": 0,
+      "coveredBranches": 0,
+      "reason": "common_type_redundant_assignability"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/Matrices.java",
+      "line": 4728,
+      "missedInstructions": 0,
+      "coveredInstructions": 11,
+      "missedBranches": 1,
+      "coveredBranches": 5,
+      "reason": "common_type_antisymmetry"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/Matrices.java",
+      "line": 4761,
+      "missedInstructions": 0,
+      "coveredInstructions": 8,
+      "missedBranches": 1,
+      "coveredBranches": 3,
+      "reason": "single_class_inheritance"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/DoubleMatrix.java",
+      "line": 250,
+      "missedInstructions": 2,
+      "coveredInstructions": 12,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "copy_null_after_validation"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/DoubleMatrix.java",
+      "line": 2750,
+      "missedInstructions": 0,
+      "coveredInstructions": 10,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "oversized_flatten"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/DoubleMatrix.java",
+      "line": 2751,
+      "missedInstructions": 9,
+      "coveredInstructions": 0,
+      "missedBranches": 0,
+      "coveredBranches": 0,
+      "reason": "oversized_flatten"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/DoubleMatrix.java",
+      "line": 2839,
+      "missedInstructions": 1,
+      "coveredInstructions": 16,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "oversized_stack_rows"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/DoubleMatrix.java",
+      "line": 3680,
+      "missedInstructions": 0,
+      "coveredInstructions": 6,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "row_major_chunk_invariant"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/AbstractMatrix.java",
+      "line": 1180,
+      "missedInstructions": 1,
+      "coveredInstructions": 12,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "oversized_reshape_rows"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/ShortMatrix.java",
+      "line": 243,
+      "missedInstructions": 2,
+      "coveredInstructions": 12,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "copy_null_after_validation"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/ShortMatrix.java",
+      "line": 2544,
+      "missedInstructions": 0,
+      "coveredInstructions": 10,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "oversized_flatten"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/ShortMatrix.java",
+      "line": 2545,
+      "missedInstructions": 9,
+      "coveredInstructions": 0,
+      "missedBranches": 0,
+      "coveredBranches": 0,
+      "reason": "oversized_flatten"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/ShortMatrix.java",
+      "line": 2634,
+      "missedInstructions": 1,
+      "coveredInstructions": 16,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "oversized_stack_rows"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/ShortMatrix.java",
+      "line": 3662,
+      "missedInstructions": 0,
+      "coveredInstructions": 6,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "row_major_chunk_invariant"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/Matrix.java",
+      "line": 3160,
+      "missedInstructions": 0,
+      "coveredInstructions": 10,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "oversized_flatten"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/Matrix.java",
+      "line": 3161,
+      "missedInstructions": 9,
+      "coveredInstructions": 0,
+      "missedBranches": 0,
+      "coveredBranches": 0,
+      "reason": "oversized_flatten"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/Matrix.java",
+      "line": 3437,
+      "missedInstructions": 1,
+      "coveredInstructions": 16,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "oversized_stack_rows"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/CharMatrix.java",
+      "line": 240,
+      "missedInstructions": 2,
+      "coveredInstructions": 12,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "copy_null_after_validation"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/CharMatrix.java",
+      "line": 2602,
+      "missedInstructions": 0,
+      "coveredInstructions": 10,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "oversized_flatten"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/CharMatrix.java",
+      "line": 2603,
+      "missedInstructions": 9,
+      "coveredInstructions": 0,
+      "missedBranches": 0,
+      "coveredBranches": 0,
+      "reason": "oversized_flatten"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/CharMatrix.java",
+      "line": 2692,
+      "missedInstructions": 1,
+      "coveredInstructions": 16,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "oversized_stack_rows"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/CharMatrix.java",
+      "line": 3533,
+      "missedInstructions": 0,
+      "coveredInstructions": 6,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "row_major_chunk_invariant"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/CharMatrix.java",
+      "line": 4155,
+      "missedInstructions": 1,
+      "coveredInstructions": 0,
+      "missedBranches": 0,
+      "coveredBranches": 0,
+      "reason": "string_builder_no_io_exception"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/CharMatrix.java",
+      "line": 4157,
+      "missedInstructions": 5,
+      "coveredInstructions": 0,
+      "missedBranches": 0,
+      "coveredBranches": 0,
+      "reason": "string_builder_no_io_exception"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/IntMatrix.java",
+      "line": 236,
+      "missedInstructions": 2,
+      "coveredInstructions": 12,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "copy_null_after_validation"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/IntMatrix.java",
+      "line": 2785,
+      "missedInstructions": 0,
+      "coveredInstructions": 10,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "oversized_flatten"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/IntMatrix.java",
+      "line": 2786,
+      "missedInstructions": 9,
+      "coveredInstructions": 0,
+      "missedBranches": 0,
+      "coveredBranches": 0,
+      "reason": "oversized_flatten"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/IntMatrix.java",
+      "line": 2875,
+      "missedInstructions": 1,
+      "coveredInstructions": 16,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "oversized_stack_rows"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/IntMatrix.java",
+      "line": 3345,
+      "missedInstructions": 3,
+      "coveredInstructions": 0,
+      "missedBranches": 0,
+      "coveredBranches": 0,
+      "reason": "always_throwing_call_probe"
+    },
+    {
+      "file": "src/main/java/com/landawn/abacus/matrix/IntMatrix.java",
+      "line": 3914,
+      "missedInstructions": 0,
+      "coveredInstructions": 6,
+      "missedBranches": 1,
+      "coveredBranches": 1,
+      "reason": "row_major_chunk_invariant"
+    }
+  ],
+  "addedTestMethodsByFile": {
+    "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java": 6,
+    "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java": 33,
+    "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java": 39,
+    "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java": 36,
+    "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java": 34,
+    "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java": 36,
+    "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java": 38,
+    "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java": 36,
+    "src/test/java/com/landawn/abacus/matrix/MatricesTest.java": 46,
+    "src/test/java/com/landawn/abacus/matrix/MatrixTest.java": 31,
+    "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java": 39
+  }
+}
