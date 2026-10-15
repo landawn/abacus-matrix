@@ -35,8 +35,9 @@ class MatrixTraversalContractTest extends MatrixTestSupport {
         private static List<AbstractMatrix<?, ?, ?, ?, ?>> matrices(final int rows, final int columns) {
             final IntMatrix ints = new IntMatrix(new int[rows][columns], columns);
             for (int i = 0; i < rows; i++) {
-                for (int j = 0; j < columns; j++)
+                for (int j = 0; j < columns; j++) {
                     ints.set(i, j, i * columns + j + 1);
+                }
             }
             return List.of(ints, ints.toLongMatrix(), ints.toFloatMatrix(), ints.toDoubleMatrix());
         }
@@ -46,14 +47,18 @@ class MatrixTraversalContractTest extends MatrixTestSupport {
         }
 
         private static Object iterator(final Object stream) {
-            if (stream instanceof IntStream s)
+            if (stream instanceof IntStream s) {
                 return s.iterator();
-            if (stream instanceof LongStream s)
+            }
+            if (stream instanceof LongStream s) {
                 return s.iterator();
-            if (stream instanceof FloatStream s)
+            }
+            if (stream instanceof FloatStream s) {
                 return s.iterator();
-            if (stream instanceof DoubleStream s)
+            }
+            if (stream instanceof DoubleStream s) {
                 return s.iterator();
+            }
             throw new AssertionError(stream.getClass());
         }
 
@@ -62,46 +67,56 @@ class MatrixTraversalContractTest extends MatrixTestSupport {
         }
 
         private static void advance(final Object iterator, final long count) {
-            if (iterator instanceof IntIteratorEx i)
+            if (iterator instanceof IntIteratorEx i) {
                 i.advance(count);
-            else if (iterator instanceof LongIteratorEx i)
+            } else if (iterator instanceof LongIteratorEx i) {
                 i.advance(count);
-            else if (iterator instanceof FloatIteratorEx i)
+            } else if (iterator instanceof FloatIteratorEx i) {
                 i.advance(count);
-            else if (iterator instanceof DoubleIteratorEx i)
+            } else if (iterator instanceof DoubleIteratorEx i) {
                 i.advance(count);
-            else
+            } else {
                 throw new AssertionError(iterator.getClass());
+            }
         }
 
         private static Object toArray(final Object iterator) {
-            if (iterator instanceof IntIterator i)
+            if (iterator instanceof IntIterator i) {
                 return i.toArray();
-            if (iterator instanceof LongIterator i)
+            }
+            if (iterator instanceof LongIterator i) {
                 return i.toArray();
-            if (iterator instanceof FloatIterator i)
+            }
+            if (iterator instanceof FloatIterator i) {
                 return i.toArray();
-            if (iterator instanceof DoubleIterator i)
+            }
+            if (iterator instanceof DoubleIterator i) {
                 return i.toArray();
+            }
             throw new AssertionError(iterator.getClass());
         }
 
         private static Object toListArray(final Object iterator) {
-            if (iterator instanceof IntIterator i)
+            if (iterator instanceof IntIterator i) {
                 return i.toList().toArray();
-            if (iterator instanceof LongIterator i)
+            }
+            if (iterator instanceof LongIterator i) {
                 return i.toList().toArray();
-            if (iterator instanceof FloatIterator i)
+            }
+            if (iterator instanceof FloatIterator i) {
                 return i.toList().toArray();
-            if (iterator instanceof DoubleIterator i)
+            }
+            if (iterator instanceof DoubleIterator i) {
                 return i.toList().toArray();
+            }
             throw new AssertionError(iterator.getClass());
         }
 
         private static void assertValues(final double[] expected, final Object actual) {
             assertEquals(expected.length, Array.getLength(actual));
-            for (int i = 0; i < expected.length; i++)
+            for (int i = 0; i < expected.length; i++) {
                 assertEquals(expected[i], ((Number) Array.get(actual, i)).doubleValue(), "element " + i);
+            }
         }
 
         private static void assertExhausted(final Object iterator) {
@@ -188,16 +203,18 @@ class MatrixTraversalContractTest extends MatrixTestSupport {
             for (final AbstractMatrix<?, ?, ?, ?, ?> matrix : matrices(3, 0)) {
                 final List<?> rows = ((Stream<?>) matrix.rowStreams()).toList();
                 assertEquals(3, rows.size());
-                for (final Object row : rows)
+                for (final Object row : rows) {
                     assertExhausted(iterator(row));
+                }
                 assertExhausted(iterator(matrix.mainDiagonalStream()));
                 assertExhausted(iterator(matrix.antiDiagonalStream()));
             }
             for (final AbstractMatrix<?, ?, ?, ?, ?> matrix : matrices(0, 3)) {
                 final List<?> columns = ((Stream<?>) matrix.columnStreams()).toList();
                 assertEquals(3, columns.size());
-                for (final Object column : columns)
+                for (final Object column : columns) {
                     assertExhausted(iterator(column));
+                }
                 assertExhausted(iterator(matrix.mainDiagonalStream()));
                 assertExhausted(iterator(matrix.antiDiagonalStream()));
             }

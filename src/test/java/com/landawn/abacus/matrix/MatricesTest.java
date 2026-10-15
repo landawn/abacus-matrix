@@ -978,7 +978,7 @@ class MatricesTest extends MatrixTestSupport {
         @Test
         public void testIsSameShapeCollection() {
             // Test empty collection
-            assertTrue(Matrices.isSameShape(new ArrayList<IntMatrix>()));
+            assertTrue(Matrices.isSameShape(new ArrayList<>()));
 
             // Test single element
             assertTrue(Matrices.isSameShape(N.asList(intMatrix1)));

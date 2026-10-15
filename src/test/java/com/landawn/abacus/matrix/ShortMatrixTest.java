@@ -27,15 +27,15 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import com.landawn.abacus.util.Sheet.Point;
 import com.landawn.abacus.util.Sheet;
+import com.landawn.abacus.util.Sheet.Point;
 import com.landawn.abacus.util.ShortList;
 import com.landawn.abacus.util.Throwables;
+import com.landawn.abacus.util.u.OptionalShort;
 import com.landawn.abacus.util.stream.ObjIteratorEx;
 import com.landawn.abacus.util.stream.ShortIteratorEx;
 import com.landawn.abacus.util.stream.ShortStream;
 import com.landawn.abacus.util.stream.Stream;
-import com.landawn.abacus.util.u.OptionalShort;
 
 class ShortMatrixTest extends MatrixTestSupport {
 
@@ -5464,7 +5464,7 @@ class ShortMatrixTest extends MatrixTestSupport {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { (short) -1, Short.MIN_VALUE } });
             com.landawn.abacus.matrix.LongMatrix asLong = m.toLongMatrix();
             assertEquals(-1L, asLong.get(0, 0));
-            assertEquals((long) Short.MIN_VALUE, asLong.get(0, 1));
+            assertEquals(Short.MIN_VALUE, asLong.get(0, 1));
         }
     }
 
@@ -7573,8 +7573,9 @@ class ShortMatrixTest extends MatrixTestSupport {
             int[] sum = { 0 };
             m.accept(matrix -> {
                 ShortList flat = matrix.flatten();
-                for (int i = 0; i < flat.size(); i++)
+                for (int i = 0; i < flat.size(); i++) {
                     sum[0] += flat.get(i);
+                }
             });
             assertEquals(10, sum[0]);
         }

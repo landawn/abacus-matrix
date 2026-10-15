@@ -27,12 +27,12 @@ import org.junit.jupiter.params.provider.ValueSource;
 import com.landawn.abacus.util.DoubleList;
 import com.landawn.abacus.util.Sheet.Point;
 import com.landawn.abacus.util.Throwables;
+import com.landawn.abacus.util.u;
+import com.landawn.abacus.util.u.OptionalDouble;
 import com.landawn.abacus.util.stream.DoubleIteratorEx;
 import com.landawn.abacus.util.stream.DoubleStream;
 import com.landawn.abacus.util.stream.ObjIteratorEx;
 import com.landawn.abacus.util.stream.Stream;
-import com.landawn.abacus.util.u.OptionalDouble;
-import com.landawn.abacus.util.u;
 
 class DoubleMatrixTest extends MatrixTestSupport {
 
@@ -2977,7 +2977,7 @@ class DoubleMatrixTest extends MatrixTestSupport {
             final DoubleMatrix source = DoubleMatrix.wrap(new double[] { 1 });
             final Matrix<Double> scalars = source.mapToObj(value -> value, double.class);
             assertSame(Double.class, scalars.elementType());
-            assertEquals((double) 1, scalars.get(0, 0).doubleValue());
+            assertEquals(1, scalars.get(0, 0).doubleValue());
 
             final int[] arrayValue = { 1, 2 };
             final Matrix<int[]> arrays = source.mapToObj(value -> arrayValue, int[].class);

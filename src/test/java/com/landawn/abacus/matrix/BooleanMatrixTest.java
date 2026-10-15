@@ -29,9 +29,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 import com.landawn.abacus.util.BooleanList;
 import com.landawn.abacus.util.Sheet.Point;
 import com.landawn.abacus.util.Throwables;
+import com.landawn.abacus.util.u.OptionalBoolean;
 import com.landawn.abacus.util.stream.ObjIteratorEx;
 import com.landawn.abacus.util.stream.Stream;
-import com.landawn.abacus.util.u.OptionalBoolean;
 
 class BooleanMatrixTest extends MatrixTestSupport {
 
@@ -6094,8 +6094,9 @@ class BooleanMatrixTest extends MatrixTestSupport {
 
             int[] trueCount = { 0 };
             matrix.forEach(val -> {
-                if (val)
+                if (val) {
                     trueCount[0]++;
+                }
             });
             assertEquals(2, trueCount[0]);
         }
@@ -6107,8 +6108,9 @@ class BooleanMatrixTest extends MatrixTestSupport {
 
             int[] trueCount = { 0 };
             matrix.forEach(0, 2, 1, 3, val -> {
-                if (val)
+                if (val) {
                     trueCount[0]++;
+                }
             });
             assertEquals(2, trueCount[0]);
 

@@ -32,11 +32,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 import com.landawn.abacus.util.CharList;
 import com.landawn.abacus.util.Sheet.Point;
 import com.landawn.abacus.util.Throwables;
+import com.landawn.abacus.util.u.OptionalChar;
 import com.landawn.abacus.util.stream.CharIteratorEx;
 import com.landawn.abacus.util.stream.CharStream;
 import com.landawn.abacus.util.stream.ObjIteratorEx;
 import com.landawn.abacus.util.stream.Stream;
-import com.landawn.abacus.util.u.OptionalChar;
 
 class CharMatrixTest extends MatrixTestSupport {
 
@@ -5312,7 +5312,7 @@ class CharMatrixTest extends MatrixTestSupport {
 
             assertEquals((char) (exact & 0xFFFF), left.matrixMultiply(right).get(0, 0));
             assertEquals(exact, left.toLongMatrix().matrixMultiply(right.toLongMatrix()).get(0, 0));
-            assertNotEquals(exact, (long) left.toIntMatrix().matrixMultiply(right.toIntMatrix()).get(0, 0));
+            assertNotEquals(exact, left.toIntMatrix().matrixMultiply(right.toIntMatrix()).get(0, 0));
 
             CharMatrix single = CharMatrix.wrap(new char[][] { { (char) 46341 } });
             assertTrue(single.toIntMatrix().matrixMultiply(single.toIntMatrix()).get(0, 0) < 0);

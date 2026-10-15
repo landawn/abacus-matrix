@@ -28,14 +28,14 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import com.landawn.abacus.util.LongList;
-import com.landawn.abacus.util.Sheet.Point;
 import com.landawn.abacus.util.Sheet;
+import com.landawn.abacus.util.Sheet.Point;
 import com.landawn.abacus.util.Throwables;
+import com.landawn.abacus.util.u;
+import com.landawn.abacus.util.u.OptionalLong;
 import com.landawn.abacus.util.stream.LongIteratorEx;
 import com.landawn.abacus.util.stream.LongStream;
 import com.landawn.abacus.util.stream.ObjIteratorEx;
-import com.landawn.abacus.util.u.OptionalLong;
-import com.landawn.abacus.util.u;
 
 class LongMatrixTest extends MatrixTestSupport {
 
@@ -2751,7 +2751,7 @@ class LongMatrixTest extends MatrixTestSupport {
             final LongMatrix source = LongMatrix.wrap(new long[] { 1 });
             final Matrix<Long> scalars = source.mapToObj(value -> value, long.class);
             assertSame(Long.class, scalars.elementType());
-            assertEquals((long) 1, scalars.get(0, 0).longValue());
+            assertEquals(1, scalars.get(0, 0).longValue());
 
             final int[] arrayValue = { 1, 2 };
             final Matrix<int[]> arrays = source.mapToObj(value -> arrayValue, int[].class);
@@ -7054,9 +7054,9 @@ class LongMatrixTest extends MatrixTestSupport {
             assertEquals(rows, result.rowCount());
             assertEquals(columns, result.columnCount());
             for (int index = 0; index < rows * columns; index++) {
-                assertEquals((long) (index < 5 ? index + 1 : 0), result.get(index / columns, index % columns));
+                assertEquals(index < 5 ? index + 1 : 0, result.get(index / columns, index % columns));
             }
-            result.set(0, 0, (long) 99);
+            result.set(0, 0, 99);
             assertArrayEquals(new long[] { 1, 2, 3, 4, 5 }, matrix.rowCopy(0));
         }
 
@@ -7238,8 +7238,9 @@ class LongMatrixTest extends MatrixTestSupport {
             long[] sum = { 0 };
             m.accept(matrix -> {
                 LongList flat = matrix.flatten();
-                for (int i = 0; i < flat.size(); i++)
+                for (int i = 0; i < flat.size(); i++) {
                     sum[0] += flat.get(i);
+                }
             });
             assertEquals(10L, sum[0]);
         }

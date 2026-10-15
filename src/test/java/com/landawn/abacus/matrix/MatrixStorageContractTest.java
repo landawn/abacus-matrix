@@ -34,8 +34,9 @@ class MatrixStorageContractTest extends MatrixTestSupport {
         private static List<AbstractMatrix<?, ?, ?, ?, ?>> matrices(final int rows, final int columns) {
             final IntMatrix ints = new IntMatrix(new int[rows][columns], columns);
             for (int i = 0; i < rows; i++) {
-                for (int j = 0; j < columns; j++)
+                for (int j = 0; j < columns; j++) {
                     ints.set(i, j, i * columns + j + 1);
+                }
             }
             return List.of(ints, ints.toLongMatrix(), ints.toFloatMatrix(), ints.toDoubleMatrix());
         }
@@ -55,65 +56,77 @@ class MatrixStorageContractTest extends MatrixTestSupport {
 
         private static Object backingRows(final AbstractMatrix<?, ?, ?, ?, ?> matrix, final int... indices) {
             final Object result = Array.newInstance(matrix.rowView(0).getClass(), indices.length);
-            for (int i = 0; i < indices.length; i++)
+            for (int i = 0; i < indices.length; i++) {
                 Array.set(result, i, matrix.rowView(indices[i]));
+            }
             return result;
         }
 
         private static void copyFrom(final AbstractMatrix<?, ?, ?, ?, ?> matrix, final int row, final int column, final Object source) {
-            if (matrix instanceof IntMatrix m)
+            if (matrix instanceof IntMatrix m) {
                 m.copyFrom(row, column, (int[][]) source);
-            else if (matrix instanceof LongMatrix m)
+            } else if (matrix instanceof LongMatrix m) {
                 m.copyFrom(row, column, (long[][]) source);
-            else if (matrix instanceof FloatMatrix m)
+            } else if (matrix instanceof FloatMatrix m) {
                 m.copyFrom(row, column, (float[][]) source);
-            else if (matrix instanceof DoubleMatrix m)
+            } else if (matrix instanceof DoubleMatrix m) {
                 m.copyFrom(row, column, (double[][]) source);
-            else
+            } else {
                 throw new AssertionError(matrix.getClass());
+            }
         }
 
         private static void setAntiDiagonal(final AbstractMatrix<?, ?, ?, ?, ?> matrix, final Object values) {
-            if (matrix instanceof IntMatrix m)
+            if (matrix instanceof IntMatrix m) {
                 m.setAntiDiagonal((int[]) values);
-            else if (matrix instanceof LongMatrix m)
+            } else if (matrix instanceof LongMatrix m) {
                 m.setAntiDiagonal((long[]) values);
-            else if (matrix instanceof FloatMatrix m)
+            } else if (matrix instanceof FloatMatrix m) {
                 m.setAntiDiagonal((float[]) values);
-            else if (matrix instanceof DoubleMatrix m)
+            } else if (matrix instanceof DoubleMatrix m) {
                 m.setAntiDiagonal((double[]) values);
-            else
+            } else {
                 throw new AssertionError(matrix.getClass());
+            }
         }
 
         private static Matrix<?> boxed(final AbstractMatrix<?, ?, ?, ?, ?> matrix) {
-            if (matrix instanceof IntMatrix m)
+            if (matrix instanceof IntMatrix m) {
                 return m.boxed();
-            if (matrix instanceof LongMatrix m)
+            }
+            if (matrix instanceof LongMatrix m) {
                 return m.boxed();
-            if (matrix instanceof FloatMatrix m)
+            }
+            if (matrix instanceof FloatMatrix m) {
                 return m.boxed();
-            if (matrix instanceof DoubleMatrix m)
+            }
+            if (matrix instanceof DoubleMatrix m) {
                 return m.boxed();
+            }
             throw new AssertionError(matrix.getClass());
         }
 
         private static Matrix<?> mapped(final AbstractMatrix<?, ?, ?, ?, ?> matrix) {
-            if (matrix instanceof IntMatrix m)
+            if (matrix instanceof IntMatrix m) {
                 return m.mapToObj(value -> value + 1, int.class);
-            if (matrix instanceof LongMatrix m)
+            }
+            if (matrix instanceof LongMatrix m) {
                 return m.mapToObj(value -> value + 1, long.class);
-            if (matrix instanceof FloatMatrix m)
+            }
+            if (matrix instanceof FloatMatrix m) {
                 return m.mapToObj(value -> value + 1, float.class);
-            if (matrix instanceof DoubleMatrix m)
+            }
+            if (matrix instanceof DoubleMatrix m) {
                 return m.mapToObj(value -> value + 1, double.class);
+            }
             throw new AssertionError(matrix.getClass());
         }
 
         private static void assertValues(final double[] expected, final Object actual) {
             assertEquals(expected.length, Array.getLength(actual));
-            for (int i = 0; i < expected.length; i++)
+            for (int i = 0; i < expected.length; i++) {
                 assertEquals(expected[i], ((Number) Array.get(actual, i)).doubleValue(), "element " + i);
+            }
         }
 
         @Test

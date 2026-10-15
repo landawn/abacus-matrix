@@ -27,14 +27,14 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import com.landawn.abacus.util.IntList;
-import com.landawn.abacus.util.Sheet.Point;
 import com.landawn.abacus.util.Sheet;
+import com.landawn.abacus.util.Sheet.Point;
 import com.landawn.abacus.util.Throwables;
+import com.landawn.abacus.util.u;
+import com.landawn.abacus.util.u.OptionalInt;
 import com.landawn.abacus.util.stream.IntIteratorEx;
 import com.landawn.abacus.util.stream.IntStream;
 import com.landawn.abacus.util.stream.ObjIteratorEx;
-import com.landawn.abacus.util.u.OptionalInt;
-import com.landawn.abacus.util.u;
 
 class IntMatrixTest extends MatrixTestSupport {
 
@@ -2925,7 +2925,7 @@ class IntMatrixTest extends MatrixTestSupport {
             final IntMatrix source = IntMatrix.wrap(new int[] { 1 });
             final Matrix<Integer> scalars = source.mapToObj(value -> value, int.class);
             assertSame(Integer.class, scalars.elementType());
-            assertEquals((int) 1, scalars.get(0, 0).intValue());
+            assertEquals(1, scalars.get(0, 0).intValue());
 
             final int[] arrayValue = { 1, 2 };
             final Matrix<int[]> arrays = source.mapToObj(value -> arrayValue, int[].class);
@@ -4459,8 +4459,9 @@ class IntMatrixTest extends MatrixTestSupport {
             m.mutateViaFlatArray(flatArray -> {
                 int max = Integer.MIN_VALUE;
                 for (int val : flatArray) {
-                    if (val > max)
+                    if (val > max) {
                         max = val;
+                    }
                 }
                 maxValues.add(max);
             });
@@ -7521,8 +7522,9 @@ class IntMatrixTest extends MatrixTestSupport {
             int[] sum = { 0 };
             m.accept(matrix -> {
                 IntList flat = matrix.flatten();
-                for (int i = 0; i < flat.size(); i++)
+                for (int i = 0; i < flat.size(); i++) {
                     sum[0] += flat.get(i);
+                }
             });
             assertEquals(10, sum[0]);
         }

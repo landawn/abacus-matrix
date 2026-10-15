@@ -27,16 +27,16 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import com.landawn.abacus.util.FloatList;
-import com.landawn.abacus.util.Sheet.Point;
 import com.landawn.abacus.util.Sheet;
+import com.landawn.abacus.util.Sheet.Point;
 import com.landawn.abacus.util.Throwables;
+import com.landawn.abacus.util.u;
+import com.landawn.abacus.util.u.OptionalDouble;
+import com.landawn.abacus.util.u.OptionalFloat;
 import com.landawn.abacus.util.stream.FloatIteratorEx;
 import com.landawn.abacus.util.stream.FloatStream;
 import com.landawn.abacus.util.stream.ObjIteratorEx;
 import com.landawn.abacus.util.stream.Stream;
-import com.landawn.abacus.util.u.OptionalDouble;
-import com.landawn.abacus.util.u.OptionalFloat;
-import com.landawn.abacus.util.u;
 
 class FloatMatrixTest extends MatrixTestSupport {
 
@@ -2624,7 +2624,7 @@ class FloatMatrixTest extends MatrixTestSupport {
             final FloatMatrix source = FloatMatrix.wrap(new float[] { 1 });
             final Matrix<Float> scalars = source.mapToObj(value -> value, float.class);
             assertSame(Float.class, scalars.elementType());
-            assertEquals((float) 1, scalars.get(0, 0).floatValue());
+            assertEquals(1, scalars.get(0, 0).floatValue());
 
             final int[] arrayValue = { 1, 2 };
             final Matrix<int[]> arrays = source.mapToObj(value -> arrayValue, int[].class);
@@ -6963,8 +6963,9 @@ class FloatMatrixTest extends MatrixTestSupport {
             float[] sum = { 0 };
             m.accept(matrix -> {
                 FloatList flat = matrix.flatten();
-                for (int i = 0; i < flat.size(); i++)
+                for (int i = 0; i < flat.size(); i++) {
                     sum[0] += flat.get(i);
+                }
             });
             assertEquals(10.0f, sum[0], 0.001f);
         }
