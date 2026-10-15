@@ -1,0 +1,3567 @@
+{
+  "baselineMethods": 6837,
+  "removed": [
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+        "className": "AbstractMatrixTest.AbstractMatrix2025Test",
+        "method": "testCopyRegion_outOfBounds",
+        "signature": "testCopyRegion_outOfBounds()",
+        "line": 1088
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+        "className": "AbstractMatrixTest.AbstractMatrix2510Test",
+        "method": "testCopyRegion_outOfBounds",
+        "signature": "testCopyRegion_outOfBounds()",
+        "line": 2111
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+        "className": "AbstractMatrixTest.CopyRegionTests",
+        "method": "testCopyRegion_OutOfBounds",
+        "signature": "testCopyRegion_OutOfBounds()",
+        "line": 1259
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+        "className": "AbstractMatrixTest.AbstractMatrix2512Test",
+        "method": "test_reshape_singleParameter",
+        "signature": "test_reshape_singleParameter()",
+        "line": 3364
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+        "className": "AbstractMatrixTest.JavadocExampleUtilsTest_AbstractMatrix",
+        "method": "testAbstractMatrix_reshape_singleArg",
+        "signature": "testAbstractMatrix_reshape_singleArg()",
+        "line": 3674
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+        "className": "AbstractMatrixTest.ReshapeAndPadToColumnCountTests",
+        "method": "testReshape_SingleArg",
+        "signature": "testReshape_SingleArg()",
+        "line": 2119
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+        "className": "AbstractMatrixTest.AbstractMatrix2025Test",
+        "method": "testReshapeAndPadToColumnCount_notEvenlyDivisible",
+        "signature": "testReshapeAndPadToColumnCount_notEvenlyDivisible()",
+        "line": 1716
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+        "className": "AbstractMatrixTest.AbstractMatrix2510Test",
+        "method": "testReshapeAndPadToColumnCount_needsPadding",
+        "signature": "testReshapeAndPadToColumnCount_needsPadding()",
+        "line": 2269
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+        "className": "AbstractMatrixTest.ReshapeAndPadToColumnCountTests",
+        "method": "testReshapeAndPadToColumnCount_NeedsPadding",
+        "signature": "testReshapeAndPadToColumnCount_NeedsPadding()",
+        "line": 2083
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+        "className": "AbstractMatrixTest.AbstractMatrix2025Test",
+        "method": "testIsEmpty_emptyMatrix",
+        "signature": "testIsEmpty_emptyMatrix()",
+        "line": 1005
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+        "className": "AbstractMatrixTest.AbstractMatrix2025Test",
+        "method": "testEmptyMatrix_operations",
+        "signature": "testEmptyMatrix_operations()",
+        "line": 1647
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+        "className": "AbstractMatrixTest.FlattenTests",
+        "method": "testEmptyMatrix_Operations",
+        "signature": "testEmptyMatrix_Operations()",
+        "line": 2526
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2512Test",
+        "method": "test_transpose",
+        "signature": "test_transpose()",
+        "line": 5129
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2025Test",
+        "method": "testTranspose",
+        "signature": "testTranspose()",
+        "line": 2114
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.TransposeTests",
+        "method": "testTranspose_Shape2By3",
+        "signature": "testTranspose_Shape2By3()",
+        "line": 3683
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2512Test",
+        "method": "test_repeatElements",
+        "signature": "test_repeatElements()",
+        "line": 5187
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2511Test",
+        "method": "testRepeatElements",
+        "signature": "testRepeatElements()",
+        "line": 4376
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.RepeatElementsTests",
+        "method": "testRepeatElements_Shape2By2_RepeatedBlockAndAdjacentValue",
+        "signature": "testRepeatElements_Shape2By2_RepeatedBlockAndAdjacentValue()",
+        "line": 3846
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2512Test",
+        "method": "test_stackHorizontally",
+        "signature": "test_stackHorizontally()",
+        "line": 5255
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2510Test",
+        "method": "testHstack",
+        "signature": "testHstack()",
+        "line": 3618
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.StackHorizontallyTests",
+        "method": "testStackHorizontally_Shape2By1",
+        "signature": "testStackHorizontally_Shape2By1()",
+        "line": 4568
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.JavadocExampleMatrixGroup1Test_BooleanMatrix",
+        "method": "testBooleanMatrix_or",
+        "signature": "testBooleanMatrix_or()",
+        "line": 5637
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest",
+        "method": "testOr",
+        "signature": "testOr()",
+        "line": 6001
+      },
+      "reason": "Equal AST body and fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.OrTests",
+        "method": "testOr",
+        "signature": "testOr()",
+        "line": 4229
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.JavadocExampleMatrixGroup1Test_BooleanMatrix",
+        "method": "testBooleanMatrix_and",
+        "signature": "testBooleanMatrix_and()",
+        "line": 5625
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest",
+        "method": "testAnd",
+        "signature": "testAnd()",
+        "line": 5966
+      },
+      "reason": "Equal AST body and fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.AndTests",
+        "method": "testAnd",
+        "signature": "testAnd()",
+        "line": 4163
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.JavadocExampleMatrixGroup1Test_BooleanMatrix",
+        "method": "testBooleanMatrix_xor",
+        "signature": "testBooleanMatrix_xor()",
+        "line": 5649
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest",
+        "method": "testXor",
+        "signature": "testXor()",
+        "line": 6028
+      },
+      "reason": "Equal AST body and fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.XorTests",
+        "method": "testXor",
+        "signature": "testXor()",
+        "line": 4289
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2512Test",
+        "method": "test_repeatMatrix",
+        "signature": "test_repeatMatrix()",
+        "line": 5199
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2511Test",
+        "method": "testRepeatMatrix",
+        "signature": "testRepeatMatrix()",
+        "line": 4399
+      },
+      "reason": "Equal AST body and fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.RepeatMatrixTests",
+        "method": "testRepeatMatrix_Shape2By2_DiagonalTileBoundary",
+        "signature": "testRepeatMatrix_Shape2By2_DiagonalTileBoundary()",
+        "line": 3964
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2510Test",
+        "method": "testBoxed",
+        "signature": "testBoxed()",
+        "line": 3640
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2511Test",
+        "method": "testBoxed",
+        "signature": "testBoxed()",
+        "line": 4453
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BoxedTests",
+        "method": "testBoxed_Shape2By2",
+        "signature": "testBoxed_Shape2By2()",
+        "line": 4650
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2511Test",
+        "method": "testTranspose_squareMatrix",
+        "signature": "testTranspose_squareMatrix()",
+        "line": 4346
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2025Test",
+        "method": "testTranspose_square",
+        "signature": "testTranspose_square()",
+        "line": 2128
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.TransposeTests",
+        "method": "testTranspose_Square",
+        "signature": "testTranspose_Square()",
+        "line": 3697
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2510Test",
+        "method": "testReshape_twoArgs",
+        "signature": "testReshape_twoArgs()",
+        "line": 3536
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2511Test",
+        "method": "testReshape",
+        "signature": "testReshape()",
+        "line": 4356
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.ReshapeTests",
+        "method": "testReshape_Shape1By4",
+        "signature": "testReshape_Shape1By4()",
+        "line": 6224
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2512Test",
+        "method": "test_rotate90",
+        "signature": "test_rotate90()",
+        "line": 5101
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2025Test",
+        "method": "testRotate90",
+        "signature": "testRotate90()",
+        "line": 2076
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.Rotate90Tests",
+        "method": "testRotate90_Shape2By2",
+        "signature": "testRotate90_Shape2By2()",
+        "line": 3534
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2512Test",
+        "method": "test_ofMainDiagonal",
+        "signature": "test_ofMainDiagonal()",
+        "line": 4730
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2025Test",
+        "method": "testDiagonalLU2RD",
+        "signature": "testDiagonalLU2RD()",
+        "line": 1417
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.OfMainDiagonalTests",
+        "method": "testDiagonalLU2RD_Values",
+        "signature": "testDiagonalLU2RD_Values()",
+        "line": 359
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2512Test",
+        "method": "test_ofAntiDiagonal",
+        "signature": "test_ofAntiDiagonal()",
+        "line": 4747
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2025Test",
+        "method": "testDiagonalRU2LD",
+        "signature": "testDiagonalRU2LD()",
+        "line": 1429
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.OfAntiDiagonalTests",
+        "method": "testDiagonalRU2LD_Values",
+        "signature": "testDiagonalRU2LD_Values()",
+        "line": 400
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2512Test",
+        "method": "test_constructor_validArray",
+        "signature": "test_constructor_validArray()",
+        "line": 4684
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2510Test",
+        "method": "testConstructor_withValidArray",
+        "signature": "testConstructor_withValidArray()",
+        "line": 3025
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.ConstructorTests",
+        "method": "testConstructor_WithValidArray_Values",
+        "signature": "testConstructor_WithValidArray_Values()",
+        "line": 61
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2512Test",
+        "method": "test_rotate270",
+        "signature": "test_rotate270()",
+        "line": 5121
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2025Test",
+        "method": "testRotate270",
+        "signature": "testRotate270()",
+        "line": 2100
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.Rotate270Tests",
+        "method": "testRotate270_Shape2By2",
+        "signature": "testRotate270_Shape2By2()",
+        "line": 3643
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2512Test",
+        "method": "test_flipVertically",
+        "signature": "test_flipVertically()",
+        "line": 5149
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2510Test",
+        "method": "testFlipV",
+        "signature": "testFlipV()",
+        "line": 3512
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.FlipVerticallyTests",
+        "method": "testFlipVertically_Shape2By2",
+        "signature": "testFlipVertically_Shape2By2()",
+        "line": 3496
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2512Test",
+        "method": "test_streamV_columnRange",
+        "signature": "test_streamV_columnRange()",
+        "line": 5351
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2511Test",
+        "method": "testStreamV_withRange",
+        "signature": "testStreamV_withRange()",
+        "line": 4521
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.ColumnMajorStreamTests",
+        "method": "testColumnMajorStream_WithRange_Shape2By3",
+        "signature": "testColumnMajorStream_WithRange_Shape2By3()",
+        "line": 5334
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2512Test",
+        "method": "test_streamH_rowRange",
+        "signature": "test_streamH_rowRange()",
+        "line": 5326
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2511Test",
+        "method": "testStreamH_withRange",
+        "signature": "testStreamH_withRange()",
+        "line": 4503
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.RowMajorStreamTests",
+        "method": "testRowMajorStream_WithRange_Shape3By2",
+        "signature": "testRowMajorStream_WithRange_Shape3By2()",
+        "line": 5079
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2511Test",
+        "method": "testPrintln",
+        "signature": "testPrintln()",
+        "line": 4669
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2510Test",
+        "method": "testPrintln",
+        "signature": "testPrintln()",
+        "line": 3926
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.ToMultilineStringTests",
+        "method": "testToMultilineString_Shape2By2_ContainsElementText",
+        "signature": "testToMultilineString_Shape2By2_ContainsElementText()",
+        "line": 5859
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2512Test",
+        "method": "test_flipVerticallyInPlace",
+        "signature": "test_flipVerticallyInPlace()",
+        "line": 5165
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2510Test",
+        "method": "testReverseV",
+        "signature": "testReverseV()",
+        "line": 3492
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.FlipVerticallyInPlaceTests",
+        "method": "testFlipVerticallyInPlace_Shape2By2",
+        "signature": "testFlipVerticallyInPlace_Shape2By2()",
+        "line": 3350
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2512Test",
+        "method": "test_setColumn_invalidLength",
+        "signature": "test_setColumn_invalidLength()",
+        "line": 4904
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2025Test",
+        "method": "testSetColumn_wrongSize",
+        "signature": "testSetColumn_wrongSize()",
+        "line": 1672
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.SetColumnTests",
+        "method": "testSetColumn_WrongSize",
+        "signature": "testSetColumn_WrongSize()",
+        "line": 1261
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2512Test",
+        "method": "test_of_validArray",
+        "signature": "test_of_validArray()",
+        "line": 4708
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2025Test",
+        "method": "testWrap_withValidArray",
+        "signature": "testWrap_withValidArray()",
+        "line": 1374
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.WrapTests",
+        "method": "testWrap_WithValidArray",
+        "signature": "testWrap_WithValidArray()",
+        "line": 177
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest",
+        "method": "testEmpty",
+        "signature": "testEmpty()",
+        "line": 205
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2025Test",
+        "method": "testEmpty",
+        "signature": "testEmpty()",
+        "line": 1363
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.EmptyTests",
+        "method": "testEmpty",
+        "signature": "testEmpty()",
+        "line": 127
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2512Test",
+        "method": "test_of_singleRow",
+        "signature": "test_of_singleRow()",
+        "line": 4716
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.BooleanMatrix2511Test",
+        "method": "testWrap_withSingleRow",
+        "signature": "testWrap_withSingleRow()",
+        "line": 4006
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.WrapTests",
+        "method": "testWrap_WithSingleRow",
+        "signature": "testWrap_WithSingleRow()",
+        "line": 217
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2512Test",
+        "method": "test_transpose",
+        "signature": "test_transpose()",
+        "line": 5419
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2025Test",
+        "method": "testTranspose",
+        "signature": "testTranspose()",
+        "line": 2379
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.TransposeTests",
+        "method": "testTranspose_Shape2By3",
+        "signature": "testTranspose_Shape2By3()",
+        "line": 3881
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2512Test",
+        "method": "test_repeatElements",
+        "signature": "test_repeatElements()",
+        "line": 5477
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2511Test",
+        "method": "testRepeatElements",
+        "signature": "testRepeatElements()",
+        "line": 4603
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.RepeatElementsTests",
+        "method": "testRepeatElements_Shape2By2_RepeatedBlockAndAdjacentValue",
+        "signature": "testRepeatElements_Shape2By2_RepeatedBlockAndAdjacentValue()",
+        "line": 4037
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2512Test",
+        "method": "test_stackHorizontally",
+        "signature": "test_stackHorizontally()",
+        "line": 5545
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2510Test",
+        "method": "testHstack",
+        "signature": "testHstack()",
+        "line": 3719
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.StackHorizontallyTests",
+        "method": "testStackHorizontally_Shape2By1",
+        "signature": "testStackHorizontally_Shape2By1()",
+        "line": 4494
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2510Test",
+        "method": "testBoxed",
+        "signature": "testBoxed()",
+        "line": 3741
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2511Test",
+        "method": "testBoxed",
+        "signature": "testBoxed()",
+        "line": 4680
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.BoxedTests",
+        "method": "testBoxed_Shape2By2",
+        "signature": "testBoxed_Shape2By2()",
+        "line": 4786
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2511Test",
+        "method": "testTranspose_squareMatrix",
+        "signature": "testTranspose_squareMatrix()",
+        "line": 4573
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2025Test",
+        "method": "testTranspose_square",
+        "signature": "testTranspose_square()",
+        "line": 2393
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.TransposeTests",
+        "method": "testTranspose_Square",
+        "signature": "testTranspose_Square()",
+        "line": 3895
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2512Test",
+        "method": "test_ofMainDiagonal",
+        "signature": "test_ofMainDiagonal()",
+        "line": 5016
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2025Test",
+        "method": "testDiagonalLU2RD",
+        "signature": "testDiagonalLU2RD()",
+        "line": 1693
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.OfMainDiagonalTests",
+        "method": "testDiagonalLU2RD_Values",
+        "signature": "testDiagonalLU2RD_Values()",
+        "line": 647
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2510Test",
+        "method": "testReshape_twoArgs",
+        "signature": "testReshape_twoArgs()",
+        "line": 3637
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2511Test",
+        "method": "testReshape",
+        "signature": "testReshape()",
+        "line": 4583
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ReshapeTests",
+        "method": "testReshape_Shape1By4",
+        "signature": "testReshape_Shape1By4()",
+        "line": 6486
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2512Test",
+        "method": "test_zipWith_twoMatrices",
+        "signature": "test_zipWith_twoMatrices()",
+        "line": 5642
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2510Test",
+        "method": "testZipWith_two",
+        "signature": "testZipWith_two()",
+        "line": 3753
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ZipWithTests",
+        "method": "testZipWith_Two",
+        "signature": "testZipWith_Two()",
+        "line": 5026
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2512Test",
+        "method": "test_rotate90",
+        "signature": "test_rotate90()",
+        "line": 5391
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2025Test",
+        "method": "testRotate90",
+        "signature": "testRotate90()",
+        "line": 2341
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.Rotate90Tests",
+        "method": "testRotate90_Shape2By2",
+        "signature": "testRotate90_Shape2By2()",
+        "line": 3760
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2512Test",
+        "method": "test_ofAntiDiagonal",
+        "signature": "test_ofAntiDiagonal()",
+        "line": 5033
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2025Test",
+        "method": "testDiagonalRU2LD",
+        "signature": "testDiagonalRU2LD()",
+        "line": 1705
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.OfAntiDiagonalTests",
+        "method": "testDiagonalRU2LD_Values",
+        "signature": "testDiagonalRU2LD_Values()",
+        "line": 702
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2025Test",
+        "method": "testReverseH",
+        "signature": "testReverseH()",
+        "line": 2295
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest",
+        "method": "testFlipInPlaceHorizontally",
+        "signature": "testFlipInPlaceHorizontally()",
+        "line": 6254
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.FlipHorizontallyInPlaceTests",
+        "method": "testFlipInPlaceHorizontally",
+        "signature": "testFlipInPlaceHorizontally()",
+        "line": 3538
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2512Test",
+        "method": "test_constructor_validArray",
+        "signature": "test_constructor_validArray()",
+        "line": 4926
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2510Test",
+        "method": "testConstructor_withValidArray",
+        "signature": "testConstructor_withValidArray()",
+        "line": 3096
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ConstructorTests",
+        "method": "testConstructor_WithValidArray_Values",
+        "signature": "testConstructor_WithValidArray_Values()",
+        "line": 65
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2510Test",
+        "method": "testReverseH",
+        "signature": "testReverseH()",
+        "line": 3594
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest",
+        "method": "testFlipInPlaceHorizontally",
+        "signature": "testFlipInPlaceHorizontally()",
+        "line": 6254
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.FlipHorizontallyInPlaceTests",
+        "method": "testFlipInPlaceHorizontally",
+        "signature": "testFlipInPlaceHorizontally()",
+        "line": 3538
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2512Test",
+        "method": "test_rotate270",
+        "signature": "test_rotate270()",
+        "line": 5411
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2025Test",
+        "method": "testRotate270",
+        "signature": "testRotate270()",
+        "line": 2365
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.Rotate270Tests",
+        "method": "testRotate270_Shape2By2",
+        "signature": "testRotate270_Shape2By2()",
+        "line": 3851
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2512Test",
+        "method": "test_flipVertically",
+        "signature": "test_flipVertically()",
+        "line": 5439
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2510Test",
+        "method": "testFlipV",
+        "signature": "testFlipV()",
+        "line": 3613
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.FlipVerticallyTests",
+        "method": "testFlipVertically_Shape2By2",
+        "signature": "testFlipVertically_Shape2By2()",
+        "line": 3720
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2511Test",
+        "method": "testPrintln",
+        "signature": "testPrintln()",
+        "line": 4911
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2510Test",
+        "method": "testPrintln",
+        "signature": "testPrintln()",
+        "line": 4050
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ToMultilineStringTests",
+        "method": "testToMultilineString_Shape2By2",
+        "signature": "testToMultilineString_Shape2By2()",
+        "line": 6127
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2512Test",
+        "method": "test_flipVerticallyInPlace",
+        "signature": "test_flipVerticallyInPlace()",
+        "line": 5455
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2510Test",
+        "method": "testReverseV",
+        "signature": "testReverseV()",
+        "line": 3603
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.FlipVerticallyInPlaceTests",
+        "method": "testFlipVerticallyInPlace_Shape2By2",
+        "signature": "testFlipVerticallyInPlace_Shape2By2()",
+        "line": 3591
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2512Test",
+        "method": "test_get_byPoint",
+        "signature": "test_get_byPoint()",
+        "line": 5073
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2025Test",
+        "method": "testGetWithPoint",
+        "signature": "testGetWithPoint()",
+        "line": 1808
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.GetTests",
+        "method": "testGetWithPoint_Shape2By2",
+        "signature": "testGetWithPoint_Shape2By2()",
+        "line": 940
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2512Test",
+        "method": "test_of_validArray",
+        "signature": "test_of_validArray()",
+        "line": 4958
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2025Test",
+        "method": "testWrap_withValidArray",
+        "signature": "testWrap_withValidArray()",
+        "line": 1610
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.WrapTests",
+        "method": "testWrap_WithValidArray",
+        "signature": "testWrap_WithValidArray()",
+        "line": 212
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2512Test",
+        "method": "test_setColumn_invalidLength",
+        "signature": "test_setColumn_invalidLength()",
+        "line": 5184
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2025Test",
+        "method": "testSetColumn_wrongSize",
+        "signature": "testSetColumn_wrongSize()",
+        "line": 1948
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.SetColumnTests",
+        "method": "testSetColumn_WrongSize",
+        "signature": "testSetColumn_WrongSize()",
+        "line": 1611
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2512Test",
+        "method": "test_of_singleRow",
+        "signature": "test_of_singleRow()",
+        "line": 4966
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.ByteMatrix2511Test",
+        "method": "testWrap_withSingleRow",
+        "signature": "testWrap_withSingleRow()",
+        "line": 4130
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.WrapTests",
+        "method": "testWrap_WithSingleRow",
+        "signature": "testWrap_WithSingleRow()",
+        "line": 247
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2512Test",
+        "method": "test_repeatElements",
+        "signature": "test_repeatElements()",
+        "line": 5830
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2511Test",
+        "method": "testRepeatElements",
+        "signature": "testRepeatElements()",
+        "line": 4946
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.RepeatElementsTests",
+        "method": "testRepeatElements_Shape2By2_RepeatedBlockAndAdjacentValue",
+        "signature": "testRepeatElements_Shape2By2_RepeatedBlockAndAdjacentValue()",
+        "line": 4330
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2511Test",
+        "method": "testPad_withDefaultValue",
+        "signature": "testPad_withDefaultValue()",
+        "line": 4791
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2510Test",
+        "method": "testPad_withDefaultValue",
+        "signature": "testPad_withDefaultValue()",
+        "line": 3601
+      },
+      "reason": "Equal AST body and fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.ResizeTests",
+        "method": "testResize_WithDefaultValue_Shape1By2",
+        "signature": "testResize_WithDefaultValue_Shape1By2()",
+        "line": 3442
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2512Test",
+        "method": "test_stackHorizontally",
+        "signature": "test_stackHorizontally()",
+        "line": 5898
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2510Test",
+        "method": "testHstack",
+        "signature": "testHstack()",
+        "line": 3830
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.StackHorizontallyTests",
+        "method": "testStackHorizontally_Shape2By1",
+        "signature": "testStackHorizontally_Shape2By1()",
+        "line": 4833
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2511Test",
+        "method": "testUnbox_withNullElements",
+        "signature": "testUnbox_withNullElements()",
+        "line": 4349
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2510Test",
+        "method": "testUnbox_withNullElements",
+        "signature": "testUnbox_withNullElements()",
+        "line": 3248
+      },
+      "reason": "Equal AST body and fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.UnboxTests",
+        "method": "testUnbox_WithNullElements",
+        "signature": "testUnbox_WithNullElements()",
+        "line": 909
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2511Test",
+        "method": "testDiagonalLU2RD",
+        "signature": "testDiagonalLU2RD()",
+        "line": 4302
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2510Test",
+        "method": "testDiagonalLU2RD",
+        "signature": "testDiagonalLU2RD()",
+        "line": 3176
+      },
+      "reason": "Equal AST body and fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.OfMainDiagonalTests",
+        "method": "testOfMainDiagonal_Values_ZeroFillsOffDiagonal",
+        "signature": "testOfMainDiagonal_Values_ZeroFillsOffDiagonal()",
+        "line": 644
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2511Test",
+        "method": "testDiagonalRU2LD",
+        "signature": "testDiagonalRU2LD()",
+        "line": 4322
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2510Test",
+        "method": "testDiagonalRU2LD",
+        "signature": "testDiagonalRU2LD()",
+        "line": 3188
+      },
+      "reason": "Equal AST body and fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.OfAntiDiagonalTests",
+        "method": "testOfAntiDiagonal_Values_ZeroFillsOffDiagonal",
+        "signature": "testOfAntiDiagonal_Values_ZeroFillsOffDiagonal()",
+        "line": 692
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2510Test",
+        "method": "testBoxed",
+        "signature": "testBoxed()",
+        "line": 3852
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2511Test",
+        "method": "testBoxed",
+        "signature": "testBoxed()",
+        "line": 5023
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.BoxedTests",
+        "method": "testBoxed_Shape2By2",
+        "signature": "testBoxed_Shape2By2()",
+        "line": 5175
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2511Test",
+        "method": "testTranspose_squareMatrix",
+        "signature": "testTranspose_squareMatrix()",
+        "line": 4916
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2510Test",
+        "method": "testTranspose_square",
+        "signature": "testTranspose_square()",
+        "line": 3722
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.TransposeTests",
+        "method": "testTranspose_Square_Shape2By2",
+        "signature": "testTranspose_Square_Shape2By2()",
+        "line": 4227
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2512Test",
+        "method": "test_ofMainDiagonal",
+        "signature": "test_ofMainDiagonal()",
+        "line": 5363
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2510Test",
+        "method": "testDiagonalLU2RD",
+        "signature": "testDiagonalLU2RD()",
+        "line": 3176
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.OfMainDiagonalTests",
+        "method": "testOfMainDiagonal_Values_ZeroFillsOffDiagonal",
+        "signature": "testOfMainDiagonal_Values_ZeroFillsOffDiagonal()",
+        "line": 644
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2510Test",
+        "method": "testReshape_twoArgs",
+        "signature": "testReshape_twoArgs()",
+        "line": 3748
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2511Test",
+        "method": "testReshape",
+        "signature": "testReshape()",
+        "line": 4926
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.ReshapeTests",
+        "method": "testReshape_Shape1By4",
+        "signature": "testReshape_Shape1By4()",
+        "line": 6888
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2512Test",
+        "method": "test_rotate90",
+        "signature": "test_rotate90()",
+        "line": 5744
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2510Test",
+        "method": "testRotate90",
+        "signature": "testRotate90()",
+        "line": 3686
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.Rotate90Tests",
+        "method": "testRotate90_Shape2By2_DimensionsAndEveryCellValue",
+        "signature": "testRotate90_Shape2By2_DimensionsAndEveryCellValue()",
+        "line": 4009
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2511Test",
+        "method": "testPad_withDirections",
+        "signature": "testPad_withDirections()",
+        "line": 4815
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2510Test",
+        "method": "testPad_withDirections",
+        "signature": "testPad_withDirections()",
+        "line": 3625
+      },
+      "reason": "Equal AST body and fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.PadTests",
+        "method": "testPad_WithDirections",
+        "signature": "testPad_WithDirections()",
+        "line": 3607
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2512Test",
+        "method": "test_ofAntiDiagonal",
+        "signature": "test_ofAntiDiagonal()",
+        "line": 5380
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2510Test",
+        "method": "testDiagonalRU2LD",
+        "signature": "testDiagonalRU2LD()",
+        "line": 3188
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.OfAntiDiagonalTests",
+        "method": "testOfAntiDiagonal_Values_ZeroFillsOffDiagonal",
+        "signature": "testOfAntiDiagonal_Values_ZeroFillsOffDiagonal()",
+        "line": 692
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2512Test",
+        "method": "test_constructor_validArray",
+        "signature": "test_constructor_validArray()",
+        "line": 5281
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2510Test",
+        "method": "testConstructor_withValidArray",
+        "signature": "testConstructor_withValidArray()",
+        "line": 3066
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.ConstructorTests",
+        "method": "testConstructor_WithValidArray_Values",
+        "signature": "testConstructor_WithValidArray_Values()",
+        "line": 63
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2510Test",
+        "method": "testReverseH",
+        "signature": "testReverseH()",
+        "line": 3646
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest",
+        "method": "testFlipInPlaceHorizontally",
+        "signature": "testFlipInPlaceHorizontally()",
+        "line": 6658
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.FlipHorizontallyInPlaceTests",
+        "method": "testFlipInPlaceHorizontally",
+        "signature": "testFlipInPlaceHorizontally()",
+        "line": 3746
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2512Test",
+        "method": "test_flipVertically",
+        "signature": "test_flipVertically()",
+        "line": 5792
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2510Test",
+        "method": "testFlipV",
+        "signature": "testFlipV()",
+        "line": 3675
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.FlipVerticallyTests",
+        "method": "testFlipVertically_Shape2By2",
+        "signature": "testFlipVertically_Shape2By2()",
+        "line": 3947
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2512Test",
+        "method": "test_rotate270",
+        "signature": "test_rotate270()",
+        "line": 5764
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2510Test",
+        "method": "testRotate270",
+        "signature": "testRotate270()",
+        "line": 3710
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.Rotate270Tests",
+        "method": "testRotate270_Shape2By2_DimensionsAndEveryCellValue",
+        "signature": "testRotate270_Shape2By2_DimensionsAndEveryCellValue()",
+        "line": 4124
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2511Test",
+        "method": "testPrintln",
+        "signature": "testPrintln()",
+        "line": 5266
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2510Test",
+        "method": "testPrintln",
+        "signature": "testPrintln()",
+        "line": 4159
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.ToMultilineStringTests",
+        "method": "testToMultilineString_Shape2By2",
+        "signature": "testToMultilineString_Shape2By2()",
+        "line": 6448
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2512Test",
+        "method": "test_flipVerticallyInPlace",
+        "signature": "test_flipVerticallyInPlace()",
+        "line": 5808
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2510Test",
+        "method": "testReverseV",
+        "signature": "testReverseV()",
+        "line": 3655
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.FlipVerticallyInPlaceTests",
+        "method": "testFlipVerticallyInPlace_Shape2By2",
+        "signature": "testFlipVerticallyInPlace_Shape2By2()",
+        "line": 3799
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2512Test",
+        "method": "test_of_validArray",
+        "signature": "test_of_validArray()",
+        "line": 5305
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2510Test",
+        "method": "testWrap_withValidArray",
+        "signature": "testWrap_withValidArray()",
+        "line": 3102
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.WrapTests",
+        "method": "testWrap_WithValidArray_Values",
+        "signature": "testWrap_WithValidArray_Values()",
+        "line": 234
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2512Test",
+        "method": "test_of_singleRow",
+        "signature": "test_of_singleRow()",
+        "line": 5313
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.CharMatrix2511Test",
+        "method": "testWrap_withSingleRow",
+        "signature": "testWrap_withSingleRow()",
+        "line": 4239
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.WrapTests",
+        "method": "testWrap_WithSingleRow",
+        "signature": "testWrap_WithSingleRow()",
+        "line": 270
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+        "className": "DoubleMatrixTest.JavadocExampleMatrixGroup2Test_DoubleMatrix",
+        "method": "testDoubleMatrix_flipVertically",
+        "signature": "testDoubleMatrix_flipVertically()",
+        "line": 5976
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+        "className": "DoubleMatrixTest.JavadocExampleMatrixTest_DoubleMatrix",
+        "method": "testDoubleMatrixFlipV",
+        "signature": "testDoubleMatrixFlipV()",
+        "line": 6105
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+        "className": "DoubleMatrixTest.FlipVerticallyTests",
+        "method": "testDoubleMatrixFlipV",
+        "signature": "testDoubleMatrixFlipV()",
+        "line": 3813
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+        "className": "DoubleMatrixTest.DoubleMatrix2511Test",
+        "method": "testWrap_withEmptyRows",
+        "signature": "testWrap_withEmptyRows()",
+        "line": 4524
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+        "className": "DoubleMatrixTest.ReviewBugfixTests",
+        "method": "testDiagonalStream_Nx0MatrixThrowsBecauseNotSquare",
+        "signature": "testDiagonalStream_Nx0MatrixThrowsBecauseNotSquare()",
+        "line": 6259
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+        "className": "DoubleMatrixTest.MainDiagonalStreamTests",
+        "method": "testDiagonalStream_Nx0MatrixThrowsBecauseNotSquare",
+        "signature": "testDiagonalStream_Nx0MatrixThrowsBecauseNotSquare()",
+        "line": 5466
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+        "className": "FloatMatrixTest.FloatMatrix2510Test",
+        "method": "testPrintln",
+        "signature": "testPrintln()",
+        "line": 4010
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+        "className": "FloatMatrixTest.FloatMatrix2512Test",
+        "method": "test_println",
+        "signature": "test_println()",
+        "line": 5197
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+        "className": "FloatMatrixTest.ToMultilineStringTests",
+        "method": "testToMultilineString_Shape2By2_NonemptyRendering",
+        "signature": "testToMultilineString_Shape2By2_NonemptyRendering()",
+        "line": 5855
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+        "className": "FloatMatrixTest.FloatMatrix2511Test",
+        "method": "testWrap_withEmptyRows",
+        "signature": "testWrap_withEmptyRows()",
+        "line": 4040
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+        "className": "FloatMatrixTest.ReviewBugfixTests",
+        "method": "testDiagonalStream_Nx0MatrixThrowsBecauseNotSquare",
+        "signature": "testDiagonalStream_Nx0MatrixThrowsBecauseNotSquare()",
+        "line": 6046
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+        "className": "FloatMatrixTest.MainDiagonalStreamTests",
+        "method": "testDiagonalStream_Nx0MatrixThrowsBecauseNotSquare",
+        "signature": "testDiagonalStream_Nx0MatrixThrowsBecauseNotSquare()",
+        "line": 5064
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.IntMatrix2512Test",
+        "method": "test_transpose",
+        "signature": "test_transpose()",
+        "line": 4684
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.IntMatrix2025Test",
+        "method": "testTranspose",
+        "signature": "testTranspose()",
+        "line": 2137
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.TransposeTests",
+        "method": "testTranspose",
+        "signature": "testTranspose()",
+        "line": 3885
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.IntMatrix2512Test",
+        "method": "test_copy",
+        "signature": "test_copy()",
+        "line": 4565
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.IntMatrix2025Test",
+        "method": "testCopy",
+        "signature": "testCopy()",
+        "line": 1976
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.CopyTests",
+        "method": "testCopy_Shape2By2",
+        "signature": "testCopy_Shape2By2()",
+        "line": 3077
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.IntMatrix2512Test",
+        "method": "test_transpose_square",
+        "signature": "test_transpose_square()",
+        "line": 4696
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.IntMatrix2025Test",
+        "method": "testTranspose_square",
+        "signature": "testTranspose_square()",
+        "line": 2151
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.TransposeTests",
+        "method": "testTranspose_Square",
+        "signature": "testTranspose_Square()",
+        "line": 3899
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.IntMatrix2512Test",
+        "method": "test_flipHorizontallyInPlace",
+        "signature": "test_flipHorizontallyInPlace()",
+        "line": 4643
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest",
+        "method": "testReverseH",
+        "signature": "testReverseH()",
+        "line": 745
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.FlipHorizontallyInPlaceTests",
+        "method": "testReverseH",
+        "signature": "testReverseH()",
+        "line": 3614
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.IntMatrix2512Test",
+        "method": "test_setColumn_invalidLength",
+        "signature": "test_setColumn_invalidLength()",
+        "line": 4346
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.IntMatrix2025Test",
+        "method": "testSetColumn_wrongSize",
+        "signature": "testSetColumn_wrongSize()",
+        "line": 1755
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.SetColumnTests",
+        "method": "testSetColumn_WrongSize",
+        "signature": "testSetColumn_WrongSize()",
+        "line": 1786
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.IntMatrix2512Test",
+        "method": "test_repeatElements_invalidRepeats",
+        "signature": "test_repeatElements_invalidRepeats()",
+        "line": 4751
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.IntMatrix2025Test",
+        "method": "testRepeatElements_invalidArguments",
+        "signature": "testRepeatElements_invalidArguments()",
+        "line": 2194
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.RepeatElementsTests",
+        "method": "testRepeatElements_InvalidArguments",
+        "signature": "testRepeatElements_InvalidArguments()",
+        "line": 4113
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.IntMatrix2512Test",
+        "method": "test_repeatMatrix_invalidRepeats",
+        "signature": "test_repeatMatrix_invalidRepeats()",
+        "line": 4771
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.IntMatrix2025Test",
+        "method": "testRepeatMatrix_invalidArguments",
+        "signature": "testRepeatMatrix_invalidArguments()",
+        "line": 2201
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.RepeatMatrixTests",
+        "method": "testRepeatMatrix_InvalidArguments",
+        "signature": "testRepeatMatrix_InvalidArguments()",
+        "line": 4212
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.IntMatrix2512Test",
+        "method": "test_setMainDiagonal_nonSquare",
+        "signature": "test_setMainDiagonal_nonSquare()",
+        "line": 4392
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.IntMatrix2025Test",
+        "method": "testSetLU2RD_nonSquare",
+        "signature": "testSetLU2RD_nonSquare()",
+        "line": 1793
+      },
+      "reason": "Equal AST body and fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.SetMainDiagonalTests",
+        "method": "testSetMainDiagonal_NonSquare",
+        "signature": "testSetMainDiagonal_NonSquare()",
+        "line": 2063
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.LongMatrix2512Test",
+        "method": "test_transpose",
+        "signature": "test_transpose()",
+        "line": 5332
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.LongMatrix2025Test",
+        "method": "testTranspose",
+        "signature": "testTranspose()",
+        "line": 2551
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.TransposeTests",
+        "method": "testTranspose_Shape2By3",
+        "signature": "testTranspose_Shape2By3()",
+        "line": 3708
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.LongMatrix2025Test",
+        "method": "testTranspose_square",
+        "signature": "testTranspose_square()",
+        "line": 2565
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.LongMatrix2510Test",
+        "method": "testTranspose_square",
+        "signature": "testTranspose_square()",
+        "line": 3479
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.TransposeTests",
+        "method": "testTranspose_Square",
+        "signature": "testTranspose_Square()",
+        "line": 3737
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.LongMatrix2512Test",
+        "method": "test_copy",
+        "signature": "test_copy()",
+        "line": 5190
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.LongMatrix2025Test",
+        "method": "testCopy",
+        "signature": "testCopy()",
+        "line": 2359
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.CopyTests",
+        "method": "testCopy_Shape2By2",
+        "signature": "testCopy_Shape2By2()",
+        "line": 2897
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.LongMatrix2512Test",
+        "method": "test_transpose_square",
+        "signature": "test_transpose_square()",
+        "line": 5344
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.LongMatrix2510Test",
+        "method": "testTranspose_square",
+        "signature": "testTranspose_square()",
+        "line": 3479
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.TransposeTests",
+        "method": "testTranspose_Square",
+        "signature": "testTranspose_Square()",
+        "line": 3737
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.LongMatrix2511Test",
+        "method": "testDiagonalRU2LD",
+        "signature": "testDiagonalRU2LD()",
+        "line": 3865
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.LongMatrix2025Test",
+        "method": "testDiagonalRU2LD",
+        "signature": "testDiagonalRU2LD()",
+        "line": 1857
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.OfAntiDiagonalTests",
+        "method": "testDiagonalRU2LD_Values",
+        "signature": "testDiagonalRU2LD_Values()",
+        "line": 771
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.LongMatrix2510Test",
+        "method": "testEquals",
+        "signature": "testEquals()",
+        "line": 3802
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.LongMatrix2511Test",
+        "method": "testEquals",
+        "signature": "testEquals()",
+        "line": 4496
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.EqualsTests",
+        "method": "testEquals_Shape2By2_NullInput_DifferentValuesNullAndType",
+        "signature": "testEquals_Shape2By2_NullInput_DifferentValuesNullAndType()",
+        "line": 6348
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.LongMatrix2512Test",
+        "method": "test_flipHorizontallyInPlace",
+        "signature": "test_flipHorizontallyInPlace()",
+        "line": 5268
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.LongMatrix2511Test",
+        "method": "testReverseH",
+        "signature": "testReverseH()",
+        "line": 4203
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.FlipHorizontallyInPlaceTests",
+        "method": "testFlipHorizontallyInPlace_Shape2By3",
+        "signature": "testFlipHorizontallyInPlace_Shape2By3()",
+        "line": 3351
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.LongMatrix2512Test",
+        "method": "test_setColumn_invalidLength",
+        "signature": "test_setColumn_invalidLength()",
+        "line": 4970
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.LongMatrix2025Test",
+        "method": "testSetColumn_wrongSize",
+        "signature": "testSetColumn_wrongSize()",
+        "line": 2109
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.SetColumnTests",
+        "method": "testSetColumn_WrongSize",
+        "signature": "testSetColumn_WrongSize()",
+        "line": 1647
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.LongMatrix2512Test",
+        "method": "test_repeatElements_invalidRepeats",
+        "signature": "test_repeatElements_invalidRepeats()",
+        "line": 5404
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.LongMatrix2025Test",
+        "method": "testRepeatElements_invalidArguments",
+        "signature": "testRepeatElements_invalidArguments()",
+        "line": 2639
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.RepeatElementsTests",
+        "method": "testRepeatElements_InvalidArguments",
+        "signature": "testRepeatElements_InvalidArguments()",
+        "line": 3921
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.LongMatrix2512Test",
+        "method": "test_repeatMatrix_invalidRepeats",
+        "signature": "test_repeatMatrix_invalidRepeats()",
+        "line": 5424
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.LongMatrix2025Test",
+        "method": "testRepeatMatrix_invalidArguments",
+        "signature": "testRepeatMatrix_invalidArguments()",
+        "line": 2667
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.RepeatMatrixTests",
+        "method": "testRepeatMatrix_InvalidArguments",
+        "signature": "testRepeatMatrix_InvalidArguments()",
+        "line": 4030
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.LongMatrix2512Test",
+        "method": "test_random",
+        "signature": "test_random()",
+        "line": 4669
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.LongMatrix2511Test",
+        "method": "testRandom",
+        "signature": "testRandom()",
+        "line": 3857
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.RandomRowTests",
+        "method": "testRandomRow_Values_SingleRowDimensionsAndValues",
+        "signature": "testRandomRow_Values_SingleRowDimensionsAndValues()",
+        "line": 471
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+        "className": "MatricesTest.Matrices2511Test",
+        "method": "testZip_collection_withParallel",
+        "signature": "testZip_collection_withParallel()",
+        "line": 4160
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+        "className": "MatricesTest.Matrices2511Test",
+        "method": "testZip_IntMatrix_collection",
+        "signature": "testZip_IntMatrix_collection()",
+        "line": 4053
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+        "className": "MatricesTest.ZipTests",
+        "method": "testZip_IntMatrix_Collection",
+        "signature": "testZip_IntMatrix_Collection()",
+        "line": 4014
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+        "className": "MatrixTest.Matrix2511Test",
+        "method": "testDiagonal_bothDiagonals_integers",
+        "signature": "testDiagonal_bothDiagonals_integers()",
+        "line": 4885
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+        "className": "MatrixTest.Matrix2510Test",
+        "method": "testDiagonal_bothDiagonals",
+        "signature": "testDiagonal_bothDiagonals()",
+        "line": 4156
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+        "className": "MatrixTest.OfDiagonalsTests",
+        "method": "testDiagonal_BothDiagonals",
+        "signature": "testDiagonal_BothDiagonals()",
+        "line": 780
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+        "className": "MatrixTest.Matrix2511Test",
+        "method": "testDiagonalLU2RD_strings",
+        "signature": "testDiagonalLU2RD_strings()",
+        "line": 4860
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+        "className": "MatrixTest.Matrix2512Test",
+        "method": "test_ofMainDiagonal_createsMainDiagonal",
+        "signature": "test_ofMainDiagonal_createsMainDiagonal()",
+        "line": 6286
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+        "className": "MatrixTest.OfMainDiagonalTests",
+        "method": "testOfMainDiagonal_CreatesMainDiagonal",
+        "signature": "testOfMainDiagonal_CreatesMainDiagonal()",
+        "line": 545
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+        "className": "MatrixTest.Matrix2512Test",
+        "method": "test_ofAntiDiagonal_createsAntiDiagonal",
+        "signature": "test_ofAntiDiagonal_createsAntiDiagonal()",
+        "line": 6299
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+        "className": "MatrixTest.Matrix2511Test",
+        "method": "testDiagonalRU2LD_integers",
+        "signature": "testDiagonalRU2LD_integers()",
+        "line": 4872
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+        "className": "MatrixTest.OfAntiDiagonalTests",
+        "method": "testDiagonalRU2LD_Integers",
+        "signature": "testDiagonalRU2LD_Integers()",
+        "line": 665
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ParallelMode2512Test",
+        "method": "test_valueOf_invalidValue",
+        "signature": "test_valueOf_invalidValue()",
+        "line": 875
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest",
+        "method": "testValueOfWithInvalidName",
+        "signature": "testValueOfWithInvalidName()",
+        "line": 49
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedByParameterizedReplacement": true
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ParallelMode2025Test",
+        "method": "testValueOf_CaseSensitive",
+        "signature": "testValueOf_CaseSensitive()",
+        "line": 244
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ParallelMode2512Test",
+        "method": "test_valueOf_caseSensitive",
+        "signature": "test_valueOf_caseSensitive()",
+        "line": 880
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedByParameterizedReplacement": true
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+        "className": "ShortMatrixTest.ShortMatrix2511Test",
+        "method": "testDiagonalRU2LD",
+        "signature": "testDiagonalRU2LD()",
+        "line": 4246
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+        "className": "ShortMatrixTest",
+        "method": "testDiagonalRU2LD",
+        "signature": "testDiagonalRU2LD()",
+        "line": 301
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+        "className": "ShortMatrixTest.OfAntiDiagonalTests",
+        "method": "testDiagonalRU2LD",
+        "signature": "testDiagonalRU2LD()",
+        "line": 629
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+        "className": "ShortMatrixTest.ShortMatrix2511Test",
+        "method": "testReverseH",
+        "signature": "testReverseH()",
+        "line": 4650
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+        "className": "ShortMatrixTest",
+        "method": "testReverseH",
+        "signature": "testReverseH()",
+        "line": 878
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+        "className": "ShortMatrixTest.FlipHorizontallyInPlaceTests",
+        "method": "testReverseH",
+        "signature": "testReverseH()",
+        "line": 3256
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+        "className": "ShortMatrixTest.ShortMatrix2510Test",
+        "method": "testEquals",
+        "signature": "testEquals()",
+        "line": 4132
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+        "className": "ShortMatrixTest.ShortMatrix2511Test",
+        "method": "testEquals",
+        "signature": "testEquals()",
+        "line": 4949
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+        "className": "ShortMatrixTest.EqualsTests",
+        "method": "testEquals_Shape2By2_NullInput",
+        "signature": "testEquals_Shape2By2_NullInput()",
+        "line": 6614
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+        "className": "ShortMatrixTest.ShortMatrix2512Test",
+        "method": "test_constructor_withEmptyArray",
+        "signature": "test_constructor_withEmptyArray()",
+        "line": 5053
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+        "className": "ShortMatrixTest.ShortMatrix2025Test",
+        "method": "testConstructor_withEmptyArray",
+        "signature": "testConstructor_withEmptyArray()",
+        "line": 1924
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+        "className": "ShortMatrixTest.ConstructorTests",
+        "method": "testConstructor_WithEmptyArray",
+        "signature": "testConstructor_WithEmptyArray()",
+        "line": 97
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+        "className": "ShortMatrixTest.ShortMatrix2512Test",
+        "method": "test_random_createsRandomMatrix",
+        "signature": "test_random_createsRandomMatrix()",
+        "line": 5100
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+        "className": "ShortMatrixTest.ShortMatrix2511Test",
+        "method": "testRandom",
+        "signature": "testRandom()",
+        "line": 4226
+      },
+      "reason": "Entire AST body retained as a prefix of a stronger test in the same fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+        "className": "ShortMatrixTest.RandomRowTests",
+        "method": "testRandom_Values",
+        "signature": "testRandom_Values()",
+        "line": 321
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+        "className": "ShortMatrixTest.ShortMatrix2512Test",
+        "method": "test_diagonal_withBothNull_throws",
+        "signature": "test_diagonal_withBothNull_throws()",
+        "line": 5187
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+        "className": "ShortMatrixTest.ShortMatrix2025Test",
+        "method": "testDiagonal_withBothNull",
+        "signature": "testDiagonal_withBothNull()",
+        "line": 2071
+      },
+      "reason": "Equal AST body and fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+        "className": "ShortMatrixTest.OfDiagonalsTests",
+        "method": "testDiagonal_WithBothNull",
+        "signature": "testDiagonal_WithBothNull()",
+        "line": 766
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+        "className": "ShortMatrixTest.ShortMatrix2512Test",
+        "method": "test_of_withNullArray",
+        "signature": "test_of_withNullArray()",
+        "line": 5089
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+        "className": "ShortMatrixTest.ShortMatrix2025Test",
+        "method": "testWrap_withNullArray",
+        "signature": "testWrap_withNullArray()",
+        "line": 1941
+      },
+      "reason": "Equal AST body and fixture context",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+        "className": "ShortMatrixTest.WrapTests",
+        "method": "testWrap_WithNullArray",
+        "signature": "testWrap_WithNullArray()",
+        "line": 231
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+        "className": "AbstractMatrixTest.ConstructorTests",
+        "method": "testConstructor_nullArray",
+        "signature": "testConstructor_nullArray()",
+        "line": 132
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.WrapTests",
+        "method": "testOf_withNullArray",
+        "signature": "testOf_withNullArray()",
+        "line": 331
+      },
+      "reason": "Reviewed cross-file duplicate: self-contained IntMatrix case with identical inputs and assertions",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.WrapTests",
+        "method": "testWrap_WithNullArray",
+        "signature": "testWrap_WithNullArray()",
+        "line": 246
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+        "className": "AbstractMatrixTest.MainDiagonalStreamTests",
+        "method": "testStreamLU2RD_nonSquare",
+        "signature": "testStreamLU2RD_nonSquare()",
+        "line": 3929
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.MainDiagonalStreamTests",
+        "method": "testStreamLU2RD_nonSquare_Shape1By2_ArrayValues",
+        "signature": "testStreamLU2RD_nonSquare_Shape1By2_ArrayValues()",
+        "line": 5489
+      },
+      "reason": "Reviewed cross-file duplicate: self-contained IntMatrix case with identical inputs and assertions",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.MainDiagonalStreamTests",
+        "method": "testMainDiagonalStream_NonSquare_Shape1By2_ArrayValues",
+        "signature": "testMainDiagonalStream_NonSquare_Shape1By2_ArrayValues()",
+        "line": 5531
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+        "className": "AbstractMatrixTest.AntiDiagonalStreamTests",
+        "method": "testStreamRU2LD_nonSquare",
+        "signature": "testStreamRU2LD_nonSquare()",
+        "line": 3961
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.AntiDiagonalStreamTests",
+        "method": "testStreamRU2LD_nonSquare_Shape1By2_ArrayValues",
+        "signature": "testStreamRU2LD_nonSquare_Shape1By2_ArrayValues()",
+        "line": 5597
+      },
+      "reason": "Reviewed cross-file duplicate: self-contained IntMatrix case with identical inputs and assertions",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.AntiDiagonalStreamTests",
+        "method": "testAntiDiagonalStream_NonSquare_Shape1By2_ArrayValues",
+        "signature": "testAntiDiagonalStream_NonSquare_Shape1By2_ArrayValues()",
+        "line": 5640
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+        "className": "MatricesTest.GetParallelModeTests",
+        "method": "testGetParallelMode_returnsCurrentSetting",
+        "signature": "testGetParallelMode_returnsCurrentSetting()",
+        "line": 280
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+        "className": "MatricesTest.GetParallelModeTests",
+        "method": "testGetParallelMode_DefaultIsSequential"
+      },
+      "reason": "Same default-policy assertion with only the local variable name changed; corrected AUTO to documented FORCE_OFF default",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+        "className": "MatricesTest.GetParallelModeTests",
+        "method": "testGetParallelMode_DefaultIsSequential",
+        "signature": "testGetParallelMode_DefaultIsSequential()",
+        "line": 204
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+        "className": "MatricesTest.GetParallelModeTests",
+        "method": "testGetParallelMode_defaultValue",
+        "signature": "testGetParallelMode_defaultValue()",
+        "line": 208
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+        "className": "MatricesTest.GetParallelModeTests",
+        "method": "testGetParallelMode_DefaultIsSequential"
+      },
+      "reason": "Same default-policy assertion with only the local variable name changed; corrected AUTO to documented FORCE_OFF default",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+        "className": "MatricesTest.GetParallelModeTests",
+        "method": "testGetParallelMode_DefaultIsSequential",
+        "signature": "testGetParallelMode_DefaultIsSequential()",
+        "line": 204
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.EmptyTests",
+        "method": "testEmpty_EmptyMatrix_Identity",
+        "signature": "testEmpty_EmptyMatrix_Identity()",
+        "line": 153
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.EmptyTests",
+        "method": "testEmpty",
+        "signature": "testEmpty()",
+        "line": 127
+      },
+      "reason": "Reviewed redundant singleton case: the retained test has the same empty(), isEmpty(), and identity assertions plus dimension assertions",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.EmptyTests",
+        "method": "testEmpty",
+        "signature": "testEmpty()",
+        "line": 127
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.EmptyTests",
+        "method": "testEmpty_EmptyMatrix_Identity_Checks2",
+        "signature": "testEmpty_EmptyMatrix_Identity_Checks2()",
+        "line": 182
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.EmptyTests",
+        "method": "testEmpty_EmptyMatrix_Identity",
+        "signature": "testEmpty_EmptyMatrix_Identity()",
+        "line": 156
+      },
+      "reason": "Reviewed redundant singleton case: the retained test has the same empty(), isEmpty(), and identity assertions plus dimension assertions",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.EmptyTests",
+        "method": "testEmpty_EmptyMatrix_Identity",
+        "signature": "testEmpty_EmptyMatrix_Identity()",
+        "line": 156
+      }
+    },
+    {
+      "removed": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.EmptyTests",
+        "method": "testEmpty_EmptyMatrix_Identity_Checks2",
+        "signature": "testEmpty_EmptyMatrix_Identity_Checks2()",
+        "line": 179
+      },
+      "retained": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.EmptyTests",
+        "method": "testEmpty_EmptyMatrix_Identity",
+        "signature": "testEmpty_EmptyMatrix_Identity()",
+        "line": 153
+      },
+      "reason": "Reviewed redundant singleton case: the retained test has the same empty(), isEmpty(), and identity assertions plus dimension assertions",
+      "retainedAtCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.EmptyTests",
+        "method": "testEmpty_EmptyMatrix_Identity",
+        "signature": "testEmpty_EmptyMatrix_Identity()",
+        "line": 153
+      }
+    }
+  ],
+  "parameterizedReplacement": {
+    "file": "ParallelModeTest.java",
+    "previousMethods": 109,
+    "retainedContracts": [
+      "constant names and order",
+      "defensive values array",
+      "valid name identity and ordinal",
+      "all previous invalid names and null",
+      "all nine comparison/equality pairs",
+      "hashCode equality for the same policy",
+      "collection keys"
+    ],
+    "improvements": [
+      "actual serialization round trip",
+      "lowercase-name rejection"
+    ],
+    "removedNonContracts": [
+      "self-comparison assertions",
+      "distinct-enum hash-code assumptions",
+      "switch statements that only exercised code inside the tests"
+    ],
+    "replaced": [
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValuesTests",
+        "method": "testEnumValues",
+        "signature": "testEnumValues()",
+        "line": 33
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValuesTests",
+        "method": "testParallelModeEnumValues",
+        "signature": "testParallelModeEnumValues()",
+        "line": 43
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValuesTests",
+        "method": "testEnumValues_ContainsYes",
+        "signature": "testEnumValues_ContainsYes()",
+        "line": 55
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValuesTests",
+        "method": "testEnumValues_ContainsNo",
+        "signature": "testEnumValues_ContainsNo()",
+        "line": 70
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValuesTests",
+        "method": "testEnumValues_ContainsDefault",
+        "signature": "testEnumValues_ContainsDefault()",
+        "line": 85
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValuesTests",
+        "method": "testEnumValues_HasExactlyThreeValues",
+        "signature": "testEnumValues_HasExactlyThreeValues()",
+        "line": 100
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValuesTests",
+        "method": "testEnumIteration",
+        "signature": "testEnumIteration()",
+        "line": 107
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValuesTests",
+        "method": "testEnumValues_OrderIsConsistent",
+        "signature": "testEnumValues_OrderIsConsistent()",
+        "line": 120
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValuesTests",
+        "method": "testEnumValues_AllThreePresent",
+        "signature": "testEnumValues_AllThreePresent()",
+        "line": 131
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValuesTests",
+        "method": "testEdgeCase_EnumIsNotInstantiable",
+        "signature": "testEdgeCase_EnumIsNotInstantiable()",
+        "line": 151
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValuesTests",
+        "method": "testValues_returnsAllEnumConstants",
+        "signature": "testValues_returnsAllEnumConstants()",
+        "line": 157
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValuesTests",
+        "method": "testValues_containsYes",
+        "signature": "testValues_containsYes()",
+        "line": 165
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValuesTests",
+        "method": "testValues_containsNo",
+        "signature": "testValues_containsNo()",
+        "line": 180
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValuesTests",
+        "method": "testValues_containsDefault",
+        "signature": "testValues_containsDefault()",
+        "line": 195
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValuesTests",
+        "method": "testValues_allThreePresent",
+        "signature": "testValues_allThreePresent()",
+        "line": 210
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValuesTests",
+        "method": "testSwitchStatement_allValues",
+        "signature": "testSwitchStatement_allValues()",
+        "line": 230
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValuesTests",
+        "method": "testEdgeCase_allValuesAreDistinct",
+        "signature": "testEdgeCase_allValuesAreDistinct()",
+        "line": 244
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValuesTests",
+        "method": "testEnumInSwitchStatement",
+        "signature": "testEnumInSwitchStatement()",
+        "line": 255
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValuesTests",
+        "method": "testEnumValues_NotNull",
+        "signature": "testEnumValues_NotNull()",
+        "line": 274
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValuesTests",
+        "method": "testValues_notNull",
+        "signature": "testValues_notNull()",
+        "line": 284
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValueOfTests",
+        "method": "testValueOf",
+        "signature": "testValueOf()",
+        "line": 297
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValueOfTests",
+        "method": "testEnumSerializability",
+        "signature": "testEnumSerializability()",
+        "line": 304
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValueOfTests",
+        "method": "testValueOf_Yes",
+        "signature": "testValueOf_Yes()",
+        "line": 314
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValueOfTests",
+        "method": "testValueOf_No",
+        "signature": "testValueOf_No()",
+        "line": 321
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValueOfTests",
+        "method": "testValueOf_Default",
+        "signature": "testValueOf_Default()",
+        "line": 328
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValueOfTests",
+        "method": "testEdgeCase_ValueOfWithExactName",
+        "signature": "testEdgeCase_ValueOfWithExactName()",
+        "line": 335
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValueOfTests",
+        "method": "testValueOf_yes",
+        "signature": "testValueOf_yes()",
+        "line": 343
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValueOfTests",
+        "method": "testValueOf_no",
+        "signature": "testValueOf_no()",
+        "line": 351
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValueOfTests",
+        "method": "testValueOf_default",
+        "signature": "testValueOf_default()",
+        "line": 359
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValueOfTests",
+        "method": "testValueOf_caseSensitive",
+        "signature": "testValueOf_caseSensitive()",
+        "line": 367
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValueOfTests",
+        "method": "testValueOf_whitespace",
+        "signature": "testValueOf_whitespace()",
+        "line": 374
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValueOfTests",
+        "method": "testValueOf_mixedCase",
+        "signature": "testValueOf_mixedCase()",
+        "line": 379
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValueOfTests",
+        "method": "testValueOf_returnsSameInstance",
+        "signature": "testValueOf_returnsSameInstance()",
+        "line": 386
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValueOfTests",
+        "method": "testValueOf_null",
+        "signature": "testValueOf_null()",
+        "line": 394
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValueOfTests",
+        "method": "testValueOf_emptyString",
+        "signature": "testValueOf_emptyString()",
+        "line": 399
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValueOfTests",
+        "method": "testValueOfWithInvalidName",
+        "signature": "testValueOfWithInvalidName()",
+        "line": 404
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.NameTests",
+        "method": "testEnumNames",
+        "signature": "testEnumNames()",
+        "line": 415
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.NameTests",
+        "method": "testName_Yes",
+        "signature": "testName_Yes()",
+        "line": 422
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.NameTests",
+        "method": "testName_No",
+        "signature": "testName_No()",
+        "line": 429
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.NameTests",
+        "method": "testName_Default",
+        "signature": "testName_Default()",
+        "line": 436
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.NameTests",
+        "method": "testEnumUsagePattern",
+        "signature": "testEnumUsagePattern()",
+        "line": 443
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.NameTests",
+        "method": "testSemantics_YesRepresentsParallelMode",
+        "signature": "testSemantics_YesRepresentsParallelMode()",
+        "line": 453
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.NameTests",
+        "method": "testSemantics_NoRepresentsParallelDisabled",
+        "signature": "testSemantics_NoRepresentsParallelDisabled()",
+        "line": 462
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.NameTests",
+        "method": "testSemantics_DefaultRepresentsDefaultBehavior",
+        "signature": "testSemantics_DefaultRepresentsDefaultBehavior()",
+        "line": 471
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.NameTests",
+        "method": "testName_yes",
+        "signature": "testName_yes()",
+        "line": 480
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.NameTests",
+        "method": "testName_no",
+        "signature": "testName_no()",
+        "line": 488
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.NameTests",
+        "method": "testName_default",
+        "signature": "testName_default()",
+        "line": 496
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.NameTests",
+        "method": "testName_consistentWithValueOf",
+        "signature": "testName_consistentWithValueOf()",
+        "line": 504
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.NameTests",
+        "method": "testName_notEmpty",
+        "signature": "testName_notEmpty()",
+        "line": 511
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.NameTests",
+        "method": "testName_notNull",
+        "signature": "testName_notNull()",
+        "line": 518
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.OrdinalTests",
+        "method": "testEnumOrdinals",
+        "signature": "testEnumOrdinals()",
+        "line": 529
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.OrdinalTests",
+        "method": "testOrdinal_Values",
+        "signature": "testOrdinal_Values()",
+        "line": 536
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.OrdinalTests",
+        "method": "testOrdinal_Yes",
+        "signature": "testOrdinal_Yes()",
+        "line": 545
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.OrdinalTests",
+        "method": "testOrdinal_No",
+        "signature": "testOrdinal_No()",
+        "line": 552
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.OrdinalTests",
+        "method": "testOrdinal_Default",
+        "signature": "testOrdinal_Default()",
+        "line": 559
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.OrdinalTests",
+        "method": "testOrdinal_UniqueValues",
+        "signature": "testOrdinal_UniqueValues()",
+        "line": 566
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.OrdinalTests",
+        "method": "testEnumComparison",
+        "signature": "testEnumComparison()",
+        "line": 578
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.OrdinalTests",
+        "method": "testOrdinal_sequential",
+        "signature": "testOrdinal_sequential()",
+        "line": 586
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.OrdinalTests",
+        "method": "testOrdinal_yes",
+        "signature": "testOrdinal_yes()",
+        "line": 595
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.OrdinalTests",
+        "method": "testOrdinal_no",
+        "signature": "testOrdinal_no()",
+        "line": 602
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.OrdinalTests",
+        "method": "testOrdinal_default",
+        "signature": "testOrdinal_default()",
+        "line": 609
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.OrdinalTests",
+        "method": "testOrdinal_NonNegative",
+        "signature": "testOrdinal_NonNegative()",
+        "line": 616
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.OrdinalTests",
+        "method": "testOrdinal_nonNegative",
+        "signature": "testOrdinal_nonNegative()",
+        "line": 623
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ToStringTests",
+        "method": "testEnumToString",
+        "signature": "testEnumToString()",
+        "line": 634
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ToStringTests",
+        "method": "testToString_yes",
+        "signature": "testToString_yes()",
+        "line": 641
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ToStringTests",
+        "method": "testToString_no",
+        "signature": "testToString_no()",
+        "line": 649
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ToStringTests",
+        "method": "testToString_default",
+        "signature": "testToString_default()",
+        "line": 657
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ToStringTests",
+        "method": "testToString_matchesName",
+        "signature": "testToString_matchesName()",
+        "line": 665
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ToStringTests",
+        "method": "testToString_notNull",
+        "signature": "testToString_notNull()",
+        "line": 672
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ToStringTests",
+        "method": "testToString_notEmpty",
+        "signature": "testToString_notEmpty()",
+        "line": 679
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.EqualsTests",
+        "method": "testEquals_SameInstance",
+        "signature": "testEquals_SameInstance()",
+        "line": 690
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.EqualsTests",
+        "method": "testEquals_UsingEqualsMethod_DifferentValues",
+        "signature": "testEquals_UsingEqualsMethod_DifferentValues()",
+        "line": 697
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.EqualsTests",
+        "method": "testEquals_Reflexive",
+        "signature": "testEquals_Reflexive()",
+        "line": 704
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.EqualsTests",
+        "method": "testEquals_Symmetric",
+        "signature": "testEquals_Symmetric()",
+        "line": 712
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.EqualsTests",
+        "method": "testEquals_Transitive",
+        "signature": "testEquals_Transitive()",
+        "line": 721
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.EqualsTests",
+        "method": "testEquals_Consistent",
+        "signature": "testEquals_Consistent()",
+        "line": 733
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.EqualsTests",
+        "method": "testEquals_differentInstances",
+        "signature": "testEquals_differentInstances()",
+        "line": 747
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.EqualsTests",
+        "method": "testEquals_usingEqualsMethod",
+        "signature": "testEquals_usingEqualsMethod()",
+        "line": 754
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.EqualsTests",
+        "method": "testEquals_usingEqualsMethod_differentValues",
+        "signature": "testEquals_usingEqualsMethod_differentValues()",
+        "line": 761
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.EqualsTests",
+        "method": "testEquals_withDifferentType",
+        "signature": "testEquals_withDifferentType()",
+        "line": 768
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.EqualsTests",
+        "method": "testEquals_WithNull",
+        "signature": "testEquals_WithNull()",
+        "line": 775
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.EqualsTests",
+        "method": "testEquals_withNull",
+        "signature": "testEquals_withNull()",
+        "line": 782
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.HashCodeTests",
+        "method": "testEnumHashCode",
+        "signature": "testEnumHashCode()",
+        "line": 793
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.HashCodeTests",
+        "method": "testEnumHashCode_Values",
+        "signature": "testEnumHashCode_Values()",
+        "line": 801
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.HashCodeTests",
+        "method": "testHashCode_Consistent",
+        "signature": "testHashCode_Consistent()",
+        "line": 810
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.HashCodeTests",
+        "method": "testHashCode_DifferentValuesDifferentHash",
+        "signature": "testHashCode_DifferentValuesDifferentHash()",
+        "line": 821
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.HashCodeTests",
+        "method": "testHashCode_EqualsContract",
+        "signature": "testHashCode_EqualsContract()",
+        "line": 832
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.HashCodeTests",
+        "method": "testHashCode_AllValuesHaveHashCode",
+        "signature": "testHashCode_AllValuesHaveHashCode()",
+        "line": 843
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.HashCodeTests",
+        "method": "testHashCode_sameValuesSameHash",
+        "signature": "testHashCode_sameValuesSameHash()",
+        "line": 853
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.CompareToTests",
+        "method": "testEnumCompareTo",
+        "signature": "testEnumCompareTo()",
+        "line": 865
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.CompareToTests",
+        "method": "testCompareTo_SameValue",
+        "signature": "testCompareTo_SameValue()",
+        "line": 881
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.CompareToTests",
+        "method": "testCompareTo_Reflexive",
+        "signature": "testCompareTo_Reflexive()",
+        "line": 889
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.CompareToTests",
+        "method": "testCompareTo_Antisymmetric",
+        "signature": "testCompareTo_Antisymmetric()",
+        "line": 897
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.CompareToTests",
+        "method": "testCompareTo_Transitive",
+        "signature": "testCompareTo_Transitive()",
+        "line": 909
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.CompareToTests",
+        "method": "testCompareTo_differentValues",
+        "signature": "testCompareTo_differentValues()",
+        "line": 925
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.CompareToTests",
+        "method": "testCompareTo_orderingByOrdinal",
+        "signature": "testCompareTo_orderingByOrdinal()",
+        "line": 944
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.CompareToTests",
+        "method": "testCompareTo_consistentWithEquals",
+        "signature": "testCompareTo_consistentWithEquals()",
+        "line": 953
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ContractsTests",
+        "method": "testEnumEquals",
+        "signature": "testEnumEquals()",
+        "line": 967
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ContractsTests",
+        "method": "testSwitchStatement_Yes",
+        "signature": "testSwitchStatement_Yes()",
+        "line": 974
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ContractsTests",
+        "method": "testSwitchStatement_ReturnValue",
+        "signature": "testSwitchStatement_ReturnValue()",
+        "line": 994
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ContractsTests",
+        "method": "testEdgeCase_EnumConstantsArePublic",
+        "signature": "testEdgeCase_EnumConstantsArePublic()",
+        "line": 1007
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ContractsTests",
+        "method": "testSemantics_AllValuesHaveDistinctMeaning",
+        "signature": "testSemantics_AllValuesHaveDistinctMeaning()",
+        "line": 1015
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ContractsTests",
+        "method": "testSwitchStatement_no",
+        "signature": "testSwitchStatement_no()",
+        "line": 1027
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ContractsTests",
+        "method": "testSwitchStatement_default",
+        "signature": "testSwitchStatement_default()",
+        "line": 1047
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ContractsTests",
+        "method": "testEnumInCollection",
+        "signature": "testEnumInCollection()",
+        "line": 1067
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ContractsTests",
+        "method": "testEnumInSet",
+        "signature": "testEnumInSet()",
+        "line": 1081
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ContractsTests",
+        "method": "testEnumInMap",
+        "signature": "testEnumInMap()",
+        "line": 1092
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ContractsTests",
+        "method": "testEnumInEnumSet",
+        "signature": "testEnumInEnumSet()",
+        "line": 1106
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ContractsTests",
+        "method": "testEnumInEnumMap",
+        "signature": "testEnumInEnumMap()",
+        "line": 1117
+      }
+    ],
+    "finalMethods": [
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValuesTests",
+        "method": "testValues_DeclarationOrderAndIndependentArrays",
+        "signature": "testValues_DeclarationOrderAndIndependentArrays()",
+        "line": 55
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValuesTests",
+        "method": "testCollections_KeepAllThreeDistinctPolicies",
+        "signature": "testCollections_KeepAllThreeDistinctPolicies()",
+        "line": 67
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValueOfTests",
+        "method": "testValueOf_NameOrdinalAndIdentity",
+        "signature": "testValueOf_NameOrdinalAndIdentity(String,int)",
+        "line": 88
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValueOfTests",
+        "method": "testValueOf_NullName",
+        "signature": "testValueOf_NullName()",
+        "line": 100
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ValueOfTests",
+        "method": "testValueOf_InvalidNames",
+        "signature": "testValueOf_InvalidNames(String)",
+        "line": 105
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.EqualsTests",
+        "method": "testEqualsAndCompareTo_AllPairs",
+        "signature": "testEqualsAndCompareTo_AllPairs(ParallelMode,ParallelMode)",
+        "line": 116
+      },
+      {
+        "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+        "className": "ParallelModeTest.ContractsTests",
+        "method": "testSerialization_RestoresCanonicalInstance",
+        "signature": "testSerialization_RestoresCanonicalInstance(ParallelMode)",
+        "line": 131
+      }
+    ],
+    "finalInvocations": 30
+  },
+  "locationNote": "removed and retained describe migration-time selectors; retainedAtCompletion and the parameterizedReplacement.finalMethods describe final selectors. Line numbers are informational snapshots.",
+  "finalMethods": 6627,
+  "removedMethodCount": 114
+}

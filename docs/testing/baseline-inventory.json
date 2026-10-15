@@ -1,0 +1,462 @@
+{
+  "testMethods": 6837,
+  "files": [
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+      "methods": 383
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+      "methods": 620
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+      "methods": 630
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+      "methods": 672
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/CoreNullValidationTest.java",
+      "methods": 3
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+      "methods": 624
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+      "methods": 607
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/FunctionalInterfaceNullValidationTest.java",
+      "methods": 1
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+      "methods": 641
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+      "methods": 614
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+      "methods": 435
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+      "methods": 738
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/NullArgumentValidationTest.java",
+      "methods": 4
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/NumericDeepReviewTest.java",
+      "methods": 2
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/NumericExceptionReviewTest.java",
+      "methods": 5
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/NumericNullReviewTest.java",
+      "methods": 5
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/NumericPerformanceOptimizationTest.java",
+      "methods": 14
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/ObjectExceptionReviewTest.java",
+      "methods": 5
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/ObjectNullReviewTest.java",
+      "methods": 3
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/ObjectUtilityDeepReviewTest.java",
+      "methods": 1
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/ObjectUtilityPerformanceOptimizationTest.java",
+      "methods": 11
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+      "methods": 111
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/PrimitiveDeepReviewTest.java",
+      "methods": 2
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/PrimitiveExceptionReviewTest.java",
+      "methods": 5
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/PrimitiveNullReviewTest.java",
+      "methods": 8
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/PrimitivePerformanceOptimizationTest.java",
+      "methods": 12
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/ReviewFixRegressionTest.java",
+      "methods": 27
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/SharedPerformanceOptimizationTest.java",
+      "methods": 7
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+      "methods": 642
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/ValidationOrderTest.java",
+      "methods": 5
+    }
+  ],
+  "duplicates": [
+    {
+      "scope": "cross-file",
+      "sameContext": false,
+      "methods": [
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+          "className": "AbstractMatrixTest.AbstractMatrix2025Test",
+          "method": "testStreamLU2RD_nonSquare",
+          "signature": "testStreamLU2RD_nonSquare()",
+          "line": 1544
+        },
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+          "className": "IntMatrixTest.IntMatrix2510Test",
+          "method": "testStreamLU2RD_nonSquare",
+          "signature": "testStreamLU2RD_nonSquare()",
+          "line": 3036
+        }
+      ]
+    },
+    {
+      "scope": "cross-file",
+      "sameContext": false,
+      "methods": [
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+          "className": "AbstractMatrixTest.AbstractMatrix2025Test",
+          "method": "testStreamRU2LD_nonSquare",
+          "signature": "testStreamRU2LD_nonSquare()",
+          "line": 1550
+        },
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+          "className": "IntMatrixTest.IntMatrix2510Test",
+          "method": "testStreamRU2LD_nonSquare",
+          "signature": "testStreamRU2LD_nonSquare()",
+          "line": 3049
+        }
+      ]
+    },
+    {
+      "scope": "cross-file",
+      "sameContext": false,
+      "methods": [
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+          "className": "AbstractMatrixTest.AbstractMatrix2025Test",
+          "method": "testConstructor_nullArray",
+          "signature": "testConstructor_nullArray()",
+          "line": 1680
+        },
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+          "className": "IntMatrixTest.IntMatrix2512Test",
+          "method": "test_of_withNullArray",
+          "signature": "test_of_withNullArray()",
+          "line": 3957
+        }
+      ]
+    },
+    {
+      "scope": "same-file",
+      "sameContext": true,
+      "methods": [
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+          "className": "BooleanMatrixTest.BooleanMatrix2511Test",
+          "method": "testRepeatMatrix",
+          "signature": "testRepeatMatrix()",
+          "line": 4399
+        },
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+          "className": "BooleanMatrixTest.BooleanMatrix2512Test",
+          "method": "test_repeatMatrix",
+          "signature": "test_repeatMatrix()",
+          "line": 5199
+        }
+      ]
+    },
+    {
+      "scope": "same-file",
+      "sameContext": true,
+      "methods": [
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+          "className": "BooleanMatrixTest.JavadocExampleMatrixGroup1Test_BooleanMatrix",
+          "method": "testBooleanMatrix_and",
+          "signature": "testBooleanMatrix_and()",
+          "line": 5625
+        },
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+          "className": "BooleanMatrixTest",
+          "method": "testAnd",
+          "signature": "testAnd()",
+          "line": 5966
+        }
+      ]
+    },
+    {
+      "scope": "same-file",
+      "sameContext": true,
+      "methods": [
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+          "className": "BooleanMatrixTest.JavadocExampleMatrixGroup1Test_BooleanMatrix",
+          "method": "testBooleanMatrix_or",
+          "signature": "testBooleanMatrix_or()",
+          "line": 5637
+        },
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+          "className": "BooleanMatrixTest",
+          "method": "testOr",
+          "signature": "testOr()",
+          "line": 6001
+        }
+      ]
+    },
+    {
+      "scope": "same-file",
+      "sameContext": true,
+      "methods": [
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+          "className": "BooleanMatrixTest.JavadocExampleMatrixGroup1Test_BooleanMatrix",
+          "method": "testBooleanMatrix_xor",
+          "signature": "testBooleanMatrix_xor()",
+          "line": 5649
+        },
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+          "className": "BooleanMatrixTest",
+          "method": "testXor",
+          "signature": "testXor()",
+          "line": 6028
+        }
+      ]
+    },
+    {
+      "scope": "same-file",
+      "sameContext": true,
+      "methods": [
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+          "className": "CharMatrixTest.CharMatrix2510Test",
+          "method": "testDiagonalLU2RD",
+          "signature": "testDiagonalLU2RD()",
+          "line": 3176
+        },
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+          "className": "CharMatrixTest.CharMatrix2511Test",
+          "method": "testDiagonalLU2RD",
+          "signature": "testDiagonalLU2RD()",
+          "line": 4302
+        }
+      ]
+    },
+    {
+      "scope": "same-file",
+      "sameContext": true,
+      "methods": [
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+          "className": "CharMatrixTest.CharMatrix2510Test",
+          "method": "testDiagonalRU2LD",
+          "signature": "testDiagonalRU2LD()",
+          "line": 3188
+        },
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+          "className": "CharMatrixTest.CharMatrix2511Test",
+          "method": "testDiagonalRU2LD",
+          "signature": "testDiagonalRU2LD()",
+          "line": 4322
+        }
+      ]
+    },
+    {
+      "scope": "same-file",
+      "sameContext": true,
+      "methods": [
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+          "className": "CharMatrixTest.CharMatrix2510Test",
+          "method": "testUnbox_withNullElements",
+          "signature": "testUnbox_withNullElements()",
+          "line": 3248
+        },
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+          "className": "CharMatrixTest.CharMatrix2511Test",
+          "method": "testUnbox_withNullElements",
+          "signature": "testUnbox_withNullElements()",
+          "line": 4349
+        }
+      ]
+    },
+    {
+      "scope": "same-file",
+      "sameContext": true,
+      "methods": [
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+          "className": "CharMatrixTest.CharMatrix2510Test",
+          "method": "testPad_withDefaultValue",
+          "signature": "testPad_withDefaultValue()",
+          "line": 3601
+        },
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+          "className": "CharMatrixTest.CharMatrix2511Test",
+          "method": "testPad_withDefaultValue",
+          "signature": "testPad_withDefaultValue()",
+          "line": 4791
+        }
+      ]
+    },
+    {
+      "scope": "same-file",
+      "sameContext": true,
+      "methods": [
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+          "className": "CharMatrixTest.CharMatrix2510Test",
+          "method": "testPad_withDirections",
+          "signature": "testPad_withDirections()",
+          "line": 3625
+        },
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+          "className": "CharMatrixTest.CharMatrix2511Test",
+          "method": "testPad_withDirections",
+          "signature": "testPad_withDirections()",
+          "line": 4815
+        }
+      ]
+    },
+    {
+      "scope": "same-file",
+      "sameContext": true,
+      "methods": [
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+          "className": "IntMatrixTest.IntMatrix2025Test",
+          "method": "testSetLU2RD_nonSquare",
+          "signature": "testSetLU2RD_nonSquare()",
+          "line": 1793
+        },
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+          "className": "IntMatrixTest.IntMatrix2512Test",
+          "method": "test_setMainDiagonal_nonSquare",
+          "signature": "test_setMainDiagonal_nonSquare()",
+          "line": 4392
+        }
+      ]
+    },
+    {
+      "scope": "same-file",
+      "sameContext": true,
+      "methods": [
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+          "className": "ShortMatrixTest.ShortMatrix2025Test",
+          "method": "testWrap_withNullArray",
+          "signature": "testWrap_withNullArray()",
+          "line": 1941
+        },
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+          "className": "ShortMatrixTest.ShortMatrix2512Test",
+          "method": "test_of_withNullArray",
+          "signature": "test_of_withNullArray()",
+          "line": 5089
+        }
+      ]
+    },
+    {
+      "scope": "same-file",
+      "sameContext": true,
+      "methods": [
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+          "className": "ShortMatrixTest.ShortMatrix2025Test",
+          "method": "testDiagonal_withBothNull",
+          "signature": "testDiagonal_withBothNull()",
+          "line": 2071
+        },
+        {
+          "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+          "className": "ShortMatrixTest.ShortMatrix2512Test",
+          "method": "test_diagonal_withBothNull_throws",
+          "signature": "test_diagonal_withBothNull_throws()",
+          "line": 5187
+        }
+      ]
+    }
+  ],
+  "executedTests": 6837,
+  "failures": 0,
+  "coverage": [
+    {
+      "type": "INSTRUCTION",
+      "missed": 3095,
+      "covered": 51636
+    },
+    {
+      "type": "BRANCH",
+      "missed": 586,
+      "covered": 4734
+    },
+    {
+      "type": "LINE",
+      "missed": 436,
+      "covered": 7846
+    },
+    {
+      "type": "COMPLEXITY",
+      "missed": 582,
+      "covered": 3729
+    },
+    {
+      "type": "METHOD",
+      "missed": 75,
+      "covered": 1573
+    },
+    {
+      "type": "CLASS",
+      "missed": 0,
+      "covered": 77
+    }
+  ],
+  "revision": "fec223f1f78fe58a2a8d5307060bdfb2cbd52153"
+}

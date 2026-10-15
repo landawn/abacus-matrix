@@ -1,0 +1,2517 @@
+[
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+    "from": "testApply_Shape2By2_Checks1_2",
+    "to": "testApply_ComputesElementCount"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+    "from": "testAccept_Shape2By2_Checks1_2",
+    "to": "testAccept_ReceivesMatrixWithTwoRows"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "from": "testStreamLU2RD_Shape3By3_Checks4_2",
+    "to": "testMainDiagonalStream_AllTrueDiagonal"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "from": "testRepeatMatrix_Shape2By2_Checks5_2",
+    "to": "testRepeatMatrix_TwoByTwoTiling"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "from": "testCopy_Shape2By2_Checks5_2",
+    "to": "testCopy_ResultMutationPreservesSource"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "from": "testMapToObj_Shape2By2_Checks4_2",
+    "to": "testMapToObj_DecimalStringValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "from": "testMap_Shape2By2_Checks5_2",
+    "to": "testMap_DoublesValuesAndPreservesSource"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "from": "testUpdateRU2LD_Shape3By3_Checks3_2",
+    "to": "testUpdateAntiDiagonal_TriplesValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "from": "testUpdateLU2RD_Shape3By3_Checks3_2",
+    "to": "testUpdateMainDiagonal_DoublesValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "from": "testRepeatMatrix_Shape2By2_Checks5_2",
+    "to": "testRepeatMatrix_TwoByTwoTiling"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "from": "testMap_Shape2By2_Checks5_2",
+    "to": "testMap_UppercasesValuesAndPreservesSource"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "from": "testUpdateRU2LD_Shape3By3_Checks3_2",
+    "to": "testUpdateAntiDiagonal_UppercasesValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "from": "testSetRU2LD_Shape3By3_Checks4_2",
+    "to": "testSetAntiDiagonal_AbcValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "from": "testUpdateLU2RD_Shape3By3_Checks3_2",
+    "to": "testUpdateMainDiagonal_UppercasesValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "from": "testSetLU2RD_Shape3By3_Checks4_2",
+    "to": "testSetMainDiagonal_AbcValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "from": "testSubtract_Shape2By2_Checks4_2",
+    "to": "testSubtract_AllFourCellValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "from": "testAdd_Shape2By2_Checks4_2",
+    "to": "testAdd_AllFourCellValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "from": "testTranspose_Shape2By3_Checks6_2",
+    "to": "testTranspose_RectangularCellPositions"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "from": "testRotate180_Shape2By2_Checks4_2",
+    "to": "testRotate180_ReversesBothAxes"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "from": "testRotate90_Shape2By2_Checks6_2",
+    "to": "testRotate90_ClockwiseCellPositions"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "from": "testCopyRegion_Shape3By3_Checks4_2",
+    "to": "testCopyRegion_BottomRightSubmatrix"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "from": "testMap_Shape2By2_Checks5_2",
+    "to": "testMap_DoublesValuesAndPreservesSource"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "from": "testRightOf_Shape2By2_Checks2_2",
+    "to": "testValueRight_RowZeroColumnZero"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "from": "testLeftOf_Shape2By2_Checks2_2",
+    "to": "testValueLeft_RowZeroColumnOne"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "from": "testDownOf_Shape2By2_Checks2_2",
+    "to": "testValueBelow_RowZeroColumnZero"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "from": "testUpOf_Shape2By2_Checks2_2",
+    "to": "testValueAbove_RowOneColumnZero"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "from": "testToDoubleMatrix_Shape2By2_Checks4_2",
+    "to": "testToDoubleMatrix_AllFourCellValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "from": "testSubtract_Shape2By2_Checks4_2",
+    "to": "testSubtract_AllFourCellValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "from": "testAdd_Shape2By2_Checks4_2",
+    "to": "testAdd_AllFourCellValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "from": "testTranspose_Shape2By3_Checks6_2",
+    "to": "testTranspose_RectangularCellPositions"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "from": "testCopyRegion_Shape3By3_Checks4_2",
+    "to": "testCopyRegion_BottomRightSubmatrix"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "from": "testMap_Shape2By2_Checks5_2",
+    "to": "testMap_DoublesValuesAndPreservesSource"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "from": "testRightOf_Shape2By2_Checks2_2",
+    "to": "testValueRight_RowZeroColumnZero"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "from": "testLeftOf_Shape2By2_Checks2_2",
+    "to": "testValueLeft_RowZeroColumnOne"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "from": "testDownOf_Shape2By2_Checks2_2",
+    "to": "testValueBelow_RowZeroColumnZero"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "from": "testUpOf_Shape2By2_Checks2_2",
+    "to": "testValueAbove_RowOneColumnZero"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "from": "testToDoubleMatrix_Shape2By2_Checks4_2",
+    "to": "testToDoubleMatrix_AllFourCellValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "from": "testToLongMatrix_Shape2By2_Checks4_2",
+    "to": "testToLongMatrix_AllFourCellValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "from": "testBoxed_Shape2By2_Checks4_2",
+    "to": "testBoxed_AllFourCellValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "from": "testSubtract_Shape2By2_Checks4_2",
+    "to": "testSubtract_AllFourCellValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "from": "testAdd_Shape2By2_Checks4_2",
+    "to": "testAdd_AllFourCellValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "from": "testCopyRegion_Shape3By3_Checks4_2",
+    "to": "testCopyRegion_BottomRightSubmatrix"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "from": "testToDoubleMatrix_Shape2By2_Checks4_2",
+    "to": "testToDoubleMatrix_AllFourCellValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "from": "testBoxed_Shape2By2_Checks4_2",
+    "to": "testBoxed_AllFourCellValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "from": "testMultiply_Shape2By2_Checks4_2",
+    "to": "testMatrixMultiply_AllFourCellValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "from": "testSubtract_Shape2By2_Checks4_2",
+    "to": "testSubtract_AllFourCellValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "from": "testAdd_Shape2By2_Checks4_2",
+    "to": "testAdd_AllFourCellValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "from": "testCopyRegion_Shape3By3_Checks4_2",
+    "to": "testCopyRegion_BottomRightSubmatrix"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "from": "testMap_Shape2By2_Checks5_2",
+    "to": "testMap_DoublesValuesAndPreservesSource"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "from": "testToIntMatrix_Shape2By2_Checks2_2",
+    "to": "testToIntMatrix_FirstRowValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "from": "testMultiply_Shape2By2_Checks4_2",
+    "to": "testMatrixMultiply_AllFourCellValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "from": "testSubtract_Shape2By2_Checks4_2",
+    "to": "testSubtract_AllFourCellValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "from": "testAdd_Shape2By2_Checks4_2",
+    "to": "testAdd_AllFourCellValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+    "className": "AbstractMatrixTest.ApplyTests",
+    "from": "testApply_Shape2By2_Checks1",
+    "to": "testApply_Shape2By2_FunctionSumsAllElements"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+    "className": "AbstractMatrixTest.AcceptTests",
+    "from": "testAccept_Shape2By2_Checks1",
+    "to": "testAccept_Shape2By2_ConsumerSumsAllElements"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+    "className": "AbstractMatrixTest.ColumnPointsTests",
+    "from": "testPointsC_Shape2By2_Checks4",
+    "to": "testColumnPoints_Shape2By2_GroupedColumnCoordinates"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+    "className": "AbstractMatrixTest.RowPointsTests",
+    "from": "testPointsR_Shape2By2_Checks4",
+    "to": "testRowPoints_Shape2By2_GroupedRowCoordinates"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+    "className": "AbstractMatrixTest.ColumnMajorPointsTests",
+    "from": "testPointsV_Shape2By2_Checks7",
+    "to": "testColumnMajorPoints_Shape2By2_CoordinatesInColumnOrder"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+    "className": "AbstractMatrixTest.RowMajorPointsTests",
+    "from": "testPointsH_Shape2By2_Checks7",
+    "to": "testRowMajorPoints_Shape2By2_CoordinatesInRowOrder"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+    "className": "AbstractMatrixTest.AntiDiagonalPointsTests",
+    "from": "testPointsRU2LD_Shape3By3_Checks7",
+    "to": "testAntiDiagonalPoints_Shape3By3_CoordinatesInDiagonalOrder"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+    "className": "AbstractMatrixTest.MainDiagonalPointsTests",
+    "from": "testPointsLU2RD_Shape3By3_Checks7",
+    "to": "testMainDiagonalPoints_Shape3By3_CoordinatesInDiagonalOrder"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+    "className": "AbstractMatrixTest.ForEachIndicesTests",
+    "from": "testForEach_WithMatrix_Shape2By2_Checks1",
+    "to": "testForEachIndices_WithMatrix_Shape2By2_SumsValuesUsingMatrixArgument"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+    "className": "AbstractMatrixTest.RepeatMatrixTests",
+    "from": "testRepeatMatrix_Shape2By2_Checks7",
+    "to": "testRepeatMatrix_Shape2By2_TilesAndCornerValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.PrintlnTests",
+    "from": "testPrintln_Shape2By2_Checks3",
+    "to": "testToMultilineString_Shape2By2_ContainsElementText"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.ToStringTests",
+    "from": "testToString_Shape2By2_Checks3",
+    "to": "testToString_Shape2By2_ContainsElementText"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.EqualsTests",
+    "from": "testEquals_Shape2By2_NullInput_Checks4",
+    "to": "testEquals_Shape2By2_NullInput_DifferentValuesNullAndType"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.ForEachTests",
+    "from": "testForEach_Shape2By2_Checks1",
+    "to": "testForEach_Shape2By2_CountsTrueValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.ColumnStreamsTests",
+    "from": "testColumnStreams_Shape2By2_Checks2",
+    "to": "testColumnStreams_Shape2By2_OuterAndInnerStreamSizes"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.RowStreamsTests",
+    "from": "testRowStreams_Shape2By2_Checks2",
+    "to": "testRowStreams_Shape2By2_OuterAndInnerStreamSizes"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.AntiDiagonalStreamTests",
+    "from": "testAntiDiagonalStream_Shape3By3_Checks4",
+    "to": "testAntiDiagonalStream_Shape3By3_OrderedListValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.MainDiagonalStreamTests",
+    "from": "testMainDiagonalStream_Shape3By3_Checks4",
+    "to": "testMainDiagonalStream_Shape3By3_OrderedListValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.BoxedTests",
+    "from": "testBoxed_Shape2By2_Checks2",
+    "to": "testBoxed_Shape2By2_FirstRowBoxedValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.FlattenTests",
+    "from": "testFlatten_Shape2By2_Checks5",
+    "to": "testFlatten_Shape2By2_EveryListElement"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.RepeatMatrixTests",
+    "from": "testRepeatMatrix_Shape2By2_Checks5",
+    "to": "testRepeatMatrix_Shape2By2_DiagonalTileBoundary"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.RepeatMatrixTests",
+    "from": "testRepeatMatrix_Shape2By2_Checks6",
+    "to": "testRepeatMatrix_Shape2By2_VerticalTileBoundary"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.RepeatElementsTests",
+    "from": "testRepeatElements_Shape2By2_Checks7",
+    "to": "testRepeatElements_Shape2By2_RepeatedBlockAndAdjacentValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.Rotate180Tests",
+    "from": "testRotate180_Shape2By2_Checks4",
+    "to": "testRotate180_Shape2By2_EveryCellValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.FlipHorizontallyTests",
+    "from": "testFlipH_Shape2By3_Checks4",
+    "to": "testFlipHorizontally_Shape2By3_ReversesFirstRowAndPreservesSource"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.FlipHorizontallyInPlaceTests",
+    "from": "testReverseH_Shape2By3_Checks3",
+    "to": "testFlipHorizontallyInPlace_Shape2By3_ReversesFirstRow"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.CopyRegionTests",
+    "from": "testCopyRegion_Shape3By3_Checks4",
+    "to": "testCopyRegion_Shape3By3_UpperRightRegion"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.CopyRegionTests",
+    "from": "testCopyRegion_Shape3By3_Checks6",
+    "to": "testCopyRegion_Shape3By3_LowerRightRegion"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.CopyTests",
+    "from": "testCopy_Shape2By2_Checks4",
+    "to": "testCopy_Shape2By2_DimensionsAndIndependentStorage"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.CopyTests",
+    "from": "testCopy_Shape2By2_Checks5",
+    "to": "testCopy_Shape2By2_FirstRowAndIndependentStorage"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.CopyFromTests",
+    "from": "testCopyFrom_Shape2By2_Checks5",
+    "to": "testCopyFrom_Shape2By2_PreservesCellsOutsideCopiedRegion"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.MapToObjTests",
+    "from": "testMapToObj_Shape2By2_Checks2",
+    "to": "testMapToObj_Shape2By2_MapsBooleanWords"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.MapToObjTests",
+    "from": "testMapToObj_Shape2By2_Checks4",
+    "to": "testMapToObj_Shape2By2_MapsBooleanLetters"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.MapTests",
+    "from": "testMap_Shape2By2_Checks3",
+    "to": "testMap_Shape2By2_NegatesFirstRowAndPreservesSource"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.MapTests",
+    "from": "testMap_Shape2By2_Checks5",
+    "to": "testMap_Shape2By2_NegatesAllCellsAndPreservesSource"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.UpdateAntiDiagonalTests",
+    "from": "testUpdateAntiDiagonal_Shape3By3_Checks3",
+    "to": "testUpdateAntiDiagonal_Shape3By3_TogglesEveryDiagonalElement"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.UpdateMainDiagonalTests",
+    "from": "testUpdateMainDiagonal_Shape3By3_Checks3",
+    "to": "testUpdateMainDiagonal_Shape3By3_TogglesEveryDiagonalElement"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.SetMainDiagonalTests",
+    "from": "testSetMainDiagonal_Shape3By3_Checks4",
+    "to": "testSetMainDiagonal_Shape3By3_PreservesOffDiagonalValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.MainDiagonalCopyTests",
+    "from": "testMainDiagonalCopy_Shape3By3_ArrayValues_Checks1",
+    "to": "testMainDiagonalCopy_Shape3By3_ArrayValues_AlternatingBooleanDiagonal"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.ColumnCopyTests",
+    "from": "testColumn_Shape2By3_ArrayValues_Checks1",
+    "to": "testColumnCopy_Shape2By3_ArrayValues_FirstColumnSnapshot"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.RowViewTests",
+    "from": "testRow_Shape2By3_ArrayValues_Checks1",
+    "to": "testRowView_Shape2By3_ArrayValues_FirstRowView"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "className": "BooleanMatrixTest.RandomTests",
+    "from": "testRandom_Values_Checks2",
+    "to": "testRandomRow_Values_SingleRowDimensions"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.ToStringTests",
+    "from": "testToString_Shape2By2_Checks3",
+    "to": "testToString_Shape2By2_ContainsElementText"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.EqualsTests",
+    "from": "testEquals_Shape2By2_NullInput_Checks4",
+    "to": "testEquals_Shape2By2_NullInput_DifferentValuesNullAndType"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.ColumnStreamsTests",
+    "from": "testColumnStreams_Shape2By2_Checks2",
+    "to": "testColumnStreams_Shape2By2_OuterAndInnerStreamSizes"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.RowStreamsTests",
+    "from": "testRowStreams_Shape2By2_Checks2",
+    "to": "testRowStreams_Shape2By2_OuterAndInnerStreamSizes"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.ColumnMajorStreamTests",
+    "from": "testColumnMajorStream_Shape2By2_Checks3",
+    "to": "testColumnMajorStream_Shape2By2_SizeAndFirstValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.RowMajorStreamTests",
+    "from": "testRowMajorStream_Shape2By2_Checks3",
+    "to": "testRowMajorStream_Shape2By2_SizeAndFirstValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.AntiDiagonalStreamTests",
+    "from": "testAntiDiagonalStream_Shape3By3_Checks4",
+    "to": "testAntiDiagonalStream_Shape3By3_OrderedListValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.MainDiagonalStreamTests",
+    "from": "testMainDiagonalStream_Shape3By3_Checks4",
+    "to": "testMainDiagonalStream_Shape3By3_OrderedListValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.ToDoubleMatrixTests",
+    "from": "testToDoubleMatrix_Shape2By2_Checks2",
+    "to": "testToDoubleMatrix_Shape2By2_FirstRowConvertedValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.ToFloatMatrixTests",
+    "from": "testToFloatMatrix_Shape2By2_Checks2",
+    "to": "testToFloatMatrix_Shape2By2_FirstRowConvertedValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.ToLongMatrixTests",
+    "from": "testToLongMatrix_Shape2By2_Checks2",
+    "to": "testToLongMatrix_Shape2By2_FirstRowConvertedValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.ToIntMatrixTests",
+    "from": "testToIntMatrix_Shape2By2_Checks2",
+    "to": "testToIntMatrix_Shape2By2_FirstRowConvertedValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.BoxedTests",
+    "from": "testBoxed_Shape2By2_Checks2",
+    "to": "testBoxed_Shape2By2_FirstRowBoxedValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.SubtractTests",
+    "from": "testSubtract_Shape2By2_Checks4",
+    "to": "testSubtract_Shape2By2_EveryCellDifference"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.AddTests",
+    "from": "testAdd_Shape2By2_Checks4",
+    "to": "testAdd_Shape2By2_EveryCellSum"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.FlattenTests",
+    "from": "testFlatten_Shape2By2_Checks5",
+    "to": "testFlatten_Shape2By2_EveryListElement"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.RepeatMatrixTests",
+    "from": "testRepeatMatrix_Shape2By2_Checks5",
+    "to": "testRepeatMatrix_Shape2By2_LastTileCorner"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.RepeatMatrixTests",
+    "from": "testRepeatMatrix_Shape2By2_Checks6",
+    "to": "testRepeatMatrix_Shape2By2_VerticalTileBoundary"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.RepeatElementsTests",
+    "from": "testRepeatElements_Shape2By2_Checks7",
+    "to": "testRepeatElements_Shape2By2_RepeatedBlockAndAdjacentValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.Rotate180Tests",
+    "from": "testRotate180_Shape2By2_Checks4",
+    "to": "testRotate180_Shape2By2_EveryCellValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.CopyRegionTests",
+    "from": "testCopyRegion_Shape3By3_Checks4",
+    "to": "testCopyRegion_Shape3By3_UpperRightRegion"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.CopyRegionTests",
+    "from": "testCopyRegion_Shape3By3_Checks6",
+    "to": "testCopyRegion_Shape3By3_LowerRightRegion"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.CopyTests",
+    "from": "testCopy_Shape2By2_Checks4",
+    "to": "testCopy_Shape2By2_DimensionsAndIndependentStorage"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.CopyTests",
+    "from": "testCopy_Shape2By2_Checks5",
+    "to": "testCopy_Shape2By2_FirstRowAndIndependentStorage"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.CopyFromTests",
+    "from": "testCopyFrom_Shape2By2_Checks5",
+    "to": "testCopyFrom_Shape2By2_PreservesCellsOutsideCopiedRegion"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.MapToObjTests",
+    "from": "testMapToObj_Shape2By2_Checks2",
+    "to": "testMapToObj_Shape2By2_AddsStringPrefixToFirstRow"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.MapToObjTests",
+    "from": "testMapToObj_Shape2By2_Checks4",
+    "to": "testMapToObj_Shape2By2_AddsStringPrefixToEveryCell"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.MapTests",
+    "from": "testMap_Shape2By2_Checks3",
+    "to": "testMap_Shape2By2_ScalesFirstRowAndPreservesSource"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.MapTests",
+    "from": "testMap_Shape2By2_Checks5",
+    "to": "testMap_Shape2By2_ScalesAllCellsAndPreservesSource"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.UpdateAntiDiagonalTests",
+    "from": "testUpdateAntiDiagonal_Shape3By3_Checks3",
+    "to": "testUpdateAntiDiagonal_Shape3By3_ScalesEveryDiagonalElement"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.AntiDiagonalCopyTests",
+    "from": "testAntiDiagonalCopy_Shape3By3_ArrayValues_Checks1",
+    "to": "testAntiDiagonalCopy_Shape3By3_ArrayValues_NonzeroAntiDiagonal"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.UpdateMainDiagonalTests",
+    "from": "testUpdateMainDiagonal_Shape3By3_Checks3",
+    "to": "testUpdateMainDiagonal_Shape3By3_ScalesEveryDiagonalElement"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.UpdateColumnTests",
+    "from": "testUpdateColumn_Shape3By2_ArrayValues_Checks2",
+    "to": "testUpdateColumn_Shape3By2_ArrayValues_PreservesOtherColumn"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.UpdateRowTests",
+    "from": "testUpdateRow_Shape2By3_ArrayValues_Checks2",
+    "to": "testUpdateRow_Shape2By3_ArrayValues_PreservesOtherRow"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.ColumnCopyTests",
+    "from": "testColumn_Shape2By3_ArrayValues_Checks1",
+    "to": "testColumnCopy_Shape2By3_ArrayValues_FirstColumnSnapshot"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.RowViewTests",
+    "from": "testRow_Shape2By3_ArrayValues_Checks1",
+    "to": "testRowView_Shape2By3_ArrayValues_FirstRowView"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.UnboxTests",
+    "from": "testUnbox_Values_Checks4",
+    "to": "testUnbox_Values_DimensionsAndFirstRowValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.RangeClosedTests",
+    "from": "testRangeClosed_Values_Checks4",
+    "to": "testRangeClosed_Values_InclusiveEndpoints"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.RangeTests",
+    "from": "testRange_Values_Checks4",
+    "to": "testRange_Values_ExclusiveEndpoints"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "className": "ByteMatrixTest.RandomTests",
+    "from": "testRandom_Values_Checks2",
+    "to": "testRandomRow_Values_SingleRowDimensions"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.ElementTypeTests",
+    "from": "testElementType_Shape1By1_Checks1",
+    "to": "testElementType_Shape1By1_PrimitiveElementClass"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.ToStringTests",
+    "from": "testToString_Shape2By2_Checks3",
+    "to": "testToString_Shape2By2_ContainsElementText"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.EqualsTests",
+    "from": "testEquals_Shape2By2_NullInput_Checks4",
+    "to": "testEquals_Shape2By2_NullInput_DifferentValuesNullAndType"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.ColumnStreamsTests",
+    "from": "testColumnStreams_Shape2By2_Checks2",
+    "to": "testColumnStreams_Shape2By2_OuterAndInnerStreamSizes"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.RowStreamsTests",
+    "from": "testRowStreams_Shape2By2_Checks2",
+    "to": "testRowStreams_Shape2By2_OuterAndInnerStreamSizes"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.ColumnMajorStreamTests",
+    "from": "testColumnMajorStream_Shape2By2_Checks3",
+    "to": "testColumnMajorStream_Shape2By2_SizeAndFirstValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.RowMajorStreamTests",
+    "from": "testRowMajorStream_Shape2By2_Checks3",
+    "to": "testRowMajorStream_Shape2By2_SizeAndFirstValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.AntiDiagonalStreamTests",
+    "from": "testAntiDiagonalStream_Shape3By3_Checks4",
+    "to": "testAntiDiagonalStream_Shape3By3_OrderedListValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.MainDiagonalStreamTests",
+    "from": "testMainDiagonalStream_Shape3By3_Checks4",
+    "to": "testMainDiagonalStream_Shape3By3_OrderedListValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.ToDoubleMatrixTests",
+    "from": "testToDoubleMatrix_Shape2By2_Checks2",
+    "to": "testToDoubleMatrix_Shape2By2_FirstRowConvertedValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.ToFloatMatrixTests",
+    "from": "testToFloatMatrix_Shape2By2_Checks2",
+    "to": "testToFloatMatrix_Shape2By2_FirstRowConvertedValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.ToLongMatrixTests",
+    "from": "testToLongMatrix_Shape2By2_Checks2",
+    "to": "testToLongMatrix_Shape2By2_FirstRowConvertedValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.ToIntMatrixTests",
+    "from": "testToIntMatrix_Shape2By2_Checks2",
+    "to": "testToIntMatrix_Shape2By2_FirstRowConvertedValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.BoxedTests",
+    "from": "testBoxed_Shape2By2_Checks2",
+    "to": "testBoxed_Shape2By2_FirstRowBoxedValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.SubtractTests",
+    "from": "testSubtract_Shape2By2_Checks4",
+    "to": "testSubtract_Shape2By2_EveryCellDifference"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.AddTests",
+    "from": "testAdd_Shape2By2_Checks4",
+    "to": "testAdd_Shape2By2_EveryCellSum"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.FlattenTests",
+    "from": "testFlatten_Shape2By2_Checks5",
+    "to": "testFlatten_Shape2By2_EveryListElement"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.RepeatMatrixTests",
+    "from": "testRepeatMatrix_Shape2By2_Checks5",
+    "to": "testRepeatMatrix_Shape2By2_LastTileCorner"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.RepeatMatrixTests",
+    "from": "testRepeatMatrix_Shape2By2_Checks6",
+    "to": "testRepeatMatrix_Shape2By2_VerticalTileBoundary"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.RepeatElementsTests",
+    "from": "testRepeatElements_Shape2By2_Checks7",
+    "to": "testRepeatElements_Shape2By2_RepeatedBlockAndAdjacentValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.TransposeTests",
+    "from": "testTranspose_Shape2By3_Checks6",
+    "to": "testTranspose_Shape2By3_SwapsDimensionsAndCornerValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.Rotate270Tests",
+    "from": "testRotate270_Shape2By2_Checks6",
+    "to": "testRotate270_Shape2By2_DimensionsAndEveryCellValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.Rotate180Tests",
+    "from": "testRotate180_Shape2By2_Checks4",
+    "to": "testRotate180_Shape2By2_EveryCellValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.Rotate180Tests",
+    "from": "testRotate180_Shape2By2_Checks6",
+    "to": "testRotate180_Shape2By2_DimensionsAndEveryCellValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.Rotate90Tests",
+    "from": "testRotate90_Shape2By2_Checks6",
+    "to": "testRotate90_Shape2By2_DimensionsAndEveryCellValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.FlipHorizontallyTests",
+    "from": "testFlipH_Shape2By3_Checks4",
+    "to": "testFlipHorizontally_Shape2By3_ReversesFirstRowAndPreservesSource"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.CopyRegionTests",
+    "from": "testCopyRegion_Shape3By3_Checks4",
+    "to": "testCopyRegion_Shape3By3_UpperRightRegion"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.CopyRegionTests",
+    "from": "testCopyRegion_Shape3By3_Checks6",
+    "to": "testCopyRegion_Shape3By3_LowerRightRegion"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.CopyTests",
+    "from": "testCopy_Shape2By2_Checks4",
+    "to": "testCopy_Shape2By2_DimensionsAndIndependentStorage"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.CopyTests",
+    "from": "testCopy_Shape2By2_Checks5",
+    "to": "testCopy_Shape2By2_FirstRowAndIndependentStorage"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.CopyFromTests",
+    "from": "testCopyFrom_WithOffset_Shape3By3_Checks6",
+    "to": "testCopyFrom_WithOffset_Shape3By3_OffsetsSourceAndPreservesOutsideCells"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.CopyFromTests",
+    "from": "testCopyFrom_Shape2By2_Checks5",
+    "to": "testCopyFrom_Shape2By2_PreservesCellsOutsideCopiedRegion"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.CopyFromTests",
+    "from": "testCopyFrom_Shape2By2_Checks2",
+    "to": "testCopyFrom_Shape2By2_CopiesCornerValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.FillTests",
+    "from": "testFill_SingleValue_Shape2By2_Checks4",
+    "to": "testFill_SingleValue_Shape2By2_FillsEveryCell"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.MapToObjTests",
+    "from": "testMapToObj_Shape2By2_Checks2",
+    "to": "testMapToObj_Shape2By2_AddsStringPrefixToFirstRow"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.MapToObjTests",
+    "from": "testMapToObj_Shape2By2_Checks4",
+    "to": "testMapToObj_Shape2By2_ConvertsEveryCharacterToString"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.MapTests",
+    "from": "testMap_Shape2By2_Checks3",
+    "to": "testMap_Shape2By2_IncrementsFirstRowAndPreservesSource"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.MapTests",
+    "from": "testMap_Shape2By2_Checks5",
+    "to": "testMap_Shape2By2_IncrementsAllCellsAndPreservesSource"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.ReplaceIfTests",
+    "from": "testReplaceIf_Predicate_Shape2By2_Checks4",
+    "to": "testReplaceIf_Predicate_Shape2By2_ReplacesMatchingCharacters"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.UpdateAllTests",
+    "from": "testUpdateAll_BiFunction_Shape2By2_Checks4",
+    "to": "testUpdateAll_BiFunction_Shape2By2_GeneratesEveryCellFromCoordinates"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.UpdateAntiDiagonalTests",
+    "from": "testUpdateAntiDiagonal_Shape3By3_Checks3",
+    "to": "testUpdateAntiDiagonal_Shape3By3_IncrementsEveryDiagonalElement"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.SetAntiDiagonalTests",
+    "from": "testSetAntiDiagonal_Shape3By3_Checks4",
+    "to": "testSetAntiDiagonal_Shape3By3_PreservesOffDiagonalValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.AntiDiagonalCopyTests",
+    "from": "testAntiDiagonalCopy_Shape3By3_ArrayValues_Checks1",
+    "to": "testAntiDiagonalCopy_Shape3By3_ArrayValues_NonzeroAntiDiagonal"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.AntiDiagonalCopyTests",
+    "from": "testDiagonalRU2LD_Values_Checks7",
+    "to": "testOfAntiDiagonal_Values_ZeroFillsOffDiagonal"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.UpdateMainDiagonalTests",
+    "from": "testUpdateMainDiagonal_Shape3By3_Checks3",
+    "to": "testUpdateMainDiagonal_Shape3By3_IncrementsEveryDiagonalElement"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.SetMainDiagonalTests",
+    "from": "testSetMainDiagonal_Shape3By3_Checks4",
+    "to": "testSetMainDiagonal_Shape3By3_PreservesOffDiagonalValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.MainDiagonalCopyTests",
+    "from": "testDiagonalLU2RD_Values_Checks7",
+    "to": "testOfMainDiagonal_Values_ZeroFillsOffDiagonal"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.UpdateColumnTests",
+    "from": "testUpdateColumn_Shape3By2_ArrayValues_Checks2",
+    "to": "testUpdateColumn_Shape3By2_ArrayValues_UppercaseFirstColumn"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.UpdateRowTests",
+    "from": "testUpdateRow_Shape2By3_ArrayValues_Checks2",
+    "to": "testUpdateRow_Shape2By3_ArrayValues_UppercaseFirstRow"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.SetColumnTests",
+    "from": "testSetColumn_InvalidLength_Shape2By2_Validation_Checks1",
+    "to": "testSetColumn_InvalidLength_Shape2By2_Validation_RejectsShortColumn"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.SetColumnTests",
+    "from": "testSetColumn_Shape3By2_ArrayValues_Checks2",
+    "to": "testSetColumn_Shape3By2_ArrayValues_PreservesOtherColumn"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.SetRowTests",
+    "from": "testSetRow_Shape2By3_ArrayValues_Checks2",
+    "to": "testSetRow_Shape2By3_ArrayValues_PreservesOtherRow"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.ColumnCopyTests",
+    "from": "testColumn_Shape2By3_ArrayValues_Checks1",
+    "to": "testColumnCopy_Shape2By3_ArrayValues_FirstColumnSnapshot"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.RowViewTests",
+    "from": "testRow_Shape2By3_ArrayValues_Checks1",
+    "to": "testRowView_Shape2By3_ArrayValues_FirstRowView"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.SetTests",
+    "from": "testSet_ByPoint_Shape2By2_Checks1",
+    "to": "testSet_ByPoint_Shape2By2_ChangesSecondRowFirstColumn"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.SetTests",
+    "from": "testSet_ByIndices_Shape2By2_Checks1",
+    "to": "testSet_ByIndices_Shape2By2_ChangesFirstRowSecondColumn"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.UnboxTests",
+    "from": "testUnbox_Values_Checks4",
+    "to": "testUnbox_Values_DimensionsAndFirstRowValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.RangeClosedTests",
+    "from": "testRangeClosed_Values_Checks4",
+    "to": "testRangeClosed_Values_InclusiveAlphabetEndpoint"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.RangeClosedTests",
+    "from": "testRangeClosed_WithStep_Values_Checks5",
+    "to": "testRangeClosed_WithStep_Values_SteppedAlphabet"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.RangeTests",
+    "from": "testRange_Values_Checks4",
+    "to": "testRange_Values_ExclusiveAlphabetEndpoint"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.RangeTests",
+    "from": "testRange_WithStep_Values_Checks7",
+    "to": "testRange_WithStep_Values_SteppedAlphabet"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "className": "CharMatrixTest.RandomTests",
+    "from": "testRandom_Values_Checks2",
+    "to": "testRandomRow_Values_SingleRowDimensions"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.PrintlnTests",
+    "from": "testPrintln_Shape2By2_Checks2",
+    "to": "testToMultilineString_Shape2By2_NonemptyRendering"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.PrintlnTests",
+    "from": "testPrintln_Shape2By2_Checks1",
+    "to": "testToMultilineString_Shape2By2_NonNullRendering"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.ToStringTests",
+    "from": "testToString_Shape2By2_Checks2",
+    "to": "testToString_Shape2By2_NonemptyRendering"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.ToStringTests",
+    "from": "testToString_Shape2By2_Checks3",
+    "to": "testToString_Shape2By2_ContainsElementText"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.EqualsTests",
+    "from": "testEquals_Shape2By2_NullInput_Checks5",
+    "to": "testEquals_Shape2By2_NullInput_ReflexivityDifferentValuesNullAndType"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.HashCodeTests",
+    "from": "testHashCode_Shape2By2_Checks1",
+    "to": "testHashCode_Shape2By2_EqualMatricesHaveEqualHashCodes"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.ForEachTests",
+    "from": "testForEach_Shape2By2_Checks1",
+    "to": "testForEach_Shape2By2_CountsVisitedElements"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.RowStreamsTests",
+    "from": "testRowStreams_WithRange_Shape3By2_Checks1",
+    "to": "testRowStreams_WithRange_Shape3By2_CountsSelectedRows"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.AntiDiagonalStreamTests",
+    "from": "testAntiDiagonalStream_Shape3By3_ArrayValues_Checks1",
+    "to": "testAntiDiagonalStream_Shape3By3_ArrayValues_AntiDiagonalArrayValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.MainDiagonalStreamTests",
+    "from": "testMainDiagonalStream_Shape3By3_ArrayValues_Checks1",
+    "to": "testMainDiagonalStream_Shape3By3_ArrayValues_DiagonalArrayValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.BoxedTests",
+    "from": "testBoxed_Shape2By2_Checks4",
+    "to": "testBoxed_Shape2By2_DimensionsAndCornerValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.MatrixMultiplyTests",
+    "from": "testMultiply_Shape2By2_Checks4",
+    "to": "testMatrixMultiply_Shape2By2_EveryCellProduct"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.SubtractTests",
+    "from": "testSubtract_Shape2By2_Checks4",
+    "to": "testSubtract_Shape2By2_EveryCellDifference"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.AddTests",
+    "from": "testAdd_Shape2By2_Checks4",
+    "to": "testAdd_Shape2By2_EveryCellSum"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.StackHorizontallyTests",
+    "from": "testHstack_Shape2By2_Checks4",
+    "to": "testStackHorizontally_Shape2By2_DimensionsAndOuterValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.FlattenTests",
+    "from": "testFlatten_Shape2By2_Checks5",
+    "to": "testFlatten_Shape2By2_EveryListElement"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.RepeatMatrixTests",
+    "from": "testRepeatMatrix_Shape2By2_Checks7",
+    "to": "testRepeatMatrix_Shape2By2_DimensionsAndTileCorners"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.RepeatElementsTests",
+    "from": "testRepeatElements_Shape2By2_Checks7",
+    "to": "testRepeatElements_Shape2By2_RepeatedBlockAndAdjacentValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.TransposeTests",
+    "from": "testTranspose_Square_Shape2By2_Checks4",
+    "to": "testTranspose_Square_Shape2By2_EveryCellValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.TransposeTests",
+    "from": "testTranspose_Shape2By3_Checks6",
+    "to": "testTranspose_Shape2By3_SwapsDimensionsAndCornerValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.Rotate270Tests",
+    "from": "testRotate270_Shape2By2_Checks6",
+    "to": "testRotate270_Shape2By2_DimensionsAndEveryCellValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.Rotate270Tests",
+    "from": "testRotate270_Shape2By2_Checks4",
+    "to": "testRotate270_Shape2By2_EveryCellValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.Rotate180Tests",
+    "from": "testRotate180_Shape2By2_Checks4",
+    "to": "testRotate180_Shape2By2_EveryCellValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.Rotate90Tests",
+    "from": "testRotate90_Shape2By2_Checks6",
+    "to": "testRotate90_Shape2By2_DimensionsAndEveryCellValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.CopyRegionTests",
+    "from": "testCopyRegion_Shape3By3_Checks4",
+    "to": "testCopyRegion_Shape3By3_UpperRightRegion"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.CopyRowsTests",
+    "from": "testCopyRows_Shape3By2_Checks4",
+    "to": "testCopyRows_Shape3By2_DimensionsAndRowValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.CopyTests",
+    "from": "testCopy_Shape2By2_Checks4",
+    "to": "testCopy_Shape2By2_DimensionsAndIndependentStorage"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.CopyTests",
+    "from": "testCopy_Shape2By2_Checks3",
+    "to": "testCopy_Shape2By2_CornerValuesAndIndependentStorage"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.CopyFromTests",
+    "from": "testCopyFrom_Shape2By2_Checks4",
+    "to": "testCopyFrom_Shape2By2_EveryCellValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.MapToObjTests",
+    "from": "testMapToObj_Shape2By2_Checks4",
+    "to": "testMapToObj_Shape2By2_EveryStringValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.MapToObjTests",
+    "from": "testMapToObj_Shape2By2_Checks2",
+    "to": "testMapToObj_Shape2By2_FirstRowStringValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.MapToLongTests",
+    "from": "testMapToLong_Shape2By2_Checks4",
+    "to": "testMapToLong_Shape2By2_EveryLongValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.MapToLongTests",
+    "from": "testMapToLong_Shape2By2_Checks2",
+    "to": "testMapToLong_Shape2By2_FirstRowLongValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.MapToIntTests",
+    "from": "testMapToInt_Shape2By2_Checks4",
+    "to": "testMapToInt_Shape2By2_EveryIntegerValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.MapToIntTests",
+    "from": "testMapToInt_Shape2By2_Checks2",
+    "to": "testMapToInt_Shape2By2_FirstRowIntegerValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.MapTests",
+    "from": "testMap_Shape2By2_Checks5",
+    "to": "testMap_Shape2By2_ScalesAllCellsAndPreservesSource"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.AntiDiagonalCopyTests",
+    "from": "testAntiDiagonalCopy_Shape3By3_ArrayValues_Checks1",
+    "to": "testAntiDiagonalCopy_Shape3By3_ArrayValues_AntiDiagonalArrayValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.AntiDiagonalCopyTests",
+    "from": "testDiagonalRU2LD_Values_Checks7",
+    "to": "testOfAntiDiagonal_Values_ZeroFillsOffDiagonal"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.MainDiagonalCopyTests",
+    "from": "testMainDiagonalCopy_Shape3By3_ArrayValues_Checks1",
+    "to": "testMainDiagonalCopy_Shape3By3_ArrayValues_DiagonalArrayValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.MainDiagonalCopyTests",
+    "from": "testDiagonalLU2RD_Values_Checks7",
+    "to": "testOfMainDiagonal_Values_ZeroFillsOffDiagonal"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.UpdateColumnTests",
+    "from": "testUpdateColumn_Shape2By2_ArrayValues_Checks2",
+    "to": "testUpdateColumn_Shape2By2_ArrayValues_PreservesOtherColumn"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.UpdateRowTests",
+    "from": "testUpdateRow_Shape2By2_ArrayValues_Checks2",
+    "to": "testUpdateRow_Shape2By2_ArrayValues_PreservesOtherRow"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.SetColumnTests",
+    "from": "testSetColumn_Shape2By2_ArrayValues_Checks1",
+    "to": "testSetColumn_Shape2By2_ArrayValues_ReplacesFirstColumn"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.SetRowTests",
+    "from": "testSetRow_Shape2By2_ArrayValues_Checks1",
+    "to": "testSetRow_Shape2By2_ArrayValues_ReplacesFirstRow"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.ColumnCopyTests",
+    "from": "testColumn_Shape2By3_ArrayValues_Checks1",
+    "to": "testColumnCopy_Shape2By3_ArrayValues_FirstColumnSnapshot"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.RowViewTests",
+    "from": "testRow_Shape2By3_ArrayValues_Checks1",
+    "to": "testRowView_Shape2By3_ArrayValues_FirstRowView"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.ValueRightTests",
+    "from": "testValueRight_Shape2By2_Checks2",
+    "to": "testValueRight_Shape2By2_PresentNeighborValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.ValueLeftTests",
+    "from": "testValueLeft_Shape2By2_Checks2",
+    "to": "testValueLeft_Shape2By2_PresentNeighborValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.ValueBelowTests",
+    "from": "testValueBelow_Shape2By2_Checks2",
+    "to": "testValueBelow_Shape2By2_PresentNeighborValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.ValueAboveTests",
+    "from": "testValueAbove_Shape2By2_Checks2",
+    "to": "testValueAbove_Shape2By2_PresentNeighborValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.SetTests",
+    "from": "testSet_Shape2By2_Checks1",
+    "to": "testSet_Shape2By2_ChangesFirstRowSecondColumn"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.UnboxTests",
+    "from": "testUnbox_Shape2By2_Checks4",
+    "to": "testUnbox_Shape2By2_DimensionsAndCornerValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.RandomTests",
+    "from": "testRandom_Values_Checks2",
+    "to": "testRandomRow_Values_SingleRowDimensions"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.RandomTests",
+    "from": "testRandom_Values_Checks3",
+    "to": "testRandomRow_Values_SingleRowDimensionsAndValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.ConstructorTests",
+    "from": "testConstructor_WithSingleElement_Shape1By1_Checks3",
+    "to": "testConstructor_WithSingleElement_Shape1By1_DimensionsAndValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+    "className": "DoubleMatrixTest.ConstructorTests",
+    "from": "testConstructor_WithValidArray_Values_Checks4",
+    "to": "testConstructor_WithValidArray_Values_DimensionsAndCornerValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.PrintlnTests",
+    "from": "testPrintln_Shape2By2_Checks2",
+    "to": "testToMultilineString_Shape2By2_NonemptyRendering"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.ToStringTests",
+    "from": "testToString_Shape2By2_Checks2",
+    "to": "testToString_Shape2By2_NonemptyRendering"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.ToStringTests",
+    "from": "testToString_Shape2By2_Checks3",
+    "to": "testToString_Shape2By2_ContainsElementText"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.ForEachTests",
+    "from": "testForEach_WithRange_Shape3By3_Checks1",
+    "to": "testForEach_WithRange_Shape3By3_CountsSelectedRegion"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.ForEachTests",
+    "from": "testForEach_Shape2By2_Checks1",
+    "to": "testForEach_Shape2By2_CountsVisitedElements"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.RowStreamsTests",
+    "from": "testRowStreams_WithRange_Shape3By2_Checks1",
+    "to": "testRowStreams_WithRange_Shape3By2_CountsSelectedRows"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.AntiDiagonalStreamTests",
+    "from": "testAntiDiagonalStream_Shape3By3_ArrayValues_Checks1",
+    "to": "testAntiDiagonalStream_Shape3By3_ArrayValues_AntiDiagonalArrayValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.MainDiagonalStreamTests",
+    "from": "testMainDiagonalStream_Shape3By3_ArrayValues_Checks1",
+    "to": "testMainDiagonalStream_Shape3By3_ArrayValues_DiagonalArrayValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.ToDoubleMatrixTests",
+    "from": "testToDoubleMatrix_Shape2By2_Checks4",
+    "to": "testToDoubleMatrix_Shape2By2_DimensionsAndConvertedValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.BoxedTests",
+    "from": "testBoxed_Shape2By2_Checks4",
+    "to": "testBoxed_Shape2By2_DimensionsAndCornerValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.SubtractTests",
+    "from": "testSubtract_Shape2By2_Checks4",
+    "to": "testSubtract_Shape2By2_EveryCellDifference"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.AddTests",
+    "from": "testAdd_Shape2By2_Checks4",
+    "to": "testAdd_Shape2By2_EveryCellSum"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.StackHorizontallyTests",
+    "from": "testHstack_Shape2By2_Checks4",
+    "to": "testStackHorizontally_Shape2By2_DimensionsAndOuterValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.FlattenTests",
+    "from": "testFlatten_Shape2By2_Checks5",
+    "to": "testFlatten_Shape2By2_EveryListElement"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.RepeatElementsTests",
+    "from": "testRepeatElements_Shape2By2_Checks7",
+    "to": "testRepeatElements_Shape2By2_RepeatedBlockAndAdjacentValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.TransposeTests",
+    "from": "testTranspose_Square_Shape2By2_Checks4",
+    "to": "testTranspose_Square_Shape2By2_EveryCellValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.TransposeTests",
+    "from": "testTranspose_Shape2By3_Checks6",
+    "to": "testTranspose_Shape2By3_SwapsDimensionsAndCornerValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.Rotate270Tests",
+    "from": "testRotate270_Shape2By2_Checks6",
+    "to": "testRotate270_Shape2By2_DimensionsAndEveryCellValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.Rotate180Tests",
+    "from": "testRotate180_Shape2By2_Checks4",
+    "to": "testRotate180_Shape2By2_EveryCellValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.Rotate90Tests",
+    "from": "testRotate90_Shape2By2_Checks6",
+    "to": "testRotate90_Shape2By2_DimensionsAndEveryCellValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.CopyRegionTests",
+    "from": "testCopyRegion_Shape3By3_Checks4",
+    "to": "testCopyRegion_Shape3By3_UpperRightRegion"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.CopyRowsTests",
+    "from": "testCopyRows_Shape3By2_Checks4",
+    "to": "testCopyRows_Shape3By2_DimensionsAndRowValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.CopyTests",
+    "from": "testCopy_Shape2By2_Checks4",
+    "to": "testCopy_Shape2By2_DimensionsAndIndependentStorage"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.CopyTests",
+    "from": "testCopy_Shape2By2_Checks3",
+    "to": "testCopy_Shape2By2_CornerValuesAndIndependentStorage"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.CopyFromTests",
+    "from": "testCopyFrom_Shape2By2_Checks4",
+    "to": "testCopyFrom_Shape2By2_EveryCellValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.MapToObjTests",
+    "from": "testMapToObj_Shape2By2_Checks4",
+    "to": "testMapToObj_Shape2By2_EveryStringValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.MapToObjTests",
+    "from": "testMapToObj_Shape2By2_Checks2",
+    "to": "testMapToObj_Shape2By2_FirstRowStringValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.MapTests",
+    "from": "testMap_Shape2By2_Checks5",
+    "to": "testMap_Shape2By2_ScalesAllCellsAndPreservesSource"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.AntiDiagonalCopyTests",
+    "from": "testAntiDiagonalCopy_Shape3By3_ArrayValues_Checks1",
+    "to": "testAntiDiagonalCopy_Shape3By3_ArrayValues_AntiDiagonalArrayValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.AntiDiagonalCopyTests",
+    "from": "testDiagonalRU2LD_Values_Checks7",
+    "to": "testOfAntiDiagonal_Values_ZeroFillsOffDiagonal"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.MainDiagonalCopyTests",
+    "from": "testMainDiagonalCopy_Shape3By3_ArrayValues_Checks1",
+    "to": "testMainDiagonalCopy_Shape3By3_ArrayValues_DiagonalArrayValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.MainDiagonalCopyTests",
+    "from": "testDiagonalLU2RD_Values_Checks7",
+    "to": "testOfMainDiagonal_Values_ZeroFillsOffDiagonal"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.UpdateColumnTests",
+    "from": "testUpdateColumn_Shape2By2_ArrayValues_Checks2",
+    "to": "testUpdateColumn_Shape2By2_ArrayValues_PreservesOtherColumn"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.UpdateRowTests",
+    "from": "testUpdateRow_Shape2By2_ArrayValues_Checks2",
+    "to": "testUpdateRow_Shape2By2_ArrayValues_PreservesOtherRow"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.SetColumnTests",
+    "from": "testSetColumn_Shape2By2_ArrayValues_Checks1",
+    "to": "testSetColumn_Shape2By2_ArrayValues_ReplacesFirstColumn"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.SetRowTests",
+    "from": "testSetRow_Shape2By2_ArrayValues_Checks1",
+    "to": "testSetRow_Shape2By2_ArrayValues_ReplacesFirstRow"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.ColumnCopyTests",
+    "from": "testColumn_Shape2By3_ArrayValues_Checks1",
+    "to": "testColumnCopy_Shape2By3_ArrayValues_FirstColumnSnapshot"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.RowViewTests",
+    "from": "testRow_Shape2By3_ArrayValues_Checks1",
+    "to": "testRowView_Shape2By3_ArrayValues_FirstRowView"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.ValueRightTests",
+    "from": "testValueRight_Shape2By2_Checks2",
+    "to": "testValueRight_Shape2By2_PresentNeighborValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.ValueLeftTests",
+    "from": "testValueLeft_Shape2By2_Checks2",
+    "to": "testValueLeft_Shape2By2_PresentNeighborValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.ValueBelowTests",
+    "from": "testValueBelow_Shape2By2_Checks2",
+    "to": "testValueBelow_Shape2By2_PresentNeighborValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.ValueAboveTests",
+    "from": "testValueAbove_Shape2By2_Checks2",
+    "to": "testValueAbove_Shape2By2_PresentNeighborValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.SetTests",
+    "from": "testSet_Shape2By2_Checks1",
+    "to": "testSet_Shape2By2_ChangesFirstRowSecondColumn"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.UnboxTests",
+    "from": "testUnbox_Shape2By2_Checks4",
+    "to": "testUnbox_Shape2By2_DimensionsAndCornerValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.FromTests",
+    "from": "testFromFromIntArray_Values_Checks4",
+    "to": "testFrom_Values_ConvertsIntArrayAndDimensions"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.ConstructorTests",
+    "from": "testConstructor_WithSingleElement_Shape1By1_Checks3",
+    "to": "testConstructor_WithSingleElement_Shape1By1_DimensionsAndValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+    "className": "FloatMatrixTest.ConstructorTests",
+    "from": "testConstructor_WithValidArray_Values_Checks4",
+    "to": "testConstructor_WithValidArray_Values_DimensionsAndCornerValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.ReshapeTests",
+    "from": "testReshape_Shape2By3_Checks6",
+    "to": "testReshape_Shape2By3_DimensionsAndRowMajorValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.ToStringTests",
+    "from": "testToString_Shape2By2_Checks3",
+    "to": "testToString_Shape2By2_ContainsElementText"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.ToStringTests",
+    "from": "testToString_Shape2By2_Checks2",
+    "to": "testToString_Shape2By2_NonemptyRendering"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.AntiDiagonalStreamTests",
+    "from": "testAntiDiagonalStream_Shape3By3_ArrayValues_Checks1",
+    "to": "testAntiDiagonalStream_Shape3By3_ArrayValues_AntiDiagonalArrayValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.ToDoubleMatrixTests",
+    "from": "testToDoubleMatrix_Shape2By2_Checks4",
+    "to": "testMapToDouble_Shape2By2_ConvertsEveryCellToDouble"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.ToFloatMatrixTests",
+    "from": "testToFloatMatrix_Shape2By2_Checks4",
+    "to": "testToFloatMatrix_Shape2By2_DimensionsAndConvertedValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.ToFloatMatrixTests",
+    "from": "testToFloatMatrix_Shape2By2_Checks2",
+    "to": "testToFloatMatrix_Shape2By2_FirstRowConvertedValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.ToLongMatrixTests",
+    "from": "testToLongMatrix_Shape2By2_Checks4",
+    "to": "testMapToLong_Shape2By2_ConvertsEveryCellToLong"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.ToLongMatrixTests",
+    "from": "testToLongMatrix_Shape2By2_Checks2",
+    "to": "testToLongMatrix_Shape2By2_FirstRowConvertedValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.BoxedTests",
+    "from": "testBoxed_Shape2By2_Checks4",
+    "to": "testBoxed_Shape2By2_DimensionsAndBoxedCornerValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.MatrixMultiplyTests",
+    "from": "testMultiply_Shape2By2_Checks4",
+    "to": "testMatrixMultiply_Shape2By2_EveryCellProduct"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.SubtractTests",
+    "from": "testSubtract_Shape2By2_Checks4",
+    "to": "testSubtract_Shape2By2_EveryCellDifference"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.AddTests",
+    "from": "testAdd_Shape2By2_Checks4",
+    "to": "testAdd_Shape2By2_EveryCellSum"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.StackHorizontallyTests",
+    "from": "testHstack_Shape2By2_Checks6",
+    "to": "testStackHorizontally_Shape2By2_DimensionsAndBothInputs"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.MutateViaFlatArrayTests",
+    "from": "testFlatOp_Shape2By2_Checks1",
+    "to": "testMutateViaFlatArray_Shape2By2_CallbackSumsFlatValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.RepeatMatrixTests",
+    "from": "testRepeatMatrix_Shape1By2_Checks6",
+    "to": "testRepeatMatrix_Shape1By2_RepeatsRowInBothDirections"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.RepeatElementsTests",
+    "from": "testRepeatElements_Shape2By2_Checks7",
+    "to": "testRepeatElements_Shape2By2_RepeatedBlockAndAdjacentValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.FlipVerticallyInPlaceTests",
+    "from": "testReverseV_Shape3By2_Checks3",
+    "to": "testFlipVerticallyInPlace_Shape3By2_ReversesFirstColumn"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.PadTests",
+    "from": "testPad_WithDefaultValue_Shape1By2_Checks5",
+    "to": "testResize_WithDefaultValue_Shape1By2_CustomPaddingValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.CopyRegionTests",
+    "from": "testCopyRegion_Shape3By3_Checks4",
+    "to": "testCopyRegion_Shape3By3_UpperRightRegion"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.CopyTests",
+    "from": "testCopy_Shape2By2_Checks4",
+    "to": "testCopy_Shape2By2_DimensionsAndIndependentStorage"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.CopyFromTests",
+    "from": "testCopyFrom_Shape2By2_Checks4",
+    "to": "testCopyFrom_Shape2By2_EveryCellValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.MapToObjTests",
+    "from": "testMapToObj_Shape2By2_Checks4",
+    "to": "testMapToObj_Shape2By2_EveryStringValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.MapToDoubleTests",
+    "from": "testMapToDouble_Shape2By2_Checks4",
+    "to": "testMapToDouble_Shape2By2_ConvertsEveryCellToDouble"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.MapToDoubleTests",
+    "from": "testMapToDouble_Shape2By2_Checks2",
+    "to": "testMapToDouble_Shape2By2_ScalesFirstRowToDouble"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.MapToLongTests",
+    "from": "testMapToLong_Shape2By2_Checks4",
+    "to": "testMapToLong_Shape2By2_EveryLongValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.MapToLongTests",
+    "from": "testMapToLong_Shape2By2_Checks2",
+    "to": "testMapToLong_Shape2By2_ScalesFirstRowToLong"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.MapTests",
+    "from": "testMap_Shape2By2_Checks5",
+    "to": "testMap_Shape2By2_ScalesAllCellsAndPreservesSource"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.UpdateAntiDiagonalTests",
+    "from": "testUpdateAntiDiagonal_Shape3By3_Checks3",
+    "to": "testUpdateAntiDiagonal_Shape3By3_OffsetsEveryDiagonalElement"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.SetAntiDiagonalTests",
+    "from": "testSetAntiDiagonal_Shape3By3_Checks3",
+    "to": "testSetAntiDiagonal_Shape3By3_ReplacesEveryDiagonalElement"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.UpdateMainDiagonalTests",
+    "from": "testUpdateMainDiagonal_Shape3By3_Checks3",
+    "to": "testUpdateMainDiagonal_Shape3By3_ScalesEveryDiagonalElement"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.UpdateColumnTests",
+    "from": "testUpdateColumn_Shape2By2_ArrayValues_Checks2",
+    "to": "testUpdateColumn_Shape2By2_ArrayValues_PreservesOtherColumn"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.SetColumnTests",
+    "from": "testSetColumn_Shape2By2_ArrayValues_Checks1",
+    "to": "testSetColumn_Shape2By2_ArrayValues_ReplacesFirstColumn"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.SetRowTests",
+    "from": "testSetRow_Shape2By2_ArrayValues_Checks1",
+    "to": "testSetRow_Shape2By2_ArrayValues_ReplacesFirstRow"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.SetRowTests",
+    "from": "testSetRow_Shape2By2_ArrayValues_Checks2",
+    "to": "testSetRow_Shape2By2_ArrayValues_RowReplacementAndNeighborPreserved"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.ValueRightTests",
+    "from": "testValueRight_Shape2By2_Checks2",
+    "to": "testValueRight_Shape2By2_PresentNeighborValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.ValueRightTests",
+    "from": "testValueRight_Shape2By2_Checks3",
+    "to": "testValueRight_Shape2By2_InteriorValueAndMissingBoundary"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.ValueLeftTests",
+    "from": "testValueLeft_Shape2By2_Checks2",
+    "to": "testValueLeft_Shape2By2_PresentNeighborValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.ValueLeftTests",
+    "from": "testValueLeft_Shape2By2_Checks3",
+    "to": "testValueLeft_Shape2By2_InteriorValueAndMissingBoundary"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.ValueBelowTests",
+    "from": "testValueBelow_Shape2By2_Checks2",
+    "to": "testValueBelow_Shape2By2_PresentNeighborValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.ValueBelowTests",
+    "from": "testValueBelow_Shape2By2_Checks3",
+    "to": "testValueBelow_Shape2By2_InteriorValueAndMissingBoundary"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.ValueAboveTests",
+    "from": "testValueAbove_Shape2By2_Checks2",
+    "to": "testValueAbove_Shape2By2_PresentNeighborValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "className": "IntMatrixTest.ValueAboveTests",
+    "from": "testValueAbove_Shape2By2_Checks3",
+    "to": "testValueAbove_Shape2By2_InteriorValueAndMissingBoundary"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.PrintlnTests",
+    "from": "testPrintln_Shape2By2_Checks2",
+    "to": "testToMultilineString_Shape2By2_NonemptyRendering"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.ReshapeTests",
+    "from": "testReshape_Shape2By3_Checks6",
+    "to": "testReshape_Shape2By3_DimensionsAndRowMajorValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.ReshapeTests",
+    "from": "testReshape_Shape3By3_Checks3",
+    "to": "testReshape_Shape3By3_SingleRowDimensionsAndLastValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.ToStringTests",
+    "from": "testToString_Shape2By2_Checks3",
+    "to": "testToString_Shape2By2_ContainsElementText"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.ToStringTests",
+    "from": "testToString_Shape2By2_Checks2",
+    "to": "testToString_Shape2By2_NonemptyRendering"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.EqualsTests",
+    "from": "testEquals_Shape2By2_NullInput_Checks4",
+    "to": "testEquals_Shape2By2_NullInput_DifferentValuesNullAndType"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.AntiDiagonalStreamTests",
+    "from": "testAntiDiagonalStream_Shape3By3_ArrayValues_Checks1",
+    "to": "testAntiDiagonalStream_Shape3By3_ArrayValues_AntiDiagonalArrayValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.ToDoubleMatrixTests",
+    "from": "testToDoubleMatrix_Shape2By2_Checks4",
+    "to": "testMapToDouble_Shape2By2_ConvertsEveryCellToDouble"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.ToDoubleMatrixTests",
+    "from": "testToDoubleMatrix_Shape2By2_Checks2",
+    "to": "testToDoubleMatrix_Shape2By2_FirstRowConvertedValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.ToFloatMatrixTests",
+    "from": "testToFloatMatrix_Shape2By2_Checks4",
+    "to": "testToFloatMatrix_Shape2By2_DimensionsAndConvertedValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.ToFloatMatrixTests",
+    "from": "testToFloatMatrix_Shape2By2_Checks2",
+    "to": "testToFloatMatrix_Shape2By2_FirstRowConvertedValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.BoxedTests",
+    "from": "testBoxed_Shape2By2_Checks4",
+    "to": "testBoxed_Shape2By2_DimensionsAndBoxedCornerValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.MatrixMultiplyTests",
+    "from": "testMultiply_Shape2By2_Checks4",
+    "to": "testMatrixMultiply_Shape2By2_EveryCellProduct"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.SubtractTests",
+    "from": "testSubtract_Shape2By2_Checks4",
+    "to": "testSubtract_Shape2By2_EveryCellDifference"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.AddTests",
+    "from": "testAdd_Shape2By2_Checks4",
+    "to": "testAdd_Shape2By2_EveryCellSum"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.StackHorizontallyTests",
+    "from": "testHstack_Shape2By2_Checks6",
+    "to": "testStackHorizontally_Shape2By2_DimensionsAndBothInputs"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.MutateViaFlatArrayTests",
+    "from": "testFlatOp_Shape2By2_Checks1",
+    "to": "testMutateViaFlatArray_Shape2By2_CallbackSumsFlatValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.FlattenTests",
+    "from": "testFlatten_Shape2By2_Checks5",
+    "to": "testFlatten_Shape2By2_EveryListElement"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.RepeatMatrixTests",
+    "from": "testRepeatMatrix_Shape1By2_Checks6",
+    "to": "testRepeatMatrix_Shape1By2_RepeatsRowInBothDirections"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.RepeatElementsTests",
+    "from": "testRepeatElements_Shape2By2_Checks7",
+    "to": "testRepeatElements_Shape2By2_RepeatedBlockAndAdjacentValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.TransposeTests",
+    "from": "testTranspose_Shape2By3_Checks5",
+    "to": "testTranspose_Shape2By3_SwapsDimensionsAndSelectedValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.Rotate180Tests",
+    "from": "testRotate180_Shape2By2_Checks4",
+    "to": "testRotate180_Shape2By2_EveryCellValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.FlipVerticallyInPlaceTests",
+    "from": "testReverseV_Shape3By2_Checks3",
+    "to": "testFlipVerticallyInPlace_Shape3By2_ReversesFirstColumn"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.PadTests",
+    "from": "testPad_WithDefaultValue_Shape1By2_Checks5",
+    "to": "testResize_WithDefaultValue_Shape1By2_CustomPaddingValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.CopyRegionTests",
+    "from": "testCopyRegion_Shape3By3_Checks4",
+    "to": "testCopyRegion_Shape3By3_UpperRightRegion"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.CopyTests",
+    "from": "testCopy_Shape2By2_Checks4",
+    "to": "testCopy_Shape2By2_DimensionsAndIndependentStorage"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.CopyFromTests",
+    "from": "testCopyFrom_Shape2By2_Checks4",
+    "to": "testCopyFrom_Shape2By2_EveryCellValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.MapToObjTests",
+    "from": "testMapToObj_Shape2By2_Checks4",
+    "to": "testMapToObj_Shape2By2_EveryStringValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.MapToObjTests",
+    "from": "testMapToObj_Shape2By2_Checks2",
+    "to": "testMapToObj_Shape2By2_AddsValuePrefixToFirstRow"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.MapToDoubleTests",
+    "from": "testMapToDouble_Shape2By2_Checks4",
+    "to": "testMapToDouble_Shape2By2_ConvertsEveryCellToDouble"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.MapToDoubleTests",
+    "from": "testMapToDouble_Shape2By2_Checks2",
+    "to": "testMapToDouble_Shape2By2_ScalesFirstRowToDouble"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.MapToIntTests",
+    "from": "testMapToInt_Shape2By2_Checks4",
+    "to": "testMapToInt_Shape2By2_EveryIntegerValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.MapTests",
+    "from": "testMap_Shape2By2_Checks5",
+    "to": "testMap_Shape2By2_ScalesAllCellsAndPreservesSource"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.UpdateAntiDiagonalTests",
+    "from": "testUpdateAntiDiagonal_Shape3By3_Checks3",
+    "to": "testUpdateAntiDiagonal_Shape3By3_OffsetsEveryDiagonalElement"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.SetAntiDiagonalTests",
+    "from": "testSetAntiDiagonal_Shape3By3_Checks3",
+    "to": "testSetAntiDiagonal_Shape3By3_ReplacesEveryDiagonalElement"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.UpdateMainDiagonalTests",
+    "from": "testUpdateMainDiagonal_Shape3By3_Checks3",
+    "to": "testUpdateMainDiagonal_Shape3By3_ScalesEveryDiagonalElement"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.UpdateColumnTests",
+    "from": "testUpdateColumn_Shape2By2_ArrayValues_Checks2",
+    "to": "testUpdateColumn_Shape2By2_ArrayValues_PreservesOtherColumn"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.UpdateRowTests",
+    "from": "testUpdateRow_Shape2By2_ArrayValues_Checks2",
+    "to": "testUpdateRow_Shape2By2_ArrayValues_PreservesOtherRow"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.SetColumnTests",
+    "from": "testSetColumn_Shape2By2_ArrayValues_Checks1",
+    "to": "testSetColumn_Shape2By2_ArrayValues_ReplacesFirstColumn"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.SetRowTests",
+    "from": "testSetRow_Shape2By2_ArrayValues_Checks1",
+    "to": "testSetRow_Shape2By2_ArrayValues_ReplacesFirstRow"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.SetRowTests",
+    "from": "testSetRow_Shape2By2_ArrayValues_Checks2",
+    "to": "testSetRow_Shape2By2_ArrayValues_RowReplacementAndNeighborPreserved"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.ValueRightTests",
+    "from": "testValueRight_Shape2By2_Checks2",
+    "to": "testValueRight_Shape2By2_PresentNeighborValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.ValueRightTests",
+    "from": "testValueRight_Shape2By2_Checks3",
+    "to": "testValueRight_Shape2By2_InteriorValueAndMissingBoundary"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.ValueLeftTests",
+    "from": "testValueLeft_Shape2By2_Checks2",
+    "to": "testValueLeft_Shape2By2_PresentNeighborValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.ValueLeftTests",
+    "from": "testValueLeft_Shape2By2_Checks3",
+    "to": "testValueLeft_Shape2By2_InteriorValueAndMissingBoundary"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.ValueBelowTests",
+    "from": "testValueBelow_Shape2By2_Checks2",
+    "to": "testValueBelow_Shape2By2_PresentNeighborValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.ValueBelowTests",
+    "from": "testValueBelow_Shape2By2_Checks3",
+    "to": "testValueBelow_Shape2By2_InteriorValueAndMissingBoundary"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.ValueAboveTests",
+    "from": "testValueAbove_Shape2By2_Checks2",
+    "to": "testValueAbove_Shape2By2_PresentNeighborValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.ValueAboveTests",
+    "from": "testValueAbove_Shape2By2_Checks3",
+    "to": "testValueAbove_Shape2By2_InteriorValueAndMissingBoundary"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "className": "LongMatrixTest.RandomTests",
+    "from": "testRandom_Values_Checks3",
+    "to": "testRandomRow_Values_SingleRowDimensionsAndValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+    "className": "MatrixTest.MapToFloatTests",
+    "from": "testMapToFloat_Shape2By2_Checks4",
+    "to": "testMapToFloat_Shape2By2_UnboxesEveryFloatValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+    "className": "MatrixTest.MapToLongTests",
+    "from": "testMapToLong_Shape2By2_Checks4",
+    "to": "testMapToLong_Shape2By2_UnboxesEveryLongValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+    "className": "MatrixTest.MapToShortTests",
+    "from": "testMapToShort_Shape2By2_Checks4",
+    "to": "testMapToShort_Shape2By2_UnboxesEveryShortValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+    "className": "MatrixTest.MapToCharTests",
+    "from": "testMapToChar_Shape2By2_Checks4",
+    "to": "testMapToChar_Shape2By2_ConvertsEveryCharacterValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+    "className": "MatrixTest.MapToByteTests",
+    "from": "testMapToByte_Shape2By2_Checks4",
+    "to": "testMapToByte_Shape2By2_UnboxesEveryByteValue"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.ToStringTests",
+    "from": "testToString_Shape2By2_Checks3",
+    "to": "testToString_Shape2By2_ContainsElementText"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.ToStringTests",
+    "from": "testToString_Shape2By2_Checks2",
+    "to": "testToString_Shape2By2_NonemptyRendering"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.AntiDiagonalStreamTests",
+    "from": "testAntiDiagonalStream_Shape3By3_ArrayValues_Checks1",
+    "to": "testAntiDiagonalStream_Shape3By3_ArrayValues_AntiDiagonalArrayValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.ToDoubleMatrixTests",
+    "from": "testToDoubleMatrix_Shape2By2_Checks2",
+    "to": "testToDoubleMatrix_Shape2By2_FirstRowConvertedValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.ToFloatMatrixTests",
+    "from": "testToFloatMatrix_Shape2By2_Checks2",
+    "to": "testToFloatMatrix_Shape2By2_FirstRowConvertedValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.ToLongMatrixTests",
+    "from": "testToLongMatrix_Shape2By2_Checks2",
+    "to": "testToLongMatrix_Shape2By2_FirstRowConvertedValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.ToIntMatrixTests",
+    "from": "testToIntMatrix_Shape2By2_Checks2",
+    "to": "testToIntMatrix_Shape2By2_FirstRowConvertedValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.BoxedTests",
+    "from": "testBoxed_Shape2By2_Checks4",
+    "to": "testBoxed_Shape2By2_DimensionsAndBoxedCornerValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.MatrixMultiplyTests",
+    "from": "testMultiply_Shape2By2_Checks4",
+    "to": "testMatrixMultiply_Shape2By2_EveryCellProduct"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.SubtractTests",
+    "from": "testSubtract_Shape2By2_Checks4",
+    "to": "testSubtract_Shape2By2_EveryCellDifference"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.AddTests",
+    "from": "testAdd_Shape2By2_Checks4",
+    "to": "testAdd_Shape2By2_EveryCellSum"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.StackHorizontallyTests",
+    "from": "testHstack_Shape2By2_Checks6",
+    "to": "testStackHorizontally_Shape2By2_DimensionsAndBothInputs"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.MutateViaFlatArrayTests",
+    "from": "testFlatOp_Shape2By2_Checks1",
+    "to": "testMutateViaFlatArray_Shape2By2_CallbackSumsFlatValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.TransposeTests",
+    "from": "testTranspose_Shape2By3_Checks5",
+    "to": "testTranspose_Shape2By3_SwapsDimensionsAndSelectedValues"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.FlipHorizontallyTests",
+    "from": "testFlipH_Shape2By3_Checks3",
+    "to": "testFlipHorizontally_Shape2By3_ReversesFirstRow"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.FlipVerticallyInPlaceTests",
+    "from": "testReverseV_Shape3By2_Checks3",
+    "to": "testFlipVerticallyInPlace_Shape3By2_ReversesFirstColumn"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.CopyRegionTests",
+    "from": "testCopyRegion_Shape3By3_Checks4",
+    "to": "testCopyRegion_Shape3By3_MiddleRowRegion"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.CopyTests",
+    "from": "testCopy_Shape2By2_Checks4",
+    "to": "testCopy_Shape2By2_DimensionsAndIndependentStorage"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.MapToObjTests",
+    "from": "testMapToObj_Shape2By2_Checks2",
+    "to": "testMapToObj_Shape2By2_AddsValuePrefixToFirstRow"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.MapTests",
+    "from": "testMap_Shape2By2_Checks5",
+    "to": "testMap_Shape2By2_ScalesAllCellsAndPreservesSource"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.UpdateAntiDiagonalTests",
+    "from": "testUpdateAntiDiagonal_Shape3By3_Checks3",
+    "to": "testUpdateAntiDiagonal_Shape3By3_OffsetsEveryDiagonalElement"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.SetAntiDiagonalTests",
+    "from": "testSetAntiDiagonal_Shape3By3_Checks3",
+    "to": "testSetAntiDiagonal_Shape3By3_ReplacesEveryDiagonalElement"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.UpdateMainDiagonalTests",
+    "from": "testUpdateMainDiagonal_Shape3By3_Checks3",
+    "to": "testUpdateMainDiagonal_Shape3By3_ScalesEveryDiagonalElement"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.SetMainDiagonalTests",
+    "from": "testSetMainDiagonal_Shape3By3_Checks3",
+    "to": "testSetMainDiagonal_Shape3By3_ReplacesEveryDiagonalElement"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.SetRowTests",
+    "from": "testSetRow_Shape2By2_ArrayValues_Checks2",
+    "to": "testSetRow_Shape2By2_ArrayValues_RowReplacementAndNeighborPreserved"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.ValueRightTests",
+    "from": "testValueRight_Shape2By2_Checks3",
+    "to": "testValueRight_Shape2By2_InteriorValueAndMissingBoundary"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.ValueLeftTests",
+    "from": "testValueLeft_Shape2By2_Checks3",
+    "to": "testValueLeft_Shape2By2_InteriorValueAndMissingBoundary"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.ValueBelowTests",
+    "from": "testValueBelow_Shape2By2_Checks3",
+    "to": "testValueBelow_Shape2By2_InteriorValueAndMissingBoundary"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.ValueAboveTests",
+    "from": "testValueAbove_Shape2By2_Checks3",
+    "to": "testValueAbove_Shape2By2_InteriorValueAndMissingBoundary"
+  },
+  {
+    "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "className": "ShortMatrixTest.SetTests",
+    "from": "testSet_Shape2By2_Checks2",
+    "to": "testSet_Shape2By2_ChangesBothDiagonalCells"
+  }
+]

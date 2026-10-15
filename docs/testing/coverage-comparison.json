@@ -1,0 +1,87 @@
+{
+  "baseline": {
+    "INSTRUCTION": {
+      "missed": 3095,
+      "covered": 51636
+    },
+    "BRANCH": {
+      "missed": 586,
+      "covered": 4734
+    },
+    "LINE": {
+      "missed": 436,
+      "covered": 7846
+    },
+    "COMPLEXITY": {
+      "missed": 582,
+      "covered": 3729
+    },
+    "METHOD": {
+      "missed": 75,
+      "covered": 1573
+    },
+    "CLASS": {
+      "missed": 0,
+      "covered": 77
+    }
+  },
+  "normal": {
+    "INSTRUCTION": {
+      "missed": 3095,
+      "covered": 51636
+    },
+    "BRANCH": {
+      "missed": 586,
+      "covered": 4734
+    },
+    "LINE": {
+      "missed": 436,
+      "covered": 7846
+    },
+    "COMPLEXITY": {
+      "missed": 582,
+      "covered": 3729
+    },
+    "METHOD": {
+      "missed": 75,
+      "covered": 1573
+    },
+    "CLASS": {
+      "missed": 0,
+      "covered": 77
+    }
+  },
+  "regressions": [],
+  "randomized": {
+    "INSTRUCTION": {
+      "missed": 3095,
+      "covered": 51636
+    },
+    "BRANCH": {
+      "missed": 586,
+      "covered": 4734
+    },
+    "LINE": {
+      "missed": 436,
+      "covered": 7846
+    },
+    "COMPLEXITY": {
+      "missed": 582,
+      "covered": 3729
+    },
+    "METHOD": {
+      "missed": 75,
+      "covered": 1573
+    },
+    "CLASS": {
+      "missed": 0,
+      "covered": 77
+    }
+  },
+  "randomSeed": 20261015,
+  "randomizedRegressions": [],
+  "executedCases": {
+    "normal": 6658,
+    "randomized": 6658
+  }
+}

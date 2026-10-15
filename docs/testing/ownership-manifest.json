@@ -1,0 +1,1361 @@
+{
+  "moved": [
+    {
+      "from": "CoreNullValidationTest.rowSnapshotRejectsNullOnlyWhenThereAreBackingRows",
+      "to": "AbstractMatrixTest/OutputAndSnapshotValidation.rowSnapshotRejectsNullOnlyWhenThereAreBackingRows",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+        "className": "AbstractMatrixTest.SnapshotRowsIfBackingRowsTests",
+        "method": "testRowSnapshotRejectsNullOnlyWhenThereAreBackingRows",
+        "signature": "testRowSnapshotRejectsNullOnlyWhenThereAreBackingRows()",
+        "line": 161
+      }
+    },
+    {
+      "from": "CoreNullValidationTest.elementOutputValidatesDestinationBeforeRenderingAndPreservesNullableValues",
+      "to": "AbstractMatrixTest/OutputAndSnapshotValidation.elementOutputValidatesDestinationBeforeRenderingAndPreservesNullableValues",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+        "className": "AbstractMatrixTest.AppendElementForOutputTests",
+        "method": "testElementOutputValidatesDestinationBeforeRenderingAndPreservesNullableValues",
+        "signature": "testElementOutputValidatesDestinationBeforeRenderingAndPreservesNullableValues()",
+        "line": 4574
+      }
+    },
+    {
+      "from": "CoreNullValidationTest.outputImplementationNullPointerExceptionIsNotTranslated",
+      "to": "AbstractMatrixTest/OutputAndSnapshotValidation.outputImplementationNullPointerExceptionIsNotTranslated",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+        "className": "AbstractMatrixTest.AppendElementForOutputTests",
+        "method": "testOutputImplementationNullPointerExceptionIsNotTranslated",
+        "signature": "testOutputImplementationNullPointerExceptionIsNotTranslated()",
+        "line": 4594
+      }
+    },
+    {
+      "from": "FunctionalInterfaceNullValidationTest.testEveryPublicMethodRejectsNullFunctionalInterfaceArguments",
+      "to": "MatrixNullContractTest/FunctionalArguments.testEveryPublicMethodRejectsNullFunctionalInterfaceArguments",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixNullContractTest.java",
+        "className": "MatrixNullContractTest.FunctionalArguments",
+        "method": "testEveryPublicMethodRejectsNullFunctionalInterfaceArguments",
+        "signature": "testEveryPublicMethodRejectsNullFunctionalInterfaceArguments()",
+        "line": 153
+      }
+    },
+    {
+      "from": "NullArgumentValidationTest.everyNonNullableReferenceParameterRejectsNullWithIllegalArgumentException",
+      "to": "MatrixNullContractTest/ReferenceArguments.everyNonNullableReferenceParameterRejectsNullWithIllegalArgumentException",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixNullContractTest.java",
+        "className": "MatrixNullContractTest.ReferenceArguments",
+        "method": "testEveryNonNullableReferenceParameterRejectsNullWithIllegalArgumentException",
+        "signature": "testEveryNonNullableReferenceParameterRejectsNullWithIllegalArgumentException()",
+        "line": 379
+      }
+    },
+    {
+      "from": "NullArgumentValidationTest.nullElementsOfArrayOrCollectionArgumentsNeverCauseNullPointerException",
+      "to": "MatrixNullContractTest/ReferenceArguments.nullElementsOfArrayOrCollectionArgumentsNeverCauseNullPointerException",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixNullContractTest.java",
+        "className": "MatrixNullContractTest.ReferenceArguments",
+        "method": "testNullElementsOfArrayOrCollectionArgumentsNeverCauseNullPointerException",
+        "signature": "testNullElementsOfArrayOrCollectionArgumentsNeverCauseNullPointerException()",
+        "line": 418
+      }
+    },
+    {
+      "from": "NullArgumentValidationTest.boxedMapperReturningNullThrowsNullPointerExceptionInBothModes",
+      "to": "MatrixNullContractTest/ReferenceArguments.boxedMapperReturningNullThrowsNullPointerExceptionInBothModes",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixNullContractTest.java",
+        "className": "MatrixNullContractTest.ReferenceArguments",
+        "method": "testBoxedMapperReturningNullThrowsNullPointerExceptionInBothModes",
+        "signature": "testBoxedMapperReturningNullThrowsNullPointerExceptionInBothModes()",
+        "line": 451
+      }
+    },
+    {
+      "from": "NullArgumentValidationTest.objectValuedFunctionsStoreNullResultsAndNullElementsFlowThrough",
+      "to": "MatrixNullContractTest/ReferenceArguments.objectValuedFunctionsStoreNullResultsAndNullElementsFlowThrough",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixNullContractTest.java",
+        "className": "MatrixNullContractTest.ReferenceArguments",
+        "method": "testObjectValuedFunctionsStoreNullResultsAndNullElementsFlowThrough",
+        "signature": "testObjectValuedFunctionsStoreNullResultsAndNullElementsFlowThrough()",
+        "line": 475
+      }
+    },
+    {
+      "from": "NumericDeepReviewTest.intClosedRangeIncludesEqualEndpointsForEitherStepDirection",
+      "to": "IntMatrixTest/ClosedRangeEndpoints.intClosedRangeIncludesEqualEndpointsForEitherStepDirection",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.RangeClosedTests",
+        "method": "testIntClosedRangeIncludesEqualEndpointsForEitherStepDirection",
+        "signature": "testIntClosedRangeIncludesEqualEndpointsForEitherStepDirection()",
+        "line": 819
+      }
+    },
+    {
+      "from": "NumericDeepReviewTest.longClosedRangeIncludesEqualEndpointsForEitherStepDirection",
+      "to": "LongMatrixTest/ClosedRangeEndpoints.longClosedRangeIncludesEqualEndpointsForEitherStepDirection",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.RangeClosedTests",
+        "method": "testLongClosedRangeIncludesEqualEndpointsForEitherStepDirection",
+        "signature": "testLongClosedRangeIncludesEqualEndpointsForEitherStepDirection()",
+        "line": 675
+      }
+    },
+    {
+      "from": "NumericExceptionReviewTest.copyFactoriesValidateRowsAndKeepDuplicateSourceRowsIndependent",
+      "to": "MatrixValidationContractTest/NumericFailures.copyFactoriesValidateRowsAndKeepDuplicateSourceRowsIndependent",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixValidationContractTest.java",
+        "className": "MatrixValidationContractTest.NumericFailures",
+        "method": "testCopyFactoriesValidateRowsAndKeepDuplicateSourceRowsIndependent",
+        "signature": "testCopyFactoriesValidateRowsAndKeepDuplicateSourceRowsIndependent()",
+        "line": 27
+      }
+    },
+    {
+      "from": "NumericExceptionReviewTest.mappingRejectsInvalidTypesBeforeInvokingCallbacksEvenForEmptyMatrices",
+      "to": "MatrixValidationContractTest/NumericFailures.mappingRejectsInvalidTypesBeforeInvokingCallbacksEvenForEmptyMatrices",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixValidationContractTest.java",
+        "className": "MatrixValidationContractTest.NumericFailures",
+        "method": "testMappingRejectsInvalidTypesBeforeInvokingCallbacksEvenForEmptyMatrices",
+        "signature": "testMappingRejectsInvalidTypesBeforeInvokingCallbacksEvenForEmptyMatrices()",
+        "line": 52
+      }
+    },
+    {
+      "from": "NumericExceptionReviewTest.mappingReportsIncompatibleResultValuesAndPreservesCheckedFailures",
+      "to": "MatrixValidationContractTest/NumericFailures.mappingReportsIncompatibleResultValuesAndPreservesCheckedFailures",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixValidationContractTest.java",
+        "className": "MatrixValidationContractTest.NumericFailures",
+        "method": "testMappingReportsIncompatibleResultValuesAndPreservesCheckedFailures",
+        "signature": "testMappingReportsIncompatibleResultValuesAndPreservesCheckedFailures()",
+        "line": 65
+      }
+    },
+    {
+      "from": "NumericExceptionReviewTest.generatorFailuresPropagateOnlyWhenThereAreCellsToGenerate",
+      "to": "MatrixValidationContractTest/NumericFailures.generatorFailuresPropagateOnlyWhenThereAreCellsToGenerate",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixValidationContractTest.java",
+        "className": "MatrixValidationContractTest.NumericFailures",
+        "method": "testGeneratorFailuresPropagateOnlyWhenThereAreCellsToGenerate",
+        "signature": "testGeneratorFailuresPropagateOnlyWhenThereAreCellsToGenerate()",
+        "line": 81
+      }
+    },
+    {
+      "from": "NumericExceptionReviewTest.exhaustedTraversalReportsFailureDuringConsumption",
+      "to": "MatrixValidationContractTest/NumericFailures.exhaustedTraversalReportsFailureDuringConsumption",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixValidationContractTest.java",
+        "className": "MatrixValidationContractTest.NumericFailures",
+        "method": "testExhaustedTraversalReportsFailureDuringConsumption",
+        "signature": "testExhaustedTraversalReportsFailureDuringConsumption()",
+        "line": 101
+      }
+    },
+    {
+      "from": "NumericNullReviewTest.resultFactoriesRejectNullArraysConsistentlyWithPublicFactories",
+      "to": "MatrixNullContractTest/NumericValues.resultFactoriesRejectNullArraysConsistentlyWithPublicFactories",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixNullContractTest.java",
+        "className": "MatrixNullContractTest.NumericValues",
+        "method": "testResultFactoriesRejectNullArraysConsistentlyWithPublicFactories",
+        "signature": "testResultFactoriesRejectNullArraysConsistentlyWithPublicFactories()",
+        "line": 497
+      }
+    },
+    {
+      "from": "NumericNullReviewTest.nullCallbackResultsStillFailOnlyWhenUnboxed",
+      "to": "MatrixNullContractTest/NumericValues.nullCallbackResultsStillFailOnlyWhenUnboxed",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixNullContractTest.java",
+        "className": "MatrixNullContractTest.NumericValues",
+        "method": "testNullCallbackResultsStillFailOnlyWhenUnboxed",
+        "signature": "testNullCallbackResultsStillFailOnlyWhenUnboxed()",
+        "line": 514
+      }
+    },
+    {
+      "from": "NumericNullReviewTest.objectMappingAndUnboxingKeepTheirDifferentNullValueContracts",
+      "to": "MatrixNullContractTest/NumericValues.objectMappingAndUnboxingKeepTheirDifferentNullValueContracts",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixNullContractTest.java",
+        "className": "MatrixNullContractTest.NumericValues",
+        "method": "testObjectMappingAndUnboxingKeepTheirDifferentNullValueContracts",
+        "signature": "testObjectMappingAndUnboxingKeepTheirDifferentNullValueContracts()",
+        "line": 531
+      }
+    },
+    {
+      "from": "NumericNullReviewTest.optionalDiagonalsAndSkippedSourceRowsStillAcceptNull",
+      "to": "MatrixNullContractTest/NumericValues.optionalDiagonalsAndSkippedSourceRowsStillAcceptNull",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixNullContractTest.java",
+        "className": "MatrixNullContractTest.NumericValues",
+        "method": "testOptionalDiagonalsAndSkippedSourceRowsStillAcceptNull",
+        "signature": "testOptionalDiagonalsAndSkippedSourceRowsStillAcceptNull()",
+        "line": 543
+      }
+    },
+    {
+      "from": "NumericNullReviewTest.nullableObjectAndRowHooksKeepTheirExistingResults",
+      "to": "MatrixNullContractTest/NumericValues.nullableObjectAndRowHooksKeepTheirExistingResults",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixNullContractTest.java",
+        "className": "MatrixNullContractTest.NumericValues",
+        "method": "testNullableObjectAndRowHooksKeepTheirExistingResults",
+        "signature": "testNullableObjectAndRowHooksKeepTheirExistingResults()",
+        "line": 559
+      }
+    },
+    {
+      "from": "PrimitiveDeepReviewTest.closedRangesWithEqualBoundsContainOneValueForEitherStepDirection",
+      "to": "MatrixValidationContractTest/PrimitiveRangeEndpoints.closedRangesWithEqualBoundsContainOneValueForEitherStepDirection",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixValidationContractTest.java",
+        "className": "MatrixValidationContractTest.PrimitiveRangeEndpoints",
+        "method": "testClosedRangesWithEqualBoundsContainOneValueForEitherStepDirection",
+        "signature": "testClosedRangesWithEqualBoundsContainOneValueForEitherStepDirection()",
+        "line": 121
+      }
+    },
+    {
+      "from": "PrimitiveDeepReviewTest.byteDiagonalStreamsAreEmptyWhenEitherDimensionIsZero",
+      "to": "ByteMatrixTest/EmptyDiagonalStreams.byteDiagonalStreamsAreEmptyWhenEitherDimensionIsZero",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.RandomTests",
+        "method": "testByteDiagonalStreamsAreEmptyWhenEitherDimensionIsZero",
+        "signature": "testByteDiagonalStreamsAreEmptyWhenEitherDimensionIsZero()",
+        "line": 349
+      }
+    },
+    {
+      "from": "PrimitiveExceptionReviewTest.copyFactoriesPreserveValidationFailureOrderAndMessages",
+      "to": "MatrixValidationContractTest/PrimitiveFailures.copyFactoriesPreserveValidationFailureOrderAndMessages",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixValidationContractTest.java",
+        "className": "MatrixValidationContractTest.PrimitiveFailures",
+        "method": "testCopyFactoriesPreserveValidationFailureOrderAndMessages",
+        "signature": "testCopyFactoriesPreserveValidationFailureOrderAndMessages()",
+        "line": 156
+      }
+    },
+    {
+      "from": "PrimitiveExceptionReviewTest.copyFactoriesStillAcceptRepeatedRowsAndOwnIndependentCopies",
+      "to": "MatrixValidationContractTest/PrimitiveFailures.copyFactoriesStillAcceptRepeatedRowsAndOwnIndependentCopies",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixValidationContractTest.java",
+        "className": "MatrixValidationContractTest.PrimitiveFailures",
+        "method": "testCopyFactoriesStillAcceptRepeatedRowsAndOwnIndependentCopies",
+        "signature": "testCopyFactoriesStillAcceptRepeatedRowsAndOwnIndependentCopies()",
+        "line": 174
+      }
+    },
+    {
+      "from": "PrimitiveExceptionReviewTest.suppliedRandomGeneratorFailuresPropagateOnlyWhenGeneratingElements",
+      "to": "MatrixValidationContractTest/PrimitiveFailures.suppliedRandomGeneratorFailuresPropagateOnlyWhenGeneratingElements",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixValidationContractTest.java",
+        "className": "MatrixValidationContractTest.PrimitiveFailures",
+        "method": "testSuppliedRandomGeneratorFailuresPropagateOnlyWhenGeneratingElements",
+        "signature": "testSuppliedRandomGeneratorFailuresPropagateOnlyWhenGeneratingElements()",
+        "line": 195
+      }
+    },
+    {
+      "from": "PrimitiveExceptionReviewTest.objectMappingRejectsVoidEvenWhenThereAreNoCells",
+      "to": "MatrixValidationContractTest/PrimitiveFailures.objectMappingRejectsVoidEvenWhenThereAreNoCells",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixValidationContractTest.java",
+        "className": "MatrixValidationContractTest.PrimitiveFailures",
+        "method": "testObjectMappingRejectsVoidEvenWhenThereAreNoCells",
+        "signature": "testObjectMappingRejectsVoidEvenWhenThereAreNoCells()",
+        "line": 217
+      }
+    },
+    {
+      "from": "PrimitiveExceptionReviewTest.characterRenderingValidatesInputsBeforeConversionAndOutput",
+      "to": "CharMatrixTest/RenderingValidation.characterRenderingValidatesInputsBeforeConversionAndOutput",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.AppendElementForOutputTests",
+        "method": "testCharacterRenderingValidatesInputsBeforeConversionAndOutput",
+        "signature": "testCharacterRenderingValidatesInputsBeforeConversionAndOutput()",
+        "line": 6499
+      }
+    },
+    {
+      "from": "PrimitiveNullReviewTest.resultFactoriesRejectNullArraysBeforeInspectingTheirShape",
+      "to": "MatrixNullContractTest/PrimitiveValues.resultFactoriesRejectNullArraysBeforeInspectingTheirShape",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixNullContractTest.java",
+        "className": "MatrixNullContractTest.PrimitiveValues",
+        "method": "testResultFactoriesRejectNullArraysBeforeInspectingTheirShape",
+        "signature": "testResultFactoriesRejectNullArraysBeforeInspectingTheirShape()",
+        "line": 575
+      }
+    },
+    {
+      "from": "PrimitiveNullReviewTest.characterOutputChecksDestinationThenRequiredCharacterWithoutWriting",
+      "to": "CharMatrixTest/OutputValidation.characterOutputChecksDestinationThenRequiredCharacterWithoutWriting",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.AppendElementForOutputTests",
+        "method": "testCharacterOutputChecksDestinationThenRequiredCharacterWithoutWriting",
+        "signature": "testCharacterOutputChecksDestinationThenRequiredCharacterWithoutWriting()",
+        "line": 6486
+      }
+    },
+    {
+      "from": "PrimitiveNullReviewTest.iteratorArrayNullContractRejectsWithoutConsumingElements",
+      "to": "BooleanMatrixTest/IteratorDestinationValidation.iteratorArrayNullContractRejectsWithoutConsumingElements",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.RowMajorStreamTests",
+        "method": "testIteratorArrayNullContractRejectsWithoutConsumingElements",
+        "signature": "testIteratorArrayNullContractRejectsWithoutConsumingElements()",
+        "line": 5248
+      }
+    },
+    {
+      "from": "PrimitiveNullReviewTest.nullCoordinateMapperResultsKeepTheirUnboxingFailure",
+      "to": "MatrixNullContractTest/PrimitiveValues.nullCoordinateMapperResultsKeepTheirUnboxingFailure",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixNullContractTest.java",
+        "className": "MatrixNullContractTest.PrimitiveValues",
+        "method": "testNullCoordinateMapperResultsKeepTheirUnboxingFailure",
+        "signature": "testNullCoordinateMapperResultsKeepTheirUnboxingFailure()",
+        "line": 589
+      }
+    },
+    {
+      "from": "PrimitiveNullReviewTest.objectMappingCanStillProduceNullElements",
+      "to": "MatrixNullContractTest/PrimitiveValues.objectMappingCanStillProduceNullElements",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixNullContractTest.java",
+        "className": "MatrixNullContractTest.PrimitiveValues",
+        "method": "testObjectMappingCanStillProduceNullElements",
+        "signature": "testObjectMappingCanStillProduceNullElements()",
+        "line": 597
+      }
+    },
+    {
+      "from": "PrimitiveNullReviewTest.diagonalFactoriesStillAllowOneMissingDiagonal",
+      "to": "MatrixNullContractTest/PrimitiveValues.diagonalFactoriesStillAllowOneMissingDiagonal",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixNullContractTest.java",
+        "className": "MatrixNullContractTest.PrimitiveValues",
+        "method": "testDiagonalFactoriesStillAllowOneMissingDiagonal",
+        "signature": "testDiagonalFactoriesStillAllowOneMissingDiagonal()",
+        "line": 605
+      }
+    },
+    {
+      "from": "PrimitiveNullReviewTest.unboxingStillMapsNullElementsToPrimitiveDefaults",
+      "to": "MatrixNullContractTest/PrimitiveValues.unboxingStillMapsNullElementsToPrimitiveDefaults",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixNullContractTest.java",
+        "className": "MatrixNullContractTest.PrimitiveValues",
+        "method": "testUnboxingStillMapsNullElementsToPrimitiveDefaults",
+        "signature": "testUnboxingStillMapsNullElementsToPrimitiveDefaults()",
+        "line": 617
+      }
+    },
+    {
+      "from": "PrimitiveNullReviewTest.copyingStillSkipsNullRows",
+      "to": "MatrixNullContractTest/PrimitiveValues.copyingStillSkipsNullRows",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixNullContractTest.java",
+        "className": "MatrixNullContractTest.PrimitiveValues",
+        "method": "testCopyingStillSkipsNullRows",
+        "signature": "testCopyingStillSkipsNullRows()",
+        "line": 625
+      }
+    },
+    {
+      "from": "ValidationOrderTest.indexIsCheckedBeforeNullRowOrOperator",
+      "to": "MatrixValidationContractTest/ArgumentPrecedence.indexIsCheckedBeforeNullRowOrOperator",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixValidationContractTest.java",
+        "className": "MatrixValidationContractTest.ArgumentPrecedence",
+        "method": "testIndexIsCheckedBeforeNullRowOrOperator",
+        "signature": "testIndexIsCheckedBeforeNullRowOrOperator()",
+        "line": 229
+      }
+    },
+    {
+      "from": "ValidationOrderTest.validIndexWithNullArgumentStillThrowsIllegalArgumentException",
+      "to": "MatrixValidationContractTest/ArgumentPrecedence.validIndexWithNullArgumentStillThrowsIllegalArgumentException",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixValidationContractTest.java",
+        "className": "MatrixValidationContractTest.ArgumentPrecedence",
+        "method": "testValidIndexWithNullArgumentStillThrowsIllegalArgumentException",
+        "signature": "testValidIndexWithNullArgumentStillThrowsIllegalArgumentException()",
+        "line": 281
+      }
+    },
+    {
+      "from": "ValidationOrderTest.rangeIsCheckedBeforeNullCallbackInIndexHelpers",
+      "to": "MatrixValidationContractTest/ArgumentPrecedence.rangeIsCheckedBeforeNullCallbackInIndexHelpers",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixValidationContractTest.java",
+        "className": "MatrixValidationContractTest.ArgumentPrecedence",
+        "method": "testRangeIsCheckedBeforeNullCallbackInIndexHelpers",
+        "signature": "testRangeIsCheckedBeforeNullCallbackInIndexHelpers()",
+        "line": 289
+      }
+    },
+    {
+      "from": "ValidationOrderTest.threeMatrixZipValidatesEachOperandInArgumentOrder",
+      "to": "MatrixValidationContractTest/ArgumentPrecedence.threeMatrixZipValidatesEachOperandInArgumentOrder",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixValidationContractTest.java",
+        "className": "MatrixValidationContractTest.ArgumentPrecedence",
+        "method": "testThreeMatrixZipValidatesEachOperandInArgumentOrder",
+        "signature": "testThreeMatrixZipValidatesEachOperandInArgumentOrder()",
+        "line": 298
+      }
+    },
+    {
+      "from": "ValidationOrderTest.genericThreeMatrixZipValidatesEachOperandInArgumentOrderLikePrimitives",
+      "to": "MatrixValidationContractTest/ArgumentPrecedence.genericThreeMatrixZipValidatesEachOperandInArgumentOrderLikePrimitives",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixValidationContractTest.java",
+        "className": "MatrixValidationContractTest.ArgumentPrecedence",
+        "method": "testGenericThreeMatrixZipValidatesEachOperandInArgumentOrderLikePrimitives",
+        "signature": "testGenericThreeMatrixZipValidatesEachOperandInArgumentOrderLikePrimitives()",
+        "line": 325
+      }
+    },
+    {
+      "from": "ObjectExceptionReviewTest.diagonalTypeIsFullyValidatedBeforeTheLaterArrayArgument",
+      "to": "MatrixTest/DiagonalTypeValidation.diagonalTypeIsFullyValidatedBeforeTheLaterArrayArgument",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+        "className": "MatrixTest.OfMainDiagonalTests",
+        "method": "testDiagonalTypeIsFullyValidatedBeforeTheLaterArrayArgument",
+        "signature": "testDiagonalTypeIsFullyValidatedBeforeTheLaterArrayArgument()",
+        "line": 558
+      }
+    },
+    {
+      "from": "ObjectExceptionReviewTest.objectZipValidatesTheResultTypeBeforeAllocatingItsMatrixSnapshot",
+      "to": "MatricesTest/CollectionZipValidation.objectZipValidatesTheResultTypeBeforeAllocatingItsMatrixSnapshot",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+        "className": "MatricesTest.ZipTests",
+        "method": "testObjectZipValidatesTheResultTypeBeforeAllocatingItsMatrixSnapshot",
+        "signature": "testObjectZipValidatesTheResultTypeBeforeAllocatingItsMatrixSnapshot()",
+        "line": 4262
+      }
+    },
+    {
+      "from": "ObjectExceptionReviewTest.collectionZipChecksInputTypeCompatibilityBeforeTheLaterTargetType",
+      "to": "MatricesTest/CollectionZipValidation.collectionZipChecksInputTypeCompatibilityBeforeTheLaterTargetType",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+        "className": "MatricesTest.ZipTests",
+        "method": "testCollectionZipChecksInputTypeCompatibilityBeforeTheLaterTargetType",
+        "signature": "testCollectionZipChecksInputTypeCompatibilityBeforeTheLaterTargetType()",
+        "line": 4282
+      }
+    },
+    {
+      "from": "ObjectExceptionReviewTest.explicitInputTypeAvoidsTheLegacyCallbackArrayCastFailure",
+      "to": "MatricesTest/CollectionZipValidation.explicitInputTypeAvoidsTheLegacyCallbackArrayCastFailure",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+        "className": "MatricesTest.ZipTests",
+        "method": "testExplicitInputTypeAvoidsTheLegacyCallbackArrayCastFailure",
+        "signature": "testExplicitInputTypeAvoidsTheLegacyCallbackArrayCastFailure()",
+        "line": 4294
+      }
+    },
+    {
+      "from": "ObjectExceptionReviewTest.datasetNameChecksPreserveConstructorDiagnostics",
+      "to": "MatrixTest/DatasetValidation.datasetNameChecksPreserveConstructorDiagnostics",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+        "className": "MatrixTest.ToDatasetTests",
+        "method": "testDatasetNameChecksPreserveConstructorDiagnostics",
+        "signature": "testDatasetNameChecksPreserveConstructorDiagnostics()",
+        "line": 7539
+      }
+    },
+    {
+      "from": "ObjectNullReviewTest.commonElementTypeRejectsNullInputsAndPreservesTheEmptyArrayFailure",
+      "to": "MatricesTest/ElementTypeValidation.commonElementTypeRejectsNullInputsAndPreservesTheEmptyArrayFailure",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+        "className": "MatricesTest.ResolveCommonElementTypeTests",
+        "method": "testCommonElementTypeRejectsNullInputsAndPreservesTheEmptyArrayFailure",
+        "signature": "testCommonElementTypeRejectsNullInputsAndPreservesTheEmptyArrayFailure()",
+        "line": 5611
+      }
+    },
+    {
+      "from": "ObjectNullReviewTest.commonElementTypeAcceptsMatricesContainingNullValues",
+      "to": "MatricesTest/ElementTypeValidation.commonElementTypeAcceptsMatricesContainingNullValues",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+        "className": "MatricesTest.ResolveCommonElementTypeTests",
+        "method": "testCommonElementTypeAcceptsMatricesContainingNullValues",
+        "signature": "testCommonElementTypeAcceptsMatricesContainingNullValues()",
+        "line": 5603
+      }
+    },
+    {
+      "from": "ObjectNullReviewTest.optionalTypeTokensKeepTheirInferenceSemantics",
+      "to": "MatricesTest/ElementTypeValidation.optionalTypeTokensKeepTheirInferenceSemantics",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+        "className": "MatricesTest.ResolveCommonAssignableTypeTests",
+        "method": "testOptionalTypeTokensKeepTheirInferenceSemantics",
+        "signature": "testOptionalTypeTokensKeepTheirInferenceSemantics()",
+        "line": 5588
+      }
+    },
+    {
+      "from": "ObjectUtilityDeepReviewTest.voidWrapperRemainsAValidReferenceElementTypeIncludingEmptyDimensions",
+      "to": "MatricesTest/ReferenceArrayAllocation.voidWrapperRemainsAValidReferenceElementTypeIncludingEmptyDimensions",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+        "className": "MatricesTest.NewMatrixArrayTests",
+        "method": "testVoidWrapperRemainsAValidReferenceElementTypeIncludingEmptyDimensions",
+        "signature": "testVoidWrapperRemainsAValidReferenceElementTypeIncludingEmptyDimensions()",
+        "line": 1393
+      }
+    },
+    {
+      "from": "ObjectUtilityPerformanceOptimizationTest.flattenIsGrowableAndOwnsSlotsWhileSharingElementObjects",
+      "to": "MatrixTest/ObjectStorageAndTraversal.flattenIsGrowableAndOwnsSlotsWhileSharingElementObjects",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+        "className": "MatrixTest.FlattenTests",
+        "method": "testFlattenIsGrowableAndOwnsSlotsWhileSharingElementObjects",
+        "signature": "testFlattenIsGrowableAndOwnsSlotsWhileSharingElementObjects()",
+        "line": 5668
+      }
+    },
+    {
+      "from": "ObjectUtilityPerformanceOptimizationTest.datasetConversionsOwnMutableNamesAndColumns",
+      "to": "MatrixTest/ObjectStorageAndTraversal.datasetConversionsOwnMutableNamesAndColumns",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+        "className": "MatrixTest.SetTests",
+        "method": "testDatasetConversionsOwnMutableNamesAndColumns",
+        "signature": "testDatasetConversionsOwnMutableNamesAndColumns()",
+        "line": 1100
+      }
+    },
+    {
+      "from": "ObjectUtilityPerformanceOptimizationTest.transposedDatasetBulkCopiesLongAndCovariantRowsIntoIndependentColumns",
+      "to": "MatrixTest/ObjectStorageAndTraversal.transposedDatasetBulkCopiesLongAndCovariantRowsIntoIndependentColumns",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+        "className": "MatrixTest.SetTests",
+        "method": "testTransposedDatasetBulkCopiesLongAndCovariantRowsIntoIndependentColumns",
+        "signature": "testTransposedDatasetBulkCopiesLongAndCovariantRowsIntoIndependentColumns()",
+        "line": 1125
+      }
+    },
+    {
+      "from": "ObjectUtilityPerformanceOptimizationTest.datasetConversionsRetainHeaderValidationAndDegenerateShapes",
+      "to": "MatrixTest/ObjectStorageAndTraversal.datasetConversionsRetainHeaderValidationAndDegenerateShapes",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+        "className": "MatrixTest.ToDatasetTests",
+        "method": "testDatasetConversionsRetainHeaderValidationAndDegenerateShapes",
+        "signature": "testDatasetConversionsRetainHeaderValidationAndDegenerateShapes()",
+        "line": 7568
+      }
+    },
+    {
+      "from": "ObjectUtilityPerformanceOptimizationTest.exactStorageValidationKeepsMessagesAndValidationOrder",
+      "to": "MatrixTest/ObjectStorageAndTraversal.exactStorageValidationKeepsMessagesAndValidationOrder",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+        "className": "MatrixTest.ElementTypeTests",
+        "method": "testExactStorageValidationKeepsMessagesAndValidationOrder",
+        "signature": "testExactStorageValidationKeepsMessagesAndValidationOrder()",
+        "line": 7943
+      }
+    },
+    {
+      "from": "ObjectUtilityPerformanceOptimizationTest.storabilityAndStackElementTypeChecksKeepTheirMessages",
+      "to": "MatrixTest/ObjectStorageAndTraversal.storabilityAndStackElementTypeChecksKeepTheirMessages",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+        "className": "MatrixTest.ElementTypeTests",
+        "method": "testStorabilityAndStackElementTypeChecksKeepTheirMessages",
+        "signature": "testStorabilityAndStackElementTypeChecksKeepTheirMessages()",
+        "line": 7964
+      }
+    },
+    {
+      "from": "ObjectUtilityPerformanceOptimizationTest.allObjectCollectionZipFactoriesKeepShapeTypeAndIndependentRows",
+      "to": "MatricesTest/CollectionZipStorage.allObjectCollectionZipFactoriesKeepShapeTypeAndIndependentRows",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+        "className": "MatricesTest.ZipTests",
+        "method": "testAllObjectCollectionZipFactoriesKeepShapeTypeAndIndependentRows",
+        "signature": "testAllObjectCollectionZipFactoriesKeepShapeTypeAndIndependentRows()",
+        "line": 4305
+      }
+    },
+    {
+      "from": "ObjectUtilityPerformanceOptimizationTest.boundedCopySnapshotsPreserveOverlappingSourceValuesAndNoOpValidation",
+      "to": "MatrixTest/ObjectStorageAndTraversal.boundedCopySnapshotsPreserveOverlappingSourceValuesAndNoOpValidation",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+        "className": "MatrixTest.CopyTests",
+        "method": "testBoundedCopySnapshotsPreserveOverlappingSourceValuesAndNoOpValidation",
+        "signature": "testBoundedCopySnapshotsPreserveOverlappingSourceValuesAndNoOpValidation()",
+        "line": 3973
+      }
+    },
+    {
+      "from": "ObjectUtilityPerformanceOptimizationTest.emptyStreamRangesValidateIndexesAndPreserveLogicalRowColumnStreams",
+      "to": "MatrixTest/ObjectStorageAndTraversal.emptyStreamRangesValidateIndexesAndPreserveLogicalRowColumnStreams",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+        "className": "MatrixTest.EmptyTests",
+        "method": "testEmptyStreamRangesValidateIndexesAndPreserveLogicalRowColumnStreams",
+        "signature": "testEmptyStreamRangesValidateIndexesAndPreserveLogicalRowColumnStreams()",
+        "line": 300
+      }
+    },
+    {
+      "from": "ObjectUtilityPerformanceOptimizationTest.indexedStreamsBypassMappersForLongCountsAndDirectAdvancesInBothModes",
+      "to": "MatricesTest/IndexedCursorLaziness.indexedStreamsBypassMappersForLongCountsAndDirectAdvancesInBothModes",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+        "className": "MatricesTest.MapIndicesTests",
+        "method": "testIndexedStreamsBypassMappersForLongCountsAndDirectAdvancesInBothModes",
+        "signature": "testIndexedStreamsBypassMappersForLongCountsAndDirectAdvancesInBothModes()",
+        "line": 2296
+      }
+    },
+    {
+      "from": "ObjectUtilityPerformanceOptimizationTest.indexedStreamCursorsRemainLazyAndExceptionsStayDeferred",
+      "to": "MatricesTest/IndexedCursorLaziness.indexedStreamCursorsRemainLazyAndExceptionsStayDeferred",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+        "className": "MatricesTest.MapIndicesTests",
+        "method": "testIndexedStreamCursorsRemainLazyAndExceptionsStayDeferred",
+        "signature": "testIndexedStreamCursorsRemainLazyAndExceptionsStayDeferred()",
+        "line": 2460
+      }
+    },
+    {
+      "from": "NumericPerformanceOptimizationTest.exactIntMultiplicationNarrowsFinishedCellsAndResetsEveryScratchRow",
+      "to": "IntMatrixTest/CheckedMultiplication.exactIntMultiplicationNarrowsFinishedCellsAndResetsEveryScratchRow",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.CopyTests",
+        "method": "testExactIntMultiplicationNarrowsFinishedCellsAndResetsEveryScratchRow",
+        "signature": "testExactIntMultiplicationNarrowsFinishedCellsAndResetsEveryScratchRow()",
+        "line": 3104
+      }
+    },
+    {
+      "from": "NumericPerformanceOptimizationTest.exactIntMultiplicationStillRejectsIntermediateLongAndFinishedIntOverflow",
+      "to": "IntMatrixTest/CheckedMultiplication.exactIntMultiplicationStillRejectsIntermediateLongAndFinishedIntOverflow",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.MatrixMultiplyExactTests",
+        "method": "testExactIntMultiplicationStillRejectsIntermediateLongAndFinishedIntOverflow",
+        "signature": "testExactIntMultiplicationStillRejectsIntermediateLongAndFinishedIntOverflow()",
+        "line": 5155
+      }
+    },
+    {
+      "from": "NumericPerformanceOptimizationTest.exactIntMultiplicationPreservesLongOverflowPrecedenceAcrossRows",
+      "to": "IntMatrixTest/CheckedMultiplication.exactIntMultiplicationPreservesLongOverflowPrecedenceAcrossRows",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.MatrixMultiplyWidenedExactTests",
+        "method": "testExactIntMultiplicationPreservesLongOverflowPrecedenceAcrossRows",
+        "signature": "testExactIntMultiplicationPreservesLongOverflowPrecedenceAcrossRows()",
+        "line": 5119
+      }
+    },
+    {
+      "from": "NumericPerformanceOptimizationTest.exactIntMultiplicationMatchesTheCheckedWidenedProductForRandomRectangularShapes",
+      "to": "IntMatrixTest/CheckedMultiplication.exactIntMultiplicationMatchesTheCheckedWidenedProductForRandomRectangularShapes",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.MatrixMultiplyWidenedExactTests",
+        "method": "testExactIntMultiplicationMatchesTheCheckedWidenedProductForRandomRectangularShapes",
+        "signature": "testExactIntMultiplicationMatchesTheCheckedWidenedProductForRandomRectangularShapes()",
+        "line": 5052
+      }
+    },
+    {
+      "from": "NumericPerformanceOptimizationTest.exactIntMultiplicationPreservesAllEmptyProductShapes",
+      "to": "IntMatrixTest/CheckedMultiplication.exactIntMultiplicationPreservesAllEmptyProductShapes",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.MatrixMultiplyExactTests",
+        "method": "testExactIntMultiplicationPreservesAllEmptyProductShapes",
+        "signature": "testExactIntMultiplicationPreservesAllEmptyProductShapes()",
+        "line": 5142
+      }
+    },
+    {
+      "from": "NumericPerformanceOptimizationTest.trustedCopyAndWideningFactoriesStillOwnIndependentRows",
+      "to": "MatrixStorageContractTest/NumericStorage.trustedCopyAndWideningFactoriesStillOwnIndependentRows",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixStorageContractTest.java",
+        "className": "MatrixStorageContractTest.NumericStorage",
+        "method": "testTrustedCopyAndWideningFactoriesStillOwnIndependentRows",
+        "signature": "testTrustedCopyAndWideningFactoriesStillOwnIndependentRows()",
+        "line": 119
+      }
+    },
+    {
+      "from": "NumericPerformanceOptimizationTest.trustedDiagonalFactoriesRetainPrecedenceAndIndependentStorage",
+      "to": "MatrixStorageContractTest/NumericStorage.trustedDiagonalFactoriesRetainPrecedenceAndIndependentStorage",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixStorageContractTest.java",
+        "className": "MatrixStorageContractTest.NumericStorage",
+        "method": "testTrustedDiagonalFactoriesRetainPrecedenceAndIndependentStorage",
+        "signature": "testTrustedDiagonalFactoriesRetainPrecedenceAndIndependentStorage()",
+        "line": 164
+      }
+    },
+    {
+      "from": "NumericPerformanceOptimizationTest.trustedBoxedAndMappedResultsKeepTypesShapesAndIndependentRows",
+      "to": "MatrixStorageContractTest/NumericStorage.trustedBoxedAndMappedResultsKeepTypesShapesAndIndependentRows",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixStorageContractTest.java",
+        "className": "MatrixStorageContractTest.NumericStorage",
+        "method": "testTrustedBoxedAndMappedResultsKeepTypesShapesAndIndependentRows",
+        "signature": "testTrustedBoxedAndMappedResultsKeepTypesShapesAndIndependentRows()",
+        "line": 186
+      }
+    },
+    {
+      "from": "NumericPerformanceOptimizationTest.diagonalMaterializationUsesOnlyRemainingLiveCellsAndExhaustsIterators",
+      "to": "MatrixTraversalContractTest/NumericCursors.diagonalMaterializationUsesOnlyRemainingLiveCellsAndExhaustsIterators",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTraversalContractTest.java",
+        "className": "MatrixTraversalContractTest.NumericCursors",
+        "method": "testDiagonalMaterializationUsesOnlyRemainingLiveCellsAndExhaustsIterators",
+        "signature": "testDiagonalMaterializationUsesOnlyRemainingLiveCellsAndExhaustsIterators()",
+        "line": 114
+      }
+    },
+    {
+      "from": "NumericPerformanceOptimizationTest.columnMaterializationObservesLaterRowReorderingAndCellChanges",
+      "to": "MatrixTraversalContractTest/NumericCursors.columnMaterializationObservesLaterRowReorderingAndCellChanges",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTraversalContractTest.java",
+        "className": "MatrixTraversalContractTest.NumericCursors",
+        "method": "testColumnMaterializationObservesLaterRowReorderingAndCellChanges",
+        "signature": "testColumnMaterializationObservesLaterRowReorderingAndCellChanges()",
+        "line": 133
+      }
+    },
+    {
+      "from": "NumericPerformanceOptimizationTest.rowAndColumnMajorListsRespectPartiallyConsumedCursors",
+      "to": "MatrixTraversalContractTest/NumericCursors.rowAndColumnMajorListsRespectPartiallyConsumedCursors",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTraversalContractTest.java",
+        "className": "MatrixTraversalContractTest.NumericCursors",
+        "method": "testRowAndColumnMajorListsRespectPartiallyConsumedCursors",
+        "signature": "testRowAndColumnMajorListsRespectPartiallyConsumedCursors()",
+        "line": 151
+      }
+    },
+    {
+      "from": "NumericPerformanceOptimizationTest.emptyRangesValidateBoundsAndPreserveStreamsOfEmptyRowsOrColumns",
+      "to": "MatrixTraversalContractTest/NumericCursors.emptyRangesValidateBoundsAndPreserveStreamsOfEmptyRowsOrColumns",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTraversalContractTest.java",
+        "className": "MatrixTraversalContractTest.NumericCursors",
+        "method": "testEmptyRangesValidateBoundsAndPreserveStreamsOfEmptyRowsOrColumns",
+        "signature": "testEmptyRangesValidateBoundsAndPreserveStreamsOfEmptyRowsOrColumns()",
+        "line": 176
+      }
+    },
+    {
+      "from": "NumericPerformanceOptimizationTest.boundedCopyFromKeepsOverlappingSourceValuesAndNoOpValidation",
+      "to": "MatrixStorageContractTest/NumericStorage.boundedCopyFromKeepsOverlappingSourceValuesAndNoOpValidation",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixStorageContractTest.java",
+        "className": "MatrixStorageContractTest.NumericStorage",
+        "method": "testBoundedCopyFromKeepsOverlappingSourceValuesAndNoOpValidation",
+        "signature": "testBoundedCopyFromKeepsOverlappingSourceValuesAndNoOpValidation()",
+        "line": 213
+      }
+    },
+    {
+      "from": "NumericPerformanceOptimizationTest.boundedAntiDiagonalSnapshotProtectsAliasedRowsInsideTheWriteRegion",
+      "to": "MatrixStorageContractTest/NumericStorage.boundedAntiDiagonalSnapshotProtectsAliasedRowsInsideTheWriteRegion",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixStorageContractTest.java",
+        "className": "MatrixStorageContractTest.NumericStorage",
+        "method": "testBoundedAntiDiagonalSnapshotProtectsAliasedRowsInsideTheWriteRegion",
+        "signature": "testBoundedAntiDiagonalSnapshotProtectsAliasedRowsInsideTheWriteRegion()",
+        "line": 227
+      }
+    },
+    {
+      "from": "PrimitivePerformanceOptimizationTest.exactShortMultiplicationChecksCompleteDotsAndResetsItsScratchRow",
+      "to": "ShortMatrixTest/CheckedMultiplication.exactShortMultiplicationChecksCompleteDotsAndResetsItsScratchRow",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+        "className": "ShortMatrixTest.MatrixMultiplyExactTests",
+        "method": "testExactShortMultiplicationChecksCompleteDotsAndResetsItsScratchRow",
+        "signature": "testExactShortMultiplicationChecksCompleteDotsAndResetsItsScratchRow()",
+        "line": 4991
+      }
+    },
+    {
+      "from": "PrimitivePerformanceOptimizationTest.exactShortMultiplicationPreservesEmptyShapesAndArgumentFailures",
+      "to": "ShortMatrixTest/CheckedMultiplication.exactShortMultiplicationPreservesEmptyShapesAndArgumentFailures",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+        "className": "ShortMatrixTest.MatrixMultiplyExactTests",
+        "method": "testExactShortMultiplicationPreservesEmptyShapesAndArgumentFailures",
+        "signature": "testExactShortMultiplicationPreservesEmptyShapesAndArgumentFailures()",
+        "line": 5013
+      }
+    },
+    {
+      "from": "PrimitivePerformanceOptimizationTest.trustedFactoriesKeepCopiedAndConvertedRowsIndependent",
+      "to": "MatrixStorageContractTest/PrimitiveStorage.trustedFactoriesKeepCopiedAndConvertedRowsIndependent",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixStorageContractTest.java",
+        "className": "MatrixStorageContractTest.PrimitiveStorage",
+        "method": "testTrustedFactoriesKeepCopiedAndConvertedRowsIndependent",
+        "signature": "testTrustedFactoriesKeepCopiedAndConvertedRowsIndependent()",
+        "line": 241
+      }
+    },
+    {
+      "from": "PrimitivePerformanceOptimizationTest.boundedCopiesAndAntiDiagonalsKeepOriginalAliasedValues",
+      "to": "MatrixStorageContractTest/PrimitiveStorage.boundedCopiesAndAntiDiagonalsKeepOriginalAliasedValues",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixStorageContractTest.java",
+        "className": "MatrixStorageContractTest.PrimitiveStorage",
+        "method": "testBoundedCopiesAndAntiDiagonalsKeepOriginalAliasedValues",
+        "signature": "testBoundedCopiesAndAntiDiagonalsKeepOriginalAliasedValues()",
+        "line": 306
+      }
+    },
+    {
+      "from": "PrimitivePerformanceOptimizationTest.byteIteratorMaterializationConsumesOnlyTheRemainingLiveValues",
+      "to": "ByteMatrixTest/IteratorMaterialization.byteIteratorMaterializationConsumesOnlyTheRemainingLiveValues",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.MainDiagonalStreamTests",
+        "method": "testByteIteratorMaterializationConsumesOnlyTheRemainingLiveValues",
+        "signature": "testByteIteratorMaterializationConsumesOnlyTheRemainingLiveValues()",
+        "line": 5176
+      }
+    },
+    {
+      "from": "PrimitivePerformanceOptimizationTest.charIteratorMaterializationConsumesOnlyTheRemainingLiveValues",
+      "to": "CharMatrixTest/IteratorMaterialization.charIteratorMaterializationConsumesOnlyTheRemainingLiveValues",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.MainDiagonalStreamTests",
+        "method": "testCharIteratorMaterializationConsumesOnlyTheRemainingLiveValues",
+        "signature": "testCharIteratorMaterializationConsumesOnlyTheRemainingLiveValues()",
+        "line": 5593
+      }
+    },
+    {
+      "from": "PrimitivePerformanceOptimizationTest.shortIteratorMaterializationConsumesOnlyTheRemainingLiveValues",
+      "to": "ShortMatrixTest/IteratorMaterialization.shortIteratorMaterializationConsumesOnlyTheRemainingLiveValues",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+        "className": "ShortMatrixTest.MainDiagonalStreamTests",
+        "method": "testShortIteratorMaterializationConsumesOnlyTheRemainingLiveValues",
+        "signature": "testShortIteratorMaterializationConsumesOnlyTheRemainingLiveValues()",
+        "line": 5601
+      }
+    },
+    {
+      "from": "PrimitivePerformanceOptimizationTest.booleanEmptyStreamRangesKeepBoundsValidationAndLogicalShapeCounts",
+      "to": "BooleanMatrixTest/EmptyStreamRanges.booleanEmptyStreamRangesKeepBoundsValidationAndLogicalShapeCounts",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+        "className": "BooleanMatrixTest.RowMajorStreamTests",
+        "method": "testBooleanEmptyStreamRangesKeepBoundsValidationAndLogicalShapeCounts",
+        "signature": "testBooleanEmptyStreamRangesKeepBoundsValidationAndLogicalShapeCounts()",
+        "line": 5208
+      }
+    },
+    {
+      "from": "PrimitivePerformanceOptimizationTest.byteEmptyStreamRangesKeepBoundsValidationAndLogicalShapeCounts",
+      "to": "ByteMatrixTest/EmptyStreamRanges.byteEmptyStreamRangesKeepBoundsValidationAndLogicalShapeCounts",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+        "className": "ByteMatrixTest.RowMajorStreamTests",
+        "method": "testByteEmptyStreamRangesKeepBoundsValidationAndLogicalShapeCounts",
+        "signature": "testByteEmptyStreamRangesKeepBoundsValidationAndLogicalShapeCounts()",
+        "line": 5505
+      }
+    },
+    {
+      "from": "PrimitivePerformanceOptimizationTest.charEmptyStreamRangesKeepBoundsValidationAndLogicalShapeCounts",
+      "to": "CharMatrixTest/EmptyStreamRanges.charEmptyStreamRangesKeepBoundsValidationAndLogicalShapeCounts",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.RowMajorStreamTests",
+        "method": "testCharEmptyStreamRangesKeepBoundsValidationAndLogicalShapeCounts",
+        "signature": "testCharEmptyStreamRangesKeepBoundsValidationAndLogicalShapeCounts()",
+        "line": 5921
+      }
+    },
+    {
+      "from": "PrimitivePerformanceOptimizationTest.shortEmptyStreamRangesKeepBoundsValidationAndLogicalShapeCounts",
+      "to": "ShortMatrixTest/EmptyStreamRanges.shortEmptyStreamRangesKeepBoundsValidationAndLogicalShapeCounts",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+        "className": "ShortMatrixTest.RowMajorStreamTests",
+        "method": "testShortEmptyStreamRangesKeepBoundsValidationAndLogicalShapeCounts",
+        "signature": "testShortEmptyStreamRangesKeepBoundsValidationAndLogicalShapeCounts()",
+        "line": 5915
+      }
+    },
+    {
+      "from": "PrimitivePerformanceOptimizationTest.characterEscapingMatchesTheEstablishedFormatForEveryCodeUnit",
+      "to": "CharMatrixTest/CharacterEscaping.characterEscapingMatchesTheEstablishedFormatForEveryCodeUnit",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+        "className": "CharMatrixTest.ToStringTests",
+        "method": "testCharacterEscapingMatchesTheEstablishedFormatForEveryCodeUnit",
+        "signature": "testCharacterEscapingMatchesTheEstablishedFormatForEveryCodeUnit()",
+        "line": 6678
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.zeroByNShapeSurvivesNumericOperations",
+      "to": "MatrixShapeContractTest/CrossTypeOperations.zeroByNShapeSurvivesNumericOperations",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixShapeContractTest.java",
+        "className": "MatrixShapeContractTest.CrossTypeOperations",
+        "method": "testZeroByNShapeSurvivesNumericOperations",
+        "signature": "testZeroByNShapeSurvivesNumericOperations()",
+        "line": 45
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.randomFactoriesAcceptReproducibleGeneratorsAndPreserveZeroByN",
+      "to": "MatrixShapeContractTest/CrossTypeOperations.randomFactoriesAcceptReproducibleGeneratorsAndPreserveZeroByN",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixShapeContractTest.java",
+        "className": "MatrixShapeContractTest.CrossTypeOperations",
+        "method": "testRandomFactoriesAcceptReproducibleGeneratorsAndPreserveZeroByN",
+        "signature": "testRandomFactoriesAcceptReproducibleGeneratorsAndPreserveZeroByN()",
+        "line": 70
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.rectangularDiagonalsUseTheShorterDimension",
+      "to": "MatrixShapeContractTest/CrossTypeOperations.rectangularDiagonalsUseTheShorterDimension",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixShapeContractTest.java",
+        "className": "MatrixShapeContractTest.CrossTypeOperations",
+        "method": "testRectangularDiagonalsUseTheShorterDimension",
+        "signature": "testRectangularDiagonalsUseTheShorterDimension()",
+        "line": 85
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.longExactArithmeticReportsEveryOverflowSite",
+      "to": "LongMatrixTest/CheckedArithmetic.longExactArithmeticReportsEveryOverflowSite",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.AddExactTests",
+        "method": "testLongExactArithmeticReportsEveryOverflowSite",
+        "signature": "testLongExactArithmeticReportsEveryOverflowSite()",
+        "line": 4663
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.iteratorCountConsumesTheRemainingElementsAndToArrayStillWorks",
+      "to": "MatrixShapeContractTest/CrossTypeOperations.iteratorCountConsumesTheRemainingElementsAndToArrayStillWorks",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixShapeContractTest.java",
+        "className": "MatrixShapeContractTest.CrossTypeOperations",
+        "method": "testIteratorCountConsumesTheRemainingElementsAndToArrayStillWorks",
+        "signature": "testIteratorCountConsumesTheRemainingElementsAndToArrayStillWorks()",
+        "line": 110
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.mappedIndexStreamsAreLazyAndSequentialOrderIsRowMajor",
+      "to": "MatricesTest/IndexedTraversal.mappedIndexStreamsAreLazyAndSequentialOrderIsRowMajor",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+        "className": "MatricesTest.MapIndicesTests",
+        "method": "testMappedIndexStreamsAreLazyAndSequentialOrderIsRowMajor",
+        "signature": "testMappedIndexStreamsAreLazyAndSequentialOrderIsRowMajor()",
+        "line": 2335
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.typedGenericCollectionZipUsesDeclaredArrayTypesAndPreservesShape",
+      "to": "MatricesTest/TypedCollectionZip.typedGenericCollectionZipUsesDeclaredArrayTypesAndPreservesShape",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+        "className": "MatricesTest.ZipTests",
+        "method": "testTypedGenericCollectionZipUsesDeclaredArrayTypesAndPreservesShape",
+        "signature": "testTypedGenericCollectionZipUsesDeclaredArrayTypesAndPreservesShape()",
+        "line": 4340
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.naryStackAllocatesIndependentRowsAndPreservesZeroByNShapes",
+      "to": "MatricesTest/StackStorage.naryStackAllocatesIndependentRowsAndPreservesZeroByNShapes",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+        "className": "MatricesTest.StackVerticallyTests",
+        "method": "testNaryStackAllocatesIndependentRowsAndPreservesZeroByNShapes",
+        "signature": "testNaryStackAllocatesIndependentRowsAndPreservesZeroByNShapes()",
+        "line": 3082
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.appendToWritesIncrementallyAndWrapsSinkFailures",
+      "to": "LongMatrixTest/IncrementalOutput.appendToWritesIncrementallyAndWrapsSinkFailures",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+        "className": "LongMatrixTest.AppendToTests",
+        "method": "testAppendToWritesIncrementallyAndWrapsSinkFailures",
+        "signature": "testAppendToWritesIncrementallyAndWrapsSinkFailures()",
+        "line": 6831
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.newThreadsDefaultToSequentialPolicy",
+      "to": "MatricesTest/ThreadLocalDefaults.newThreadsDefaultToSequentialPolicy",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+        "className": "MatricesTest.GetParallelModeTests",
+        "method": "testNewThreadsDefaultToSequentialPolicy",
+        "signature": "testNewThreadsDefaultToSequentialPolicy()",
+        "line": 279
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.nByZeroTransposeAndRotationPreserveTheColumnCountInEveryVariant",
+      "to": "MatrixShapeContractTest/CrossTypeOperations.nByZeroTransposeAndRotationPreserveTheColumnCountInEveryVariant",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixShapeContractTest.java",
+        "className": "MatrixShapeContractTest.CrossTypeOperations",
+        "method": "testNByZeroTransposeAndRotationPreserveTheColumnCountInEveryVariant",
+        "signature": "testNByZeroTransposeAndRotationPreserveTheColumnCountInEveryVariant()",
+        "line": 133
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.zeroByNShapeSurvivesConversionsAndMapToObj",
+      "to": "MatrixShapeContractTest/CrossTypeOperations.zeroByNShapeSurvivesConversionsAndMapToObj",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixShapeContractTest.java",
+        "className": "MatrixShapeContractTest.CrossTypeOperations",
+        "method": "testZeroByNShapeSurvivesConversionsAndMapToObj",
+        "signature": "testZeroByNShapeSurvivesConversionsAndMapToObj()",
+        "line": 155
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.columnStreamsOfAZeroRowMatrixYieldOneEmptyStreamPerColumn",
+      "to": "MatrixShapeContractTest/CrossTypeOperations.columnStreamsOfAZeroRowMatrixYieldOneEmptyStreamPerColumn",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixShapeContractTest.java",
+        "className": "MatrixShapeContractTest.CrossTypeOperations",
+        "method": "testColumnStreamsOfAZeroRowMatrixYieldOneEmptyStreamPerColumn",
+        "signature": "testColumnStreamsOfAZeroRowMatrixYieldOneEmptyStreamPerColumn()",
+        "line": 171
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.zipResultsKeepTheColumnCountOfZeroRowInputs",
+      "to": "MatrixShapeContractTest/CrossTypeOperations.zipResultsKeepTheColumnCountOfZeroRowInputs",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixShapeContractTest.java",
+        "className": "MatrixShapeContractTest.CrossTypeOperations",
+        "method": "testZipResultsKeepTheColumnCountOfZeroRowInputs",
+        "signature": "testZipResultsKeepTheColumnCountOfZeroRowInputs()",
+        "line": 187
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.emptyResultsAreTheSharedSingletonInEveryVariant",
+      "to": "MatrixShapeContractTest/CrossTypeOperations.emptyResultsAreTheSharedSingletonInEveryVariant",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixShapeContractTest.java",
+        "className": "MatrixShapeContractTest.CrossTypeOperations",
+        "method": "testEmptyResultsAreTheSharedSingletonInEveryVariant",
+        "signature": "testEmptyResultsAreTheSharedSingletonInEveryVariant()",
+        "line": 206
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.matrixMultiplyExactAcceptsCancellingIntermediateTerms",
+      "to": "MatrixShapeContractTest/CrossTypeOperations.matrixMultiplyExactAcceptsCancellingIntermediateTerms",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixShapeContractTest.java",
+        "className": "MatrixShapeContractTest.CrossTypeOperations",
+        "method": "testMatrixMultiplyExactAcceptsCancellingIntermediateTerms",
+        "signature": "testMatrixMultiplyExactAcceptsCancellingIntermediateTerms()",
+        "line": 226
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.wrapSnapshotsTheOuterArrayButSharesTheRows",
+      "to": "IntMatrixTest/WrapOwnership.wrapSnapshotsTheOuterArrayButSharesTheRows",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+        "className": "IntMatrixTest.WrapTests",
+        "method": "testWrapSnapshotsTheOuterArrayButSharesTheRows",
+        "signature": "testWrapSnapshotsTheOuterArrayButSharesTheRows()",
+        "line": 215
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.zeroRowMatricesOfDifferentWidthsDoNotCollideInHash",
+      "to": "MatrixShapeContractTest/CrossTypeOperations.zeroRowMatricesOfDifferentWidthsDoNotCollideInHash",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixShapeContractTest.java",
+        "className": "MatrixShapeContractTest.CrossTypeOperations",
+        "method": "testZeroRowMatricesOfDifferentWidthsDoNotCollideInHash",
+        "signature": "testZeroRowMatricesOfDifferentWidthsDoNotCollideInHash()",
+        "line": 247
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.collectionZipEstimatesWorkAcrossEveryInput",
+      "to": "MatricesTest/CollectionZipWorkEstimates.collectionZipEstimatesWorkAcrossEveryInput",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+        "className": "MatricesTest.ZipTests",
+        "method": "testCollectionZipEstimatesWorkAcrossEveryInput",
+        "signature": "testCollectionZipEstimatesWorkAcrossEveryInput()",
+        "line": 4359
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.mapToObjNormalisesAPrimitiveElementTypeToken",
+      "to": "MatrixShapeContractTest/CrossTypeOperations.mapToObjNormalisesAPrimitiveElementTypeToken",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixShapeContractTest.java",
+        "className": "MatrixShapeContractTest.CrossTypeOperations",
+        "method": "testMapToObjNormalisesAPrimitiveElementTypeToken",
+        "signature": "testMapToObjNormalisesAPrimitiveElementTypeToken()",
+        "line": 273
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.transformsProduceUniformlyWritableRowsForCovariantStorage",
+      "to": "MatrixTest/CovariantStorage.transformsProduceUniformlyWritableRowsForCovariantStorage",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+        "className": "MatrixTest.ElementTypeTests",
+        "method": "testTransformsProduceUniformlyWritableRowsForCovariantStorage",
+        "signature": "testTransformsProduceUniformlyWritableRowsForCovariantStorage()",
+        "line": 7987
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.transposedDatasetRejectsShapesItCannotRepresent",
+      "to": "MatrixTest/TransposedDatasetShapes.transposedDatasetRejectsShapesItCannotRepresent",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+        "className": "MatrixTest.ToTransposedDatasetTests",
+        "method": "testTransposedDatasetRejectsShapesItCannotRepresent",
+        "signature": "testTransposedDatasetRejectsShapesItCannotRepresent()",
+        "line": 7655
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.genericMatrixInPlaceMutatorsHonourTheParallelPolicy",
+      "to": "MatrixTest/MutationParallelPolicy.genericMatrixInPlaceMutatorsHonourTheParallelPolicy",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+        "className": "MatrixTest.UpdateAllTests",
+        "method": "testGenericMatrixInPlaceMutatorsHonourTheParallelPolicy",
+        "signature": "testGenericMatrixInPlaceMutatorsHonourTheParallelPolicy()",
+        "line": 2732
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.conversionsCanonicaliseOnlyGenuinelyEmptyResults",
+      "to": "MatrixShapeContractTest/CrossTypeOperations.conversionsCanonicaliseOnlyGenuinelyEmptyResults",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixShapeContractTest.java",
+        "className": "MatrixShapeContractTest.CrossTypeOperations",
+        "method": "testConversionsCanonicaliseOnlyGenuinelyEmptyResults",
+        "signature": "testConversionsCanonicaliseOnlyGenuinelyEmptyResults()",
+        "line": 299
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.arrayTypedElementsAreNotRewrittenByElementTypeNormalisation",
+      "to": "MatrixTest/ArrayElementTypes.arrayTypedElementsAreNotRewrittenByElementTypeNormalisation",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+        "className": "MatrixTest.ElementTypeTests",
+        "method": "testArrayTypedElementsAreNotRewrittenByElementTypeNormalisation",
+        "signature": "testArrayTypedElementsAreNotRewrittenByElementTypeNormalisation()",
+        "line": 8014
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.arrayElementTypesSurviveEveryAllocationPath",
+      "to": "MatrixTest/ArrayElementTypes.arrayElementTypesSurviveEveryAllocationPath",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+        "className": "MatrixTest.ElementTypeTests",
+        "method": "testArrayElementTypesSurviveEveryAllocationPath",
+        "signature": "testArrayElementTypesSurviveEveryAllocationPath()",
+        "line": 8039
+      }
+    },
+    {
+      "from": "ReviewFixRegressionTest.everyEmptyProducingPathReturnsTheSharedSingleton",
+      "to": "MatrixShapeContractTest/CrossTypeOperations.everyEmptyProducingPathReturnsTheSharedSingleton",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixShapeContractTest.java",
+        "className": "MatrixShapeContractTest.CrossTypeOperations",
+        "method": "testEveryEmptyProducingPathReturnsTheSharedSingleton",
+        "signature": "testEveryEmptyProducingPathReturnsTheSharedSingleton()",
+        "line": 324
+      }
+    },
+    {
+      "from": "SharedPerformanceOptimizationTest.overlappingCopiesMatchAnIndependentSourceSnapshotForEveryMatrixType",
+      "to": "MatrixStorageContractTest/SharedStorageAndCursors.overlappingCopiesMatchAnIndependentSourceSnapshotForEveryMatrixType",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixStorageContractTest.java",
+        "className": "MatrixStorageContractTest.SharedStorageAndCursors",
+        "method": "testOverlappingCopiesMatchAnIndependentSourceSnapshotForEveryMatrixType",
+        "signature": "testOverlappingCopiesMatchAnIndependentSourceSnapshotForEveryMatrixType()",
+        "line": 410
+      }
+    },
+    {
+      "from": "SharedPerformanceOptimizationTest.boundedSnapshotsIgnoreUnusedRowsAndShareOnlyNeededPrefixes",
+      "to": "MatrixStorageContractTest/SharedStorageAndCursors.boundedSnapshotsIgnoreUnusedRowsAndShareOnlyNeededPrefixes",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixStorageContractTest.java",
+        "className": "MatrixStorageContractTest.SharedStorageAndCursors",
+        "method": "testBoundedSnapshotsIgnoreUnusedRowsAndShareOnlyNeededPrefixes",
+        "signature": "testBoundedSnapshotsIgnoreUnusedRowsAndShareOnlyNeededPrefixes()",
+        "line": 461
+      }
+    },
+    {
+      "from": "SharedPerformanceOptimizationTest.multiRowSnapshotsReturnTheSourceWhenNoWrittenRowIsRead",
+      "to": "MatrixStorageContractTest/SharedStorageAndCursors.multiRowSnapshotsReturnTheSourceWhenNoWrittenRowIsRead",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixStorageContractTest.java",
+        "className": "MatrixStorageContractTest.SharedStorageAndCursors",
+        "method": "testMultiRowSnapshotsReturnTheSourceWhenNoWrittenRowIsRead",
+        "signature": "testMultiRowSnapshotsReturnTheSourceWhenNoWrittenRowIsRead()",
+        "line": 484
+      }
+    },
+    {
+      "from": "SharedPerformanceOptimizationTest.boundedRowSnapshotProtectsOnlyAffectedRows",
+      "to": "MatrixStorageContractTest/SharedStorageAndCursors.boundedRowSnapshotProtectsOnlyAffectedRows",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixStorageContractTest.java",
+        "className": "MatrixStorageContractTest.SharedStorageAndCursors",
+        "method": "testBoundedRowSnapshotProtectsOnlyAffectedRows",
+        "signature": "testBoundedRowSnapshotProtectsOnlyAffectedRows()",
+        "line": 512
+      }
+    },
+    {
+      "from": "SharedPerformanceOptimizationTest.coordinateStreamsKeepOrderWithoutRetainingMatrixStorage",
+      "to": "MatrixStorageContractTest/SharedStorageAndCursors.coordinateStreamsKeepOrderWithoutRetainingMatrixStorage",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixStorageContractTest.java",
+        "className": "MatrixStorageContractTest.SharedStorageAndCursors",
+        "method": "testCoordinateStreamsKeepOrderWithoutRetainingMatrixStorage",
+        "signature": "testCoordinateStreamsKeepOrderWithoutRetainingMatrixStorage()",
+        "line": 524
+      }
+    },
+    {
+      "from": "SharedPerformanceOptimizationTest.emptyRangeStreamsRetainNoSourceAndStillValidateBounds",
+      "to": "MatrixStorageContractTest/SharedStorageAndCursors.emptyRangeStreamsRetainNoSourceAndStillValidateBounds",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixStorageContractTest.java",
+        "className": "MatrixStorageContractTest.SharedStorageAndCursors",
+        "method": "testEmptyRangeStreamsRetainNoSourceAndStillValidateBounds",
+        "signature": "testEmptyRangeStreamsRetainNoSourceAndStillValidateBounds()",
+        "line": 545
+      }
+    },
+    {
+      "from": "SharedPerformanceOptimizationTest.emptyDiagonalStreamsRetainNoSource",
+      "to": "MatrixStorageContractTest/SharedStorageAndCursors.emptyDiagonalStreamsRetainNoSource",
+      "atCompletion": {
+        "file": "src/test/java/com/landawn/abacus/matrix/MatrixStorageContractTest.java",
+        "className": "MatrixStorageContractTest.SharedStorageAndCursors",
+        "method": "testEmptyDiagonalStreamsRetainNoSource",
+        "signature": "testEmptyDiagonalStreamsRetainNoSource()",
+        "line": 565
+      }
+    }
+  ],
+  "deleted": [
+    "src/test/java/com/landawn/abacus/matrix/CoreNullValidationTest.java",
+    "src/test/java/com/landawn/abacus/matrix/FunctionalInterfaceNullValidationTest.java",
+    "src/test/java/com/landawn/abacus/matrix/NullArgumentValidationTest.java",
+    "src/test/java/com/landawn/abacus/matrix/NumericDeepReviewTest.java",
+    "src/test/java/com/landawn/abacus/matrix/NumericExceptionReviewTest.java",
+    "src/test/java/com/landawn/abacus/matrix/NumericNullReviewTest.java",
+    "src/test/java/com/landawn/abacus/matrix/PrimitiveDeepReviewTest.java",
+    "src/test/java/com/landawn/abacus/matrix/PrimitiveExceptionReviewTest.java",
+    "src/test/java/com/landawn/abacus/matrix/PrimitiveNullReviewTest.java",
+    "src/test/java/com/landawn/abacus/matrix/ValidationOrderTest.java",
+    "src/test/java/com/landawn/abacus/matrix/ObjectExceptionReviewTest.java",
+    "src/test/java/com/landawn/abacus/matrix/ObjectNullReviewTest.java",
+    "src/test/java/com/landawn/abacus/matrix/ObjectUtilityDeepReviewTest.java",
+    "src/test/java/com/landawn/abacus/matrix/ObjectUtilityPerformanceOptimizationTest.java",
+    "src/test/java/com/landawn/abacus/matrix/NumericPerformanceOptimizationTest.java",
+    "src/test/java/com/landawn/abacus/matrix/PrimitivePerformanceOptimizationTest.java",
+    "src/test/java/com/landawn/abacus/matrix/ReviewFixRegressionTest.java",
+    "src/test/java/com/landawn/abacus/matrix/SharedPerformanceOptimizationTest.java"
+  ],
+  "changedFiles": [
+    "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+    "src/test/java/com/landawn/abacus/matrix/MatrixNullContractTest.java",
+    "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+    "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+    "src/test/java/com/landawn/abacus/matrix/MatrixValidationContractTest.java",
+    "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+    "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+    "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+    "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+    "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+    "src/test/java/com/landawn/abacus/matrix/MatrixStorageContractTest.java",
+    "src/test/java/com/landawn/abacus/matrix/MatrixTraversalContractTest.java",
+    "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+    "src/test/java/com/landawn/abacus/matrix/MatrixShapeContractTest.java"
+  ],
+  "locationNote": "from and to record migration-time ownership; atCompletion records final selectors after organization and naming."
+}

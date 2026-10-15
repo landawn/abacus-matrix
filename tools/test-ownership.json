@@ -1,0 +1,116 @@
+{
+  "CoreNullValidationTest": {
+    "default": "AbstractMatrixTest/OutputAndSnapshotValidation"
+  },
+  "FunctionalInterfaceNullValidationTest": {
+    "default": "MatrixNullContractTest/FunctionalArguments"
+  },
+  "NullArgumentValidationTest": {
+    "default": "MatrixNullContractTest/ReferenceArguments"
+  },
+  "NumericDeepReviewTest": {
+    "methods": {
+      "intClosedRangeIncludesEqualEndpointsForEitherStepDirection": "IntMatrixTest/ClosedRangeEndpoints",
+      "longClosedRangeIncludesEqualEndpointsForEitherStepDirection": "LongMatrixTest/ClosedRangeEndpoints"
+    }
+  },
+  "NumericExceptionReviewTest": {
+    "default": "MatrixValidationContractTest/NumericFailures"
+  },
+  "NumericNullReviewTest": {
+    "default": "MatrixNullContractTest/NumericValues"
+  },
+  "PrimitiveDeepReviewTest": {
+    "default": "MatrixValidationContractTest/PrimitiveRangeEndpoints",
+    "methods": {
+      "byteDiagonalStreamsAreEmptyWhenEitherDimensionIsZero": "ByteMatrixTest/EmptyDiagonalStreams"
+    }
+  },
+  "PrimitiveExceptionReviewTest": {
+    "default": "MatrixValidationContractTest/PrimitiveFailures",
+    "methods": {
+      "characterRenderingValidatesInputsBeforeConversionAndOutput": "CharMatrixTest/RenderingValidation"
+    }
+  },
+  "PrimitiveNullReviewTest": {
+    "default": "MatrixNullContractTest/PrimitiveValues",
+    "methods": {
+      "characterOutputChecksDestinationThenRequiredCharacterWithoutWriting": "CharMatrixTest/OutputValidation",
+      "iteratorArrayNullContractRejectsWithoutConsumingElements": "BooleanMatrixTest/IteratorDestinationValidation"
+    }
+  },
+  "ValidationOrderTest": {
+    "default": "MatrixValidationContractTest/ArgumentPrecedence"
+  },
+  "ObjectExceptionReviewTest": {
+    "default": "MatricesTest/CollectionZipValidation",
+    "methods": {
+      "diagonalTypeIsFullyValidatedBeforeTheLaterArrayArgument": "MatrixTest/DiagonalTypeValidation",
+      "datasetNameChecksPreserveConstructorDiagnostics": "MatrixTest/DatasetValidation"
+    }
+  },
+  "ObjectNullReviewTest": {
+    "default": "MatricesTest/ElementTypeValidation"
+  },
+  "ObjectUtilityDeepReviewTest": {
+    "default": "MatricesTest/ReferenceArrayAllocation"
+  },
+  "ObjectUtilityPerformanceOptimizationTest": {
+    "default": "MatrixTest/ObjectStorageAndTraversal",
+    "methods": {
+      "allObjectCollectionZipFactoriesKeepShapeTypeAndIndependentRows": "MatricesTest/CollectionZipStorage",
+      "indexedStreamsBypassMappersForLongCountsAndDirectAdvancesInBothModes": "MatricesTest/IndexedCursorLaziness",
+      "indexedStreamCursorsRemainLazyAndExceptionsStayDeferred": "MatricesTest/IndexedCursorLaziness"
+    }
+  },
+  "NumericPerformanceOptimizationTest": {
+    "default": "MatrixStorageContractTest/NumericStorage",
+    "methods": {
+      "exactIntMultiplicationNarrowsFinishedCellsAndResetsEveryScratchRow": "IntMatrixTest/CheckedMultiplication",
+      "exactIntMultiplicationStillRejectsIntermediateLongAndFinishedIntOverflow": "IntMatrixTest/CheckedMultiplication",
+      "exactIntMultiplicationPreservesLongOverflowPrecedenceAcrossRows": "IntMatrixTest/CheckedMultiplication",
+      "exactIntMultiplicationMatchesTheCheckedWidenedProductForRandomRectangularShapes": "IntMatrixTest/CheckedMultiplication",
+      "exactIntMultiplicationPreservesAllEmptyProductShapes": "IntMatrixTest/CheckedMultiplication",
+      "diagonalMaterializationUsesOnlyRemainingLiveCellsAndExhaustsIterators": "MatrixTraversalContractTest/NumericCursors",
+      "columnMaterializationObservesLaterRowReorderingAndCellChanges": "MatrixTraversalContractTest/NumericCursors",
+      "rowAndColumnMajorListsRespectPartiallyConsumedCursors": "MatrixTraversalContractTest/NumericCursors",
+      "emptyRangesValidateBoundsAndPreserveStreamsOfEmptyRowsOrColumns": "MatrixTraversalContractTest/NumericCursors"
+    }
+  },
+  "PrimitivePerformanceOptimizationTest": {
+    "default": "MatrixStorageContractTest/PrimitiveStorage",
+    "methods": {
+      "exactShortMultiplicationChecksCompleteDotsAndResetsItsScratchRow": "ShortMatrixTest/CheckedMultiplication",
+      "exactShortMultiplicationPreservesEmptyShapesAndArgumentFailures": "ShortMatrixTest/CheckedMultiplication",
+      "byteIteratorMaterializationConsumesOnlyTheRemainingLiveValues": "ByteMatrixTest/IteratorMaterialization",
+      "charIteratorMaterializationConsumesOnlyTheRemainingLiveValues": "CharMatrixTest/IteratorMaterialization",
+      "shortIteratorMaterializationConsumesOnlyTheRemainingLiveValues": "ShortMatrixTest/IteratorMaterialization",
+      "booleanEmptyStreamRangesKeepBoundsValidationAndLogicalShapeCounts": "BooleanMatrixTest/EmptyStreamRanges",
+      "byteEmptyStreamRangesKeepBoundsValidationAndLogicalShapeCounts": "ByteMatrixTest/EmptyStreamRanges",
+      "charEmptyStreamRangesKeepBoundsValidationAndLogicalShapeCounts": "CharMatrixTest/EmptyStreamRanges",
+      "shortEmptyStreamRangesKeepBoundsValidationAndLogicalShapeCounts": "ShortMatrixTest/EmptyStreamRanges",
+      "characterEscapingMatchesTheEstablishedFormatForEveryCodeUnit": "CharMatrixTest/CharacterEscaping"
+    }
+  },
+  "ReviewFixRegressionTest": {
+    "default": "MatrixShapeContractTest/CrossTypeOperations",
+    "methods": {
+      "longExactArithmeticReportsEveryOverflowSite": "LongMatrixTest/CheckedArithmetic",
+      "mappedIndexStreamsAreLazyAndSequentialOrderIsRowMajor": "MatricesTest/IndexedTraversal",
+      "typedGenericCollectionZipUsesDeclaredArrayTypesAndPreservesShape": "MatricesTest/TypedCollectionZip",
+      "naryStackAllocatesIndependentRowsAndPreservesZeroByNShapes": "MatricesTest/StackStorage",
+      "appendToWritesIncrementallyAndWrapsSinkFailures": "LongMatrixTest/IncrementalOutput",
+      "newThreadsDefaultToSequentialPolicy": "MatricesTest/ThreadLocalDefaults",
+      "wrapSnapshotsTheOuterArrayButSharesTheRows": "IntMatrixTest/WrapOwnership",
+      "collectionZipEstimatesWorkAcrossEveryInput": "MatricesTest/CollectionZipWorkEstimates",
+      "transformsProduceUniformlyWritableRowsForCovariantStorage": "MatrixTest/CovariantStorage",
+      "transposedDatasetRejectsShapesItCannotRepresent": "MatrixTest/TransposedDatasetShapes",
+      "genericMatrixInPlaceMutatorsHonourTheParallelPolicy": "MatrixTest/MutationParallelPolicy",
+      "arrayTypedElementsAreNotRewrittenByElementTypeNormalisation": "MatrixTest/ArrayElementTypes",
+      "arrayElementTypesSurviveEveryAllocationPath": "MatrixTest/ArrayElementTypes"
+    }
+  },
+  "SharedPerformanceOptimizationTest": {
+    "default": "MatrixStorageContractTest/SharedStorageAndCursors"
+  }
+}

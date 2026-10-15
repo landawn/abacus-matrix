@@ -1,0 +1,218 @@
+{
+  "baselineRevision": "fec223f1f78fe58a2a8d5307060bdfb2cbd52153",
+  "baselineTestClasses": 30,
+  "testClasses": 17,
+  "testMethods": 6627,
+  "executedTests": 6658,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "removedMethods": 114,
+  "relocatedMethods": 120,
+  "removedAuxiliaryFiles": 18,
+  "files": [
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/AbstractMatrixTest.java",
+      "methods": 379
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+      "methods": 597
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+      "methods": 612
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+      "methods": 655
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+      "methods": 623
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/FloatMatrixTest.java",
+      "methods": 605
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+      "methods": 640
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+      "methods": 608
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+      "methods": 447
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/MatrixNullContractTest.java",
+      "methods": 16
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/MatrixShapeContractTest.java",
+      "methods": 14
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/MatrixStorageContractTest.java",
+      "methods": 14
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+      "methods": 750
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/MatrixTraversalContractTest.java",
+      "methods": 4
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/MatrixValidationContractTest.java",
+      "methods": 15
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/ParallelModeTest.java",
+      "methods": 7
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+      "methods": 641
+    }
+  ],
+  "additionalBehaviorTests": [
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+      "className": "ByteMatrixTest.MatrixMultiplyTests",
+      "method": "testMatrixMultiply_ExplicitModesPreserveInputs",
+      "signature": "testMatrixMultiply_ExplicitModesPreserveInputs(ParallelMode)",
+      "line": 4708
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/DoubleMatrixTest.java",
+      "className": "DoubleMatrixTest.ForEachTests",
+      "method": "testForEach_SubregionVisitsEachSelectedCellOnce",
+      "signature": "testForEach_SubregionVisitsEachSelectedCellOnce(ParallelMode)",
+      "line": 6281
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+      "className": "LongMatrixTest.ReshapeAndPadToColumnCountTests",
+      "method": "testReshapeAndPadToColumnCount_PreservesOrderAndPadsTrailingCells",
+      "signature": "testReshapeAndPadToColumnCount_PreservesOrderAndPadsTrailingCells(int)",
+      "line": 6605
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+      "className": "LongMatrixTest.ReshapeAndPadToColumnCountTests",
+      "method": "testReshapeAndPadToColumnCount_InvalidColumnCount",
+      "signature": "testReshapeAndPadToColumnCount_InvalidColumnCount(int)",
+      "line": 6620
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+      "className": "ShortMatrixTest.ReshapeAndPadToColumnCountTests",
+      "method": "testReshapeAndPadToColumnCount_PreservesOrderAndPadsTrailingCells",
+      "signature": "testReshapeAndPadToColumnCount_PreservesOrderAndPadsTrailingCells(int)",
+      "line": 6881
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+      "className": "ShortMatrixTest.ReshapeAndPadToColumnCountTests",
+      "method": "testReshapeAndPadToColumnCount_InvalidColumnCount",
+      "signature": "testReshapeAndPadToColumnCount_InvalidColumnCount(int)",
+      "line": 6896
+    }
+  ],
+  "strengthenedEqualityTests": [
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/BooleanMatrixTest.java",
+      "className": "BooleanMatrixTest.EqualsTests",
+      "method": "testEquals_Same",
+      "signature": "testEquals_Same()",
+      "line": 5953
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+      "className": "ByteMatrixTest.EqualsTests",
+      "method": "testEquals",
+      "signature": "testEquals()",
+      "line": 6202
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/ByteMatrixTest.java",
+      "className": "ByteMatrixTest.EqualsTests",
+      "method": "testEquals_Same",
+      "signature": "testEquals_Same()",
+      "line": 6218
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+      "className": "CharMatrixTest.EqualsTests",
+      "method": "testEquals",
+      "signature": "testEquals()",
+      "line": 6562
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/CharMatrixTest.java",
+      "className": "CharMatrixTest.EqualsTests",
+      "method": "testEquals_Same",
+      "signature": "testEquals_Same()",
+      "line": 6578
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/IntMatrixTest.java",
+      "className": "IntMatrixTest.EqualsTests",
+      "method": "testEqualsHashCode_ConsistencyAndShape",
+      "signature": "testEqualsHashCode_ConsistencyAndShape()",
+      "line": 6606
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/LongMatrixTest.java",
+      "className": "LongMatrixTest.EqualsTests",
+      "method": "testEquals",
+      "signature": "testEquals()",
+      "line": 6302
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/MatrixTest.java",
+      "className": "MatrixTest.EqualsTests",
+      "method": "testEquals",
+      "signature": "testEquals()",
+      "line": 7765
+    },
+    {
+      "file": "src/test/java/com/landawn/abacus/matrix/ShortMatrixTest.java",
+      "className": "ShortMatrixTest.EqualsTests",
+      "method": "testEqualsHashCode_ConsistencyAndShape",
+      "signature": "testEqualsHashCode_ConsistencyAndShape()",
+      "line": 6596
+    }
+  ],
+  "defaultPolicyTest": {
+    "file": "src/test/java/com/landawn/abacus/matrix/MatricesTest.java",
+    "className": "MatricesTest.GetParallelModeTests",
+    "method": "testGetParallelMode_DefaultIsSequential",
+    "signature": "testGetParallelMode_DefaultIsSequential()",
+    "line": 204
+  },
+  "baselineMethodBodyAudit": {
+    "exactBodyStillPresent": 6620,
+    "bodyRetainedAsPrefix": 92,
+    "enumCasesReplaced": 110,
+    "reviewedSingletonConsolidations": 3,
+    "defaultPolicyCorrections": 3,
+    "directEqualityAssertions": 9
+  },
+  "toolingRegressionTests": {
+    "tests": 7,
+    "failures": 0
+  },
+  "randomizedRun": {
+    "seed": 20261015,
+    "executedTests": 6658,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}
