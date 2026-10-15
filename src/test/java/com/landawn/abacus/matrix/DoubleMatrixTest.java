@@ -27,12 +27,12 @@ import org.junit.jupiter.params.provider.ValueSource;
 import com.landawn.abacus.util.DoubleList;
 import com.landawn.abacus.util.Sheet.Point;
 import com.landawn.abacus.util.Throwables;
-import com.landawn.abacus.util.u;
-import com.landawn.abacus.util.u.OptionalDouble;
 import com.landawn.abacus.util.stream.DoubleIteratorEx;
 import com.landawn.abacus.util.stream.DoubleStream;
 import com.landawn.abacus.util.stream.ObjIteratorEx;
 import com.landawn.abacus.util.stream.Stream;
+import com.landawn.abacus.util.u.OptionalDouble;
+import com.landawn.abacus.util.u;
 
 class DoubleMatrixTest extends MatrixTestSupport {
 
@@ -134,14 +134,6 @@ class DoubleMatrixTest extends MatrixTestSupport {
     class EmptyTests {
 
         @Test
-        public void testEmpty() {
-            DoubleMatrix empty = DoubleMatrix.empty();
-            assertEquals(0, empty.rowCount());
-            assertEquals(0, empty.columnCount());
-            assertTrue(empty.isEmpty());
-        }
-
-        @Test
         public void testEmpty_EmptyMatrix_Identity() {
             DoubleMatrix empty = DoubleMatrix.empty();
             assertEquals(0, empty.rowCount());
@@ -165,13 +157,6 @@ class DoubleMatrixTest extends MatrixTestSupport {
             assertEquals(2, extended.rowCount());
             assertEquals(2, extended.columnCount());
             assertEquals(5.5, extended.get(0, 0), DELTA);
-        }
-
-        @Test
-        public void testDoubleMatrixEmptyRowCount() {
-            DoubleMatrix matrix = DoubleMatrix.empty();
-            assertEquals(0, matrix.rowCount());
-            assertEquals(0, matrix.columnCount());
         }
     }
 
@@ -356,16 +341,6 @@ class DoubleMatrixTest extends MatrixTestSupport {
     class FromTests {
 
         @Test
-        public void testFromFromLong() {
-            long[][] longArr = { { 1L, 2L }, { 3L, 4L } };
-            DoubleMatrix matrix = DoubleMatrix.from(longArr);
-            assertEquals(2, matrix.rowCount());
-            assertEquals(2, matrix.columnCount());
-            assertEquals(1.0, matrix.get(0, 0));
-            assertEquals(4.0, matrix.get(1, 1));
-        }
-
-        @Test
         public void testFromFromFloat() {
             float[][] floatArr = { { 1.0f, 2.0f }, { 3.0f, 4.0f } };
             DoubleMatrix matrix = DoubleMatrix.from(floatArr);
@@ -517,12 +492,6 @@ class DoubleMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testFromFromIntArray_WithJaggedArray() {
-            int[][] jagged = { { 1, 2 }, { 3 } };
-            assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.from(jagged));
-        }
-
-        @Test
         public void testFromFromIntArray_WithNullRow() {
             int[][] nullRow = { { 1, 2 }, null };
             assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.from(nullRow));
@@ -601,12 +570,6 @@ class DoubleMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testFrom_FromIntArray_NullFirstRow() {
-            int[][] ints = { null, { 1, 2 } };
-            assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.from(ints));
-        }
-
-        @Test
         public void testFrom_FromIntArray_DifferentRowLengths() {
             int[][] ints = { { 1, 2 }, { 3 } };
             assertThrows(IllegalArgumentException.class, () -> DoubleMatrix.from(ints));
@@ -639,13 +602,6 @@ class DoubleMatrixTest extends MatrixTestSupport {
 
     @Nested
     class RandomRowTests {
-
-        @Test
-        public void testRandom() {
-            DoubleMatrix matrix = DoubleMatrix.randomRow(5);
-            assertEquals(1, matrix.rowCount());
-            assertEquals(5, matrix.columnCount());
-        }
 
         @Test
         public void testRandom_Values() {
@@ -729,17 +685,6 @@ class DoubleMatrixTest extends MatrixTestSupport {
             assertEquals(3.0, m.get(2, 2), 0.0);
             assertEquals(0.0, m.get(0, 1), 0.0);
             assertEquals(0.0, m.get(1, 0), 0.0);
-        }
-
-        @Test
-        public void testDoubleMatrixMainDiagonal() {
-            DoubleMatrix matrix = DoubleMatrix.ofMainDiagonal(new double[] { 1.0, 2.0, 3.0 });
-            assertEquals(3, matrix.rowCount());
-            assertEquals(3, matrix.columnCount());
-            assertEquals(1.0, matrix.get(0, 0));
-            assertEquals(2.0, matrix.get(1, 1));
-            assertEquals(3.0, matrix.get(2, 2));
-            assertEquals(0.0, matrix.get(0, 1));
         }
 
         @Test
@@ -1166,12 +1111,6 @@ class DoubleMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testget() {
-            DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            assertEquals(2.0, matrix.get(0, 1));
-        }
-
-        @Test
         public void testGet_OutOfBounds() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             assertThrows(ArrayIndexOutOfBoundsException.class, () -> m.get(-1, 0));
@@ -1499,7 +1438,7 @@ class DoubleMatrixTest extends MatrixTestSupport {
     class RowViewTests {
 
         @Test
-        public void testRow() {
+        public void testRowView() {
             double[][] arr = { { 1.0, 2.0 }, { 3.0, 4.0 } };
             DoubleMatrix matrix = DoubleMatrix.wrap(arr);
 
@@ -1531,13 +1470,6 @@ class DoubleMatrixTest extends MatrixTestSupport {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             double[] row = m.rowView(0);
             assertArrayEquals(new double[] { 1.0, 2.0 }, row, 0.0);
-        }
-
-        @Test
-        public void testRowView() {
-            DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 } });
-            double[] firstRow = matrix.rowView(0);
-            assertArrayEquals(new double[] { 1.0, 2.0, 3.0 }, firstRow);
         }
 
         @Test
@@ -1582,7 +1514,7 @@ class DoubleMatrixTest extends MatrixTestSupport {
     class ColumnCopyTests {
 
         @Test
-        public void testColumn() {
+        public void testColumnCopy() {
             double[][] arr = { { 1.0, 2.0 }, { 3.0, 4.0 } };
             DoubleMatrix matrix = DoubleMatrix.wrap(arr);
 
@@ -1615,13 +1547,6 @@ class DoubleMatrixTest extends MatrixTestSupport {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             double[] col = m.columnCopy(0);
             assertArrayEquals(new double[] { 1.0, 3.0 }, col, 0.0);
-        }
-
-        @Test
-        public void testColumnCopy() {
-            DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 } });
-            double[] firstColumn = matrix.columnCopy(0);
-            assertArrayEquals(new double[] { 1.0, 4.0 }, firstColumn);
         }
 
         @Test
@@ -1822,7 +1747,7 @@ class DoubleMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testupdateRow() {
+        public void testUpdateRow_DoublesFirstRowOnly() {
             DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 } });
             matrix.updateRow(0, x -> x * 2);
             assertArrayEquals(new double[] { 2.0, 4.0, 6.0 }, matrix.rowView(0));
@@ -1912,7 +1837,7 @@ class DoubleMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testupdateColumn() {
+        public void testUpdateColumn_AddsTenToFirstColumn() {
             DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 }, { 5.0, 6.0 } });
             matrix.updateColumn(0, x -> x + 10.0);
             assertEquals(11.0, matrix.get(0, 0));
@@ -1995,13 +1920,6 @@ class DoubleMatrixTest extends MatrixTestSupport {
         public void testMainDiagonalCopy_NonSquare() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 }, { 5.0, 6.0 } });
             assertArrayEquals(new double[] { 1.0, 4.0 }, m.mainDiagonalCopy(), 0.0);
-        }
-
-        @Test
-        public void testmainDiagonalCopy() {
-            DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
-            double[] diagonal = matrix.mainDiagonalCopy();
-            assertArrayEquals(new double[] { 1.0, 5.0, 9.0 }, diagonal);
         }
     }
 
@@ -2171,13 +2089,6 @@ class DoubleMatrixTest extends MatrixTestSupport {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
             double[] diag = m.antiDiagonalCopy();
             assertArrayEquals(new double[] { 3.0, 5.0, 7.0 }, diag, 0.0);
-        }
-
-        @Test
-        public void testantiDiagonalCopy() {
-            DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
-            double[] diagonal = matrix.antiDiagonalCopy();
-            assertArrayEquals(new double[] { 3.0, 5.0, 7.0 }, diagonal);
         }
     }
 
@@ -2380,16 +2291,6 @@ class DoubleMatrixTest extends MatrixTestSupport {
             assertEquals(22.0, m.get(1, 1), 0.0);
         }
 
-        @Test
-        public void testupdateAll() {
-            DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            matrix.updateAll(x -> x * 2);
-            assertEquals(2.0, matrix.get(0, 0));
-            assertEquals(4.0, matrix.get(0, 1));
-            assertEquals(6.0, matrix.get(1, 0));
-            assertEquals(8.0, matrix.get(1, 1));
-        }
-
         @ParameterizedTest
         @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
         public void testUpdateAll_ExplicitModesTransformEveryValue(final ParallelMode mode) {
@@ -2522,18 +2423,6 @@ class DoubleMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testreplaceIf() {
-            DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { -1.0, 2.0, -3.0 }, { 4.0, -5.0, 6.0 } });
-            matrix.replaceIf(x -> x < 0, 0.0);
-            assertEquals(0.0, matrix.get(0, 0));
-            assertEquals(2.0, matrix.get(0, 1));
-            assertEquals(0.0, matrix.get(0, 2));
-            assertEquals(4.0, matrix.get(1, 0));
-            assertEquals(0.0, matrix.get(1, 1));
-            assertEquals(6.0, matrix.get(1, 2));
-        }
-
-        @Test
         public void testReplaceIfByIndex() {
             DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
             matrix.replaceIf((i, j) -> i == j, 0.0);
@@ -2566,6 +2455,18 @@ class DoubleMatrixTest extends MatrixTestSupport {
             } finally {
                 Matrices.setParallelMode(previous);
             }
+        }
+
+        @Test
+        public void testReplaceIf_ZerosNegativeCells() {
+            DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { -1.0, 2.0, -3.0 }, { 4.0, -5.0, 6.0 } });
+            matrix.replaceIf(x -> x < 0, 0.0);
+            assertEquals(0.0, matrix.get(0, 0));
+            assertEquals(2.0, matrix.get(0, 1));
+            assertEquals(0.0, matrix.get(0, 2));
+            assertEquals(4.0, matrix.get(1, 0));
+            assertEquals(0.0, matrix.get(1, 1));
+            assertEquals(6.0, matrix.get(1, 2));
         }
     }
 
@@ -2910,14 +2811,6 @@ class DoubleMatrixTest extends MatrixTestSupport {
             Matrix<String> result = m.mapToObj(x -> "val:" + x, String.class);
             assertEquals("val:1.5", result.get(0, 0));
             assertEquals("val:4.5", result.get(1, 1));
-        }
-
-        @Test
-        public void testMapToObj_Shape2By2_FirstRowStringValues() {
-            DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            Matrix<String> result = m.mapToObj(x -> String.valueOf(x), String.class);
-            assertEquals("1.0", result.get(0, 0));
-            assertEquals("4.0", result.get(1, 1));
         }
 
         @Test
@@ -3717,7 +3610,7 @@ class DoubleMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testflipHorizontallyInPlace() {
+        public void testFlipHorizontallyInPlace_ReversesEveryRowValue() {
             DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0, 3.0 } });
             matrix.flipHorizontallyInPlace();
             assertArrayEquals(new double[] { 3.0, 2.0, 1.0 }, matrix.rowView(0));
@@ -3767,7 +3660,7 @@ class DoubleMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testflipVerticallyInPlace() {
+        public void testFlipVerticallyInPlace_ReversesSingleColumnValues() {
             DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { 1.0 }, { 2.0 }, { 3.0 } });
             matrix.flipVerticallyInPlace();
             assertEquals(3.0, matrix.get(0, 0));
@@ -3826,15 +3719,6 @@ class DoubleMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testflipHorizontally() {
-            DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0, 3.0 } });
-            DoubleMatrix flipped = matrix.flipHorizontally();
-            assertArrayEquals(new double[] { 3.0, 2.0, 1.0 }, flipped.rowView(0));
-            // original unchanged
-            assertArrayEquals(new double[] { 1.0, 2.0, 3.0 }, matrix.rowView(0));
-        }
-
-        @Test
         public void testDoubleMatrixFlipH() {
             // DoubleMatrix.java: DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] {{1.0, 2.0, 3.0}});
             // DoubleMatrix flipped = matrix.flipHorizontally();   // returns [[3.0, 2.0, 1.0]], original unchanged
@@ -3845,6 +3729,15 @@ class DoubleMatrixTest extends MatrixTestSupport {
             assertEquals(1.0, flipped.get(0, 2));
             // Verify original unchanged
             assertEquals(1.0, matrix.get(0, 0));
+        }
+
+        @Test
+        public void testFlipHorizontally_SingleRowPreservesSourceValues() {
+            DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0, 3.0 } });
+            DoubleMatrix flipped = matrix.flipHorizontally();
+            assertArrayEquals(new double[] { 3.0, 2.0, 1.0 }, flipped.rowView(0));
+            // original unchanged
+            assertArrayEquals(new double[] { 1.0, 2.0, 3.0 }, matrix.rowView(0));
         }
     }
 
@@ -4329,7 +4222,7 @@ class DoubleMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testrepeatElements() {
+        public void testRepeatElements_RepeatsCellsTwiceVerticallyAndThreeTimesHorizontally() {
             DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             DoubleMatrix repeated = matrix.repeatElements(2, 3);
             assertEquals(4, repeated.rowCount());
@@ -4434,7 +4327,7 @@ class DoubleMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testrepeatMatrix() {
+        public void testRepeatMatrix_TilesTwiceVerticallyAndThreeTimesHorizontally() {
             DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             DoubleMatrix repeated = matrix.repeatMatrix(2, 3);
             assertEquals(4, repeated.rowCount());
@@ -4558,7 +4451,7 @@ class DoubleMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testflatten() {
+        public void testFlatten_SquareRowMajorList() {
             DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             DoubleList list = matrix.flatten();
             assertEquals(DoubleList.of(1.0, 2.0, 3.0, 4.0), list);
@@ -4621,7 +4514,7 @@ class DoubleMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testmutateViaFlatArray() {
+        public void testMutateViaFlatArray_SortsAllCellsInRowOrder() {
             DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { 5.0, 3.0 }, { 4.0, 1.0 } });
             matrix.mutateViaFlatArray(arr -> java.util.Arrays.sort(arr));
             assertEquals(1.0, matrix.get(0, 0));
@@ -4706,7 +4599,7 @@ class DoubleMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void teststackVertically() {
+        public void testStackVertically_PreservesEveryAppendedRow() {
             DoubleMatrix a = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             DoubleMatrix b = DoubleMatrix.wrap(new double[][] { { 5.0, 6.0 } });
             DoubleMatrix stacked = a.stackVertically(b);
@@ -4802,7 +4695,7 @@ class DoubleMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void teststackHorizontally() {
+        public void testStackHorizontally_PreservesEveryAppendedColumn() {
             DoubleMatrix a = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             DoubleMatrix b = DoubleMatrix.wrap(new double[][] { { 5.0 }, { 6.0 } });
             DoubleMatrix stacked = a.stackHorizontally(b);
@@ -5935,7 +5828,7 @@ class DoubleMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testhorizontalStream() {
+        public void testRowMajorStream_SquareSumAndRowMajorArray() {
             DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             double sum = matrix.rowMajorStream().sum();
             assertEquals(10.0, sum);
@@ -6718,13 +6611,6 @@ class DoubleMatrixTest extends MatrixTestSupport {
     class ToMultilineStringTests {
 
         @Test
-        public void testToMultilineString_Shape2By2_NonNullRendering() {
-            DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
-            String result = m.toMultilineString();
-            assertNotNull(result);
-        }
-
-        @Test
         public void testToMultilineString_Shape2By2_NonemptyRendering() {
             DoubleMatrix m = DoubleMatrix.wrap(new double[][] { { 1.0, 2.0 }, { 3.0, 4.0 } });
             String result = m.toMultilineString();
@@ -6806,18 +6692,6 @@ class DoubleMatrixTest extends MatrixTestSupport {
 
             assertEquals(m1, m2, "Two matrices with NaN values at the same positions must be equal");
             assertEquals(m1.hashCode(), m2.hashCode(), "Equal matrices must produce equal hash codes (NaN content)");
-        }
-
-        @Test
-        public void testHashCode_ZeroRowWidthsDistinguishShapes() {
-            final var empty = DoubleMatrix.wrap(new double[0][0]);
-            final var narrow = empty.resize(0, 4);
-            final var equal = empty.resize(0, 4);
-            final var wide = empty.resize(0, 5);
-            assertEquals(narrow, equal);
-            assertEquals(narrow.hashCode(), equal.hashCode());
-            assertNotEquals(narrow.hashCode(), wide.hashCode());
-            assertNotEquals(narrow.hashCode(), empty.hashCode());
         }
 
         @Test
@@ -6960,12 +6834,6 @@ class DoubleMatrixTest extends MatrixTestSupport {
 
     @Nested
     class ElementTypeTests {
-
-        @Test
-        public void testElementType() {
-            DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] { { 1.0 } });
-            assertEquals(double.class, matrix.elementType());
-        }
 
         @Test
         public void testElementType_Shape1By1() {

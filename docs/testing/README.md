@@ -53,6 +53,10 @@ mvn clean test jacoco:report '-Djunit.jupiter.testmethod.order.default=org.junit
 
 See [the tool guide](../../tools/README.md) for preview/apply commands and audit limitations.
 
+## Latest consolidation
+
+The follow-up consolidation removes 260 redundant methods and replaces 17 others with three focused methods. All **7,309 invocations** pass in normal and randomized order, preserving **100% method, 99.83% line, and 99.21% branch coverage**. See the [plan](consolidation-plan.md) and [results with replacement records](consolidation-results.md). The sections below preserve the earlier cleanup and coverage history.
+
 ## Coverage improvement
 
 A subsequent coverage pass reaches **100% of methods, 99.83% of lines, and 99.21% of branches**, with all 7,567 invocations passing in normal and randomized order. See the [coverage improvement record](coverage-improvement.md) for added scenarios, reproducible results, and the remaining gaps. The cleanup figures below are the historical results before that pass.

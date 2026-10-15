@@ -28,14 +28,14 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import com.landawn.abacus.util.Dataset;
-import com.landawn.abacus.util.Sheet;
 import com.landawn.abacus.util.Sheet.Point;
+import com.landawn.abacus.util.Sheet;
 import com.landawn.abacus.util.Throwables;
-import com.landawn.abacus.util.u;
-import com.landawn.abacus.util.u.Nullable;
 import com.landawn.abacus.util.stream.IntStream;
 import com.landawn.abacus.util.stream.ObjIteratorEx;
 import com.landawn.abacus.util.stream.Stream;
+import com.landawn.abacus.util.u.Nullable;
+import com.landawn.abacus.util.u;
 
 class MatrixTest extends MatrixTestSupport {
 
@@ -276,13 +276,6 @@ class MatrixTest extends MatrixTestSupport {
             assertEquals(0, empty.columnCount());
             assertEquals(String.class, empty.elementType());
             assertEquals(Object.class, Matrix.empty().elementType());
-        }
-
-        @Test
-        public void testMatrixEmptyRowCount() {
-            Matrix<String> matrix = new Matrix<>(new String[0][0]);
-            assertEquals(0, matrix.rowCount());
-            assertEquals(0, matrix.columnCount());
         }
 
         @Test
@@ -791,21 +784,10 @@ class MatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testDiagonal_BothDiagonals() {
-            Integer[] lu2rd = { 1, 2, 3 };
-            Integer[] ru2ld = { 7, 8, 9 };
-            Matrix<Integer> m = Matrix.ofDiagonals(lu2rd, ru2ld);
-            assertEquals(3, m.rowCount());
-            assertEquals(3, m.columnCount());
-            // LU2RD diagonal
-            assertEquals(1, m.get(0, 0));
-            assertEquals(2, m.get(1, 1));
-            assertEquals(3, m.get(2, 2));
-            // RU2LD diagonal
-            assertEquals(7, m.get(0, 2));
-            assertEquals(9, m.get(2, 0));
-            // LU2RD takes precedence at center
-            assertEquals(2, m.get(1, 1));
+        public void testOfDiagonals_MainDiagonalWinsAtSharedCenter() {
+            final Matrix<Integer> matrix = Matrix.ofDiagonals(new Integer[] { 1, 2, 3 }, new Integer[] { 7, 8, 9 });
+            // At the shared center, the main diagonal wins; other cells remain null.
+            assertEquals(Matrix.wrap(new Integer[][] { { 1, null, 7 }, { null, 2, null }, { 9, null, 3 } }), matrix);
         }
 
         @Test
@@ -846,20 +828,6 @@ class MatrixTest extends MatrixTestSupport {
             assertEquals("B", m.get(1, 1));
             assertEquals("X", m.get(0, 1));
             assertEquals("Y", m.get(1, 0));
-        }
-
-        @Test
-        public void testDiagonal_WithBothDiagonals_Values() {
-            Integer[] lu = { 1, 2, 3 };
-            Integer[] ru = { 7, 8, 9 };
-            Matrix<Integer> m = Matrix.ofDiagonals(lu, ru);
-            assertEquals(3, m.rowCount());
-            assertEquals(3, m.columnCount());
-            assertEquals(1, m.get(0, 0));
-            assertEquals(2, m.get(1, 1)); // Main diagonal takes precedence
-            assertEquals(3, m.get(2, 2));
-            assertEquals(7, m.get(0, 2));
-            assertEquals(9, m.get(2, 0));
         }
 
         @Test
@@ -930,13 +898,6 @@ class MatrixTest extends MatrixTestSupport {
 
             Sheet.Point point = Sheet.Point.of(1, 1);
             Assertions.assertEquals(4, matrix.get(point));
-        }
-
-        @Test
-        public void testGet_Indices() {
-            Matrix<String> matrix = Matrix.wrap(new String[][] { { "A", "B" }, { "C", "D" } });
-            assertEquals("C", matrix.get(1, 0));
-            assertEquals("D", matrix.get(1, 1));
         }
 
         @Test
@@ -1751,7 +1712,7 @@ class MatrixTest extends MatrixTestSupport {
     class ColumnCopyTests {
 
         @Test
-        public void testColumn() {
+        public void testColumnCopy() {
             Integer[][] data = { { 1, 2 }, { 3, 4 }, { 5, 6 } };
             Matrix<Integer> matrix = Matrix.wrap(data);
 
@@ -1760,13 +1721,6 @@ class MatrixTest extends MatrixTestSupport {
 
             column[0] = 10; // This does not modify the matrix
             Assertions.assertEquals(2, matrix.get(0, 1));
-        }
-
-        @Test
-        public void testColumnCopy() {
-            Matrix<String> matrix = Matrix.wrap(new String[][] { { "A", "B" }, { "C", "D" } });
-            String[] colData = matrix.columnCopy(1);
-            assertArrayEquals(new String[] { "B", "D" }, colData);
         }
 
         @Test
@@ -2190,7 +2144,7 @@ class MatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testmainDiagonalCopy() {
+        public void testMainDiagonalCopy_ThreeByThreeValues() {
             Matrix<Integer> m = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             Integer[] diag = m.mainDiagonalCopy();
             assertArrayEquals(new Integer[] { 1, 5, 9 }, diag);
@@ -2414,7 +2368,7 @@ class MatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testantiDiagonalCopy() {
+        public void testAntiDiagonalCopy_ThreeByThreeValues() {
             Matrix<Integer> m = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             Integer[] diag = m.antiDiagonalCopy();
             assertArrayEquals(new Integer[] { 3, 5, 7 }, diag);
@@ -3630,14 +3584,6 @@ class MatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testFill_WithNullValue() {
-            Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" }, { "C", "D" } });
-            m.fill(null);
-            assertNull(m.get(0, 0));
-            assertNull(m.get(1, 1));
-        }
-
-        @Test
         public void testFill_SingleValue_Null() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" }, { "C", "D" } });
             m.fill(null);
@@ -4169,16 +4115,6 @@ class MatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testCopyRegion_Shape3By3() {
-            Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B", "C" }, { "D", "E", "F" }, { "G", "H", "I" } });
-            Matrix<String> submatrix = m.copyRegion(0, 2, 1, 3);
-            assertEquals(2, submatrix.rowCount());
-            assertEquals(2, submatrix.columnCount());
-            assertEquals("B", submatrix.get(0, 0));
-            assertEquals("F", submatrix.get(1, 1));
-        }
-
-        @Test
         public void testCopyRegion_Strings() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B", "C" }, { "D", "E", "F" }, { "G", "H", "I" } });
             Matrix<String> submatrix = m.copyRegion(0, 2, 1, 3);
@@ -4377,16 +4313,6 @@ class MatrixTest extends MatrixTestSupport {
             assertEquals(2, truncated.columnCount());
             assertEquals("A", truncated.get(0, 0));
             assertEquals("E", truncated.get(1, 1));
-        }
-
-        @Test
-        public void testResize_WithDefaultValue_Shape2By2() {
-            Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" }, { "C", "D" } });
-            Matrix<String> extended = m.resize(3, 3, "X");
-            assertEquals(3, extended.rowCount());
-            assertEquals(3, extended.columnCount());
-            assertEquals("A", extended.get(0, 0));
-            assertEquals("X", extended.get(2, 2)); // new cell
         }
 
         @Test
@@ -4931,18 +4857,6 @@ class MatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testFlipHorizontally_Shape2By3() {
-            Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B", "C" }, { "D", "E", "F" } });
-            Matrix<String> flipped = m.flipHorizontally();
-            assertEquals("C", flipped.get(0, 0));
-            assertEquals("B", flipped.get(0, 1));
-            assertEquals("A", flipped.get(0, 2));
-
-            // Original unchanged
-            assertEquals("A", m.get(0, 0));
-        }
-
-        @Test
         public void testFlipHorizontally_Strings() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B", "C" }, { "D", "E", "F" } });
             Matrix<String> flipped = m.flipHorizontally();
@@ -5001,18 +4915,6 @@ class MatrixTest extends MatrixTestSupport {
             assertEquals(4, flipped.get(1, 1));
             assertEquals(1, flipped.get(2, 0));
             assertEquals(2, flipped.get(2, 1));
-        }
-
-        @Test
-        public void testFlipVertically_Shape3By2() {
-            Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B" }, { "C", "D" }, { "E", "F" } });
-            Matrix<String> flipped = m.flipVertically();
-            assertEquals("E", flipped.get(0, 0));
-            assertEquals("C", flipped.get(1, 0));
-            assertEquals("A", flipped.get(2, 0));
-
-            // Original unchanged
-            assertEquals("A", m.get(0, 0));
         }
 
         @Test
@@ -5468,7 +5370,7 @@ class MatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testrepeatElements() {
+        public void testRepeatElements_RepeatsCellsTwiceVerticallyAndThreeTimesHorizontally() {
             Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } });
             Matrix<Integer> repeated = matrix.repeatElements(2, 3);
             assertEquals(4, repeated.rowCount());
@@ -5601,7 +5503,7 @@ class MatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testrepeatMatrix() {
+        public void testRepeatMatrix_TilesTwiceVerticallyAndThreeTimesHorizontally() {
             Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } });
             Matrix<Integer> repeated = matrix.repeatMatrix(2, 3);
             assertEquals(4, repeated.rowCount());
@@ -5745,7 +5647,7 @@ class MatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testflatten() {
+        public void testFlatten_RectangleRowMajorList() {
             Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             List<Integer> flat = matrix.flatten();
             assertEquals(java.util.Arrays.asList(1, 2, 3, 4, 5, 6), flat);
@@ -5821,13 +5723,6 @@ class MatrixTest extends MatrixTestSupport {
             assertEquals(2, extended.rowCount());
             assertEquals(2, extended.columnCount());
             assertEquals("X", extended.get(0, 0));
-        }
-
-        @Test
-        public void testFlatten_Empty() {
-            Matrix<String> empty = Matrix.wrap(new String[0][0]);
-            List<String> flat = empty.flatten();
-            assertTrue(flat.isEmpty());
         }
 
         @Test
@@ -6317,7 +6212,7 @@ class MatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testzipWith() {
+        public void testZipWith_AddsCorrespondingSquareCells() {
             Matrix<Integer> m1 = Matrix.wrap(new Integer[][] { { 1, 2 }, { 3, 4 } });
             Matrix<Integer> m2 = Matrix.wrap(new Integer[][] { { 5, 6 }, { 7, 8 } });
             Matrix<Integer> sum = m1.zipWith(m2, (a, b) -> a + b);
@@ -6555,7 +6450,7 @@ class MatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testmainDiagonalStream() {
+        public void testMainDiagonalStream_ThreeByThreeArrayValues() {
             Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             Object[] diag = matrix.mainDiagonalStream().toArray();
             assertArrayEquals(new Object[] { 1, 5, 9 }, diag);
@@ -6681,7 +6576,7 @@ class MatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testantiDiagonalStream() {
+        public void testAntiDiagonalStream_ThreeByThreeArrayValues() {
             Matrix<Integer> matrix = Matrix.wrap(new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             Object[] diag = matrix.antiDiagonalStream().toArray();
             assertArrayEquals(new Object[] { 3, 5, 7 }, diag);
@@ -7003,16 +6898,6 @@ class MatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testRowMajorStream_WithSingleRowRange() {
-            Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B", "C" }, { "D", "E", "F" } });
-            List<String> row1 = m.rowMajorStream(1, 2).toList();
-            assertEquals(3, row1.size());
-            assertEquals("D", row1.get(0));
-            assertEquals("E", row1.get(1));
-            assertEquals("F", row1.get(2));
-        }
-
-        @Test
         public void testRowMajorStream_SingleRowRange() {
             Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B", "C" } });
             List<String> result = m.rowMajorStream(0, 1).toList();
@@ -7281,15 +7166,6 @@ class MatrixTest extends MatrixTestSupport {
         public void testColumnMajorStream_Empty() {
             Matrix<String> empty = Matrix.wrap(new String[0][0]);
             assertEquals(0, empty.columnMajorStream().count());
-        }
-
-        @Test
-        public void testColumnMajorStream_WithSingleColumnRange() {
-            Matrix<String> m = Matrix.wrap(new String[][] { { "A", "B", "C" }, { "D", "E", "F" } });
-            List<String> col1 = m.columnMajorStream(1, 2).toList();
-            assertEquals(2, col1.size());
-            assertEquals("B", col1.get(0));
-            assertEquals("E", col1.get(1));
         }
 
         @Test
@@ -8089,15 +7965,11 @@ class MatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testHashCode_ZeroRowWidthsDistinguishShapes() {
-            final var empty = Matrix.wrap(new Integer[0][0]);
-            final var narrow = empty.resize(0, 4);
-            final var equal = empty.resize(0, 4);
-            final var wide = empty.resize(0, 5);
-            assertEquals(narrow, equal);
-            assertEquals(narrow.hashCode(), equal.hashCode());
-            assertNotEquals(narrow.hashCode(), wide.hashCode());
-            assertNotEquals(narrow.hashCode(), empty.hashCode());
+        public void testHashCode_NullFilledRectanglesHaveEqualHashes() {
+            final Matrix<String> first = Matrix.wrap(new String[2][3]);
+            final Matrix<String> equal = Matrix.wrap(new String[2][3]);
+            assertEquals(first, equal);
+            assertEquals(first.hashCode(), equal.hashCode());
         }
     }
 

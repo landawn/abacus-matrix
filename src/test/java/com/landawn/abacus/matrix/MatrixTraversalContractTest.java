@@ -1,5 +1,6 @@
 package com.landawn.abacus.matrix;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -16,6 +17,7 @@ import com.landawn.abacus.util.DoubleIterator;
 import com.landawn.abacus.util.FloatIterator;
 import com.landawn.abacus.util.IntIterator;
 import com.landawn.abacus.util.LongIterator;
+import com.landawn.abacus.util.ObjIterator;
 import com.landawn.abacus.util.stream.DoubleIteratorEx;
 import com.landawn.abacus.util.stream.DoubleStream;
 import com.landawn.abacus.util.stream.FloatIteratorEx;
@@ -124,6 +126,39 @@ class MatrixTraversalContractTest extends MatrixTestSupport {
             assertValues(new double[0], toArray(iterator));
             assertValues(new double[0], toListArray(iterator));
             assertThrows(NoSuchElementException.class, () -> ((Iterator<?>) iterator).next());
+        }
+
+        private static void assertCountExhausts(final LongIterator iterator, final long expected) {
+            assertEquals(expected, iterator.count());
+            assertFalse(iterator.hasNext());
+        }
+
+        private static void assertCountExhausts(final ObjIterator<?> iterator, final long expected) {
+            assertEquals(expected, iterator.count());
+            assertFalse(iterator.hasNext());
+        }
+
+        @Test
+        public void testIteratorCountConsumesTheRemainingElementsAndToArrayStillWorks() {
+            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+            assertCountExhausts(matrix.mainDiagonalStream().iterator(), 2);
+            assertCountExhausts(matrix.antiDiagonalStream().iterator(), 2);
+            assertCountExhausts(matrix.rowMajorStream().iterator(), 6);
+            assertCountExhausts(matrix.columnMajorStream().iterator(), 6);
+            assertCountExhausts(matrix.rowStreams().iterator(), 2);
+            assertCountExhausts(matrix.columnStreams().iterator(), 3);
+
+            LongIterator remaining = matrix.rowMajorStream().iterator();
+            assertEquals(1L, remaining.nextLong());
+            assertArrayEquals(new long[] { 2, 3, 4, 5, 6 }, remaining.toArray());
+
+            FloatIterator floatIterator = FloatMatrix.wrap(new float[][] { { 1, 2 } }).rowMajorStream().iterator();
+            assertEquals(2L, floatIterator.count());
+            assertFalse(floatIterator.hasNext());
+
+            DoubleIterator doubleIterator = DoubleMatrix.wrap(new double[][] { { 1, 2 } }).rowMajorStream().iterator();
+            assertEquals(2L, doubleIterator.count());
+            assertFalse(doubleIterator.hasNext());
         }
 
         @Test

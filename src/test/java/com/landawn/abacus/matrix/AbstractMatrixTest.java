@@ -25,12 +25,14 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import com.landawn.abacus.util.DoubleList;
 import com.landawn.abacus.util.IntList;
-import com.landawn.abacus.util.Sheet;
 import com.landawn.abacus.util.Sheet.Point;
+import com.landawn.abacus.util.Sheet;
 import com.landawn.abacus.util.Throwables;
 import com.landawn.abacus.util.stream.Stream;
 
@@ -67,6 +69,17 @@ class AbstractMatrixTest extends MatrixTestSupport {
 
     private static void assertShape(final String context, final AbstractMatrix<?, ?, ?, ?, ?> matrix, final int rowCount, final int columnCount) {
         assertEquals(rowCount + "x" + columnCount, matrix.rowCount() + "x" + matrix.columnCount(), context);
+    }
+
+    private static java.util.stream.Stream<Arguments> matrixDimensions() {
+        return java.util.stream.Stream.of(Arguments.of("square", IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } }), 2, 2, 4L),
+                Arguments.of("rectangle", IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } }), 2, 3, 6L),
+                Arguments.of("large rectangle", IntMatrix.wrap(new int[100][50]), 100, 50, 5000L),
+                Arguments.of("single element", IntMatrix.wrap(new int[][] { { 42 } }), 1, 1, 1L), Arguments.of("empty", IntMatrix.empty(), 0, 0, 0L),
+                Arguments.of("single row", IntMatrix.wrap(new int[][] { { 1, 2, 3, 4, 5 } }), 1, 5, 5L),
+                Arguments.of("single column", IntMatrix.wrap(new int[][] { { 1 }, { 2 }, { 3 }, { 4 } }), 4, 1, 4L),
+                Arguments.of("zero rows with columns", IntMatrix.empty().resize(0, 4), 0, 4, 0L),
+                Arguments.of("rows with zero columns", IntMatrix.wrap(new int[3][0]), 3, 0, 0L));
     }
 
     @Nested
@@ -320,13 +333,6 @@ class AbstractMatrixTest extends MatrixTestSupport {
             BooleanMatrix matrix = BooleanMatrix.wrap(new boolean[][] { { true, false }, { false, true } });
             assertEquals(boolean.class, matrix.elementType());
         }
-
-        @Test
-        public void testelementType() {
-            // From elementType Javadoc
-            IntMatrix intMatrix = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            assertEquals(int.class, intMatrix.elementType()); // Returns int.class
-        }
     }
 
     @Nested
@@ -555,13 +561,6 @@ class AbstractMatrixTest extends MatrixTestSupport {
     class RowCountTests {
 
         @Test
-        public void testRowCount() {
-            // From rowCount Javadoc
-            IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            assertEquals(2, matrix.rowCount()); // Returns 2
-        }
-
-        @Test
         public void testPackageContract_FactoryStorageOwnershipAcrossTypes() {
             final boolean[] z = new boolean[2];
             final byte[] y = new byte[2];
@@ -620,13 +619,6 @@ class AbstractMatrixTest extends MatrixTestSupport {
     class ColumnCountTests {
 
         @Test
-        public void testColumnCount() {
-            // From columnCount Javadoc
-            IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            assertEquals(3, matrix.columnCount()); // Returns 3
-        }
-
-        @Test
         public void testReshape_SameColumnCountSameMatrix() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             IntMatrix reshaped = m.reshapeAndPadToColumnCount(3);
@@ -651,6 +643,16 @@ class AbstractMatrixTest extends MatrixTestSupport {
 
     @Nested
     class ElementCountTests {
+
+        @ParameterizedTest(name = "{0}: dimensions and element count")
+        @MethodSource("com.landawn.abacus.matrix.AbstractMatrixTest#matrixDimensions")
+        public void testElementCount_ShapeMetadataMatchesDimensions(final String scenario, final IntMatrix matrix, final int rows, final int columns,
+                final long elements) {
+            assertEquals(rows, matrix.rowCount());
+            assertEquals(columns, matrix.columnCount());
+            assertEquals(elements, matrix.elementCount());
+            assertEquals(elements == 0, matrix.isEmpty());
+        }
 
         @Test
         public void testLargeMatrix() {
@@ -678,14 +680,6 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testRowsColsCount_SquareMatrix() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            assertEquals(2, m.rowCount());
-            assertEquals(2, m.columnCount());
-            assertEquals(4, m.elementCount());
-        }
-
-        @Test
         public void testLargeMatrix_Count() {
             int[][] large = new int[1000][1000];
             IntMatrix m = IntMatrix.wrap(large);
@@ -695,34 +689,11 @@ class AbstractMatrixTest extends MatrixTestSupport {
             assertEquals(1000000L, m.elementCount());
         }
 
-        @Test
-        public void testRowsColsCount_Rectangular() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            assertEquals(2, m.rowCount());
-            assertEquals(3, m.columnCount());
-            assertEquals(6, m.elementCount());
-        }
-
-        @Test
-        public void testRowsColsCount_LargeMatrix() {
-            IntMatrix m = IntMatrix.wrap(new int[100][50]);
-            assertEquals(100, m.rowCount());
-            assertEquals(50, m.columnCount());
-            assertEquals(5000, m.elementCount());
-        }
-
         // From rotate90 Javadoc
         // Original:    Rotated 90 degrees clockwise:
         // 1 2 3        7 4 1
         // 4 5 6   =>   8 5 2
         // 7 8 9        9 6 3
-        @Test
-        public void testElementCount() {
-            // From elementCount Javadoc
-            IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            assertEquals(6, matrix.elementCount()); // Returns 6
-        }
-
         @Test
         public void testEmptyMatrix() {
             IntMatrix empty = IntMatrix.wrap(new int[0][0]);
@@ -755,53 +726,9 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testRowsColsCount_SingleElement() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 42 } });
-            assertEquals(1, m.rowCount());
-            assertEquals(1, m.columnCount());
-            assertEquals(1, m.elementCount());
-        }
-
-        @Test
-        public void testRowsColsCount_EmptyMatrix() {
-            IntMatrix m = IntMatrix.empty();
-            assertEquals(0, m.rowCount());
-            assertEquals(0, m.columnCount());
-            assertEquals(0, m.elementCount());
-        }
-
-        @Test
-        public void testRowsColsCount_SingleRow() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3, 4, 5 } });
-            assertEquals(1, m.rowCount());
-            assertEquals(5, m.columnCount());
-            assertEquals(5, m.elementCount());
-        }
-
-        @Test
-        public void testRowsColsCount_SingleColumn() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1 }, { 2 }, { 3 }, { 4 } });
-            assertEquals(4, m.rowCount());
-            assertEquals(1, m.columnCount());
-            assertEquals(4, m.elementCount());
-        }
-
-        @Test
         public void testElementCount_Empty() {
             IntMatrix m = IntMatrix.wrap(new int[0][0]);
             assertEquals(0, m.elementCount());
-        }
-
-        @Test
-        public void testElementCount_SingleElement() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 42 } });
-            assertEquals(1, m.elementCount());
-        }
-
-        @Test
-        public void testElementCount_SingleRow() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3, 4, 5 } });
-            assertEquals(5, m.elementCount());
         }
 
         @Test
@@ -827,12 +754,6 @@ class AbstractMatrixTest extends MatrixTestSupport {
         public void testIsEmpty_NonEmptyMatrix() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1 } });
             assertFalse(m.isEmpty());
-        }
-
-        @Test
-        public void testIsEmpty_ZeroRows() {
-            IntMatrix m = IntMatrix.wrap(new int[0][0]);
-            assertTrue(m.isEmpty());
         }
 
         @Test
@@ -872,7 +793,7 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testisEmpty() {
+        public void testIsEmpty_EmptyAndSingleElementMatrices() {
             // From isEmpty Javadoc
             IntMatrix empty = IntMatrix.wrap(new int[0][0]);
             assertTrue(empty.isEmpty()); // Returns true (0x0)
@@ -971,7 +892,7 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testcopy() {
+        public void testCopy_MutatingResultPreservesSource() {
             // From copy Javadoc
             IntMatrix original = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
             IntMatrix copy = original.copy();
@@ -1023,7 +944,7 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testcopyRows() {
+        public void testCopyRows_LeadingRowsAndLastRow() {
             // From copyRows(fromRowIndex, toRowIndex) Javadoc
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
             IntMatrix subMatrix = matrix.copyRows(0, 2); // Contains rows 0 and 1
@@ -1221,7 +1142,7 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testcopyRegion() {
+        public void testCopyRegion_OffsetRectangleAndCenterCell() {
             // From copyRegion(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex) Javadoc
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             IntMatrix subMatrix = matrix.copyRegion(0, 2, 1, 3);
@@ -1315,7 +1236,7 @@ class AbstractMatrixTest extends MatrixTestSupport {
 
         // From reshape(int) Javadoc
         @Test
-        public void testrotate90() {
+        public void testRotate90_ThreeByThreeAllCellValues() {
             // From rotate90 Javadoc
             // Original:    Rotated 90 degrees clockwise:
             // 1 2 3        7 4 1
@@ -1400,7 +1321,7 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testrotate180() {
+        public void testRotate180_ThreeByThreeAllCellValues() {
             // From rotate180 Javadoc
             // Original:    Rotated 180 degrees:
             // 1 2 3        9 8 7
@@ -1449,17 +1370,6 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testRotate270_SquareMatrix() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix rotated = m.rotate270();
-
-            assertEquals(2, rotated.get(0, 0));
-            assertEquals(4, rotated.get(0, 1));
-            assertEquals(1, rotated.get(1, 0));
-            assertEquals(3, rotated.get(1, 1));
-        }
-
-        @Test
         public void testRotate270_Rectangular() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             IntMatrix rotated = m.rotate270();
@@ -1486,7 +1396,7 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testrotate270() {
+        public void testRotate270_ThreeByThreeAllCellValues() {
             // From rotate270 Javadoc
             // Original:    Rotated 270 degrees clockwise:
             // 1 2 3        3 6 9
@@ -1541,7 +1451,7 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testtranspose() {
+        public void testTranspose_TwoByThreeAllCellValues() {
             // From transpose Javadoc
             // 2x3 becomes 3x2
             IntMatrix original = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
@@ -1814,7 +1724,7 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testisSameShape() {
+        public void testIsSameShape_IgnoresValuesAndChecksColumnCount() {
             // From isSameShape Javadoc
             IntMatrix m1 = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
             IntMatrix m2 = IntMatrix.wrap(new int[][] { { 5, 6 }, { 7, 8 } });
@@ -1857,19 +1767,6 @@ class AbstractMatrixTest extends MatrixTestSupport {
             assertEquals(2, reshaped.rowCount());
             assertEquals(2, reshaped.columnCount());
             assertEquals(m, reshaped);
-        }
-
-        @Test
-        public void testReshape_TwoParams() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            IntMatrix reshaped = m.reshape(3, 2);
-
-            assertEquals(3, reshaped.rowCount());
-            assertEquals(2, reshaped.columnCount());
-            assertEquals(1, reshaped.get(0, 0));
-            assertEquals(2, reshaped.get(0, 1));
-            assertEquals(3, reshaped.get(1, 0));
-            assertEquals(6, reshaped.get(2, 1));
         }
 
         @Test
@@ -2085,32 +1982,6 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testReshapeAndPadToColumnCount_Shape2By3() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            IntMatrix reshaped = m.reshapeAndPadToColumnCount(2);
-
-            assertEquals(3, reshaped.rowCount());
-            assertEquals(2, reshaped.columnCount());
-            assertEquals(1, reshaped.get(0, 0));
-            assertEquals(2, reshaped.get(0, 1));
-            assertEquals(3, reshaped.get(1, 0));
-            assertEquals(6, reshaped.get(2, 1));
-        }
-
-        @Test
-        public void testReshapeAndPadToColumnCount_NeedsPadding() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            IntMatrix reshaped = m.reshapeAndPadToColumnCount(4);
-
-            assertEquals(2, reshaped.rowCount());
-            assertEquals(4, reshaped.columnCount());
-            assertEquals(1, reshaped.get(0, 0));
-            assertEquals(4, reshaped.get(0, 3));
-            assertEquals(5, reshaped.get(1, 0));
-            assertEquals(0, reshaped.get(1, 3)); // Padding with default value
-        }
-
-        @Test
         public void testReshapeAndPadToColumnCount_PadsWithEachTypesDefaultValue() {
             assertEquals(CharMatrix.wrap(new char[][] { { 'a', 'b' }, { 'c', (char) 0 } }),
                     CharMatrix.wrap(new char[][] { { 'a', 'b', 'c' } }).reshapeAndPadToColumnCount(2));
@@ -2121,18 +1992,6 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         // AbstractMatrix.java: DoubleMatrix matrix = DoubleMatrix.wrap(new double[][] {{1.0, 2.0}, {3.0, 4.0}});
-        @Test
-        public void testReshape_SingleParameter_WithPadding() {
-            IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            IntMatrix reshaped = matrix.reshapeAndPadToColumnCount(4);
-            assertEquals(2, reshaped.rowCount());
-            assertEquals(4, reshaped.columnCount());
-            assertEquals(5, reshaped.get(1, 0));
-            assertEquals(6, reshaped.get(1, 1));
-            assertEquals(0, reshaped.get(1, 2)); // Padded
-            assertEquals(0, reshaped.get(1, 3)); // Padded
-        }
-
         @Test
         public void testReshape_SingleArg() {
             // From reshape(int) Javadoc
@@ -2222,21 +2081,6 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testRepeatElements_Shape2By2() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix repeated = m.repeatElements(2, 2);
-
-            assertEquals(4, repeated.rowCount());
-            assertEquals(4, repeated.columnCount());
-            assertEquals(1, repeated.get(0, 0));
-            assertEquals(1, repeated.get(0, 1));
-            assertEquals(1, repeated.get(1, 0));
-            assertEquals(1, repeated.get(1, 1));
-            assertEquals(4, repeated.get(2, 2));
-            assertEquals(4, repeated.get(3, 3));
-        }
-
-        @Test
         public void testRepeatElements_Asymmetric() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 } });
             IntMatrix repeated = m.repeatElements(3, 2);
@@ -2251,7 +2095,7 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testrepeatElements() {
+        public void testRepeatElements_TwoByTwoExpansionChecksEveryCell() {
             // From repeatElements Javadoc
             // Original:    repeatElements(2, 2):
             // 1 2          1 1 2 2
@@ -2342,20 +2186,6 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testRepeatMatrix_Shape2By2_TilesAndCornerValues() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix repeated = m.repeatMatrix(2, 2);
-
-            assertEquals(4, repeated.rowCount());
-            assertEquals(4, repeated.columnCount());
-            assertEquals(1, repeated.get(0, 0));
-            assertEquals(2, repeated.get(0, 1));
-            assertEquals(1, repeated.get(0, 2)); // Repeated
-            assertEquals(1, repeated.get(2, 0)); // Repeated
-            assertEquals(4, repeated.get(3, 3));
-        }
-
-        @Test
         public void testRepeatMatrix_Asymmetric() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 } });
             IntMatrix repeated = m.repeatMatrix(3, 2);
@@ -2369,7 +2199,7 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testrepeatMatrix() {
+        public void testRepeatMatrix_TwoByTwoTilingChecksEveryCell() {
             // From repeatMatrix Javadoc
             // Original:    repeatMatrix(2, 2):
             // 1 2          1 2 1 2
@@ -2520,7 +2350,7 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testflatten() {
+        public void testFlatten_SquareAndRectangleRowMajorValues() {
             // From flatten Javadoc
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
             IntList flat = matrix.flatten(); // Returns [1, 2, 3, 4]
@@ -2880,14 +2710,6 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testForEach_WithMatrix_Shape2By2() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            AtomicInteger sum = new AtomicInteger(0);
-            m.forEachIndices((i, j, matrix) -> sum.addAndGet(matrix.get(i, j)));
-            assertEquals(10, sum.get());
-        }
-
-        @Test
         public void testForEach_WithMatrix_WithRange() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             AtomicInteger sum = new AtomicInteger(0);
@@ -3067,14 +2889,6 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testForEach_WithRegionAndMatrix() {
-            IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            AtomicInteger sum = new AtomicInteger(0);
-            matrix.forEachIndices(1, 3, 1, 3, (i, j, m) -> sum.addAndGet(m.get(i, j)));
-            assertEquals(28, sum.get()); // 5+6+8+9
-        }
-
-        @Test
         public void testForEach_EmptyMatrix_Shape0By0() {
             IntMatrix matrix = IntMatrix.wrap(new int[0][0]);
             AtomicInteger count = new AtomicInteger(0);
@@ -3183,7 +2997,7 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testadjacent4Points_Corner() {
+        public void testAdjacent4Points_TopLeftCornerHasTwoDistinctNeighbors() {
             // From adjacent4Points Javadoc
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
             Stream<Point> adjacent = matrix.adjacent4Points(0, 0);
@@ -3195,7 +3009,7 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testadjacent4Points_Center() {
+        public void testAdjacent4Points_CenterHasFourDistinctNeighbors() {
             // From adjacent4Points Javadoc
             IntMatrix larger = IntMatrix.wrap(new int[3][3]);
             Stream<Point> centerAdj = larger.adjacent4Points(1, 1);
@@ -3297,7 +3111,7 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testadjacent8Points_Corner() {
+        public void testAdjacent8Points_BooleanTopLeftCornerHasThreeNeighbors() {
             // From adjacent8Points Javadoc
             BooleanMatrix matrix = BooleanMatrix.wrap(new boolean[][] { { true, false, true }, { false, true, false }, { true, false, true } });
             Stream<Point> corner = matrix.adjacent8Points(0, 0);
@@ -3310,7 +3124,7 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testadjacent8Points_Center() {
+        public void testAdjacent8Points_BooleanCenterHasEightNeighbors() {
             // From adjacent8Points Javadoc
             BooleanMatrix matrix = BooleanMatrix.wrap(new boolean[][] { { true, false, true }, { false, true, false }, { true, false, true } });
             Stream<Point> adjacent = matrix.adjacent8Points(1, 1);
@@ -3347,17 +3161,6 @@ class AbstractMatrixTest extends MatrixTestSupport {
 
             List<Sheet.Point> points = matrix.mainDiagonalPoints().collect(Collectors.toList());
             Assertions.assertEquals(java.util.Arrays.asList(Sheet.Point.of(0, 0), Sheet.Point.of(1, 1)), points);
-        }
-
-        @Test
-        public void testMainDiagonalPoints_Shape3By3() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            List<Point> points = m.mainDiagonalPoints().toList();
-
-            assertEquals(3, points.size());
-            assertEquals(Point.of(0, 0), points.get(0));
-            assertEquals(Point.of(1, 1), points.get(1));
-            assertEquals(Point.of(2, 2), points.get(2));
         }
 
         @Test
@@ -3398,12 +3201,6 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testMainDiagonalPoints_NonSquareMatrix() {
-            IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            assertEquals(java.util.Arrays.asList(Point.of(0, 0), Point.of(1, 1)), matrix.mainDiagonalPoints().toList());
-        }
-
-        @Test
         public void testPointsMainDiagonal_EmptyMatrix() {
             IntMatrix m = IntMatrix.wrap(new int[0][0]);
             assertEquals(0, m.mainDiagonalPoints().count());
@@ -3422,17 +3219,6 @@ class AbstractMatrixTest extends MatrixTestSupport {
             Assertions.assertEquals(Sheet.Point.of(0, 2), points.get(0));
             Assertions.assertEquals(Sheet.Point.of(1, 1), points.get(1));
             Assertions.assertEquals(Sheet.Point.of(2, 0), points.get(2));
-        }
-
-        @Test
-        public void testAntiDiagonalPoints_Shape3By3() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            List<Point> points = m.antiDiagonalPoints().toList();
-
-            assertEquals(3, points.size());
-            assertEquals(Point.of(0, 2), points.get(0));
-            assertEquals(Point.of(1, 1), points.get(1));
-            assertEquals(Point.of(2, 0), points.get(2));
         }
 
         @Test
@@ -3470,12 +3256,6 @@ class AbstractMatrixTest extends MatrixTestSupport {
             assertEquals(Point.of(0, 2), points.get(0));
             assertEquals(Point.of(1, 1), points.get(1));
             assertEquals(Point.of(2, 0), points.get(2));
-        }
-
-        @Test
-        public void testAntiDiagonalPoints_NonSquareMatrix() {
-            IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            assertEquals(java.util.Arrays.asList(Point.of(0, 1), Point.of(1, 0)), matrix.antiDiagonalPoints().toList());
         }
 
         @Test
@@ -3534,28 +3314,6 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testRowMajorPoints_WithRow() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            List<Point> points = m.rowMajorPoints(1, 1 + 1).toList();
-
-            assertEquals(2, points.size());
-            assertEquals(Point.of(1, 0), points.get(0));
-            assertEquals(Point.of(1, 1), points.get(1));
-        }
-
-        @Test
-        public void testRowMajorPoints_WithRange() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            List<Point> points = m.rowMajorPoints(1, 3).toList();
-
-            assertEquals(4, points.size());
-            assertEquals(Point.of(1, 0), points.get(0));
-            assertEquals(Point.of(1, 1), points.get(1));
-            assertEquals(Point.of(2, 0), points.get(2));
-            assertEquals(Point.of(2, 1), points.get(3));
-        }
-
-        @Test
         public void testRowMajorPoints_Shape2By2_CoordinatesInRowOrder() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
             Stream<Point> points = m.rowMajorPoints();
@@ -3579,17 +3337,6 @@ class AbstractMatrixTest extends MatrixTestSupport {
             assertEquals(4, list.size());
             assertEquals(1, list.get(0).rowIndex());
             assertEquals(2, list.get(2).rowIndex());
-        }
-
-        @Test
-        public void testRowMajorPoints_AllPoints() {
-            IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            List<Point> points = matrix.rowMajorPoints().toList();
-            assertEquals(4, points.size());
-            assertEquals(Point.of(0, 0), points.get(0));
-            assertEquals(Point.of(0, 1), points.get(1));
-            assertEquals(Point.of(1, 0), points.get(2));
-            assertEquals(Point.of(1, 1), points.get(3));
         }
 
         @Test
@@ -3699,18 +3446,6 @@ class AbstractMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testColumnMajorPoints_WithRange() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            List<Point> points = m.columnMajorPoints(1, 3).toList();
-
-            assertEquals(4, points.size());
-            assertEquals(Point.of(0, 1), points.get(0));
-            assertEquals(Point.of(1, 1), points.get(1));
-            assertEquals(Point.of(0, 2), points.get(2));
-            assertEquals(Point.of(1, 2), points.get(3));
-        }
-
-        @Test
         public void testColumnMajorPoints_Shape2By2_CoordinatesInColumnOrder() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
             Stream<Point> points = m.columnMajorPoints();
@@ -3734,17 +3469,6 @@ class AbstractMatrixTest extends MatrixTestSupport {
             assertEquals(4, list.size());
             assertEquals(1, list.get(0).columnIndex());
             assertEquals(2, list.get(2).columnIndex());
-        }
-
-        @Test
-        public void testColumnMajorPoints_AllPoints() {
-            IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            List<Point> points = matrix.columnMajorPoints().toList();
-            assertEquals(4, points.size());
-            assertEquals(Point.of(0, 0), points.get(0));
-            assertEquals(Point.of(1, 0), points.get(1));
-            assertEquals(Point.of(0, 1), points.get(2));
-            assertEquals(Point.of(1, 1), points.get(3));
         }
 
         @Test

@@ -27,15 +27,15 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import com.landawn.abacus.util.Sheet;
 import com.landawn.abacus.util.Sheet.Point;
+import com.landawn.abacus.util.Sheet;
 import com.landawn.abacus.util.ShortList;
 import com.landawn.abacus.util.Throwables;
-import com.landawn.abacus.util.u.OptionalShort;
 import com.landawn.abacus.util.stream.ObjIteratorEx;
 import com.landawn.abacus.util.stream.ShortIteratorEx;
 import com.landawn.abacus.util.stream.ShortStream;
 import com.landawn.abacus.util.stream.Stream;
+import com.landawn.abacus.util.u.OptionalShort;
 
 class ShortMatrixTest extends MatrixTestSupport {
 
@@ -141,13 +141,6 @@ class ShortMatrixTest extends MatrixTestSupport {
 
     @Nested
     class EmptyTests {
-
-        @Test
-        public void testShortMatrixEmptyRowCount() {
-            ShortMatrix matrix = ShortMatrix.empty();
-            assertEquals(0, matrix.rowCount());
-            assertEquals(0, matrix.columnCount());
-        }
 
         @Test
         public void testEmptyMatrixOperations_EmptyMatrix() {
@@ -739,16 +732,10 @@ class ShortMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testDiagonal_BothDiagonals() {
-            ShortMatrix m = ShortMatrix.ofDiagonals(new short[] { 1, 2, 3 }, new short[] { 4, 5, 6 });
-            assertEquals(3, m.rowCount());
-            assertEquals(3, m.columnCount());
-            assertEquals((short) 1, m.get(0, 0));
-            assertEquals((short) 2, m.get(1, 1));
-            assertEquals((short) 3, m.get(2, 2));
-            assertEquals((short) 4, m.get(0, 2));
-            assertEquals((short) 2, m.get(1, 1));
-            assertEquals((short) 6, m.get(2, 0));
+        public void testOfDiagonals_MainDiagonalWinsAtSharedCenter() {
+            final ShortMatrix matrix = ShortMatrix.ofDiagonals(new short[] { 1, 2, 3 }, new short[] { 4, 5, 6 });
+            // At the shared center, the main diagonal wins.
+            assertEquals(ShortMatrix.wrap(new short[][] { { 1, 0, 4 }, { 0, 2, 0 }, { 6, 0, 3 } }), matrix);
         }
 
         @Test
@@ -802,17 +789,6 @@ class ShortMatrixTest extends MatrixTestSupport {
             assertEquals((short) 2, unboxed.get(0, 1));
             assertEquals((short) 3, unboxed.get(1, 0));
             assertEquals((short) 4, unboxed.get(1, 1));
-        }
-
-        @Test
-        public void testUnbox_Values() {
-            Short[][] boxed = { { 1, 2 }, { 3, 4 } };
-            Matrix<Short> boxedMatrix = Matrix.wrap(boxed);
-            ShortMatrix unboxed = ShortMatrix.unbox(boxedMatrix);
-            assertEquals(2, unboxed.rowCount());
-            assertEquals(2, unboxed.columnCount());
-            assertEquals(1, unboxed.get(0, 0));
-            assertEquals(4, unboxed.get(1, 1));
         }
 
         @Test
@@ -1712,7 +1688,7 @@ class ShortMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testmainDiagonalCopy() {
+        public void testMainDiagonalCopy_ThreeByThreeValues() {
             ShortMatrix matrix = ShortMatrix.wrap(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             short[] diagonal = matrix.mainDiagonalCopy();
             assertArrayEquals(new short[] { 1, 5, 9 }, diagonal);
@@ -1910,7 +1886,7 @@ class ShortMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testantiDiagonalCopy() {
+        public void testAntiDiagonalCopy_ThreeByThreeValues() {
             ShortMatrix matrix = ShortMatrix.wrap(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             short[] diagonal = matrix.antiDiagonalCopy();
             assertArrayEquals(new short[] { 3, 5, 7 }, diagonal);
@@ -2225,19 +2201,6 @@ class ShortMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testreplaceIf() {
-            ShortMatrix matrix = ShortMatrix.wrap(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            matrix.replaceIf(x -> x > 3, (short) 0);
-            // Result: [[1, 2, 3], [0, 0, 0]]
-            assertEquals((short) 1, matrix.get(0, 0));
-            assertEquals((short) 2, matrix.get(0, 1));
-            assertEquals((short) 3, matrix.get(0, 2));
-            assertEquals((short) 0, matrix.get(1, 0));
-            assertEquals((short) 0, matrix.get(1, 1));
-            assertEquals((short) 0, matrix.get(1, 2));
-        }
-
-        @Test
         public void testReplaceIf_Shape2By3() {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             m.replaceIf(x -> x > 3, (short) 0);
@@ -2333,6 +2296,19 @@ class ShortMatrixTest extends MatrixTestSupport {
                 Matrices.setParallelMode(previous);
             }
         }
+
+        @Test
+        public void testReplaceIf_ZerosValuesGreaterThanThree() {
+            ShortMatrix matrix = ShortMatrix.wrap(new short[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+            matrix.replaceIf(x -> x > 3, (short) 0);
+            // Result: [[1, 2, 3], [0, 0, 0]]
+            assertEquals((short) 1, matrix.get(0, 0));
+            assertEquals((short) 2, matrix.get(0, 1));
+            assertEquals((short) 3, matrix.get(0, 2));
+            assertEquals((short) 0, matrix.get(1, 0));
+            assertEquals((short) 0, matrix.get(1, 1));
+            assertEquals((short) 0, matrix.get(1, 2));
+        }
     }
 
     @Nested
@@ -2350,7 +2326,7 @@ class ShortMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testmap() {
+        public void testMap_SquaresEveryCell() {
             ShortMatrix matrix = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
             ShortMatrix squared = matrix.map(x -> (short) (x * x));
             // Result: [[1, 4], [9, 16]]
@@ -3428,15 +3404,6 @@ class ShortMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testFlipVerticallyInPlace_Shape3By2_ReversesFirstColumn() {
-            ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            m.flipVerticallyInPlace();
-            assertEquals((short) 5, m.get(0, 0));
-            assertEquals((short) 6, m.get(0, 1));
-            assertEquals((short) 1, m.get(2, 0));
-        }
-
-        @Test
         public void testFlipVerticallyInPlace_ReversesVertically() {
             short[][] arr = { { 1, 2 }, { 3, 4 }, { 5, 6 } };
             ShortMatrix m = new ShortMatrix(arr);
@@ -3591,17 +3558,6 @@ class ShortMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testrotate90() {
-            ShortMatrix matrix = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-            ShortMatrix rotated = matrix.rotate90();
-            // Result: [[3, 1], [4, 2]]
-            assertEquals((short) 3, rotated.get(0, 0));
-            assertEquals((short) 1, rotated.get(0, 1));
-            assertEquals((short) 4, rotated.get(1, 0));
-            assertEquals((short) 2, rotated.get(1, 1));
-        }
-
-        @Test
         public void testRotate90_Shape2By2() {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
             ShortMatrix rotated = m.rotate90();
@@ -3686,17 +3642,6 @@ class ShortMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testrotate180() {
-            ShortMatrix matrix = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-            ShortMatrix rotated = matrix.rotate180();
-            // Result: [[4, 3], [2, 1]]
-            assertEquals((short) 4, rotated.get(0, 0));
-            assertEquals((short) 3, rotated.get(0, 1));
-            assertEquals((short) 2, rotated.get(1, 0));
-            assertEquals((short) 1, rotated.get(1, 1));
-        }
-
-        @Test
         public void testRotate180_Shape2By2() {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
             ShortMatrix rotated = m.rotate180();
@@ -3764,17 +3709,6 @@ class ShortMatrixTest extends MatrixTestSupport {
             ShortMatrix rotated = m.rotate270();
             assertEquals(2, rotated.rowCount());
             assertEquals(2, rotated.columnCount());
-            assertEquals((short) 2, rotated.get(0, 0));
-            assertEquals((short) 4, rotated.get(0, 1));
-            assertEquals((short) 1, rotated.get(1, 0));
-            assertEquals((short) 3, rotated.get(1, 1));
-        }
-
-        @Test
-        public void testrotate270() {
-            ShortMatrix matrix = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-            ShortMatrix rotated = matrix.rotate270();
-            // Result: [[2, 4], [1, 3]]
             assertEquals((short) 2, rotated.get(0, 0));
             assertEquals((short) 4, rotated.get(0, 1));
             assertEquals((short) 1, rotated.get(1, 0));
@@ -4075,7 +4009,7 @@ class ShortMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testrepeatElements() {
+        public void testRepeatElements_RepeatsCellsTwiceVerticallyAndThreeTimesHorizontally() {
             ShortMatrix matrix = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
             ShortMatrix repeated = matrix.repeatElements(2, 3);
             // Result: [[1, 1, 1, 2, 2, 2], [1, 1, 1, 2, 2, 2], [3, 3, 3, 4, 4, 4], [3, 3, 3, 4, 4, 4]]
@@ -4183,7 +4117,7 @@ class ShortMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testrepeatMatrix() {
+        public void testRepeatMatrix_TilesTwiceVerticallyAndThreeTimesHorizontally() {
             ShortMatrix matrix = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
             ShortMatrix repeated = matrix.repeatMatrix(2, 3);
             // Result: [[1, 2, 1, 2, 1, 2], [3, 4, 3, 4, 3, 4], [1, 2, 1, 2, 1, 2], [3, 4, 3, 4, 3, 4]]
@@ -4292,17 +4226,6 @@ class ShortMatrixTest extends MatrixTestSupport {
             for (int i = 0; i < 9; i++) {
                 assertEquals((short) (i + 1), flat.get(i));
             }
-        }
-
-        @Test
-        public void testflatten() {
-            ShortMatrix matrix = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-            ShortList list = matrix.flatten();
-            assertEquals(4, list.size());
-            assertEquals((short) 1, list.get(0));
-            assertEquals((short) 2, list.get(1));
-            assertEquals((short) 3, list.get(2));
-            assertEquals((short) 4, list.get(3));
         }
 
         @Test
@@ -4738,7 +4661,7 @@ class ShortMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testadd() {
+        public void testAdd_SquareAdditionChecksEveryCell() {
             ShortMatrix matrix1 = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
             ShortMatrix matrix2 = ShortMatrix.wrap(new short[][] { { 5, 6 }, { 7, 8 } });
             ShortMatrix sum = matrix1.add(matrix2);
@@ -4747,18 +4670,6 @@ class ShortMatrixTest extends MatrixTestSupport {
             assertEquals((short) 8, sum.get(0, 1));
             assertEquals((short) 10, sum.get(1, 0));
             assertEquals((short) 12, sum.get(1, 1));
-        }
-
-        @Test
-        public void testAdd_Shape2By2() {
-            ShortMatrix m1 = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-            ShortMatrix m2 = ShortMatrix.wrap(new short[][] { { 5, 6 }, { 7, 8 } });
-            ShortMatrix sum = m1.add(m2);
-
-            assertEquals(6, sum.get(0, 0));
-            assertEquals(8, sum.get(0, 1));
-            assertEquals(10, sum.get(1, 0));
-            assertEquals(12, sum.get(1, 1));
         }
 
         @Test
@@ -4901,7 +4812,7 @@ class ShortMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testsubtract() {
+        public void testSubtract_SquareSubtractionChecksEveryCell() {
             ShortMatrix matrix1 = ShortMatrix.wrap(new short[][] { { 5, 6 }, { 7, 8 } });
             ShortMatrix matrix2 = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
             ShortMatrix diff = matrix1.subtract(matrix2);
@@ -4910,18 +4821,6 @@ class ShortMatrixTest extends MatrixTestSupport {
             assertEquals((short) 4, diff.get(0, 1));
             assertEquals((short) 4, diff.get(1, 0));
             assertEquals((short) 4, diff.get(1, 1));
-        }
-
-        @Test
-        public void testSubtract_Shape2By2() {
-            ShortMatrix m1 = ShortMatrix.wrap(new short[][] { { 5, 6 }, { 7, 8 } });
-            ShortMatrix m2 = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-            ShortMatrix diff = m1.subtract(m2);
-
-            assertEquals(4, diff.get(0, 0));
-            assertEquals(4, diff.get(0, 1));
-            assertEquals(4, diff.get(1, 0));
-            assertEquals(4, diff.get(1, 1));
         }
 
         @Test
@@ -5055,13 +4954,6 @@ class ShortMatrixTest extends MatrixTestSupport {
             assertEquals(22, product.get(0, 1)); // 1*6 + 2*8
             assertEquals(43, product.get(1, 0)); // 3*5 + 4*7
             assertEquals(50, product.get(1, 1)); // 3*6 + 4*8
-        }
-
-        @Test
-        public void testMatrixMultiply_IncompatibleDimensions() {
-            ShortMatrix m1 = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-            ShortMatrix m2 = ShortMatrix.wrap(new short[][] { { 1, 2, 3 } });
-            assertThrows(IllegalArgumentException.class, () -> m1.matrixMultiply(m2));
         }
 
         @Test
@@ -5282,14 +5174,6 @@ class ShortMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testBoxed_Shape2By2() {
-            ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-            Matrix<Short> boxed = m.boxed();
-            assertEquals(Short.valueOf((short) 1), boxed.get(0, 0));
-            assertEquals(Short.valueOf((short) 4), boxed.get(1, 1));
-        }
-
-        @Test
         public void testBoxed_Shape2By2_DimensionsAndBoxedCornerValues() {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
             Matrix<Short> boxed = m.boxed();
@@ -5341,31 +5225,14 @@ class ShortMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testtoIntMatrix() {
-            ShortMatrix shortMatrix = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix intMatrix = shortMatrix.toIntMatrix();
-            assertEquals(1, intMatrix.get(0, 0));
-            assertEquals(2, intMatrix.get(0, 1));
-            assertEquals(3, intMatrix.get(1, 0));
-            assertEquals(4, intMatrix.get(1, 1));
-        }
-
-        @Test
-        public void testToIntMatrix_Shape2By2() {
-            ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix intMatrix = m.toIntMatrix();
-            assertEquals(2, intMatrix.rowCount());
-            assertEquals(2, intMatrix.columnCount());
-            assertEquals(1, intMatrix.get(0, 0));
-            assertEquals(4, intMatrix.get(1, 1));
-        }
-
-        @Test
-        public void testToIntMatrix_Shape2By2_FirstRowConvertedValues() {
-            ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix result = m.toIntMatrix();
-            assertEquals(1, result.get(0, 0));
-            assertEquals(4, result.get(1, 1));
+        public void testToIntMatrix_AllValuesAndIndependentStorage() {
+            final ShortMatrix source = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
+            final IntMatrix converted = source.toIntMatrix();
+            assertEquals(IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } }), converted);
+            source.set(0, 1, (short) 9);
+            assertEquals(2, converted.get(0, 1));
+            converted.set(1, 0, (int) 8);
+            assertEquals(3, source.get(1, 0));
         }
 
         @Test
@@ -5375,14 +5242,6 @@ class ShortMatrixTest extends MatrixTestSupport {
             IntMatrix intMatrix = m.toIntMatrix();
             assertEquals(1, intMatrix.get(0, 0));
             assertEquals(4, intMatrix.get(1, 1));
-        }
-
-        @Test
-        public void testToIntMatrix_FirstRowValues() {
-            ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix intM = m.toIntMatrix();
-            assertEquals(1, intM.get(0, 0));
-            assertEquals(4, intM.get(1, 1));
         }
 
         @Test
@@ -5409,29 +5268,14 @@ class ShortMatrixTest extends MatrixTestSupport {
     class ToLongMatrixTests {
 
         @Test
-        public void testtoLongMatrix() {
-            ShortMatrix shortMatrix = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-            LongMatrix longMatrix = shortMatrix.toLongMatrix();
-            assertEquals(1L, longMatrix.get(0, 0));
-            assertEquals(4L, longMatrix.get(1, 1));
-        }
-
-        @Test
-        public void testToLongMatrix() {
-            ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-            LongMatrix longMatrix = m.toLongMatrix();
-            assertEquals(2, longMatrix.rowCount());
-            assertEquals(2, longMatrix.columnCount());
-            assertEquals(1L, longMatrix.get(0, 0));
-            assertEquals(4L, longMatrix.get(1, 1));
-        }
-
-        @Test
-        public void testToLongMatrix_Shape2By2() {
-            ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-            LongMatrix result = m.toLongMatrix();
-            assertEquals(1L, result.get(0, 0));
-            assertEquals(4L, result.get(1, 1));
+        public void testToLongMatrix_AllValuesAndIndependentStorage() {
+            final ShortMatrix source = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
+            final LongMatrix converted = source.toLongMatrix();
+            assertEquals(LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } }), converted);
+            source.set(0, 1, (short) 9);
+            assertEquals(2, converted.get(0, 1));
+            converted.set(1, 0, (long) 8);
+            assertEquals(3, source.get(1, 0));
         }
 
         @Test
@@ -5441,14 +5285,6 @@ class ShortMatrixTest extends MatrixTestSupport {
             LongMatrix longMatrix = m.toLongMatrix();
             assertEquals(1L, longMatrix.get(0, 0));
             assertEquals(4L, longMatrix.get(1, 1));
-        }
-
-        @Test
-        public void testToLongMatrix_Shape2By2_FirstRowConvertedValues() {
-            ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-            LongMatrix longM = m.toLongMatrix();
-            assertEquals(1L, longM.get(0, 0));
-            assertEquals(4L, longM.get(1, 1));
         }
 
         @Test
@@ -5482,14 +5318,6 @@ class ShortMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testToFloatMatrix_Shape2By2() {
-            ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-            FloatMatrix result = m.toFloatMatrix();
-            assertEquals(1.0f, result.get(0, 0), 0.001f);
-            assertEquals(4.0f, result.get(1, 1), 0.001f);
-        }
-
-        @Test
         public void testToFloatMatrix_ConvertsToFloatMatrix() {
             short[][] arr = { { 1, 2 }, { 3, 4 } };
             ShortMatrix m = new ShortMatrix(arr);
@@ -5499,11 +5327,14 @@ class ShortMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testToFloatMatrix_Shape2By2_FirstRowConvertedValues() {
-            ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-            FloatMatrix floatM = m.toFloatMatrix();
-            assertEquals(1.0f, floatM.get(0, 0), 0.001f);
-            assertEquals(4.0f, floatM.get(1, 1), 0.001f);
+        public void testToFloatMatrix_AllValuesAndIndependentStorage() {
+            final ShortMatrix source = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
+            final FloatMatrix converted = source.toFloatMatrix();
+            assertEquals(FloatMatrix.wrap(new float[][] { { 1, 2 }, { 3, 4 } }), converted);
+            source.set(0, 1, (short) 9);
+            assertEquals(2, converted.get(0, 1));
+            converted.set(1, 0, (float) 8);
+            assertEquals(3, source.get(1, 0));
         }
 
         @Test
@@ -5529,14 +5360,6 @@ class ShortMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testToDoubleMatrix_Shape2By2() {
-            ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-            DoubleMatrix result = m.toDoubleMatrix();
-            assertEquals(1.0, result.get(0, 0), 0.001);
-            assertEquals(4.0, result.get(1, 1), 0.001);
-        }
-
-        @Test
         public void testToDoubleMatrix_ConvertsToDoubleMatrix() {
             short[][] arr = { { 1, 2 }, { 3, 4 } };
             ShortMatrix m = new ShortMatrix(arr);
@@ -5546,11 +5369,14 @@ class ShortMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testToDoubleMatrix_Shape2By2_FirstRowConvertedValues() {
-            ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-            DoubleMatrix doubleM = m.toDoubleMatrix();
-            assertEquals(1.0, doubleM.get(0, 0), 0.001);
-            assertEquals(4.0, doubleM.get(1, 1), 0.001);
+        public void testToDoubleMatrix_AllValuesAndIndependentStorage() {
+            final ShortMatrix source = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
+            final DoubleMatrix converted = source.toDoubleMatrix();
+            assertEquals(DoubleMatrix.wrap(new double[][] { { 1, 2 }, { 3, 4 } }), converted);
+            source.set(0, 1, (short) 9);
+            assertEquals(2, converted.get(0, 1));
+            converted.set(1, 0, (double) 8);
+            assertEquals(3, source.get(1, 0));
         }
 
         @Test
@@ -5592,18 +5418,6 @@ class ShortMatrixTest extends MatrixTestSupport {
             assertEquals((short) 18, result.get(0, 1)); // 2+6+10
             assertEquals((short) 21, result.get(1, 0)); // 3+7+11
             assertEquals((short) 24, result.get(1, 1)); // 4+8+12
-        }
-
-        @Test
-        public void testzipWith() {
-            ShortMatrix matrix1 = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-            ShortMatrix matrix2 = ShortMatrix.wrap(new short[][] { { 5, 6 }, { 7, 8 } });
-            ShortMatrix max = matrix1.zipWith(matrix2, (a, b) -> (short) Math.max(a, b));
-            // Result: [[5, 6], [7, 8]]
-            assertEquals((short) 5, max.get(0, 0));
-            assertEquals((short) 6, max.get(0, 1));
-            assertEquals((short) 7, max.get(1, 0));
-            assertEquals((short) 8, max.get(1, 1));
         }
 
         @Test
@@ -5730,6 +5544,18 @@ class ShortMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testZipWith_MaximumOfCorrespondingCells() {
+            ShortMatrix matrix1 = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
+            ShortMatrix matrix2 = ShortMatrix.wrap(new short[][] { { 5, 6 }, { 7, 8 } });
+            ShortMatrix max = matrix1.zipWith(matrix2, (a, b) -> (short) Math.max(a, b));
+            // Result: [[5, 6], [7, 8]]
+            assertEquals((short) 5, max.get(0, 0));
+            assertEquals((short) 6, max.get(0, 1));
+            assertEquals((short) 7, max.get(1, 0));
+            assertEquals((short) 8, max.get(1, 1));
+        }
+
+        @Test
         public void testZipWith_SingleElement() {
             ShortMatrix m1 = ShortMatrix.wrap(new short[][] { { 2 } });
             ShortMatrix m2 = ShortMatrix.wrap(new short[][] { { 3 } });
@@ -5773,12 +5599,6 @@ class ShortMatrixTest extends MatrixTestSupport {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             short[] diagonal = m.mainDiagonalStream().toArray();
             assertArrayEquals(new short[] { 1, 5, 9 }, diagonal);
-        }
-
-        @Test
-        public void testMainDiagonalStream_NonSquare() {
-            ShortMatrix nonSquare = ShortMatrix.wrap(new short[][] { { 1, 2 } });
-            assertArrayEquals(new short[] { 1 }, nonSquare.mainDiagonalStream().toArray());
         }
 
         @Test
@@ -5942,19 +5762,6 @@ class ShortMatrixTest extends MatrixTestSupport {
             assertTrue(emptyMatrix.antiDiagonalStream().toArray().length == 0);
 
             // Test non-square
-            ShortMatrix nonSquare = ShortMatrix.wrap(new short[][] { { 1, 2 } });
-            assertArrayEquals(new short[] { 2 }, nonSquare.antiDiagonalStream().toArray());
-        }
-
-        @Test
-        public void testAntiDiagonalStream_Shape3By3_ArrayValues() {
-            ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            short[] antiDiagonal = m.antiDiagonalStream().toArray();
-            assertArrayEquals(new short[] { 3, 5, 7 }, antiDiagonal);
-        }
-
-        @Test
-        public void testAntiDiagonalStream_NonSquare() {
             ShortMatrix nonSquare = ShortMatrix.wrap(new short[][] { { 1, 2 } });
             assertArrayEquals(new short[] { 2 }, nonSquare.antiDiagonalStream().toArray());
         }
@@ -7025,18 +6832,6 @@ class ShortMatrixTest extends MatrixTestSupport {
             ShortMatrix empty2 = ShortMatrix.wrap(new short[0][0]);
             assertEquals(empty1.hashCode(), empty2.hashCode());
         }
-
-        @Test
-        public void testHashCode_ZeroRowWidthsDistinguishShapes() {
-            final var empty = ShortMatrix.wrap(new short[0][0]);
-            final var narrow = empty.resize(0, 4);
-            final var equal = empty.resize(0, 4);
-            final var wide = empty.resize(0, 5);
-            assertEquals(narrow, equal);
-            assertEquals(narrow.hashCode(), equal.hashCode());
-            assertNotEquals(narrow.hashCode(), wide.hashCode());
-            assertNotEquals(narrow.hashCode(), empty.hashCode());
-        }
     }
 
     @Nested
@@ -7134,16 +6929,6 @@ class ShortMatrixTest extends MatrixTestSupport {
     class ToStringTests {
 
         @Test
-        public void testToString() {
-            ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-            String str = m.toString();
-            assertTrue(str.contains("1"));
-            assertTrue(str.contains("2"));
-            assertTrue(str.contains("3"));
-            assertTrue(str.contains("4"));
-        }
-
-        @Test
         public void testToString_Shape2By2() {
             ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
             String str = m.toString();
@@ -7151,15 +6936,6 @@ class ShortMatrixTest extends MatrixTestSupport {
             assertTrue(str.contains("1"));
             assertTrue(str.contains("2"));
             assertTrue(str.contains("3"));
-            assertTrue(str.contains("4"));
-        }
-
-        @Test
-        public void testToString_Shape2By2_ContainsElementText() {
-            ShortMatrix m = ShortMatrix.wrap(new short[][] { { 1, 2 }, { 3, 4 } });
-            String str = m.toString();
-            assertNotNull(str);
-            assertTrue(str.contains("1"));
             assertTrue(str.contains("4"));
         }
 
@@ -7245,12 +7021,6 @@ class ShortMatrixTest extends MatrixTestSupport {
 
     @Nested
     class IsEmptyTests {
-
-        @Test
-        public void testIsEmpty_True() {
-            ShortMatrix empty = ShortMatrix.empty();
-            assertTrue(empty.isEmpty());
-        }
 
         @Test
         public void testIsEmpty_False() {

@@ -2,7 +2,6 @@ package com.landawn.abacus.matrix;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -14,28 +13,53 @@ import java.util.random.RandomGenerator;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import com.landawn.abacus.util.DoubleIterator;
-import com.landawn.abacus.util.FloatIterator;
-import com.landawn.abacus.util.LongIterator;
-import com.landawn.abacus.util.ObjIterator;
 import com.landawn.abacus.util.Sheet.Point;
 
 /** Shared contracts intentionally exercised across matrix implementations. */
 class MatrixShapeContractTest extends MatrixTestSupport {
 
+    private static java.util.stream.Stream<Arguments> emptyMatrices() {
+        return java.util.stream.Stream.of(Arguments.of("boolean", BooleanMatrix.wrap(new boolean[0][0])), Arguments.of("byte", ByteMatrix.wrap(new byte[0][0])),
+                Arguments.of("char", CharMatrix.wrap(new char[0][0])), Arguments.of("short", ShortMatrix.wrap(new short[0][0])),
+                Arguments.of("int", IntMatrix.wrap(new int[0][0])), Arguments.of("long", LongMatrix.wrap(new long[0][0])),
+                Arguments.of("float", FloatMatrix.wrap(new float[0][0])), Arguments.of("double", DoubleMatrix.wrap(new double[0][0])),
+                Arguments.of("object", Matrix.wrap(new Integer[0][0])));
+    }
+
+    @Nested
+    class ShapeIdentityTests {
+
+        @ParameterizedTest(name = "{0}: equality and hashing retain degenerate dimensions")
+        @MethodSource("com.landawn.abacus.matrix.MatrixShapeContractTest#emptyMatrices")
+        public void testHashCode_DegenerateShapesPreserveEqualityAndHashing(final String kind, final AbstractMatrix<?, ?, ?, ?, ?> empty) {
+            final var narrow = empty.resize(0, 4);
+            final var equal = empty.resize(0, 4);
+            final var wide = empty.resize(0, 5);
+            final var threeColumns = empty.resize(0, 3);
+            final var threeRows = empty.resize(3, 0);
+
+            assertEquals(1, empty.hashCode());
+            assertEquals(narrow, equal);
+            assertEquals(narrow.hashCode(), equal.hashCode());
+            assertNotEquals(narrow, wide);
+            assertNotEquals(narrow.hashCode(), wide.hashCode());
+            assertNotEquals(narrow.hashCode(), empty.hashCode());
+            assertNotEquals(threeColumns, wide);
+            assertNotEquals(threeColumns, empty);
+            assertNotEquals(threeColumns.hashCode(), wide.hashCode());
+            assertNotEquals(threeColumns.hashCode(), empty.hashCode());
+            assertEquals(threeRows, empty.resize(3, 0));
+            assertEquals(threeRows.hashCode(), empty.resize(3, 0).hashCode());
+            assertNotEquals(threeRows.hashCode(), empty.hashCode());
+        }
+    }
+
     @Nested
     class CrossTypeOperations {
-
-        private static void assertCountExhausts(final LongIterator iterator, final long expected) {
-            assertEquals(expected, iterator.count());
-            assertFalse(iterator.hasNext());
-        }
-
-        private static void assertCountExhausts(final ObjIterator<?> iterator, final long expected) {
-            assertEquals(expected, iterator.count());
-            assertFalse(iterator.hasNext());
-        }
 
         private static void assertShape(final AbstractMatrix<?, ?, ?, ?, ?> matrix, final int rows, final int columns) {
             assertEquals(rows, matrix.rowCount());
@@ -105,29 +129,6 @@ class MatrixShapeContractTest extends MatrixTestSupport {
             DoubleMatrix doubleTall = DoubleMatrix.wrap(new double[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
             assertArrayEquals(new double[] { 1, 4 }, doubleTall.mainDiagonalCopy());
             assertArrayEquals(new double[] { 2, 3 }, doubleTall.antiDiagonalCopy());
-        }
-
-        @Test
-        public void testIteratorCountConsumesTheRemainingElementsAndToArrayStillWorks() {
-            LongMatrix matrix = LongMatrix.wrap(new long[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            assertCountExhausts(matrix.mainDiagonalStream().iterator(), 2);
-            assertCountExhausts(matrix.antiDiagonalStream().iterator(), 2);
-            assertCountExhausts(matrix.rowMajorStream().iterator(), 6);
-            assertCountExhausts(matrix.columnMajorStream().iterator(), 6);
-            assertCountExhausts(matrix.rowStreams().iterator(), 2);
-            assertCountExhausts(matrix.columnStreams().iterator(), 3);
-
-            LongIterator remaining = matrix.rowMajorStream().iterator();
-            assertEquals(1L, remaining.nextLong());
-            assertArrayEquals(new long[] { 2, 3, 4, 5, 6 }, remaining.toArray());
-
-            FloatIterator floatIterator = FloatMatrix.wrap(new float[][] { { 1, 2 } }).rowMajorStream().iterator();
-            assertEquals(2L, floatIterator.count());
-            assertFalse(floatIterator.hasNext());
-
-            DoubleIterator doubleIterator = DoubleMatrix.wrap(new double[][] { { 1, 2 } }).rowMajorStream().iterator();
-            assertEquals(2L, doubleIterator.count());
-            assertFalse(doubleIterator.hasNext());
         }
 
         @Test
@@ -243,32 +244,6 @@ class MatrixShapeContractTest extends MatrixTestSupport {
                     ByteMatrix.wrap(new byte[][] { { 100, 100 } }).matrixMultiplyExact(ByteMatrix.wrap(new byte[][] { { 1 }, { -1 } })).get(0, 0));
             assertEquals((short) 0,
                     ShortMatrix.wrap(new short[][] { { 30_000, 30_000 } }).matrixMultiplyExact(ShortMatrix.wrap(new short[][] { { 1 }, { -1 } })).get(0, 0));
-        }
-
-        @Test
-        public void testZeroRowMatricesOfDifferentWidthsDoNotCollideInHash() {
-            final IntMatrix zeroByZero = IntMatrix.empty();
-            final IntMatrix zeroByThree = IntMatrix.random(0, 3);
-            final IntMatrix zeroByFive = IntMatrix.random(0, 5);
-
-            assertNotEquals(zeroByThree, zeroByFive);
-            assertNotEquals(zeroByThree, zeroByZero);
-            assertNotEquals(zeroByThree.hashCode(), zeroByFive.hashCode());
-            assertNotEquals(zeroByThree.hashCode(), zeroByZero.hashCode());
-
-            // The documented hash of the empty matrix is unchanged.
-            assertEquals(1, zeroByZero.hashCode());
-            assertEquals(1, LongMatrix.empty().hashCode());
-            assertEquals(1, DoubleMatrix.empty().hashCode());
-
-            // Equal matrices still agree, in every variant.
-            assertEquals(IntMatrix.random(0, 4).hashCode(), IntMatrix.random(0, 4).hashCode());
-            assertEquals(CharMatrix.random(0, 4).hashCode(), CharMatrix.random(0, 4).hashCode());
-            assertEquals(Matrix.wrap(new String[2][3]).hashCode(), Matrix.wrap(new String[2][3]).hashCode());
-
-            // A genuine N x 0 shape keeps hashing off its rows.
-            assertEquals(IntMatrix.wrap(new int[3][0]).hashCode(), IntMatrix.wrap(new int[3][0]).hashCode());
-            assertNotEquals(IntMatrix.wrap(new int[3][0]).hashCode(), zeroByZero.hashCode());
         }
 
         @Test

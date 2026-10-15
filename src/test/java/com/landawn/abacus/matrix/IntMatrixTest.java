@@ -27,14 +27,14 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import com.landawn.abacus.util.IntList;
-import com.landawn.abacus.util.Sheet;
 import com.landawn.abacus.util.Sheet.Point;
+import com.landawn.abacus.util.Sheet;
 import com.landawn.abacus.util.Throwables;
-import com.landawn.abacus.util.u;
-import com.landawn.abacus.util.u.OptionalInt;
 import com.landawn.abacus.util.stream.IntIteratorEx;
 import com.landawn.abacus.util.stream.IntStream;
 import com.landawn.abacus.util.stream.ObjIteratorEx;
+import com.landawn.abacus.util.u.OptionalInt;
+import com.landawn.abacus.util.u;
 
 class IntMatrixTest extends MatrixTestSupport {
 
@@ -153,21 +153,6 @@ class IntMatrixTest extends MatrixTestSupport {
             assertEquals(2, extended.columnCount());
             assertEquals(5, extended.get(0, 0));
         }
-
-        @Test
-        public void testIntMatrixEmptyRowCount() {
-            // IntMatrix.java: IntMatrix matrix = IntMatrix.empty();
-            // matrix.rowCount() returns 0
-            IntMatrix matrix = IntMatrix.empty();
-            assertEquals(0, matrix.rowCount());
-        }
-
-        @Test
-        public void testIntMatrixEmptyColumnCount() {
-            // IntMatrix.java: matrix.columnCount() returns 0
-            IntMatrix matrix = IntMatrix.empty();
-            assertEquals(0, matrix.columnCount());
-        }
     }
 
     @Nested
@@ -211,14 +196,6 @@ class IntMatrixTest extends MatrixTestSupport {
             assertEquals(2, m.rowCount());
             assertEquals(2, m.columnCount());
             assertEquals(1, m.get(0, 0));
-        }
-
-        @Test
-        public void testIntMatrixWrapGet() {
-            // IntMatrix.java: IntMatrix matrix = IntMatrix.wrap(new int[][] {{1, 2}, {3, 4}});
-            // matrix.get(0, 1) returns 2
-            IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            assertEquals(2, matrix.get(0, 1));
         }
 
         @Test
@@ -362,24 +339,6 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testFromFromCharArray_WithJaggedArray() {
-            char[][] jagged = { { 'A', 'B' }, { 'C' } };
-            assertThrows(IllegalArgumentException.class, () -> IntMatrix.from(jagged));
-        }
-
-        @Test
-        public void testFromFromByteArray_WithJaggedArray() {
-            byte[][] jagged = { { 1, 2 }, { 3 } };
-            assertThrows(IllegalArgumentException.class, () -> IntMatrix.from(jagged));
-        }
-
-        @Test
-        public void testFromFromShortArray_WithJaggedArray() {
-            short[][] jagged = { { 1, 2 }, { 3 } };
-            assertThrows(IllegalArgumentException.class, () -> IntMatrix.from(jagged));
-        }
-
-        @Test
         public void testFrom_FromShortArray_DifferentRowLengths() {
             short[][] shorts = { { 1, 2 }, { 3 } };
             assertThrows(IllegalArgumentException.class, () -> IntMatrix.from(shorts));
@@ -512,12 +471,6 @@ class IntMatrixTest extends MatrixTestSupport {
         public void testFromFromShortArray_WithNullRow() {
             short[][] nullRow = { { 1, 2 }, null };
             assertThrows(IllegalArgumentException.class, () -> IntMatrix.from(nullRow));
-        }
-
-        @Test
-        public void testFrom_FromCharArray_NullFirstRow() {
-            char[][] chars = { null, { 'A', 'B' } };
-            assertThrows(IllegalArgumentException.class, () -> IntMatrix.from(chars));
         }
 
         @Test
@@ -878,18 +831,6 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testDiagonalLU2RD() {
-            IntMatrix m = IntMatrix.ofMainDiagonal(new int[] { 1, 2, 3 });
-            assertEquals(3, m.rowCount());
-            assertEquals(3, m.columnCount());
-            assertEquals(1, m.get(0, 0));
-            assertEquals(2, m.get(1, 1));
-            assertEquals(3, m.get(2, 2));
-            assertEquals(0, m.get(0, 1));
-            assertEquals(0, m.get(1, 0));
-        }
-
-        @Test
         public void testOfMainDiagonal_Null() {
             assertThrows(IllegalArgumentException.class, () -> IntMatrix.ofMainDiagonal(null));
         }
@@ -911,17 +852,6 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testIntMatrixAntiDiagonal() {
-            IntMatrix matrix = IntMatrix.ofAntiDiagonal(new int[] { 1, 2, 3 });
-            assertEquals(3, matrix.rowCount());
-            assertEquals(3, matrix.columnCount());
-            assertEquals(1, matrix.get(0, 2));
-            assertEquals(2, matrix.get(1, 1));
-            assertEquals(3, matrix.get(2, 0));
-            assertEquals(0, matrix.get(0, 0));
-        }
-
-        @Test
         public void testDiagonalRU2LD() {
             IntMatrix m = IntMatrix.ofAntiDiagonal(new int[] { 1, 2, 3 });
             assertEquals(3, m.rowCount());
@@ -931,17 +861,6 @@ class IntMatrixTest extends MatrixTestSupport {
             assertEquals(3, m.get(2, 0));
             assertEquals(0, m.get(0, 0));
             assertEquals(0, m.get(2, 2));
-        }
-
-        @Test
-        public void testDiagonalRU2LD_Values() {
-            IntMatrix m = IntMatrix.ofAntiDiagonal(new int[] { 1, 2, 3 });
-            assertEquals(3, m.rowCount());
-            assertEquals(3, m.columnCount());
-            assertEquals(1, m.get(0, 2));
-            assertEquals(2, m.get(1, 1));
-            assertEquals(3, m.get(2, 0));
-            assertEquals(0, m.get(0, 0));
         }
 
         @Test
@@ -1004,18 +923,6 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testDiagonal_WithBothDiagonals() {
-            IntMatrix m = IntMatrix.ofDiagonals(new int[] { 1, 2, 3 }, new int[] { 4, 5, 6 });
-            assertEquals(3, m.rowCount());
-            assertEquals(3, m.columnCount());
-            assertEquals(1, m.get(0, 0));
-            assertEquals(2, m.get(1, 1));
-            assertEquals(3, m.get(2, 2));
-            assertEquals(4, m.get(0, 2));
-            assertEquals(6, m.get(2, 0));
-        }
-
-        @Test
         public void testDiagonal_WithOnlyMainDiagonal() {
             IntMatrix m = IntMatrix.ofDiagonals(new int[] { 1, 2, 3 }, null);
             assertEquals(3, m.rowCount());
@@ -1041,16 +948,10 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testDiagonal_BothDiagonals() {
-            IntMatrix m = IntMatrix.ofDiagonals(new int[] { 1, 2, 3 }, new int[] { 4, 5, 6 });
-            assertEquals(3, m.rowCount());
-            assertEquals(3, m.columnCount());
-            assertEquals(1, m.get(0, 0));
-            assertEquals(2, m.get(1, 1));
-            assertEquals(3, m.get(2, 2));
-            assertEquals(4, m.get(0, 2));
-            assertEquals(2, m.get(1, 1));
-            assertEquals(6, m.get(2, 0));
+        public void testOfDiagonals_MainDiagonalWinsAtSharedCenter() {
+            final IntMatrix matrix = IntMatrix.ofDiagonals(new int[] { 1, 2, 3 }, new int[] { 4, 5, 6 });
+            // At the shared center, the main diagonal wins.
+            assertEquals(IntMatrix.wrap(new int[][] { { 1, 0, 4 }, { 0, 2, 0 }, { 6, 0, 3 } }), matrix);
         }
 
         @Test
@@ -1340,19 +1241,6 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testValueAbove_Shape2By2() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-
-            OptionalInt up = m.valueAbove(1, 0);
-            assertTrue(up.isPresent());
-            assertEquals(1, up.get());
-
-            // Top row has no element above
-            OptionalInt empty = m.valueAbove(0, 0);
-            assertFalse(empty.isPresent());
-        }
-
-        @Test
         public void testValueAbove_Shape2By2_PresentNeighborValue() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
             OptionalInt up = m.valueAbove(1, 0);
@@ -1399,19 +1287,6 @@ class IntMatrixTest extends MatrixTestSupport {
 
             // Test bottom row
             OptionalInt empty = matrix.valueBelow(2, 1);
-            assertFalse(empty.isPresent());
-        }
-
-        @Test
-        public void testValueBelow_Shape2By2() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-
-            OptionalInt down = m.valueBelow(0, 0);
-            assertTrue(down.isPresent());
-            assertEquals(3, down.get());
-
-            // Bottom row has no element below
-            OptionalInt empty = m.valueBelow(1, 0);
             assertFalse(empty.isPresent());
         }
 
@@ -1466,19 +1341,6 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testValueLeft_Shape2By2() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-
-            OptionalInt left = m.valueLeft(0, 1);
-            assertTrue(left.isPresent());
-            assertEquals(1, left.get());
-
-            // Leftmost column has no element to the left
-            OptionalInt empty = m.valueLeft(0, 0);
-            assertFalse(empty.isPresent());
-        }
-
-        @Test
         public void testValueLeft_Shape2By2_PresentNeighborValue() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
             OptionalInt left = m.valueLeft(0, 1);
@@ -1525,19 +1387,6 @@ class IntMatrixTest extends MatrixTestSupport {
 
             // Test rightmost column
             OptionalInt empty = matrix.valueRight(1, 2);
-            assertFalse(empty.isPresent());
-        }
-
-        @Test
-        public void testValueRight_Shape2By2() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-
-            OptionalInt right = m.valueRight(0, 0);
-            assertTrue(right.isPresent());
-            assertEquals(2, right.get());
-
-            // Rightmost column has no element to the right
-            OptionalInt empty = m.valueRight(0, 1);
             assertFalse(empty.isPresent());
         }
 
@@ -1902,7 +1751,7 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testupdateRow() {
+        public void testUpdateRow_DoublesFirstRowOnly() {
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             matrix.updateRow(0, x -> x * 2);
             assertArrayEquals(new int[] { 2, 4, 6 }, matrix.rowView(0));
@@ -1989,7 +1838,7 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testupdateColumn() {
+        public void testUpdateColumn_AddsTenToFirstColumn() {
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
             matrix.updateColumn(0, x -> x + 10);
             assertEquals(11, matrix.get(0, 0));
@@ -2037,13 +1886,6 @@ class IntMatrixTest extends MatrixTestSupport {
         public void testMainDiagonalCopy_NonSquare() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
             assertArrayEquals(new int[] { 1, 4 }, m.mainDiagonalCopy());
-        }
-
-        @Test
-        public void testmainDiagonalCopy() {
-            IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            int[] diagonal = matrix.mainDiagonalCopy();
-            assertArrayEquals(new int[] { 1, 5, 9 }, diagonal);
         }
     }
 
@@ -2151,15 +1993,6 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testUpdateMainDiagonal_Shape3By3_ScalesEveryDiagonalElement() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            m.updateMainDiagonal(x -> x * 10);
-            assertEquals(10, m.get(0, 0));
-            assertEquals(50, m.get(1, 1));
-            assertEquals(90, m.get(2, 2));
-        }
-
-        @Test
         public void testUpdateMainDiagonal() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
             m.updateMainDiagonal(x -> x * 2);
@@ -2167,7 +2000,7 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testupdateMainDiagonal() {
+        public void testUpdateMainDiagonal_SquaresOnlyDiagonalCells() {
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
             matrix.updateMainDiagonal(x -> x * x);
             // matrix is now {{1, 2}, {3, 16}}
@@ -2208,13 +2041,6 @@ class IntMatrixTest extends MatrixTestSupport {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             int[] diag = m.antiDiagonalCopy();
             assertArrayEquals(new int[] { 3, 5, 7 }, diag);
-        }
-
-        @Test
-        public void testantiDiagonalCopy() {
-            IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            int[] diagonal = matrix.antiDiagonalCopy();
-            assertArrayEquals(new int[] { 3, 5, 7 }, diagonal);
         }
     }
 
@@ -2327,7 +2153,7 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testupdateAntiDiagonal() {
+        public void testUpdateAntiDiagonal_NegatesOnlyDiagonalCells() {
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
             matrix.updateAntiDiagonal(x -> -x);
             // matrix is now {{1, -2}, {-3, 4}}
@@ -2400,16 +2226,6 @@ class IntMatrixTest extends MatrixTestSupport {
             assertEquals(12, m.get(0, 1));
             assertEquals(21, m.get(1, 0));
             assertEquals(22, m.get(1, 1));
-        }
-
-        @Test
-        public void testupdateAll() {
-            IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            matrix.updateAll(x -> x * 2);
-            assertEquals(2, matrix.get(0, 0));
-            assertEquals(4, matrix.get(0, 1));
-            assertEquals(6, matrix.get(1, 0));
-            assertEquals(8, matrix.get(1, 1));
         }
 
         @Test
@@ -2554,18 +2370,6 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testreplaceIf() {
-            IntMatrix matrix = IntMatrix.wrap(new int[][] { { -1, 2, -3 }, { 4, -5, 6 } });
-            matrix.replaceIf(x -> x < 0, 0);
-            assertEquals(0, matrix.get(0, 0));
-            assertEquals(2, matrix.get(0, 1));
-            assertEquals(0, matrix.get(0, 2));
-            assertEquals(4, matrix.get(1, 0));
-            assertEquals(0, matrix.get(1, 1));
-            assertEquals(6, matrix.get(1, 2));
-        }
-
-        @Test
         public void testReplaceIfByIndex() {
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             matrix.replaceIf((i, j) -> i == j, 0);
@@ -2619,6 +2423,18 @@ class IntMatrixTest extends MatrixTestSupport {
             assertThrows(IllegalArgumentException.class, () -> emptyLike.updateAntiDiagonal((Throwables.IntUnaryOperator<RuntimeException>) null));
             assertThrows(IllegalArgumentException.class, () -> m.replaceIf((Throwables.IntBiPredicate<RuntimeException>) null, 0));
             assertThrows(IllegalArgumentException.class, () -> emptyLike.replaceIf((Throwables.IntBiPredicate<RuntimeException>) null, 0));
+        }
+
+        @Test
+        public void testReplaceIf_ZerosNegativeCells() {
+            IntMatrix matrix = IntMatrix.wrap(new int[][] { { -1, 2, -3 }, { 4, -5, 6 } });
+            matrix.replaceIf(x -> x < 0, 0);
+            assertEquals(0, matrix.get(0, 0));
+            assertEquals(2, matrix.get(0, 1));
+            assertEquals(0, matrix.get(0, 2));
+            assertEquals(4, matrix.get(1, 0));
+            assertEquals(0, matrix.get(1, 1));
+            assertEquals(6, matrix.get(1, 2));
         }
     }
 
@@ -3078,7 +2894,7 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testcopyFrom() {
+        public void testCopyFrom_PartialWidthPreservesTrailingZeros() {
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 0, 0, 0 }, { 0, 0, 0 } });
             matrix.copyFrom(new int[][] { { 1, 2 }, { 3, 4 } });
             assertEquals(1, matrix.get(0, 0));
@@ -3090,7 +2906,7 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testcopyFromWithOffset() {
+        public void testCopyFrom_OffsetCopyPreservesSurroundingZeros() {
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } });
             matrix.copyFrom(1, 1, new int[][] { { 1, 2 }, { 3, 4 } });
             assertEquals(0, matrix.get(0, 0));
@@ -3712,16 +3528,6 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testFlipHorizontallyInPlace_Shape2By3() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            m.flipHorizontallyInPlace();
-            assertEquals(3, m.get(0, 0));
-            assertEquals(2, m.get(0, 1));
-            assertEquals(1, m.get(0, 2));
-            assertEquals(6, m.get(1, 0));
-        }
-
-        @Test
         public void testFlipHorizontallyInPlace() {
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             matrix.flipHorizontallyInPlace();
@@ -3746,35 +3552,7 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testFlipVerticallyInPlace_Shape3By2() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            m.flipVerticallyInPlace();
-            assertEquals(5, m.get(0, 0));
-            assertEquals(6, m.get(0, 1));
-            assertEquals(3, m.get(1, 0));
-            assertEquals(1, m.get(2, 0));
-        }
-
-        @Test
-        public void testFlipVerticallyInPlace_Shape3By2_ReversesFirstColumn() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            m.flipVerticallyInPlace();
-            assertEquals(5, m.get(0, 0));
-            assertEquals(6, m.get(0, 1));
-            assertEquals(1, m.get(2, 0));
-        }
-
-        @Test
         public void testFlipVerticallyInPlace() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            m.flipVerticallyInPlace();
-            assertEquals(5, m.get(0, 0));
-            assertEquals(3, m.get(1, 0));
-            assertEquals(1, m.get(2, 0));
-        }
-
-        @Test
-        public void testflipVerticallyInPlace() {
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
             matrix.flipVerticallyInPlace();
             assertArrayEquals(new int[] { 5, 6 }, matrix.rowView(0));
@@ -3805,16 +3583,6 @@ class IntMatrixTest extends MatrixTestSupport {
 
             // Original should be unchanged
             assertEquals(1, matrix.get(0, 0));
-        }
-
-        @Test
-        public void testFlipHorizontally_Shape2By3() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            IntMatrix flipped = m.flipHorizontally();
-            assertEquals(3, flipped.get(0, 0));
-            assertEquals(1, flipped.get(0, 2));
-            // Original unchanged
-            assertEquals(1, m.get(0, 0));
         }
 
         @Test
@@ -3997,17 +3765,6 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testTranspose_Shape2By3() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            IntMatrix transposed = m.transpose();
-            assertEquals(3, transposed.rowCount());
-            assertEquals(2, transposed.columnCount());
-            assertEquals(1, transposed.get(0, 0));
-            assertEquals(4, transposed.get(0, 1));
-            assertEquals(6, transposed.get(2, 1));
-        }
-
-        @Test
         public void testTranspose_InverseProperty() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3, 4 }, { 5, 6, 7, 8 } });
             IntMatrix t = m.transpose();
@@ -4124,14 +3881,6 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testReshapeWithTrailingZeroFill() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            IntMatrix reshaped = m.reshapeAndPad(2, 4);
-            assertArrayEquals(new int[] { 1, 2, 3, 4 }, reshaped.rowCopy(0));
-            assertArrayEquals(new int[] { 5, 6, 0, 0 }, reshaped.rowCopy(1));
-        }
-
-        @Test
         public void testReshape_ZeroRowsPreservesLargeColumnDimension() {
             IntMatrix m = IntMatrix.empty().reshapeAndPad(0, 46_341);
             assertEquals(0, m.rowCount());
@@ -4197,7 +3946,7 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testrepeatElements() {
+        public void testRepeatElements_RepeatsCellsTwiceVerticallyAndThreeTimesHorizontally() {
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2 } });
             IntMatrix repeated = matrix.repeatElements(2, 3);
             assertEquals(2, repeated.rowCount());
@@ -4286,7 +4035,7 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testrepeatMatrix() {
+        public void testRepeatMatrix_TilesTwiceVerticallyAndThreeTimesHorizontally() {
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
             IntMatrix repeated = matrix.repeatMatrix(2, 3);
             assertEquals(4, repeated.rowCount());
@@ -4390,7 +4139,7 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testflatten() {
+        public void testFlatten_SquareRowMajorList() {
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
             IntList list = matrix.flatten();
             assertEquals(IntList.of(1, 2, 3, 4), list);
@@ -4500,7 +4249,7 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testmutateViaFlatArray() {
+        public void testMutateViaFlatArray_SortsAllCellsInRowOrder() {
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 5, 3 }, { 4, 1 } });
             matrix.mutateViaFlatArray(arr -> java.util.Arrays.sort(arr));
             assertEquals(1, matrix.get(0, 0));
@@ -4532,15 +4281,12 @@ class IntMatrixTest extends MatrixTestSupport {
 
         @Test
         public void testStackVertically_Shape2By3() {
-            IntMatrix m1 = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            IntMatrix m2 = IntMatrix.wrap(new int[][] { { 7, 8, 9 }, { 10, 11, 12 } });
-            IntMatrix stacked = m1.stackVertically(m2);
-
-            assertEquals(4, stacked.rowCount());
-            assertEquals(3, stacked.columnCount());
-            assertEquals(1, stacked.get(0, 0));
-            assertEquals(7, stacked.get(2, 0));
-            assertEquals(12, stacked.get(3, 2));
+            final IntMatrix top = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
+            final IntMatrix bottom = IntMatrix.wrap(new int[][] { { 7, 8, 9 }, { 10, 11, 12 } });
+            final IntMatrix stacked = top.stackVertically(bottom);
+            assertEquals(IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 }, { 10, 11, 12 } }), stacked);
+            assertEquals(IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } }), top);
+            assertEquals(IntMatrix.wrap(new int[][] { { 7, 8, 9 }, { 10, 11, 12 } }), bottom);
         }
 
         @Test
@@ -4552,15 +4298,12 @@ class IntMatrixTest extends MatrixTestSupport {
 
         @Test
         public void testStackVertically_Shape2By2() {
-            IntMatrix m1 = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix m2 = IntMatrix.wrap(new int[][] { { 5, 6 }, { 7, 8 } });
-            IntMatrix stacked = m1.stackVertically(m2);
-            assertEquals(4, stacked.rowCount());
-            assertEquals(2, stacked.columnCount());
-            assertEquals(1, stacked.get(0, 0));
-            assertEquals(4, stacked.get(1, 1));
-            assertEquals(5, stacked.get(2, 0));
-            assertEquals(8, stacked.get(3, 1));
+            final IntMatrix top = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
+            final IntMatrix bottom = IntMatrix.wrap(new int[][] { { 5, 6 }, { 7, 8 } });
+            final IntMatrix stacked = top.stackVertically(bottom);
+            assertEquals(IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 }, { 5, 6 }, { 7, 8 } }), stacked);
+            assertEquals(IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } }), top);
+            assertEquals(IntMatrix.wrap(new int[][] { { 5, 6 }, { 7, 8 } }), bottom);
         }
 
         @Test
@@ -4575,24 +4318,12 @@ class IntMatrixTest extends MatrixTestSupport {
         // public void testToFloatMatrix() {
         @Test
         public void testStackVertically_Shape1By2() {
-            IntMatrix m1 = IntMatrix.wrap(new int[][] { { 1, 2 } });
-            IntMatrix m2 = IntMatrix.wrap(new int[][] { { 3, 4 } });
-            IntMatrix stacked = m1.stackVertically(m2);
-            assertEquals(2, stacked.rowCount());
-            assertEquals(2, stacked.columnCount());
-            assertEquals(1, stacked.get(0, 0));
-            assertEquals(3, stacked.get(1, 0));
-        }
-
-        @Test
-        public void testStackVertically() {
-            IntMatrix m1 = IntMatrix.wrap(new int[][] { { 1, 2 } });
-            IntMatrix m2 = IntMatrix.wrap(new int[][] { { 3, 4 } });
-            IntMatrix result = m1.stackVertically(m2);
-            assertEquals(2, result.rowCount());
-            assertEquals(2, result.columnCount());
-            assertEquals(1, result.get(0, 0));
-            assertEquals(3, result.get(1, 0));
+            final IntMatrix top = IntMatrix.wrap(new int[][] { { 1, 2 } });
+            final IntMatrix bottom = IntMatrix.wrap(new int[][] { { 3, 4 } });
+            final IntMatrix stacked = top.stackVertically(bottom);
+            assertEquals(IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } }), stacked);
+            assertEquals(IntMatrix.wrap(new int[][] { { 1, 2 } }), top);
+            assertEquals(IntMatrix.wrap(new int[][] { { 3, 4 } }), bottom);
         }
 
         @Test
@@ -4603,7 +4334,7 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void teststackVertically() {
+        public void testStackVertically() {
             IntMatrix a = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             IntMatrix b = IntMatrix.wrap(new int[][] { { 7, 8, 9 }, { 10, 11, 12 } });
             IntMatrix c = a.stackVertically(b);
@@ -4723,7 +4454,7 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void teststackHorizontally() {
+        public void testStackHorizontally_PreservesEveryAppendedColumn() {
             IntMatrix a = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             IntMatrix b = IntMatrix.wrap(new int[][] { { 7, 8, 9 }, { 10, 11, 12 } });
             IntMatrix c = a.stackHorizontally(b);
@@ -4788,18 +4519,6 @@ class IntMatrixTest extends MatrixTestSupport {
             // Test that sum of all elements is correct
             long totalSum = largeSum.rowMajorStream().asLongStream().sum();
             assertEquals(15150, totalSum); // (1+2+...+100) + 2*(1+2+...+100) = 3*(1+2+...+100) = 3*5050 = 15150
-        }
-
-        @Test
-        public void testAdd_Shape2By2() {
-            IntMatrix m1 = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix m2 = IntMatrix.wrap(new int[][] { { 5, 6 }, { 7, 8 } });
-            IntMatrix sum = m1.add(m2);
-
-            assertEquals(6, sum.get(0, 0));
-            assertEquals(8, sum.get(0, 1));
-            assertEquals(10, sum.get(1, 0));
-            assertEquals(12, sum.get(1, 1));
         }
 
         @Test
@@ -4875,17 +4594,6 @@ class IntMatrixTest extends MatrixTestSupport {
 
         // IntMatrix.java: IntMatrix matrix = IntMatrix.from(new char[][] {{'A', 'B'}, {'C', 'D'}});
         // matrix.get(0, 0) returns 65
-        @Test
-        public void testadd() {
-            IntMatrix a = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix b = IntMatrix.wrap(new int[][] { { 5, 6 }, { 7, 8 } });
-            IntMatrix sum = a.add(b);
-            assertEquals(6, sum.get(0, 0));
-            assertEquals(8, sum.get(0, 1));
-            assertEquals(10, sum.get(1, 0));
-            assertEquals(12, sum.get(1, 1));
-        }
-
         @ParameterizedTest
         @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
         public void testAdd_ExplicitModesPreserveBothOperands(final ParallelMode mode) {
@@ -4964,18 +4672,6 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testSubtract_Shape2By2() {
-            IntMatrix m1 = IntMatrix.wrap(new int[][] { { 5, 6 }, { 7, 8 } });
-            IntMatrix m2 = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix diff = m1.subtract(m2);
-
-            assertEquals(4, diff.get(0, 0));
-            assertEquals(4, diff.get(0, 1));
-            assertEquals(4, diff.get(1, 0));
-            assertEquals(4, diff.get(1, 1));
-        }
-
-        @Test
         public void testSubtract_DifferentDimensions() {
             IntMatrix m1 = IntMatrix.wrap(new int[][] { { 5, 6 }, { 7, 8 } });
             IntMatrix m2 = IntMatrix.wrap(new int[][] { { 1, 2, 3 } });
@@ -5016,17 +4712,6 @@ class IntMatrixTest extends MatrixTestSupport {
             IntMatrix m1 = IntMatrix.wrap(new int[][] { { 1, 2 } });
             IntMatrix m2 = IntMatrix.wrap(new int[][] { { 3 } });
             assertThrows(IllegalArgumentException.class, () -> m1.subtract(m2));
-        }
-
-        @Test
-        public void testsubtract() {
-            IntMatrix a = IntMatrix.wrap(new int[][] { { 5, 6 }, { 7, 8 } });
-            IntMatrix b = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix diff = a.subtract(b);
-            assertEquals(4, diff.get(0, 0));
-            assertEquals(4, diff.get(0, 1));
-            assertEquals(4, diff.get(1, 0));
-            assertEquals(4, diff.get(1, 1));
         }
 
         @ParameterizedTest
@@ -5075,13 +4760,6 @@ class IntMatrixTest extends MatrixTestSupport {
             // Test incompatible dimensions
             IntMatrix m3 = IntMatrix.wrap(new int[][] { { 1, 2, 3 } });
             assertThrows(IllegalArgumentException.class, () -> m1.matrixMultiply(m3));
-        }
-
-        @Test
-        public void testMultiply_IncompatibleDimensions() {
-            IntMatrix m1 = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix m2 = IntMatrix.wrap(new int[][] { { 1, 2, 3 } });
-            assertThrows(IllegalArgumentException.class, () -> m1.matrixMultiply(m2));
         }
 
         @Test
@@ -5136,7 +4814,7 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testmatrixMultiply() {
+        public void testMatrixMultiply_SquareProductChecksEveryCell() {
             IntMatrix a = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
             IntMatrix b = IntMatrix.wrap(new int[][] { { 5, 6 }, { 7, 8 } });
             IntMatrix product = a.matrixMultiply(b);
@@ -5429,14 +5107,6 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testBoxed_Shape2By2() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            Matrix<Integer> boxed = m.boxed();
-            assertEquals(Integer.valueOf(1), boxed.get(0, 0));
-            assertEquals(Integer.valueOf(4), boxed.get(1, 1));
-        }
-
-        @Test
         public void testBoxed_Shape2By2_DimensionsAndBoxedCornerValues() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
             Matrix<Integer> boxed = m.boxed();
@@ -5470,40 +5140,20 @@ class IntMatrixTest extends MatrixTestSupport {
     class ToLongMatrixTests {
 
         @Test
-        public void testToLongMatrix() {
-            LongMatrix longMatrix = matrix.toLongMatrix();
-            assertEquals(3, longMatrix.rowCount());
-            assertEquals(3, longMatrix.columnCount());
-            assertEquals(1L, longMatrix.get(0, 0));
-            assertEquals(5L, longMatrix.get(1, 1));
+        public void testToLongMatrix_SquareMatrixPreservesAllValues() {
+            final LongMatrix converted = matrix.toLongMatrix();
+            assertEquals(LongMatrix.wrap(new long[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } }), converted);
         }
 
         @Test
-        public void testToLongMatrix_Shape2By2() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            LongMatrix longMatrix = m.toLongMatrix();
-            assertEquals(2, longMatrix.rowCount());
-            assertEquals(2, longMatrix.columnCount());
-            assertEquals(1L, longMatrix.get(0, 0));
-            assertEquals(4L, longMatrix.get(1, 1));
-        }
-
-        @Test
-        public void testToLongMatrix_Shape2By2_FirstRowConvertedValues() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            LongMatrix result = m.toLongMatrix();
-            assertEquals(1L, result.get(0, 0));
-            assertEquals(4L, result.get(1, 1));
-        }
-
-        @Test
-        public void testToLongMatrix_AllFourCellValues() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            LongMatrix result = m.toLongMatrix();
-            assertEquals(2, result.rowCount());
-            assertEquals(2, result.columnCount());
-            assertEquals(1L, result.get(0, 0));
-            assertEquals(4L, result.get(1, 1));
+        public void testToLongMatrix_AllValuesAndIndependentStorage() {
+            final IntMatrix source = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
+            final LongMatrix converted = source.toLongMatrix();
+            assertEquals(LongMatrix.wrap(new long[][] { { 1, 2 }, { 3, 4 } }), converted);
+            source.set(0, 1, (int) 9);
+            assertEquals(2, converted.get(0, 1));
+            converted.set(1, 0, (long) 8);
+            assertEquals(3, source.get(1, 0));
         }
 
         @Test
@@ -5544,11 +5194,14 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testToFloatMatrix_Shape2By2_FirstRowConvertedValues() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            FloatMatrix result = m.toFloatMatrix();
-            assertEquals(1.0f, result.get(0, 0), 0.001f);
-            assertEquals(4.0f, result.get(1, 1), 0.001f);
+        public void testToFloatMatrix_AllValuesAndIndependentStorage() {
+            final IntMatrix source = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
+            final FloatMatrix converted = source.toFloatMatrix();
+            assertEquals(FloatMatrix.wrap(new float[][] { { 1, 2 }, { 3, 4 } }), converted);
+            source.set(0, 1, (int) 9);
+            assertEquals(2, converted.get(0, 1));
+            converted.set(1, 0, (float) 8);
+            assertEquals(3, source.get(1, 0));
         }
 
         @Test
@@ -5745,12 +5398,6 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testMainDiagonalStream_NonSquare() {
-            IntMatrix nonSquare = IntMatrix.wrap(new int[][] { { 1, 2 } });
-            assertArrayEquals(new int[] { 1 }, nonSquare.mainDiagonalStream().toArray());
-        }
-
-        @Test
         public void testMainDiagonalStream_NonSquare_Shape1By2_ArrayValues() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 } });
             assertArrayEquals(new int[] { 1 }, m.mainDiagonalStream().toArray());
@@ -5865,19 +5512,6 @@ class IntMatrixTest extends MatrixTestSupport {
             assertTrue(emptyMatrix.antiDiagonalStream().toArray().length == 0);
 
             // Test non-square
-            IntMatrix nonSquare = IntMatrix.wrap(new int[][] { { 1, 2 } });
-            assertArrayEquals(new int[] { 2 }, nonSquare.antiDiagonalStream().toArray());
-        }
-
-        @Test
-        public void testAntiDiagonalStream_Shape3By3_ArrayValues() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            int[] antiDiagonal = m.antiDiagonalStream().toArray();
-            assertArrayEquals(new int[] { 3, 5, 7 }, antiDiagonal);
-        }
-
-        @Test
-        public void testAntiDiagonalStream_NonSquare() {
             IntMatrix nonSquare = IntMatrix.wrap(new int[][] { { 1, 2 } });
             assertArrayEquals(new int[] { 2 }, nonSquare.antiDiagonalStream().toArray());
         }
@@ -6321,17 +5955,10 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testverticalStream() {
+        public void testColumnMajorStream_SquareColumnMajorArray() {
             IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
             int[] colMajor = matrix.columnMajorStream().toArray();
             assertArrayEquals(new int[] { 1, 3, 2, 4 }, colMajor);
-        }
-
-        @Test
-        public void testVerticalStreamRange() {
-            IntMatrix matrix = IntMatrix.wrap(new int[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            int[] subset = matrix.columnMajorStream(0, 2).toArray();
-            assertArrayEquals(new int[] { 1, 4, 2, 5 }, subset);
         }
 
         @Test
@@ -7002,18 +6629,6 @@ class IntMatrixTest extends MatrixTestSupport {
 
             assertEquals(m1.hashCode(), m2.hashCode());
         }
-
-        @Test
-        public void testHashCode_ZeroRowWidthsDistinguishShapes() {
-            final var empty = IntMatrix.wrap(new int[0][0]);
-            final var narrow = empty.resize(0, 4);
-            final var equal = empty.resize(0, 4);
-            final var wide = empty.resize(0, 5);
-            assertEquals(narrow, equal);
-            assertEquals(narrow.hashCode(), equal.hashCode());
-            assertNotEquals(narrow.hashCode(), wide.hashCode());
-            assertNotEquals(narrow.hashCode(), empty.hashCode());
-        }
     }
 
     @Nested
@@ -7032,16 +6647,6 @@ class IntMatrixTest extends MatrixTestSupport {
             assertFalse(m1.equals(m4)); // Different dimensions
             assertFalse(m1.equals(null));
             assertFalse(m1.equals("not a matrix"));
-        }
-
-        @Test
-        public void testEquals_Shape2By2() {
-            IntMatrix m1 = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix m2 = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix m3 = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 5 } });
-
-            assertEquals(m1, m2);
-            assertNotEquals(m1, m3);
         }
 
         @Test
@@ -7110,16 +6715,6 @@ class IntMatrixTest extends MatrixTestSupport {
     class ToStringTests {
 
         @Test
-        public void testToString() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            String str = m.toString();
-            assertTrue(str.contains("1"));
-            assertTrue(str.contains("2"));
-            assertTrue(str.contains("3"));
-            assertTrue(str.contains("4"));
-        }
-
-        @Test
         public void testToString_Shape2By2() {
             IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
             String str = m.toString();
@@ -7127,15 +6722,6 @@ class IntMatrixTest extends MatrixTestSupport {
             assertTrue(str.contains("1"));
             assertTrue(str.contains("2"));
             assertTrue(str.contains("3"));
-            assertTrue(str.contains("4"));
-        }
-
-        @Test
-        public void testToString_Shape2By2_ContainsElementText() {
-            IntMatrix m = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            String str = m.toString();
-            assertNotNull(str);
-            assertTrue(str.contains("1"));
             assertTrue(str.contains("4"));
         }
 

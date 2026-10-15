@@ -27,16 +27,16 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import com.landawn.abacus.util.FloatList;
-import com.landawn.abacus.util.Sheet;
 import com.landawn.abacus.util.Sheet.Point;
+import com.landawn.abacus.util.Sheet;
 import com.landawn.abacus.util.Throwables;
-import com.landawn.abacus.util.u;
-import com.landawn.abacus.util.u.OptionalDouble;
-import com.landawn.abacus.util.u.OptionalFloat;
 import com.landawn.abacus.util.stream.FloatIteratorEx;
 import com.landawn.abacus.util.stream.FloatStream;
 import com.landawn.abacus.util.stream.ObjIteratorEx;
 import com.landawn.abacus.util.stream.Stream;
+import com.landawn.abacus.util.u.OptionalDouble;
+import com.landawn.abacus.util.u.OptionalFloat;
+import com.landawn.abacus.util.u;
 
 class FloatMatrixTest extends MatrixTestSupport {
 
@@ -182,13 +182,6 @@ class FloatMatrixTest extends MatrixTestSupport {
             assertEquals(2, extended.rowCount());
             assertEquals(2, extended.columnCount());
             assertEquals(5.5f, extended.get(0, 0), DELTA);
-        }
-
-        @Test
-        public void testFloatMatrixEmptyRowCount() {
-            FloatMatrix matrix = FloatMatrix.empty();
-            assertEquals(0, matrix.rowCount());
-            assertEquals(0, matrix.columnCount());
         }
 
         @Test
@@ -458,12 +451,6 @@ class FloatMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testFromFromIntArray_WithJaggedArray() {
-            int[][] jagged = { { 1, 2 }, { 3 } };
-            assertThrows(IllegalArgumentException.class, () -> FloatMatrix.from(jagged));
-        }
-
-        @Test
         public void testFromFromIntArray_WithNullRow() {
             int[][] nullRow = { { 1, 2 }, null };
             assertThrows(IllegalArgumentException.class, () -> FloatMatrix.from(nullRow));
@@ -493,12 +480,6 @@ class FloatMatrixTest extends MatrixTestSupport {
             assertEquals(2, m.columnCount());
             assertEquals(1.0f, m.get(0, 0), 0.0f);
             assertEquals(4.0f, m.get(1, 1), 0.0f);
-        }
-
-        @Test
-        public void testFrom_FromIntArray_NullFirstRow() {
-            int[][] ints = { null, { 1, 2 } };
-            assertThrows(IllegalArgumentException.class, () -> FloatMatrix.from(ints));
         }
 
         @Test
@@ -594,22 +575,6 @@ class FloatMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testFloatMatrixMainDiagonal() {
-            // FloatMatrix.java: FloatMatrix matrix = FloatMatrix.ofMainDiagonal(new float[] {1.0f, 2.0f, 3.0f});
-            // Creates 3x3 matrix:
-            // [[1.0, 0.0, 0.0],
-            //  [0.0, 2.0, 0.0],
-            //  [0.0, 0.0, 3.0]]
-            FloatMatrix matrix = FloatMatrix.ofMainDiagonal(new float[] { 1.0f, 2.0f, 3.0f });
-            assertEquals(3, matrix.rowCount());
-            assertEquals(3, matrix.columnCount());
-            assertEquals(1.0f, matrix.get(0, 0));
-            assertEquals(2.0f, matrix.get(1, 1));
-            assertEquals(3.0f, matrix.get(2, 2));
-            assertEquals(0.0f, matrix.get(0, 1));
-        }
-
-        @Test
         public void testDiagonalLU2RD() {
             FloatMatrix m = FloatMatrix.ofMainDiagonal(new float[] { 1.0f, 2.0f, 3.0f });
             assertEquals(3, m.rowCount());
@@ -670,20 +635,6 @@ class FloatMatrixTest extends MatrixTestSupport {
             assertEquals(2.0f, m.get(1, 1), 0.0f);
             assertEquals(3.0f, m.get(2, 0), 0.0f);
             assertEquals(0.0f, m.get(0, 0), 0.0f);
-        }
-
-        @Test
-        public void testFloatMatrixAntiDiagonal() {
-            // FloatMatrix.java: FloatMatrix matrix = FloatMatrix.ofAntiDiagonal(new float[] {1.0f, 2.0f, 3.0f});
-            // Creates 3x3 matrix:
-            // [[0.0, 0.0, 1.0],
-            //  [0.0, 2.0, 0.0],
-            //  [3.0, 0.0, 0.0]]
-            FloatMatrix matrix = FloatMatrix.ofAntiDiagonal(new float[] { 1.0f, 2.0f, 3.0f });
-            assertEquals(1.0f, matrix.get(0, 2));
-            assertEquals(2.0f, matrix.get(1, 1));
-            assertEquals(3.0f, matrix.get(2, 0));
-            assertEquals(0.0f, matrix.get(0, 0));
         }
 
         @Test
@@ -1069,12 +1020,6 @@ class FloatMatrixTest extends MatrixTestSupport {
             FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             Point p = Point.of(0, 1);
             assertEquals(2.0f, m.get(p), 0.0f);
-        }
-
-        @Test
-        public void testget() {
-            FloatMatrix matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            assertEquals(2.0f, matrix.get(0, 1));
         }
 
         @Test
@@ -1858,13 +1803,6 @@ class FloatMatrixTest extends MatrixTestSupport {
             FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f }, { 5.0f, 6.0f } });
             assertArrayEquals(new float[] { 1.0f, 4.0f }, m.mainDiagonalCopy(), 0.0f);
         }
-
-        @Test
-        public void testmainDiagonalCopy() {
-            FloatMatrix matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
-            float[] diagonal = matrix.mainDiagonalCopy();
-            assertArrayEquals(new float[] { 1.0f, 5.0f, 9.0f }, diagonal);
-        }
     }
 
     @Nested
@@ -2040,13 +1978,6 @@ class FloatMatrixTest extends MatrixTestSupport {
             FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
             float[] diag = m.antiDiagonalCopy();
             assertArrayEquals(new float[] { 3.0f, 5.0f, 7.0f }, diag, 0.0f);
-        }
-
-        @Test
-        public void testantiDiagonalCopy() {
-            FloatMatrix matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f }, { 7.0f, 8.0f, 9.0f } });
-            float[] diagonal = matrix.antiDiagonalCopy();
-            assertArrayEquals(new float[] { 3.0f, 5.0f, 7.0f }, diagonal);
         }
     }
 
@@ -2247,16 +2178,6 @@ class FloatMatrixTest extends MatrixTestSupport {
             assertEquals(22.0f, m.get(1, 1), 0.0f);
         }
 
-        @Test
-        public void testupdateAll() {
-            FloatMatrix matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            matrix.updateAll(x -> x * 2);
-            assertEquals(2.0f, matrix.get(0, 0));
-            assertEquals(4.0f, matrix.get(0, 1));
-            assertEquals(6.0f, matrix.get(1, 0));
-            assertEquals(8.0f, matrix.get(1, 1));
-        }
-
         @ParameterizedTest
         @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
         public void testUpdateAll_ExplicitModesTransformEveryValue(final ParallelMode mode) {
@@ -2383,18 +2304,6 @@ class FloatMatrixTest extends MatrixTestSupport {
             assertEquals(99.0f, m.get(1, 1), 0.0f);
         }
 
-        @Test
-        public void testreplaceIf() {
-            FloatMatrix matrix = FloatMatrix.wrap(new float[][] { { -1.0f, 2.0f, -3.0f }, { 4.0f, -5.0f, 6.0f } });
-            matrix.replaceIf(x -> x < 0, 0.0f);
-            assertEquals(0.0f, matrix.get(0, 0));
-            assertEquals(2.0f, matrix.get(0, 1));
-            assertEquals(0.0f, matrix.get(0, 2));
-            assertEquals(4.0f, matrix.get(1, 0));
-            assertEquals(0.0f, matrix.get(1, 1));
-            assertEquals(6.0f, matrix.get(1, 2));
-        }
-
         @ParameterizedTest
         @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
         public void testReplaceIf_ExplicitModesReplaceOnlyMatchingValues(final ParallelMode mode) {
@@ -2407,6 +2316,18 @@ class FloatMatrixTest extends MatrixTestSupport {
             } finally {
                 Matrices.setParallelMode(previous);
             }
+        }
+
+        @Test
+        public void testReplaceIf_ZerosNegativeCells() {
+            FloatMatrix matrix = FloatMatrix.wrap(new float[][] { { -1.0f, 2.0f, -3.0f }, { 4.0f, -5.0f, 6.0f } });
+            matrix.replaceIf(x -> x < 0, 0.0f);
+            assertEquals(0.0f, matrix.get(0, 0));
+            assertEquals(2.0f, matrix.get(0, 1));
+            assertEquals(0.0f, matrix.get(0, 2));
+            assertEquals(4.0f, matrix.get(1, 0));
+            assertEquals(0.0f, matrix.get(1, 1));
+            assertEquals(6.0f, matrix.get(1, 2));
         }
     }
 
@@ -2569,14 +2490,6 @@ class FloatMatrixTest extends MatrixTestSupport {
             Matrix<String> result = m.mapToObj(x -> String.format("%.1f", x), String.class);
             assertEquals("1.5", result.get(0, 0));
             assertEquals("4.5", result.get(1, 1));
-        }
-
-        @Test
-        public void testMapToObj_Shape2By2_FirstRowStringValues() {
-            FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            Matrix<String> result = m.mapToObj(x -> String.valueOf(x), String.class);
-            assertEquals("1.0", result.get(0, 0));
-            assertEquals("4.0", result.get(1, 1));
         }
 
         @Test
@@ -3369,16 +3282,6 @@ class FloatMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testFlipHorizontallyInPlace_Shape2By3() {
-            FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f } });
-            m.flipHorizontallyInPlace();
-            assertEquals(3.0f, m.get(0, 0), DELTA);
-            assertEquals(2.0f, m.get(0, 1), DELTA);
-            assertEquals(1.0f, m.get(0, 2), DELTA);
-            assertEquals(6.0f, m.get(1, 0), DELTA);
-        }
-
-        @Test
         public void testFlipHorizontallyInPlace_Shape2By2() {
             FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             m.flipHorizontallyInPlace();
@@ -3421,16 +3324,6 @@ class FloatMatrixTest extends MatrixTestSupport {
             assertEquals(4.0f, m.get(1, 1), DELTA);
             assertEquals(1.0f, m.get(2, 0), DELTA);
             assertEquals(2.0f, m.get(2, 1), DELTA);
-        }
-
-        @Test
-        public void testFlipVerticallyInPlace_Shape3By2() {
-            FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f }, { 5.0f, 6.0f } });
-            m.flipVerticallyInPlace();
-            assertEquals(5.0f, m.get(0, 0), DELTA);
-            assertEquals(6.0f, m.get(0, 1), DELTA);
-            assertEquals(3.0f, m.get(1, 0), DELTA);
-            assertEquals(1.0f, m.get(2, 0), DELTA);
         }
 
         @Test
@@ -3755,18 +3648,6 @@ class FloatMatrixTest extends MatrixTestSupport {
     class TransposeTests {
 
         @Test
-        public void testTranspose() {
-            FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f } });
-            FloatMatrix transposed = m.transpose();
-            assertEquals(3, transposed.rowCount());
-            assertEquals(2, transposed.columnCount());
-            assertEquals(1.0f, transposed.get(0, 0), DELTA);
-            assertEquals(4.0f, transposed.get(0, 1), DELTA);
-            assertEquals(2.0f, transposed.get(1, 0), DELTA);
-            assertEquals(5.0f, transposed.get(1, 1), DELTA);
-        }
-
-        @Test
         public void testTranspose_Shape2By3() {
             FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f } });
             FloatMatrix transposed = m.transpose();
@@ -3976,7 +3857,7 @@ class FloatMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testrepeatElements() {
+        public void testRepeatElements_RepeatsCellsTwiceVerticallyAndThreeTimesHorizontally() {
             FloatMatrix matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f } });
             FloatMatrix repeated = matrix.repeatElements(2, 3);
             assertEquals(2, repeated.rowCount());
@@ -4080,7 +3961,7 @@ class FloatMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testrepeatMatrix() {
+        public void testRepeatMatrix_TilesTwiceVerticallyAndThreeTimesHorizontally() {
             FloatMatrix matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             FloatMatrix repeated = matrix.repeatMatrix(2, 3);
             assertEquals(4, repeated.rowCount());
@@ -4199,7 +4080,7 @@ class FloatMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testflatten() {
+        public void testFlatten_SquareRowMajorList() {
             FloatMatrix matrix = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             FloatList list = matrix.flatten();
             assertEquals(FloatList.of(1.0f, 2.0f, 3.0f, 4.0f), list);
@@ -4280,7 +4161,7 @@ class FloatMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testmutateViaFlatArray() {
+        public void testMutateViaFlatArray_SortsAllCellsInRowOrder() {
             FloatMatrix matrix = FloatMatrix.wrap(new float[][] { { 5.0f, 3.0f }, { 4.0f, 1.0f } });
             matrix.mutateViaFlatArray(arr -> java.util.Arrays.sort(arr));
             assertEquals(1.0f, matrix.get(0, 0));
@@ -4369,7 +4250,7 @@ class FloatMatrixTest extends MatrixTestSupport {
         // FloatMatrix.java: FloatMatrix result = matrix1.zipWith(matrix2, matrix3, (a, b, c) -> a + b + c);
         // result is [[6.0f]]
         @Test
-        public void teststackVertically() {
+        public void testStackVertically_PreservesEveryAppendedRow() {
             FloatMatrix a = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             FloatMatrix b = FloatMatrix.wrap(new float[][] { { 5.0f, 6.0f }, { 7.0f, 8.0f } });
             FloatMatrix stacked = a.stackVertically(b);
@@ -4484,7 +4365,7 @@ class FloatMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void teststackHorizontally() {
+        public void testStackHorizontally_PreservesEveryAppendedColumn() {
             FloatMatrix a = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             FloatMatrix b = FloatMatrix.wrap(new float[][] { { 5.0f, 6.0f }, { 7.0f, 8.0f } });
             FloatMatrix stacked = a.stackHorizontally(b);
@@ -4619,17 +4500,6 @@ class FloatMatrixTest extends MatrixTestSupport {
             assertThrows(IllegalArgumentException.class, () -> m1.add(m2));
         }
 
-        @Test
-        public void testadd() {
-            FloatMatrix a = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            FloatMatrix b = FloatMatrix.wrap(new float[][] { { 5.0f, 6.0f }, { 7.0f, 8.0f } });
-            FloatMatrix sum = a.add(b);
-            assertEquals(6.0f, sum.get(0, 0));
-            assertEquals(8.0f, sum.get(0, 1));
-            assertEquals(10.0f, sum.get(1, 0));
-            assertEquals(12.0f, sum.get(1, 1));
-        }
-
         @ParameterizedTest
         @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
         public void testAdd_ExplicitModesPreserveBothOperands(final ParallelMode mode) {
@@ -4747,17 +4617,6 @@ class FloatMatrixTest extends MatrixTestSupport {
         }
 
         // FloatMatrix.java: FloatMatrix matrix = FloatMatrix.from(new int[][] {{1, 2}, {3, 4}});
-        @Test
-        public void testsubtract() {
-            FloatMatrix a = FloatMatrix.wrap(new float[][] { { 5.0f, 6.0f }, { 7.0f, 8.0f } });
-            FloatMatrix b = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            FloatMatrix diff = a.subtract(b);
-            assertEquals(4.0f, diff.get(0, 0));
-            assertEquals(4.0f, diff.get(0, 1));
-            assertEquals(4.0f, diff.get(1, 0));
-            assertEquals(4.0f, diff.get(1, 1));
-        }
-
         @ParameterizedTest
         @EnumSource(value = ParallelMode.class, names = { "FORCE_OFF", "FORCE_ON" })
         public void testSubtract_ExplicitModesPreserveBothOperands(final ParallelMode mode) {
@@ -4851,7 +4710,7 @@ class FloatMatrixTest extends MatrixTestSupport {
         // FloatMatrix.java: FloatMatrix result = matrix1.zipWith(matrix2, (a, b) -> a * b);
         // result is [[3.0f, 8.0f]]
         @Test
-        public void testmatrixMultiply() {
+        public void testMatrixMultiply_SquareProductChecksEveryCell() {
             FloatMatrix a = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
             FloatMatrix b = FloatMatrix.wrap(new float[][] { { 5.0f, 6.0f }, { 7.0f, 8.0f } });
             FloatMatrix product = a.matrixMultiply(b);
@@ -4954,14 +4813,6 @@ class FloatMatrixTest extends MatrixTestSupport {
     @Nested
     class ToDoubleMatrixTests {
 
-        @Test
-        public void testMapToDouble() {
-            FloatMatrix m = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f }, { 3.0f, 4.0f } });
-            DoubleMatrix result = m.toDoubleMatrix();
-            assertEquals(1.0, result.get(0, 0), 0.0001);
-            assertEquals(4.0, result.get(1, 1), 0.0001);
-        }
-
         // Test different shapes
         @Test
         public void testToDoubleMatrix() {
@@ -5007,7 +4858,7 @@ class FloatMatrixTest extends MatrixTestSupport {
     class ToIntMatrixTests {
 
         @Test
-        public void testtoIntMatrix() {
+        public void testToIntMatrix_TruncatesFractionalPartsInEveryCell() {
             FloatMatrix floatMatrix = FloatMatrix.wrap(new float[][] { { 1.9f, 2.1f }, { 3.5f, 4.0f } });
             IntMatrix intMatrix = floatMatrix.toIntMatrix();
             assertEquals(1, intMatrix.get(0, 0));
@@ -5029,7 +4880,7 @@ class FloatMatrixTest extends MatrixTestSupport {
     class ToLongMatrixTests {
 
         @Test
-        public void testtoLongMatrix() {
+        public void testToLongMatrix_TruncatesFractionalPartsInEveryCell() {
             FloatMatrix floatMatrix = FloatMatrix.wrap(new float[][] { { 1.9f, 2.1f }, { 3.5f, 4.0f } });
             LongMatrix longMatrix = floatMatrix.toLongMatrix();
             assertEquals(1L, longMatrix.get(0, 0));
@@ -5158,7 +5009,7 @@ class FloatMatrixTest extends MatrixTestSupport {
         // identity.fill(1.0f);
         // Creates a matrix filled with 1.0f: [[1.0f, 1.0f, 1.0f], [1.0f, 1.0f, 1.0f], [1.0f, 1.0f, 1.0f]]
         @Test
-        public void testzipWith() {
+        public void testZipWith_MultipliesCorrespondingRowCells() {
             FloatMatrix m1 = FloatMatrix.wrap(new float[][] { { 1.0f, 2.0f } });
             FloatMatrix m2 = FloatMatrix.wrap(new float[][] { { 3.0f, 4.0f } });
             FloatMatrix result = m1.zipWith(m2, (a, b) -> a * b);
@@ -6351,18 +6202,6 @@ class FloatMatrixTest extends MatrixTestSupport {
 
             assertEquals(m1, m2, "Two matrices with NaN values at the same positions must be equal");
             assertEquals(m1.hashCode(), m2.hashCode(), "Equal matrices must produce equal hash codes (NaN content)");
-        }
-
-        @Test
-        public void testHashCode_ZeroRowWidthsDistinguishShapes() {
-            final var empty = FloatMatrix.wrap(new float[0][0]);
-            final var narrow = empty.resize(0, 4);
-            final var equal = empty.resize(0, 4);
-            final var wide = empty.resize(0, 5);
-            assertEquals(narrow, equal);
-            assertEquals(narrow.hashCode(), equal.hashCode());
-            assertNotEquals(narrow.hashCode(), wide.hashCode());
-            assertNotEquals(narrow.hashCode(), empty.hashCode());
         }
 
         @Test

@@ -286,15 +286,6 @@ class MatricesTest extends MatrixTestSupport {
                 Matrices.setParallelMode(original);
             }
         }
-
-        @Test
-        public void testNewThreadsDefaultToSequentialPolicy() throws InterruptedException {
-            AtomicReference<ParallelMode> observed = new AtomicReference<>();
-            Thread thread = new Thread(() -> observed.set(Matrices.getParallelMode()));
-            thread.start();
-            thread.join();
-            assertEquals(ParallelMode.FORCE_OFF, observed.get());
-        }
     }
 
     @Nested
@@ -1305,14 +1296,6 @@ class MatricesTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testNewArray_PrimitiveType() {
-            Integer[][] arr = Matrices.newMatrixArray(3, 4, int.class);
-            assertNotNull(arr);
-            assertEquals(3, arr.length);
-            assertEquals(4, arr[0].length);
-        }
-
-        @Test
         public void testNewArray_StringType() {
             String[][] arr = Matrices.newMatrixArray(2, 2, String.class);
             assertNotNull(arr);
@@ -1605,7 +1588,7 @@ class MatricesTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testrunWithParallelMode() {
+        public void testRunWithParallelMode_RestoresAutoAfterForcedParallelAction() {
             // From runWithParallelMode Javadoc
             ParallelMode original = Matrices.getParallelMode();
             try {
@@ -2934,41 +2917,11 @@ class MatricesTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testMultiply_Shape2By2() {
-            IntMatrix m1 = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix m2 = IntMatrix.wrap(new int[][] { { 5, 6 }, { 7, 8 } });
-            int[][] result = new int[2][2];
-
-            Matrices.forEachCartesianIndices(m1, m2, (i, j, k) -> result[i][j] += m1.get(i, k) * m2.get(k, j));
-
-            assertEquals(19, result[0][0]);
-            assertEquals(22, result[0][1]);
-            assertEquals(43, result[1][0]);
-            assertEquals(50, result[1][1]);
-        }
-
-        @Test
         public void testMultiply_IncompatibleDimensions() {
             IntMatrix m1 = IntMatrix.wrap(new int[][] { { 1, 2 } });
             IntMatrix m2 = IntMatrix.wrap(new int[][] { { 1 }, { 2 }, { 3 } });
             assertThrows(IllegalArgumentException.class, () -> Matrices.forEachCartesianIndices(m1, m2, (i, j, k) -> {
             }));
-        }
-
-        @Test
-        public void testMultiply_WithParallel() {
-            IntMatrix m1 = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix m2 = IntMatrix.wrap(new int[][] { { 5, 6 }, { 7, 8 } });
-            int[][] result = new int[2][2];
-
-            Matrices.forEachCartesianIndices(m1, m2, (i, j, k) -> {
-                synchronized (result) {
-                    result[i][j] += m1.get(i, k) * m2.get(k, j);
-                }
-            }, true);
-
-            assertEquals(19, result[0][0]);
-            assertEquals(22, result[0][1]);
         }
 
         @Test
@@ -4173,17 +4126,6 @@ class MatricesTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testZip_byteMatrix_twoMatrices() {
-            ByteMatrix m1 = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
-            ByteMatrix m2 = ByteMatrix.wrap(new byte[][] { { 5, 6 }, { 7, 8 } });
-            ByteMatrix result = Matrices.zip(m1, m2, (a, b) -> (byte) (a + b));
-            assertEquals(2, result.rowCount());
-            assertEquals(2, result.columnCount());
-            assertEquals(6, result.get(0, 0)); // 1+5
-            assertEquals(12, result.get(1, 1)); // 4+8
-        }
-
-        @Test
         public void testZip_byteMatrix_threeMatrices() {
             ByteMatrix m1 = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
             ByteMatrix m2 = ByteMatrix.wrap(new byte[][] { { 5, 6 }, { 7, 8 } });
@@ -4204,17 +4146,6 @@ class MatricesTest extends MatrixTestSupport {
             assertEquals(2, result.rowCount());
             assertEquals(2, result.columnCount());
             assertEquals(6, result.get(0, 0));
-        }
-
-        @Test
-        public void testZip_intMatrix_twoMatrices() {
-            IntMatrix m1 = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix m2 = IntMatrix.wrap(new int[][] { { 5, 6 }, { 7, 8 } });
-            IntMatrix result = Matrices.zip(m1, m2, (a, b) -> a + b);
-            assertEquals(2, result.rowCount());
-            assertEquals(2, result.columnCount());
-            assertEquals(6, result.get(0, 0));
-            assertEquals(12, result.get(1, 1));
         }
 
         @Test
@@ -4556,17 +4487,6 @@ class MatricesTest extends MatrixTestSupport {
 
             assertEquals(15, result.get(0, 0));
             assertEquals(24, result.get(1, 1));
-        }
-
-        @Test
-        public void testZip_LongMatrix_WithTwoMatrices() {
-            LongMatrix m1 = LongMatrix.wrap(new long[][] { { 1L, 2L }, { 3L, 4L } });
-            LongMatrix m2 = LongMatrix.wrap(new long[][] { { 5L, 6L }, { 7L, 8L } });
-
-            LongMatrix result = Matrices.zip(m1, m2, (a, b) -> a + b);
-
-            assertEquals(6L, result.get(0, 0));
-            assertEquals(12L, result.get(1, 1));
         }
 
         @Test
@@ -5847,17 +5767,6 @@ class MatricesTest extends MatrixTestSupport {
             } finally {
                 Matrices.setParallelMode(previous);
             }
-        }
-
-        @Test
-        public void testZipToLong_FromIntMatrix() {
-            IntMatrix m1 = IntMatrix.wrap(new int[][] { { 1, 2 }, { 3, 4 } });
-            IntMatrix m2 = IntMatrix.wrap(new int[][] { { 5, 6 }, { 7, 8 } });
-
-            LongMatrix result = Matrices.zipToLong(m1, m2, (a, b) -> (long) a * b);
-
-            assertEquals(5L, result.get(0, 0));
-            assertEquals(32L, result.get(1, 1));
         }
     }
 

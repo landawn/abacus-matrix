@@ -30,11 +30,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 import com.landawn.abacus.util.ByteList;
 import com.landawn.abacus.util.Sheet.Point;
 import com.landawn.abacus.util.Throwables;
-import com.landawn.abacus.util.u.OptionalByte;
 import com.landawn.abacus.util.stream.ByteIteratorEx;
 import com.landawn.abacus.util.stream.ByteStream;
 import com.landawn.abacus.util.stream.ObjIteratorEx;
 import com.landawn.abacus.util.stream.Stream;
+import com.landawn.abacus.util.u.OptionalByte;
 
 class ByteMatrixTest extends MatrixTestSupport {
 
@@ -54,16 +54,6 @@ class ByteMatrixTest extends MatrixTestSupport {
             Assertions.assertEquals(2, matrix.columnCount());
 
             assertThrows(IllegalArgumentException.class, () -> new ByteMatrix(null));
-        }
-
-        @Test
-        public void testConstructor_WithValidArray() {
-            byte[][] arr = { { 1, 2 }, { 3, 4 } };
-            ByteMatrix m = new ByteMatrix(arr);
-            assertEquals(2, m.rowCount());
-            assertEquals(2, m.columnCount());
-            assertEquals(1, m.get(0, 0));
-            assertEquals(4, m.get(1, 1));
         }
 
         @Test
@@ -124,12 +114,6 @@ class ByteMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testConstructor_EmptyArray() {
-            ByteMatrix m = new ByteMatrix(new byte[0][0]);
-            assertTrue(m.isEmpty());
-        }
-
-        @Test
         public void testConstructor_SingleElement() {
             ByteMatrix m = new ByteMatrix(new byte[][] { { 5 } });
             assertEquals(1, m.rowCount());
@@ -181,12 +165,6 @@ class ByteMatrixTest extends MatrixTestSupport {
             assertEquals(2, extended.rowCount());
             assertEquals(2, extended.columnCount());
             assertEquals(5, extended.get(0, 0));
-        }
-
-        @Test
-        public void testByteMatrixEmptyRowCount() {
-            ByteMatrix matrix = ByteMatrix.empty();
-            assertEquals(0, matrix.rowCount());
         }
 
         @Test
@@ -443,15 +421,6 @@ class ByteMatrixTest extends MatrixTestSupport {
             assertEquals(5, m.columnCount());
             assertEquals(0, m.get(0, 0));
             assertEquals(4, m.get(0, 4));
-        }
-
-        @Test
-        public void testRange_WithBy() {
-            ByteMatrix m = ByteMatrix.range((byte) 0, (byte) 10, (byte) 2);
-            assertEquals(1, m.rowCount());
-            assertEquals(5, m.columnCount());
-            assertEquals(0, m.get(0, 0));
-            assertEquals(8, m.get(0, 4));
         }
 
         @Test
@@ -784,24 +753,6 @@ class ByteMatrixTest extends MatrixTestSupport {
         @Test
         public void testDiagonal_WithDifferentLengths_Validation() {
             assertThrows(IllegalArgumentException.class, () -> ByteMatrix.ofDiagonals(new byte[] { 1, 2 }, new byte[] { 1, 2, 3 }));
-        }
-
-        @Test
-        public void testDiagonal_WithBothDiagonalsOverlapping() {
-            ByteMatrix m = ByteMatrix.ofDiagonals(new byte[] { 1, 2, 3 }, new byte[] { 4, 5, 6 });
-            assertEquals(3, m.rowCount());
-            assertEquals(3, m.columnCount());
-            // Center element should be from main diagonal (set second)
-            assertEquals(2, m.get(1, 1));
-        }
-
-        @Test
-        public void testDiagonal_Both() {
-            ByteMatrix m = ByteMatrix.ofDiagonals(new byte[] { 1, 2, 3 }, new byte[] { 4, 5, 6 });
-            assertEquals(3, m.rowCount());
-            assertEquals(3, m.columnCount());
-            assertEquals(1, m.get(0, 0));
-            assertEquals(4, m.get(0, 2));
         }
 
         @Test
@@ -1320,7 +1271,7 @@ class ByteMatrixTest extends MatrixTestSupport {
     class RowViewTests {
 
         @Test
-        public void testRow() {
+        public void testRowView() {
             byte[][] a = { { 1, 2, 3 }, { 4, 5, 6 } };
             ByteMatrix matrix = ByteMatrix.wrap(a);
 
@@ -1356,13 +1307,6 @@ class ByteMatrixTest extends MatrixTestSupport {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             byte[] row = m.rowView(0);
             assertArrayEquals(new byte[] { 1, 2, 3 }, row);
-        }
-
-        @Test
-        public void testRowView() {
-            ByteMatrix matrix = ByteMatrix.wrap(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            byte[] firstRow = matrix.rowView(0);
-            assertArrayEquals(new byte[] { 1, 2, 3 }, firstRow);
         }
 
         @Test
@@ -1457,7 +1401,7 @@ class ByteMatrixTest extends MatrixTestSupport {
     class ColumnCopyTests {
 
         @Test
-        public void testColumn() {
+        public void testColumnCopy() {
             byte[][] a = { { 1, 2, 3 }, { 4, 5, 6 } };
             ByteMatrix matrix = ByteMatrix.wrap(a);
 
@@ -1494,13 +1438,6 @@ class ByteMatrixTest extends MatrixTestSupport {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             byte[] col = m.columnCopy(0);
             assertArrayEquals(new byte[] { 1, 4 }, col);
-        }
-
-        @Test
-        public void testColumnCopy() {
-            ByteMatrix matrix = ByteMatrix.wrap(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            byte[] firstColumn = matrix.columnCopy(0);
-            assertArrayEquals(new byte[] { 1, 4 }, firstColumn);
         }
 
         @Test
@@ -1880,13 +1817,6 @@ class ByteMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testmainDiagonalCopy() {
-            ByteMatrix matrix = ByteMatrix.wrap(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            byte[] diagonal = matrix.mainDiagonalCopy();
-            assertArrayEquals(new byte[] { 1, 5, 9 }, diagonal);
-        }
-
-        @Test
         public void testMainDiagonalCopy_SingleElement() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 42 } });
             assertArrayEquals(new byte[] { 42 }, m.mainDiagonalCopy());
@@ -2074,13 +2004,6 @@ class ByteMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testantiDiagonalCopy() {
-            ByteMatrix matrix = ByteMatrix.wrap(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            byte[] diagonal = matrix.antiDiagonalCopy();
-            assertArrayEquals(new byte[] { 3, 5, 7 }, diagonal);
-        }
-
-        @Test
         public void testAntiDiagonalCopy_Shape3By3_ArrayValues_NonzeroAntiDiagonal() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 0, 0, 1 }, { 0, 2, 0 }, { 3, 0, 0 } });
             byte[] diag = m.antiDiagonalCopy();
@@ -2247,16 +2170,6 @@ class ByteMatrixTest extends MatrixTestSupport {
         }
 
         // Original unchanged
-        @Test
-        public void testUpdateAll_Shape2By2() {
-            ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
-            m.updateAll(x -> (byte) (x * 2));
-            assertEquals(2, m.get(0, 0));
-            assertEquals(4, m.get(0, 1));
-            assertEquals(6, m.get(1, 0));
-            assertEquals(8, m.get(1, 1));
-        }
-
         @Test
         public void testUpdateAll_WithIndices() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 0, 0 }, { 0, 0 } });
@@ -2478,19 +2391,6 @@ class ByteMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testMap_Shape2By2() {
-            ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
-            ByteMatrix result = m.map(x -> (byte) (x * 2));
-            assertEquals(2, result.get(0, 0));
-            assertEquals(4, result.get(0, 1));
-            assertEquals(6, result.get(1, 0));
-            assertEquals(8, result.get(1, 1));
-
-            // Original unchanged
-            assertEquals(1, m.get(0, 0));
-        }
-
-        @Test
         public void testMap_Shape2By2_ScalesAllCellsAndPreservesSource() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
             ByteMatrix mapped = m.map(val -> (byte) (val * 10));
@@ -2519,16 +2419,6 @@ class ByteMatrixTest extends MatrixTestSupport {
             assertEquals(1, mapped.get(0, 0));
             assertEquals(2, mapped.get(0, 1));
             assertNotSame(m, mapped);
-        }
-
-        @Test
-        public void testMap_Shape2By2_ScalesFirstRowAndPreservesSource() {
-            ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
-            ByteMatrix doubled = m.map(val -> (byte) (val * 2));
-            assertEquals(2, doubled.get(0, 0));
-            assertEquals(4, doubled.get(0, 1));
-            // Original unchanged
-            assertEquals(1, m.get(0, 0));
         }
 
         @Test
@@ -3300,16 +3190,6 @@ class ByteMatrixTest extends MatrixTestSupport {
 
         // Check new values
         @Test
-        public void testResize_Smaller() {
-            ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            ByteMatrix truncated = m.resize(2, 2);
-            assertEquals(2, truncated.rowCount());
-            assertEquals(2, truncated.columnCount());
-            assertEquals(1, truncated.get(0, 0));
-            assertEquals(5, truncated.get(1, 1));
-        }
-
-        @Test
         public void testResize_WithDefaultValue_Shape2By2() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
             ByteMatrix extended = m.resize(3, 3, (byte) -1);
@@ -3354,16 +3234,6 @@ class ByteMatrixTest extends MatrixTestSupport {
         }
 
         // Result: [[9, 9, 9, 9, 9, 9], [9, 9, 1, 2, 9, 9], [9, 9, 9, 9, 9, 9]]
-        @Test
-        public void testResize_TwoParams() {
-            ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
-            ByteMatrix extended = m.resize(3, 3);
-            assertEquals(3, extended.rowCount());
-            assertEquals(3, extended.columnCount());
-            assertEquals(1, extended.get(0, 0));
-            assertEquals(0, extended.get(2, 2));
-        }
-
         @Test
         public void testResize_TwoParamsWithDefault() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
@@ -3614,15 +3484,6 @@ class ByteMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testflipHorizontallyInPlace() {
-            ByteMatrix matrix = ByteMatrix.wrap(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 } });
-            matrix.flipHorizontallyInPlace();
-            // matrix is now: [[3, 2, 1], [6, 5, 4]]
-            assertArrayEquals(new byte[] { 3, 2, 1 }, matrix.rowView(0));
-            assertArrayEquals(new byte[] { 6, 5, 4 }, matrix.rowView(1));
-        }
-
-        @Test
         public void testFlipInPlaceHorizontally() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 } });
             m.flipHorizontallyInPlace();
@@ -3663,16 +3524,6 @@ class ByteMatrixTest extends MatrixTestSupport {
             Assertions.assertEquals(6, matrix.get(0, 1));
             Assertions.assertEquals(3, matrix.get(1, 0));
             Assertions.assertEquals(1, matrix.get(2, 0));
-        }
-
-        @Test
-        public void testFlipVerticallyInPlace_Shape3By2() {
-            ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
-            m.flipVerticallyInPlace();
-            assertEquals(5, m.get(0, 0));
-            assertEquals(6, m.get(0, 1));
-            assertEquals(3, m.get(1, 0));
-            assertEquals(1, m.get(2, 0));
         }
 
         @Test
@@ -3895,16 +3746,6 @@ class ByteMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testRotate180_Shape2By2_EveryCellValue() {
-            ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
-            ByteMatrix rotated = m.rotate180();
-            assertEquals(4, rotated.get(0, 0));
-            assertEquals(3, rotated.get(0, 1));
-            assertEquals(2, rotated.get(1, 0));
-            assertEquals(1, rotated.get(1, 1));
-        }
-
-        @Test
         public void testRotate180AndRotate90Twice_PreserveNx0Shape() {
             ByteMatrix m = ByteMatrix.wrap(new byte[3][0]);
 
@@ -4114,19 +3955,6 @@ class ByteMatrixTest extends MatrixTestSupport {
             assertEquals(2, repeated.get(0, 4));
             assertEquals(2, repeated.get(0, 5));
             assertEquals(1, repeated.get(1, 0)); // second row same as first
-        }
-
-        @Test
-        public void testRepeatElements_Shape2By2() {
-            ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
-            ByteMatrix result = m.repeatElements(2, 2);
-            assertEquals(4, result.rowCount());
-            assertEquals(4, result.columnCount());
-            assertEquals(1, result.get(0, 0));
-            assertEquals(1, result.get(0, 1));
-            assertEquals(1, result.get(1, 0));
-            assertEquals(1, result.get(1, 1));
-            assertEquals(2, result.get(0, 2));
         }
 
         @Test
@@ -4394,17 +4222,6 @@ class ByteMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testFlatten_Shape2By2() {
-            ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
-            ByteList flattened = m.flatten();
-            assertEquals(4, flattened.size());
-            assertEquals(1, flattened.get(0));
-            assertEquals(2, flattened.get(1));
-            assertEquals(3, flattened.get(2));
-            assertEquals(4, flattened.get(3));
-        }
-
-        @Test
         public void testFlatten_Shape2By2_EveryListElement() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
             ByteList flat = m.flatten();
@@ -4417,7 +4234,7 @@ class ByteMatrixTest extends MatrixTestSupport {
 
         // ByteMatrix.java: System.out.println(matrix.toString());   // Output: [[1, 2], [3, 4]]
         @Test
-        public void testflatten() {
+        public void testFlatten_SquareRowMajorValues() {
             ByteMatrix matrix = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
             ByteList list = matrix.flatten();
             // Returns ByteList containing [1, 2, 3, 4]
@@ -4499,7 +4316,7 @@ class ByteMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testmutateViaFlatArray() {
+        public void testMutateViaFlatArray_SortsAllCellsInRowOrder() {
             ByteMatrix matrix = ByteMatrix.wrap(new byte[][] { { 5, 3 }, { 4, 1 } });
             matrix.mutateViaFlatArray(arr -> java.util.Arrays.sort(arr));
             // matrix is now [[1, 3], [4, 5]]
@@ -4514,7 +4331,7 @@ class ByteMatrixTest extends MatrixTestSupport {
     class StackVerticallyTests {
 
         @Test
-        public void testVstack() {
+        public void testStackVertically() {
             byte[][] a = { { 1, 2 }, { 3, 4 } };
             byte[][] b = { { 5, 6 }, { 7, 8 } };
             ByteMatrix matrixA = ByteMatrix.wrap(a);
@@ -4568,17 +4385,6 @@ class ByteMatrixTest extends MatrixTestSupport {
             ByteMatrix m1 = ByteMatrix.wrap(new byte[][] { { 1, 2 } });
             ByteMatrix m2 = ByteMatrix.wrap(new byte[][] { { 3 } });
             assertThrows(IllegalArgumentException.class, () -> m1.stackVertically(m2));
-        }
-
-        @Test
-        public void testStackVertically() {
-            ByteMatrix m1 = ByteMatrix.wrap(new byte[][] { { 1, 2 } });
-            ByteMatrix m2 = ByteMatrix.wrap(new byte[][] { { 3, 4 } });
-            ByteMatrix stacked = m1.stackVertically(m2);
-            assertEquals(2, stacked.rowCount());
-            assertEquals(2, stacked.columnCount());
-            assertEquals(1, stacked.get(0, 0));
-            assertEquals(3, stacked.get(1, 0));
         }
 
         @Test
@@ -4703,18 +4509,6 @@ class ByteMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testAdd_Shape2By2() {
-            ByteMatrix m1 = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
-            ByteMatrix m2 = ByteMatrix.wrap(new byte[][] { { 5, 6 }, { 7, 8 } });
-            ByteMatrix sum = m1.add(m2);
-
-            assertEquals(6, sum.get(0, 0));
-            assertEquals(8, sum.get(0, 1));
-            assertEquals(10, sum.get(1, 0));
-            assertEquals(12, sum.get(1, 1));
-        }
-
-        @Test
         public void testAdd_DifferentDimensions() {
             ByteMatrix m1 = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
             ByteMatrix m2 = ByteMatrix.wrap(new byte[][] { { 1, 2, 3 } });
@@ -4783,18 +4577,6 @@ class ByteMatrixTest extends MatrixTestSupport {
         // constructor) so an empty product yields the shared EMPTY singleton, and must call
         // checkNonNegativeShape before allocation for consistency with the other
         // result-allocating methods (resize/reshape/transpose/rotate).
-        @Test
-        public void testSubtract_Shape2By2() {
-            ByteMatrix m1 = ByteMatrix.wrap(new byte[][] { { 5, 6 }, { 7, 8 } });
-            ByteMatrix m2 = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
-            ByteMatrix diff = m1.subtract(m2);
-
-            assertEquals(4, diff.get(0, 0));
-            assertEquals(4, diff.get(0, 1));
-            assertEquals(4, diff.get(1, 0));
-            assertEquals(4, diff.get(1, 1));
-        }
-
         @Test
         public void testSubtract_DifferentDimensions() {
             ByteMatrix m1 = ByteMatrix.wrap(new byte[][] { { 5, 6 }, { 7, 8 } });
@@ -5323,7 +5105,7 @@ class ByteMatrixTest extends MatrixTestSupport {
     class MainDiagonalStreamTests {
 
         @Test
-        public void testStreamLU2RD() {
+        public void testMainDiagonalStream() {
             byte[][] a = { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } };
             ByteMatrix matrix = ByteMatrix.wrap(a);
 
@@ -5368,13 +5150,6 @@ class ByteMatrixTest extends MatrixTestSupport {
             assertEquals(1, diagonal.get(0).byteValue());
             assertEquals(5, diagonal.get(1).byteValue());
             assertEquals(9, diagonal.get(2).byteValue());
-        }
-
-        @Test
-        public void testMainDiagonalStream() {
-            ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            byte[] diag = m.mainDiagonalStream().toArray();
-            assertArrayEquals(new byte[] { 1, 5, 9 }, diag);
         }
 
         @SuppressWarnings("unchecked")
@@ -5519,7 +5294,7 @@ class ByteMatrixTest extends MatrixTestSupport {
     class AntiDiagonalStreamTests {
 
         @Test
-        public void testStreamRU2LD() {
+        public void testAntiDiagonalStream() {
             byte[][] a = { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } };
             ByteMatrix matrix = ByteMatrix.wrap(a);
 
@@ -5558,13 +5333,6 @@ class ByteMatrixTest extends MatrixTestSupport {
             assertEquals(3, diagonal.get(0).byteValue());
             assertEquals(5, diagonal.get(1).byteValue());
             assertEquals(7, diagonal.get(2).byteValue());
-        }
-
-        @Test
-        public void testAntiDiagonalStream() {
-            ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            byte[] diag = m.antiDiagonalStream().toArray();
-            assertArrayEquals(new byte[] { 3, 5, 7 }, diag);
         }
 
         @ParameterizedTest
@@ -6513,26 +6281,6 @@ class ByteMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testForEach_ValueConsumer() {
-            ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
-            List<Byte> values = new ArrayList<>();
-            m.forEach(b -> values.add(b));
-            assertEquals(4, values.size());
-            assertEquals((byte) 1, values.get(0));
-            assertEquals((byte) 2, values.get(1));
-        }
-
-        @Test
-        public void testForEach_WithRange() {
-            ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
-            List<Byte> values = new ArrayList<>();
-            m.forEach(1, 3, 1, 3, b -> values.add(b));
-            assertEquals(4, values.size());
-            assertEquals((byte) 5, values.get(0));
-            assertEquals((byte) 6, values.get(1));
-        }
-
-        @Test
         public void testForEach_Shape2By2() {
             ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
             AtomicInteger sum = new AtomicInteger(0);
@@ -6670,18 +6418,6 @@ class ByteMatrixTest extends MatrixTestSupport {
             ByteMatrix m2 = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
             assertEquals(m1.hashCode(), m2.hashCode());
         }
-
-        @Test
-        public void testHashCode_ZeroRowWidthsDistinguishShapes() {
-            final var empty = ByteMatrix.wrap(new byte[0][0]);
-            final var narrow = empty.resize(0, 4);
-            final var equal = empty.resize(0, 4);
-            final var wide = empty.resize(0, 5);
-            assertEquals(narrow, equal);
-            assertEquals(narrow.hashCode(), equal.hashCode());
-            assertNotEquals(narrow.hashCode(), wide.hashCode());
-            assertNotEquals(narrow.hashCode(), empty.hashCode());
-        }
     }
 
     @Nested
@@ -6803,28 +6539,19 @@ class ByteMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testToString_Shape2By2_ContainsElementText() {
-            ByteMatrix m = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
-            String str = m.toString();
-            assertNotNull(str);
-            assertTrue(str.contains("1"));
-            assertTrue(str.contains("4"));
+        public void testByteMatrixToString() {
+            // ByteMatrix.java: System.out.println(matrix.toString());   // Output: [[1, 2], [3, 4]]
+            ByteMatrix matrix = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
+            assertEquals("[[1, 2], [3, 4]]", matrix.toString());
         }
 
         @Test
-        public void testtoString() {
+        public void testToString_SquareValuesAndEmptyBrackets() {
             ByteMatrix matrix = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
             assertEquals("[[1, 2], [3, 4]]", matrix.toString());
 
             ByteMatrix empty = ByteMatrix.empty();
             assertEquals("[]", empty.toString());
-        }
-
-        @Test
-        public void testByteMatrixToString() {
-            // ByteMatrix.java: System.out.println(matrix.toString());   // Output: [[1, 2], [3, 4]]
-            ByteMatrix matrix = ByteMatrix.wrap(new byte[][] { { 1, 2 }, { 3, 4 } });
-            assertEquals("[[1, 2], [3, 4]]", matrix.toString());
         }
     }
 
