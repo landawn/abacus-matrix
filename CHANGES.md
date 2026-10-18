@@ -1,21 +1,19 @@
+## 3.8.12
+* Improvements and bug fixes
+
 ## 3.8.11
-* Naming convention improvements
 * Improvements and bug fixes
 
 ## 3.8.10
-* Naming convention improvements
 * Improvements and bug fixes
 
 ## 3.8.9
-* Naming convention improvements
 * Improvements and bug fixes
 
 ## 3.8.8
-* Naming convention improvements
 * Improvements and bug fixes
 
 ## 3.8.7
-* Naming convention improvements
 * Improvements and bug fixes
 
 ## 3.8.6
