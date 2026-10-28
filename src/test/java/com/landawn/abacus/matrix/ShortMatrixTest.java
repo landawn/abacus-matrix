@@ -396,6 +396,23 @@ class ShortMatrixTest extends MatrixTestSupport {
     class RangeTests {
 
         @Test
+        public void testEmptyRangesOwnTheirRow() {
+            // Array.range/rangeClosed return a shared empty-array constant for an empty range; each matrix must own
+            // its row, or rows of independently created empty range matrices could not be wrapped together.
+            final short[][] rows = { ShortMatrix.range((short) 5, (short) 5).rowView(0), ShortMatrix.range((short) 5, (short) 1, (short) 1).rowView(0),
+                    ShortMatrix.rangeClosed((short) 9, (short) 1).rowView(0), ShortMatrix.rangeClosed((short) 1, (short) 9, (short) -1).rowView(0) };
+
+            for (final short[] row : rows) {
+                assertEquals(0, row.length);
+                assertNotSame(com.landawn.abacus.util.N.EMPTY_SHORT_ARRAY, row);
+            }
+
+            final ShortMatrix combined = ShortMatrix.wrap(rows);
+            assertEquals(4, combined.rowCount());
+            assertEquals(0, combined.columnCount());
+        }
+
+        @Test
         public void testRange() {
             ShortMatrix m = ShortMatrix.range((short) 0, (short) 5);
             assertEquals(1, m.rowCount());

@@ -56,7 +56,10 @@ import com.landawn.abacus.util.stream.Stream;
  * <p><b>Aggregations:</b> this class does not provide dedicated reduction methods such as
  * {@code sum()}, {@code min()}, {@code max()} or {@code average()}. Compute such aggregations
  * through the streaming API instead &mdash; for example {@code rowMajorStream().sum()} over all
- * elements, or {@code rowStreams()} / {@code columnStreams()} for per-row or per-column reductions.</p>
+ * elements, or {@code rowStreams()} / {@code columnStreams()} for per-row or per-column reductions.
+ * {@code ShortStream.sum()} returns an {@code int} and throws {@link ArithmeticException} when the
+ * total does not fit, which can happen once more than 65,536 elements are summed; use
+ * {@code rowMajorStream().summaryStatistics().getSum()} for an exact {@code long} total.</p>
  *
  * @see IntMatrix
  * @see LongMatrix
@@ -358,7 +361,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @return a new {@code 1xn} {@code ShortMatrix} where {@code n = max(0, endExclusive - startInclusive)}
      */
     public static ShortMatrix range(final short startInclusive, final short endExclusive) {
-        return new ShortMatrix(new short[][] { Array.range(startInclusive, endExclusive) });
+        return new ShortMatrix(new short[][] { ownedRangeRow(Array.range(startInclusive, endExclusive)) });
     }
 
     /**
@@ -384,7 +387,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @throws IllegalArgumentException if {@code step} is zero
      */
     public static ShortMatrix range(final short startInclusive, final short endExclusive, final short step) throws IllegalArgumentException {
-        return new ShortMatrix(new short[][] { Array.range(startInclusive, endExclusive, step) });
+        return new ShortMatrix(new short[][] { ownedRangeRow(Array.range(startInclusive, endExclusive, step)) });
     }
 
     /**
@@ -407,7 +410,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @return a new {@code 1xn} {@code ShortMatrix} where {@code n = max(0, endInclusive - startInclusive + 1)}
      */
     public static ShortMatrix rangeClosed(final short startInclusive, final short endInclusive) {
-        return new ShortMatrix(new short[][] { Array.rangeClosed(startInclusive, endInclusive) });
+        return new ShortMatrix(new short[][] { ownedRangeRow(Array.rangeClosed(startInclusive, endInclusive)) });
     }
 
     /**
@@ -436,7 +439,20 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * @throws IllegalArgumentException if {@code step} is zero
      */
     public static ShortMatrix rangeClosed(final short startInclusive, final short endInclusive, final short step) throws IllegalArgumentException {
-        return new ShortMatrix(new short[][] { Array.rangeClosed(startInclusive, endInclusive, step) });
+        return new ShortMatrix(new short[][] { ownedRangeRow(Array.rangeClosed(startInclusive, endInclusive, step)) });
+    }
+
+    /**
+     * Returns {@code row}, or a new zero-length array in place of the shared empty-array constant that
+     * {@code Array.range} and {@code Array.rangeClosed} return for an empty range. Every other factory
+     * allocates its own rows; without this, rows taken from two independently created empty range
+     * matrices would be the same array and could not be wrapped together.
+     *
+     * @param row the range values
+     * @return {@code row}, or a new zero-length array if {@code row} is empty
+     */
+    private static short[] ownedRangeRow(final short[] row) {
+        return row.length == 0 ? new short[0] : row;
     }
 
     /**
@@ -1675,7 +1691,8 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
      * ShortMatrix.empty().copy().isEmpty();    // returns true
      * }</pre>
      *
-     * @return a new matrix that is a copy of this matrix with full independence guarantee
+     * @return a copy of this matrix with full independence guarantee, or the shared {@link #empty()} instance
+     *         if this matrix is {@code 0 x 0} (it has no cells to share)
      */
     @Override
     public ShortMatrix copy() {
@@ -4297,7 +4314,7 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     /**
      * Returns a hash code value for this matrix.
      * The hash code is computed from the deep contents of the internal two-dimensional array. A matrix
-     * with no rows has no contents to hash, so its column count participates instead, keeping
+     * with no rows but some columns has no contents to hash, so its column count participates instead, keeping
      * {@code 0 x 3} and {@code 0 x 5} -- which {@code equals} distinguishes -- apart.
      * Matrices with the same dimensions and element values will have equal hash codes,
      * consistent with the {@link #equals(Object)} method.

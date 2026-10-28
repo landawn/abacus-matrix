@@ -500,6 +500,23 @@ class LongMatrixTest extends MatrixTestSupport {
     class RangeTests {
 
         @Test
+        public void testEmptyRangesOwnTheirRow() {
+            // Array.range/rangeClosed return a shared empty-array constant for an empty range; each matrix must own
+            // its row, or rows of independently created empty range matrices could not be wrapped together.
+            final long[][] rows = { LongMatrix.range(5L, 5L).rowView(0), LongMatrix.range(5L, 1L, 1L).rowView(0), LongMatrix.rangeClosed(9L, 1L).rowView(0),
+                    LongMatrix.rangeClosed(1L, 9L, -1L).rowView(0) };
+
+            for (final long[] row : rows) {
+                assertEquals(0, row.length);
+                assertNotSame(com.landawn.abacus.util.N.EMPTY_LONG_ARRAY, row);
+            }
+
+            final LongMatrix combined = LongMatrix.wrap(rows);
+            assertEquals(4, combined.rowCount());
+            assertEquals(0, combined.columnCount());
+        }
+
+        @Test
         public void testRange() {
             LongMatrix matrix = LongMatrix.range(0L, 5L);
             Assertions.assertEquals(1, matrix.rowCount());
@@ -4908,6 +4925,53 @@ class LongMatrixTest extends MatrixTestSupport {
             final var left = LongMatrix.wrap(new long[][] { { 1L, 2L } });
             final var right = LongMatrix.wrap(new long[][] { { 3L, 4L } });
             assertThrows(IllegalArgumentException.class, () -> left.matrixMultiplyExact(right));
+        }
+
+        @Test
+        public void testMatrixMultiplyExact_MatchesWrappingProductWhenNothingOverflows() {
+            // The kernel accumulates a whole result row at a time (i-k-j); every cell must still equal its own dot product.
+            final java.util.Random random = new java.util.Random(20261027L);
+
+            for (int trial = 0; trial < 300; trial++) {
+                final int rows = random.nextInt(6);
+                final int inner = random.nextInt(6);
+                final int cols = random.nextInt(6);
+                final long[][] left = new long[rows][inner];
+                final long[][] right = new long[inner][cols];
+
+                for (final long[][] array : java.util.List.of(left, right)) {
+                    for (final long[] row : array) {
+                        for (int j = 0; j < row.length; j++) {
+                            row[j] = random.nextInt(2001) - 1000;
+                        }
+                    }
+                }
+
+                final LongMatrix a = new LongMatrix(left, inner);
+                final LongMatrix b = new LongMatrix(right, cols);
+                final LongMatrix exact = a.matrixMultiplyExact(b);
+
+                assertEquals(a.matrixMultiply(b), exact);
+                assertEquals(rows, exact.rowCount());
+                assertEquals(cols, exact.columnCount());
+            }
+        }
+
+        @Test
+        public void testMatrixMultiplyExact_DetectsOverflowInAnyCell() {
+            final LongMatrix maxInLastColumn = LongMatrix.wrap(new long[][] { { 1L, Long.MAX_VALUE }, { 1L, 1L } });
+
+            // Only cell (2, 1) overflows: its running sum is MAX + 1 after the second term.
+            final LongMatrix lastRowOnly = LongMatrix.wrap(new long[][] { { 0L, 0L }, { 0L, 0L }, { 1L, 1L } });
+            assertThrows(ArithmeticException.class, () -> lastRowOnly.matrixMultiplyExact(maxInLastColumn));
+
+            // A single overflowing product in a later column of the first row.
+            final LongMatrix two = LongMatrix.wrap(new long[][] { { 2L } });
+            assertThrows(ArithmeticException.class, () -> two.matrixMultiplyExact(LongMatrix.wrap(new long[][] { { 1L, Long.MAX_VALUE } })));
+
+            // The same operands without the overflowing cell succeed.
+            final LongMatrix firstRowsOnly = LongMatrix.wrap(new long[][] { { 0L, 0L }, { 0L, 0L } });
+            assertEquals(LongMatrix.wrap(new long[][] { { 0L, 0L }, { 0L, 0L } }), firstRowsOnly.matrixMultiplyExact(maxInLastColumn));
         }
     }
 

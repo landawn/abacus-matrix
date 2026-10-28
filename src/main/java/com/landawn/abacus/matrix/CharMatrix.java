@@ -51,7 +51,10 @@ import com.landawn.abacus.util.stream.Stream;
  * <p><b>Aggregations:</b> this class does not provide dedicated reduction methods such as
  * {@code sum()}, {@code min()}, {@code max()} or {@code average()}. Compute such aggregations
  * through the streaming API instead &mdash; for example {@code rowMajorStream().sum()} over all
- * elements, or {@code rowStreams()} / {@code columnStreams()} for per-row or per-column reductions.</p>
+ * elements, or {@code rowStreams()} / {@code columnStreams()} for per-row or per-column reductions.
+ * {@code CharStream.sum()} returns an {@code int} and throws {@link ArithmeticException} when the
+ * total does not fit, which can happen once more than 32,768 elements are summed; use
+ * {@code rowMajorStream().summaryStatistics().getSum()} for an exact {@code long} total.</p>
  *
  * @see IntMatrix
  * @see LongMatrix
@@ -355,7 +358,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @return a single-row {@code CharMatrix} containing the range of values
      */
     public static CharMatrix range(final char startInclusive, final char endExclusive) {
-        return new CharMatrix(new char[][] { Array.range(startInclusive, endExclusive) });
+        return new CharMatrix(new char[][] { ownedRangeRow(Array.range(startInclusive, endExclusive)) });
     }
 
     /**
@@ -381,7 +384,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @throws IllegalArgumentException if {@code step} is zero
      */
     public static CharMatrix range(final char startInclusive, final char endExclusive, final int step) throws IllegalArgumentException {
-        return new CharMatrix(new char[][] { Array.range(startInclusive, endExclusive, step) });
+        return new CharMatrix(new char[][] { ownedRangeRow(Array.range(startInclusive, endExclusive, step)) });
     }
 
     /**
@@ -403,7 +406,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @return a single-row {@code CharMatrix} containing the range of values
      */
     public static CharMatrix rangeClosed(final char startInclusive, final char endInclusive) {
-        return new CharMatrix(new char[][] { Array.rangeClosed(startInclusive, endInclusive) });
+        return new CharMatrix(new char[][] { ownedRangeRow(Array.rangeClosed(startInclusive, endInclusive)) });
     }
 
     /**
@@ -431,7 +434,20 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @throws IllegalArgumentException if {@code step} is zero
      */
     public static CharMatrix rangeClosed(final char startInclusive, final char endInclusive, final int step) throws IllegalArgumentException {
-        return new CharMatrix(new char[][] { Array.rangeClosed(startInclusive, endInclusive, step) });
+        return new CharMatrix(new char[][] { ownedRangeRow(Array.rangeClosed(startInclusive, endInclusive, step)) });
+    }
+
+    /**
+     * Returns {@code row}, or a new zero-length array in place of the shared empty-array constant that
+     * {@code Array.range} and {@code Array.rangeClosed} return for an empty range. Every other factory
+     * allocates its own rows; without this, rows taken from two independently created empty range
+     * matrices would be the same array and could not be wrapped together.
+     *
+     * @param row the range values
+     * @return {@code row}, or a new zero-length array if {@code row} is empty
+     */
+    private static char[] ownedRangeRow(final char[] row) {
+        return row.length == 0 ? new char[0] : row;
     }
 
     /**
@@ -1700,7 +1716,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * CharMatrix.empty().copy().isEmpty(); // returns true
      * }</pre>
      *
-     * @return a new matrix that is a copy of this matrix with full independence guarantee
+     * @return a copy of this matrix with full independence guarantee, or the shared {@link #empty()} instance
+     *         if this matrix is {@code 0 x 0} (it has no cells to share)
      */
     @Override
     public CharMatrix copy() {
@@ -2878,7 +2895,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * <p><b>&#9888;&#65039; Numeric semantics:</b> this operates on the underlying UTF-16 code-unit values of each
      * {@code char}, not on text. If you want explicit integer arithmetic, convert with
-     * {@link #toIntMatrix()} first.</p>
+     * {@link #toLongMatrix()} first (see the overflow note below for why {@link #toIntMatrix()} is not enough).</p>
      *
      * <p><b>Note:</b> This is the linear-algebra matrix product, not element-wise multiplication.
      * For element-wise multiplication use {@link #zipWith(CharMatrix, Throwables.CharBinaryOperator)}.</p>
@@ -4237,7 +4254,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     /**
      * Returns a hash code value for this matrix.
      * The hash code is computed from the deep contents of the internal two-dimensional array. A matrix
-     * with no rows has no contents to hash, so its column count participates instead, keeping
+     * with no rows but some columns has no contents to hash, so its column count participates instead, keeping
      * {@code 0 x 3} and {@code 0 x 5} -- which {@code equals} distinguishes -- apart.
      * Matrices with the same dimensions and element values will have equal hash codes,
      * consistent with the {@link #equals(Object)} method.

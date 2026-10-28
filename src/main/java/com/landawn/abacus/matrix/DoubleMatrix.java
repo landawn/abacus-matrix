@@ -145,8 +145,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     static DoubleMatrix wrapResult(final double[][] a, final int columnCount) throws IllegalArgumentException {
         N.checkArgNotNull(a, cs.a);
 
-        // Every wrapResult(...) call site (here, in Matrix and in Matrices) passes freshly allocated rows, so they are
-        // identity-distinct by construction and the duplicate-row scan can be skipped.
+        // Every wrapResult(...) call site (here, in the sibling matrix classes, in Matrix and in Matrices) passes
+        // freshly allocated rows, so they are identity-distinct by construction and the duplicate-row scan can be skipped.
         return a.length == 0 && columnCount == 0 ? EMPTY_DOUBLE_MATRIX : new DoubleMatrix(a, columnCount, true);
     }
 
@@ -1839,7 +1839,8 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * DoubleMatrix.empty().copy().isEmpty(); // returns true
      * }</pre>
      *
-     * @return a new matrix that is a copy of this matrix with full independence guarantee
+     * @return a copy of this matrix with full independence guarantee, or the shared {@link #empty()} instance
+     *         if this matrix is {@code 0 x 0} (it has no cells to share)
      */
     @Override
     public DoubleMatrix copy() {
@@ -4163,7 +4164,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
      * @param <E> the type of exception that the action may throw
      * @param action the action to perform on each element; must not be {@code null}
      * @throws IllegalArgumentException if {@code action} is {@code null}
-     * @throws E if {@code action} throws while processing an element in the selected region
+     * @throws E if {@code action} throws while processing a matrix element
      * @see #forEach(int, int, int, int, Throwables.DoubleConsumer)
      */
     public <E extends Exception> void forEach(final Throwables.DoubleConsumer<E> action) throws IllegalArgumentException, E {
@@ -4276,7 +4277,7 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     /**
      * Returns a hash code value for this matrix.
      * The hash code is computed from the deep contents of the internal two-dimensional array. A matrix
-     * with no rows has no contents to hash, so its column count participates instead, keeping
+     * with no rows but some columns has no contents to hash, so its column count participates instead, keeping
      * {@code 0 x 3} and {@code 0 x 5} -- which {@code equals} distinguishes -- apart.
      * Matrices with the same dimensions and element values will have equal hash codes,
      * consistent with the {@link #equals(Object)} method.

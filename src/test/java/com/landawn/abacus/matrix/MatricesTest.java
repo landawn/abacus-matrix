@@ -4806,13 +4806,42 @@ class MatricesTest extends MatrixTestSupport {
 
         @Test
         public void testZipCollection_NullElement_ReportsNullNotShape() {
-            // Regression: a null entry inside the collection must surface as a "matrices[N] is null"
+            // Regression: a null entry inside the collection must surface as a "coll[N] is null"
             // diagnostic, not the misleading "Cannot zip matrices with different shapes".
             List<IntMatrix> withNull = Arrays.asList(intMatrix1, null, intMatrix3);
 
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> Matrices.zip(withNull, (a, b) -> a + b));
             assertTrue(ex.getMessage().contains("null"), "Expected message to mention null, got: " + ex.getMessage());
             assertFalse(ex.getMessage().contains("different shapes"), "Expected null-not-shape message, got: " + ex.getMessage());
+        }
+
+        @Test
+        public void testNullCollectionElement_IsReportedUnderTheCallersParameterName() {
+            final List<IntMatrix> withNull = Arrays.asList(intMatrix1, null, intMatrix3);
+
+            assertEquals("coll[1] is null", assertThrows(IllegalArgumentException.class, () -> Matrices.zip(withNull, (a, b) -> a + b)).getMessage());
+            assertEquals("matrices[1] is null", assertThrows(IllegalArgumentException.class, () -> Matrices.stackVertically(withNull)).getMessage());
+        }
+
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+        @Test
+        public void testCollectionZipNamesEveryBadElementUnderTheCallersParameterName() {
+            // One zip call must not name the same argument "coll" for a null element but "matrices" for a shape or type mismatch.
+            final List<IntMatrix> shapeMismatchAtTwo = new java.util.LinkedList<>(List.of(intMatrix1, intMatrix1, IntMatrix.wrap(new int[][] { { 1 } })));
+            assertEquals("Cannot zip matrices with different shapes: coll[0] is 2x2 but coll[2] is 1x1",
+                    assertThrows(IllegalArgumentException.class, () -> Matrices.zip(shapeMismatchAtTwo, (a, b) -> a + b)).getMessage());
+
+            final Matrix<Number> numbers = Matrix.copyOf(Number.class, new Number[][] { { 1 } });
+            final Matrix<Number> integers = (Matrix) Matrix.copyOf(Integer.class, new Integer[][] { { 2 } });
+            final Throwables.Function<Number[], String, RuntimeException> function = values -> "value";
+            final IllegalArgumentException typeMismatchAtZero = assertThrows(IllegalArgumentException.class,
+                    () -> Matrices.zip(List.of(numbers, integers), function, (Class) Integer.class, String.class));
+            assertTrue(typeMismatchAtZero.getMessage().startsWith("coll[0] declares element type java.lang.Number,"), typeMismatchAtZero.getMessage());
+
+            final Throwables.BinaryOperator<Number, RuntimeException> fold = (a, b) -> a;
+            final IllegalArgumentException foldTypeMismatch = assertThrows(IllegalArgumentException.class,
+                    () -> Matrices.zip(List.of(integers, numbers), fold, (Class) Integer.class));
+            assertTrue(foldTypeMismatch.getMessage().startsWith("coll[1] declares element type java.lang.Number,"), foldTypeMismatch.getMessage());
         }
 
         @Test

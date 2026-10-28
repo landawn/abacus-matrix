@@ -125,16 +125,14 @@ public final class Matrices {
      * {@link #shouldRunInParallel(AbstractMatrix)} or
      * {@link #shouldRunInParallel(AbstractMatrix, long)}:</p>
      * <ul>
-     * <li>{@link ParallelMode#FORCE_ON} - requests parallel execution whenever the runtime supports it and
-     *     the operation's safety constraints allow it.</li>
+     * <li>{@link ParallelMode#FORCE_ON} - requests parallel execution whenever the runtime supports it.</li>
      * <li>{@link ParallelMode#FORCE_OFF} - selects sequential execution for policy-aware operations.</li>
      * <li>{@link ParallelMode#AUTO} - decides from runtime support and the operation's estimated work count
      *     (current threshold: 8192).</li>
      * </ul>
      *
      * <p>Explicit traversal overloads with an {@code inParallel} argument are controlled by that
-     * argument instead. Individual operations may also use a subset or multiply-add work estimate,
-     * or keep execution sequential when shared storage would make parallel mutation unsafe.</p>
+     * argument instead. Individual operations may also use a subset or multiply-add work estimate.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -170,7 +168,7 @@ public final class Matrices {
      * <p>Available settings:</p>
      * <ul>
      * <li>{@link ParallelMode#FORCE_ON} - requests parallel processing for policy-aware operations when
-     *     runtime support and the operation's safety constraints allow it, regardless of work size.</li>
+     *     the runtime supports it, regardless of work size.</li>
      * <li>{@link ParallelMode#FORCE_OFF} - selects sequential processing for policy-aware operations,
      *     regardless of work size.</li>
      * <li>{@link ParallelMode#AUTO} - decides from runtime support and the work count estimated by each
@@ -810,8 +808,9 @@ public final class Matrices {
      * region defined by the row and column index ranges, exposing the results as a {@link Stream}.</p>
      *
      * <p>The stream is lazy and has row-major encounter order. Requesting parallel execution marks
-     * the returned stream parallel when supported, including for an empty region. The mapper runs only
-     * when a value is requested; counting or skipping positions can bypass it.</p>
+     * the returned stream parallel when supported, including for an empty region. The mapper runs lazily
+     * as positions are pulled from the stream; a terminal {@code count()} can bypass it, but positions
+     * skipped with {@code skip} may still be evaluated.</p>
      *
      * <p>If {@code mapper} throws a checked exception, it is wrapped in a {@code RuntimeException}
      * and rethrown when the returned stream is consumed. Runtime exceptions from {@code mapper}
@@ -964,8 +963,9 @@ public final class Matrices {
      * an {@link IntStream} and avoiding boxing overhead of a generic {@link Stream}.</p>
      *
      * <p>The stream is lazy and has row-major encounter order. Requesting parallel execution marks
-     * the returned stream parallel when supported, including for an empty region. The mapper runs only
-     * when a value is requested; counting or skipping positions can bypass it.</p>
+     * the returned stream parallel when supported, including for an empty region. The mapper runs lazily
+     * as positions are pulled from the stream; a terminal {@code count()} can bypass it, but positions
+     * skipped with {@code skip} may still be evaluated.</p>
      *
      * <p>If {@code mapper} throws a checked exception, it is wrapped in a {@code RuntimeException}
      * and rethrown when the returned stream is consumed. Runtime exceptions from {@code mapper}
@@ -1301,7 +1301,9 @@ public final class Matrices {
      * but avoids the boilerplate when stacking three or more matrices.</p>
      *
      * <p>Inputs with compatible runtime storage are copied directly into one result allocation in
-     * encounter order. Incompatible implementations use the public pairwise operation.</p>
+     * encounter order. Incompatible implementations use the public pairwise operation. For
+     * {@link Matrix} inputs whose element types differ, each pairwise step infers its result's
+     * element type from its two operands, so the final element type can depend on the input order.</p>
      *
      * <p>A single input is normally copied. When that input is the shared {@link Matrix#empty()}
      * instance, it is returned as-is because it has no mutable cells. A collection of two or more
@@ -1349,7 +1351,9 @@ public final class Matrices {
      * but avoids the boilerplate when stacking three or more matrices.</p>
      *
      * <p>Inputs with compatible runtime storage are copied directly into one result allocation in
-     * encounter order. Incompatible implementations use the public pairwise operation.</p>
+     * encounter order. Incompatible implementations use the public pairwise operation. For
+     * {@link Matrix} inputs whose element types differ, each pairwise step infers its result's
+     * element type from its two operands, so the final element type can depend on the input order.</p>
      *
      * <p>A single input is normally copied. When that input is the shared {@link Matrix#empty()}
      * instance, it is returned as-is because it has no mutable cells. A collection of two or more
@@ -4234,7 +4238,7 @@ public final class Matrices {
      * @param <T> the input and result element type
      * @param <E> the checked exception type of the operator
      * @param coll the non-empty, null-free collection of same-shaped matrices
-     * @param zipFunction the left-to-right per-cell fold; must not be {@code null}
+     * @param zipFunction the left-to-right per-cell fold; must not be {@code null} and must be thread-safe if execution is parallelized
      * @param elementType the exact writable result and accepted input supertype; must not be {@code null}
      * @return a newly allocated matrix with the same shape, including an explicit {@code 0 x N} shape
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different
@@ -4345,7 +4349,7 @@ public final class Matrices {
      * @param <R> the result element type
      * @param <E> the checked exception type of the function
      * @param coll the non-empty, null-free collection of same-shaped matrices
-     * @param zipFunction the per-cell aggregation function; must not be {@code null}
+     * @param zipFunction the per-cell aggregation function; must not be {@code null} and must be thread-safe if execution is parallelized
      * @param inputElementType the exact runtime component type of the callback array; must not be {@code null}
      * @param targetElementType the exact runtime component type of result rows; must not be {@code null}
      * @return a newly allocated result matrix with the same shape
@@ -4452,7 +4456,7 @@ public final class Matrices {
      * @param <R> the result element type
      * @param <E> the checked exception type of the function
      * @param coll the non-empty, null-free collection of same-shaped matrices
-     * @param zipFunction the per-cell aggregation function; must not be {@code null}
+     * @param zipFunction the per-cell aggregation function; must not be {@code null} and must be thread-safe if execution is parallelized
      * @param shareIntermediateArray whether sequential execution may reuse one callback array;
      *        callers must not retain or modify a reused array
      * @param inputElementType the exact runtime component type of callback arrays; must not be {@code null}
@@ -4519,7 +4523,7 @@ public final class Matrices {
             // An empty matrix contributes no value to a callback array, so its placeholder token
             // cannot cause an ArrayStoreException and need not constrain the requested input type.
             if (matrix.elementCount > 0 && !inputElementType.isAssignableFrom(matrix.elementType)) {
-                throw new IllegalArgumentException("matrices[" + i + "] declares element type " + matrix.elementType.getTypeName()
+                throw new IllegalArgumentException(cs.coll + "[" + i + "] declares element type " + matrix.elementType.getTypeName()
                         + ", which is not assignable to input element type " + inputElementType.getTypeName());
             }
         }
@@ -4837,8 +4841,8 @@ public final class Matrices {
         while (iterator.hasNext()) {
             final AbstractMatrix<?, ?, ?, ?, ?> current = iterator.next();
 
-            N.checkArgument(isSameShape(first, current), "Cannot zip matrices with different shapes: matrices[0] is {}x{} but matrices[{}] is {}x{}",
-                    first.rowCount, first.columnCount, idx, current.rowCount, current.columnCount);
+            N.checkArgument(isSameShape(first, current), "Cannot zip matrices with different shapes: {}[0] is {}x{} but {}[{}] is {}x{}", cs.coll,
+                    first.rowCount, first.columnCount, cs.coll, idx, current.rowCount, current.columnCount);
             idx++;
         }
     }
@@ -4847,7 +4851,7 @@ public final class Matrices {
      * Verifies that a matrix collection is non-empty and contains no {@code null} elements.
      *
      * @param matrices the collection to validate; must not be {@code null}
-     * @param argName the caller's parameter name, reported if {@code matrices} is {@code null} or empty
+     * @param argName the caller's parameter name, reported if {@code matrices} is {@code null}, empty, or contains a {@code null} element
      * @throws IllegalArgumentException if {@code matrices} is {@code null}, empty, or contains a {@code null} element
      */
     private static void checkMatricesNotEmptyAndNoNullElements(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> matrices, final String argName)
@@ -4857,7 +4861,7 @@ public final class Matrices {
         int idx = 0;
         for (final AbstractMatrix<?, ?, ?, ?, ?> m : matrices) {
             if (m == null) {
-                throw new IllegalArgumentException("matrices[" + idx + "] is null");
+                throw new IllegalArgumentException(argName + "[" + idx + "] is null");
             }
             idx++;
         }

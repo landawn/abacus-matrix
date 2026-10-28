@@ -611,6 +611,23 @@ class IntMatrixTest extends MatrixTestSupport {
     class RangeTests {
 
         @Test
+        public void testEmptyRangesOwnTheirRow() {
+            // Array.range/rangeClosed return a shared empty-array constant for an empty range; each matrix must own
+            // its row, or rows of independently created empty range matrices could not be wrapped together.
+            final int[][] rows = { IntMatrix.range(5, 5).rowView(0), IntMatrix.range(5, 1, 1).rowView(0), IntMatrix.rangeClosed(9, 1).rowView(0),
+                    IntMatrix.rangeClosed(1, 9, -1).rowView(0) };
+
+            for (final int[] row : rows) {
+                assertEquals(0, row.length);
+                assertNotSame(com.landawn.abacus.util.N.EMPTY_INT_ARRAY, row);
+            }
+
+            final IntMatrix combined = IntMatrix.wrap(rows);
+            assertEquals(4, combined.rowCount());
+            assertEquals(0, combined.columnCount());
+        }
+
+        @Test
         public void testRange() {
             IntMatrix m = IntMatrix.range(0, 5);
             assertEquals(1, m.rowCount());
@@ -4969,9 +4986,10 @@ class IntMatrixTest extends MatrixTestSupport {
                 try {
                     widened = left.matrixMultiplyWidenedExact(right);
                 } catch (final ArithmeticException longOverflow) {
-                    // Long overflow must win over any int narrowing failure. Only the narrowing message is compared:
-                    // HotSpot may drop the message of a frequently thrown Math.addExact overflow.
-                    assertNotEquals("integer overflow", assertThrows(ArithmeticException.class, () -> left.matrixMultiplyExact(right)).getMessage());
+                    // Long overflow must win over any int narrowing failure. Both messages come from explicit throws
+                    // (not a Math.addExact intrinsic), so HotSpot cannot drop them in this hot loop.
+                    assertEquals("long overflow", longOverflow.getMessage());
+                    assertEquals("long overflow", assertThrows(ArithmeticException.class, () -> left.matrixMultiplyExact(right)).getMessage());
                     longOverflows++;
                     continue;
                 }
@@ -5011,6 +5029,116 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
+        public void testMatrixMultiplyWidenedExact_AcceptsPartialSumsBeyondLongThatCancel() {
+            final int min = Integer.MIN_VALUE;
+            final int max = Integer.MAX_VALUE;
+
+            // Documented example: MIN*MIN + MIN*MIN is 2^63, but the third term brings the sum back into range.
+            final IntMatrix mins = IntMatrix.wrap(new int[][] { { min, min, min } });
+            assertEquals(4611686020574871552L, mins.matrixMultiplyWidenedExact(IntMatrix.wrap(new int[][] { { min }, { min }, { max } })).get(0, 0));
+
+            // The exact value is 0 in every term order, including orders whose first two terms already pass Long.MAX_VALUE.
+            final IntMatrix sixMins = IntMatrix.wrap(new int[][] { { min, min, min, min, min, min } });
+            for (final int[] column : new int[][] { { min, min, max, max, 1, 1 }, { min, max, min, max, 1, 1 }, { max, max, min, min, 1, 1 } }) {
+                final IntMatrix right = IntMatrix.wrap(column).transpose();
+                assertEquals(LongMatrix.wrap(new long[][] { { 0L } }), sixMins.matrixMultiplyWidenedExact(right));
+                assertEquals(IntMatrix.wrap(new int[][] { { 0 } }), sixMins.matrixMultiplyExact(right));
+            }
+
+            // Wraps past both ends and back: 2^63 after two terms, back near 2^62, below Long.MIN_VALUE after seven, back after eight.
+            final IntMatrix left = IntMatrix.wrap(new int[][] { { min, min, min, -min - 1, -min - 1, -min - 1, -min - 1, min } });
+            final IntMatrix right = IntMatrix.wrap(new int[][] { { min }, { min }, { max }, { min }, { min }, { min }, { min }, { min } });
+            final java.math.BigInteger expected = java.util.stream.IntStream.range(0, 8)
+                    .mapToObj(k -> java.math.BigInteger.valueOf((long) left.get(0, k) * right.get(k, 0)))
+                    .reduce(java.math.BigInteger.ZERO, java.math.BigInteger::add);
+            assertTrue(expected.bitLength() <= 63, expected::toString);
+            assertEquals(expected.longValueExact(), left.matrixMultiplyWidenedExact(right).get(0, 0));
+        }
+
+        @Test
+        public void testExactIntMultiplicationMatchesBigIntegerForExtremeValues() {
+            final int[] extremes = { Integer.MIN_VALUE, Integer.MAX_VALUE, Integer.MIN_VALUE + 1, Integer.MAX_VALUE - 1, 0, 1, -1, 46_341, -46_341 };
+            final Random random = new Random(20261027L);
+            int beyondLong = 0;
+            int beyondIntOnly = 0;
+            int fits = 0;
+
+            for (int iteration = 0; iteration < 3_000; iteration++) {
+                final int rows = 1 + random.nextInt(3);
+                final int inner = 1 + random.nextInt(8);
+                final int columns = 1 + random.nextInt(3);
+                final int[][] leftCells = new int[rows][inner];
+                final int[][] rightCells = new int[inner][columns];
+
+                for (final int[][] cells : List.of(leftCells, rightCells)) {
+                    for (final int[] row : cells) {
+                        for (int j = 0; j < row.length; j++) {
+                            row[j] = random.nextBoolean() ? extremes[random.nextInt(extremes.length)] : random.nextInt();
+                        }
+                    }
+                }
+
+                final long[][] expectedCells = new long[rows][columns];
+                boolean anyBeyondLong = false;
+                boolean anyBeyondInt = false;
+
+                for (int i = 0; i < rows; i++) {
+                    for (int j = 0; j < columns; j++) {
+                        java.math.BigInteger sum = java.math.BigInteger.ZERO;
+
+                        for (int k = 0; k < inner; k++) {
+                            sum = sum.add(java.math.BigInteger.valueOf((long) leftCells[i][k] * rightCells[k][j]));
+                        }
+
+                        if (sum.bitLength() > 63) {
+                            anyBeyondLong = true;
+                        } else {
+                            expectedCells[i][j] = sum.longValue();
+                            anyBeyondInt |= sum.bitLength() > 31;
+                        }
+                    }
+                }
+
+                final IntMatrix left = IntMatrix.wrap(leftCells);
+                final IntMatrix right = IntMatrix.wrap(rightCells);
+
+                if (anyBeyondLong) {
+                    assertEquals("long overflow", assertThrows(ArithmeticException.class, () -> left.matrixMultiplyWidenedExact(right)).getMessage());
+                    assertEquals("long overflow", assertThrows(ArithmeticException.class, () -> left.matrixMultiplyExact(right)).getMessage());
+                    beyondLong++;
+                } else {
+                    final LongMatrix widened = left.matrixMultiplyWidenedExact(right);
+                    assertEquals(LongMatrix.wrap(expectedCells), widened);
+
+                    if (anyBeyondInt) {
+                        assertEquals("integer overflow", assertThrows(ArithmeticException.class, () -> left.matrixMultiplyExact(right)).getMessage());
+                        beyondIntOnly++;
+                    } else {
+                        assertEquals(widened.toIntMatrix(), left.matrixMultiplyExact(right));
+                        fits++;
+                    }
+                }
+            }
+
+            // The seed must keep every outcome covered.
+            assertTrue(beyondLong > 0 && beyondIntOnly > 0 && fits > 0, beyondLong + " beyond long, " + beyondIntOnly + " beyond int, " + fits + " fit");
+        }
+
+        @Test
+        public void testMatrixMultiplyWidenedExact_PreservesAllEmptyProductShapes() {
+            final LongMatrix noInnerCells = IntMatrix.wrap(new int[][] { {}, {} }).matrixMultiplyWidenedExact(new IntMatrix(new int[0][], 3));
+            assertShape(noInnerCells, 2, 3);
+            assertArrayEquals(new long[3], noInnerCells.rowView(0));
+            assertArrayEquals(new long[3], noInnerCells.rowView(1));
+            assertNotSame(noInnerCells.rowView(0), noInnerCells.rowView(1));
+            assertShape(new IntMatrix(new int[0][], 3).matrixMultiplyWidenedExact(IntMatrix.wrap(new int[3][4])), 0, 4);
+            assertShape(IntMatrix.wrap(new int[2][3]).matrixMultiplyWidenedExact(IntMatrix.wrap(new int[3][0])), 2, 0);
+            // A zero-row product must not allocate per-column work storage: here that would be an 8 GB int[].
+            assertShape(IntMatrix.empty().matrixMultiplyWidenedExact(new IntMatrix(new int[0][], Integer.MAX_VALUE)), 0, Integer.MAX_VALUE);
+            assertSame(LongMatrix.empty(), IntMatrix.empty().matrixMultiplyWidenedExact(IntMatrix.empty()));
+        }
+
+        @Test
         public void testMatrixMultiplyWidenedExact_RejectsIncompatibleInnerDimensions() {
             final var left = IntMatrix.wrap(new int[][] { { 1, 2 } });
             final var right = IntMatrix.wrap(new int[][] { { 3, 4 } });
@@ -5045,7 +5173,8 @@ class IntMatrixTest extends MatrixTestSupport {
         }
 
         @Test
-        public void testExactIntMultiplicationStillRejectsIntermediateLongAndFinishedIntOverflow() {
+        public void testExactIntMultiplicationStillRejectsFinishedLongAndIntOverflow() {
+            // [MIN, MIN] times its transpose is exactly 2^63, so the finished cell fits neither long nor int.
             final IntMatrix longOverflow = IntMatrix.wrap(new int[] { Integer.MIN_VALUE, Integer.MIN_VALUE });
             assertThrows(ArithmeticException.class, () -> longOverflow.matrixMultiplyExact(longOverflow.transpose()));
             assertThrows(ArithmeticException.class, () -> IntMatrix.wrap(new int[] { 50_000 }).matrixMultiplyExact(IntMatrix.wrap(new int[] { 50_000 })));

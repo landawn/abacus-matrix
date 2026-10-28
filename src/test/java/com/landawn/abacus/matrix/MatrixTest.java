@@ -8186,6 +8186,106 @@ class MatrixTest extends MatrixTestSupport {
 
         @Test
         @SuppressWarnings({ "rawtypes", "unchecked" })
+        public void testWrapWithElementType_AcceptsTheErasedHolderOfAGenericVarargsCall() {
+            // Called from generic code, wrap(Class, T[]...) receives an Object[][] holder even though both rows are exactly String[].
+            final String[] first = { "a", "b" };
+            final String[] second = { "c", "d" };
+            final Matrix<String> matrix = wrapTwoRowsGenerically(String.class, first, second);
+
+            assertSame(String.class, matrix.elementType());
+            assertEquals("c", matrix.get(1, 0));
+            first[0] = "x";
+            assertEquals("x", matrix.get(0, 0));
+            matrix.set(0, 1, "y");
+            assertEquals("y", first[1]);
+            assertEquals(Matrix.wrap(String.class, new String[][] { { "x", "c" }, { "y", "d" } }), matrix.transpose());
+
+            final Matrix<String> noRows = wrapNoRowsGenerically(String.class);
+            assertEquals(0, noRows.rowCount());
+            assertSame(String.class, noRows.elementType());
+
+            // The rows themselves must still be exact.
+            assertEquals(
+                    "Row 0 must have exact runtime type java.lang.Number[] but has java.lang.Integer[]. "
+                            + "Use copyOf(Class, Object[][]) to canonicalize covariant rows",
+                    assertThrows(IllegalArgumentException.class, () -> wrapTwoRowsGenerically(Number.class, new Integer[] { 1 }, new Number[] { 2 }))
+                            .getMessage());
+            assertEquals("Row 1 cannot be null",
+                    assertThrows(IllegalArgumentException.class, () -> wrapTwoRowsGenerically(String.class, first, null)).getMessage());
+            assertThrows(IllegalArgumentException.class, () -> wrapTwoRowsGenerically(String.class, first, first));
+
+            // The non-varargs constructor keeps requiring an exactly typed outer array.
+            assertEquals(
+                    "Matrix outer array must have exact element type java.lang.String but has java.lang.Object. "
+                            + "Use copyOf(Class, Object[][]) to widen covariant input",
+                    assertThrows(IllegalArgumentException.class, () -> new Matrix((Class) String.class, new Object[][] { second })).getMessage());
+        }
+
+        private static <X> Matrix<X> wrapTwoRowsGenerically(final Class<X> elementType, final X[] first, final X[] second) {
+            return Matrix.wrap(elementType, first, second);
+        }
+
+        private static <X> Matrix<X> wrapNoRowsGenerically(final Class<X> elementType) {
+            return Matrix.wrap(elementType);
+        }
+
+        @Test
+        public void testExactStorageKeepsTheRowsItValidatedWhileTheCallerReplacesThem() throws InterruptedException {
+            // A writer keeps swapping row 0 of the caller's outer array between an exact Object[] row and a covariant
+            // String[] row. Every matrix built meanwhile must be rejected or hold the exact row: validating the caller's
+            // array but storing a later snapshot of it let the String[] row in, so set(0, 0, 42) threw ArrayStoreException.
+            final Object[] exactRow = { "e" };
+            final Object[] covariantRow = new String[] { "c" };
+            final Object[][] holder = { exactRow, new Object[] { "x" } };
+            final java.util.concurrent.atomic.AtomicBoolean running = new java.util.concurrent.atomic.AtomicBoolean(true);
+            final Thread writer = new Thread(() -> {
+                for (int n = 0; running.get(); n++) {
+                    holder[0] = (n & 1) == 0 ? covariantRow : exactRow;
+                }
+            });
+            writer.setDaemon(true);
+            writer.start();
+            int built = 0;
+
+            try {
+                for (int i = 0; i < 200_000; i++) {
+                    try {
+                        final Matrix<Object> matrix = (i & 1) == 0 ? Matrix.wrap(Object.class, holder) : new Matrix<>(Object.class, holder);
+                        assertSame(Object[].class, matrix.rowView(0).getClass());
+                        built++;
+                    } catch (final IllegalArgumentException covariantRowSeen) {
+                        // The String[] row was the one read, and it was rejected.
+                    }
+                }
+            } finally {
+                running.set(false);
+                writer.join();
+            }
+
+            assertTrue(built > 0);
+        }
+
+        @Test
+        @SuppressWarnings("deprecation")
+        public void testRuntimeTypedVarargsFactoriesAreNotSafeVarargs() throws NoSuchMethodException {
+            // Both factories take the element type from the varargs array's runtime type, so a generic caller's erased
+            // Object[][] gives a Matrix<String> whose returned T[] arrays are Object[]; the compiler must keep warning there.
+            assertFalse(Matrix.class.getMethod("wrap", Object[][].class).isAnnotationPresent(SafeVarargs.class));
+            assertFalse(Matrix.class.getMethod("copyOf", Object[][].class).isAnnotationPresent(SafeVarargs.class));
+            assertSame(Object.class, wrapGenericallyWithoutElementType(new String[] { "a" }).elementType());
+
+            // The explicit-type overloads re-home or copy into exactly typed storage, so they stay @SafeVarargs.
+            assertTrue(Matrix.class.getMethod("wrap", Class.class, Object[][].class).isAnnotationPresent(SafeVarargs.class));
+            assertTrue(Matrix.class.getMethod("copyOf", Class.class, Object[][].class).isAnnotationPresent(SafeVarargs.class));
+        }
+
+        @SuppressWarnings({ "deprecation", "unchecked" })
+        private static <X> Matrix<X> wrapGenericallyWithoutElementType(final X[] row) {
+            return Matrix.wrap(row);
+        }
+
+        @Test
+        @SuppressWarnings({ "rawtypes", "unchecked" })
         public void testStorabilityAndStackElementTypeChecksKeepTheirMessages() {
             final IllegalArgumentException storability = assertThrows(IllegalArgumentException.class, () -> new Matrix(new String[0][], Integer.class, 0));
             assertEquals("Element type java.lang.Integer is not storable in backing rows of type java.lang.String[]", storability.getMessage());

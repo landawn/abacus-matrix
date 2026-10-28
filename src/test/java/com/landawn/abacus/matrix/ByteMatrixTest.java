@@ -353,6 +353,23 @@ class ByteMatrixTest extends MatrixTestSupport {
     class RangeTests {
 
         @Test
+        public void testEmptyRangesOwnTheirRow() {
+            // Array.range/rangeClosed return a shared empty-array constant for an empty range; each matrix must own
+            // its row, or rows of independently created empty range matrices could not be wrapped together.
+            final byte[][] rows = { ByteMatrix.range((byte) 5, (byte) 5).rowView(0), ByteMatrix.range((byte) 5, (byte) 1, (byte) 1).rowView(0),
+                    ByteMatrix.rangeClosed((byte) 9, (byte) 1).rowView(0), ByteMatrix.rangeClosed((byte) 1, (byte) 9, (byte) -1).rowView(0) };
+
+            for (final byte[] row : rows) {
+                assertEquals(0, row.length);
+                assertNotSame(com.landawn.abacus.util.N.EMPTY_BYTE_ARRAY, row);
+            }
+
+            final ByteMatrix combined = ByteMatrix.wrap(rows);
+            assertEquals(4, combined.rowCount());
+            assertEquals(0, combined.columnCount());
+        }
+
+        @Test
         public void testRange() {
             ByteMatrix matrix = ByteMatrix.range((byte) 1, (byte) 5);
             Assertions.assertEquals(1, matrix.rowCount());
@@ -4774,6 +4791,77 @@ class ByteMatrixTest extends MatrixTestSupport {
             final var left = ByteMatrix.wrap(new byte[][] { { (byte) 1, (byte) 2 } });
             final var right = ByteMatrix.wrap(new byte[][] { { (byte) 3, (byte) 4 } });
             assertThrows(IllegalArgumentException.class, () -> left.matrixMultiplyExact(right));
+        }
+
+        @Test
+        public void testMatrixMultiplyWidenedAndExact_MatchNaiveDotProductsOnRandomShapes() {
+            // Both kernels accumulate a whole result row at a time (i-k-j); every cell must still equal its own dot product.
+            final java.util.Random random = new java.util.Random(20261027L);
+
+            for (int trial = 0; trial < 300; trial++) {
+                final int rows = random.nextInt(6);
+                final int inner = random.nextInt(6);
+                final int cols = random.nextInt(6);
+                final boolean small = trial % 2 == 0;
+                final byte[][] left = new byte[rows][inner];
+                final byte[][] right = new byte[inner][cols];
+
+                for (final byte[][] array : java.util.List.of(left, right)) {
+                    for (final byte[] row : array) {
+                        for (int j = 0; j < row.length; j++) {
+                            row[j] = small ? (byte) (random.nextInt(7) - 3) : (byte) random.nextInt(256);
+                        }
+                    }
+                }
+
+                final ByteMatrix a = new ByteMatrix(left, inner);
+                final ByteMatrix b = new ByteMatrix(right, cols);
+                final LongMatrix widened = a.matrixMultiplyWidened(b);
+                assertEquals(rows, widened.rowCount());
+                assertEquals(cols, widened.columnCount());
+
+                String firstOverflow = null;
+
+                for (int i = 0; i < rows; i++) {
+                    for (int j = 0; j < cols; j++) {
+                        long expected = 0;
+
+                        for (int k = 0; k < inner; k++) {
+                            expected += (long) left[i][k] * right[k][j];
+                        }
+
+                        assertEquals(expected, widened.get(i, j));
+
+                        if (firstOverflow == null && (expected < Byte.MIN_VALUE || expected > Byte.MAX_VALUE)) {
+                            firstOverflow = "byte overflow: " + expected;
+                        }
+                    }
+                }
+
+                if (firstOverflow == null) {
+                    final ByteMatrix exact = a.matrixMultiplyExact(b);
+                    assertEquals(rows, exact.rowCount());
+                    assertEquals(cols, exact.columnCount());
+
+                    for (int i = 0; i < rows; i++) {
+                        for (int j = 0; j < cols; j++) {
+                            assertEquals((byte) widened.get(i, j), exact.get(i, j));
+                        }
+                    }
+                } else {
+                    // The first out-of-range cell in row-major order is the one reported.
+                    assertEquals(firstOverflow, assertThrows(ArithmeticException.class, () -> a.matrixMultiplyExact(b)).getMessage());
+                }
+            }
+        }
+
+        @Test
+        public void testMatrixMultiplyExact_ReportsFirstOverflowInRowMajorOrder() {
+            final ByteMatrix left = ByteMatrix.wrap(new byte[][] { { 1, 1 }, { 100, 100 } });
+            final ByteMatrix right = ByteMatrix.wrap(new byte[][] { { 0, 100 }, { 0, 100 } });
+
+            // Row 0 is [0, 200]; row 1 is [0, 20000]. Cell (0, 1) is the first finished cell outside the byte range.
+            assertEquals("byte overflow: 200", assertThrows(ArithmeticException.class, () -> left.matrixMultiplyExact(right)).getMessage());
         }
     }
 

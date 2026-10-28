@@ -151,7 +151,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *         have different lengths, or if two entries are the same row array; if {@code elementType} is {@code void.class}.
      */
     public Matrix(final Class<T> elementType, final T[][] a) throws IllegalArgumentException {
-        this(requireExactStorage(elementType, a), normalizeElementType(elementType));
+        this(requireExactStorage(elementType, a, false), normalizeElementType(elementType));
     }
 
     /**
@@ -241,8 +241,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         // arrays from the second), so a disagreement would corrupt every copy-producing method. Every
         // derived result (newResult) and the package-private constructor pass through here, so the
         // message (getTypeName() allocates for array types) is built only when the check fails. The
-        // public constructors use the two-argument constructor instead: their element type is either
-        // derived from the array or already proven exact by requireExactStorage.
+        // public constructors and wrap(Class, T[]...) use the two-argument constructor instead: their
+        // element type is either derived from the array or already proven exact by requireExactStorage.
         if (!arrayType.getComponentType().isAssignableFrom(elementType)) {
             throw new IllegalArgumentException(
                     formatMsg("Element type {} is not storable in backing rows of type {}", elementType.getTypeName(), arrayType.getTypeName()));
@@ -272,36 +272,59 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     /**
      * Checks that the outer array and each row have the requested exact runtime element type.
      *
+     * <p>With {@code acceptErasedHolder}, an outer array whose element type is a proper supertype of
+     * {@code elementType} is also accepted: a generic varargs call creates its array from the erasure of
+     * the static row type (for example an {@code Object[][]} holding {@code String[]} rows), so that
+     * array's runtime type says nothing about the rows. The rows must still be exact, and they are
+     * returned in a new, exactly typed outer array.</p>
+     *
      * @param <T> the element type
      * @param elementType the requested type, with primitive scalar normalization
      * @param rows the backing rows
-     * @return {@code rows}
-     * @throws IllegalArgumentException if the type is null or {@code void.class}, the rows are null, any row is null, or the outer array or a
-     *         row has a different runtime element type
+     * @param acceptErasedHolder whether an outer array with a wider element type may be re-homed
+     * @return a new, exactly typed outer array holding the validated rows
+     * @throws IllegalArgumentException if the type is null or {@code void.class}, the rows are null, any row is null, a row has a different
+     *         runtime component type, or the outer array has a different runtime element type (a proper supertype is accepted only with
+     *         {@code acceptErasedHolder}); or if a re-homed outer array would exceed the JVM limit of 255 array dimensions
      */
-    private static <T> T[][] requireExactStorage(final Class<T> elementType, final T[][] rows) throws IllegalArgumentException {
+    @SuppressWarnings("unchecked")
+    private static <T> T[][] requireExactStorage(final Class<T> elementType, final T[][] rows, final boolean acceptErasedHolder)
+            throws IllegalArgumentException {
         final Class<T> normalizedType = normalizeElementType(elementType);
         N.checkArgNotNull(rows, "Matrix array cannot be null");
 
         final Class<?> actualElementType = rows.getClass().getComponentType().getComponentType();
-        if (actualElementType != normalizedType) {
+        final boolean rehome = acceptErasedHolder && actualElementType != normalizedType && actualElementType.isAssignableFrom(normalizedType);
+
+        if (actualElementType != normalizedType && !rehome) {
             throw new IllegalArgumentException(
                     formatMsg("Matrix outer array must have exact element type {} but has {}. Use copyOf(Class, Object[][]) to widen covariant input",
                             normalizedType.getTypeName(), actualElementType.getTypeName()));
         }
 
-        final Class<?> expectedRowType = rows.getClass().getComponentType();
+        // Reflective allocation (not Class.arrayType()) keeps an over-255-dimension type an IllegalArgumentException.
+        final Class<?> expectedRowType = rehome ? java.lang.reflect.Array.newInstance(normalizedType, 0).getClass() : rows.getClass().getComponentType();
+        // Never validate the caller's live array: AbstractMatrix copies its argument again but re-checks only
+        // nulls and lengths, so a concurrent write between this check and that copy could replace a validated
+        // row with a covariant one. An exact holder is snapshotted with clone() and its snapshot validated; a
+        // re-homed holder is copied into the exactly typed array, reading each caller row only once.
+        final T[][] result = rehome ? (T[][]) java.lang.reflect.Array.newInstance(expectedRowType, rows.length) : rows.clone();
 
-        for (int i = 0; i < rows.length; i++) {
-            N.checkArgument(rows[i] != null, "Row {} cannot be null", i);
-            if (rows[i].getClass() != expectedRowType) {
+        for (int i = 0; i < result.length; i++) {
+            final T[] row = rehome ? rows[i] : result[i];
+            N.checkArgument(row != null, "Row {} cannot be null", i);
+            if (row.getClass() != expectedRowType) {
                 throw new IllegalArgumentException(
                         formatMsg("Row {} must have exact runtime type {} but has {}. Use copyOf(Class, Object[][]) to canonicalize covariant rows", i,
-                                expectedRowType.getTypeName(), rows[i].getClass().getTypeName()));
+                                expectedRowType.getTypeName(), row.getClass().getTypeName()));
+            }
+
+            if (rehome) {
+                result[i] = row;
             }
         }
 
-        return rows;
+        return result;
     }
 
     /**
@@ -401,6 +424,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * component type, which Java array covariance may make narrower than {@code T}. Prefer
      * {@link #wrap(Class, Object[][])} for writable matrices.</p>
      *
+     * <p>Conversely, when this method is called through a generic varargs parameter, the compiler
+     * creates the outer array from the erasure of {@code T} (for example an {@code Object[][]}), and
+     * that erasure becomes this matrix's element type. Arrays the matrix later allocates and returns as
+     * {@code T[]} (for example from {@link #columnCopy(int)} or {@code copy().rowView(int)}) are then
+     * {@code Object[]}, so assigning one to, say, a {@code String[]} throws {@link ClassCastException}
+     * at the call site. {@link #wrap(Class, Object[][])} re-homes such rows into exactly typed storage.</p>
+     *
      * <p>All rows must have the same length as the first row (rectangular array required).
      * The array must not be {@code null}.</p>
      *
@@ -429,7 +459,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @deprecated Prefer {@link #wrap(Class, Object[][])} so the writable runtime element type is explicit.
      */
     @Deprecated
-    @SafeVarargs
+    // Deliberately not @SafeVarargs: the varargs array's runtime type becomes the element type (see the
+    // note above), so a generic caller should see the compiler's heap-pollution warning.
+    @SuppressWarnings("unchecked")
     public static <T> Matrix<T> wrap(final T[]... a) throws IllegalArgumentException {
         return new Matrix<>(a);
     }
@@ -438,18 +470,25 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Wraps rows whose runtime component type is exactly {@code elementType}. The outer array is
      * shallow-copied; the rows remain live.
      *
+     * <p>Only the rows must be exact. An outer array whose element type is a proper supertype of
+     * {@code elementType}, such as the {@code Object[][]} a generic varargs call creates for
+     * {@code String[]} rows, is accepted and copied into exactly typed storage. A narrower outer array
+     * (for example an {@code Integer[][]} for {@code Number.class}) is rejected.</p>
+     *
      * @param <T> the element type
      * @param elementType the exact runtime element type
      * @param a the rectangular, identity-distinct rows to wrap
      * @return a matrix with uniform exact row storage
-     * @throws IllegalArgumentException if {@code elementType} or {@code a} is {@code null}, if the runtime element type of {@code a} or of any
-     *         row differs from {@code elementType} after primitive scalar normalization, if any row is {@code null}, if rows have different
-     *         lengths, or if two entries are the same row array; if {@code elementType} is {@code void.class}.
+     * @throws IllegalArgumentException if {@code elementType} or {@code a} is {@code null}, if the runtime element type of {@code a} is not
+     *         {@code elementType} or a supertype of it, if the runtime component type of any row differs from {@code elementType} after
+     *         primitive scalar normalization, if any row is {@code null}, if rows have different lengths, or if two entries are the same row
+     *         array; if {@code elementType} is {@code void.class}, or if adding two array dimensions to {@code elementType} would exceed the JVM
+     *         limit of 255.
      * @see #copyOf(Class, Object[][])
      */
     @SafeVarargs
     public static <T> Matrix<T> wrap(final Class<T> elementType, final T[]... a) throws IllegalArgumentException {
-        return new Matrix<>(elementType, a);
+        return new Matrix<>(requireExactStorage(elementType, a, true), normalizeElementType(elementType));
     }
 
     /**
@@ -460,7 +499,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * are therefore <b>not</b> visible through the returned matrix, and vice versa. The element references
      * themselves are not cloned (each row is shallow-copied, like {@link #copy()}). The result row type is
      * the input outer array's runtime element type; array covariance can make that narrower than static
-     * {@code T}, which is why the explicit-token overload is preferred.</p>
+     * {@code T}, which is why the explicit-token overload is preferred. When this method is called through a
+     * generic varargs parameter, that type is instead the erasure of {@code T} (for example {@code Object}),
+     * so every result row, and every {@code T[]} the matrix later returns, is an {@code Object[]}; assigning
+     * one to, say, a {@code String[]} throws {@link ClassCastException} at the call site.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -487,7 +529,8 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *             uniform runtime component type.
      */
     @Deprecated
-    @SafeVarargs
+    // Deliberately not @SafeVarargs: the varargs array's runtime type becomes the result row type (see
+    // the note above), so a generic caller should see the compiler's heap-pollution warning.
     @SuppressWarnings("unchecked")
     public static <T> Matrix<T> copyOf(final T[]... a) throws IllegalArgumentException {
         N.checkArgNotNull(a, "Matrix array cannot be null");
@@ -2740,7 +2783,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @return a new matrix that is this matrix rotated 90 degrees clockwise,
-     *         an {@code N x 0} matrix becomes {@code 0 x N}, so the column count is preserved
+     *         an {@code N x 0} matrix becomes {@code 0 x N}, retaining {@code N} as the result's column count
      * @see #rotate180()
      * @see #rotate270()
      * @see #transpose()
@@ -2839,7 +2882,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * }</pre>
      *
      * @return a new matrix that is this matrix rotated 270 degrees clockwise,
-     *         an {@code N x 0} matrix becomes {@code 0 x N}, so the column count is preserved
+     *         an {@code N x 0} matrix becomes {@code 0 x N}, retaining {@code N} as the result's column count
      * @see #rotate90()
      * @see #rotate180()
      * @see #transpose()
@@ -4660,9 +4703,9 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * two-dimensional array ({@link java.util.Arrays#deepHashCode(Object[])} semantics): a non-array
      * element contributes its own {@code hashCode()} (with {@code null} contributing {@code 0}), while an
      * array-typed element (for example a {@code Matrix<int[]>}) is hashed deeply by content. A matrix with
-     * no rows has no contents to hash, so its column count participates instead, keeping {@code 0 x 3} and
-     * {@code 0 x 5} -- which {@link #equals(Object)} distinguishes -- apart. Matrices that compare equal
-     * via {@link #equals(Object)} are guaranteed to produce the same hash code.
+     * no rows but some columns has no contents to hash, so its column count participates instead, keeping
+     * {@code 0 x 3} and {@code 0 x 5} -- which {@link #equals(Object)} distinguishes -- apart. Matrices that
+     * compare equal via {@link #equals(Object)} are guaranteed to produce the same hash code.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code

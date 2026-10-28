@@ -48,7 +48,9 @@ import com.landawn.abacus.util.stream.Stream;
  * <p><b>Aggregations:</b> this class does not provide dedicated reduction methods such as
  * {@code sum()}, {@code min()}, {@code max()} or {@code average()}. Compute such aggregations
  * through the streaming API instead &mdash; for example {@code rowMajorStream().sum()} over all
- * elements, or {@code rowStreams()} / {@code columnStreams()} for per-row or per-column reductions.</p>
+ * elements, or {@code rowStreams()} / {@code columnStreams()} for per-row or per-column reductions.
+ * Like {@link #add(LongMatrix)}, {@code LongStream.sum()} does not detect overflow: a total outside
+ * the {@code long} range wraps around silently.</p>
  *
  * @see IntMatrix
  * @see DoubleMatrix
@@ -132,8 +134,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     static LongMatrix wrapResult(final long[][] a, final int columnCount) throws IllegalArgumentException {
         N.checkArgNotNull(a, cs.a);
 
-        // Every wrapResult(...) call site (here, in Matrix and in Matrices) passes freshly allocated rows, so they are
-        // identity-distinct by construction and the duplicate-row scan can be skipped.
+        // Every wrapResult(...) call site (here, in the sibling matrix classes, in Matrix and in Matrices) passes
+        // freshly allocated rows, so they are identity-distinct by construction and the duplicate-row scan can be skipped.
         return a.length == 0 && columnCount == 0 ? EMPTY_LONG_MATRIX : new LongMatrix(a, columnCount, true);
     }
 
@@ -403,7 +405,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @throws IllegalArgumentException if the resulting range would contain more than {@code Integer.MAX_VALUE} elements
      */
     public static LongMatrix range(final long startInclusive, final long endExclusive) throws IllegalArgumentException {
-        return new LongMatrix(new long[][] { Array.range(startInclusive, endExclusive) });
+        return new LongMatrix(new long[][] { ownedRangeRow(Array.range(startInclusive, endExclusive)) });
     }
 
     /**
@@ -429,7 +431,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @throws IllegalArgumentException if {@code step} is zero, or if the resulting range would contain more than {@code Integer.MAX_VALUE} elements
      */
     public static LongMatrix range(final long startInclusive, final long endExclusive, final long step) throws IllegalArgumentException {
-        return new LongMatrix(new long[][] { Array.range(startInclusive, endExclusive, step) });
+        return new LongMatrix(new long[][] { ownedRangeRow(Array.range(startInclusive, endExclusive, step)) });
     }
 
     /**
@@ -453,7 +455,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @throws IllegalArgumentException if the resulting range would contain more than {@code Integer.MAX_VALUE} elements
      */
     public static LongMatrix rangeClosed(final long startInclusive, final long endInclusive) throws IllegalArgumentException {
-        return new LongMatrix(new long[][] { Array.rangeClosed(startInclusive, endInclusive) });
+        return new LongMatrix(new long[][] { ownedRangeRow(Array.rangeClosed(startInclusive, endInclusive)) });
     }
 
     /**
@@ -482,7 +484,20 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @throws IllegalArgumentException if {@code step} is zero, or if the resulting range would contain more than {@code Integer.MAX_VALUE} elements
      */
     public static LongMatrix rangeClosed(final long startInclusive, final long endInclusive, final long step) throws IllegalArgumentException {
-        return new LongMatrix(new long[][] { Array.rangeClosed(startInclusive, endInclusive, step) });
+        return new LongMatrix(new long[][] { ownedRangeRow(Array.rangeClosed(startInclusive, endInclusive, step)) });
+    }
+
+    /**
+     * Returns {@code row}, or a new zero-length array in place of the shared empty-array constant that
+     * {@code Array.range} and {@code Array.rangeClosed} return for an empty range. Every other factory
+     * allocates its own rows; without this, rows taken from two independently created empty range
+     * matrices would be the same array and could not be wrapped together.
+     *
+     * @param row the range values
+     * @return {@code row}, or a new zero-length array if {@code row} is empty
+     */
+    private static long[] ownedRangeRow(final long[] row) {
+        return row.length == 0 ? new long[0] : row;
     }
 
     /**
@@ -1795,7 +1810,8 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * LongMatrix.empty().copy().isEmpty();    // returns true
      * }</pre>
      *
-     * @return a new matrix that is a copy of this matrix with full independence guarantee
+     * @return a copy of this matrix with full independence guarantee, or the shared {@link #empty()} instance
+     *         if this matrix is {@code 0 x 0} (it has no cells to share)
      */
     @Override
     public LongMatrix copy() {
@@ -3088,19 +3104,41 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
 
         final long[][] result = new long[rowCount][other.columnCount];
 
+        // Row-at-a-time (i-k-j) accumulation reads the right-hand rows sequentially instead of striding
+        // down a column. Every cell still sees the same checked partial sums in ascending k, so exactly
+        // the same inputs overflow as with a cell-at-a-time dot product.
         for (int i = 0; i < rowCount; i++) {
-            for (int j = 0; j < other.columnCount; j++) {
-                long sum = 0;
-
-                for (int k = 0; k < columnCount; k++) {
-                    sum = Math.addExact(sum, Math.multiplyExact(a[i][k], other.a[k][j]));
-                }
-
-                result[i][j] = sum;
-            }
+            accumulateExactRow(a[i], other.a, result[i], columnCount, other.columnCount);
         }
 
         return wrapResult(result, other.columnCount);
+    }
+
+    /**
+     * Adds one left-hand row's checked dot-product terms to {@code sums}, visiting the inner
+     * dimension in ascending order so every cell sees the same partial sums as a direct dot product.
+     *
+     * <p>Kept out of {@link #matrixMultiplyExact(LongMatrix)} as a small method of its own, mirroring
+     * {@code IntMatrix}'s exact kernel, whose inline form compiled noticeably slower in most JVM runs.</p>
+     *
+     * @param leftRow the left-hand row
+     * @param rightRows the right-hand matrix's rows; at least {@code innerCount} rows of
+     *        at least {@code resultColumnCount} elements
+     * @param sums the running sums for the result row, one per result column
+     * @param innerCount the shared inner dimension
+     * @param resultColumnCount the number of result columns
+     * @throws ArithmeticException if a product or a partial sum overflows {@code long}
+     */
+    private static void accumulateExactRow(final long[] leftRow, final long[][] rightRows, final long[] sums, final int innerCount, final int resultColumnCount)
+            throws ArithmeticException {
+        for (int k = 0; k < innerCount; k++) {
+            final long left = leftRow[k];
+            final long[] rightRow = rightRows[k];
+
+            for (int j = 0; j < resultColumnCount; j++) {
+                sums[j] = Math.addExact(sums[j], Math.multiplyExact(left, rightRow[j]));
+            }
+        }
     }
 
     /**
@@ -4164,7 +4202,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
      * @param <E> the type of exception that the action may throw
      * @param action the action to be performed for each element; receives each element value
      * @throws IllegalArgumentException if {@code action} is {@code null}
-     * @throws E if {@code action} throws while processing an element in the selected region
+     * @throws E if {@code action} throws while processing a matrix element
      * @see #forEach(int, int, int, int, Throwables.LongConsumer)
      */
     public <E extends Exception> void forEach(final Throwables.LongConsumer<E> action) throws IllegalArgumentException, E {
@@ -4278,7 +4316,7 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     /**
      * Returns a hash code value for this matrix.
      * The hash code is computed from the deep contents of the internal two-dimensional array. A matrix
-     * with no rows has no contents to hash, so its column count participates instead, keeping
+     * with no rows but some columns has no contents to hash, so its column count participates instead, keeping
      * {@code 0 x 3} and {@code 0 x 5} -- which {@code equals} distinguishes -- apart.
      * Matrices with the same dimensions and element values will have equal hash codes,
      * consistent with the {@link #equals(Object)} method.

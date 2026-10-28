@@ -58,7 +58,10 @@ import com.landawn.abacus.util.stream.Stream;
  * <p><b>Aggregations:</b> this class does not provide dedicated reduction methods such as
  * {@code sum()}, {@code min()}, {@code max()} or {@code average()}. Compute such aggregations
  * through the streaming API instead &mdash; for example {@code rowMajorStream().sum()} over all
- * elements, or {@code rowStreams()} / {@code columnStreams()} for per-row or per-column reductions.</p>
+ * elements, or {@code rowStreams()} / {@code columnStreams()} for per-row or per-column reductions.
+ * {@code ByteStream.sum()} returns an {@code int} and throws {@link ArithmeticException} when the
+ * total does not fit, which can happen once more than 16,777,216 elements are summed; use
+ * {@code rowMajorStream().summaryStatistics().getSum()} for an exact {@code long} total.</p>
  *
  * @see IntMatrix
  * @see LongMatrix
@@ -372,7 +375,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @return a single-row {@code ByteMatrix} containing the range of values
      */
     public static ByteMatrix range(final byte startInclusive, final byte endExclusive) {
-        return new ByteMatrix(new byte[][] { Array.range(startInclusive, endExclusive) });
+        return new ByteMatrix(new byte[][] { ownedRangeRow(Array.range(startInclusive, endExclusive)) });
     }
 
     /**
@@ -403,7 +406,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @throws IllegalArgumentException if {@code step} is zero
      */
     public static ByteMatrix range(final byte startInclusive, final byte endExclusive, final byte step) throws IllegalArgumentException {
-        return new ByteMatrix(new byte[][] { Array.range(startInclusive, endExclusive, step) });
+        return new ByteMatrix(new byte[][] { ownedRangeRow(Array.range(startInclusive, endExclusive, step)) });
     }
 
     /**
@@ -430,7 +433,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @return a single-row {@code ByteMatrix} containing the range of values
      */
     public static ByteMatrix rangeClosed(final byte startInclusive, final byte endInclusive) {
-        return new ByteMatrix(new byte[][] { Array.rangeClosed(startInclusive, endInclusive) });
+        return new ByteMatrix(new byte[][] { ownedRangeRow(Array.rangeClosed(startInclusive, endInclusive)) });
     }
 
     /**
@@ -462,7 +465,20 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @throws IllegalArgumentException if {@code step} is zero
      */
     public static ByteMatrix rangeClosed(final byte startInclusive, final byte endInclusive, final byte step) throws IllegalArgumentException {
-        return new ByteMatrix(new byte[][] { Array.rangeClosed(startInclusive, endInclusive, step) });
+        return new ByteMatrix(new byte[][] { ownedRangeRow(Array.rangeClosed(startInclusive, endInclusive, step)) });
+    }
+
+    /**
+     * Returns {@code row}, or a new zero-length array in place of the shared empty-array constant that
+     * {@code Array.range} and {@code Array.rangeClosed} return for an empty range. Every other factory
+     * allocates its own rows; without this, rows taken from two independently created empty range
+     * matrices would be the same array and could not be wrapped together.
+     *
+     * @param row the range values
+     * @return {@code row}, or a new zero-length array if {@code row} is empty
+     */
+    private static byte[] ownedRangeRow(final byte[] row) {
+        return row.length == 0 ? new byte[0] : row;
     }
 
     /**
@@ -1710,7 +1726,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * ByteMatrix.empty().copy().isEmpty();    // returns true
      * }</pre>
      *
-     * @return a new matrix that is a copy of this matrix with full independence guarantee
+     * @return a copy of this matrix with full independence guarantee, or the shared {@link #empty()} instance
+     *         if this matrix is {@code 0 x 0} (it has no cells to share)
      */
     @Override
     public ByteMatrix copy() {
@@ -3055,15 +3072,20 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         final int newColumnCount = other.columnCount;
         final long[][] result = new long[rowCount][newColumnCount];
 
+        // i-k-j loop order, as in ShortMatrix and IntMatrix, so the right-hand rows are read sequentially;
+        // the rows are additionally hoisted out of the inner loops here. The largest possible byte dot
+        // product still fits in long for any Java-array length.
         for (int i = 0; i < rowCount; i++) {
-            for (int j = 0; j < newColumnCount; j++) {
-                long sum = 0;
+            final byte[] leftRow = a[i];
+            final long[] resultRow = result[i];
 
-                for (int k = 0; k < columnCount; k++) {
-                    sum += (long) a[i][k] * other.a[k][j];
+            for (int k = 0; k < columnCount; k++) {
+                final long left = leftRow[k];
+                final byte[] rightRow = other.a[k];
+
+                for (int j = 0; j < newColumnCount; j++) {
+                    resultRow[j] += left * rightRow[j];
                 }
-
-                result[i][j] = sum;
             }
         }
 
@@ -3088,17 +3110,36 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         final int newColumnCount = other.columnCount;
         final byte[][] result = new byte[rowCount][newColumnCount];
 
+        if (rowCount == 0 || newColumnCount == 0 || columnCount == 0) {
+            return wrapResult(result, newColumnCount);
+        }
+
+        // Reuse one widened row rather than retaining a full long matrix alongside the byte result.
+        final long[] sums = new long[newColumnCount];
+
         for (int i = 0; i < rowCount; i++) {
-            for (int j = 0; j < newColumnCount; j++) {
-                long sum = 0;
+            if (i > 0) {
+                N.fill(sums, 0L);
+            }
 
-                // Accumulate the whole dot product before narrowing. Checking each partial sum would
-                // incorrectly reject valid results whose positive and negative terms cancel.
-                for (int k = 0; k < columnCount; k++) {
-                    sum += (long) a[i][k] * other.a[k][j];
+            final byte[] leftRow = a[i];
+
+            for (int k = 0; k < columnCount; k++) {
+                final long left = leftRow[k];
+                final byte[] rightRow = other.a[k];
+
+                // Unchecked is safe: each product is at most 2^14 in magnitude and there are fewer than
+                // 2^31 terms, so a partial sum never exceeds 2^45 and cannot overflow long.
+                for (int j = 0; j < newColumnCount; j++) {
+                    sums[j] += left * rightRow[j];
                 }
+            }
 
-                result[i][j] = toByteExact(sum);
+            final byte[] resultRow = result[i];
+
+            for (int j = 0; j < newColumnCount; j++) {
+                // Check only complete dot products: out-of-range partial sums may still cancel.
+                resultRow[j] = toByteExact(sums[j]);
             }
         }
 
@@ -4336,7 +4377,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     /**
      * Returns a hash code value for this matrix.
      * The hash code is computed from the deep contents of the internal two-dimensional array. A matrix
-     * with no rows has no contents to hash, so its column count participates instead, keeping
+     * with no rows but some columns has no contents to hash, so its column count participates instead, keeping
      * {@code 0 x 3} and {@code 0 x 5} -- which {@code equals} distinguishes -- apart.
      * Matrices with the same dimensions and element values will have equal hash codes,
      * consistent with the {@link #equals(Object)} method.

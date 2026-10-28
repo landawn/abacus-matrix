@@ -378,6 +378,23 @@ class CharMatrixTest extends MatrixTestSupport {
     class RangeTests {
 
         @Test
+        public void testEmptyRangesOwnTheirRow() {
+            // Array.range/rangeClosed return a shared empty-array constant for an empty range; each matrix must own
+            // its row, or rows of independently created empty range matrices could not be wrapped together.
+            final char[][] rows = { CharMatrix.range('e', 'e').rowView(0), CharMatrix.range('e', 'a', 1).rowView(0),
+                    CharMatrix.rangeClosed('z', 'a').rowView(0), CharMatrix.rangeClosed('a', 'z', -1).rowView(0) };
+
+            for (final char[] row : rows) {
+                assertEquals(0, row.length);
+                assertNotSame(com.landawn.abacus.util.N.EMPTY_CHAR_ARRAY, row);
+            }
+
+            final CharMatrix combined = CharMatrix.wrap(rows);
+            assertEquals(4, combined.rowCount());
+            assertEquals(0, combined.columnCount());
+        }
+
+        @Test
         public void testRange() {
             CharMatrix matrix = CharMatrix.range('a', 'e');
             Assertions.assertEquals(1, matrix.rowCount());

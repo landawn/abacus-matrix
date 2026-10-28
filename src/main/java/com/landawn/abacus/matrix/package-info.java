@@ -44,7 +44,8 @@
  * logical column count alongside the backing array. Every operation propagates it: an {@code N x 0} matrix
  * transposes to {@code 0 x N}, a conversion or element-wise map of a {@code 0 x N} matrix is {@code 0 x N},
  * an empty row slice keeps the column count, and a {@code 0 x N} matrix yields {@code N} empty column
- * streams. Only a result that is genuinely {@code 0 x 0} is canonicalized to the shared empty instance.</p>
+ * streams. Only a genuinely {@code 0 x 0} primitive result is canonicalized to its type's shared empty instance;
+ * a {@link com.landawn.abacus.matrix.Matrix} result keeps its element type and is therefore normally a new instance.</p>
  *
  * <p>Because a bare {@code T[][]} loses this information, a zero-row array obtained from
  * {@link com.landawn.abacus.matrix.Matrices#newMatrixArray(int, int, Class)} or from
@@ -135,7 +136,7 @@
  *     { 4, 5, 6 }
  * };
  *
- * IntMatrix wrapped = IntMatrix.wrap(source);      // shares source
+ * IntMatrix wrapped = IntMatrix.wrap(source);      // shares source's row arrays
  * IntMatrix owned = IntMatrix.copyOf(source);    // owns its row arrays
  * source[0][0] = 10;
  *

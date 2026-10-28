@@ -20,7 +20,7 @@ package com.landawn.abacus.matrix;
  * failures. Keeping these values centralized makes equivalent validation errors use the same name.
  */
 final class cs { // NOSONAR
-    /** Parameter name for the first matrix operand. */
+    /** Parameter name for the first matrix operand or for a two-dimensional backing array. */
     static final String a = "a";
 
     /** Parameter name for an action callback. */

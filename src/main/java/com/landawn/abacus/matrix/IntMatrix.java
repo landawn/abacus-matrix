@@ -51,7 +51,10 @@ import com.landawn.abacus.util.stream.Stream;
  * <p><b>Aggregations:</b> this class does not provide dedicated reduction methods such as
  * {@code sum()}, {@code min()}, {@code max()} or {@code average()}. Compute such aggregations
  * through the streaming API instead &mdash; for example {@code rowMajorStream().sum()} over all
- * elements, or {@code rowStreams()} / {@code columnStreams()} for per-row or per-column reductions.</p>
+ * elements, or {@code rowStreams()} / {@code columnStreams()} for per-row or per-column reductions.
+ * Unlike {@link #add(IntMatrix)}, the stream {@code sum()} does not wrap: it returns an {@code int} and
+ * throws {@link ArithmeticException} when the total does not fit in one; use
+ * {@code rowMajorStream().asLongStream().sum()} for a {@code long} total.</p>
  *
  * @see LongMatrix
  * @see DoubleMatrix
@@ -135,8 +138,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     static IntMatrix wrapResult(final int[][] a, final int columnCount) throws IllegalArgumentException {
         N.checkArgNotNull(a, cs.a);
 
-        // Every wrapResult(...) call site (here, in Matrix and in Matrices) passes freshly allocated rows, so they are
-        // identity-distinct by construction and the duplicate-row scan can be skipped.
+        // Every wrapResult(...) call site (here, in the sibling matrix classes, in Matrix and in Matrices) passes
+        // freshly allocated rows, so they are identity-distinct by construction and the duplicate-row scan can be skipped.
         return a.length == 0 && columnCount == 0 ? EMPTY_INT_MATRIX : new IntMatrix(a, columnCount, true);
     }
 
@@ -521,7 +524,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @throws IllegalArgumentException if the resulting range would contain more than {@code Integer.MAX_VALUE} elements
      */
     public static IntMatrix range(final int startInclusive, final int endExclusive) throws IllegalArgumentException {
-        return new IntMatrix(new int[][] { Array.range(startInclusive, endExclusive) });
+        return new IntMatrix(new int[][] { ownedRangeRow(Array.range(startInclusive, endExclusive)) });
     }
 
     /**
@@ -547,7 +550,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @throws IllegalArgumentException if {@code step} is zero, or if the resulting range would contain more than {@code Integer.MAX_VALUE} elements
      */
     public static IntMatrix range(final int startInclusive, final int endExclusive, final int step) throws IllegalArgumentException {
-        return new IntMatrix(new int[][] { Array.range(startInclusive, endExclusive, step) });
+        return new IntMatrix(new int[][] { ownedRangeRow(Array.range(startInclusive, endExclusive, step)) });
     }
 
     /**
@@ -571,7 +574,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @throws IllegalArgumentException if the resulting range would contain more than {@code Integer.MAX_VALUE} elements
      */
     public static IntMatrix rangeClosed(final int startInclusive, final int endInclusive) throws IllegalArgumentException {
-        return new IntMatrix(new int[][] { Array.rangeClosed(startInclusive, endInclusive) });
+        return new IntMatrix(new int[][] { ownedRangeRow(Array.rangeClosed(startInclusive, endInclusive)) });
     }
 
     /**
@@ -600,7 +603,20 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @throws IllegalArgumentException if {@code step} is zero, or if the resulting range would contain more than {@code Integer.MAX_VALUE} elements
      */
     public static IntMatrix rangeClosed(final int startInclusive, final int endInclusive, final int step) throws IllegalArgumentException {
-        return new IntMatrix(new int[][] { Array.rangeClosed(startInclusive, endInclusive, step) });
+        return new IntMatrix(new int[][] { ownedRangeRow(Array.rangeClosed(startInclusive, endInclusive, step)) });
+    }
+
+    /**
+     * Returns {@code row}, or a new zero-length array in place of the shared empty-array constant that
+     * {@code Array.range} and {@code Array.rangeClosed} return for an empty range. Every other factory
+     * allocates its own rows; without this, rows taken from two independently created empty range
+     * matrices would be the same array and could not be wrapped together.
+     *
+     * @param row the range values
+     * @return {@code row}, or a new zero-length array if {@code row} is empty
+     */
+    private static int[] ownedRangeRow(final int[] row) {
+        return row.length == 0 ? new int[0] : row;
     }
 
     /**
@@ -1915,7 +1931,8 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * IntMatrix.empty().copy().isEmpty();    // returns true
      * }</pre>
      *
-     * @return a new matrix that is a copy of this matrix with full independence guarantee
+     * @return a copy of this matrix with full independence guarantee, or the shared {@link #empty()} instance
+     *         if this matrix is {@code 0 x 0} (it has no cells to share)
      */
     @Override
     public IntMatrix copy() {
@@ -3157,11 +3174,13 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * <p><b>Overflow:</b> both the per-step products {@code a[i][k] * other[k][j]} and the
      * accumulating sums use standard Java {@code int} arithmetic, which silently wraps modulo
-     * 2<sup>32</sup>. For inputs that may overflow, convert to long first via
-     * {@link #toLongMatrix()} and multiply there.
-     * To keep the wider intermediate value instead, use {@link #matrixMultiplyWidened(IntMatrix)};
-     * to be told about an overflow rather than silently wrapping, use
-     * {@link #matrixMultiplyExact(IntMatrix)}.</p>
+     * 2<sup>32</sup>.
+     * To keep the wider intermediate value instead, use {@link #matrixMultiplyWidened(IntMatrix)}
+     * (the same as multiplying the {@link #toLongMatrix()} conversions); that is not exact for every
+     * {@code int} input, because a {@code long} dot product can itself wrap: two terms of
+     * {@code Integer.MIN_VALUE * Integer.MIN_VALUE} already sum to 2<sup>63</sup>.
+     * To be told about an overflow rather than silently wrapping, use
+     * {@link #matrixMultiplyExact(IntMatrix)} or {@link #matrixMultiplyWidenedExact(IntMatrix)}.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -3255,13 +3274,18 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     }
 
     /**
-     * Multiplies this matrix by {@code other} using {@code long} arithmetic and reports overflow
-     * during the left-to-right accumulation of any dot product.
+     * Multiplies this matrix by {@code other} using {@code long} arithmetic and returns the exact product,
+     * or reports an overflow if a finished dot product does not fit in a {@code long}.
+     *
+     * <p>Only finished cell values are checked. A partial sum may pass the {@code long} range as long as
+     * later terms bring it back: the product of {@code [[MIN, MIN, MIN]]} and
+     * {@code [[MIN], [MIN], [MAX]]} (with {@code MIN}/{@code MAX} the {@code int} bounds) is exactly
+     * {@code 4611686020574871552}, although its first two terms alone already sum to 2<sup>63</sup>.</p>
      *
      * @param other the right-hand matrix
      * @return the matrix product in a {@link LongMatrix}
      * @throws IllegalArgumentException if {@code other} is {@code null} or the inner dimensions differ
-     * @throws ArithmeticException if a dot-product sum overflows {@code long}
+     * @throws ArithmeticException if a finished dot product does not fit in a {@code long}
      */
     public LongMatrix matrixMultiplyWidenedExact(final IntMatrix other) throws IllegalArgumentException, ArithmeticException {
         N.checkArgNotNull(other, cs.other);
@@ -3269,36 +3293,46 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
                 columnCount, other.rowCount, other.columnCount);
 
-        final long[][] result = new long[rowCount][other.columnCount];
+        final int resultColumnCount = other.columnCount;
+        final long[][] result = new long[rowCount][resultColumnCount];
+
+        // Nothing to accumulate: skip the carry array, which for a 0 x N product could be far larger than the result.
+        if (rowCount == 0 || columnCount == 0 || resultColumnCount == 0) {
+            return LongMatrix.wrapResult(result, resultColumnCount);
+        }
+
+        final int[] carries = new int[resultColumnCount];
 
         for (int i = 0; i < rowCount; i++) {
-            for (int k = 0; k < columnCount; k++) {
-                final long left = a[i][k];
+            accumulateExactRow(a[i], other.a, result[i], carries, columnCount, resultColumnCount);
 
-                for (int j = 0; j < other.columnCount; j++) {
-                    result[i][j] = Math.addExact(result[i][j], left * other.a[k][j]);
+            // A row with any non-zero carry throws, so every carry is still zero when the next row starts.
+            for (int j = 0; j < resultColumnCount; j++) {
+                if (carries[j] != 0) {
+                    throw new ArithmeticException("long overflow");
                 }
             }
         }
 
-        return LongMatrix.wrapResult(result, other.columnCount);
+        return LongMatrix.wrapResult(result, resultColumnCount);
     }
 
     /**
      * Multiplies this matrix by {@code other} and returns the exact {@code int} product.
      *
-     * <p>Each dot product is accumulated using checked {@code long} arithmetic and only the finished
-     * cell value is narrowed to {@code int}. Intermediate sums may exceed the {@code int} range:
-     * the product of {@code [[2000000000, 2000000000, -2000000000]]} and {@code [[1], [1], [1]]} is
-     * {@code 2000000000}, not an overflow. An exception is thrown when a finished cell value
-     * does not fit in an {@code int}, or when any intermediate sum exceeds the {@code long} range,
-     * even if later terms would bring the sum back into range.</p>
+     * <p>Each dot product is accumulated in {@code long} arithmetic that keeps track of wrap-around,
+     * and only the finished cell value is checked and narrowed to {@code int}. Intermediate sums may
+     * exceed the {@code int} range, and even the {@code long} range: the product of
+     * {@code [[2000000000, 2000000000, -2000000000]]} and {@code [[1], [1], [1]]} is
+     * {@code 2000000000}, not an overflow. An exception is thrown only when a finished cell value
+     * does not fit in an {@code int}; its message is {@code "long overflow"} if some finished cell does not
+     * even fit in a {@code long} (as {@link #matrixMultiplyWidenedExact(IntMatrix)} would report), and
+     * {@code "integer overflow"} otherwise.</p>
      *
      * @param other the right-hand matrix
      * @return the exact matrix product as an {@code IntMatrix}
      * @throws IllegalArgumentException if {@code other} is {@code null} or the inner dimensions differ
-     * @throws ArithmeticException if an intermediate dot-product sum overflows {@code long},
-     *         or a finished result cell does not fit in an {@code int}
+     * @throws ArithmeticException if a finished result cell does not fit in an {@code int}
      * @see #matrixMultiplyWidenedExact(IntMatrix)
      * @see #matrixMultiply(IntMatrix)
      */
@@ -3315,8 +3349,9 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             return wrapResult(result, resultColumnCount);
         }
 
-        // Only one row needs widened storage; narrow after its checked long dot products finish.
+        // Only one row needs widened storage; narrow after its long dot products finish.
         final long[] sums = new long[resultColumnCount];
+        final int[] carries = new int[resultColumnCount];
         boolean narrowingOverflow = false;
         long firstNarrowingOverflow = 0;
 
@@ -3325,11 +3360,17 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
                 N.fill(sums, 0L);
             }
 
-            accumulateExactRow(a[i], other.a, sums, columnCount, resultColumnCount);
+            accumulateExactRow(a[i], other.a, sums, carries, columnCount, resultColumnCount);
 
             final int[] resultRow = result[i];
 
             for (int j = 0; j < resultColumnCount; j++) {
+                // Finished outside the long range: report it at once, ahead of any int narrowing failure.
+                // Throwing here also keeps every carry zero for the next row.
+                if (carries[j] != 0) {
+                    throw new ArithmeticException("long overflow");
+                }
+
                 final long value = sums[j];
                 resultRow[j] = (int) value;
 
@@ -3340,7 +3381,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             }
         }
 
-        // Checked long overflow anywhere in the product takes precedence over final int narrowing.
+        // Every finished cell fits in a long here; report the first one that does not fit in an int.
         if (narrowingOverflow) {
             Math.toIntExact(firstNarrowingOverflow);
         }
@@ -3349,8 +3390,16 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     }
 
     /**
-     * Adds one left-hand row's checked {@code long} dot-product terms to {@code sums}, visiting the
-     * inner dimension in ascending order so every cell sees the same partial sums as a direct dot product.
+     * Adds one left-hand row's {@code long} dot-product terms to {@code sums}, visiting the inner dimension
+     * in ascending order, and counts every wrap of a partial sum past the {@code long} range in {@code carries}.
+     *
+     * <p>A single {@code int * int} term fits in a {@code long}, but two of them can already overflow it,
+     * and later terms may bring the sum back (for example {@code MIN*MIN + MIN*MIN + MIN*MAX + MIN*MAX}
+     * is {@code 2^32}). Failing on the first wrap, as {@code Math.addExact} does, would reject such exact
+     * results depending on term order. Instead each wrap adds {@code +1} or {@code -1} to the cell's carry,
+     * so a cell's exact dot product is {@code sums[j]} plus {@code carries[j]} times 2<sup>64</sup>: it fits
+     * in a {@code long} exactly when {@code carries[j]} is zero, and {@code sums[j]} is then its value.
+     * A carry cannot overflow, since there is at most one wrap per term.</p>
      *
      * <p>This hot loop is kept out of {@link #matrixMultiplyExact(IntMatrix)} on purpose: written inline
      * in the row loop, it was compiled about 30% slower in most JVM runs, while as a small method of its
@@ -3359,19 +3408,29 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param leftRow the left-hand row
      * @param rightRows the right-hand matrix's rows; at least {@code innerCount} rows of
      *        at least {@code resultColumnCount} elements
-     * @param sums the running sums for the result row, one per result column
+     * @param sums the running (wrapping) sums for the result row, one per result column
+     * @param carries the net number of wraps for each result column; zero on entry
      * @param innerCount the shared inner dimension
      * @param resultColumnCount the number of result columns
-     * @throws ArithmeticException if a partial sum overflows {@code long}
      */
-    private static void accumulateExactRow(final int[] leftRow, final int[][] rightRows, final long[] sums, final int innerCount, final int resultColumnCount)
-            throws ArithmeticException {
+    private static void accumulateExactRow(final int[] leftRow, final int[][] rightRows, final long[] sums, final int[] carries, final int innerCount,
+            final int resultColumnCount) {
         for (int k = 0; k < innerCount; k++) {
             final long left = leftRow[k];
             final int[] rightRow = rightRows[k];
 
             for (int j = 0; j < resultColumnCount; j++) {
-                sums[j] = Math.addExact(sums[j], left * rightRow[j]);
+                final long term = left * rightRow[j];
+                final long sum = sums[j];
+                final long next = sum + term;
+
+                // Same test as Math.addExact: the add wrapped iff sum and term share a sign that next lacks, so the
+                // first shift yields -1 (all bits) for a wrap and 0 otherwise. A wrap moves in the direction of
+                // term's sign, which (term >> 63) | 1 gives as -1 or +1. Kept branch-free on purpose: measured as
+                // fast as the Math.addExact loop it replaced, and about twice as fast in matrixMultiplyWidenedExact.
+                carries[j] += (int) ((((sum ^ next) & (term ^ next)) >> 63) & ((term >> 63) | 1));
+
+                sums[j] = next;
             }
         }
     }
@@ -4418,7 +4477,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      * @param <E> the type of exception that the action may throw
      * @param action the action to be performed for each element; receives each element value
      * @throws IllegalArgumentException if {@code action} is {@code null}
-     * @throws E if {@code action} throws while processing an element in the selected region
+     * @throws E if {@code action} throws while processing a matrix element
      * @see #forEach(int, int, int, int, Throwables.IntConsumer)
      */
     public <E extends Exception> void forEach(final Throwables.IntConsumer<E> action) throws IllegalArgumentException, E {
@@ -4532,7 +4591,7 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     /**
      * Returns a hash code value for this matrix.
      * The hash code is computed from the deep contents of the internal two-dimensional array. A matrix
-     * with no rows has no contents to hash, so its column count participates instead, keeping
+     * with no rows but some columns has no contents to hash, so its column count participates instead, keeping
      * {@code 0 x 3} and {@code 0 x 5} -- which {@code equals} distinguishes -- apart.
      * Matrices with the same dimensions and element values will have equal hash codes,
      * consistent with the {@link #equals(Object)} method.

@@ -788,7 +788,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     /**
      * Returns a structural copy of this matrix.
      * The returned matrix has its own row arrays, so replacing elements or mutating primitive
-     * cells through one matrix does not modify the other's storage.
+     * cells through one matrix does not modify the other's storage. A primitive {@code 0 x 0}
+     * matrix has no cells to copy, so its copy is its type's shared empty instance.
      *
      * <p>For object matrices, element references are copied, not the referenced objects
      * themselves; mutating a shared mutable element can still be observed through both matrices.</p>
@@ -806,7 +807,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * empty.copy().isEmpty();                                  // returns true (empty copy stays empty)
      * }</pre>
      *
-     * @return a new matrix that is a copy of this matrix with the same dimensions and values
+     * @return a copy of this matrix with the same dimensions and values
      */
     public abstract M copy();
 
@@ -1563,7 +1564,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Performs the specified action for each element position in the matrix.
      * The action receives the row and column indices for each element.
      * Elements are processed in row-major order (row by row from left to right) when executed sequentially.
-     * The current thread's parallel policy and runtime support determine whether the operation is
+     * The current thread's parallel policy, matrix size, and runtime support determine whether the operation is
      * parallelized (the default policy is sequential), in which case the order in which
      * positions are visited is unspecified and the supplied action must be thread-safe. Every position is
      * visited exactly once on successful completion. Distinct coordinates have independent cell storage,
@@ -1676,7 +1677,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * Performs the specified action for each element position in the matrix, providing the matrix itself as a parameter.
      * The action receives the row index, column index, and the matrix instance.
      * Elements are processed in row-major order (row by row from left to right) when executed sequentially.
-     * The current thread's parallel policy and runtime support determine whether the operation is
+     * The current thread's parallel policy, matrix size, and runtime support determine whether the operation is
      * parallelized (the default policy is sequential), in which case the order in which
      * positions are visited is unspecified and the supplied action must be thread-safe. Every position is
      * visited exactly once on successful completion. Distinct coordinates have independent cell storage,

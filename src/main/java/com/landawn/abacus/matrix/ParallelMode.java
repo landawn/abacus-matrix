@@ -24,11 +24,10 @@ package com.landawn.abacus.matrix;
  * available policies trade off explicit control against automatic heuristics:</p>
  * <ul>
  *   <li>{@link #FORCE_ON} requests parallel execution irrespective of operation size when the required
- *       runtime support is present and the operation's safety restrictions permit it.</li>
+ *       runtime support is present.</li>
  *   <li>{@link #FORCE_OFF} keeps automatic operations that consult this policy sequential. This is the
  *       default for every thread.</li>
- *   <li>{@link #AUTO} combines runtime support, operation-specific safety restrictions, and the
- *       operation's work-count threshold.</li>
+ *   <li>{@link #AUTO} combines runtime support with the operation's work-count threshold.</li>
  * </ul>
  *
  * <p>Explicit overloads with an {@code inParallel} argument are controlled by that argument and do not
@@ -47,7 +46,7 @@ package com.landawn.abacus.matrix;
 public enum ParallelMode {
     /**
      * Requests parallel execution for automatic operations on the current thread regardless of operation
-     * size, provided the runtime supports it and the operation's safety restrictions permit it.
+     * size, provided the runtime supports it.
      *
      * <p>This mode bypasses only the work-count threshold used by {@link #AUTO}, so even small matrices may
      * be processed in parallel when otherwise eligible. It is most useful when the per-element work is
@@ -67,8 +66,8 @@ public enum ParallelMode {
 
     /**
      * Uses parallel execution for automatic operations on the current thread only when the runtime supports
-     * it, the operation's safety restrictions permit it, and the operation-specific work count meets the
-     * threshold checked by {@link Matrices#shouldRunInParallel(AbstractMatrix, long)}.
+     * it and the operation-specific work count meets the threshold checked by
+     * {@link Matrices#shouldRunInParallel(AbstractMatrix, long)}.
      *
      * <p>This is the recommended mode for most workloads once a caller has opted in to parallelism: small
      * operations stay sequential to avoid parallel-dispatch overhead, while larger eligible operations can
