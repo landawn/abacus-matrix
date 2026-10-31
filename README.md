@@ -10,10 +10,6 @@ values, traverse rows and columns, and perform element-wise arithmetic or matrix
 Primitive matrices keep values in primitive arrays, avoiding boxing for storage and primitive
 operations.
 
-This guide describes the source in this checkout: **abacus-matrix 3.9.0, Java 21 or later**.
-Dependency versions below match [pom.xml](./pom.xml); they do not identify the latest published
-release. Published Javadocs and the generated API index may describe an earlier version.
-
 ## Contents
 
 - [Installation](#installation)
