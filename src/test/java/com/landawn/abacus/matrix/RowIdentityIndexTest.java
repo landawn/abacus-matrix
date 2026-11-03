@@ -2,6 +2,7 @@ package com.landawn.abacus.matrix;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Random;
 
@@ -54,18 +55,58 @@ class RowIdentityIndexTest extends MatrixTestSupport {
     }
 
     @Test
-    void indexAboveTheTableCapacityFallsBackToAnIdentityMapWithTheSameContract() {
-        final int[] shared = { 1 };
-        final Object[] rows = { shared, new int[] { 2 }, shared };
-        // The capacity is only an upper bound, so the fallback is exercised without allocating a huge table.
-        final AbstractMatrix.RowIdentityIndex index = new AbstractMatrix.RowIdentityIndex(rows, AbstractMatrix.RowIdentityIndex.MAX_TABLE_CAPACITY + 1);
+    void chainedLayoutForInputsAboveTheTableCapacityKeepsTheSameContract() {
+        // Above MAX_TABLE_CAPACITY the index used to fall back to an IdentityHashMap, which cannot hold more than
+        // 2^29 - 1 entries and so failed on exactly the inputs it existed for. The chained layout that replaced it is
+        // exercised here with tiny bucket counts, so every chain is long and every bucket collides.
+        assertEquals(1 << 30, AbstractMatrix.RowIdentityIndex.MAX_CHAINED_BUCKET_COUNT);
+        assertTrue(AbstractMatrix.RowIdentityIndex.MAX_CHAINED_BUCKET_COUNT >= 2 * AbstractMatrix.RowIdentityIndex.MAX_TABLE_CAPACITY);
 
-        assertEquals(-1, index.add(0));
-        assertEquals(-1, index.add(1));
-        assertEquals(0, index.add(2));
-        assertEquals(1, index.indexOf(rows[1]));
-        assertEquals(-1, index.indexOf(new int[] { 1 }));
+        final Random random = new Random(27);
+
+        for (final int bucketCount : new int[] { 2, 4, 8, 1024 }) {
+            for (int trial = 0; trial < 200; trial++) {
+                final int n = 1 + random.nextInt(300);
+                final Object[] rows = new Object[n];
+                final java.util.IdentityHashMap<Object, Integer> expected = new java.util.IdentityHashMap<>();
+
+                for (int i = 0; i < n; i++) {
+                    rows[i] = i > 0 && random.nextInt(4) == 0 ? rows[random.nextInt(i)] : new int[] { i };
+                }
+
+                final AbstractMatrix.RowIdentityIndex index = new AbstractMatrix.RowIdentityIndex(rows, n, bucketCount);
+
+                for (int i = 0; i < n; i++) {
+                    final Integer previous = expected.putIfAbsent(rows[i], i);
+                    assertEquals(previous == null ? -1 : previous, index.add(i), "buckets " + bucketCount + ", trial " + trial + ", add " + i);
+                }
+
+                for (int i = 0; i < n; i++) {
+                    assertEquals(expected.get(rows[i]), index.indexOf(rows[i]));
+                }
+
+                assertEquals(-1, index.indexOf(new int[] { 0 }), "an equal but distinct array is not found");
+                assertEquals(-1, index.indexOf(null));
+            }
+        }
+    }
+
+    @Test
+    void chainedLayoutIndexesNullAndPositionsAddedOutOfOrder() {
+        final int[] shared = { 1 };
+        final Object[] rows = { null, shared, new int[] { 2 }, shared, null, new int[0] };
+        final AbstractMatrix.RowIdentityIndex index = new AbstractMatrix.RowIdentityIndex(rows, rows.length, 2);
+
+        // copyFrom adds destination positions that need not start at 0.
+        assertEquals(-1, index.add(5));
+        assertEquals(-1, index.add(3));
+        assertEquals(-1, index.add(2));
+        assertEquals(3, index.add(1));
         assertEquals(-1, index.indexOf(null));
+        assertEquals(-1, index.add(0));
+        assertEquals(0, index.add(4));
+        assertEquals(0, index.indexOf(null));
+        assertEquals(5, index.indexOf(rows[5]));
     }
 
     @Test

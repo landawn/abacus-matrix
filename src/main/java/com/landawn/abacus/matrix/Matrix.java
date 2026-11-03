@@ -3200,8 +3200,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             final T[] aa = a[i];
             final T[] fr = c[i * rowRepeats];
 
-            for (int j = 0; j < columnCount; j++) {
-                N.fill(fr, j * columnRepeats, j * columnRepeats + columnRepeats, aa[j]);
+            if (columnRepeats == 1) {
+                // Repeating whole rows: one bulk copy instead of a one-cell fill per element.
+                N.copy(aa, 0, fr, 0, columnCount);
+            } else {
+                for (int j = 0; j < columnCount; j++) {
+                    N.fill(fr, j * columnRepeats, j * columnRepeats + columnRepeats, aa[j]);
+                }
             }
 
             for (int k = 1; k < rowRepeats; k++) {
@@ -3262,9 +3267,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         }
 
         for (int i = 0; i < rowCount; i++) {
-            for (int j = 0; j < columnRepeats; j++) {
-                N.copy(a[i], 0, c[i], j * columnCount, columnCount);
-            }
+            tileRow(a[i], c[i], columnCount, columnRepeats);
         }
 
         for (int i = 1; i < rowRepeats; i++) {

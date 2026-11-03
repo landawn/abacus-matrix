@@ -346,6 +346,84 @@ public final class Matrices {
         return shouldRunInParallel(m, saturatedMultiply(m.elementCount, resultColumnCount));
     }
 
+    /** The task count {@link #matrixMultiplyInParallel} aims for when a product has too few result rows to keep every core busy. */
+    static final int MATRIX_MULTIPLY_TARGET_TASK_COUNT = Math.max(64, 4 * Runtime.getRuntime().availableProcessors());
+
+    /** The narrowest result-column band {@link #matrixMultiplyInParallel} hands out, in bytes: two cache lines. */
+    static final int MATRIX_MULTIPLY_MIN_BAND_BYTES = 128;
+
+    /**
+     * Computes the blocks of a matrix product, one block of result cells per parallel task.
+     *
+     * @see #matrixMultiplyInParallel(int, int, int, MatrixMultiplyBlockKernel)
+     */
+    @FunctionalInterface
+    interface MatrixMultiplyBlockKernel {
+        /**
+         * Accumulates the result cells of rows {@code [fromRowIndex, toRowIndex)} and columns
+         * {@code [fromColumnIndex, toColumnIndex)}.
+         *
+         * @param fromRowIndex the first result row, inclusive
+         * @param toRowIndex the last result row, exclusive
+         * @param fromColumnIndex the first result column, inclusive
+         * @param toColumnIndex the last result column, exclusive
+         */
+        void multiply(int fromRowIndex, int toRowIndex, int fromColumnIndex, int toColumnIndex);
+    }
+
+    /**
+     * Runs a matrix-product kernel in parallel over disjoint blocks of result cells, each block one
+     * result row or one column band of a result row. The inner dimension is never split, so no two
+     * tasks write the same cell, and a kernel that accumulates it in ascending order produces exactly
+     * the sequential i-k-j result, floating point included.
+     *
+     * <p>A product with at least {@link #MATRIX_MULTIPLY_TARGET_TASK_COUNT} rows gets one full-width
+     * task per row. A product with fewer rows also splits each row into column bands until there are
+     * about that many tasks, so a {@code 1 x 100000} by {@code 100000 x 64} product still runs on
+     * several cores. A band is never narrower than {@link #MATRIX_MULTIPLY_MIN_BAND_BYTES}, though:
+     * every task rewrites its result cells once per inner index, and two tasks sharing a cache line of
+     * a result row make it bounce between cores on each of those writes (8-cell {@code byte} bands
+     * measured 4x slower than the sequential loop). A product that yields a single block runs it on
+     * the calling thread.</p>
+     *
+     * <p>The kernel runs once per block, not once per multiply-add. A per-element lambda through
+     * {@link #forEachCartesianIndices(AbstractMatrix, AbstractMatrix, Throwables.IntTriConsumer, boolean)}
+     * cannot index hoisted rows, and once several matrix types share that call site it is no longer
+     * inlined: a {@code 300 x 300 x 300} float product then ran about 30x slower than this kernel and
+     * about 7x slower than the sequential loop.</p>
+     *
+     * @param rowCount the number of result rows; must not be negative
+     * @param resultColumnCount the number of result columns; must not be negative
+     * @param elementBytes the size in bytes of one result element, which sets the narrowest band; must be positive
+     * @param kernel the block kernel; must be safe to run concurrently on disjoint blocks
+     */
+    static void matrixMultiplyInParallel(final int rowCount, final int resultColumnCount, final int elementBytes, final MatrixMultiplyBlockKernel kernel) {
+        if (rowCount == 0 || resultColumnCount == 0) {
+            return;
+        }
+
+        // Bands split a row evenly (their widths differ by at most one column), and there are at most
+        // resultColumnCount / minBandWidth of them, so none is narrower than minBandWidth.
+        final int minBandWidth = Math.max(1, MATRIX_MULTIPLY_MIN_BAND_BYTES / elementBytes);
+        final int bandCount = rowCount >= MATRIX_MULTIPLY_TARGET_TASK_COUNT ? 1
+                : Math.max(1, Math.min((MATRIX_MULTIPLY_TARGET_TASK_COUNT - 1) / rowCount + 1, resultColumnCount / minBandWidth));
+        // Either bandCount is 1 (one task per row), or rowCount < the target and bandCount <= ceil(target / rowCount),
+        // so the product stays below twice the target: it cannot overflow.
+        final int taskCount = rowCount * bandCount;
+
+        if (taskCount == 1) {
+            kernel.multiply(0, 1, 0, resultColumnCount);
+            return;
+        }
+
+        //noinspection resource
+        IntStream.range(0, taskCount).parallel().forEach(task -> {
+            final int rowIndex = task / bandCount;
+            final long band = task % bandCount;
+            kernel.multiply(rowIndex, rowIndex + 1, (int) (band * resultColumnCount / bandCount), (int) ((band + 1) * resultColumnCount / bandCount));
+        });
+    }
+
     /**
      * Checks if two matrices have the same shape (identical dimensions).
      *
@@ -2075,21 +2153,44 @@ public final class Matrices {
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
         final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size));
-        final boolean shareArray = shareIntermediateArray && !zipInParallel;
-        final byte[] intermediateArray = new byte[size];
         final int[][] result = new int[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> action = (i, j) -> {
-            final byte[] tmp = shareArray ? intermediateArray : N.clone(intermediateArray);
+        if (zipInParallel) {
+            final Throwables.IntBiConsumer<E> action = (i, j) -> {
+                final byte[] tmp = new byte[size]; // concurrent calls never share a callback array
 
-            for (int k = 0; k < size; k++) {
-                tmp[k] = matrices[k].a[i][j];
+                for (int k = 0; k < size; k++) {
+                    tmp[k] = matrices[k].a[i][j];
+                }
+
+                result[i][j] = zipFunction.apply(tmp);
+            };
+
+            forEachIndices(rowCount, columnCount, action, true);
+        } else {
+            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+            // An unshared callback array is allocated fresh, about 2x cheaper than cloning a zeroed template.
+            final byte[] sharedArray = shareIntermediateArray ? new byte[size] : null;
+            final byte[][] rows = new byte[size][];
+
+            for (int i = 0; i < rowCount; i++) {
+                for (int k = 0; k < size; k++) {
+                    rows[k] = matrices[k].a[i];
+                }
+
+                final int[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    final byte[] tmp = sharedArray == null ? new byte[size] : sharedArray;
+
+                    for (int k = 0; k < size; k++) {
+                        tmp[k] = rows[k][j];
+                    }
+
+                    resultRow[j] = zipFunction.apply(tmp);
+                }
             }
-
-            result[i][j] = zipFunction.apply(tmp);
-        };
-
-        forEachIndices(rowCount, columnCount, action, zipInParallel);
+        }
 
         return IntMatrix.wrapResult(result, columnCount);
     }
@@ -2221,21 +2322,44 @@ public final class Matrices {
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
         final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size));
-        final boolean shareArray = shareIntermediateArray && !zipInParallel;
-        final byte[] intermediateArray = new byte[size];
         final R[][] result = newMatrixArray(rowCount, columnCount, normalizedTargetType);
 
-        final Throwables.IntBiConsumer<E> action = (i, j) -> {
-            final byte[] tmp = shareArray ? intermediateArray : N.clone(intermediateArray);
+        if (zipInParallel) {
+            final Throwables.IntBiConsumer<E> action = (i, j) -> {
+                final byte[] tmp = new byte[size]; // concurrent calls never share a callback array
 
-            for (int k = 0; k < size; k++) {
-                tmp[k] = matrices[k].a[i][j];
+                for (int k = 0; k < size; k++) {
+                    tmp[k] = matrices[k].a[i][j];
+                }
+
+                result[i][j] = zipFunction.apply(tmp);
+            };
+
+            forEachIndices(rowCount, columnCount, action, true);
+        } else {
+            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+            // An unshared callback array is allocated fresh, about 2x cheaper than cloning a zeroed template.
+            final byte[] sharedArray = shareIntermediateArray ? new byte[size] : null;
+            final byte[][] rows = new byte[size][];
+
+            for (int i = 0; i < rowCount; i++) {
+                for (int k = 0; k < size; k++) {
+                    rows[k] = matrices[k].a[i];
+                }
+
+                final R[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    final byte[] tmp = sharedArray == null ? new byte[size] : sharedArray;
+
+                    for (int k = 0; k < size; k++) {
+                        tmp[k] = rows[k][j];
+                    }
+
+                    resultRow[j] = zipFunction.apply(tmp);
+                }
             }
-
-            result[i][j] = zipFunction.apply(tmp);
-        };
-
-        forEachIndices(rowCount, columnCount, action, zipInParallel);
+        }
 
         return Matrix.newResult(result, normalizedTargetType, columnCount);
     }
@@ -2711,21 +2835,44 @@ public final class Matrices {
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
         final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size));
-        final boolean shareArray = shareIntermediateArray && !zipInParallel;
-        final int[] intermediateArray = new int[size];
         final long[][] result = new long[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> action = (i, j) -> {
-            final int[] tmp = shareArray ? intermediateArray : N.clone(intermediateArray);
+        if (zipInParallel) {
+            final Throwables.IntBiConsumer<E> action = (i, j) -> {
+                final int[] tmp = new int[size]; // concurrent calls never share a callback array
 
-            for (int k = 0; k < size; k++) {
-                tmp[k] = matrices[k].a[i][j];
+                for (int k = 0; k < size; k++) {
+                    tmp[k] = matrices[k].a[i][j];
+                }
+
+                result[i][j] = zipFunction.apply(tmp);
+            };
+
+            forEachIndices(rowCount, columnCount, action, true);
+        } else {
+            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+            // An unshared callback array is allocated fresh, about 2x cheaper than cloning a zeroed template.
+            final int[] sharedArray = shareIntermediateArray ? new int[size] : null;
+            final int[][] rows = new int[size][];
+
+            for (int i = 0; i < rowCount; i++) {
+                for (int k = 0; k < size; k++) {
+                    rows[k] = matrices[k].a[i];
+                }
+
+                final long[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    final int[] tmp = sharedArray == null ? new int[size] : sharedArray;
+
+                    for (int k = 0; k < size; k++) {
+                        tmp[k] = rows[k][j];
+                    }
+
+                    resultRow[j] = zipFunction.apply(tmp);
+                }
             }
-
-            result[i][j] = zipFunction.apply(tmp);
-        };
-
-        forEachIndices(rowCount, columnCount, action, zipInParallel);
+        }
 
         return LongMatrix.wrapResult(result, columnCount);
     }
@@ -2986,21 +3133,44 @@ public final class Matrices {
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
         final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size));
-        final boolean shareArray = shareIntermediateArray && !zipInParallel;
-        final int[] intermediateArray = new int[size];
         final double[][] result = new double[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> action = (i, j) -> {
-            final int[] tmp = shareArray ? intermediateArray : N.clone(intermediateArray);
+        if (zipInParallel) {
+            final Throwables.IntBiConsumer<E> action = (i, j) -> {
+                final int[] tmp = new int[size]; // concurrent calls never share a callback array
 
-            for (int k = 0; k < size; k++) {
-                tmp[k] = matrices[k].a[i][j];
+                for (int k = 0; k < size; k++) {
+                    tmp[k] = matrices[k].a[i][j];
+                }
+
+                result[i][j] = zipFunction.apply(tmp);
+            };
+
+            forEachIndices(rowCount, columnCount, action, true);
+        } else {
+            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+            // An unshared callback array is allocated fresh, about 2x cheaper than cloning a zeroed template.
+            final int[] sharedArray = shareIntermediateArray ? new int[size] : null;
+            final int[][] rows = new int[size][];
+
+            for (int i = 0; i < rowCount; i++) {
+                for (int k = 0; k < size; k++) {
+                    rows[k] = matrices[k].a[i];
+                }
+
+                final double[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    final int[] tmp = sharedArray == null ? new int[size] : sharedArray;
+
+                    for (int k = 0; k < size; k++) {
+                        tmp[k] = rows[k][j];
+                    }
+
+                    resultRow[j] = zipFunction.apply(tmp);
+                }
             }
-
-            result[i][j] = zipFunction.apply(tmp);
-        };
-
-        forEachIndices(rowCount, columnCount, action, zipInParallel);
+        }
 
         return DoubleMatrix.wrapResult(result, columnCount);
     }
@@ -3130,21 +3300,44 @@ public final class Matrices {
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
         final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size));
-        final boolean shareArray = shareIntermediateArray && !zipInParallel;
-        final int[] intermediateArray = new int[size];
         final R[][] result = newMatrixArray(rowCount, columnCount, normalizedTargetType);
 
-        final Throwables.IntBiConsumer<E> action = (i, j) -> {
-            final int[] tmp = shareArray ? intermediateArray : N.clone(intermediateArray);
+        if (zipInParallel) {
+            final Throwables.IntBiConsumer<E> action = (i, j) -> {
+                final int[] tmp = new int[size]; // concurrent calls never share a callback array
 
-            for (int k = 0; k < size; k++) {
-                tmp[k] = matrices[k].a[i][j];
+                for (int k = 0; k < size; k++) {
+                    tmp[k] = matrices[k].a[i][j];
+                }
+
+                result[i][j] = zipFunction.apply(tmp);
+            };
+
+            forEachIndices(rowCount, columnCount, action, true);
+        } else {
+            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+            // An unshared callback array is allocated fresh, about 2x cheaper than cloning a zeroed template.
+            final int[] sharedArray = shareIntermediateArray ? new int[size] : null;
+            final int[][] rows = new int[size][];
+
+            for (int i = 0; i < rowCount; i++) {
+                for (int k = 0; k < size; k++) {
+                    rows[k] = matrices[k].a[i];
+                }
+
+                final R[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    final int[] tmp = sharedArray == null ? new int[size] : sharedArray;
+
+                    for (int k = 0; k < size; k++) {
+                        tmp[k] = rows[k][j];
+                    }
+
+                    resultRow[j] = zipFunction.apply(tmp);
+                }
             }
-
-            result[i][j] = zipFunction.apply(tmp);
-        };
-
-        forEachIndices(rowCount, columnCount, action, zipInParallel);
+        }
 
         return Matrix.newResult(result, normalizedTargetType, columnCount);
     }
@@ -3611,21 +3804,44 @@ public final class Matrices {
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
         final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size));
-        final boolean shareArray = shareIntermediateArray && !zipInParallel;
-        final long[] intermediateArray = new long[size];
         final double[][] result = new double[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> action = (i, j) -> {
-            final long[] tmp = shareArray ? intermediateArray : N.clone(intermediateArray);
+        if (zipInParallel) {
+            final Throwables.IntBiConsumer<E> action = (i, j) -> {
+                final long[] tmp = new long[size]; // concurrent calls never share a callback array
 
-            for (int k = 0; k < size; k++) {
-                tmp[k] = matrices[k].a[i][j];
+                for (int k = 0; k < size; k++) {
+                    tmp[k] = matrices[k].a[i][j];
+                }
+
+                result[i][j] = zipFunction.apply(tmp);
+            };
+
+            forEachIndices(rowCount, columnCount, action, true);
+        } else {
+            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+            // An unshared callback array is allocated fresh, about 2x cheaper than cloning a zeroed template.
+            final long[] sharedArray = shareIntermediateArray ? new long[size] : null;
+            final long[][] rows = new long[size][];
+
+            for (int i = 0; i < rowCount; i++) {
+                for (int k = 0; k < size; k++) {
+                    rows[k] = matrices[k].a[i];
+                }
+
+                final double[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    final long[] tmp = sharedArray == null ? new long[size] : sharedArray;
+
+                    for (int k = 0; k < size; k++) {
+                        tmp[k] = rows[k][j];
+                    }
+
+                    resultRow[j] = zipFunction.apply(tmp);
+                }
             }
-
-            result[i][j] = zipFunction.apply(tmp);
-        };
-
-        forEachIndices(rowCount, columnCount, action, zipInParallel);
+        }
 
         return DoubleMatrix.wrapResult(result, columnCount);
     }
@@ -3754,21 +3970,44 @@ public final class Matrices {
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
         final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size));
-        final boolean shareArray = shareIntermediateArray && !zipInParallel;
-        final long[] intermediateArray = new long[size];
         final R[][] result = newMatrixArray(rowCount, columnCount, normalizedTargetType);
 
-        final Throwables.IntBiConsumer<E> action = (i, j) -> {
-            final long[] tmp = shareArray ? intermediateArray : N.clone(intermediateArray);
+        if (zipInParallel) {
+            final Throwables.IntBiConsumer<E> action = (i, j) -> {
+                final long[] tmp = new long[size]; // concurrent calls never share a callback array
 
-            for (int k = 0; k < size; k++) {
-                tmp[k] = matrices[k].a[i][j];
+                for (int k = 0; k < size; k++) {
+                    tmp[k] = matrices[k].a[i][j];
+                }
+
+                result[i][j] = zipFunction.apply(tmp);
+            };
+
+            forEachIndices(rowCount, columnCount, action, true);
+        } else {
+            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+            // An unshared callback array is allocated fresh, about 2x cheaper than cloning a zeroed template.
+            final long[] sharedArray = shareIntermediateArray ? new long[size] : null;
+            final long[][] rows = new long[size][];
+
+            for (int i = 0; i < rowCount; i++) {
+                for (int k = 0; k < size; k++) {
+                    rows[k] = matrices[k].a[i];
+                }
+
+                final R[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    final long[] tmp = sharedArray == null ? new long[size] : sharedArray;
+
+                    for (int k = 0; k < size; k++) {
+                        tmp[k] = rows[k][j];
+                    }
+
+                    resultRow[j] = zipFunction.apply(tmp);
+                }
             }
-
-            result[i][j] = zipFunction.apply(tmp);
-        };
-
-        forEachIndices(rowCount, columnCount, action, zipInParallel);
+        }
 
         return Matrix.newResult(result, normalizedTargetType, columnCount);
     }
@@ -4099,21 +4338,44 @@ public final class Matrices {
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
         final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size));
-        final boolean shareArray = shareIntermediateArray && !zipInParallel;
-        final double[] intermediateArray = new double[size];
         final R[][] result = newMatrixArray(rowCount, columnCount, normalizedTargetType);
 
-        final Throwables.IntBiConsumer<E> action = (i, j) -> {
-            final double[] tmp = shareArray ? intermediateArray : N.clone(intermediateArray);
+        if (zipInParallel) {
+            final Throwables.IntBiConsumer<E> action = (i, j) -> {
+                final double[] tmp = new double[size]; // concurrent calls never share a callback array
 
-            for (int k = 0; k < size; k++) {
-                tmp[k] = matrices[k].a[i][j];
+                for (int k = 0; k < size; k++) {
+                    tmp[k] = matrices[k].a[i][j];
+                }
+
+                result[i][j] = zipFunction.apply(tmp);
+            };
+
+            forEachIndices(rowCount, columnCount, action, true);
+        } else {
+            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+            // An unshared callback array is allocated fresh, about 2x cheaper than cloning a zeroed template.
+            final double[] sharedArray = shareIntermediateArray ? new double[size] : null;
+            final double[][] rows = new double[size][];
+
+            for (int i = 0; i < rowCount; i++) {
+                for (int k = 0; k < size; k++) {
+                    rows[k] = matrices[k].a[i];
+                }
+
+                final R[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    final double[] tmp = sharedArray == null ? new double[size] : sharedArray;
+
+                    for (int k = 0; k < size; k++) {
+                        tmp[k] = rows[k][j];
+                    }
+
+                    resultRow[j] = zipFunction.apply(tmp);
+                }
             }
-
-            result[i][j] = zipFunction.apply(tmp);
-        };
-
-        forEachIndices(rowCount, columnCount, action, zipInParallel);
+        }
 
         return Matrix.newResult(result, normalizedTargetType, columnCount);
     }
@@ -4706,21 +4968,46 @@ public final class Matrices {
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
         final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size));
-        final boolean shareArray = shareIntermediateArray && !zipInParallel;
+        // The callback array must have the exact runtime type normalizedInputType, so unshared arrays are
+        // clones of this all-null template rather than reflective allocations.
         final T[] intermediateArray = N.newArray(normalizedInputType, size);
         final R[][] result = newMatrixArray(rowCount, columnCount, normalizedTargetType);
 
-        final Throwables.IntBiConsumer<E> action = (i, j) -> {
-            final T[] tmp = shareArray ? intermediateArray : N.clone(intermediateArray);
+        if (zipInParallel) {
+            final Throwables.IntBiConsumer<E> action = (i, j) -> {
+                final T[] tmp = N.clone(intermediateArray); // concurrent calls never share a callback array
 
-            for (int k = 0; k < size; k++) {
-                tmp[k] = matrices[k].a[i][j];
+                for (int k = 0; k < size; k++) {
+                    tmp[k] = matrices[k].a[i][j];
+                }
+
+                result[i][j] = zipFunction.apply(tmp);
+            };
+
+            forEachIndices(rowCount, columnCount, action, true);
+        } else {
+            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+            @SuppressWarnings("unchecked")
+            final T[][] rows = (T[][]) new Object[size][]; // T erases to Object, so this buffer accepts every input's row array
+
+            for (int i = 0; i < rowCount; i++) {
+                for (int k = 0; k < size; k++) {
+                    rows[k] = matrices[k].a[i];
+                }
+
+                final R[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    final T[] tmp = shareIntermediateArray ? intermediateArray : N.clone(intermediateArray);
+
+                    for (int k = 0; k < size; k++) {
+                        tmp[k] = rows[k][j];
+                    }
+
+                    resultRow[j] = zipFunction.apply(tmp);
+                }
             }
-
-            result[i][j] = zipFunction.apply(tmp);
-        };
-
-        forEachIndices(rowCount, columnCount, action, zipInParallel);
+        }
 
         return Matrix.newResult(result, normalizedTargetType, columnCount);
     }
@@ -4749,7 +5036,10 @@ public final class Matrices {
     /**
      * Resolves a deterministically ranked assignable common type for the two input types.
      *
-     * <p>This search considers both superclasses and interfaces. It ranks candidates by total inheritance
+     * <p>A {@code null} argument is ignored ({@link Object} is returned when both are {@code null}), and
+     * when either type is assignable from the other, that type is returned without ranking.</p>
+     *
+     * <p>Otherwise this search considers both superclasses and interfaces. It ranks candidates by total inheritance
      * distance, then by type category and public-method count, with specificity and name breaking remaining
      * ties. Because distance takes priority, the result need not be the most specific possible common type.
      * {@link Object} is returned when no candidate is selected.</p>
@@ -4819,7 +5109,8 @@ public final class Matrices {
     /**
      * Resolves a deterministically ranked common element type shared by all the given matrices.
      *
-     * <p>This method ranks the types that are assignable from every original matrix element
+     * <p>An element type that is assignable from every other matrix element type is returned directly.
+     * Otherwise this method ranks the types that are assignable from every original matrix element
      * type using the distance-first ranking described by {@link #resolveCommonAssignableType(Class, Class)}.
      * Considering all inputs together keeps the result independent of matrix order. The result need not be
      * the most specific possible common type; {@link Object} is returned when no candidate is selected. Empty matrices
@@ -4864,6 +5155,21 @@ public final class Matrices {
      * @throws SecurityException if a security manager denies access to type metadata while inferring the common runtime element type
      */
     private static Class<?> resolveCommonType(final Class<?>[] types) throws ArrayIndexOutOfBoundsException, SecurityException {
+        // An input type assignable from every other input is the most specific common type, exactly as the
+        // two-type resolveCommonAssignableType returns it. Without this check the distance ranking below can
+        // prefer a shared interface wider than every input (MenuContainer for {Frame, Component}), and the
+        // deprecated zips then hand callers a MenuContainer[] where their static type promises Component[].
+        // At most one class is assignable from all the others, so the result is independent of input order.
+        outer: for (final Class<?> candidate : types) {
+            for (final Class<?> type : types) {
+                if (!candidate.isAssignableFrom(type)) {
+                    continue outer;
+                }
+            }
+
+            return candidate;
+        }
+
         boolean allReferenceArrays = types.length > 0;
 
         for (final Class<?> type : types) {

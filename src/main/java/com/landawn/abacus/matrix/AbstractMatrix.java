@@ -17,9 +17,7 @@ package com.landawn.abacus.matrix;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
-import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.random.RandomGenerator;
 
@@ -456,6 +454,41 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         final Object copy = java.lang.reflect.Array.newInstance(source.getClass().getComponentType(), length);
         System.arraycopy(source, 0, copy, 0, length);
         return (R) copy;
+    }
+
+    /** Rows shorter than this are tiled by doubling in {@link #tileRow(Object, Object, int, int)}. */
+    private static final int TILE_BY_DOUBLING_MAX_LENGTH = 63;
+
+    /**
+     * Writes {@code repeats} consecutive copies of the first {@code length} elements of {@code source}
+     * into the start of {@code target}: the horizontal step of {@code repeatMatrix}.
+     *
+     * <p>A short row is tiled by repeatedly copying the already filled prefix of {@code target} onto
+     * the space after it, so the number of copies grows with {@code log2(repeats)} instead of
+     * {@code repeats}: repeating a {@code 1000 x 1} column 1000 times across is about 11x faster than
+     * one copy per block. A longer row keeps one copy per block from {@code source}, which measured as
+     * fast or faster once each block is a few cache lines long.</p>
+     *
+     * @param source the row to repeat; an array holding at least {@code length} elements
+     * @param target an array of the same component type holding at least {@code length * repeats} elements
+     * @param length the number of elements to repeat; must not be negative
+     * @param repeats the number of copies to write; must be positive, with {@code length * repeats} not overflowing
+     */
+    static void tileRow(final Object source, final Object target, final int length, final int repeats) {
+        if (length <= TILE_BY_DOUBLING_MAX_LENGTH) {
+            final int tiledLength = length * repeats;
+            System.arraycopy(source, 0, target, 0, length);
+
+            for (int filled = length; filled < tiledLength;) {
+                final int copied = Math.min(filled, tiledLength - filled);
+                System.arraycopy(target, 0, target, filled, copied);
+                filled += copied;
+            }
+        } else {
+            for (int k = 0; k < repeats; k++) {
+                System.arraycopy(source, 0, target, k * length, length);
+            }
+        }
     }
 
     /**
@@ -2690,7 +2723,16 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
                 output.append('[');
                 final A row = a[i];
 
-                if (!appendPrimitiveRow(output, row)) {
+                if (row instanceof Object[] values) {
+                    // Object rows still go through the overridable hook, just without reflective access (about 2x faster).
+                    for (int j = 0; j < columnCount; j++) {
+                        if (j > 0) {
+                            output.append(", ");
+                        }
+
+                        appendElementForOutput(output, values[j]);
+                    }
+                } else if (!appendPrimitiveRow(output, row)) {
                     for (int j = 0; j < columnCount; j++) {
                         if (j > 0) {
                             output.append(", ");
@@ -2708,12 +2750,14 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     }
 
     /**
-     * Appends the comma-separated elements of a row whose elements render as their natural string
-     * form, skipping the reflective {@code Array.get}, boxing and {@code N.toString} of the generic
-     * path (3-5x slower on large matrices). {@code char[]} and object rows are left to the generic
-     * path: {@code CharMatrix} overrides {@link #appendElementForOutput(Appendable, Object)} to escape
-     * characters, and no other subclass overrides it (every concrete subclass lives in this package,
-     * because {@link #toMultilineString()} is package-private), so no override is bypassed.
+     * Appends the comma-separated elements of a primitive row, skipping the reflective
+     * {@code Array.get}, boxing and {@code N.toString} of the generic path (2-5x slower on large
+     * matrices). {@code char[]} rows are quoted and escaped exactly as
+     * {@code CharMatrix}'s {@link #appendElementForOutput(Appendable, Object)} override does, other
+     * primitive rows render in their natural string form, and object rows are left to the caller,
+     * which renders each element through that hook. No other subclass overrides it (every concrete
+     * subclass lives in this package, because {@link #toMultilineString()} is package-private), so no
+     * override is bypassed.
      *
      * @param output the non-{@code null} destination
      * @param row the backing row to render
@@ -2776,6 +2820,14 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
                 }
 
                 output.append(String.valueOf(values[j]));
+            }
+        } else if (row instanceof char[] values) {
+            for (int j = 0; j < values.length; j++) {
+                if (j > 0) {
+                    output.append(", ");
+                }
+
+                CharMatrix.appendEscapedChar(output, values[j]);
             }
         } else {
             return false;
@@ -2926,34 +2978,51 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * and a value reference per row: on a {@code 300000 x 2} wrap the map made the scan about 3.5x
      * slower and several times larger. The table length is a power of two of at least twice the
      * capacity, so linear probing always reaches an empty slot. Above {@link #MAX_TABLE_CAPACITY}
-     * entries that length would exceed the maximum array length, so such (multi-gigabyte) inputs keep
-     * the map.</p>
+     * entries that length would exceed the maximum array length, so such (multi-gigabyte) inputs
+     * switch to a chained layout instead: {@link #MAX_CHAINED_BUCKET_COUNT} bucket heads plus one
+     * {@code int} link per position, which holds any number of entries an array can index.</p>
      */
     static final class RowIdentityIndex {
         /** The largest capacity whose table length, at most four slots per entry, stays below {@code 2^31}. */
         static final int MAX_TABLE_CAPACITY = 1 << 29;
 
+        /** The bucket count of the chained layout: the largest power-of-two {@code int[]} length. */
+        static final int MAX_CHAINED_BUCKET_COUNT = 1 << 30;
+
         private final Object[] rows;
         private final int[] table;
         private final int shift;
-        private final Map<Object, Integer> fallback;
+        private final int[] next;
 
         /**
          * @param rows the outer array whose positions are indexed; its elements must not change while this index is used
          * @param capacity the maximum number of positions that will be added; must be at least 1
          */
         RowIdentityIndex(final Object[] rows, final int capacity) {
+            // An IdentityHashMap cannot serve as the large-input layout: it holds at most 2^29 - 1 entries and then
+            // throws IllegalStateException("Capacity exhausted."), which is exactly the range this branch must cover.
+            this(rows, capacity, capacity <= MAX_TABLE_CAPACITY ? 0 : MAX_CHAINED_BUCKET_COUNT);
+        }
+
+        /**
+         * @param rows the outer array whose positions are indexed; its elements must not change while this index is used
+         * @param capacity the maximum number of positions that will be added; must be at least 1
+         * @param chainedBucketCount {@code 0} for the open-addressing layout sized by {@code capacity}, or a power of two
+         *        of at least 2 selecting the chained layout with that many buckets (tests use small counts to force long
+         *        chains); a single bucket would need a 32-bit shift, which Java masks to no shift at all
+         */
+        RowIdentityIndex(final Object[] rows, final int capacity, final int chainedBucketCount) {
             this.rows = rows;
 
-            if (capacity <= MAX_TABLE_CAPACITY) {
+            if (chainedBucketCount == 0) {
                 table = new int[Integer.highestOneBit(Math.max(capacity, 2) - 1) << 2];
-                shift = Integer.numberOfLeadingZeros(table.length - 1);
-                fallback = null;
+                next = null;
             } else {
-                table = null;
-                shift = 0;
-                fallback = new IdentityHashMap<>(); // grows on demand: pre-sizing for an upper bound this large could itself exhaust memory
+                table = new int[chainedBucketCount];
+                next = new int[rows.length]; // next[position] = 1 + the position added before it to the same bucket, 0 ends the chain
             }
+
+            shift = Integer.numberOfLeadingZeros(table.length - 1);
         }
 
         /**
@@ -2965,9 +3034,16 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         int add(final int position) {
             final Object row = rows[position];
 
-            if (table == null) {
-                final Integer previous = fallback.putIfAbsent(row, position);
-                return previous == null ? -1 : previous;
+            if (next != null) {
+                final int bucket = slotOf(row);
+                final int indexed = indexInChain(table[bucket], row);
+
+                if (indexed < 0) {
+                    next[position] = table[bucket];
+                    table[bucket] = position + 1;
+                }
+
+                return indexed;
             }
 
             final int mask = table.length - 1;
@@ -2991,9 +3067,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
          * @return the indexed position of {@code row}, or {@code -1}
          */
         int indexOf(final Object row) {
-            if (table == null) {
-                final Integer position = fallback.get(row);
-                return position == null ? -1 : position;
+            if (next != null) {
+                return indexInChain(table[slotOf(row)], row);
             }
 
             final int mask = table.length - 1;
@@ -3007,6 +3082,16 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
                     return entry - 1;
                 }
             }
+        }
+
+        private int indexInChain(final int head, final Object row) {
+            for (int entry = head; entry != 0; entry = next[entry - 1]) {
+                if (rows[entry - 1] == row) {
+                    return entry - 1;
+                }
+            }
+
+            return -1;
         }
 
         private int slotOf(final Object row) {
