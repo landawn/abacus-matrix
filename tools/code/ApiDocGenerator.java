@@ -15,7 +15,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -36,12 +35,17 @@ import com.sun.source.doctree.DeprecatedTree;
 import com.sun.source.doctree.DocCommentTree;
 import com.sun.source.doctree.DocTree;
 import com.sun.source.doctree.EndElementTree;
+import com.sun.source.doctree.EntityTree;
+import com.sun.source.doctree.LinkTree;
 import com.sun.source.doctree.LiteralTree;
 import com.sun.source.doctree.ParamTree;
+import com.sun.source.doctree.ReferenceTree;
 import com.sun.source.doctree.ReturnTree;
 import com.sun.source.doctree.SeeTree;
 import com.sun.source.doctree.StartElementTree;
+import com.sun.source.doctree.TextTree;
 import com.sun.source.doctree.ThrowsTree;
+import com.sun.source.doctree.ValueTree;
 import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.AssignmentTree;
 import com.sun.source.tree.BlockTree;
@@ -51,6 +55,7 @@ import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.ImportTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.ModifiersTree;
+import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.TypeParameterTree;
 import com.sun.source.tree.VariableTree;
@@ -94,6 +99,12 @@ public final class ApiDocGenerator {
     private static final class ThrowInfo {
         String type;
         String condition;
+    }
+
+    private static final class EnumConstantInfo {
+        String name;
+        String javadocSummary;
+        DeprecatedInfo deprecated;
     }
 
     private static final class ConstructorInfo {
@@ -143,7 +154,12 @@ public final class ApiDocGenerator {
         String javadocSummary;
         String threadSafety = "unspecified";
         String nullability = "unspecified";
+        String declaration;
+        String superclass;
+        List<String> interfaces = new ArrayList<>();
+        List<String> permits = new ArrayList<>();
         List<TypeParamInfo> typeParams = new ArrayList<>();
+        List<EnumConstantInfo> enumConstants = new ArrayList<>();
         List<ConstructorInfo> constructors = new ArrayList<>();
         List<MethodInfo> methods = new ArrayList<>();
         List<FieldInfo> fields = new ArrayList<>();
@@ -178,6 +194,19 @@ public final class ApiDocGenerator {
         String performance;
     }
 
+    // HTML elements that separate blocks of prose; rendered as a space so adjacent words do not merge.
+    private static final Set<String> BLOCK_HTML_ELEMENTS = Set.of("p", "br", "hr", "div", "ul", "ol", "li", "dl", "dt", "dd", "pre", "table", "thead",
+            "tbody", "tfoot", "tr", "td", "th", "caption", "blockquote", "h1", "h2", "h3", "h4", "h5", "h6");
+
+    private static final Map<String, String> HTML_ENTITIES = Map.ofEntries(Map.entry("lt", "<"), Map.entry("gt", ">"), Map.entry("amp", "&"),
+            Map.entry("quot", "\""), Map.entry("apos", "'"), Map.entry("nbsp", " "), Map.entry("mdash", "—"), Map.entry("ndash", "–"),
+            Map.entry("times", "×"), Map.entry("divide", "÷"), Map.entry("le", "≤"), Map.entry("ge", "≥"), Map.entry("ne", "≠"),
+            Map.entry("plusmn", "±"), Map.entry("minus", "−"), Map.entry("middot", "·"), Map.entry("hellip", "…"),
+            Map.entry("rarr", "→"), Map.entry("larr", "←"), Map.entry("harr", "↔"), Map.entry("infin", "∞"),
+            Map.entry("deg", "°"), Map.entry("sup2", "²"), Map.entry("laquo", "«"), Map.entry("raquo", "»"),
+            Map.entry("lsquo", "‘"), Map.entry("rsquo", "’"), Map.entry("ldquo", "“"), Map.entry("rdquo", "”"),
+            Map.entry("copy", "©"));
+
     private static int methodOrder;
 
     public static void main(final String[] args) throws Exception {
@@ -187,6 +216,7 @@ public final class ApiDocGenerator {
         final Path pomPath = args.length > 3 ? Path.of(args[3]) : Path.of("pom.xml");
 
         final LibraryInfo library = readLibraryInfo(pomPath);
+        library.gitSha = readGitSha(pomPath.toAbsolutePath().getParent());
         final List<Path> javaFiles = listJavaFiles(sourceRoot);
         if (javaFiles.isEmpty()) {
             throw new IllegalStateException("No Java source files under " + sourceRoot);
@@ -319,6 +349,17 @@ public final class ApiDocGenerator {
         type.modifiers = sortedModifiers(classTree.getModifiers(), parentType);
         type.typeParams = readTypeParams(classTree.getTypeParameters());
         type.nullability = inferNullability(classTree.getModifiers().getAnnotations(), "");
+        // javac reports an interface's super-interfaces through getImplementsClause().
+        if (classTree.getExtendsClause() != null) {
+            type.superclass = normalize(classTree.getExtendsClause().toString());
+        }
+        for (final Tree t : classTree.getImplementsClause()) {
+            type.interfaces.add(normalize(t.toString()));
+        }
+        for (final Tree t : classTree.getPermitsClause()) {
+            type.permits.add(normalize(t.toString()));
+        }
+        type.declaration = buildTypeDeclaration(classTree, type);
 
         final DocInfo typeDoc = readDoc(docTrees, typePath);
         if (typeDoc != null) {
@@ -329,13 +370,26 @@ public final class ApiDocGenerator {
 
         for (final Tree member : classTree.getMembers()) {
             if (member instanceof VariableTree varTree) {
+                if (isEnumConstant(varTree, classTree)) {
+                    final DocInfo constantDoc = readDoc(docTrees, new TreePath(typePath, varTree));
+                    final EnumConstantInfo constant = new EnumConstantInfo();
+                    constant.name = varTree.getName().toString();
+                    constant.javadocSummary = constantDoc == null ? null : constantDoc.summary;
+                    constant.deprecated = readDeprecated(varTree.getModifiers(), constantDoc);
+                    type.enumConstants.add(constant);
+                    continue;
+                }
                 if (!isPublicField(varTree, classTree)) {
                     continue;
                 }
                 final FieldInfo field = new FieldInfo();
                 field.name = varTree.getName().toString();
                 field.type = normalize(varTree.getType() == null ? "" : varTree.getType().toString());
-                field.modifiers = sortedModifiers(varTree.getModifiers(), null);
+                field.modifiers = sortedModifiers(varTree.getModifiers(), type);
+                if (classTree.getKind() == Tree.Kind.INTERFACE || classTree.getKind() == Tree.Kind.ANNOTATION_TYPE) {
+                    // Interface fields are implicitly public static final.
+                    field.modifiers = List.of("public", "static", "final");
+                }
                 if (varTree.getInitializer() != null) {
                     field.value = normalize(varTree.getInitializer().toString());
                 }
@@ -409,6 +463,42 @@ public final class ApiDocGenerator {
         return false;
     }
 
+    private static boolean isEnumConstant(final VariableTree variableTree, final ClassTree owner) {
+        // The parser desugars each enum constant into a field initialized with "new <EnumName>(...)";
+        // source code can never instantiate an enum explicitly, so the shape identifies constants.
+        return owner.getKind() == Tree.Kind.ENUM && variableTree.getInitializer() instanceof NewClassTree newClass
+                && newClass.getIdentifier().toString().equals(owner.getSimpleName().toString());
+    }
+
+    private static String buildTypeDeclaration(final ClassTree classTree, final TypeInfo type) {
+        final StringBuilder sb = new StringBuilder();
+        for (final String m : type.modifiers) {
+            sb.append(m).append(' ');
+        }
+        sb.append("annotation".equals(type.kind) ? "@interface" : type.kind).append(' ').append(type.name);
+        if (!type.typeParams.isEmpty()) {
+            sb.append(classTree.getTypeParameters().stream().map(tp -> normalize(tp.toString())).collect(Collectors.joining(", ", "<", ">")));
+        }
+        if (classTree.getKind() == Tree.Kind.RECORD) {
+            // Record components are the record's only non-static fields.
+            sb.append(classTree.getMembers()
+                    .stream()
+                    .filter(m -> m instanceof VariableTree v && !v.getModifiers().getFlags().contains(Modifier.STATIC))
+                    .map(m -> normalize(((VariableTree) m).getType() + " " + ((VariableTree) m).getName()))
+                    .collect(Collectors.joining(", ", "(", ")")));
+        }
+        if (type.superclass != null) {
+            sb.append(" extends ").append(type.superclass);
+        }
+        if (!type.interfaces.isEmpty()) {
+            sb.append("interface".equals(type.kind) ? " extends " : " implements ").append(String.join(", ", type.interfaces));
+        }
+        if (!type.permits.isEmpty()) {
+            sb.append(" permits ").append(String.join(", ", type.permits));
+        }
+        return sb.toString();
+    }
+
     private static boolean isConstructor(final MethodTree methodTree, final ClassTree owner) {
         return methodTree.getReturnType() == null && methodTree.getName().contentEquals(owner.getSimpleName());
     }
@@ -445,15 +535,17 @@ public final class ApiDocGenerator {
 
     private static List<String> sortedModifiers(final ModifiersTree modifiers, final TypeInfo ownerType) {
         final LinkedHashSet<String> out = new LinkedHashSet<>();
-        final List<Modifier> order = List.of(Modifier.PUBLIC, Modifier.PROTECTED, Modifier.PRIVATE, Modifier.ABSTRACT, Modifier.STATIC, Modifier.FINAL,
-                Modifier.TRANSIENT, Modifier.VOLATILE, Modifier.SYNCHRONIZED, Modifier.NATIVE, Modifier.STRICTFP, Modifier.DEFAULT);
-        for (final Modifier m : order) {
-            if (modifiers.getFlags().contains(m)) {
-                out.add(m.toString().toLowerCase(Locale.ROOT));
-            }
-        }
+        // Interface and annotation members are implicitly public; keep it in canonical first position.
         if (ownerType != null && ("interface".equals(ownerType.kind) || "annotation".equals(ownerType.kind))) {
             out.add("public");
+        }
+        final List<Modifier> order = List.of(Modifier.PUBLIC, Modifier.PROTECTED, Modifier.PRIVATE, Modifier.ABSTRACT, Modifier.STATIC, Modifier.FINAL,
+                Modifier.SEALED, Modifier.NON_SEALED, Modifier.TRANSIENT, Modifier.VOLATILE, Modifier.SYNCHRONIZED, Modifier.NATIVE, Modifier.STRICTFP,
+                Modifier.DEFAULT);
+        for (final Modifier m : order) {
+            if (modifiers.getFlags().contains(m)) {
+                out.add(m.toString());
+            }
         }
         return new ArrayList<>(out);
     }
@@ -519,7 +611,8 @@ public final class ApiDocGenerator {
         // are not accidentally reported as behavioral contracts.
         final String body = normalizeDocProse(comment.getBody());
         if (!isBlank(body)) {
-            for (final String sentence : body.split("(?<=[.!?])\\s+")) {
+            // Do not end a sentence at common abbreviations such as "e.g." or "i.e.".
+            for (final String sentence : body.split("(?<=[.!?])(?<!\\b(?:e\\.g|i\\.e|etc|vs)\\.)\\s+")) {
                 final String s = sentence.trim();
                 if (s.isEmpty()) {
                     continue;
@@ -585,10 +678,12 @@ public final class ApiDocGenerator {
                     current = null;
                 }
             } else if (current != null) {
-                if (tree instanceof LiteralTree literal && tree.getKind() == DocTree.Kind.CODE) {
-                    current.append(literal.getBody().getBody());
-                } else {
-                    current.append(tree);
+                switch (tree.getKind()) {
+                    case CODE, LITERAL -> current.append(((LiteralTree) tree).getBody().getBody());
+                    case TEXT -> current.append(((TextTree) tree).getBody());
+                    case ENTITY -> current.append(decodeEntity(((EntityTree) tree).getName().toString()));
+                    case LINK, LINK_PLAIN -> current.append(linkLabel((LinkTree) tree));
+                    default -> current.append(tree);
                 }
             }
         }
@@ -648,20 +743,14 @@ public final class ApiDocGenerator {
         final StringBuilder out = new StringBuilder();
         boolean inPre = false;
         for (final DocTree tree : trees) {
-            if (tree instanceof StartElementTree startElement) {
-                if (startElement.getName().contentEquals("pre")) {
-                    inPre = true;
-                } else if (!inPre) {
-                    out.append(' ');
-                }
-            } else if (tree instanceof EndElementTree endElement) {
-                if (endElement.getName().contentEquals("pre")) {
-                    inPre = false;
-                } else if (!inPre) {
-                    out.append(' ');
-                }
+            if (tree instanceof StartElementTree startElement && startElement.getName().contentEquals("pre")) {
+                inPre = true;
+                out.append(' ');
+            } else if (tree instanceof EndElementTree endElement && endElement.getName().contentEquals("pre")) {
+                inPre = false;
+                out.append(' ');
             } else if (!inPre) {
-                out.append(tree).append(' ');
+                appendInline(tree, out);
             }
         }
         return normalize(out.toString());
@@ -671,8 +760,82 @@ public final class ApiDocGenerator {
         if (trees == null || trees.isEmpty()) {
             return null;
         }
-        final String raw = trees.stream().map(Objects::toString).collect(Collectors.joining(" "));
-        return normalize(raw);
+        final StringBuilder out = new StringBuilder();
+        for (final DocTree tree : trees) {
+            appendInline(tree, out);
+        }
+        return normalize(out.toString());
+    }
+
+    // Renders Javadoc as plain text with Markdown code spans: code and link tags become backtick
+    // spans, entities are decoded, and HTML markup is dropped.
+    private static void appendInline(final DocTree tree, final StringBuilder out) {
+        switch (tree.getKind()) {
+            case TEXT -> out.append(((TextTree) tree).getBody());
+            case CODE -> out.append(codeSpan(((LiteralTree) tree).getBody().getBody()));
+            case LITERAL -> out.append(((LiteralTree) tree).getBody().getBody());
+            case LINK -> {
+                final String label = linkLabel((LinkTree) tree);
+                out.append(label.indexOf('`') >= 0 ? label : codeSpan(label));
+            }
+            case LINK_PLAIN -> out.append(linkLabel((LinkTree) tree));
+            case VALUE -> {
+                final ReferenceTree ref = ((ValueTree) tree).getReference();
+                out.append(ref == null ? tree.toString() : codeSpan(displayReference(ref.getSignature())));
+            }
+            case REFERENCE -> out.append(((ReferenceTree) tree).getSignature());
+            case ENTITY -> out.append(decodeEntity(((EntityTree) tree).getName().toString()));
+            case START_ELEMENT -> out.append(htmlReplacement(((StartElementTree) tree).getName().toString(), true));
+            case END_ELEMENT -> out.append(htmlReplacement(((EndElementTree) tree).getName().toString(), false));
+            default -> out.append(tree);
+        }
+    }
+
+    private static String linkLabel(final LinkTree link) {
+        final String label = normalizeDocText(link.getLabel());
+        if (!isBlank(label)) {
+            return label;
+        }
+        return link.getReference() == null ? "" : displayReference(link.getReference().getSignature());
+    }
+
+    // Mirrors the standard doclet: "#member" shows as "member", "Type#member" as "Type.member".
+    private static String displayReference(final String signature) {
+        if (signature == null) {
+            return "";
+        }
+        return signature.startsWith("#") ? signature.substring(1) : signature.replace('#', '.');
+    }
+
+    private static String htmlReplacement(final String element, final boolean start) {
+        final String name = element.toLowerCase(Locale.ROOT);
+        if (BLOCK_HTML_ELEMENTS.contains(name)) {
+            return " ";
+        }
+        return switch (name) {
+            case "code", "tt" -> "`";
+            case "sup" -> start ? "^" : "";
+            default -> "";
+        };
+    }
+
+    private static String decodeEntity(final String name) {
+        try {
+            if (name.startsWith("#x") || name.startsWith("#X")) {
+                return new String(Character.toChars(Integer.parseInt(name.substring(2), 16)));
+            }
+            if (name.startsWith("#")) {
+                return new String(Character.toChars(Integer.parseInt(name.substring(1))));
+            }
+        } catch (final IllegalArgumentException e) {
+            return "&" + name + ";";
+        }
+        return HTML_ENTITIES.getOrDefault(name, "&" + name + ";");
+    }
+
+    private static String codeSpan(final String code) {
+        final String body = code == null ? "" : code.trim();
+        return body.indexOf('`') >= 0 ? "`` " + body + " ``" : "`" + body + "`";
     }
 
     private static List<ParamInfo> readParams(final MethodTree methodTree, final DocInfo doc) {
@@ -874,6 +1037,22 @@ public final class ApiDocGenerator {
         return null;
     }
 
+    private static String readGitSha(final Path projectDir) {
+        if (projectDir == null) {
+            return "unknown";
+        }
+        try {
+            final Process process = new ProcessBuilder("git", "rev-parse", "--short", "HEAD").directory(projectDir.toFile()).redirectErrorStream(true).start();
+            final String out = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
+            return process.waitFor() == 0 && out.matches("[0-9a-fA-F]{4,40}") ? out : "unknown";
+        } catch (final IOException e) {
+            return "unknown";
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return "unknown";
+        }
+    }
+
     private static List<Path> listJavaFiles(final Path root) throws IOException {
         final List<Path> files = new ArrayList<>();
         Files.walkFileTree(root, new SimpleFileVisitor<>() {
@@ -910,11 +1089,49 @@ public final class ApiDocGenerator {
             for (final TypeInfo t : p.types) {
                 sb.append("### ").append(capitalize(md(t.kind))).append(' ').append(md(t.name)).append(" (").append(md(t.fqn)).append(")\n");
                 sb.append(isBlank(t.javadocSummary) ? "unspecified" : md(t.javadocSummary)).append("\n\n");
+                sb.append("**Declaration:** `").append(t.declaration).append("`\n");
                 if (!isBlank(t.since)) {
                     sb.append("**Since:** ").append(md(t.since)).append('\n');
                 }
+                if (t.deprecated != null) {
+                    sb.append("**Deprecated:** ").append(deprecatedMarkdown(t.deprecated)).append('\n');
+                }
                 sb.append("**Thread-safety:** ").append(md(t.threadSafety)).append('\n');
                 sb.append("**Nullability:** ").append(md(t.nullability)).append("\n\n");
+
+                if ("enum".equals(t.kind)) {
+                    sb.append("#### Enum Constants\n");
+                    if (t.enumConstants.isEmpty()) {
+                        sb.append("- (none)\n");
+                    }
+                    for (final EnumConstantInfo c : t.enumConstants) {
+                        sb.append("- `").append(c.name).append('`');
+                        if (!isBlank(c.javadocSummary)) {
+                            sb.append(" — ").append(md(c.javadocSummary));
+                        }
+                        if (c.deprecated != null) {
+                            sb.append(" (deprecated: ").append(deprecatedMarkdown(c.deprecated)).append(')');
+                        }
+                        sb.append('\n');
+                    }
+                    sb.append('\n');
+                }
+
+                if (!t.fields.isEmpty()) {
+                    sb.append("#### Public Fields\n");
+                    for (final FieldInfo f : t.fields) {
+                        sb.append("- `").append(String.join(" ", f.modifiers)).append(' ').append(f.type).append(' ').append(f.name);
+                        if (!isBlank(f.value)) {
+                            sb.append(" = ").append(f.value);
+                        }
+                        sb.append('`');
+                        if (!isBlank(f.javadocSummary)) {
+                            sb.append(" — ").append(md(f.javadocSummary));
+                        }
+                        sb.append('\n');
+                    }
+                    sb.append('\n');
+                }
 
                 sb.append("#### Public Constructors\n");
                 if (t.constructors.isEmpty()) {
@@ -957,6 +1174,12 @@ public final class ApiDocGenerator {
             sb.append("##### ").append(md(e.getKey())).append("(...) -> ").append(md(first.returnType)).append('\n');
             for (final MethodInfo m : e.getValue()) {
                 sb.append("- **Signature:** `").append(m.signature).append("`\n");
+                if (m.deprecated != null) {
+                    sb.append("- **Deprecated:** ").append(deprecatedMarkdown(m.deprecated)).append('\n');
+                }
+                if (!isBlank(m.since)) {
+                    sb.append("- **Since:** ").append(md(m.since)).append('\n');
+                }
                 if (!isBlank(m.javadocSummary)) {
                     sb.append("- **Summary:** ").append(md(m.javadocSummary)).append('\n');
                 }
@@ -1011,6 +1234,18 @@ public final class ApiDocGenerator {
         }
     }
 
+    private static String deprecatedMarkdown(final DeprecatedInfo value) {
+        final List<String> details = new ArrayList<>();
+        if (!isBlank(value.since)) {
+            details.add("since " + value.since);
+        }
+        if (value.forRemoval) {
+            details.add("for removal");
+        }
+        final String message = isBlank(value.message) ? "yes" : md(value.message);
+        return details.isEmpty() ? message : message + " (" + md(String.join(", ", details)) + ")";
+    }
+
     private static String toJson(final LibraryInfo library, final List<PackageInfoData> packages) {
         final Map<String, Object> root = new LinkedHashMap<>();
         final Map<String, Object> lib = new LinkedHashMap<>();
@@ -1037,6 +1272,14 @@ public final class ApiDocGenerator {
                 type.put("name", t.name);
                 type.put("kind", t.kind);
                 type.put("modifiers", t.modifiers);
+                type.put("declaration", t.declaration);
+                if (!isBlank(t.superclass)) {
+                    type.put("superclass", t.superclass);
+                }
+                type.put("interfaces", t.interfaces);
+                if (!t.permits.isEmpty()) {
+                    type.put("permits", t.permits);
+                }
                 if (!isBlank(t.since)) {
                     type.put("since", t.since);
                 }
@@ -1049,6 +1292,9 @@ public final class ApiDocGenerator {
                 type.put("thread_safety", t.threadSafety);
                 type.put("nullability", t.nullability);
                 type.put("type_params", t.typeParams.stream().map(ApiDocGenerator::typeParamJson).collect(Collectors.toList()));
+                if ("enum".equals(t.kind)) {
+                    type.put("enum_constants", t.enumConstants.stream().map(ApiDocGenerator::enumConstantJson).collect(Collectors.toList()));
+                }
                 type.put("constructors", t.constructors.stream().map(ApiDocGenerator::constructorJson).collect(Collectors.toList()));
                 type.put("methods", t.methods.stream().map(ApiDocGenerator::methodJson).collect(Collectors.toList()));
                 type.put("fields", t.fields.stream().map(ApiDocGenerator::fieldJson).collect(Collectors.toList()));
@@ -1068,6 +1314,18 @@ public final class ApiDocGenerator {
         return out;
     }
 
+    private static Map<String, Object> enumConstantJson(final EnumConstantInfo value) {
+        final Map<String, Object> out = new LinkedHashMap<>();
+        out.put("name", value.name);
+        if (!isBlank(value.javadocSummary)) {
+            out.put("javadoc_summary", value.javadocSummary);
+        }
+        if (value.deprecated != null) {
+            out.put("deprecated", deprecatedJson(value.deprecated));
+        }
+        return out;
+    }
+
     private static Map<String, Object> constructorJson(final ConstructorInfo value) {
         final Map<String, Object> out = new LinkedHashMap<>();
         out.put("signature", value.signature);
@@ -1081,6 +1339,7 @@ public final class ApiDocGenerator {
             out.put("deprecated", deprecatedJson(value.deprecated));
         }
         out.put("params", value.params.stream().map(ApiDocGenerator::paramJson).collect(Collectors.toList()));
+        out.put("throws", value.throwsList.stream().map(ApiDocGenerator::throwJson).collect(Collectors.toList()));
         return out;
     }
 
@@ -1093,6 +1352,9 @@ public final class ApiDocGenerator {
         out.put("return_type", value.returnType);
         out.put("type_params", value.typeParams.stream().map(ApiDocGenerator::typeParamJson).collect(Collectors.toList()));
         out.put("params", value.params.stream().map(ApiDocGenerator::paramJson).collect(Collectors.toList()));
+        if (!isBlank(value.returns)) {
+            out.put("returns", value.returns);
+        }
         out.put("throws", value.throwsList.stream().map(ApiDocGenerator::throwJson).collect(Collectors.toList()));
         if (!isBlank(value.since)) {
             out.put("since", value.since);
@@ -1221,12 +1483,35 @@ public final class ApiDocGenerator {
         }
         final String normalized = text.replace("\r\n", "\n").replace('\r', '\n');
         final StringBuilder out = new StringBuilder(normalized.length() + 16);
-        for (int i = 0; i < normalized.length(); i++) {
+        int i = 0;
+        while (i < normalized.length()) {
             final char c = normalized.charAt(i);
-            if (c == '[' || c == ']' || c == '\\') {
-                out.append('\\');
+            if (c == '`') {
+                // Copy a code span verbatim: Markdown does not process escapes inside it.
+                int fenceEnd = i;
+                while (fenceEnd < normalized.length() && normalized.charAt(fenceEnd) == '`') {
+                    fenceEnd++;
+                }
+                final String fence = normalized.substring(i, fenceEnd);
+                final int close = normalized.indexOf(fence, fenceEnd);
+                if (close >= 0) {
+                    out.append(normalized, i, close + fence.length());
+                    i = close + fence.length();
+                    continue;
+                }
+                out.append(fence.replace("`", "\\`"));
+                i = fenceEnd;
+                continue;
             }
-            out.append(c);
+            if (c == '<') {
+                out.append("&lt;");
+            } else {
+                if (c == '[' || c == ']' || c == '\\' || c == '*') {
+                    out.append('\\');
+                }
+                out.append(c);
+            }
+            i++;
         }
         return out.toString();
     }
