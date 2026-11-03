@@ -235,11 +235,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * arrays itself -- {@code new T[rowCount][columnCount]}, a per-row {@code clone()}, or
      * {@code newIndependentRow(...)} -- because each of those produces identity-distinct rows by
      * construction, so the scan can only ever confirm what the allocation already guarantees. The scan
-     * is not free: it allocates an {@link IdentityHashMap} sized to {@code rowCount} and boxes one
-     * {@code Integer} per row on <i>every</i> construction, which dominates tall-and-thin matrices --
-     * adding two {@code 200000 x 2} matrices spent over half its time there, roughly 70x slower than
-     * the same 400000 cells shaped {@code 2 x 200000}. Rows are still checked for null and
-     * rectangularity on both paths.</p>
+     * is not free: it hashes every row by identity into a table of two to four {@code int} slots per
+     * row on <i>every</i> construction, which shows on tall-and-thin matrices whose cells are cheap
+     * to process. Rows are still checked for null and rectangularity on both paths.</p>
      *
      * @param a the row arrays; must be non-{@code null} and rectangular
      * @param elementType the matrix element type; must be non-{@code null}
@@ -261,8 +259,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         // replacement silently invalidate every bounds and traversal invariant in this class.
         final A[] validatedRows = a.clone();
 
-        // Fewer than two rows cannot contain a duplicate, so the map is never worth allocating there.
-        final Map<A, Integer> seenRows = rowsAreKnownDistinct || validatedRows.length < 2 ? null : new IdentityHashMap<>(validatedRows.length);
+        // Fewer than two rows cannot contain a duplicate, so the index is never worth allocating there.
+        final RowIdentityIndex seenRows = rowsAreKnownDistinct || validatedRows.length < 2 ? null : new RowIdentityIndex(validatedRows, validatedRows.length);
 
         // Validate the snapshot, not the caller's array: a concurrent write to `a` between the
         // clone above and this loop would otherwise let an invalid row reach `this.a` unchecked.
@@ -275,9 +273,9 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
             }
 
             if (seenRows != null) {
-                final Integer firstIndex = seenRows.put(row, i);
+                final int firstIndex = seenRows.add(i);
 
-                if (firstIndex != null) {
+                if (firstIndex >= 0) {
                     // One physical row cannot represent two independently addressable logical rows:
                     // updating either position would necessarily and invisibly update the other.
                     throw new IllegalArgumentException(formatMsg(MSG_DUPLICATE_ROW, i, firstIndex));
@@ -357,10 +355,12 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      *        when this matrix has no rows
      * @param destRowIndex validated destination row index, inclusive
      * @param destColumnIndex validated destination column index, inclusive
-     * @return the original source when no snapshot is needed, otherwise an outer array containing
-     *         only the overlapping rows, with affected source prefixes snapshotted
+     * @return the original source when no snapshot is needed, otherwise a new outer array holding
+     *         only the source rows that will be copied, in which each row that aliases a destination
+     *         row is replaced by a snapshot of its copied prefix
      * @throws IllegalArgumentException if source is {@code null} and this matrix has backing rows
      */
+    @SuppressWarnings("unchecked")
     final A[] snapshotRowsIfBackingRows(final A[] source, final int destRowIndex, final int destColumnIndex) throws IllegalArgumentException {
         if (a.length == 0) {
             return source;
@@ -389,35 +389,36 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
             return source;
         }
 
-        // A row is at risk only if this copy writes to it. The table scales with the overlap,
+        // A row is at risk only if this copy writes to it. The index scales with the overlap,
         // never with the unrelated rows of the matrix or an oversized source block.
-        final Map<A, A> snapshots = new IdentityHashMap<>(copiedRows);
+        final RowIdentityIndex writtenRows = new RowIdentityIndex(a, copiedRows);
 
         for (int i = 0; i < copiedRows; i++) {
             if (source[i] != null && length(source[i]) > 0) {
-                final A destination = a[destRowIndex + i];
-                snapshots.put(destination, destination);
+                writtenRows.add(destRowIndex + i);
             }
         }
 
         A[] snapshot = null;
+        Object[] prefixes = null; // by written row, so repeated references to one row share a single snapshot
 
         for (int i = 0; i < copiedRows; i++) {
             final A row = source[i];
-            final A saved = snapshots.get(row);
+            final int position = row == null ? -1 : writtenRows.indexOf(row);
 
-            if (saved != null) {
+            if (position >= 0) {
                 if (snapshot == null) {
                     snapshot = java.util.Arrays.copyOf(source, copiedRows);
+                    prefixes = new Object[copiedRows];
                 }
 
-                if (saved == row) {
-                    final A prefix = copyArrayPrefix(row, copiedColumns);
-                    snapshots.put(row, prefix);
-                    snapshot[i] = prefix;
-                } else {
-                    snapshot[i] = saved;
+                final int written = position - destRowIndex;
+
+                if (prefixes[written] == null) {
+                    prefixes[written] = copyArrayPrefix(row, copiedColumns);
                 }
+
+                snapshot[i] = (A) prefixes[written];
             }
         }
 
@@ -2689,12 +2690,14 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
                 output.append('[');
                 final A row = a[i];
 
-                for (int j = 0; j < columnCount; j++) {
-                    if (j > 0) {
-                        output.append(", ");
-                    }
+                if (!appendPrimitiveRow(output, row)) {
+                    for (int j = 0; j < columnCount; j++) {
+                        if (j > 0) {
+                            output.append(", ");
+                        }
 
-                    appendElementForOutput(output, java.lang.reflect.Array.get(row, j));
+                        appendElementForOutput(output, java.lang.reflect.Array.get(row, j));
+                    }
                 }
 
                 output.append(']');
@@ -2702,6 +2705,83 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    /**
+     * Appends the comma-separated elements of a row whose elements render as their natural string
+     * form, skipping the reflective {@code Array.get}, boxing and {@code N.toString} of the generic
+     * path (3-5x slower on large matrices). {@code char[]} and object rows are left to the generic
+     * path: {@code CharMatrix} overrides {@link #appendElementForOutput(Appendable, Object)} to escape
+     * characters, and no other subclass overrides it (every concrete subclass lives in this package,
+     * because {@link #toMultilineString()} is package-private), so no override is bypassed.
+     *
+     * @param output the non-{@code null} destination
+     * @param row the backing row to render
+     * @return {@code true} if the row was appended, {@code false} if the caller must render it element by element
+     * @throws IOException if {@code output.append} throws an I/O exception
+     */
+    private static boolean appendPrimitiveRow(final Appendable output, final Object row) throws IOException {
+        if (row instanceof int[] values) {
+            for (int j = 0; j < values.length; j++) {
+                if (j > 0) {
+                    output.append(", ");
+                }
+
+                output.append(String.valueOf(values[j]));
+            }
+        } else if (row instanceof long[] values) {
+            for (int j = 0; j < values.length; j++) {
+                if (j > 0) {
+                    output.append(", ");
+                }
+
+                output.append(String.valueOf(values[j]));
+            }
+        } else if (row instanceof double[] values) {
+            for (int j = 0; j < values.length; j++) {
+                if (j > 0) {
+                    output.append(", ");
+                }
+
+                output.append(String.valueOf(values[j]));
+            }
+        } else if (row instanceof float[] values) {
+            for (int j = 0; j < values.length; j++) {
+                if (j > 0) {
+                    output.append(", ");
+                }
+
+                output.append(String.valueOf(values[j]));
+            }
+        } else if (row instanceof boolean[] values) {
+            for (int j = 0; j < values.length; j++) {
+                if (j > 0) {
+                    output.append(", ");
+                }
+
+                output.append(String.valueOf(values[j]));
+            }
+        } else if (row instanceof byte[] values) {
+            for (int j = 0; j < values.length; j++) {
+                if (j > 0) {
+                    output.append(", ");
+                }
+
+                output.append(String.valueOf(values[j]));
+            }
+        } else if (row instanceof short[] values) {
+            for (int j = 0; j < values.length; j++) {
+                if (j > 0) {
+                    output.append(", ");
+                }
+
+                output.append(String.valueOf(values[j]));
+            }
+        } else {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -2835,6 +2915,104 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     protected void checkRowColumnIndex(final int rowIndex, final int columnIndex) throws IndexOutOfBoundsException {
         checkRowIndex(rowIndex);
         checkColumnIndex(columnIndex);
+    }
+
+    /**
+     * An identity-keyed index of positions in a fixed outer array of rows, used by the duplicate-row
+     * scan and the aliasing snapshot of {@code copyFrom}.
+     *
+     * <p>It stores {@code position + 1} in an open-addressing {@code int[]} table (0 marks an empty slot)
+     * instead of an {@code IdentityHashMap<A, Integer>}, which boxes an {@code Integer} and holds a key
+     * and a value reference per row: on a {@code 300000 x 2} wrap the map made the scan about 3.5x
+     * slower and several times larger. The table length is a power of two of at least twice the
+     * capacity, so linear probing always reaches an empty slot. Above {@link #MAX_TABLE_CAPACITY}
+     * entries that length would exceed the maximum array length, so such (multi-gigabyte) inputs keep
+     * the map.</p>
+     */
+    static final class RowIdentityIndex {
+        /** The largest capacity whose table length, at most four slots per entry, stays below {@code 2^31}. */
+        static final int MAX_TABLE_CAPACITY = 1 << 29;
+
+        private final Object[] rows;
+        private final int[] table;
+        private final int shift;
+        private final Map<Object, Integer> fallback;
+
+        /**
+         * @param rows the outer array whose positions are indexed; its elements must not change while this index is used
+         * @param capacity the maximum number of positions that will be added; must be at least 1
+         */
+        RowIdentityIndex(final Object[] rows, final int capacity) {
+            this.rows = rows;
+
+            if (capacity <= MAX_TABLE_CAPACITY) {
+                table = new int[Integer.highestOneBit(Math.max(capacity, 2) - 1) << 2];
+                shift = Integer.numberOfLeadingZeros(table.length - 1);
+                fallback = null;
+            } else {
+                table = null;
+                shift = 0;
+                fallback = new IdentityHashMap<>(); // grows on demand: pre-sizing for an upper bound this large could itself exhaust memory
+            }
+        }
+
+        /**
+         * Indexes {@code rows[position]} unless an identical row is already indexed.
+         *
+         * @param position the position to index
+         * @return the position of an already indexed row that is the same object, or {@code -1} if the position was added
+         */
+        int add(final int position) {
+            final Object row = rows[position];
+
+            if (table == null) {
+                final Integer previous = fallback.putIfAbsent(row, position);
+                return previous == null ? -1 : previous;
+            }
+
+            final int mask = table.length - 1;
+
+            for (int slot = slotOf(row);; slot = (slot + 1) & mask) {
+                final int entry = table[slot];
+
+                if (entry == 0) {
+                    table[slot] = position + 1;
+                    return -1;
+                } else if (rows[entry - 1] == row) {
+                    return entry - 1;
+                }
+            }
+        }
+
+        /**
+         * Returns the indexed position holding {@code row} itself, or {@code -1} if there is none.
+         *
+         * @param row the row to look up; may be {@code null}
+         * @return the indexed position of {@code row}, or {@code -1}
+         */
+        int indexOf(final Object row) {
+            if (table == null) {
+                final Integer position = fallback.get(row);
+                return position == null ? -1 : position;
+            }
+
+            final int mask = table.length - 1;
+
+            for (int slot = slotOf(row);; slot = (slot + 1) & mask) {
+                final int entry = table[slot];
+
+                if (entry == 0) {
+                    return -1;
+                } else if (rows[entry - 1] == row) {
+                    return entry - 1;
+                }
+            }
+        }
+
+        private int slotOf(final Object row) {
+            // Fibonacci hashing: the multiply spreads identity hash codes, which may be clustered, over the top bits.
+            return (System.identityHashCode(row) * 0x9E3779B9) >>> shift;
+        }
     }
 
 }

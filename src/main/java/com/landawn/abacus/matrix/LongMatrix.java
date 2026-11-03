@@ -1422,8 +1422,18 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
             throws IllegalArgumentException, E, NullPointerException {
         N.checkArgNotNull(mapper, cs.mapper);
 
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final long[] row = a[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    row[j] = mapper.apply(i, j);
+                }
+            }
+        }
     }
 
     /**
@@ -1518,12 +1528,24 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final long newValue) throws IllegalArgumentException, E {
         N.checkArgNotNull(predicate, cs.predicate);
 
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
-            if (predicate.test(i, j)) {
-                a[i][j] = newValue;
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
+                if (predicate.test(i, j)) {
+                    a[i][j] = newValue;
+                }
+            };
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final long[] row = a[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    if (predicate.test(i, j)) {
+                        row[j] = newValue;
+                    }
+                }
             }
-        };
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        }
     }
 
     /**
@@ -1559,9 +1581,20 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         N.checkArgNotNull(mapper, cs.mapper);
 
         final long[][] result = new long[rowCount][columnCount];
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsLong(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsLong(a[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final long[] row = a[i];
+                final long[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = mapper.applyAsLong(row[j]);
+                }
+            }
+        }
 
         return wrapResult(result, columnCount);
     }
@@ -1595,9 +1628,20 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         N.checkArgNotNull(mapper, cs.mapper);
 
         final int[][] result = new int[rowCount][columnCount];
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsInt(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsInt(a[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final long[] row = a[i];
+                final int[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = mapper.applyAsInt(row[j]);
+                }
+            }
+        }
 
         return IntMatrix.wrapResult(result, columnCount);
     }
@@ -1630,9 +1674,20 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         N.checkArgNotNull(mapper, cs.mapper);
 
         final double[][] result = new double[rowCount][columnCount];
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsDouble(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsDouble(a[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final long[] row = a[i];
+                final double[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = mapper.applyAsDouble(row[j]);
+                }
+            }
+        }
 
         return DoubleMatrix.wrapResult(result, columnCount);
     }
@@ -1674,9 +1729,20 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         N.checkArgNotNull(targetElementType, cs.targetElementType);
 
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final long[] row = a[i];
+                final R[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = mapper.apply(row[j]);
+                }
+            }
+        }
 
         return Matrix.newResult(result, targetElementType, columnCount);
     }
@@ -3329,9 +3395,20 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         final long[][] b = other.a;
         final long[][] result = new long[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsLong(a[i][j], b[i][j]);
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsLong(a[i][j], b[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final long[] row = a[i];
+                final long[] otherRow = b[i];
+                final long[] resultRow = result[i];
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = zipFunction.applyAsLong(row[j], otherRow[j]);
+                }
+            }
+        }
 
         return wrapResult(result, columnCount);
     }
@@ -3392,9 +3469,21 @@ public final class LongMatrix extends AbstractMatrix<long[], LongList, LongStrea
         final long[][] c = third.a;
         final long[][] result = new long[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsLong(a[i][j], b[i][j], c[i][j]);
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsLong(a[i][j], b[i][j], c[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final long[] row = a[i];
+                final long[] otherRow = b[i];
+                final long[] thirdRow = c[i];
+                final long[] resultRow = result[i];
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = zipFunction.applyAsLong(row[j], otherRow[j], thirdRow[j]);
+                }
+            }
+        }
 
         return wrapResult(result, columnCount);
     }

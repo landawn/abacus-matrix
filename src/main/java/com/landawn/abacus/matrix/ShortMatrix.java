@@ -1375,8 +1375,18 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
             throws IllegalArgumentException, E, NullPointerException {
         N.checkArgNotNull(mapper, cs.mapper);
 
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final short[] row = a[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    row[j] = mapper.apply(i, j);
+                }
+            }
+        }
     }
 
     /**
@@ -1471,12 +1481,24 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final short newValue) throws IllegalArgumentException, E {
         N.checkArgNotNull(predicate, cs.predicate);
 
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
-            if (predicate.test(i, j)) {
-                a[i][j] = newValue;
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
+                if (predicate.test(i, j)) {
+                    a[i][j] = newValue;
+                }
+            };
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final short[] row = a[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    if (predicate.test(i, j)) {
+                        row[j] = newValue;
+                    }
+                }
             }
-        };
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        }
     }
 
     /**
@@ -1512,9 +1534,20 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
         N.checkArgNotNull(mapper, cs.mapper);
 
         final short[][] result = new short[rowCount][columnCount];
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsShort(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsShort(a[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final short[] row = a[i];
+                final short[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = mapper.applyAsShort(row[j]);
+                }
+            }
+        }
 
         return wrapResult(result, columnCount);
     }
@@ -1555,9 +1588,20 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
         N.checkArgNotNull(targetElementType, cs.targetElementType);
 
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final short[] row = a[i];
+                final R[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = mapper.apply(row[j]);
+                }
+            }
+        }
 
         return Matrix.newResult(result, targetElementType, columnCount);
     }
@@ -3296,9 +3340,20 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
         final short[][] arrayB = other.a;
         final short[][] result = new short[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsShort(a[i][j], arrayB[i][j]);
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsShort(a[i][j], arrayB[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final short[] row = a[i];
+                final short[] otherRow = arrayB[i];
+                final short[] resultRow = result[i];
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = zipFunction.applyAsShort(row[j], otherRow[j]);
+                }
+            }
+        }
 
         return wrapResult(result, columnCount);
     }
@@ -3359,9 +3414,21 @@ public final class ShortMatrix extends AbstractMatrix<short[], ShortList, ShortS
         final short[][] arrayC = third.a;
         final short[][] result = new short[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsShort(a[i][j], arrayB[i][j], arrayC[i][j]);
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsShort(a[i][j], arrayB[i][j], arrayC[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final short[] row = a[i];
+                final short[] otherRow = arrayB[i];
+                final short[] thirdRow = arrayC[i];
+                final short[] resultRow = result[i];
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = zipFunction.applyAsShort(row[j], otherRow[j], thirdRow[j]);
+                }
+            }
+        }
 
         return wrapResult(result, columnCount);
     }

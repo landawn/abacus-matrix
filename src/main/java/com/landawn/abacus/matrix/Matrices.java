@@ -810,7 +810,9 @@ public final class Matrices {
      * <p>The stream is lazy and has row-major encounter order. Requesting parallel execution marks
      * the returned stream parallel when supported, including for an empty region. The mapper runs lazily
      * as positions are pulled from the stream; a terminal {@code count()} can bypass it, but positions
-     * skipped with {@code skip} may still be evaluated.</p>
+     * skipped with {@code skip} may still be evaluated. A parallel stream pulls positions, and therefore
+     * mapper calls, from one shared synchronized source, so mapper invocations do not overlap; only
+     * downstream stages run concurrently.</p>
      *
      * <p>If {@code mapper} throws a checked exception, it is wrapped in a {@code RuntimeException}
      * and rethrown when the returned stream is consumed. Runtime exceptions from {@code mapper}
@@ -965,7 +967,9 @@ public final class Matrices {
      * <p>The stream is lazy and has row-major encounter order. Requesting parallel execution marks
      * the returned stream parallel when supported, including for an empty region. The mapper runs lazily
      * as positions are pulled from the stream; a terminal {@code count()} can bypass it, but positions
-     * skipped with {@code skip} may still be evaluated.</p>
+     * skipped with {@code skip} may still be evaluated. A parallel stream pulls positions, and therefore
+     * mapper calls, from one shared synchronized source, so mapper invocations do not overlap; only
+     * downstream stages run concurrently.</p>
      *
      * <p>If {@code mapper} throws a checked exception, it is wrapped in a {@code RuntimeException}
      * and rethrown when the returned stream is consumed. Runtime exceptions from {@code mapper}
@@ -1761,17 +1765,41 @@ public final class Matrices {
         final int columnCount = matrices[0].columnCount;
         final byte[][] result = new byte[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> action = (i, j) -> {
-            byte zipped = matrices[0].a[i][j];
+        if (Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size))) {
+            final Throwables.IntBiConsumer<E> action = (i, j) -> {
+                byte zipped = matrices[0].a[i][j];
 
-            for (int k = 1; k < size; k++) {
-                zipped = zipFunction.applyAsByte(zipped, matrices[k].a[i][j]);
+                for (int k = 1; k < size; k++) {
+                    zipped = zipFunction.applyAsByte(zipped, matrices[k].a[i][j]);
+                }
+
+                result[i][j] = zipped;
+            };
+
+            forEachIndices(rowCount, columnCount, action, true);
+        } else {
+            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+            final byte[][] rows = new byte[size][];
+
+            for (int i = 0; i < rowCount; i++) {
+                for (int k = 0; k < size; k++) {
+                    rows[k] = matrices[k].a[i];
+                }
+
+                final byte[] firstRow = rows[0];
+                final byte[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    byte zipped = firstRow[j];
+
+                    for (int k = 1; k < size; k++) {
+                        zipped = zipFunction.applyAsByte(zipped, rows[k][j]);
+                    }
+
+                    resultRow[j] = zipped;
+                }
             }
-
-            result[i][j] = zipped;
-        };
-
-        forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size)));
+        }
 
         return ByteMatrix.wrapResult(result, columnCount);
     }
@@ -1828,9 +1856,20 @@ public final class Matrices {
         final byte[][] ba = b.a;
         final int[][] result = new int[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j]);
+        if (Matrices.shouldRunInParallel(a)) {
+            final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j]);
+            forEachIndices(rowCount, columnCount, action, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final byte[] aRow = aa[i];
+                final byte[] bRow = ba[i];
+                final int[] resultRow = result[i];
 
-        forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(a));
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = zipFunction.apply(aRow[j], bRow[j]);
+                }
+            }
+        }
 
         return IntMatrix.wrapResult(result, columnCount);
     }
@@ -1896,9 +1935,21 @@ public final class Matrices {
         final byte[][] ca = c.a;
         final int[][] result = new int[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j], ca[i][j]);
+        if (Matrices.shouldRunInParallel(a)) {
+            final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j], ca[i][j]);
+            forEachIndices(rowCount, columnCount, action, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final byte[] aRow = aa[i];
+                final byte[] bRow = ba[i];
+                final byte[] cRow = ca[i];
+                final int[] resultRow = result[i];
 
-        forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(a));
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = zipFunction.apply(aRow[j], bRow[j], cRow[j]);
+                }
+            }
+        }
 
         return IntMatrix.wrapResult(result, columnCount);
     }
@@ -2357,17 +2408,41 @@ public final class Matrices {
         final int columnCount = matrices[0].columnCount;
         final int[][] result = new int[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> action = (i, j) -> {
-            int zipped = matrices[0].a[i][j];
+        if (Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size))) {
+            final Throwables.IntBiConsumer<E> action = (i, j) -> {
+                int zipped = matrices[0].a[i][j];
 
-            for (int k = 1; k < size; k++) {
-                zipped = zipFunction.applyAsInt(zipped, matrices[k].a[i][j]);
+                for (int k = 1; k < size; k++) {
+                    zipped = zipFunction.applyAsInt(zipped, matrices[k].a[i][j]);
+                }
+
+                result[i][j] = zipped;
+            };
+
+            forEachIndices(rowCount, columnCount, action, true);
+        } else {
+            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+            final int[][] rows = new int[size][];
+
+            for (int i = 0; i < rowCount; i++) {
+                for (int k = 0; k < size; k++) {
+                    rows[k] = matrices[k].a[i];
+                }
+
+                final int[] firstRow = rows[0];
+                final int[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    int zipped = firstRow[j];
+
+                    for (int k = 1; k < size; k++) {
+                        zipped = zipFunction.applyAsInt(zipped, rows[k][j]);
+                    }
+
+                    resultRow[j] = zipped;
+                }
             }
-
-            result[i][j] = zipped;
-        };
-
-        forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size)));
+        }
 
         return IntMatrix.wrapResult(result, columnCount);
     }
@@ -2423,9 +2498,20 @@ public final class Matrices {
         final int[][] ba = b.a;
         final long[][] result = new long[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j]);
+        if (Matrices.shouldRunInParallel(a)) {
+            final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j]);
+            forEachIndices(rowCount, columnCount, action, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final int[] aRow = aa[i];
+                final int[] bRow = ba[i];
+                final long[] resultRow = result[i];
 
-        forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(a));
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = zipFunction.apply(aRow[j], bRow[j]);
+                }
+            }
+        }
 
         return LongMatrix.wrapResult(result, columnCount);
     }
@@ -2487,9 +2573,21 @@ public final class Matrices {
         final int[][] ca = c.a;
         final long[][] result = new long[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j], ca[i][j]);
+        if (Matrices.shouldRunInParallel(a)) {
+            final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j], ca[i][j]);
+            forEachIndices(rowCount, columnCount, action, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final int[] aRow = aa[i];
+                final int[] bRow = ba[i];
+                final int[] cRow = ca[i];
+                final long[] resultRow = result[i];
 
-        forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(a));
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = zipFunction.apply(aRow[j], bRow[j], cRow[j]);
+                }
+            }
+        }
 
         return LongMatrix.wrapResult(result, columnCount);
     }
@@ -2683,9 +2781,20 @@ public final class Matrices {
         final int[][] ba = b.a;
         final double[][] result = new double[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j]);
+        if (Matrices.shouldRunInParallel(a)) {
+            final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j]);
+            forEachIndices(rowCount, columnCount, action, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final int[] aRow = aa[i];
+                final int[] bRow = ba[i];
+                final double[] resultRow = result[i];
 
-        forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(a));
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = zipFunction.apply(aRow[j], bRow[j]);
+                }
+            }
+        }
 
         return DoubleMatrix.wrapResult(result, columnCount);
     }
@@ -2747,9 +2856,21 @@ public final class Matrices {
         final int[][] ca = c.a;
         final double[][] result = new double[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j], ca[i][j]);
+        if (Matrices.shouldRunInParallel(a)) {
+            final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j], ca[i][j]);
+            forEachIndices(rowCount, columnCount, action, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final int[] aRow = aa[i];
+                final int[] bRow = ba[i];
+                final int[] cRow = ca[i];
+                final double[] resultRow = result[i];
 
-        forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(a));
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = zipFunction.apply(aRow[j], bRow[j], cRow[j]);
+                }
+            }
+        }
 
         return DoubleMatrix.wrapResult(result, columnCount);
     }
@@ -3196,17 +3317,41 @@ public final class Matrices {
         final int columnCount = matrices[0].columnCount;
         final long[][] result = new long[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> action = (i, j) -> {
-            long zipped = matrices[0].a[i][j];
+        if (Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size))) {
+            final Throwables.IntBiConsumer<E> action = (i, j) -> {
+                long zipped = matrices[0].a[i][j];
 
-            for (int k = 1; k < size; k++) {
-                zipped = zipFunction.applyAsLong(zipped, matrices[k].a[i][j]);
+                for (int k = 1; k < size; k++) {
+                    zipped = zipFunction.applyAsLong(zipped, matrices[k].a[i][j]);
+                }
+
+                result[i][j] = zipped;
+            };
+
+            forEachIndices(rowCount, columnCount, action, true);
+        } else {
+            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+            final long[][] rows = new long[size][];
+
+            for (int i = 0; i < rowCount; i++) {
+                for (int k = 0; k < size; k++) {
+                    rows[k] = matrices[k].a[i];
+                }
+
+                final long[] firstRow = rows[0];
+                final long[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    long zipped = firstRow[j];
+
+                    for (int k = 1; k < size; k++) {
+                        zipped = zipFunction.applyAsLong(zipped, rows[k][j]);
+                    }
+
+                    resultRow[j] = zipped;
+                }
             }
-
-            result[i][j] = zipped;
-        };
-
-        forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size)));
+        }
 
         return LongMatrix.wrapResult(result, columnCount);
     }
@@ -3262,9 +3407,20 @@ public final class Matrices {
         final long[][] ba = b.a;
         final double[][] result = new double[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j]);
+        if (Matrices.shouldRunInParallel(a)) {
+            final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j]);
+            forEachIndices(rowCount, columnCount, action, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final long[] aRow = aa[i];
+                final long[] bRow = ba[i];
+                final double[] resultRow = result[i];
 
-        forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(a));
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = zipFunction.apply(aRow[j], bRow[j]);
+                }
+            }
+        }
 
         return DoubleMatrix.wrapResult(result, columnCount);
     }
@@ -3326,9 +3482,21 @@ public final class Matrices {
         final long[][] ca = c.a;
         final double[][] result = new double[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j], ca[i][j]);
+        if (Matrices.shouldRunInParallel(a)) {
+            final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j], ca[i][j]);
+            forEachIndices(rowCount, columnCount, action, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final long[] aRow = aa[i];
+                final long[] bRow = ba[i];
+                final long[] cRow = ca[i];
+                final double[] resultRow = result[i];
 
-        forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(a));
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = zipFunction.apply(aRow[j], bRow[j], cRow[j]);
+                }
+            }
+        }
 
         return DoubleMatrix.wrapResult(result, columnCount);
     }
@@ -3774,17 +3942,41 @@ public final class Matrices {
         final int columnCount = matrices[0].columnCount;
         final double[][] result = new double[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> action = (i, j) -> {
-            double zipped = matrices[0].a[i][j];
+        if (Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size))) {
+            final Throwables.IntBiConsumer<E> action = (i, j) -> {
+                double zipped = matrices[0].a[i][j];
 
-            for (int k = 1; k < size; k++) {
-                zipped = zipFunction.applyAsDouble(zipped, matrices[k].a[i][j]);
+                for (int k = 1; k < size; k++) {
+                    zipped = zipFunction.applyAsDouble(zipped, matrices[k].a[i][j]);
+                }
+
+                result[i][j] = zipped;
+            };
+
+            forEachIndices(rowCount, columnCount, action, true);
+        } else {
+            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+            final double[][] rows = new double[size][];
+
+            for (int i = 0; i < rowCount; i++) {
+                for (int k = 0; k < size; k++) {
+                    rows[k] = matrices[k].a[i];
+                }
+
+                final double[] firstRow = rows[0];
+                final double[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    double zipped = firstRow[j];
+
+                    for (int k = 1; k < size; k++) {
+                        zipped = zipFunction.applyAsDouble(zipped, rows[k][j]);
+                    }
+
+                    resultRow[j] = zipped;
+                }
             }
-
-            result[i][j] = zipped;
-        };
-
-        forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size)));
+        }
 
         return DoubleMatrix.wrapResult(result, columnCount);
     }
@@ -4266,17 +4458,42 @@ public final class Matrices {
         final int columnCount = matrices[0].columnCount;
         final T[][] result = newMatrixArray(rowCount, columnCount, normalizedElementType);
 
-        final Throwables.IntBiConsumer<E> action = (i, j) -> {
-            T zipped = matrices[0].a[i][j];
+        if (Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size))) {
+            final Throwables.IntBiConsumer<E> action = (i, j) -> {
+                T zipped = matrices[0].a[i][j];
 
-            for (int k = 1; k < size; k++) {
-                zipped = zipFunction.apply(zipped, matrices[k].a[i][j]);
+                for (int k = 1; k < size; k++) {
+                    zipped = zipFunction.apply(zipped, matrices[k].a[i][j]);
+                }
+
+                result[i][j] = zipped;
+            };
+
+            forEachIndices(rowCount, columnCount, action, true);
+        } else {
+            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+            @SuppressWarnings("unchecked")
+            final T[][] rows = (T[][]) new Object[size][]; // T erases to Object, so this buffer accepts every input's row array
+
+            for (int i = 0; i < rowCount; i++) {
+                for (int k = 0; k < size; k++) {
+                    rows[k] = matrices[k].a[i];
+                }
+
+                final T[] firstRow = rows[0];
+                final T[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    T zipped = firstRow[j];
+
+                    for (int k = 1; k < size; k++) {
+                        zipped = zipFunction.apply(zipped, rows[k][j]);
+                    }
+
+                    resultRow[j] = zipped;
+                }
             }
-
-            result[i][j] = zipped;
-        };
-
-        forEachIndices(rowCount, columnCount, action, Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size)));
+        }
 
         return Matrix.newResult(result, normalizedElementType, columnCount);
     }

@@ -1396,8 +1396,18 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
             throws IllegalArgumentException, E, NullPointerException {
         N.checkArgNotNull(mapper, cs.mapper);
 
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final char[] row = a[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    row[j] = mapper.apply(i, j);
+                }
+            }
+        }
     }
 
     /**
@@ -1495,12 +1505,24 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final char newValue) throws IllegalArgumentException, E {
         N.checkArgNotNull(predicate, cs.predicate);
 
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
-            if (predicate.test(i, j)) {
-                a[i][j] = newValue;
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
+                if (predicate.test(i, j)) {
+                    a[i][j] = newValue;
+                }
+            };
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final char[] row = a[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    if (predicate.test(i, j)) {
+                        row[j] = newValue;
+                    }
+                }
             }
-        };
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        }
     }
 
     /**
@@ -1535,9 +1557,20 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
         N.checkArgNotNull(mapper, cs.mapper);
 
         final char[][] result = new char[rowCount][columnCount];
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsChar(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsChar(a[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final char[] row = a[i];
+                final char[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = mapper.applyAsChar(row[j]);
+                }
+            }
+        }
 
         return wrapResult(result, columnCount);
     }
@@ -1578,9 +1611,20 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
         N.checkArgNotNull(targetElementType, cs.targetElementType);
 
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final char[] row = a[i];
+                final R[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = mapper.apply(row[j]);
+                }
+            }
+        }
 
         return Matrix.newResult(result, targetElementType, columnCount);
     }
@@ -3173,9 +3217,20 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
         final char[][] otherData = other.a;
         final char[][] result = new char[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsChar(a[i][j], otherData[i][j]);
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsChar(a[i][j], otherData[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final char[] row = a[i];
+                final char[] otherRow = otherData[i];
+                final char[] resultRow = result[i];
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = zipFunction.applyAsChar(row[j], otherRow[j]);
+                }
+            }
+        }
 
         return wrapResult(result, columnCount);
     }
@@ -3232,9 +3287,21 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
         final char[][] thirdData = third.a;
         final char[][] result = new char[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsChar(a[i][j], otherData[i][j], thirdData[i][j]);
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsChar(a[i][j], otherData[i][j], thirdData[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final char[] row = a[i];
+                final char[] otherRow = otherData[i];
+                final char[] thirdRow = thirdData[i];
+                final char[] resultRow = result[i];
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = zipFunction.applyAsChar(row[j], otherRow[j], thirdRow[j]);
+                }
+            }
+        }
 
         return wrapResult(result, columnCount);
     }

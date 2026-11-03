@@ -1543,8 +1543,18 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
             throws IllegalArgumentException, E, NullPointerException {
         N.checkArgNotNull(mapper, cs.mapper);
 
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final int[] row = a[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    row[j] = mapper.apply(i, j);
+                }
+            }
+        }
     }
 
     /**
@@ -1639,12 +1649,24 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final int newValue) throws IllegalArgumentException, E {
         N.checkArgNotNull(predicate, cs.predicate);
 
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
-            if (predicate.test(i, j)) {
-                a[i][j] = newValue;
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
+                if (predicate.test(i, j)) {
+                    a[i][j] = newValue;
+                }
+            };
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final int[] row = a[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    if (predicate.test(i, j)) {
+                        row[j] = newValue;
+                    }
+                }
             }
-        };
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        }
     }
 
     /**
@@ -1680,9 +1702,20 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
         N.checkArgNotNull(mapper, cs.mapper);
 
         final int[][] result = new int[rowCount][columnCount];
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsInt(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsInt(a[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final int[] row = a[i];
+                final int[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = mapper.applyAsInt(row[j]);
+                }
+            }
+        }
 
         return wrapResult(result, columnCount);
     }
@@ -1716,9 +1749,20 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
         N.checkArgNotNull(mapper, cs.mapper);
 
         final long[][] result = new long[rowCount][columnCount];
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsLong(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsLong(a[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final int[] row = a[i];
+                final long[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = mapper.applyAsLong(row[j]);
+                }
+            }
+        }
 
         return LongMatrix.wrapResult(result, columnCount);
     }
@@ -1751,9 +1795,20 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
         N.checkArgNotNull(mapper, cs.mapper);
 
         final double[][] result = new double[rowCount][columnCount];
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsDouble(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsDouble(a[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final int[] row = a[i];
+                final double[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = mapper.applyAsDouble(row[j]);
+                }
+            }
+        }
 
         return DoubleMatrix.wrapResult(result, columnCount);
     }
@@ -1795,9 +1850,20 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
         N.checkArgNotNull(targetElementType, cs.targetElementType);
 
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final int[] row = a[i];
+                final R[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = mapper.apply(row[j]);
+                }
+            }
+        }
 
         return Matrix.newResult(result, targetElementType, columnCount);
     }
@@ -3322,10 +3388,10 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
      *
      * <p>Each dot product is accumulated in {@code long} arithmetic that keeps track of wrap-around,
      * and only the finished cell value is checked and narrowed to {@code int}. Intermediate sums may
-     * exceed the {@code int} range, and even the {@code long} range: the product of
+     * exceed the {@code int} range, and even the {@code long} range. For example, the product of
      * {@code [[2000000000, 2000000000, -2000000000]]} and {@code [[1], [1], [1]]} is
-     * {@code 2000000000}, not an overflow. An exception is thrown only when a finished cell value
-     * does not fit in an {@code int}; its message is {@code "long overflow"} if some finished cell does not
+     * {@code 2000000000}, not an overflow, although its first two terms alone sum to
+     * {@code 4000000000}. An exception is thrown only when a finished cell value does not fit in an {@code int}; its message is {@code "long overflow"} if some finished cell does not
      * even fit in a {@code long} (as {@link #matrixMultiplyWidenedExact(IntMatrix)} would report), and
      * {@code "integer overflow"} otherwise.</p>
      *
@@ -3593,9 +3659,20 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
         final int[][] otherData = other.a;
         final int[][] result = new int[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsInt(a[i][j], otherData[i][j]);
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsInt(a[i][j], otherData[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final int[] row = a[i];
+                final int[] otherRow = otherData[i];
+                final int[] resultRow = result[i];
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = zipFunction.applyAsInt(row[j], otherRow[j]);
+                }
+            }
+        }
 
         return wrapResult(result, columnCount);
     }
@@ -3656,9 +3733,21 @@ public final class IntMatrix extends AbstractMatrix<int[], IntList, IntStream, S
         final int[][] thirdData = third.a;
         final int[][] result = new int[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsInt(a[i][j], otherData[i][j], thirdData[i][j]);
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsInt(a[i][j], otherData[i][j], thirdData[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final int[] row = a[i];
+                final int[] otherRow = otherData[i];
+                final int[] thirdRow = thirdData[i];
+                final int[] resultRow = result[i];
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = zipFunction.applyAsInt(row[j], otherRow[j], thirdRow[j]);
+                }
+            }
+        }
 
         return wrapResult(result, columnCount);
     }

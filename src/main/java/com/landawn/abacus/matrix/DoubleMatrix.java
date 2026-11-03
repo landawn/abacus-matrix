@@ -1447,8 +1447,18 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
             throws IllegalArgumentException, E, NullPointerException {
         N.checkArgNotNull(mapper, cs.mapper);
 
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final double[] row = a[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    row[j] = mapper.apply(i, j);
+                }
+            }
+        }
     }
 
     /**
@@ -1551,12 +1561,24 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final double newValue) throws IllegalArgumentException, E {
         N.checkArgNotNull(predicate, cs.predicate);
 
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
-            if (predicate.test(i, j)) {
-                a[i][j] = newValue;
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
+                if (predicate.test(i, j)) {
+                    a[i][j] = newValue;
+                }
+            };
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final double[] row = a[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    if (predicate.test(i, j)) {
+                        row[j] = newValue;
+                    }
+                }
             }
-        };
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        }
     }
 
     /**
@@ -1590,9 +1612,20 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
         N.checkArgNotNull(mapper, cs.mapper);
 
         final double[][] result = new double[rowCount][columnCount];
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsDouble(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsDouble(a[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final double[] row = a[i];
+                final double[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = mapper.applyAsDouble(row[j]);
+                }
+            }
+        }
 
         return wrapResult(result, columnCount);
     }
@@ -1625,9 +1658,20 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
         N.checkArgNotNull(mapper, cs.mapper);
 
         final int[][] result = new int[rowCount][columnCount];
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsInt(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsInt(a[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final double[] row = a[i];
+                final int[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = mapper.applyAsInt(row[j]);
+                }
+            }
+        }
 
         return IntMatrix.wrapResult(result, columnCount);
     }
@@ -1660,9 +1704,20 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
         N.checkArgNotNull(mapper, cs.mapper);
 
         final long[][] result = new long[rowCount][columnCount];
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsLong(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsLong(a[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final double[] row = a[i];
+                final long[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = mapper.applyAsLong(row[j]);
+                }
+            }
+        }
 
         return LongMatrix.wrapResult(result, columnCount);
     }
@@ -1703,9 +1758,20 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
         N.checkArgNotNull(targetElementType, cs.targetElementType);
 
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final double[] row = a[i];
+                final R[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = mapper.apply(row[j]);
+                }
+            }
+        }
 
         return Matrix.newResult(result, targetElementType, columnCount);
     }
@@ -3304,9 +3370,20 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
         final double[][] otherData = other.a;
         final double[][] result = new double[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsDouble(a[i][j], otherData[i][j]);
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsDouble(a[i][j], otherData[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final double[] row = a[i];
+                final double[] otherRow = otherData[i];
+                final double[] resultRow = result[i];
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = zipFunction.applyAsDouble(row[j], otherRow[j]);
+                }
+            }
+        }
 
         return wrapResult(result, columnCount);
     }
@@ -3364,9 +3441,21 @@ public final class DoubleMatrix extends AbstractMatrix<double[], DoubleList, Dou
         final double[][] thirdData = third.a;
         final double[][] result = new double[rowCount][columnCount];
 
-        final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsDouble(a[i][j], otherData[i][j], thirdData[i][j]);
+        if (Matrices.shouldRunInParallel(this)) {
+            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsDouble(a[i][j], otherData[i][j], thirdData[i][j]);
+            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final double[] row = a[i];
+                final double[] otherRow = otherData[i];
+                final double[] thirdRow = thirdData[i];
+                final double[] resultRow = result[i];
 
-        Matrices.forEachIndices(rowCount, columnCount, elementAction, Matrices.shouldRunInParallel(this));
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = zipFunction.applyAsDouble(row[j], otherRow[j], thirdRow[j]);
+                }
+            }
+        }
 
         return wrapResult(result, columnCount);
     }

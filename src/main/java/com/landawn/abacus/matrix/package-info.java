@@ -75,7 +75,7 @@
  * whether it runs sequentially or in parallel.</p>
  *
  * <p>A caller-supplied array may still contain one of a matrix's live rows -- {@code m.setColumn(0, m.rowView(1))}
- * is legal -- so the writers that need it snapshot such a source before writing.</p>
+ * is legal for a square matrix -- so the writers that need it snapshot such a source before writing.</p>
  *
  * <p>{@link com.landawn.abacus.matrix.AbstractMatrix#unsafeBackingArray()} and methods whose names end
  * in {@code View}, such as {@link com.landawn.abacus.matrix.AbstractMatrix#rowView(int)}, expose live
