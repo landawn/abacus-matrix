@@ -47,7 +47,7 @@ flat-array mutation uses the `Arrays` utilities supplied by `abacus-extra`.
     <dependency>
         <groupId>com.landawn.abacus</groupId>
         <artifactId>abacus-matrix</artifactId>
-        <version>3.9.0</version>
+        <version>3.9.1</version>
     </dependency>
 </dependencies>
 ```
@@ -56,7 +56,7 @@ flat-array mutation uses the `Arrays` utilities supplied by `abacus-extra`.
 
 ```groovy
 dependencies {
-    implementation 'com.landawn.abacus:abacus-matrix:3.9.0'
+    implementation 'com.landawn.abacus:abacus-matrix:3.9.1'
 }
 ```
 
