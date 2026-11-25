@@ -1,3 +1,7 @@
+## 3.9.2
+* Improvements and bug fixes
+* Behavior change: `ByteMatrix.random(int, int, RandomGenerator)` and `ByteMatrix.randomRow(int, RandomGenerator)` now fill each row with `RandomGenerator.nextBytes`, so a given seed produces a different matrix than in 3.9.1. Values remain uniformly distributed over the full `byte` range; code that depends on reproducing seeded output across versions must regenerate its expected matrices.
+
 ## 3.9.1
 * Improvements and bug fixes
 

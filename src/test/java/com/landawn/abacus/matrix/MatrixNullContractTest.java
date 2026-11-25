@@ -412,7 +412,7 @@ class MatrixNullContractTest extends MatrixTestSupport {
             }
 
             // Tripwire: update when public signatures change, so a silently non-matching filter cannot make this test vacuous.
-            assertEquals(599, rejected);
+            assertEquals(603, rejected);
             assertEquals(37, accepted);
         }
 

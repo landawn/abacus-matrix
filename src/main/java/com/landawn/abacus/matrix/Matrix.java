@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 import com.landawn.abacus.annotation.MayReturnNull;
-import com.landawn.abacus.annotation.SuppressFBWarnings;
 import com.landawn.abacus.util.Array;
 import com.landawn.abacus.util.Arrays;
 import com.landawn.abacus.util.Arrays.ff;
@@ -91,6 +90,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     @SuppressWarnings("deprecation")
     private static final Matrix<Object> EMPTY_MATRIX = new Matrix<>(new Object[0][0]);
 
+    /**
+     * Minimum row length for which the row-major stream iterator's {@code toArray(A[])} bulk-copies rows with
+     * {@link System#arraycopy}; narrower matrices (and a shorter partially consumed first row) use an element loop,
+     * which is cheaper than the per-row type check and copy setup.
+     */
+    private static final int MIN_ROW_ARRAYCOPY_LENGTH = 16;
+
     /** The outer array's runtime component type, used for type-compatible result allocation. */
     final Class<T[]> arrayType;
 
@@ -131,8 +137,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @deprecated Prefer {@link #Matrix(Class, Object[][])} so the writable runtime element type is explicit.
      */
     @Deprecated
+    @SuppressWarnings("unchecked")
     public Matrix(final T[][] a) throws IllegalArgumentException {
-        this(a, null);
+        // The element type is the outer array's runtime row component type, so arrayType.getComponentType() == elementType holds
+        // by construction, the same invariant the explicit-type constructors enforce.
+        super(N.checkArgNotNull(a, "Matrix array cannot be null"), a.getClass().getComponentType().getComponentType());
+        arrayType = (Class<T[]>) this.a.getClass().getComponentType();
+        this.elementType = (Class<T>) super.elementType;
     }
 
     /**
@@ -143,57 +154,63 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * <p>This zero-copy row contract intentionally rejects covariant or heterogeneous row
      * storage. Use {@link #copyOf(Class, Object[][])} to widen and copy such input.</p>
      *
-     * @param elementType the exact runtime element type; primitive classes are normalized to
-     *        their wrapper class
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * String[][] data = {{"A", "B"}, {"C", "D"}};
+     * Matrix<String> matrix = new Matrix<>(String.class, data);
+     * matrix.get(0, 0);                            // returns "A"
+     * data[0][0] = "X";
+     * matrix.get(0, 0);                            // returns "X" (row storage shared)
+     *
+     * new Matrix<>(String.class, new String[0][0]).rowCount(); // returns 0
+     * new Matrix<>(Number.class, new Integer[][] {{1}});       // throws IllegalArgumentException (covariant array)
+     * }</pre>
+     *
+     * @param elementType the exact runtime element type; primitive scalar classes are normalized to
+     *        their wrapper classes
      * @param a the rectangular rows to wrap
-     * @throws IllegalArgumentException if {@code elementType} or {@code a} is {@code null}, if the runtime element type of {@code a} is not
-     *         exactly {@code elementType}, if any row is {@code null} or its runtime component type is not exactly {@code elementType}, if rows
-     *         have different lengths, or if two entries are the same row array; if {@code elementType} is {@code void.class}.
+     * @throws IllegalArgumentException if {@code elementType} is {@code null} or {@code void.class}, if {@code a} is {@code null}, if the
+     *         runtime element type of {@code a} is not exactly {@code elementType} (after primitive scalar normalization), if any row is
+     *         {@code null} or its runtime component type is not exactly {@code elementType}, if rows have different lengths, or if two entries
+     *         are the same row array
      */
     public Matrix(final Class<T> elementType, final T[][] a) throws IllegalArgumentException {
-        this(requireExactStorage(elementType, a, false), normalizeElementType(elementType));
+        // requireExactStorage normalizes elementType and returns a freshly allocated outer array whose
+        // non-null, rectangular, identity-distinct rows all have that exact normalized component type.
+        this(requireExactStorage(elementType, a, false), true);
     }
 
     /**
-     * Constructs a matrix from validated or internally allocated storage. The superclass takes
-     * the structural snapshot of the outer array.
+     * Adopts a freshly allocated, exact-storage outer array already validated by {@link #requireExactStorage}.
      *
-     * @param a the two-dimensional backing array; must not be {@code null}, contain {@code null}
-     *          rows, or be non-rectangular
-     * @param explicitElementType the element type to report, or {@code null} to derive it from
-     *                            the runtime array type
-     * @throws IllegalArgumentException if {@code a} is {@code null}, contains a {@code null} row, is non-rectangular, or contains the same row
-     *         array twice
+     * @param validated the non-{@code null}, rectangular, identity-distinct outer array
+     * @param exactStorageTrusted marker selecting this trusted constructor
      */
-    @SuppressWarnings("unchecked")
-    private Matrix(final T[][] a, final Class<T> explicitElementType) throws IllegalArgumentException {
-        super(N.checkArgNotNull(a, "Matrix array cannot be null"),
-                explicitElementType == null ? (Class<T>) a.getClass().getComponentType().getComponentType() : explicitElementType);
-        arrayType = (Class<T[]>) this.a.getClass().getComponentType();
-        this.elementType = explicitElementType == null ? (Class<T>) arrayType.getComponentType() : explicitElementType;
+    private Matrix(final T[][] validated, final boolean exactStorageTrusted) {
+        this(validated, null, validated.length == 0 ? 0 : validated[0].length, exactStorageTrusted);
     }
 
     /**
-     * Builds a result over rows this class allocated itself, skipping the duplicate-row scan.
+     * Builds a result over rows this library allocated itself, skipping outer-array cloning, per-row
+     * validation, and the duplicate-row scan.
      *
-     * <p>Every caller passes a freshly allocated outer array whose rows were allocated by this library
-     * -- {@code newIndependentRow(Class, int)}, a per-row {@code clone()},
+     * <p>Every caller passes a freshly allocated outer array whose non-{@code null}, rectangular rows
+     * were allocated by this library -- {@code newIndependentRow(Class, int)}, a per-row {@code clone()},
      * {@link Matrices#newMatrixArray(int, int, Class)},
      * {@code java.lang.reflect.Array.newInstance(type, rows, columns)}, or a two-dimensional array
      * creation expression such as the primitive {@code boxed()} methods'
-     * {@code new Integer[rowCount][columnCount]} -- so the rows are
-     * identity-distinct by construction and the scan can only confirm what the allocation already
-     * guarantees. Unlike the primitive variants' {@code wrapResult}, this does <b>not</b> canonicalise
-     * a {@code 0 x 0} result to {@link #empty()}, because that singleton is {@code Object}-typed and
-     * would discard the result's element type.</p>
+     * {@code new Integer[rowCount][columnCount]} -- so ownership, rectangularity, and distinct row
+     * identities are guaranteed by construction. Unlike the primitive variants' {@code wrapResult},
+     * this does <b>not</b> canonicalise a {@code 0 x 0} result to {@link #empty()}, because that
+     * singleton is {@code Object}-typed and would discard the result's element type.</p>
      *
      * @param <T> the element type
-     * @param a the backing rows of the result
+     * @param a the freshly allocated backing rows of the result; must be non-{@code null}, rectangular, and identity-distinct
      * @param elementType the result's element type, or {@code null} to infer it from {@code a}'s runtime array type
-     * @param columnCount the result's logical column count
+     * @param columnCount the result's non-negative logical column count matching every row
      * @return the new matrix
-     * @throws IllegalArgumentException if the rows are null, contain a null row, are not rectangular, disagree with {@code columnCount}, or
-     *         cannot store {@code elementType}; if {@code columnCount} is negative or {@code elementType} is {@code void.class}
+     * @throws IllegalArgumentException if {@code a} is {@code null}, {@code columnCount} is negative, or {@code elementType} is
+     *         {@code void.class} or does not match the runtime row component type of {@code a}
      */
     static <T> Matrix<T> newResult(final T[][] a, final Class<T> elementType, final int columnCount) throws IllegalArgumentException {
         return new Matrix<>(a, elementType, columnCount, true);
@@ -206,23 +223,24 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param explicitElementType the element type, or {@code null} to infer it from {@code a}
      * @param columnCount the logical column count
      * @throws IllegalArgumentException if {@code a} is null, contains null or repeated rows, is not rectangular, or disagrees with {@code
-     *         columnCount}; if {@code columnCount} is negative; or if {@code explicitElementType} is {@code void.class} or incompatible with the
-     *         backing type
+     *         columnCount}; if {@code columnCount} is negative; or if {@code explicitElementType} is {@code void.class} or does not match the
+     *         outer array's row component type
      */
     Matrix(final T[][] a, final Class<T> explicitElementType, final int columnCount) throws IllegalArgumentException {
         this(a, explicitElementType, columnCount, false);
     }
 
     /**
-     * Constructs a matrix with an optional trusted guarantee that the rows are identity-distinct.
+     * Constructs a matrix, optionally trusting caller-owned, non-{@code null}, rectangular, identity-distinct rows.
      *
-     * @param a the rectangular backing rows
+     * @param a the backing rows; when {@code rowsAreKnownDistinct} is {@code true}, must be freshly allocated by this library with
+     *        non-{@code null}, rectangular, identity-distinct rows
      * @param explicitElementType the element type, or {@code null} to infer it from {@code a}
      * @param columnCount the logical column count
-     * @param rowsAreKnownDistinct whether the caller guarantees distinct row identities
-     * @throws IllegalArgumentException if {@code a} is null, contains null rows, is not rectangular, or disagrees with {@code columnCount}; if
-     *         {@code rowsAreKnownDistinct} is false and row identities repeat; if {@code columnCount} is negative; if the explicit type is
-     *         {@code void.class} or incompatible with the backing type
+     * @param rowsAreKnownDistinct {@code true} only when {@code a} and its rows are freshly allocated and guaranteed valid
+     * @throws IllegalArgumentException if {@code a} is {@code null}, {@code columnCount} is negative, {@code explicitElementType} is
+     *         {@code void.class} or does not match {@code a}'s row component type, or, when {@code rowsAreKnownDistinct} is {@code false},
+     *         if {@code a} contains {@code null} rows, non-rectangular rows, rows disagreeing with {@code columnCount}, or repeated row arrays
      */
     @SuppressWarnings("unchecked")
     private Matrix(final T[][] a, final Class<T> explicitElementType, final int columnCount, final boolean rowsAreKnownDistinct)
@@ -235,17 +253,19 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
                 explicitElementType == null ? (Class<T>) a.getClass().getComponentType().getComponentType() : normalizeElementType(explicitElementType),
                 columnCount, rowsAreKnownDistinct);
         arrayType = (Class<T[]>) this.a.getClass().getComponentType();
-        this.elementType = explicitElementType == null ? (Class<T>) arrayType.getComponentType() : normalizeElementType(explicitElementType);
+        this.elementType = (Class<T>) super.elementType;
 
         // elementType and arrayType are used independently (rows are allocated from the first, outer
-        // arrays from the second), so a disagreement would corrupt every copy-producing method. Every
-        // derived result (newResult) and the package-private constructor pass through here, so the
-        // message (getTypeName() allocates for array types) is built only when the check fails. The
-        // public constructors and wrap(Class, T[]...) use the two-argument constructor instead: their
-        // element type is either derived from the array or already proven exact by requireExactStorage.
+        // arrays from the second), so any disagreement in either direction would corrupt copy-producing
+        // methods, rowView, or toArray. Check assignability first to preserve the narrower-storage message.
         if (!arrayType.getComponentType().isAssignableFrom(elementType)) {
             throw new IllegalArgumentException(
                     formatMsg("Element type {} is not storable in backing rows of type {}", elementType.getTypeName(), arrayType.getTypeName()));
+        }
+
+        if (arrayType.getComponentType() != elementType) {
+            throw new IllegalArgumentException(
+                    formatMsg("Outer array row type {} does not match element type {}", arrayType.getTypeName(), elementType.getTypeName()));
         }
     }
 
@@ -324,6 +344,34 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             }
         }
 
+        // Validate rectangularity and distinct row identities directly on the private snapshot so callers
+        // can pass result straight to the trusted constructor without cloning the outer array a second time.
+        final int len = result.length;
+        if (len > 0) {
+            final int expectedColumns = result[0].length;
+            final RowIdentityIndex seenRows = len > SMALL_ROW_IDENTITY_SCAN_LIMIT ? new RowIdentityIndex(result, len) : null;
+
+            for (int i = 0; i < len; i++) {
+                final T[] row = result[i];
+                if (row.length != expectedColumns) {
+                    throw new IllegalArgumentException(formatMsg(MSG_NOT_RECTANGULAR, expectedColumns, i, row.length));
+                }
+
+                if (seenRows != null) {
+                    final int firstIndex = seenRows.add(i);
+                    if (firstIndex >= 0) {
+                        throw new IllegalArgumentException(formatMsg(MSG_DUPLICATE_ROW, i, firstIndex));
+                    }
+                } else {
+                    for (int j = 0; j < i; j++) {
+                        if (result[j] == row) {
+                            throw new IllegalArgumentException(formatMsg(MSG_DUPLICATE_ROW, i, j));
+                        }
+                    }
+                }
+            }
+        }
+
         return result;
     }
 
@@ -377,11 +425,20 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Returns a typed {@code 0 x 0} matrix. For {@code Object.class} this is the shared instance
      * returned by {@link #empty()}; for any other type a new matrix is created.
      *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * Matrix<String> empty = Matrix.empty(String.class);
+     * empty.rowCount();      // returns 0
+     * empty.columnCount();   // returns 0
+     * empty.elementType();   // returns String.class
+     * }</pre>
+     *
      * @param <T> the element type
-     * @param elementType the exact runtime element type
+     * @param elementType the exact runtime element type; primitive scalar classes are normalized to
+     *        their wrapper classes
      * @return an empty matrix whose future allocations use {@code elementType}
-     * @throws IllegalArgumentException if {@code elementType} is {@code null}; if {@code elementType} is {@code void.class}, or if adding two
-     *         array dimensions to {@code elementType} would exceed the JVM limit of 255.
+     * @throws IllegalArgumentException if {@code elementType} is {@code null} or {@code void.class}, or if adding two array dimensions to
+     *         {@code elementType} would exceed the JVM limit of 255
      */
     public static <T> Matrix<T> empty(final Class<T> elementType) throws IllegalArgumentException {
         return empty(elementType, 0);
@@ -393,12 +450,21 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * {@code Object.class} with {@code columnCount == 0} this is the shared instance returned by
      * {@link #empty()}; every other combination creates a new matrix.
      *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * Matrix<Integer> empty = Matrix.empty(Integer.class, 3);
+     * empty.rowCount();      // returns 0
+     * empty.columnCount();   // returns 3
+     * empty.elementType();   // returns Integer.class
+     * }</pre>
+     *
      * @param <T> the element type
-     * @param elementType the exact runtime element type
+     * @param elementType the exact runtime element type; primitive scalar classes are normalized to
+     *        their wrapper classes
      * @param columnCount the logical column count; must be non-negative
      * @return a typed {@code 0 x columnCount} matrix
-     * @throws IllegalArgumentException if {@code elementType} is {@code null} or {@code columnCount} is negative; if {@code elementType} is
-     *         {@code void.class}, or if adding two array dimensions to {@code elementType} would exceed the JVM limit of 255.
+     * @throws IllegalArgumentException if {@code elementType} is {@code null} or {@code void.class}, if {@code columnCount} is negative, or if
+     *         adding two array dimensions to {@code elementType} would exceed the JVM limit of 255
      */
     @SuppressWarnings("unchecked")
     public static <T> Matrix<T> empty(final Class<T> elementType, final int columnCount) throws IllegalArgumentException {
@@ -409,8 +475,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             return (Matrix<T>) EMPTY_MATRIX;
         }
 
-        final Class<T[]> rowType = (Class<T[]>) N.newArray(normalizedType, 0).getClass();
-        return new Matrix<>(N.newArray(rowType, 0), normalizedType, columnCount);
+        return newResult(Matrices.newMatrixArray(0, 0, normalizedType), normalizedType, columnCount);
     }
 
     /**
@@ -475,20 +540,33 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * {@code String[]} rows, is accepted and copied into exactly typed storage. A narrower outer array
      * (for example an {@code Integer[][]} for {@code Number.class}) is rejected.</p>
      *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * String[][] data = {{"a", "b"}, {"c", "d"}};
+     * Matrix<String> matrix = Matrix.wrap(String.class, data);
+     * matrix.get(1, 0);                            // returns "c"
+     * data[0][0] = "x";
+     * matrix.get(0, 0);                            // returns "x" (row storage shared)
+     *
+     * Matrix<Integer> numbers = Matrix.wrap(Integer.class, new Integer[] {1, 2}, new Integer[] {3, 4});
+     * numbers.rowCount();                          // returns 2
+     * }</pre>
+     *
      * @param <T> the element type
-     * @param elementType the exact runtime element type
+     * @param elementType the exact runtime element type; primitive scalar classes are normalized to
+     *        their wrapper classes
      * @param a the rectangular, identity-distinct rows to wrap
      * @return a matrix with uniform exact row storage
-     * @throws IllegalArgumentException if {@code elementType} or {@code a} is {@code null}, if the runtime element type of {@code a} is not
-     *         {@code elementType} or a supertype of it, if the runtime component type of any row differs from {@code elementType} after
-     *         primitive scalar normalization, if any row is {@code null}, if rows have different lengths, or if two entries are the same row
-     *         array; if {@code elementType} is {@code void.class}, or if adding two array dimensions to {@code elementType} would exceed the JVM
-     *         limit of 255.
+     * @throws IllegalArgumentException if {@code elementType} is {@code null} or {@code void.class}, if {@code a} is {@code null}, if the
+     *         runtime element type of {@code a} is not {@code elementType} or a supertype of it, if the runtime component type of any row differs
+     *         from {@code elementType} after primitive scalar normalization, if any row is {@code null}, if rows have different lengths, if two
+     *         entries are the same row array, or if adding two array dimensions to {@code elementType} would exceed the JVM limit of 255
      * @see #copyOf(Class, Object[][])
      */
     @SafeVarargs
     public static <T> Matrix<T> wrap(final Class<T> elementType, final T[]... a) throws IllegalArgumentException {
-        return new Matrix<>(requireExactStorage(elementType, a, true), normalizeElementType(elementType));
+        final T[][] validated = requireExactStorage(elementType, a, true);
+        return new Matrix<>(validated, null, validated.length == 0 ? 0 : validated[0].length, true);
     }
 
     /**
@@ -543,13 +621,22 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * is exactly {@code elementType}. Covariant and heterogeneous source rows are widened safely;
      * repeated source-row identities become independent result rows.
      *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * Number[][] data = {new Integer[] {1, 2}, new Double[] {3.5, 4.5}};
+     * Matrix<Number> matrix = Matrix.copyOf(Number.class, data);
+     * matrix.set(0, 0, 1.5);                       // valid: every row is Number[]
+     * Number first = data[0][0];                   // still 1 (copy is independent)
+     * }</pre>
+     *
      * @param <T> the element type
-     * @param elementType the exact runtime element type for every result row
+     * @param elementType the exact runtime element type for every result row; primitive scalar classes
+     *        are normalized to their wrapper classes
      * @param a the rectangular source rows
      * @return an independently stored matrix with uniform exact row storage
-     * @throws IllegalArgumentException if {@code elementType} or {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if rows
-     *         have different lengths; if {@code elementType} is {@code void.class}, or if adding two array dimensions to {@code elementType}
-     *         would exceed the JVM limit of 255.
+     * @throws IllegalArgumentException if {@code elementType} is {@code null} or {@code void.class}, if {@code a} is {@code null}, if any row of
+     *         {@code a} is {@code null}, if rows have different lengths, or if adding two array dimensions to {@code elementType} would exceed
+     *         the JVM limit of 255
      * @throws ArrayStoreException if a source value is not assignable to {@code elementType}
      */
     @SafeVarargs
@@ -557,32 +644,39 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         final Class<T> normalizedType = normalizeElementType(elementType);
         N.checkArgNotNull(a, "Matrix array cannot be null");
 
+        // Snapshot the outer array once so concurrent mutations to the caller's array cannot cause a
+        // null or mismatched-length row to slip past validation into the copy loop.
+        final T[][] rows = a.clone();
+        final int rowCount = rows.length;
         final int columnCount;
 
-        if (a.length == 0) {
+        if (rowCount == 0) {
             columnCount = 0;
         } else {
-            N.checkArgument(a[0] != null, "Row 0 cannot be null");
-            columnCount = a[0].length;
-        }
+            N.checkArgument(rows[0] != null, "Row 0 cannot be null");
+            columnCount = rows[0].length;
 
-        // Validate every row before copying any of them, so a malformed row is always reported as
-        // IllegalArgumentException rather than being preempted by an ArrayStoreException from an earlier row.
-        for (int i = 0; i < a.length; i++) {
-            N.checkArgument(a[i] != null, "Row {} cannot be null", i);
+            // Validate every remaining row before copying any of them, so a malformed row is always reported as
+            // IllegalArgumentException rather than being preempted by an ArrayStoreException from an earlier row.
+            for (int i = 1; i < rowCount; i++) {
+                final T[] row = rows[i];
+                N.checkArgument(row != null, "Row {} cannot be null", i);
 
-            if (a[i].length != columnCount) {
-                throw new IllegalArgumentException(formatMsg(MSG_NOT_RECTANGULAR, columnCount, i, a[i].length));
+                if (row.length != columnCount) {
+                    throw new IllegalArgumentException(formatMsg(MSG_NOT_RECTANGULAR, columnCount, i, row.length));
+                }
             }
         }
 
-        final T[][] copy = Matrices.newMatrixArray(a.length, columnCount, normalizedType);
+        final T[][] copy = Matrices.newMatrixArray(rowCount, columnCount, normalizedType);
 
-        for (int i = 0; i < a.length; i++) {
-            N.copy(a[i], 0, copy[i], 0, columnCount);
+        if (columnCount > 0) {
+            for (int i = 0; i < rowCount; i++) {
+                N.copy(rows[i], 0, copy[i], 0, columnCount);
+            }
         }
 
-        return newResult(copy, normalizedType, columnCount);
+        return newResult(copy, null, columnCount);
     }
 
     /**
@@ -630,18 +724,27 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Creates a square matrix with the supplied main diagonal and exact runtime element type.
      * All off-diagonal cells are {@code null}; an empty diagonal produces a typed {@code 0 x 0} matrix.
      *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * Matrix<Integer> diag = Matrix.ofMainDiagonal(Integer.class, new Integer[] {1, 2, 3});
+     * diag.get(0, 0);   // returns 1
+     * diag.get(1, 1);   // returns 2
+     * diag.get(0, 1);   // returns null (off-diagonal)
+     * }</pre>
+     *
      * @param <T> the element type
-     * @param elementType the exact runtime element type
+     * @param elementType the exact runtime element type; primitive scalar classes are normalized to
+     *        their wrapper classes
      * @param mainDiagonal the diagonal values; must not be {@code null}
      * @return the new square diagonal matrix
-     * @throws IllegalArgumentException if {@code elementType} or {@code mainDiagonal} is {@code null}; if {@code elementType} is {@code
-     *         void.class}, or if adding two array dimensions to {@code elementType} would exceed the JVM limit of 255.
+     * @throws IllegalArgumentException if {@code elementType} is {@code null} or {@code void.class}, if {@code mainDiagonal} is {@code null}, or
+     *         if adding two array dimensions to {@code elementType} would exceed the JVM limit of 255
      * @throws ArrayStoreException if a value is not assignable to {@code elementType}
      */
     public static <T> Matrix<T> ofMainDiagonal(final Class<T> elementType, final T[] mainDiagonal) throws IllegalArgumentException, ArrayStoreException {
         final Class<T> normalizedType = normalizeElementType(elementType);
         N.checkArgNotNull(mainDiagonal, cs.mainDiagonal);
-        return ofDiagonals(normalizedType, mainDiagonal, null);
+        return ofDiagonalsInternal(normalizedType, mainDiagonal, null);
     }
 
     /**
@@ -691,18 +794,27 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Values run from the upper-right corner down and left. All other cells are {@code null}; an
      * empty diagonal produces a typed {@code 0 x 0} matrix.
      *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * Matrix<Integer> diag = Matrix.ofAntiDiagonal(Integer.class, new Integer[] {1, 2, 3});
+     * diag.get(0, 2);   // returns 1
+     * diag.get(2, 0);   // returns 3
+     * diag.get(0, 0);   // returns null (off anti-diagonal)
+     * }</pre>
+     *
      * @param <T> the element type
-     * @param elementType the exact runtime element type
+     * @param elementType the exact runtime element type; primitive scalar classes are normalized to
+     *        their wrapper classes
      * @param antiDiagonal the diagonal values; must not be {@code null}
      * @return the new square diagonal matrix
-     * @throws IllegalArgumentException if {@code elementType} or {@code antiDiagonal} is {@code null}; if {@code elementType} is {@code
-     *         void.class}, or if adding two array dimensions to {@code elementType} would exceed the JVM limit of 255.
+     * @throws IllegalArgumentException if {@code elementType} is {@code null} or {@code void.class}, if {@code antiDiagonal} is {@code null}, or
+     *         if adding two array dimensions to {@code elementType} would exceed the JVM limit of 255
      * @throws ArrayStoreException if a value is not assignable to {@code elementType}
      */
     public static <T> Matrix<T> ofAntiDiagonal(final Class<T> elementType, final T[] antiDiagonal) throws IllegalArgumentException, ArrayStoreException {
         final Class<T> normalizedType = normalizeElementType(elementType);
         N.checkArgNotNull(antiDiagonal, cs.antiDiagonal);
-        return ofDiagonals(normalizedType, null, antiDiagonal);
+        return ofDiagonalsInternal(normalizedType, null, antiDiagonal);
     }
 
     /**
@@ -788,19 +900,44 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * Creates a square matrix with values on one or both diagonals and exact, uniform runtime
      * element storage. If the diagonals intersect, the main-diagonal value wins.
      *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * Matrix<String> diag = Matrix.ofDiagonals(String.class, new String[] {"A", "B", "C"}, new String[] {"X", "Y", "Z"});
+     * diag.get(0, 0);   // returns "A"
+     * diag.get(0, 2);   // returns "X"
+     * diag.get(1, 1);   // returns "B" (main diagonal wins at the center)
+     * }</pre>
+     *
      * @param <T> the element type
-     * @param elementType the exact runtime element type
+     * @param elementType the exact runtime element type; primitive scalar classes are normalized to
+     *        their wrapper classes
      * @param mainDiagonal main-diagonal values, or {@code null} when {@code antiDiagonal} is supplied
      * @param antiDiagonal anti-diagonal values, or {@code null} when {@code mainDiagonal} is supplied
      * @return the new square matrix
-     * @throws IllegalArgumentException if {@code elementType} is {@code null}, both diagonals are {@code null}, or two non-empty diagonals have
-     *         different lengths; if {@code elementType} is {@code void.class}, or if adding two array dimensions to {@code elementType} would
-     *         exceed the JVM limit of 255.
+     * @throws IllegalArgumentException if {@code elementType} is {@code null} or {@code void.class}, if both diagonals are {@code null}, if two
+     *         non-empty diagonals have different lengths, or if adding two array dimensions to {@code elementType} would exceed the JVM limit of
+     *         255
      * @throws ArrayStoreException if a value is not assignable to {@code elementType}
      */
     public static <T> Matrix<T> ofDiagonals(final Class<T> elementType, final T[] mainDiagonal, final T[] antiDiagonal)
             throws IllegalArgumentException, ArrayStoreException {
-        final Class<T> normalizedType = normalizeElementType(elementType);
+        return ofDiagonalsInternal(normalizeElementType(elementType), mainDiagonal, antiDiagonal);
+    }
+
+    /**
+     * Builds a diagonal matrix after the caller has validated and normalized {@code normalizedType}.
+     *
+     * @param <T> the element type
+     * @param normalizedType the validated, normalized runtime element type
+     * @param mainDiagonal main-diagonal values, or {@code null} when {@code antiDiagonal} is supplied
+     * @param antiDiagonal anti-diagonal values, or {@code null} when {@code mainDiagonal} is supplied
+     * @return the new square matrix
+     * @throws IllegalArgumentException if both diagonals are {@code null}, two non-empty diagonals have different lengths, or adding two array
+     *         dimensions to {@code normalizedType} would exceed the JVM limit of 255
+     * @throws ArrayStoreException if a value is not assignable to {@code normalizedType}
+     */
+    private static <T> Matrix<T> ofDiagonalsInternal(final Class<T> normalizedType, final T[] mainDiagonal, final T[] antiDiagonal)
+            throws IllegalArgumentException, ArrayStoreException {
         N.checkArgument(mainDiagonal != null || antiDiagonal != null, "Both 'mainDiagonal' and 'antiDiagonal' can't be null");
         N.checkArgument(N.isEmpty(mainDiagonal) || N.isEmpty(antiDiagonal) || mainDiagonal.length == antiDiagonal.length,
                 "The lengths of 'mainDiagonal' and 'antiDiagonal' must be the same: mainDiagonal length={}, antiDiagonal length={}", N.len(mainDiagonal),
@@ -821,7 +958,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             }
         }
 
-        return newResult(result, normalizedType, len);
+        return newResult(result, null, len);
     }
 
     /**
@@ -830,12 +967,12 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> matrix = Matrix.wrap(new String[][] {{"A", "B"}, {"C", "D"}});
+     * Matrix<String> matrix = Matrix.wrap(String.class, new String[][] {{"A", "B"}, {"C", "D"}});
      * matrix.get(1, 0);    // returns "C"
      * matrix.get(1, 1);    // returns "D"
      * matrix.get(5, 0);    // throws ArrayIndexOutOfBoundsException
      *
-     * Matrix<String> withNull = Matrix.wrap(new String[][] {{"A", null}});
+     * Matrix<String> withNull = Matrix.wrap(String.class, new String[][] {{"A", null}});
      * withNull.get(0, 1);  // returns null (null elements are permitted)
      * }</pre>
      *
@@ -857,7 +994,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> matrix = Matrix.wrap(new String[][] {{"a", "b", "c"}, {"d", "e", "f"}});
+     * Matrix<String> matrix = Matrix.wrap(String.class, new String[][] {{"a", "b", "c"}, {"d", "e", "f"}});
      * matrix.get(Point.of(1, 2));   // returns "f" (same as matrix.get(1, 2))
      * matrix.get(Point.of(0, 0));   // returns "a"
      * matrix.get((Point) null);     // throws IllegalArgumentException
@@ -885,7 +1022,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> matrix = Matrix.wrap(new String[][] {{"a", "b", "c"}, {"d", "e", "f"}});
+     * Matrix<String> matrix = Matrix.wrap(String.class, new String[][] {{"a", "b", "c"}, {"d", "e", "f"}});
      * matrix.set(1, 2, "newValue");
      * matrix.get(1, 2);            // returns "newValue"
      * matrix.set(0, 0, null);
@@ -910,7 +1047,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> matrix = Matrix.wrap(new String[][] {{"a", "b"}, {"c", "d"}});
+     * Matrix<String> matrix = Matrix.wrap(String.class, new String[][] {{"a", "b"}, {"c", "d"}});
      * matrix.set(Point.of(0, 1), "X");   // same as matrix.set(0, 1, "X")
      * matrix.get(0, 1);                  // returns "X"
      * matrix.set((Point) null, "x");     // throws IllegalArgumentException
@@ -937,7 +1074,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> matrix = Matrix.wrap(new String[][] {{"A", "B"}, {"C", "D"}});
+     * Matrix<String> matrix = Matrix.wrap(String.class, new String[][] {{"A", "B"}, {"C", "D"}});
      * matrix.valueAbove(1, 0).get();        // returns "A"
      * matrix.valueAbove(1, 1).get();        // returns "B"
      * matrix.valueAbove(0, 0).isEmpty();    // returns true (no row above the top edge)
@@ -964,7 +1101,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> matrix = Matrix.wrap(new String[][] {{"A", "B"}, {"C", "D"}});
+     * Matrix<String> matrix = Matrix.wrap(String.class, new String[][] {{"A", "B"}, {"C", "D"}});
      * matrix.valueBelow(0, 0).get();        // returns "C"
      * matrix.valueBelow(0, 1).get();        // returns "D"
      * matrix.valueBelow(1, 0).isEmpty();    // returns true (no row below the bottom edge)
@@ -992,7 +1129,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> matrix = Matrix.wrap(new String[][] {{"A", "B"}, {"C", "D"}});
+     * Matrix<String> matrix = Matrix.wrap(String.class, new String[][] {{"A", "B"}, {"C", "D"}});
      * matrix.valueLeft(0, 1).get();        // returns "A"
      * matrix.valueLeft(1, 1).get();        // returns "C"
      * matrix.valueLeft(0, 0).isEmpty();    // returns true (no column to the left of the leftmost edge)
@@ -1020,7 +1157,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> matrix = Matrix.wrap(new String[][] {{"A", "B"}, {"C", "D"}});
+     * Matrix<String> matrix = Matrix.wrap(String.class, new String[][] {{"A", "B"}, {"C", "D"}});
      * matrix.valueRight(0, 0).get();        // returns "B"
      * matrix.valueRight(1, 0).get();        // returns "D"
      * matrix.valueRight(0, 1).isEmpty();    // returns true (no column to the right of the rightmost edge)
@@ -1051,13 +1188,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>&#9888;&#65039; Runtime component type:</b> the returned array is the row exactly as it is
      * stored internally. For matrices created from typed arrays or factories such as
-     * {@link #ofDiagonals(Object[], Object[])} the backing row may have a more specific runtime
+     * {@link #ofDiagonals(Class, Object[], Object[])} the backing row may have a more specific runtime
      * component type than {@code Object[]} (it is allocated from the resolved element type), but no
      * conversion is performed by this method.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> matrix = Matrix.wrap(new String[][] {{"A", "B"}, {"C", "D"}});
+     * Matrix<String> matrix = Matrix.wrap(String.class, new String[][] {{"A", "B"}, {"C", "D"}});
      * String[] rowData = matrix.rowView(0);
      * rowData[0] = "X";          // modifies the matrix directly (live view)
      * matrix.get(0, 0);          // returns "X"
@@ -1093,7 +1230,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> matrix = Matrix.wrap(new String[][] {{"A", "B"}, {"C", "D"}});
+     * Matrix<String> matrix = Matrix.wrap(String.class, new String[][] {{"A", "B"}, {"C", "D"}});
      * String[] rowCopy = matrix.rowCopy(1);   // returns ["C", "D"]
      * rowCopy[0] = "X";                       // does NOT affect the matrix
      * matrix.get(1, 0);                       // returns "C"
@@ -1125,7 +1262,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> matrix = Matrix.wrap(new String[][] {{"A", "B"}, {"C", "D"}});
+     * Matrix<String> matrix = Matrix.wrap(String.class, new String[][] {{"A", "B"}, {"C", "D"}});
      * String[] colData = matrix.columnCopy(1);   // returns ["B", "D"]
      * colData[0] = "X";                          // does NOT affect the matrix (it's a copy)
      * matrix.get(0, 1);                          // returns "B"
@@ -1163,7 +1300,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> matrix = Matrix.wrap(new String[][] {{"A", "B"}, {"C", "D"}});
+     * Matrix<String> matrix = Matrix.wrap(String.class, new String[][] {{"A", "B"}, {"C", "D"}});
      * matrix.setRow(0, new String[] {"X", "Y"});
      * matrix.get(0, 0);                              // returns "X"
      * matrix.get(0, 1);                              // returns "Y"
@@ -1201,7 +1338,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> matrix = Matrix.wrap(new String[][] {{"A", "B"}, {"C", "D"}});
+     * Matrix<String> matrix = Matrix.wrap(String.class, new String[][] {{"A", "B"}, {"C", "D"}});
      * matrix.setColumn(1, new String[] {"X", "Y"});
      * matrix.get(0, 1);                                 // returns "X"
      * matrix.get(1, 1);                                 // returns "Y"
@@ -1236,11 +1373,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> matrix = Matrix.wrap(new String[][] {{"a", "b"}, {"c", "d"}});
+     * Matrix<String> matrix = Matrix.wrap(String.class, new String[][] {{"a", "b"}, {"c", "d"}});
      * matrix.updateRow(0, String::toUpperCase);
      * matrix.rowCopy(0);                            // returns ["A", "B"]
      *
-     * Matrix<Integer> numMatrix = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> numMatrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
      * numMatrix.updateRow(0, x -> x * 2);
      * numMatrix.rowCopy(0);                         // returns [2, 4]
      *
@@ -1276,11 +1413,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> matrix = Matrix.wrap(new String[][] {{"a", "b"}, {"c", "d"}});
+     * Matrix<String> matrix = Matrix.wrap(String.class, new String[][] {{"a", "b"}, {"c", "d"}});
      * matrix.updateColumn(1, s -> s + "_suffix");
      * matrix.columnCopy(1);                         // returns ["b_suffix", "d_suffix"]
      *
-     * Matrix<Integer> numMatrix = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> numMatrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
      * numMatrix.updateColumn(0, n -> n * n);
      * numMatrix.columnCopy(0);                      // returns [1, 9]
      *
@@ -1316,13 +1453,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> m = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
+     * Matrix<Integer> m = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      * m.mainDiagonalCopy();   // returns [1, 5, 9]
      *
-     * Matrix<Integer> single = Matrix.wrap(new Integer[][] {{42}});
+     * Matrix<Integer> single = Matrix.wrap(Integer.class, new Integer[][] {{42}});
      * single.mainDiagonalCopy();   // returns [42]
      *
-     * Matrix<Integer> rectangular = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
+     * Matrix<Integer> rectangular = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}});
      * rectangular.mainDiagonalCopy();   // returns [1, 5]
      * }</pre>
      *
@@ -1346,14 +1483,17 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p>This method sets the main diagonal elements at positions (0,0), (1,1), (2,2), etc.</p>
      *
+     * <p>The supplied array may be one of this matrix's live backing rows (for example a value returned
+     * by {@link #rowView(int)}); the values read are still the ones in place when this method was called.</p>
+     *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> m = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
+     * Matrix<Integer> m = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      * m.setMainDiagonal(new Integer[] {10, 20, 30});
      * m.mainDiagonalCopy();   // returns [10, 20, 30]
      * m.get(0, 1);            // returns 2 (off-diagonal unchanged)
      *
-     * Matrix<Integer> rectangular = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
+     * Matrix<Integer> rectangular = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}});
      * rectangular.setMainDiagonal(new Integer[] {7, 8}); // supported
      * m.setMainDiagonal(new Integer[] {1, 2});            // throws IllegalArgumentException (wrong length)
      * }</pre>
@@ -1382,14 +1522,14 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      * matrix.updateMainDiagonal(x -> x * 2);
      * matrix.mainDiagonalCopy();   // returns [2, 10, 18]
      *
      * matrix.updateMainDiagonal(x -> 0);
      * matrix.mainDiagonalCopy();   // returns [0, 0, 0]
      *
-     * Matrix<Integer> rectangular = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
+     * Matrix<Integer> rectangular = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}});
      * rectangular.updateMainDiagonal(x -> x + 1); // updates 1 and 5
      * matrix.updateMainDiagonal(null);        // throws IllegalArgumentException (null operator)
      * }</pre>
@@ -1424,13 +1564,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> m = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
+     * Matrix<Integer> m = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      * m.antiDiagonalCopy();   // returns [3, 5, 7]
      *
-     * Matrix<Integer> single = Matrix.wrap(new Integer[][] {{42}});
+     * Matrix<Integer> single = Matrix.wrap(Integer.class, new Integer[][] {{42}});
      * single.antiDiagonalCopy();   // returns [42]
      *
-     * Matrix<Integer> rectangular = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
+     * Matrix<Integer> rectangular = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}});
      * rectangular.antiDiagonalCopy();   // returns [3, 5]
      * }</pre>
      *
@@ -1461,13 +1601,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> m = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
+     * Matrix<Integer> m = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      * m.setAntiDiagonal(new Integer[] {10, 20, 30});
      * m.antiDiagonalCopy();   // returns [10, 20, 30]
      * m.get(0, 2);            // returns 10
      * m.get(2, 0);            // returns 30
      *
-     * Matrix<Integer> rectangular = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
+     * Matrix<Integer> rectangular = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}});
      * rectangular.setAntiDiagonal(new Integer[] {7, 8}); // supported
      * m.setAntiDiagonal(new Integer[] {1, 2});            // throws IllegalArgumentException (wrong length)
      * }</pre>
@@ -1497,15 +1637,15 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      * matrix.updateAntiDiagonal(x -> -x);
      * matrix.antiDiagonalCopy();   // returns [-3, -5, -7]
      *
-     * Matrix<String> strMatrix = Matrix.wrap(new String[][] {{"A", "B"}, {"C", "D"}});
+     * Matrix<String> strMatrix = Matrix.wrap(String.class, new String[][] {{"A", "B"}, {"C", "D"}});
      * strMatrix.updateAntiDiagonal(String::toLowerCase);
      * strMatrix.antiDiagonalCopy();   // returns ["b", "c"]
      *
-     * Matrix<Integer> rectangular = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
+     * Matrix<Integer> rectangular = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}});
      * rectangular.updateAntiDiagonal(x -> x + 1); // updates 3 and 5
      * matrix.updateAntiDiagonal(null);        // throws IllegalArgumentException (null operator)
      * }</pre>
@@ -1537,16 +1677,18 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p>The operation may be performed in parallel for large matrices. If parallelized, the supplied
      * function must be thread-safe. When this operation is not parallelized, elements are processed in
-     * row-major order; when it is parallelized, the encounter order is unspecified.</p>
+     * row-major order; when it is parallelized, the encounter order is unspecified. On successful completion,
+     * every logical cell is visited exactly once. If the operator throws, some cells may not be visited and
+     * earlier writes are not rolled back.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> strMatrix = Matrix.wrap(new String[][] {{"a", "b"}, {"c", "d"}});
+     * Matrix<String> strMatrix = Matrix.wrap(String.class, new String[][] {{"a", "b"}, {"c", "d"}});
      * strMatrix.updateAll(s -> s.toUpperCase());
      * strMatrix.get(0, 0);   // returns "A"
      * strMatrix.get(1, 1);   // returns "D"
      *
-     * Matrix<Integer> numMatrix = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> numMatrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
      * numMatrix.updateAll(x -> x * x);
      * numMatrix.get(0, 0);   // returns 1
      * numMatrix.get(1, 1);   // returns 16
@@ -1565,13 +1707,20 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     public <E extends Exception> void updateAll(final Throwables.UnaryOperator<T, E> operator) throws IllegalArgumentException, E, ArrayStoreException {
         N.checkArgNotNull(operator, cs.operator);
 
-        if (columnCount == 0) {
+        if (isEmpty()) {
             return;
         }
 
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.apply(a[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Long.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final T[] currentRow = a[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        currentRow[j] = operator.apply(currentRow[j]);
+                    }
+                }
+            });
         } else {
             for (final T[] currentRow : a) {
                 for (int j = 0; j < columnCount; j++) {
@@ -1594,13 +1743,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> matrix = Matrix.wrap(new String[][] {{"a", "b"}, {"c", "d"}});
+     * Matrix<String> matrix = Matrix.wrap(String.class, new String[][] {{"a", "b"}, {"c", "d"}});
      * // Create a checkerboard pattern
      * matrix.updateAll((i, j) -> (i + j) % 2 == 0 ? "black" : "white");
      * matrix.get(0, 0);   // returns "black"
      * matrix.get(0, 1);   // returns "white"
      *
-     * Matrix<Integer> numMatrix = Matrix.wrap(new Integer[][] {{0, 0}, {0, 0}});
+     * Matrix<Integer> numMatrix = Matrix.wrap(Integer.class, new Integer[][] {{0, 0}, {0, 0}});
      * numMatrix.updateAll((i, j) -> i * 10 + j);
      * numMatrix.get(1, 0);   // returns 10
      * numMatrix.get(1, 1);   // returns 11
@@ -1619,9 +1768,20 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     public <E extends Exception> void updateAll(final Throwables.IntBiFunction<? extends T, E> mapper) throws IllegalArgumentException, E, ArrayStoreException {
         N.checkArgNotNull(mapper, cs.mapper);
 
+        if (isEmpty()) {
+            return;
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Long.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final T[] currentRow = a[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        currentRow[j] = mapper.apply(i, j);
+                    }
+                }
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final T[] currentRow = a[i];
@@ -1646,13 +1806,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> matrix = Matrix.wrap(new String[][] {{"a", "", null}, {"b", "c", ""}});
+     * Matrix<String> matrix = Matrix.wrap(String.class, new String[][] {{"a", "", null}, {"b", "c", ""}});
      * matrix.replaceIf(x -> x == null, "");     // replace all null values with empty string
      * matrix.get(0, 2);                         // returns "" (was null)
      * matrix.replaceIf(String::isEmpty, "N/A"); // replace empty strings with placeholder
      * matrix.get(0, 1);                         // returns "N/A"
      *
-     * Matrix<Integer> numMatrix = Matrix.wrap(new Integer[][] {{-1, 2}, {3, -4}});
+     * Matrix<Integer> numMatrix = Matrix.wrap(Integer.class, new Integer[][] {{-1, 2}, {3, -4}});
      * numMatrix.replaceIf(x -> x < 0, 0);      // replace negative numbers with zero
      * numMatrix.get(0, 0);                     // returns 0 (was -1)
      * numMatrix.get(0, 1);                     // returns 2 (unchanged)
@@ -1673,13 +1833,22 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             throws IllegalArgumentException, E, ArrayStoreException {
         N.checkArgNotNull(predicate, cs.predicate);
 
+        if (isEmpty()) {
+            return;
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
-                if (predicate.test(a[i][j])) {
-                    a[i][j] = newValue;
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Long.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final T[] currentRow = a[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        if (predicate.test(currentRow[j])) {
+                            currentRow[j] = newValue;
+                        }
+                    }
                 }
-            };
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            });
         } else {
             for (final T[] currentRow : a) {
                 for (int j = 0; j < columnCount; j++) {
@@ -1704,7 +1873,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      * matrix.replaceIf((i, j) -> i == j, 0);   // replace diagonal elements with zero
      * matrix.mainDiagonalCopy();               // returns [0, 0, 0]
      *
@@ -1728,13 +1897,22 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             throws IllegalArgumentException, E, ArrayStoreException {
         N.checkArgNotNull(predicate, cs.predicate);
 
+        if (isEmpty()) {
+            return;
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
-                if (predicate.test(i, j)) {
-                    a[i][j] = newValue;
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Long.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final T[] currentRow = a[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        if (predicate.test(i, j)) {
+                            currentRow[j] = newValue;
+                        }
+                    }
                 }
-            };
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final T[] currentRow = a[i];
@@ -1760,12 +1938,12 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> strMatrix = Matrix.wrap(new String[][] {{"a", "b"}, {"c", "d"}});
+     * Matrix<String> strMatrix = Matrix.wrap(String.class, new String[][] {{"a", "b"}, {"c", "d"}});
      * Matrix<String> upper = strMatrix.map(String::toUpperCase);
      * upper.get(0, 0);   // returns "A"
      * upper.get(1, 1);   // returns "D"
      *
-     * Matrix<Integer> numMatrix = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> numMatrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
      * Matrix<Integer> doubled = numMatrix.map(x -> x * 2);
      * doubled.get(0, 0);   // returns 2
      * doubled.get(1, 1);   // returns 8
@@ -1783,7 +1961,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     public <E extends Exception> Matrix<T> map(final Throwables.UnaryOperator<T, E> mapper) throws IllegalArgumentException, E, ArrayStoreException {
         N.checkArgNotNull(mapper, cs.mapper);
 
-        return map(mapper, elementType);
+        return mapInternal(mapper, elementType);
     }
 
     /**
@@ -1794,12 +1972,12 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> numMatrix = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> numMatrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
      * // Convert Integer matrix to String matrix
      * Matrix<String> strings = numMatrix.map(Object::toString, String.class);
      * strings.get(0, 0);   // returns "1"
      *
-     * Matrix<String> strMatrix = Matrix.wrap(new String[][] {{"1.5", "2.5"}, {"3.5", "4.5"}});
+     * Matrix<String> strMatrix = Matrix.wrap(String.class, new String[][] {{"1.5", "2.5"}, {"3.5", "4.5"}});
      * // Convert String matrix to Double matrix
      * Matrix<Double> doubles = strMatrix.map(Double::parseDouble, Double.class);
      * doubles.get(0, 0);   // returns 1.5
@@ -1813,10 +1991,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param <R> the type of elements in the result matrix
      * @param <E> the type of exception that might be thrown
      * @param mapper the transformation function (must not be {@code null})
-     * @param targetElementType the class of the result element type (must not be {@code null})
+     * @param targetElementType the class of the result element type (must not be {@code null}); primitive scalar classes are normalized to their
+     *        wrapper classes
      * @return a new matrix with transformed elements
-     * @throws IllegalArgumentException if {@code mapper} or {@code targetElementType} is {@code null}; if {@code targetElementType} is {@code
-     *         void.class}, or if adding two array dimensions to {@code targetElementType} would exceed the JVM limit of 255.
+     * @throws IllegalArgumentException if {@code mapper} is {@code null}, if {@code targetElementType} is {@code null} or {@code void.class}, or
+     *         if adding two array dimensions to {@code targetElementType} would exceed the JVM limit of 255
      * @throws E if {@code mapper} throws while processing a visited cell
      * @throws ArrayStoreException if the {@code mapper} result for a visited cell is not assignable to {@code targetElementType} after primitive
      *         scalar normalization
@@ -1825,13 +2004,41 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             throws IllegalArgumentException, E, ArrayStoreException {
         N.checkArgNotNull(mapper, cs.mapper);
         N.checkArgNotNull(targetElementType, cs.targetElementType);
-        final Class<R> resultElementType = normalizeElementType(targetElementType);
 
+        return mapInternal(mapper, normalizeElementType(targetElementType));
+    }
+
+    /**
+     * Maps all elements into a new matrix whose element type has already been validated and normalized.
+     *
+     * @param <R> the type of elements in the result matrix
+     * @param <E> the type of exception that might be thrown
+     * @param mapper the non-null transformation function
+     * @param resultElementType the validated, normalized result element type
+     * @return a new matrix with transformed elements
+     * @throws IllegalArgumentException if adding two array dimensions to {@code resultElementType} would exceed the JVM limit of 255
+     * @throws E if {@code mapper} throws while processing a visited cell
+     * @throws ArrayStoreException if the {@code mapper} result is not assignable to {@code resultElementType}
+     */
+    private <R, E extends Exception> Matrix<R> mapInternal(final Throwables.Function<? super T, R, E> mapper, final Class<R> resultElementType)
+            throws IllegalArgumentException, E, ArrayStoreException {
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, resultElementType);
 
+        if (isEmpty()) {
+            return newResult(result, null, columnCount);
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Long.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final T[] row = a[i];
+                    final R[] resultRow = result[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        resultRow[j] = mapper.apply(row[j]);
+                    }
+                }
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final T[] row = a[i];
@@ -1843,7 +2050,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             }
         }
 
-        return newResult(result, resultElementType, columnCount);
+        return newResult(result, null, columnCount);
     }
 
     /**
@@ -1853,12 +2060,12 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> matrix = Matrix.wrap(new String[][] {{"a", null}, {null, "b"}});
+     * Matrix<String> matrix = Matrix.wrap(String.class, new String[][] {{"a", null}, {null, "b"}});
      * BooleanMatrix nullMask = matrix.mapToBoolean(x -> x == null);
      * nullMask.get(0, 0);   // returns false
      * nullMask.get(0, 1);   // returns true
      *
-     * Matrix<Integer> numMatrix = Matrix.wrap(new Integer[][] {{1, -2}, {3, -4}});
+     * Matrix<Integer> numMatrix = Matrix.wrap(Integer.class, new Integer[][] {{1, -2}, {3, -4}});
      * BooleanMatrix positive = numMatrix.mapToBoolean(x -> x > 0);
      * positive.get(0, 0);   // returns true
      * positive.get(0, 1);   // returns false
@@ -1877,9 +2084,21 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
         final boolean[][] result = new boolean[rowCount][columnCount];
 
+        if (isEmpty()) {
+            return BooleanMatrix.wrapResult(result, columnCount);
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsBoolean(a[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Byte.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final T[] row = a[i];
+                    final boolean[] resultRow = result[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        resultRow[j] = mapper.applyAsBoolean(row[j]);
+                    }
+                }
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final T[] row = a[i];
@@ -1901,11 +2120,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
      * ByteMatrix bytes = matrix.mapToByte(x -> x.byteValue());
      * bytes.get(0, 0);   // returns (byte) 1
      *
-     * Matrix<String> strMatrix = Matrix.wrap(new String[][] {{"A", "B"}, {"C", "D"}});
+     * Matrix<String> strMatrix = Matrix.wrap(String.class, new String[][] {{"A", "B"}, {"C", "D"}});
      * ByteMatrix firstChars = strMatrix.mapToByte(s -> (byte) s.charAt(0));
      * firstChars.get(0, 0);   // returns (byte) 'A' (65)
      *
@@ -1923,9 +2142,21 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
         final byte[][] result = new byte[rowCount][columnCount];
 
+        if (isEmpty()) {
+            return ByteMatrix.wrapResult(result, columnCount);
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsByte(a[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Byte.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final T[] row = a[i];
+                    final byte[] resultRow = result[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        resultRow[j] = mapper.applyAsByte(row[j]);
+                    }
+                }
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final T[] row = a[i];
@@ -1947,12 +2178,12 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> strMatrix = Matrix.wrap(new String[][] {{"abc", "def"}, {"ghi", "jkl"}});
+     * Matrix<String> strMatrix = Matrix.wrap(String.class, new String[][] {{"abc", "def"}, {"ghi", "jkl"}});
      * CharMatrix firstChars = strMatrix.mapToChar(s -> s.charAt(0));
      * firstChars.get(0, 0);   // returns 'a'
      * firstChars.get(1, 1);   // returns 'j'
      *
-     * Matrix<Integer> scores = Matrix.wrap(new Integer[][] {{95, 85}, {78, 92}});
+     * Matrix<Integer> scores = Matrix.wrap(Integer.class, new Integer[][] {{95, 85}, {78, 92}});
      * CharMatrix grades = scores.mapToChar(score -> score >= 90 ? 'A' : score >= 80 ? 'B' : 'C');
      * grades.get(0, 0);   // returns 'A'
      * grades.get(1, 0);   // returns 'C'
@@ -1971,9 +2202,21 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
         final char[][] result = new char[rowCount][columnCount];
 
+        if (isEmpty()) {
+            return CharMatrix.wrapResult(result, columnCount);
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsChar(a[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Character.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final T[] row = a[i];
+                    final char[] resultRow = result[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        resultRow[j] = mapper.applyAsChar(row[j]);
+                    }
+                }
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final T[] row = a[i];
@@ -1995,7 +2238,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
      * ShortMatrix shorts = matrix.mapToShort(x -> x.shortValue());
      * shorts.get(0, 0);   // returns (short) 1
      * shorts.get(1, 1);   // returns (short) 4
@@ -2017,9 +2260,21 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
         final short[][] result = new short[rowCount][columnCount];
 
+        if (isEmpty()) {
+            return ShortMatrix.wrapResult(result, columnCount);
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsShort(a[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Short.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final T[] row = a[i];
+                    final short[] resultRow = result[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        resultRow[j] = mapper.applyAsShort(row[j]);
+                    }
+                }
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final T[] row = a[i];
@@ -2041,12 +2296,12 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> strMatrix = Matrix.wrap(new String[][] {{"abc", "de"}, {"f", "ghij"}});
+     * Matrix<String> strMatrix = Matrix.wrap(String.class, new String[][] {{"abc", "de"}, {"f", "ghij"}});
      * IntMatrix lengths = strMatrix.mapToInt(String::length);
      * lengths.get(0, 0);   // returns 3
      * lengths.get(1, 1);   // returns 4
      *
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
      * IntMatrix ints = matrix.mapToInt(x -> x.intValue());
      * ints.get(0, 0);   // returns 1
      *
@@ -2064,9 +2319,21 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
         final int[][] result = new int[rowCount][columnCount];
 
+        if (isEmpty()) {
+            return IntMatrix.wrapResult(result, columnCount);
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsInt(a[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Integer.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final T[] row = a[i];
+                    final int[] resultRow = result[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        resultRow[j] = mapper.applyAsInt(row[j]);
+                    }
+                }
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final T[] row = a[i];
@@ -2088,7 +2355,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
      * LongMatrix longs = matrix.mapToLong(x -> x.longValue());
      * longs.get(0, 0);   // returns 1L
      *
@@ -2110,9 +2377,21 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
         final long[][] result = new long[rowCount][columnCount];
 
+        if (isEmpty()) {
+            return LongMatrix.wrapResult(result, columnCount);
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsLong(a[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Long.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final T[] row = a[i];
+                    final long[] resultRow = result[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        resultRow[j] = mapper.applyAsLong(row[j]);
+                    }
+                }
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final T[] row = a[i];
@@ -2134,7 +2413,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
      * FloatMatrix floats = matrix.mapToFloat(x -> x.floatValue());
      * floats.get(0, 0);   // returns 1.0f
      *
@@ -2156,9 +2435,21 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
         final float[][] result = new float[rowCount][columnCount];
 
+        if (isEmpty()) {
+            return FloatMatrix.wrapResult(result, columnCount);
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsFloat(a[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Float.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final T[] row = a[i];
+                    final float[] resultRow = result[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        resultRow[j] = mapper.applyAsFloat(row[j]);
+                    }
+                }
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final T[] row = a[i];
@@ -2180,7 +2471,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 4}, {9, 16}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 4}, {9, 16}});
      * DoubleMatrix doubles = matrix.mapToDouble(x -> x.doubleValue());
      * doubles.get(0, 0);   // returns 1.0
      *
@@ -2203,9 +2494,21 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
         final double[][] result = new double[rowCount][columnCount];
 
+        if (isEmpty()) {
+            return DoubleMatrix.wrapResult(result, columnCount);
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsDouble(a[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Double.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final T[] row = a[i];
+                    final double[] resultRow = result[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        resultRow[j] = mapper.applyAsDouble(row[j]);
+                    }
+                }
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final T[] row = a[i];
@@ -2228,7 +2531,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> matrix = Matrix.wrap(new String[][] {{"a", "b"}, {"c", "d"}});
+     * Matrix<String> matrix = Matrix.wrap(String.class, new String[][] {{"a", "b"}, {"c", "d"}});
      * matrix.fill("");
      * matrix.get(0, 0);          // returns ""
      * matrix.fill("default");
@@ -2243,8 +2546,12 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *         offending element are not rolled back.
      */
     public void fill(final T value) throws ArrayStoreException {
+        if (columnCount == 0) {
+            return;
+        }
+
         for (int i = 0; i < rowCount; i++) {
-            N.fill(a[i], value);
+            java.util.Arrays.fill(a[i], value);
         }
     }
 
@@ -2254,17 +2561,19 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * If the source array is larger than this matrix, extra data is ignored.
      * If the source array is smaller than this matrix, the remaining cells are unchanged.
      * Source rows that are {@code null} are skipped (the corresponding destination row is left untouched).
+     * Source rows may be this matrix's own backing rows (for example arrays returned by {@link #rowView(int)});
+     * overlapping copies still read every source value as it was when this method was called.
      *
      * <p>This method modifies the matrix in-place.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> matrix = Matrix.wrap(new String[][] {{"a", "b"}, {"c", "d"}});
+     * Matrix<String> matrix = Matrix.wrap(String.class, new String[][] {{"a", "b"}, {"c", "d"}});
      * matrix.copyFrom(new String[][] {{"A", "B"}, {"C", "D"}});   // copy from top-left
      * matrix.get(0, 0);                                       // returns "A"
      * matrix.get(1, 1);                                       // returns "D"
      *
-     * Matrix<String> partial = Matrix.wrap(new String[][] {{"a", "b"}, {"c", "d"}});
+     * Matrix<String> partial = Matrix.wrap(String.class, new String[][] {{"a", "b"}, {"c", "d"}});
      * partial.copyFrom(new String[][] {{"Z"}});   // smaller source: only (0,0) overwritten
      * partial.get(0, 0);                      // returns "Z"
      * partial.get(0, 1);                      // returns "b" (unchanged)
@@ -2295,7 +2604,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> matrix = Matrix.wrap(new String[][] {{"A", "B", "C"}, {"D", "E", "F"}, {"G", "H", "I"}});
+     * Matrix<String> matrix = Matrix.wrap(String.class, new String[][] {{"A", "B", "C"}, {"D", "E", "F"}, {"G", "H", "I"}});
      * matrix.copyFrom(1, 2, new String[][] {{"X", "Y"}, {"Z", "W"}});   // start at row 1, column 2 (truncated at edges)
      * matrix.get(1, 2);                                             // returns "X"
      * matrix.get(2, 2);                                             // returns "Z"
@@ -2332,9 +2641,11 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         final T[][] sourceSnapshot = snapshotRowsIfBackingRows(source, destRowIndex, destColumnIndex);
 
         for (int i = 0, minLen = N.min(rowCount - destRowIndex, sourceSnapshot.length); i < minLen; i++) {
-            if (sourceSnapshot[i] != null) {
-                final int copyLen = N.min(sourceSnapshot[i].length, columnCount - destColumnIndex);
-                N.copy(sourceSnapshot[i], 0, a[i + destRowIndex], destColumnIndex, copyLen);
+            final T[] srcRow = sourceSnapshot[i];
+
+            if (srcRow != null && srcRow.length > 0) {
+                final int copyLen = N.min(srcRow.length, columnCount - destColumnIndex);
+                N.copy(srcRow, 0, a[i + destRowIndex], destColumnIndex, copyLen);
             }
         }
     }
@@ -2347,7 +2658,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> original = Matrix.wrap(new String[][] {{"A", "B"}, {"C", "D"}});
+     * Matrix<String> original = Matrix.wrap(String.class, new String[][] {{"A", "B"}, {"C", "D"}});
      * Matrix<String> copy = original.copy();
      * copy.set(0, 0, "X");
      * original.get(0, 0);    // returns "A" (original unchanged)
@@ -2362,8 +2673,20 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         final T[][] c = N.newArray(arrayType, rowCount);
 
         for (int i = 0; i < rowCount; i++) {
-            c[i] = newIndependentRow(elementType, columnCount);
-            N.copy(a[i], 0, c[i], 0, columnCount);
+            final T[] row = a[i];
+
+            if (row.getClass().getComponentType() == elementType) {
+                // clone() allocates a fresh independent row (even for length 0) without reflective overhead.
+                c[i] = row.clone();
+            } else {
+                final T[] dst = newIndependentRow(elementType, columnCount);
+
+                if (columnCount > 0) {
+                    N.copy(row, 0, dst, 0, columnCount);
+                }
+
+                c[i] = dst;
+            }
         }
 
         return newResult(c, elementType, columnCount);
@@ -2377,7 +2700,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}, {5, 6}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}, {5, 6}});
      * Matrix<Integer> subset = matrix.copyRows(1, 3);   // copies rows 1 and 2 (exclusive end)
      * subset.rowCount();                            // returns 2
      * subset.get(0, 0);                             // returns 3
@@ -2400,8 +2723,19 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         final T[][] c = N.newArray(arrayType, toRowIndex - fromRowIndex);
 
         for (int i = fromRowIndex; i < toRowIndex; i++) {
-            c[i - fromRowIndex] = newIndependentRow(elementType, columnCount);
-            N.copy(a[i], 0, c[i - fromRowIndex], 0, columnCount);
+            final T[] row = a[i];
+
+            if (row.getClass().getComponentType() == elementType) {
+                c[i - fromRowIndex] = row.clone();
+            } else {
+                final T[] dst = newIndependentRow(elementType, columnCount);
+
+                if (columnCount > 0) {
+                    N.copy(row, 0, dst, 0, columnCount);
+                }
+
+                c[i - fromRowIndex] = dst;
+            }
         }
 
         return newResult(c, elementType, columnCount);
@@ -2414,7 +2748,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      * Matrix<Integer> submatrix = matrix.copyRegion(0, 2, 1, 3);   // rows 0-1, columns 1-2
      * submatrix.get(0, 0);                                   // returns 2
      * submatrix.get(0, 1);                                   // returns 3
@@ -2440,9 +2774,22 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         final T[][] c = N.newArray(arrayType, toRowIndex - fromRowIndex);
         final int resultColumnCount = toColumnIndex - fromColumnIndex;
 
-        for (int i = fromRowIndex; i < toRowIndex; i++) {
-            c[i - fromRowIndex] = newIndependentRow(elementType, resultColumnCount);
-            N.copy(a[i], fromColumnIndex, c[i - fromRowIndex], 0, resultColumnCount);
+        if (resultColumnCount == 0) {
+            for (int i = fromRowIndex; i < toRowIndex; i++) {
+                c[i - fromRowIndex] = newIndependentRow(elementType, 0);
+            }
+        } else {
+            for (int i = fromRowIndex; i < toRowIndex; i++) {
+                final T[] row = a[i];
+
+                if (row.getClass().getComponentType() == elementType) {
+                    c[i - fromRowIndex] = java.util.Arrays.copyOfRange(row, fromColumnIndex, toColumnIndex);
+                } else {
+                    final T[] dst = newIndependentRow(elementType, resultColumnCount);
+                    N.copy(row, fromColumnIndex, dst, 0, resultColumnCount);
+                    c[i - fromRowIndex] = dst;
+                }
+            }
         }
 
         return newResult(c, elementType, resultColumnCount);
@@ -2469,7 +2816,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> matrix = Matrix.wrap(new String[][] {{"a", "b", "c"}, {"d", "e", "f"}, {"g", "h", "i"}});
+     * Matrix<String> matrix = Matrix.wrap(String.class, new String[][] {{"a", "b", "c"}, {"d", "e", "f"}, {"g", "h", "i"}});
      *
      * // Grow: both dimensions larger — new cells filled with null
      * Matrix<String> grown = matrix.resize(4, 4);
@@ -2523,7 +2870,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> matrix = Matrix.wrap(new String[][] {{"a", "b", "c"}, {"d", "e", "f"}, {"g", "h", "i"}});
+     * Matrix<String> matrix = Matrix.wrap(String.class, new String[][] {{"a", "b", "c"}, {"d", "e", "f"}, {"g", "h", "i"}});
      *
      * // Grow: both dimensions larger — new cells filled with "x"
      * Matrix<String> grown = matrix.resize(4, 4, "x");
@@ -2556,33 +2903,44 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     public Matrix<T> resize(final int newRowCount, final int newColumnCount, final T defaultValue) throws IllegalArgumentException, ArrayStoreException {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newRowCount, newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newColumnCount, newColumnCount);
-        checkNonNegativeShape(newRowCount, newColumnCount);
 
         if (newRowCount <= rowCount && newColumnCount <= columnCount) {
             return copyRegion(0, newRowCount, 0, newColumnCount);
-        } else {
-            final boolean fillDefaultValue = defaultValue != null;
-            final T[][] b = N.newArray(arrayType, newRowCount);
-            final int columnCountToCopy = N.min(columnCount, newColumnCount);
+        }
 
-            for (int i = 0; i < newRowCount; i++) {
-                b[i] = newIndependentRow(elementType, newColumnCount);
+        final boolean fillDefaultValue = defaultValue != null && newColumnCount > 0;
+        final T[][] b = N.newArray(arrayType, newRowCount);
+        final int existingRows = N.min(rowCount, newRowCount);
+        final int columnCountToCopy = N.min(columnCount, newColumnCount);
+        final boolean fillRight = fillDefaultValue && columnCount < newColumnCount;
 
-                if (i < rowCount && columnCountToCopy > 0) {
-                    N.copy(a[i], 0, b[i], 0, columnCountToCopy);
-                }
+        for (int i = 0; i < existingRows; i++) {
+            final T[] dst = newIndependentRow(elementType, newColumnCount);
 
-                if (fillDefaultValue) {
-                    if (i >= rowCount) {
-                        N.fill(b[i], defaultValue);
-                    } else if (columnCount < newColumnCount) {
-                        N.fill(b[i], columnCount, newColumnCount, defaultValue);
-                    }
-                }
+            if (columnCountToCopy > 0) {
+                N.copy(a[i], 0, dst, 0, columnCountToCopy);
             }
 
-            return newResult(b, elementType, newColumnCount);
+            if (fillRight) {
+                java.util.Arrays.fill(dst, columnCount, newColumnCount, defaultValue);
+            }
+
+            b[i] = dst;
         }
+
+        if (fillDefaultValue) {
+            for (int i = existingRows; i < newRowCount; i++) {
+                final T[] dst = newIndependentRow(elementType, newColumnCount);
+                java.util.Arrays.fill(dst, defaultValue);
+                b[i] = dst;
+            }
+        } else {
+            for (int i = existingRows; i < newRowCount; i++) {
+                b[i] = newIndependentRow(elementType, newColumnCount);
+            }
+        }
+
+        return newResult(b, elementType, newColumnCount);
     }
 
     /**
@@ -2605,7 +2963,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> matrix = Matrix.wrap(new String[][] {{"a", "b"}});
+     * Matrix<String> matrix = Matrix.wrap(String.class, new String[][] {{"a", "b"}});
      *
      * // Uniform border of 1 cell on every side
      * Matrix<String> bordered = matrix.pad(1, 1, 1, 1);
@@ -2654,7 +3012,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> matrix = Matrix.wrap(new String[][] {{"a", "b"}});
+     * Matrix<String> matrix = Matrix.wrap(String.class, new String[][] {{"a", "b"}});
      *
      * // Asymmetric padding: 2 columns on the left, 1 on the right
      * Matrix<String> padded = matrix.pad(1, 1, 2, 1, "x");
@@ -2706,37 +3064,60 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
 
         if (padTop == 0 && padBottom == 0 && padLeft == 0 && padRight == 0) {
             return copy();
+        }
+
+        final int newRowCount = padTop + rowCount + padBottom;
+        final int newColumnCount = padLeft + columnCount + padRight;
+        final boolean fillDefaultValue = defaultValue != null && newColumnCount > 0;
+        final T[][] b = N.newArray(arrayType, newRowCount);
+
+        if (fillDefaultValue) {
+            for (int i = 0; i < padTop; i++) {
+                final T[] dst = newIndependentRow(elementType, newColumnCount);
+                java.util.Arrays.fill(dst, defaultValue);
+                b[i] = dst;
+            }
         } else {
-            final int newRowCount = padTop + rowCount + padBottom;
-            final int newColumnCount = padLeft + columnCount + padRight;
-            checkNonNegativeShape(newRowCount, newColumnCount);
-            final boolean fillDefaultValue = defaultValue != null;
-            final T[][] b = N.newArray(arrayType, newRowCount);
-
-            for (int i = 0; i < newRowCount; i++) {
+            for (int i = 0; i < padTop; i++) {
                 b[i] = newIndependentRow(elementType, newColumnCount);
+            }
+        }
 
-                if (i >= padTop && i < padTop + rowCount) {
-                    N.copy(a[i - padTop], 0, b[i], padLeft, columnCount);
-                }
+        final int rightStart = padLeft + columnCount;
+        final boolean fillLeft = fillDefaultValue && padLeft > 0;
+        final boolean fillRight = fillDefaultValue && padRight > 0;
 
-                if (fillDefaultValue) {
-                    if (i < padTop || i >= padTop + rowCount) {
-                        N.fill(b[i], defaultValue);
-                    } else if (columnCount < newColumnCount) {
-                        if (padLeft > 0) {
-                            N.fill(b[i], 0, padLeft, defaultValue);
-                        }
+        for (int i = 0; i < rowCount; i++) {
+            final T[] dst = newIndependentRow(elementType, newColumnCount);
 
-                        if (padRight > 0) {
-                            N.fill(b[i], columnCount + padLeft, newColumnCount, defaultValue);
-                        }
-                    }
-                }
+            if (columnCount > 0) {
+                N.copy(a[i], 0, dst, padLeft, columnCount);
             }
 
-            return newResult(b, elementType, newColumnCount);
+            if (fillLeft) {
+                java.util.Arrays.fill(dst, 0, padLeft, defaultValue);
+            }
+
+            if (fillRight) {
+                java.util.Arrays.fill(dst, rightStart, newColumnCount, defaultValue);
+            }
+
+            b[padTop + i] = dst;
         }
+
+        if (fillDefaultValue) {
+            for (int i = padTop + rowCount; i < newRowCount; i++) {
+                final T[] dst = newIndependentRow(elementType, newColumnCount);
+                java.util.Arrays.fill(dst, defaultValue);
+                b[i] = dst;
+            }
+        } else {
+            for (int i = padTop + rowCount; i < newRowCount; i++) {
+                b[i] = newIndependentRow(elementType, newColumnCount);
+            }
+        }
+
+        return newResult(b, elementType, newColumnCount);
     }
 
     /**
@@ -2746,12 +3127,12 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}});
      * matrix.flipHorizontallyInPlace();
      * matrix.rowCopy(0);   // returns [3, 2, 1]
      * matrix.rowCopy(1);   // returns [6, 5, 4]
      *
-     * Matrix<Integer> single = Matrix.wrap(new Integer[][] {{7}});
+     * Matrix<Integer> single = Matrix.wrap(Integer.class, new Integer[][] {{7}});
      * single.flipHorizontallyInPlace();
      * single.get(0, 0);    // returns 7 (single column unchanged)
      * }</pre>
@@ -2779,12 +3160,12 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}, {5, 6}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}, {5, 6}});
      * matrix.flipVerticallyInPlace();
      * matrix.rowCopy(0);   // returns [5, 6]
      * matrix.rowCopy(2);   // returns [1, 2]
      *
-     * Matrix<Integer> single = Matrix.wrap(new Integer[][] {{7, 8}});
+     * Matrix<Integer> single = Matrix.wrap(Integer.class, new Integer[][] {{7, 8}});
      * single.flipVerticallyInPlace();
      * single.rowCopy(0);   // returns [7, 8] (single row unchanged)
      * }</pre>
@@ -2811,7 +3192,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}});
      * Matrix<Integer> flipped = matrix.flipHorizontally();
      * flipped.rowCopy(0);   // returns [3, 2, 1]
      * matrix.get(0, 0);     // returns 1 (original unchanged)
@@ -2827,9 +3208,24 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     @Override
     public Matrix<T> flipHorizontally() {
-        final Matrix<T> res = this.copy();
-        res.flipHorizontallyInPlace();
-        return res;
+        if (columnCount < 2) {
+            return copy();
+        }
+
+        final T[][] c = N.newArray(arrayType, rowCount);
+
+        for (int i = 0; i < rowCount; i++) {
+            final T[] src = a[i];
+            final T[] dst = newIndependentRow(elementType, columnCount);
+
+            for (int j = 0, k = columnCount - 1; j < columnCount; j++, k--) {
+                dst[j] = src[k];
+            }
+
+            c[i] = dst;
+        }
+
+        return newResult(c, elementType, columnCount);
     }
 
     /**
@@ -2839,7 +3235,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}, {5, 6}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}, {5, 6}});
      * Matrix<Integer> flipped = matrix.flipVertically();
      * flipped.rowCopy(0);   // returns [5, 6]
      * matrix.get(0, 0);     // returns 1 (original unchanged)
@@ -2855,9 +3251,25 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     @Override
     public Matrix<T> flipVertically() {
-        final Matrix<T> res = this.copy();
-        res.flipVerticallyInPlace();
-        return res;
+        final T[][] c = N.newArray(arrayType, rowCount);
+
+        for (int i = 0; i < rowCount; i++) {
+            final T[] row = a[rowCount - i - 1];
+
+            if (row.getClass().getComponentType() == elementType) {
+                c[i] = row.clone();
+            } else {
+                final T[] dst = newIndependentRow(elementType, columnCount);
+
+                if (columnCount > 0) {
+                    N.copy(row, 0, dst, 0, columnCount);
+                }
+
+                c[i] = dst;
+            }
+        }
+
+        return newResult(c, elementType, columnCount);
     }
 
     /**
@@ -2872,7 +3284,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * // 1 2 3        7 4 1
      * // 4 5 6   =>   8 5 2
      * // 7 8 9        9 6 3
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      * Matrix<Integer> rotated = matrix.rotate90();
      * rotated.rowCopy(0);   // returns [7, 4, 1]
      * rotated.rowCopy(2);   // returns [9, 6, 3]
@@ -2893,24 +3305,46 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             return newResult(N.newArray(arrayType, 0), elementType, rowCount);
         }
 
-        checkNonNegativeShape(columnCount, rowCount);
-
         final T[][] c = N.newArray(arrayType, columnCount);
 
         for (int i = 0; i < columnCount; i++) {
             c[i] = newIndependentRow(elementType, rowCount);
         }
 
-        if (rowCount <= columnCount) {
+        if (rowCount >= TRANSPOSE_TILE_THRESHOLD && columnCount >= TRANSPOSE_TILE_THRESHOLD) {
+            for (int bi = 0; bi < columnCount;) {
+                final int iEnd = columnCount - bi > TRANSPOSE_TILE_SIZE ? bi + TRANSPOSE_TILE_SIZE : columnCount;
+
+                for (int bj = 0; bj < rowCount;) {
+                    final int jEnd = rowCount - bj > TRANSPOSE_TILE_SIZE ? bj + TRANSPOSE_TILE_SIZE : rowCount;
+
+                    for (int j = bj; j < jEnd; j++) {
+                        final T[] srcRow = a[rowCount - j - 1];
+
+                        for (int i = bi; i < iEnd; i++) {
+                            c[i][j] = srcRow[i];
+                        }
+                    }
+
+                    bj = jEnd;
+                }
+
+                bi = iEnd;
+            }
+        } else if (rowCount <= columnCount) {
             for (int j = 0; j < rowCount; j++) {
+                final T[] srcRow = a[rowCount - j - 1];
+
                 for (int i = 0; i < columnCount; i++) {
-                    c[i][j] = a[rowCount - j - 1][i];
+                    c[i][j] = srcRow[i];
                 }
             }
         } else {
             for (int i = 0; i < columnCount; i++) {
+                final T[] dstRow = c[i];
+
                 for (int j = 0; j < rowCount; j++) {
-                    c[i][j] = a[rowCount - j - 1][i];
+                    dstRow[j] = a[rowCount - j - 1][i];
                 }
             }
         }
@@ -2929,7 +3363,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * // Original:    Rotated 180°:
      * // 1 2 3        6 5 4
      * // 4 5 6   =>   3 2 1
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}});
      * Matrix<Integer> rotated = matrix.rotate180();
      * rotated.rowCopy(0);   // returns [6, 5, 4]
      * rotated.rowCopy(1);   // returns [3, 2, 1]
@@ -2944,15 +3378,24 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     @Override
     public Matrix<T> rotate180() {
+        if (columnCount < 2) {
+            return flipVertically();
+        }
+
         final T[][] c = N.newArray(arrayType, rowCount);
 
         for (int i = 0; i < rowCount; i++) {
             // Allocate from elementType rather than cloning the source row: a covariantly typed row
             // (for example a Long[] row in a Matrix<Number>) would otherwise be carried into the
             // result, which would then reject a write that copy()/transpose()/rotate90() all accept.
-            c[i] = newIndependentRow(elementType, columnCount);
-            N.copy(a[rowCount - i - 1], 0, c[i], 0, columnCount);
-            N.reverse(c[i]);
+            final T[] src = a[rowCount - i - 1];
+            final T[] dst = newIndependentRow(elementType, columnCount);
+
+            for (int j = 0, k = columnCount - 1; j < columnCount; j++, k--) {
+                dst[j] = src[k];
+            }
+
+            c[i] = dst;
         }
 
         return newResult(c, elementType, columnCount);
@@ -2971,7 +3414,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * // 1 2 3        3 6 9
      * // 4 5 6   =>   2 5 8
      * // 7 8 9        1 4 7
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      * Matrix<Integer> rotated = matrix.rotate270();
      * rotated.rowCopy(0);   // returns [3, 6, 9]
      * rotated.rowCopy(2);   // returns [1, 4, 7]
@@ -2992,24 +3435,47 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             return newResult(N.newArray(arrayType, 0), elementType, rowCount);
         }
 
-        checkNonNegativeShape(columnCount, rowCount);
-
         final T[][] c = N.newArray(arrayType, columnCount);
 
         for (int i = 0; i < columnCount; i++) {
             c[i] = newIndependentRow(elementType, rowCount);
         }
 
-        if (rowCount <= columnCount) {
+        if (rowCount >= TRANSPOSE_TILE_THRESHOLD && columnCount >= TRANSPOSE_TILE_THRESHOLD) {
+            for (int bi = 0; bi < columnCount;) {
+                final int iEnd = columnCount - bi > TRANSPOSE_TILE_SIZE ? bi + TRANSPOSE_TILE_SIZE : columnCount;
+
+                for (int bj = 0; bj < rowCount;) {
+                    final int jEnd = rowCount - bj > TRANSPOSE_TILE_SIZE ? bj + TRANSPOSE_TILE_SIZE : rowCount;
+
+                    for (int j = bj; j < jEnd; j++) {
+                        final T[] srcRow = a[j];
+
+                        for (int i = bi; i < iEnd; i++) {
+                            c[i][j] = srcRow[columnCount - i - 1];
+                        }
+                    }
+
+                    bj = jEnd;
+                }
+
+                bi = iEnd;
+            }
+        } else if (rowCount <= columnCount) {
             for (int j = 0; j < rowCount; j++) {
+                final T[] srcRow = a[j];
+
                 for (int i = 0; i < columnCount; i++) {
-                    c[i][j] = a[j][columnCount - i - 1];
+                    c[i][j] = srcRow[columnCount - i - 1];
                 }
             }
         } else {
             for (int i = 0; i < columnCount; i++) {
+                final T[] dstRow = c[i];
+                final int srcCol = columnCount - i - 1;
+
                 for (int j = 0; j < rowCount; j++) {
-                    c[i][j] = a[j][columnCount - i - 1];
+                    dstRow[j] = a[j][srcCol];
                 }
             }
         }
@@ -3028,7 +3494,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * // 1 2 3        1 4
      * // 4 5 6   =>   2 5
      * //              3 6
-     * Matrix<Integer> original = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
+     * Matrix<Integer> original = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}});
      * Matrix<Integer> transposed = original.transpose();   // 2×3 becomes 3×2
      * transposed.rowCount();                               // returns 3
      * transposed.columnCount();                            // returns 2
@@ -3049,27 +3515,50 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             return newResult(N.newArray(arrayType, 0), elementType, rowCount);
         }
 
-        checkNonNegativeShape(columnCount, rowCount);
-
         final T[][] c = N.newArray(arrayType, columnCount);
 
         for (int i = 0; i < columnCount; i++) {
             c[i] = newIndependentRow(elementType, rowCount);
         }
 
-        if (rowCount <= columnCount) {
+        if (rowCount >= TRANSPOSE_TILE_THRESHOLD && columnCount >= TRANSPOSE_TILE_THRESHOLD) {
+            for (int bi = 0; bi < columnCount;) {
+                final int iEnd = columnCount - bi > TRANSPOSE_TILE_SIZE ? bi + TRANSPOSE_TILE_SIZE : columnCount;
+
+                for (int bj = 0; bj < rowCount;) {
+                    final int jEnd = rowCount - bj > TRANSPOSE_TILE_SIZE ? bj + TRANSPOSE_TILE_SIZE : rowCount;
+
+                    for (int j = bj; j < jEnd; j++) {
+                        final T[] srcRow = a[j];
+
+                        for (int i = bi; i < iEnd; i++) {
+                            c[i][j] = srcRow[i];
+                        }
+                    }
+
+                    bj = jEnd;
+                }
+
+                bi = iEnd;
+            }
+        } else if (rowCount <= columnCount) {
             for (int j = 0; j < rowCount; j++) {
+                final T[] srcRow = a[j];
+
                 for (int i = 0; i < columnCount; i++) {
-                    c[i][j] = a[j][i];
+                    c[i][j] = srcRow[i];
                 }
             }
         } else {
             for (int i = 0; i < columnCount; i++) {
+                final T[] dstRow = c[i];
+
                 for (int j = 0; j < rowCount; j++) {
-                    c[i][j] = a[j][i];
+                    dstRow[j] = a[j][i];
                 }
             }
         }
+
         return newResult(c, elementType, rowCount);
     }
 
@@ -3083,7 +3572,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}});
      * Matrix<Integer> reshaped = matrix.reshapeAndPad(3, 2);
      * reshaped.rowCopy(0);   // returns [1, 2]
      * reshaped.rowCopy(2);   // returns [5, 6]
@@ -3100,12 +3589,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @return a new Matrix with the specified dimensions
      * @throws IllegalArgumentException if a dimension is negative or the new shape is too small to hold every existing element
      */
-    @SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG")
     @Override
     public Matrix<T> reshapeAndPad(final int newRowCount, final int newColumnCount) throws IllegalArgumentException {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newRowCount, newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newColumnCount, newColumnCount);
-        checkNonNegativeShape(newRowCount, newColumnCount);
         N.checkArgument((long) newRowCount * newColumnCount >= elementCount(), "New shape [{}x{}={}] is too small to hold all {} elements", newRowCount,
                 newColumnCount, (long) newRowCount * newColumnCount, elementCount());
 
@@ -3158,7 +3645,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
      * Matrix<Integer> repeated = matrix.repeatElements(2, 3);
      * // Result: {{1,1,1,2,2,2}, {1,1,1,2,2,2}, {3,3,3,4,4,4}, {3,3,3,4,4,4}}
      * repeated.rowCount();      // returns 4
@@ -3190,31 +3677,38 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             throw new IllegalArgumentException("Result column count overflow: " + columnCount + " * " + columnRepeats + " exceeds Integer.MAX_VALUE");
         }
 
-        final T[][] c = N.newArray(arrayType, rowCount * rowRepeats);
+        final int newRowCount = rowCount * rowRepeats;
+        final int newColumnCount = columnCount * columnRepeats;
+        final T[][] c = N.newArray(arrayType, newRowCount);
 
-        for (int i = 0, len = c.length; i < len; i++) {
-            c[i] = newIndependentRow(elementType, columnCount * columnRepeats);
+        for (int i = 0; i < newRowCount; i++) {
+            c[i] = newIndependentRow(elementType, newColumnCount);
+        }
+
+        if (isEmpty()) {
+            return newResult(c, elementType, newColumnCount);
         }
 
         for (int i = 0; i < rowCount; i++) {
             final T[] aa = a[i];
-            final T[] fr = c[i * rowRepeats];
+            final int baseRow = i * rowRepeats;
+            final T[] fr = c[baseRow];
 
             if (columnRepeats == 1) {
                 // Repeating whole rows: one bulk copy instead of a one-cell fill per element.
-                N.copy(aa, 0, fr, 0, columnCount);
+                System.arraycopy(aa, 0, fr, 0, columnCount);
             } else {
-                for (int j = 0; j < columnCount; j++) {
-                    N.fill(fr, j * columnRepeats, j * columnRepeats + columnRepeats, aa[j]);
+                for (int j = 0, offset = 0; j < columnCount; j++, offset += columnRepeats) {
+                    java.util.Arrays.fill(fr, offset, offset + columnRepeats, aa[j]);
                 }
             }
 
             for (int k = 1; k < rowRepeats; k++) {
-                N.copy(fr, 0, c[i * rowRepeats + k], 0, fr.length);
+                System.arraycopy(fr, 0, c[baseRow + k], 0, newColumnCount);
             }
         }
 
-        return newResult(c, elementType, columnCount * columnRepeats);
+        return newResult(c, elementType, newColumnCount);
     }
 
     /**
@@ -3224,7 +3718,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
      * Matrix<Integer> repeated = matrix.repeatMatrix(2, 3);
      * // Result: {{1,2,1,2,1,2}, {3,4,3,4,3,4}, {1,2,1,2,1,2}, {3,4,3,4,3,4}}
      * repeated.rowCount();      // returns 4
@@ -3287,7 +3781,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}});
      * matrix.flatten();   // returns [1, 2, 3, 4, 5, 6]
      *
      * Matrix<String> empty = Matrix.empty(String.class);
@@ -3335,12 +3829,12 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{3, 1, 2}, {6, 4, 5}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{3, 1, 2}, {6, 4, 5}});
      * matrix.mutateViaFlatArray(arr -> java.util.Arrays.sort(arr));   // sort across the whole matrix
      * matrix.rowCopy(0);                                           // returns [1, 2, 3]
      * matrix.rowCopy(1);                                           // returns [4, 5, 6]
      *
-     * Matrix<Integer> reversible = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> reversible = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
      * reversible.mutateViaFlatArray(arr -> { for (int i = 0; i < arr.length / 2; i++) { Integer t = arr[i]; arr[i] = arr[arr.length - 1 - i]; arr[arr.length - 1 - i] = t; } });
      * reversible.rowCopy(0);   // returns [4, 3]
      *
@@ -3386,13 +3880,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> m1 = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
-     * Matrix<Integer> m2 = Matrix.wrap(new Integer[][] {{5, 6}, {7, 8}});
+     * Matrix<Integer> m1 = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> m2 = Matrix.wrap(Integer.class, new Integer[][] {{5, 6}, {7, 8}});
      * Matrix<Integer> stacked = m1.stackVertically(m2);
      * stacked.rowCount();    // returns 4
      * stacked.rowCopy(2);    // returns [5, 6]
      *
-     * Matrix<Integer> mismatched = Matrix.wrap(new Integer[][] {{1, 2, 3}});
+     * Matrix<Integer> mismatched = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}});
      * m1.stackVertically(mismatched);               // throws IllegalArgumentException (different column counts)
      * m1.stackVertically((Matrix<Integer>) null);   // throws IllegalArgumentException (null other)
      * }</pre>
@@ -3411,12 +3905,12 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     @Deprecated
     public Matrix<T> stackVertically(final Matrix<T> other) throws IllegalArgumentException, SecurityException {
         N.checkArgNotNull(other, cs.other);
-        checkVerticalStackShape(other);
+        final int mergedRowCount = checkVerticalStackShape(other);
 
         @SuppressWarnings("unchecked")
         final Class<T> mergedElementType = (Class<T>) Matrices.resolveCommonAssignableType(elementType, other.elementType);
 
-        return stackVerticallyInternal(other, mergedElementType);
+        return stackVerticallyInternal(other, mergedRowCount, mergedElementType);
     }
 
     /**
@@ -3424,53 +3918,86 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * exactly {@code targetElementType}. The matrices must have the same number of columns. Empty
      * operands retain their explicit type constraints and are validated like non-empty operands.
      *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * Matrix<Integer> m1 = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> m2 = Matrix.wrap(Integer.class, new Integer[][] {{5, 6}, {7, 8}});
+     * Matrix<Integer> stacked = m1.stackVertically(m2, Integer.class);
+     * stacked.rowCount();    // returns 4
+     * stacked.rowCopy(2);    // returns [5, 6]
+     * }</pre>
+     *
      * @param other the matrix to stack below this matrix
-     * @param targetElementType the exact runtime element type for every result row; primitive
-     *        classes are normalized to their wrapper class
+     * @param targetElementType the exact runtime element type for every result row; primitive scalar
+     *        classes are normalized to their wrapper classes
      * @return a new vertically stacked matrix with dimensions (this.rowCount + other.rowCount) × columnCount
      * @throws IllegalArgumentException if {@code other} is {@code null}, has a different column count, or would make the merged row count
-     *         overflow {@code int}; if {@code targetElementType} is {@code null} or cannot safely store either operand's runtime element type;
-     *         if {@code targetElementType} is {@code void.class}.
+     *         overflow {@code int}, or if {@code targetElementType} is {@code null}, {@code void.class}, or cannot safely store either operand's
+     *         runtime element type
      * @see #stackHorizontally(Matrix, Class)
      */
     public Matrix<T> stackVertically(final Matrix<T> other, final Class<T> targetElementType) throws IllegalArgumentException {
         N.checkArgNotNull(other, cs.other);
-        return stackVerticallyInternal(other, targetElementType);
-    }
-
-    /**
-     * Validates and copies a vertical stack after the caller has checked {@code other} for null.
-     *
-     * @param other the non-null matrix to append
-     * @param targetElementType the requested result element type
-     * @return the stacked matrix
-     * @throws IllegalArgumentException if the column counts differ, the merged row count exceeds {@code Integer.MAX_VALUE}, or the target type
-     *         is null, {@code void.class}, or cannot safely store either operand's runtime element type
-     */
-    private Matrix<T> stackVerticallyInternal(final Matrix<T> other, final Class<T> targetElementType) throws IllegalArgumentException {
         final int mergedRowCount = checkVerticalStackShape(other);
-
         final Class<T> resultElementType = normalizeElementType(targetElementType);
         checkStackElementType(resultElementType, other);
 
-        @SuppressWarnings("unchecked")
-        final Class<T[]> resultArrayType = (Class<T[]>) N.newArray(resultElementType, 0).getClass();
+        return stackVerticallyInternal(other, mergedRowCount, resultElementType);
+    }
+
+    /**
+     * Copies a vertical stack after the caller has validated {@code other}, {@code mergedRowCount},
+     * and {@code resultElementType}.
+     *
+     * @param other the non-null matrix to append
+     * @param mergedRowCount the validated merged row count
+     * @param resultElementType the validated, normalized result element type assignable from both operands
+     * @return the stacked matrix
+     */
+    @SuppressWarnings("unchecked")
+    private Matrix<T> stackVerticallyInternal(final Matrix<T> other, final int mergedRowCount, final Class<T> resultElementType) {
+        // resultElementType is assignable from elementType (whose 2D array already exists), so it has at most
+        // 253 array dimensions and resultElementType.arrayType() cannot exceed the JVM 255-dimension limit.
+        final Class<T[]> resultArrayType = resultElementType == elementType ? arrayType : (Class<T[]>) resultElementType.arrayType();
         final T[][] c = N.newArray(resultArrayType, mergedRowCount);
-        int j = 0;
 
-        for (int i = 0; i < rowCount; i++) {
-            c[j] = newIndependentRow(resultElementType, columnCount);
-            N.copy(a[i], 0, c[j], 0, columnCount);
-            j++;
+        if (columnCount == 0) {
+            for (int i = 0; i < mergedRowCount; i++) {
+                c[i] = newIndependentRow(resultElementType, 0);
+            }
+        } else {
+            int j = 0;
+
+            for (int i = 0; i < rowCount; i++) {
+                final T[] row = a[i];
+
+                if (row.getClass().getComponentType() == resultElementType) {
+                    c[j] = row.clone();
+                } else {
+                    final T[] dst = newIndependentRow(resultElementType, columnCount);
+                    N.copy(row, 0, dst, 0, columnCount);
+                    c[j] = dst;
+                }
+
+                j++;
+            }
+
+            for (int i = 0; i < other.rowCount; i++) {
+                final T[] row = other.a[i];
+
+                if (row.getClass().getComponentType() == resultElementType) {
+                    c[j] = row.clone();
+                } else {
+                    final T[] dst = newIndependentRow(resultElementType, columnCount);
+                    N.copy(row, 0, dst, 0, columnCount);
+                    c[j] = dst;
+                }
+
+                j++;
+            }
         }
 
-        for (int i = 0; i < other.rowCount; i++) {
-            c[j] = newIndependentRow(resultElementType, columnCount);
-            N.copy(other.a[i], 0, c[j], 0, columnCount);
-            j++;
-        }
-
-        return newResult(c, resultElementType, columnCount);
+        return newResult(c, null, columnCount);
     }
 
     /**
@@ -3488,14 +4015,14 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> m1 = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
-     * Matrix<Integer> m2 = Matrix.wrap(new Integer[][] {{5}, {6}});
+     * Matrix<Integer> m1 = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> m2 = Matrix.wrap(Integer.class, new Integer[][] {{5}, {6}});
      * Matrix<Integer> stacked = m1.stackHorizontally(m2);
      * stacked.columnCount();   // returns 3
      * stacked.rowCopy(0);      // returns [1, 2, 5]
      * stacked.rowCopy(1);      // returns [3, 4, 6]
      *
-     * Matrix<Integer> mismatched = Matrix.wrap(new Integer[][] {{5}});
+     * Matrix<Integer> mismatched = Matrix.wrap(Integer.class, new Integer[][] {{5}});
      * m1.stackHorizontally(mismatched);               // throws IllegalArgumentException (different row counts)
      * m1.stackHorizontally((Matrix<Integer>) null);   // throws IllegalArgumentException (null other)
      * }</pre>
@@ -3514,12 +4041,12 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
     @Deprecated
     public Matrix<T> stackHorizontally(final Matrix<T> other) throws IllegalArgumentException, SecurityException {
         N.checkArgNotNull(other, cs.other);
-        checkHorizontalStackShape(other);
+        final int mergedColumnCount = checkHorizontalStackShape(other);
 
         @SuppressWarnings("unchecked")
         final Class<T> mergedElementType = (Class<T>) Matrices.resolveCommonAssignableType(elementType, other.elementType);
 
-        return stackHorizontallyInternal(other, mergedElementType);
+        return stackHorizontallyInternal(other, mergedColumnCount, mergedElementType);
     }
 
     /**
@@ -3527,46 +4054,70 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * is exactly {@code targetElementType}. The matrices must have the same number of rows. Empty
      * operands retain their explicit type constraints and are validated like non-empty operands.
      *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * Matrix<Integer> m1 = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> m2 = Matrix.wrap(Integer.class, new Integer[][] {{5}, {6}});
+     * Matrix<Integer> stacked = m1.stackHorizontally(m2, Integer.class);
+     * stacked.columnCount();   // returns 3
+     * stacked.rowCopy(0);      // returns [1, 2, 5]
+     * }</pre>
+     *
      * @param other the matrix to stack to the right of this matrix
-     * @param targetElementType the exact runtime element type for every result row; primitive
-     *        classes are normalized to their wrapper class
+     * @param targetElementType the exact runtime element type for every result row; primitive scalar
+     *        classes are normalized to their wrapper classes
      * @return a new horizontally stacked matrix with dimensions rowCount × (this.columnCount + other.columnCount)
      * @throws IllegalArgumentException if {@code other} is {@code null}, has a different row count, or would make the merged column count
-     *         overflow {@code int}; if {@code targetElementType} is {@code null} or cannot safely store either operand's runtime element type;
-     *         if {@code targetElementType} is {@code void.class}.
+     *         overflow {@code int}, or if {@code targetElementType} is {@code null}, {@code void.class}, or cannot safely store either operand's
+     *         runtime element type
      * @see #stackVertically(Matrix, Class)
      */
     public Matrix<T> stackHorizontally(final Matrix<T> other, final Class<T> targetElementType) throws IllegalArgumentException {
         N.checkArgNotNull(other, cs.other);
-        return stackHorizontallyInternal(other, targetElementType);
-    }
-
-    /**
-     * Validates and copies a horizontal stack after the caller has checked {@code other} for null.
-     *
-     * @param other the non-null matrix to append
-     * @param targetElementType the requested result element type
-     * @return the stacked matrix
-     * @throws IllegalArgumentException if the row counts differ, the merged column count exceeds {@code Integer.MAX_VALUE}, or the target type
-     *         is null, {@code void.class}, or cannot safely store either operand's runtime element type
-     */
-    private Matrix<T> stackHorizontallyInternal(final Matrix<T> other, final Class<T> targetElementType) throws IllegalArgumentException {
         final int mergedColumnCount = checkHorizontalStackShape(other);
-
         final Class<T> resultElementType = normalizeElementType(targetElementType);
         checkStackElementType(resultElementType, other);
 
-        @SuppressWarnings("unchecked")
-        final Class<T[]> resultArrayType = (Class<T[]>) N.newArray(resultElementType, 0).getClass();
+        return stackHorizontallyInternal(other, mergedColumnCount, resultElementType);
+    }
+
+    /**
+     * Copies a horizontal stack after the caller has validated {@code other}, {@code mergedColumnCount},
+     * and {@code resultElementType}.
+     *
+     * @param other the non-null matrix to append
+     * @param mergedColumnCount the validated merged column count
+     * @param resultElementType the validated, normalized result element type assignable from both operands
+     * @return the stacked matrix
+     */
+    @SuppressWarnings("unchecked")
+    private Matrix<T> stackHorizontallyInternal(final Matrix<T> other, final int mergedColumnCount, final Class<T> resultElementType) {
+        // resultElementType is assignable from elementType (whose 2D array already exists), so it has at most
+        // 253 array dimensions and resultElementType.arrayType() cannot exceed the JVM 255-dimension limit.
+        final Class<T[]> resultArrayType = resultElementType == elementType ? arrayType : (Class<T[]>) resultElementType.arrayType();
         final T[][] c = N.newArray(resultArrayType, rowCount);
 
-        for (int i = 0; i < rowCount; i++) {
-            c[i] = newIndependentRow(resultElementType, mergedColumnCount);
-            N.copy(a[i], 0, c[i], 0, columnCount);
-            N.copy(other.a[i], 0, c[i], columnCount, other.columnCount);
+        if (mergedColumnCount == 0) {
+            for (int i = 0; i < rowCount; i++) {
+                c[i] = newIndependentRow(resultElementType, 0);
+            }
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final T[] dst = newIndependentRow(resultElementType, mergedColumnCount);
+
+                if (columnCount > 0) {
+                    N.copy(a[i], 0, dst, 0, columnCount);
+                }
+
+                if (other.columnCount > 0) {
+                    N.copy(other.a[i], 0, dst, columnCount, other.columnCount);
+                }
+
+                c[i] = dst;
+            }
         }
 
-        return newResult(c, resultElementType, mergedColumnCount);
+        return newResult(c, null, mergedColumnCount);
     }
 
     /**
@@ -3629,13 +4180,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> m1 = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
-     * Matrix<Integer> m2 = Matrix.wrap(new Integer[][] {{5, 6}, {7, 8}});
+     * Matrix<Integer> m1 = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> m2 = Matrix.wrap(Integer.class, new Integer[][] {{5, 6}, {7, 8}});
      * Matrix<Integer> sum = m1.zipWith(m2, (a, b) -> a + b);
      * sum.rowCopy(0);   // returns [6, 8]
      * sum.rowCopy(1);   // returns [10, 12]
      *
-     * Matrix<Integer> mismatched = Matrix.wrap(new Integer[][] {{1, 2, 3}});
+     * Matrix<Integer> mismatched = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}});
      * m1.zipWith(mismatched, (a, b) -> a + b);   // throws IllegalArgumentException (different shapes)
      * }</pre>
      *
@@ -3654,7 +4205,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         checkZipShape(other);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
 
-        return zipWith(other, zipFunction, elementType);
+        return zipWithInternal(other, zipFunction, elementType);
     }
 
     /**
@@ -3665,13 +4216,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> m1 = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
-     * Matrix<Double> m2 = Matrix.wrap(new Double[][] {{0.5, 1.0}, {1.5, 2.0}});
+     * Matrix<Integer> m1 = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Double> m2 = Matrix.wrap(Double.class, new Double[][] {{0.5, 1.0}, {1.5, 2.0}});
      * Matrix<String> result = m1.zipWith(m2, (a, b) -> a + ":" + b, String.class);
      * result.get(0, 0);   // returns "1:0.5"
      * result.get(1, 1);   // returns "4:2.0"
      *
-     * Matrix<Double> mismatched = Matrix.wrap(new Double[][] {{0.5, 1.0, 1.5}});
+     * Matrix<Double> mismatched = Matrix.wrap(Double.class, new Double[][] {{0.5, 1.0, 1.5}});
      * m1.zipWith(mismatched, (a, b) -> a + ":" + b, String.class);   // throws IllegalArgumentException (different shapes)
      * }</pre>
      *
@@ -3680,11 +4231,12 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param <E> the type of exception that the zip function may throw
      * @param other the other matrix to zip with (must have the same dimensions, must not be {@code null})
      * @param zipFunction the function to apply to corresponding elements (must not be {@code null})
-     * @param targetElementType the class of the result element type (must not be {@code null})
+     * @param targetElementType the class of the result element type (must not be {@code null}); primitive scalar classes are normalized to their
+     *        wrapper classes
      * @return a new matrix with the results of the zip function
-     * @throws IllegalArgumentException if {@code other} is {@code null} or its shape differs from this matrix's shape, or if {@code zipFunction}
-     *         or {@code targetElementType} is {@code null}; if {@code targetElementType} is {@code void.class}, or if adding two array
-     *         dimensions to {@code targetElementType} would exceed the JVM limit of 255.
+     * @throws IllegalArgumentException if {@code other} is {@code null} or its shape differs from this matrix's shape, if {@code zipFunction} is
+     *         {@code null}, if {@code targetElementType} is {@code null} or {@code void.class}, or if adding two array dimensions to
+     *         {@code targetElementType} would exceed the JVM limit of 255
      * @throws E if {@code zipFunction} throws while processing a visited cell
      * @throws ArrayStoreException if the {@code zipFunction} result for a visited cell is not assignable to {@code targetElementType} after
      *         primitive scalar normalization
@@ -3695,14 +4247,44 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgNotNull(targetElementType, cs.targetElementType);
 
-        final Class<R> resultElementType = normalizeElementType(targetElementType);
+        return zipWithInternal(other, zipFunction, normalizeElementType(targetElementType));
+    }
 
+    /**
+     * Zips two matrices after shape, callback, and result element type have been validated.
+     *
+     * @param <B> the element type of {@code other}
+     * @param <R> the element type of the result matrix
+     * @param <E> the exception type thrown by {@code zipFunction}
+     * @param other the validated non-{@code null} right-hand matrix of identical shape
+     * @param zipFunction the validated non-{@code null} combining function
+     * @param resultElementType the validated, normalized result element type
+     * @return a newly allocated result matrix
+     * @throws IllegalArgumentException if allocating result storage exceeds 255 array dimensions
+     * @throws E if {@code zipFunction} throws while processing a visited cell
+     * @throws ArrayStoreException if {@code zipFunction} returns a value not assignable to {@code resultElementType}
+     */
+    private <B, R, E extends Exception> Matrix<R> zipWithInternal(final Matrix<B> other, final Throwables.BiFunction<? super T, ? super B, R, E> zipFunction,
+            final Class<R> resultElementType) throws IllegalArgumentException, E, ArrayStoreException {
         final B[][] b = other.a;
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, resultElementType);
 
+        if (isEmpty()) {
+            return newResult(result, null, columnCount);
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.apply(a[i][j], b[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Long.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final T[] row = a[i];
+                    final B[] otherRow = b[i];
+                    final R[] resultRow = result[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        resultRow[j] = zipFunction.apply(row[j], otherRow[j]);
+                    }
+                }
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final T[] row = a[i];
@@ -3715,7 +4297,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             }
         }
 
-        return newResult(result, resultElementType, columnCount);
+        return newResult(result, null, columnCount);
     }
 
     /**
@@ -3726,14 +4308,14 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> m1 = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
-     * Matrix<Integer> m2 = Matrix.wrap(new Integer[][] {{5, 6}, {7, 8}});
-     * Matrix<Integer> m3 = Matrix.wrap(new Integer[][] {{9, 10}, {11, 12}});
+     * Matrix<Integer> m1 = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> m2 = Matrix.wrap(Integer.class, new Integer[][] {{5, 6}, {7, 8}});
+     * Matrix<Integer> m3 = Matrix.wrap(Integer.class, new Integer[][] {{9, 10}, {11, 12}});
      * Matrix<Integer> result = m1.zipWith(m2, m3, (a, b, c) -> a + b + c);
      * result.rowCopy(0);   // returns [15, 18]
      * result.rowCopy(1);   // returns [21, 24]
      *
-     * Matrix<Integer> mismatched = Matrix.wrap(new Integer[][] {{1, 2, 3}});
+     * Matrix<Integer> mismatched = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}});
      * m1.zipWith(m2, mismatched, (a, b, c) -> a + b + c);   // throws IllegalArgumentException (different shapes)
      * }</pre>
      *
@@ -3755,7 +4337,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         checkZipShape(other, third);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
 
-        return zipWith(other, third, zipFunction, elementType);
+        return zipWithInternal(other, third, zipFunction, elementType);
     }
 
     /**
@@ -3766,14 +4348,14 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> m1 = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
-     * Matrix<String> m2 = Matrix.wrap(new String[][] {{"a", "b"}, {"c", "d"}});
-     * Matrix<Double> m3 = Matrix.wrap(new Double[][] {{0.1, 0.2}, {0.3, 0.4}});
+     * Matrix<Integer> m1 = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<String> m2 = Matrix.wrap(String.class, new String[][] {{"a", "b"}, {"c", "d"}});
+     * Matrix<Double> m3 = Matrix.wrap(Double.class, new Double[][] {{0.1, 0.2}, {0.3, 0.4}});
      * Matrix<String> result = m1.zipWith(m2, m3, (i, s, d) -> i + s + String.format(java.util.Locale.ROOT, "%.1f", d), String.class);
      * result.get(0, 0);   // returns "1a0.1"
      * result.get(1, 1);   // returns "4d0.4"
      *
-     * Matrix<Double> mismatched = Matrix.wrap(new Double[][] {{0.1, 0.2, 0.3}});
+     * Matrix<Double> mismatched = Matrix.wrap(Double.class, new Double[][] {{0.1, 0.2, 0.3}});
      * m1.zipWith(m2, mismatched, (i, s, d) -> i + s + d, String.class);   // throws IllegalArgumentException (different shapes)
      * }</pre>
      *
@@ -3784,12 +4366,12 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      * @param other the second matrix to zip with (must have the same dimensions, must not be {@code null})
      * @param third the third matrix to zip with (must have the same dimensions, must not be {@code null})
      * @param zipFunction the function to apply to corresponding elements (must not be {@code null})
-     * @param targetElementType the class of the result element type (must not be {@code null})
+     * @param targetElementType the class of the result element type (must not be {@code null}); primitive scalar classes are normalized to their
+     *        wrapper classes
      * @return a new matrix with the results of the zip function
      * @throws IllegalArgumentException if {@code other} is {@code null} or its shape differs from this matrix's shape, if {@code third} is
-     *         {@code null} or its shape differs from this matrix's shape, or if {@code zipFunction} or {@code targetElementType} is {@code
-     *         null}; if {@code targetElementType} is {@code void.class}, or if adding two array dimensions to {@code targetElementType} would
-     *         exceed the JVM limit of 255.
+     *         {@code null} or its shape differs from this matrix's shape, if {@code zipFunction} is {@code null}, if {@code targetElementType} is
+     *         {@code null} or {@code void.class}, or if adding two array dimensions to {@code targetElementType} would exceed the JVM limit of 255
      * @throws E if {@code zipFunction} throws while processing a visited cell
      * @throws ArrayStoreException if the {@code zipFunction} result for a visited cell is not assignable to {@code targetElementType} after
      *         primitive scalar normalization
@@ -3801,15 +4383,49 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgNotNull(targetElementType, cs.targetElementType);
 
-        final Class<R> resultElementType = normalizeElementType(targetElementType);
+        return zipWithInternal(other, third, zipFunction, normalizeElementType(targetElementType));
+    }
 
+    /**
+     * Zips three matrices after shape, callback, and result element type have been validated.
+     *
+     * @param <B> the element type of {@code other}
+     * @param <C> the element type of {@code third}
+     * @param <R> the element type of the result matrix
+     * @param <E> the exception type thrown by {@code zipFunction}
+     * @param other the validated non-{@code null} second matrix of identical shape
+     * @param third the validated non-{@code null} third matrix of identical shape
+     * @param zipFunction the validated non-{@code null} combining function
+     * @param resultElementType the validated, normalized result element type
+     * @return a newly allocated result matrix
+     * @throws IllegalArgumentException if allocating result storage exceeds 255 array dimensions
+     * @throws E if {@code zipFunction} throws while processing a visited cell
+     * @throws ArrayStoreException if {@code zipFunction} returns a value not assignable to {@code resultElementType}
+     */
+    private <B, C, R, E extends Exception> Matrix<R> zipWithInternal(final Matrix<B> other, final Matrix<C> third,
+            final Throwables.TriFunction<? super T, ? super B, ? super C, R, E> zipFunction, final Class<R> resultElementType)
+            throws IllegalArgumentException, E, ArrayStoreException {
         final B[][] b = other.a;
         final C[][] c = third.a;
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, resultElementType);
 
+        if (isEmpty()) {
+            return newResult(result, null, columnCount);
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.apply(a[i][j], b[i][j], c[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Long.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final T[] row = a[i];
+                    final B[] otherRow = b[i];
+                    final C[] thirdRow = c[i];
+                    final R[] resultRow = result[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        resultRow[j] = zipFunction.apply(row[j], otherRow[j], thirdRow[j]);
+                    }
+                }
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final T[] row = a[i];
@@ -3823,7 +4439,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             }
         }
 
-        return newResult(result, resultElementType, columnCount);
+        return newResult(result, null, columnCount);
     }
 
     /**
@@ -3861,13 +4477,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      * matrix.mainDiagonalStream().toArray();   // returns [1, 5, 9]
      *
      * Matrix<Integer> empty = Matrix.empty(Integer.class);
      * empty.mainDiagonalStream().count();      // returns 0 (empty stream)
      *
-     * Matrix<Integer> rectangular = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
+     * Matrix<Integer> rectangular = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}});
      * rectangular.mainDiagonalStream().toList(); // returns [1, 5]
      * }</pre>
      *
@@ -3918,6 +4534,42 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
                 cursor = toIndex;
                 return remaining;
             }
+
+            @Override
+            public List<T> toList() {
+                final int len = toIndex - cursor;
+                final List<T> list = new ArrayList<>(len);
+
+                while (cursor < toIndex) {
+                    list.add(a[cursor][cursor]);
+                    cursor++;
+                }
+
+                return list;
+            }
+
+            @Override
+            @SuppressWarnings("unchecked")
+            public <A> A[] toArray(A[] c) throws NullPointerException, ArrayStoreException {
+                final int len = toIndex - cursor;
+
+                if (c.length < len) {
+                    c = newDestinationArray(c, len);
+                }
+
+                // If c aliases backing row a[r] (r >= startCursor), step k = r - startCursor <= r writes c[0..k - 1]
+                // before reading a[r][r] == c[r], so no unread diagonal element can be overwritten and no snapshot is needed.
+                for (int k = 0; k < len; k++) {
+                    c[k] = (A) a[cursor][cursor];
+                    cursor++;
+                }
+
+                if (c.length > len) {
+                    c[len] = null;
+                }
+
+                return c;
+            }
         });
     }
 
@@ -3930,13 +4582,13 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      * matrix.antiDiagonalStream().toArray();   // returns [3, 5, 7]
      *
      * Matrix<Integer> empty = Matrix.empty(Integer.class);
      * empty.antiDiagonalStream().count();      // returns 0 (empty stream)
      *
-     * Matrix<Integer> rectangular = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
+     * Matrix<Integer> rectangular = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}});
      * rectangular.antiDiagonalStream().toList(); // returns [3, 5]
      * }</pre>
      *
@@ -3987,6 +4639,63 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
                 cursor = toIndex;
                 return remaining;
             }
+
+            @Override
+            public List<T> toList() {
+                final int len = toIndex - cursor;
+                final List<T> list = new ArrayList<>(len);
+
+                while (cursor < toIndex) {
+                    list.add(a[cursor][columnCount - cursor - 1]);
+                    cursor++;
+                }
+
+                return list;
+            }
+
+            @Override
+            @SuppressWarnings("unchecked")
+            public <A> A[] toArray(A[] c) throws NullPointerException, ArrayStoreException {
+                final int len = toIndex - cursor;
+
+                if (c.length < len) {
+                    c = newDestinationArray(c, len);
+                } else if (len > 0 && c.length == columnCount) {
+                    // Snapshot first if c aliases a backing row, because anti-diagonal writes to lower indices
+                    // can overwrite elements in a later backing row before that row is read.
+                    for (int r = cursor; r < toIndex; r++) {
+                        if (a[r] == c) {
+                            final Object[] tmp = new Object[len];
+
+                            for (int k = 0, srcRow = cursor; k < len; k++, srcRow++) {
+                                tmp[k] = a[srcRow][columnCount - srcRow - 1];
+                            }
+
+                            for (int k = 0; k < len; k++) {
+                                c[k] = (A) tmp[k];
+                                cursor++;
+                            }
+
+                            if (c.length > len) {
+                                c[len] = null;
+                            }
+
+                            return c;
+                        }
+                    }
+                }
+
+                for (int k = 0; k < len; k++) {
+                    c[k] = (A) a[cursor][columnCount - cursor - 1];
+                    cursor++;
+                }
+
+                if (c.length > len) {
+                    c[len] = null;
+                }
+
+                return c;
+            }
         });
     }
 
@@ -4000,7 +4709,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
      * matrix.rowMajorStream().toArray();   // returns [1, 2, 3, 4]
      *
      * Matrix<Integer> empty = Matrix.empty(Integer.class);
@@ -4023,7 +4732,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}, {5, 6}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}, {5, 6}});
      * matrix.rowMajorStream(1, 3).toArray();   // returns [3, 4, 5, 6]
      * matrix.rowMajorStream(0, 2).toArray();   // returns [1, 2, 3, 4]
      * matrix.rowMajorStream(0, 5);             // throws IndexOutOfBoundsException
@@ -4031,7 +4740,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
      * @param toRowIndex the ending row index (exclusive)
-     * @return a {@link Stream} of elements from the specified row range, or an empty stream if the matrix is empty
+     * @return a {@link Stream} of elements from the specified row range, or an empty stream if the matrix is empty or the range is empty
      * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount}, or {@code fromRowIndex > toRowIndex}
      */
     @Override
@@ -4101,28 +4810,120 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             /**
              * {@inheritDoc}
              *
+             * @throws IllegalStateException if the number of remaining elements exceeds {@link Integer#MAX_VALUE};
+             *         no elements are consumed
+             */
+            @Override
+            public List<T> toList() throws IllegalStateException {
+                final int len = toArrayLength(remaining());
+                final List<T> list = new ArrayList<>(len);
+
+                while (i < toRowIndex) {
+                    final T[] row = a[i];
+
+                    for (int col = j; col < columnCount; col++) {
+                        list.add(row[col]);
+                    }
+
+                    i++;
+                    j = 0;
+                }
+
+                return list;
+            }
+
+            /**
+             * {@inheritDoc}
+             *
              * @throws IllegalStateException if more than {@code Integer.MAX_VALUE} elements remain; no elements are consumed
              * @throws NullPointerException if {@code c} is {@code null}; no elements are consumed
              * @throws ArrayStoreException if a remaining element cannot be stored in {@code c}; elements copied before the failure remain
              *         consumed
              */
             @Override
+            @SuppressWarnings("unchecked")
             public <A> A[] toArray(A[] c) throws IllegalStateException, NullPointerException, ArrayStoreException {
                 // count() is terminal for ObjIteratorEx, so computing the destination size must
                 // not call it before the remaining elements are copied.
                 final int len = toArrayLength(remaining());
 
                 if (c.length < len) {
-                    c = N.copyOf(c, len);
+                    c = newDestinationArray(c, len);
                 }
 
-                for (int k = 0; k < len; k++) {
-                    c[k] = (A) a[i][j];
+                // If c aliases a backing row, c.length == columnCount >= len forces at most one row to remain
+                // (since 0 <= j < columnCount implies >= 2 remaining rows have > columnCount elements), so both
+                // System.arraycopy and the forward element loop (k <= j) are alias-safe without snapshotting.
+                // Narrow matrices: a flat element loop. A per-row isAssignableFrom + arraycopy measured ~7x slower
+                // on 2_000_000 x 1, and even a per-row element loop is ~1.5x slower there, because the per-row
+                // overhead is paid for every one or two elements. The local cursor advances only after each
+                // successful store and is written back in finally, so an ArrayStoreException leaves the failing
+                // element unconsumed.
+                if (columnCount < MIN_ROW_ARRAYCOPY_LENGTH) {
+                    final T[][] rows = a;
+                    final int cols = columnCount;
+                    int rowIndex = i;
+                    int columnIndex = j;
 
-                    if (++j >= columnCount) {
-                        i++;
-                        j = 0;
+                    try {
+                        for (int k = 0; k < len; k++) {
+                            c[k] = (A) rows[rowIndex][columnIndex];
+
+                            if (++columnIndex >= cols) {
+                                rowIndex++;
+                                columnIndex = 0;
+                            }
+                        }
+                    } finally {
+                        i = rowIndex;
+                        j = columnIndex;
                     }
+
+                    if (c.length > len) {
+                        c[len] = null;
+                    }
+
+                    return c;
+                }
+
+                final Class<?> destComponentType = c.getClass().getComponentType();
+                Class<?> lastRowType = null;
+                boolean lastRowTypeStorable = false;
+                int k = 0;
+
+                while (i < toRowIndex) {
+                    final T[] row = a[i];
+                    final int count = columnCount - j;
+
+                    // Bulk-copy rows long enough to amortize the type check and arraycopy setup. The storability
+                    // verdict is cached per row class, since rows normally share one runtime type.
+                    if (count >= MIN_ROW_ARRAYCOPY_LENGTH) {
+                        final Class<?> rowType = row.getClass();
+
+                        if (rowType != lastRowType) {
+                            lastRowType = rowType;
+                            lastRowTypeStorable = destComponentType.isAssignableFrom(rowType.getComponentType());
+                        }
+
+                        if (lastRowTypeStorable) {
+                            System.arraycopy(row, j, c, k, count);
+                            k += count;
+                            i++;
+                            j = 0;
+                            continue;
+                        }
+                    }
+
+                    // Element loop: the cursor advances only after each successful store, so an
+                    // ArrayStoreException leaves the failing element unconsumed.
+                    while (j < columnCount) {
+                        c[k] = (A) row[j];
+                        k++;
+                        j++;
+                    }
+
+                    i++;
+                    j = 0;
                 }
 
                 if (c.length > len) {
@@ -4144,7 +4945,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
      * matrix.columnMajorStream().toArray();   // returns [1, 3, 2, 4]
      *
      * Matrix<Integer> empty = Matrix.empty(Integer.class);
@@ -4167,7 +4968,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}});
      * matrix.columnMajorStream(1, 3).toArray();   // returns [2, 5, 3, 6]
      * matrix.columnMajorStream(0, 2).toArray();   // returns [1, 4, 2, 5]
      * matrix.columnMajorStream(0, 5);             // throws IndexOutOfBoundsException
@@ -4175,7 +4976,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
-     * @return a {@link Stream} of elements from the specified column range, or an empty stream if the matrix is empty
+     * @return a {@link Stream} of elements from the specified column range, or an empty stream if the matrix is empty or the range is empty
      * @throws IndexOutOfBoundsException if {@code fromColumnIndex < 0}, {@code toColumnIndex > columnCount}, or {@code fromColumnIndex >
      *         toColumnIndex}
      */
@@ -4247,6 +5048,29 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
             /**
              * {@inheritDoc}
              *
+             * @throws IllegalStateException if the number of remaining elements exceeds {@link Integer#MAX_VALUE};
+             *         no elements are consumed
+             */
+            @Override
+            public List<T> toList() throws IllegalStateException {
+                final int len = toArrayLength(remaining());
+                final List<T> list = new ArrayList<>(len);
+
+                while (j < toColumnIndex) {
+                    for (int row = i; row < rowCount; row++) {
+                        list.add(a[row][j]);
+                    }
+
+                    i = 0;
+                    j++;
+                }
+
+                return list;
+            }
+
+            /**
+             * {@inheritDoc}
+             *
              * <p>If the destination is a live backing row, all remaining values are collected before
              * writing to it so that an earlier write cannot change a later source value.</p>
              *
@@ -4256,17 +5080,44 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
              *         consumed or modified
              */
             @Override
+            @SuppressWarnings("unchecked")
             public <A> A[] toArray(A[] c) throws IllegalStateException, NullPointerException, ArrayStoreException {
                 // count() is terminal for ObjIteratorEx, so computing the destination size must
                 // not call it before the remaining elements are copied.
                 final int len = toArrayLength(remaining());
 
                 if (c.length < len) {
-                    c = N.copyOf(c, len);
-                } else {
+                    c = newDestinationArray(c, len);
+                } else if (len > 0 && c.length == columnCount) {
                     for (final T[] row : a) {
                         if (row == c) {
-                            return super.toArray(c);
+                            final Object[] tmp = new Object[len];
+                            int srcRow = i;
+                            int srcCol = j;
+
+                            for (int k = 0; k < len; k++) {
+                                tmp[k] = a[srcRow][srcCol];
+
+                                if (++srcRow >= rowCount) {
+                                    srcRow = 0;
+                                    srcCol++;
+                                }
+                            }
+
+                            for (int k = 0; k < len; k++) {
+                                c[k] = (A) tmp[k];
+
+                                if (++i >= rowCount) {
+                                    i = 0;
+                                    j++;
+                                }
+                            }
+
+                            if (c.length > len) {
+                                c[len] = null;
+                            }
+
+                            return c;
                         }
                     }
                 }
@@ -4303,7 +5154,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}, {5, 6}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}, {5, 6}});
      * matrix.rowStreams().count();                              // returns 3 (one inner stream per row)
      * matrix.rowStreams().map(Stream::toList).toList().get(0);  // returns [1, 2]
      *
@@ -4331,7 +5182,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}, {5, 6}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}, {5, 6}});
      * matrix.rowStreams(1, 3).count();                              // returns 2 (rows 1 and 2)
      * matrix.rowStreams(1, 3).map(Stream::toList).toList().get(0);  // returns [3, 4]
      * matrix.rowStreams(0, 5);                                      // throws IndexOutOfBoundsException
@@ -4387,6 +5238,39 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
                 cursor = toIndex;
                 return remaining;
             }
+
+            @Override
+            public List<Stream<T>> toList() {
+                final int len = toIndex - cursor;
+                final List<Stream<T>> list = new ArrayList<>(len);
+
+                while (cursor < toIndex) {
+                    list.add(Stream.of(a[cursor++]));
+                }
+
+                return list;
+            }
+
+            @Override
+            @SuppressWarnings("unchecked")
+            public <A> A[] toArray(A[] c) throws NullPointerException, ArrayStoreException {
+                final int len = toIndex - cursor;
+
+                if (c.length < len) {
+                    c = newDestinationArray(c, len);
+                }
+
+                for (int k = 0; k < len; k++) {
+                    c[k] = (A) Stream.of(a[cursor]);
+                    cursor++;
+                }
+
+                if (c.length > len) {
+                    c[len] = null;
+                }
+
+                return c;
+            }
         });
     }
 
@@ -4403,7 +5287,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}});
      * matrix.columnStreams().count();                              // returns 3 (one inner stream per column)
      * matrix.columnStreams().map(Stream::toList).toList().get(0);  // returns [1, 4]
      *
@@ -4413,6 +5297,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * @return one inner stream per logical column; a {@code 0 x N} matrix therefore returns
      *         {@code N} empty inner streams
+     * @see #columnMajorStream(int, int)
      */
     @Override
     public Stream<Stream<T>> columnStreams() {
@@ -4429,7 +5314,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}});
      * matrix.columnStreams(1, 3).count();                              // returns 2 (columns 1 and 2)
      * matrix.columnStreams(1, 3).map(Stream::toList).toList().get(0);  // returns [2, 5]
      * matrix.columnStreams(0, 5);                                      // throws IndexOutOfBoundsException
@@ -4469,45 +5354,12 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
                     throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                 }
 
-                return Stream.of(new ObjIteratorEx<>() {
-                    private final int columnIndex = cursor++;
-                    private final int toIndex2 = rowCount;
-                    private int cursor2 = 0;
+                if (rowCount == 0) {
+                    cursor++;
+                    return Stream.empty();
+                }
 
-                    @Override
-                    public boolean hasNext() {
-                        return cursor2 < toIndex2;
-                    }
-
-                    /**
-                     * {@inheritDoc}
-                     * @throws NoSuchElementException if no elements remain in this iterator
-                     */
-                    @Override
-                    public T next() throws NoSuchElementException {
-                        if (cursor2 >= toIndex2) {
-                            throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
-                        }
-
-                        return a[cursor2++][columnIndex];
-                    }
-
-                    @Override
-                    public void advance(final long n) {
-                        if (n <= 0) {
-                            return;
-                        }
-
-                        cursor2 = n < toIndex2 - cursor2 ? cursor2 + (int) n : toIndex2;
-                    }
-
-                    @Override
-                    public long count() {
-                        final long remaining = toIndex2 - cursor2;
-                        cursor2 = toIndex2;
-                        return remaining;
-                    }
-                });
+                return columnStream(cursor++);
             }
 
             @Override
@@ -4524,6 +5376,141 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
                 final long remaining = toIndex - cursor;
                 cursor = toIndex;
                 return remaining;
+            }
+
+            @Override
+            public List<Stream<T>> toList() {
+                final int len = toIndex - cursor;
+                final List<Stream<T>> list = new ArrayList<>(len);
+
+                while (cursor < toIndex) {
+                    list.add(rowCount == 0 ? Stream.empty() : columnStream(cursor));
+                    cursor++;
+                }
+
+                return list;
+            }
+
+            @Override
+            @SuppressWarnings("unchecked")
+            public <A> A[] toArray(A[] c) throws NullPointerException, ArrayStoreException {
+                final int len = toIndex - cursor;
+
+                if (c.length < len) {
+                    c = newDestinationArray(c, len);
+                }
+
+                for (int k = 0; k < len; k++) {
+                    c[k] = (A) (rowCount == 0 ? Stream.empty() : columnStream(cursor));
+                    cursor++;
+                }
+
+                if (c.length > len) {
+                    c[len] = null;
+                }
+
+                return c;
+            }
+        });
+    }
+
+    /**
+     * Returns a live stream of the elements in a single non-empty column.
+     *
+     * @param columnIndex the validated column index
+     * @return a stream traversing rows {@code 0..rowCount - 1} at {@code columnIndex}
+     */
+    private Stream<T> columnStream(final int columnIndex) {
+        return Stream.of(new ObjIteratorEx<>() {
+            private final int toIndex2 = rowCount;
+            private int cursor2 = 0;
+
+            @Override
+            public boolean hasNext() {
+                return cursor2 < toIndex2;
+            }
+
+            /**
+             * {@inheritDoc}
+             * @throws NoSuchElementException if no elements remain in this iterator
+             */
+            @Override
+            public T next() throws NoSuchElementException {
+                if (cursor2 >= toIndex2) {
+                    throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
+                }
+
+                return a[cursor2++][columnIndex];
+            }
+
+            @Override
+            public void advance(final long n) {
+                if (n <= 0) {
+                    return;
+                }
+
+                cursor2 = n < toIndex2 - cursor2 ? cursor2 + (int) n : toIndex2;
+            }
+
+            @Override
+            public long count() {
+                final long remaining = toIndex2 - cursor2;
+                cursor2 = toIndex2;
+                return remaining;
+            }
+
+            @Override
+            public List<T> toList() {
+                final int len = toIndex2 - cursor2;
+                final List<T> list = new ArrayList<>(len);
+
+                while (cursor2 < toIndex2) {
+                    list.add(a[cursor2++][columnIndex]);
+                }
+
+                return list;
+            }
+
+            @Override
+            @SuppressWarnings("unchecked")
+            public <A> A[] toArray(A[] c) throws NullPointerException, ArrayStoreException {
+                final int len = toIndex2 - cursor2;
+
+                if (c.length < len) {
+                    c = newDestinationArray(c, len);
+                } else if (len > 0 && c.length == columnCount) {
+                    for (int r = cursor2; r < toIndex2; r++) {
+                        if (a[r] == c) {
+                            final Object[] tmp = new Object[len];
+
+                            for (int k = 0, srcRow = cursor2; k < len; k++, srcRow++) {
+                                tmp[k] = a[srcRow][columnIndex];
+                            }
+
+                            for (int k = 0; k < len; k++) {
+                                c[k] = (A) tmp[k];
+                                cursor2++;
+                            }
+
+                            if (c.length > len) {
+                                c[len] = null;
+                            }
+
+                            return c;
+                        }
+                    }
+                }
+
+                for (int k = 0; k < len; k++) {
+                    c[k] = (A) a[cursor2][columnIndex];
+                    cursor2++;
+                }
+
+                if (c.length > len) {
+                    c[len] = null;
+                }
+
+                return c;
             }
         });
     }
@@ -4552,7 +5539,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
      *
      * // Sum all elements
      * java.util.concurrent.atomic.AtomicInteger sum = new java.util.concurrent.atomic.AtomicInteger();
@@ -4590,7 +5577,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
      *
      * // Process only the center element
      * List<Integer> center = java.util.Collections.synchronizedList(new ArrayList<>());
@@ -4623,9 +5610,20 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
         N.checkArgNotNull(action, cs.action);
 
+        if (fromRowIndex == toRowIndex || fromColumnIndex == toColumnIndex) {
+            return;
+        }
+
         if (Matrices.shouldRunInParallel(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> action.accept(a[i][j]);
-            Matrices.forEachIndices(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, elementAction, true);
+            Matrices.forEachBlockInParallel(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, Long.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final T[] aa = a[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        action.accept(aa[j]);
+                    }
+                }
+            });
         } else {
             for (int i = fromRowIndex; i < toRowIndex; i++) {
                 final T[] aa = a[i];
@@ -4647,7 +5645,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}});
      * Dataset dataset = matrix.toDataset(N.asList("A", "B", "C"));
      * // Dataset with:
      * // A  B  C
@@ -4677,24 +5675,33 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     public Dataset toDataset(final Collection<String> columnNames) throws IllegalArgumentException {
         N.checkArgNotNull(columnNames, cs.columnNames);
-        N.checkArgument(columnNames.size() == columnCount, "The size({}) of specified columnNames and column count({}) of this Matrix are not equal",
-                columnNames.size(), columnCount);
+        final int size = columnNames.size();
+        N.checkArgument(size == columnCount, "The size({}) of specified columnNames and column count({}) of this Matrix are not equal", size, columnCount);
         N.checkArgument(rowCount == 0 || columnCount > 0, "Cannot convert a matrix with rows but zero columns to a row dataset");
 
         final List<String> newColumnNameList = new ArrayList<>(columnNames);
+        // Re-check after snapshotting so concurrent mutation of columnNames cannot pass a mismatched list to RowDataset.
+        N.checkArgument(newColumnNameList.size() == columnCount, "The size({}) of specified columnNames and column count({}) of this Matrix are not equal",
+                newColumnNameList.size(), columnCount);
         checkDatasetColumnNames(newColumnNameList);
-        final List<List<Object>> newColumnList = new ArrayList<>(newColumnNameList.size());
+
+        final List<List<Object>> newColumnList = new ArrayList<>(columnCount);
+        @SuppressWarnings("unchecked")
+        final ArrayList<Object>[] columns = new ArrayList[columnCount];
 
         for (int j = 0; j < columnCount; j++) {
-            newColumnList.add(new ArrayList<>(rowCount));
+            final ArrayList<Object> col = new ArrayList<>(rowCount);
+            columns[j] = col;
+            newColumnList.add(col);
         }
 
-        // Fill row-by-row so the row-major backing array is read sequentially.
+        // Fill row-by-row so the row-major backing array is read sequentially; indexing the local
+        // ArrayList[] avoids bounds checks and interface dispatch on newColumnList.get(j) per cell.
         for (int i = 0; i < rowCount; i++) {
             final T[] row = a[i];
 
             for (int j = 0; j < columnCount; j++) {
-                newColumnList.get(j).add(row[j]);
+                columns[j].add(row[j]);
             }
         }
 
@@ -4711,7 +5718,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2, 3}, {4, 5, 6}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}, {4, 5, 6}});
      * Dataset dataset = matrix.toTransposedDataset(N.asList("Row1", "Row2"));
      * // Dataset with:
      * // Row1  Row2
@@ -4744,21 +5751,25 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      */
     public Dataset toTransposedDataset(final Collection<String> columnNames) throws IllegalArgumentException {
         N.checkArgNotNull(columnNames, cs.columnNames);
-        N.checkArgument(columnNames.size() == rowCount, "The size({}) of specified columnNames and row count({}) of this Matrix are not equal",
-                columnNames.size(), rowCount);
+        final int size = columnNames.size();
+        N.checkArgument(size == rowCount, "The size({}) of specified columnNames and row count({}) of this Matrix are not equal", size, rowCount);
         // Mirror of the guard in toDataset: a dataset with no columns cannot encode a non-zero
         // column count, so reject the shape rather than silently dropping it.
         N.checkArgument(columnCount == 0 || rowCount > 0, "Cannot convert a matrix with columns but zero rows to a transposed dataset");
 
         final List<String> newColumnNameList = new ArrayList<>(columnNames);
+        // Re-check after snapshotting so concurrent mutation of columnNames cannot pass a mismatched list to RowDataset.
+        N.checkArgument(newColumnNameList.size() == rowCount, "The size({}) of specified columnNames and row count({}) of this Matrix are not equal",
+                newColumnNameList.size(), rowCount);
         checkDatasetColumnNames(newColumnNameList);
-        final List<List<Object>> newColumnList = new ArrayList<>(newColumnNameList.size());
+        final List<List<Object>> newColumnList = new ArrayList<>(rowCount);
 
-        // Each matrix row becomes one column. Bulk-copy it rather than appending element by element: the
-        // array copies are about twice as fast as per-element appends once a row has more than a handful of
-        // elements, and a long row is the common shape for a transposed dataset (few columns, many values).
+        // Each matrix row becomes one column. Arrays.asList(row).toArray() returns a fresh Object[] copy, as the
+        // Collection.toArray() contract requires, so the column never shares storage with the matrix whichever
+        // ArrayList(Collection) implementation runs. That costs a second bulk copy, but a per-element add() loop
+        // measured about 4.5x slower (1000 x 2000: 1.9 ms -> 8.6 ms).
         for (final T[] row : a) {
-            newColumnList.add(new ArrayList<>(Array.asList(row)));
+            newColumnList.add(new ArrayList<>(java.util.Arrays.asList(row)));
         }
 
         // fromOwnedColumns (@Internal in abacus-common) adopts these lists instead of copying them, so they
@@ -4789,7 +5800,7 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
         if (a.length == 0) {
             return "[]";
         } else {
-            final StringBuilder sb = Objectory.createStringBuilder();
+            final StringBuilder sb = Objectory.createStringBuilder(estimateStringCapacity(rowCount, elementCount, 8));
             final int len = a.length;
             final String str;
 
@@ -4834,16 +5845,16 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> m1 = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
-     * Matrix<Integer> m2 = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> m1 = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> m2 = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
      * boolean equalHashes = m1.hashCode() == m2.hashCode();   // true  (equal matrices, same hash)
      * int m1Hash = m1.hashCode();                             // 32833
      *
-     * Matrix<Integer> m3 = Matrix.wrap(new Integer[][] {{1, 2}, {3, 5}});
+     * Matrix<Integer> m3 = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 5}});
      * boolean sameHashForDifferentContent = m1.hashCode() == m3.hashCode(); // false for these values
      *
      * Matrix.empty().hashCode();                              // returns 1     (empty matrix)
-     * Matrix.wrap(new String[][] {{null}}).hashCode();          // returns 62    (null element contributes 0 per element)
+     * Matrix.wrap(String.class, new String[][] {{null}}).hashCode();          // returns 62    (null element contributes 0 per element)
      * }</pre>
      *
      * @return a hash code value for this matrix
@@ -4871,10 +5882,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> m1 = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
-     * Matrix<Integer> m2 = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> m1 = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> m2 = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
      * m1.equals(m2);                                          // returns true
-     * m1.equals(Matrix.wrap(new Integer[][] {{1, 2}, {3, 5}})); // returns false (different content)
+     * m1.equals(Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 5}})); // returns false (different content)
      * m1.equals(null);                                        // returns false
      * m1.equals("not a matrix");                              // returns false (not a Matrix)
      * }</pre>
@@ -4906,10 +5917,10 @@ public final class Matrix<T> extends AbstractMatrix<T[], List<T>, Stream<T>, Str
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> matrix = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> matrix = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
      * matrix.toString();                                  // returns "[[1, 2], [3, 4]]"
      *
-     * Matrix.wrap(new String[][] {{"a", null}}).toString(); // returns "[[a, null]]"
+     * Matrix.wrap(String.class, new String[][] {{"a", null}}).toString(); // returns "[[a, null]]"
      * Matrix.empty().toString();                          // returns "[]"
      * }</pre>
      *

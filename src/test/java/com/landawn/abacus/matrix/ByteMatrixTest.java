@@ -328,6 +328,51 @@ class ByteMatrixTest extends MatrixTestSupport {
             assertThrows(IllegalArgumentException.class, () -> ByteMatrix.randomRow(1, null));
         }
 
+        /**
+         * Pins the seeded contract CHANGES.md documents for 3.9.2: each non-empty row is filled by exactly one
+         * {@code nextBytes(row)} call, in row order, and no other generator method is used (the old per-cell
+         * {@code nextInt} loop reached {@code nextLong} and fails here). Same-seed comparisons alone cannot tell the two apart.
+         */
+        @Test
+        public void testRandomGeneratorFillsEachRowWithOneNextBytesCallInRowOrder() {
+            final List<Integer> bufferLengths = new ArrayList<>();
+            final java.util.random.RandomGenerator recording = new java.util.random.RandomGenerator() {
+                private byte next = 1;
+
+                @Override
+                public long nextLong() {
+                    throw new AssertionError("only nextBytes may be used");
+                }
+
+                @Override
+                public void nextBytes(final byte[] bytes) {
+                    bufferLengths.add(bytes.length);
+
+                    for (int i = 0; i < bytes.length; i++) {
+                        bytes[i] = next++;
+                    }
+                }
+            };
+
+            final ByteMatrix m = ByteMatrix.random(3, 4, recording);
+            assertEquals(List.of(4, 4, 4), bufferLengths);
+            assertArrayEquals(new byte[] { 1, 2, 3, 4 }, m.rowView(0));
+            assertArrayEquals(new byte[] { 5, 6, 7, 8 }, m.rowView(1));
+            assertArrayEquals(new byte[] { 9, 10, 11, 12 }, m.rowView(2));
+
+            bufferLengths.clear();
+            assertArrayEquals(new byte[] { 13, 14, 15 }, ByteMatrix.randomRow(3, recording).rowView(0));
+            assertEquals(List.of(3), bufferLengths);
+
+            // Zero columns, zero rows, or both: the generator is never called.
+            bufferLengths.clear();
+            assertShape(5, 0, ByteMatrix.random(5, 0, recording));
+            assertShape(0, 5, ByteMatrix.random(0, 5, recording));
+            assertSame(ByteMatrix.empty(), ByteMatrix.random(0, 0, recording));
+            assertShape(1, 0, ByteMatrix.randomRow(0, recording));
+            assertEquals(List.of(), bufferLengths);
+        }
+
         @Test
         public void testByteDiagonalStreamsAreEmptyWhenEitherDimensionIsZero() {
             for (final ByteMatrix matrix : new ByteMatrix[] { ByteMatrix.empty(), ByteMatrix.random(0, 3), ByteMatrix.random(3, 0) }) {

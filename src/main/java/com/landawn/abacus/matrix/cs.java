@@ -65,7 +65,7 @@ final class cs { // NOSONAR
     /** Parameter name for a mapping callback. */
     static final String mapper = "mapper";
 
-    /** Parameter name for a collection of matrices. */
+    /** Parameter name for a collection or array of matrices. */
     static final String matrices = "matrices";
 
     /** Parameter name for the requested number of columns. */

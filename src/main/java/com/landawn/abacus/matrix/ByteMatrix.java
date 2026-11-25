@@ -14,6 +14,8 @@
 
 package com.landawn.abacus.matrix;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.random.RandomGenerator;
 
@@ -74,8 +76,12 @@ import com.landawn.abacus.util.stream.Stream;
  */
 public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStream, Stream<ByteStream>, ByteMatrix> {
 
-    /** The number of distinct {@code byte} values, used as the bound for full-range random generation. */
-    static final int BOUND = Byte.MAX_VALUE - Byte.MIN_VALUE + 1;
+    /**
+     * Maximum inner dimension for which an exact {@code byte} dot product is guaranteed to fit in a
+     * signed 32-bit {@code int} ({@code Integer.MAX_VALUE / (128 * 128) = 131_071}), since each term
+     * has magnitude at most {@code (-128) * (-128) = 16_384}.
+     */
+    private static final int MAX_EXACT_INT_DOT_LENGTH = Integer.MAX_VALUE / (128 * 128);
 
     /** The shared {@code 0 x 0} byte matrix returned by {@link #empty()} and public empty-array factories. */
     private static final ByteMatrix EMPTY_BYTE_MATRIX = new ByteMatrix(new byte[0][0]);
@@ -121,33 +127,35 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     }
 
     /**
-     * Constructs a matrix with an optional guarantee that its row arrays are distinct.
+     * Constructs a matrix, optionally trusting library-allocated outer and row arrays.
      *
-     * @param a the rectangular, non-null array of non-null row arrays
+     * @param a the freshly allocated outer array of non-{@code null}, rectangular, identity-distinct row arrays
+     *        when {@code rowsAreKnownDistinct} is {@code true}; otherwise the array of row arrays to snapshot and validate
      * @param columnCount the non-negative logical column count
-     * @param rowsAreKnownDistinct whether callers guarantee that no row array is repeated
-     * @throws IllegalArgumentException if {@code a} is {@code null}, if {@code columnCount} is negative,
-     *         if a row is {@code null} or its length differs from {@code columnCount}, or if rows are repeated
-     *         when {@code rowsAreKnownDistinct} is {@code false}
+     * @param rowsAreKnownDistinct {@code true} only when the caller owns a freshly allocated outer array whose rows are
+     *        already known to be non-{@code null}, of length {@code columnCount}, and identity-distinct (skipping
+     *        outer-array cloning and per-row scanning)
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if {@code columnCount} is negative, or,
+     *         when {@code rowsAreKnownDistinct} is {@code false}, if any row of {@code a} is {@code null}, its length
+     *         differs from {@code columnCount}, or two logical rows are the same array object
      */
     private ByteMatrix(final byte[][] a, final int columnCount, final boolean rowsAreKnownDistinct) throws IllegalArgumentException {
         super(N.checkArgNotNull(a, "Matrix array cannot be null"), byte.class, columnCount, rowsAreKnownDistinct);
     }
 
     /**
-     * Wraps a derived result whose row arrays are known to be distinct.
+     * Wraps a freshly allocated library result array without cloning the outer array or re-scanning rows.
      *
-     * @param a the non-null rectangular result array with distinct, non-null rows
+     * @param a the freshly allocated outer array of non-{@code null}, rectangular, identity-distinct row arrays
      * @param columnCount the non-negative logical column count
-     * @return the shared empty matrix for a {@code 0 x 0} result, otherwise a new matrix
-     * @throws IllegalArgumentException if {@code a} is {@code null}, if {@code columnCount} is negative, if a row is {@code null},
-     *         or if a row length differs from {@code columnCount}
+     * @return the shared empty matrix for a {@code 0 x 0} result, otherwise a new matrix retaining {@code a} directly
+     * @throws IllegalArgumentException if {@code a} is {@code null} or {@code columnCount} is negative
      */
     static ByteMatrix wrapResult(final byte[][] a, final int columnCount) throws IllegalArgumentException {
         N.checkArgNotNull(a, cs.a);
 
-        // Every wrapResult(...) call site (here, in Matrix and in Matrices) passes freshly allocated rows, so they are
-        // identity-distinct by construction and the duplicate-row scan can be skipped.
+        // Every wrapResult(...) call site passes a freshly allocated outer array and freshly allocated rectangular rows,
+        // so outer-array cloning, per-row bounds checks, and duplicate-row scanning can all be skipped.
         return a.length == 0 && columnCount == 0 ? EMPTY_BYTE_MATRIX : new ByteMatrix(a, columnCount, true);
     }
 
@@ -204,7 +212,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     /**
      * Creates a {@code ByteMatrix} that owns a defensive deep copy of the supplied two-dimensional array.
      *
-     * <p>For a non-empty input, unlike {@link #wrap(byte[][])}, which copies the outer array but shares the caller's rows,
+     * <p>For a non-empty input, unlike {@link #wrap(byte[]...)}, which copies the outer array but shares the caller's rows,
      * this factory allocates a new outer array and clones every row. Subsequent modifications to {@code a}
      * (or its rows) are therefore <b>not</b> visible through the returned matrix, and vice versa. A zero-row
      * input is canonicalized to the shared empty matrix, so its outer-array identity is not retained.</p>
@@ -227,7 +235,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @return a new {@code ByteMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is empty
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular)
-     * @see #wrap(byte[][])
+     * @see #wrap(byte[]...)
      * @see #copy()
      */
     public static ByteMatrix copyOf(final byte[]... a) throws IllegalArgumentException {
@@ -237,21 +245,23 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
             return EMPTY_BYTE_MATRIX;
         }
 
-        N.checkArgument(a[0] != null, "Row 0 cannot be null");
-        final int columnCount = a[0].length;
+        // Snapshot the outer array so concurrent writes to `a` cannot swap in a null or ragged row after validation.
+        final byte[][] rows = a.clone();
+        final byte[] firstRow = rows[0];
+        N.checkArgument(firstRow != null, "Row 0 cannot be null");
+        final int columnCount = firstRow.length;
 
-        for (int i = 1; i < a.length; i++) {
-            N.checkArgument(a[i] != null, "Row {} cannot be null", i);
-            N.checkArgument(a[i].length == columnCount, MSG_NOT_RECTANGULAR, columnCount, i, a[i].length);
+        for (int i = 1; i < rows.length; i++) {
+            final byte[] row = rows[i];
+            N.checkArgument(row != null, "Row {} cannot be null", i);
+            N.checkArgument(row.length == columnCount, MSG_NOT_RECTANGULAR, columnCount, i, row.length);
         }
 
-        final byte[][] c = new byte[a.length][];
-
-        for (int i = 0, len = a.length; i < len; i++) {
-            c[i] = a[i] == null ? null : a[i].clone();
+        for (int i = 0, len = rows.length; i < len; i++) {
+            rows[i] = rows[i].clone();
         }
 
-        return wrapResult(c, columnCount);
+        return wrapResult(rows, columnCount);
     }
 
     /**
@@ -280,18 +290,30 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     }
 
     /**
-     * Creates a {@code 1 x columnCount} matrix using the caller-supplied random source.
-     * Supplying the source makes generation reproducible when it has a fixed seed.
+     * Creates a {@code 1 x columnCount} matrix filled with random byte values uniformly distributed
+     * across the full byte range {@code [Byte.MIN_VALUE, Byte.MAX_VALUE]} using the caller-supplied
+     * random source. Supplying the source makes generation reproducible when it has a fixed seed.
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * ByteMatrix m1 = ByteMatrix.randomRow(5, new java.util.Random(42L));
+     * ByteMatrix m2 = ByteMatrix.randomRow(5, new java.util.Random(42L));
+     * m1.equals(m2);                                // returns true (reproducible with same seed)
+     *
+     * ByteMatrix.randomRow(0, new java.util.Random(42L)).columnCount(); // returns 0 (1x0 matrix)
+     * ByteMatrix.randomRow(-1, new java.util.Random(42L));              // throws IllegalArgumentException
+     * ByteMatrix.randomRow(5, null);                                    // throws IllegalArgumentException
+     * }</pre>
      *
      * @param columnCount the number of columns; must be non-negative
      * @param randomGenerator the random source; must not be {@code null}
      * @return the generated single-row matrix
      * @throws IllegalArgumentException if {@code columnCount} is negative, or if {@code randomGenerator} is {@code null}
-     * @throws RuntimeException if {@code randomGenerator.nextInt(int)} fails while generating a matrix element
+     * @throws RuntimeException if {@code randomGenerator.nextBytes(byte[])} fails while generating matrix elements
+     * @see #randomRow(int)
+     * @see #random(int, int, RandomGenerator)
      */
     public static ByteMatrix randomRow(final int columnCount, final RandomGenerator randomGenerator) throws IllegalArgumentException, RuntimeException {
-        N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.columnCount, columnCount);
-
         return random(1, columnCount, randomGenerator);
     }
 
@@ -314,35 +336,62 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
      * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
-     * @return a new {@code ByteMatrix} of dimensions {@code rowCount x columnCount} filled with random values
+     * @return a new {@code ByteMatrix} of dimensions {@code rowCount x columnCount} filled with random values,
+     *         or the shared {@link #empty()} instance when both dimensions are zero
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative
+     * @see #random(int, int, RandomGenerator)
+     * @see #randomRow(int)
      */
     public static ByteMatrix random(final int rowCount, final int columnCount) throws IllegalArgumentException {
         return random(rowCount, columnCount, defaultRandomGenerator());
     }
 
     /**
-     * Creates a matrix of full-range random byte values using the caller-supplied random source.
+     * Creates a matrix filled with random byte values uniformly distributed across the full byte
+     * range {@code [Byte.MIN_VALUE, Byte.MAX_VALUE]} using the caller-supplied random source.
+     * Supplying a seeded source makes generation reproducible.
+     *
+     * <p>When {@code columnCount > 0}, each row is filled by calling
+     * {@link RandomGenerator#nextBytes(byte[]) randomGenerator.nextBytes(byte[])} once per row in
+     * ascending row order ({@code 0} to {@code rowCount - 1}). When {@code columnCount == 0}, no
+     * bytes are drawn from {@code randomGenerator}.</p>
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * ByteMatrix m1 = ByteMatrix.random(2, 3, new java.util.Random(42L));
+     * ByteMatrix m2 = ByteMatrix.random(2, 3, new java.util.Random(42L));
+     * m1.equals(m2);                                  // returns true (reproducible with same seed)
+     *
+     * ByteMatrix.random(0, 3, new java.util.Random(1L)).columnCount(); // returns 3 (shape preserved)
+     * ByteMatrix.random(0, 0, new java.util.Random(1L)).isEmpty();     // returns true
+     * ByteMatrix.random(2, 3, null);                                   // throws IllegalArgumentException
+     * }</pre>
      *
      * @param rowCount the number of rows; must be non-negative
      * @param columnCount the number of columns; must be non-negative
      * @param randomGenerator the random source; must not be {@code null}
-     * @return a matrix with the requested shape, including a shape-preserving {@code 0 x N} result
+     * @return a matrix with the requested shape, including a shape-preserving {@code 0 x N} result,
+     *         or the shared {@link #empty()} instance when both dimensions are zero
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative, or if {@code randomGenerator} is {@code null}
-     * @throws RuntimeException if {@code randomGenerator.nextInt(int)} fails while generating a matrix element
+     * @throws RuntimeException if {@code randomGenerator.nextBytes(byte[])} fails while generating matrix elements
+     * @see #random(int, int)
+     * @see #randomRow(int, RandomGenerator)
      */
     public static ByteMatrix random(final int rowCount, final int columnCount, final RandomGenerator randomGenerator)
             throws IllegalArgumentException, RuntimeException {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, cs.rowCount, rowCount);
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.columnCount, columnCount);
         N.checkArgNotNull(randomGenerator, cs.randomGenerator);
-        checkNonNegativeShape(rowCount, columnCount);
+
+        if (rowCount == 0 && columnCount == 0) {
+            return EMPTY_BYTE_MATRIX;
+        }
 
         final byte[][] a = new byte[rowCount][columnCount];
 
-        for (byte[] ea : a) {
-            for (int i = 0; i < columnCount; i++) {
-                ea[i] = (byte) (randomGenerator.nextInt(BOUND) + Byte.MIN_VALUE);
+        if (columnCount > 0) {
+            for (final byte[] ea : a) {
+                randomGenerator.nextBytes(ea);
             }
         }
 
@@ -375,7 +424,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @return a single-row {@code ByteMatrix} containing the range of values
      */
     public static ByteMatrix range(final byte startInclusive, final byte endExclusive) {
-        return new ByteMatrix(new byte[][] { ownedRangeRow(Array.range(startInclusive, endExclusive)) });
+        final byte[] row = ownedRangeRow(Array.range(startInclusive, endExclusive));
+        return wrapResult(new byte[][] { row }, row.length);
     }
 
     /**
@@ -406,7 +456,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @throws IllegalArgumentException if {@code step} is zero
      */
     public static ByteMatrix range(final byte startInclusive, final byte endExclusive, final byte step) throws IllegalArgumentException {
-        return new ByteMatrix(new byte[][] { ownedRangeRow(Array.range(startInclusive, endExclusive, step)) });
+        final byte[] row = ownedRangeRow(Array.range(startInclusive, endExclusive, step));
+        return wrapResult(new byte[][] { row }, row.length);
     }
 
     /**
@@ -433,7 +484,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @return a single-row {@code ByteMatrix} containing the range of values
      */
     public static ByteMatrix rangeClosed(final byte startInclusive, final byte endInclusive) {
-        return new ByteMatrix(new byte[][] { ownedRangeRow(Array.rangeClosed(startInclusive, endInclusive)) });
+        final byte[] row = ownedRangeRow(Array.rangeClosed(startInclusive, endInclusive));
+        return wrapResult(new byte[][] { row }, row.length);
     }
 
     /**
@@ -465,7 +517,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @throws IllegalArgumentException if {@code step} is zero
      */
     public static ByteMatrix rangeClosed(final byte startInclusive, final byte endInclusive, final byte step) throws IllegalArgumentException {
-        return new ByteMatrix(new byte[][] { ownedRangeRow(Array.rangeClosed(startInclusive, endInclusive, step)) });
+        final byte[] row = ownedRangeRow(Array.rangeClosed(startInclusive, endInclusive, step));
+        return wrapResult(new byte[][] { row }, row.length);
     }
 
     /**
@@ -545,7 +598,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * Creates a square matrix from the specified main diagonal and anti-diagonal elements.
      * All other elements are set to zero. At least one array must be non-{@code null}; if both arrays
      * contain elements, they must have the same length.
-     * The resulting matrix has dimensions n×n where n is the length of the non-empty diagonal array.
+     * The resulting matrix has dimensions {@code n×n} where {@code n} is the length of the non-empty diagonal array.
      * When both diagonals are provided and they overlap (at the center element of odd-sized matrices),
      * the main diagonal value takes precedence.
      *
@@ -573,26 +626,35 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     public static ByteMatrix ofDiagonals(final byte[] mainDiagonal, final byte[] antiDiagonal) throws IllegalArgumentException {
         N.checkArgument(mainDiagonal != null || antiDiagonal != null, "Both 'mainDiagonal' and 'antiDiagonal' can't be null");
 
-        N.checkArgument(N.isEmpty(mainDiagonal) || N.isEmpty(antiDiagonal) || mainDiagonal.length == antiDiagonal.length,
+        final boolean hasMain = N.notEmpty(mainDiagonal);
+        final boolean hasAnti = N.notEmpty(antiDiagonal);
+
+        N.checkArgument(!hasMain || !hasAnti || mainDiagonal.length == antiDiagonal.length,
                 "The lengths of 'mainDiagonal' and 'antiDiagonal' must be the same: mainDiagonal length={}, antiDiagonal length={}", N.len(mainDiagonal),
                 N.len(antiDiagonal));
 
-        if (N.isEmpty(mainDiagonal) && N.isEmpty(antiDiagonal)) {
+        final int len = hasMain ? mainDiagonal.length : (hasAnti ? antiDiagonal.length : 0);
+
+        if (len == 0) {
             return EMPTY_BYTE_MATRIX;
         }
 
-        final int len = N.max(N.len(mainDiagonal), N.len(antiDiagonal));
         final byte[][] result = new byte[len][len];
 
-        if (N.notEmpty(antiDiagonal)) {
-            for (int i = 0, j = len - 1; i < len; i++, j--) {
-                result[i][j] = antiDiagonal[i];
+        if (hasMain && hasAnti) {
+            // Write anti-diagonal first so mainDiagonal wins at the center cell when len is odd.
+            for (int i = 0; i < len; i++) {
+                final byte[] row = result[i];
+                row[len - 1 - i] = antiDiagonal[i];
+                row[i] = mainDiagonal[i];
             }
-        }
-
-        if (N.notEmpty(mainDiagonal)) {
+        } else if (hasMain) {
             for (int i = 0; i < len; i++) {
                 result[i][i] = mainDiagonal[i]; // NOSONAR
+            }
+        } else {
+            for (int i = 0; i < len; i++) {
+                result[i][len - 1 - i] = antiDiagonal[i];
             }
         }
 
@@ -908,7 +970,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     public byte[] rowCopy(final int rowIndex) throws IndexOutOfBoundsException {
         checkRowIndex(rowIndex);
 
-        return N.copyOf(a[rowIndex], columnCount);
+        return a[rowIndex].clone();
     }
 
     /**
@@ -981,7 +1043,11 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         N.checkArgNotNull(row, cs.row);
         N.checkArgument(row.length == columnCount, MSG_ROW_LENGTH_MISMATCH, columnCount, row.length);
 
-        N.copy(row, 0, a[rowIndex], 0, columnCount);
+        if (row == a[rowIndex] || columnCount == 0) {
+            return;
+        }
+
+        System.arraycopy(row, 0, a[rowIndex], 0, columnCount);
     }
 
     /**
@@ -1104,7 +1170,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         N.checkArgNotNull(operator, cs.operator);
 
         for (int i = 0; i < rowCount; i++) {
-            a[i][columnIndex] = operator.applyAsByte(a[i][columnIndex]);
+            final byte[] row = a[i];
+            row[columnIndex] = operator.applyAsByte(row[columnIndex]);
         }
     }
 
@@ -1147,6 +1214,10 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * The diagonal array must have exactly {@code min(rowCount, columnCount)} elements.
      *
      * <p>This method sets the main diagonal elements at positions (0,0), (1,1), (2,2), etc.</p>
+     *
+     * <p>The supplied array may be one of this matrix's live backing rows (for example {@code rowView(k)})
+     * without snapshotting: {@code mainDiagonal[i]} is written to {@code a[i][i]}, so at {@code i == k}
+     * it writes {@code a[k][k]} to itself without clobbering any unread element.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1205,7 +1276,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         final int diagonalLength = diagonalLength();
 
         for (int i = 0; i < diagonalLength; i++) {
-            a[i][i] = operator.applyAsByte(a[i][i]);
+            final byte[] row = a[i];
+            row[i] = operator.applyAsByte(row[i]);
         }
     }
 
@@ -1312,7 +1384,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         final int diagonalLength = diagonalLength();
 
         for (int i = 0; i < diagonalLength; i++) {
-            a[i][columnCount - i - 1] = operator.applyAsByte(a[i][columnCount - i - 1]);
+            final byte[] row = a[i];
+            final int col = columnCount - i - 1;
+            row[col] = operator.applyAsByte(row[col]);
         }
     }
 
@@ -1353,13 +1427,20 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     public <E extends Exception> void updateAll(final Throwables.ByteUnaryOperator<E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, cs.operator);
 
-        if (columnCount == 0) {
+        if (isEmpty()) {
             return;
         }
 
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.applyAsByte(a[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Byte.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final byte[] row = a[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        row[j] = operator.applyAsByte(row[j]);
+                    }
+                }
+            });
         } else {
             for (final byte[] row : a) {
                 for (int j = 0; j < columnCount; j++) {
@@ -1375,7 +1456,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * <p>The mapper receives the row and column indices for each element and returns the new value
      * for that position. This is useful for initializing matrices based on position patterns or
-     * mathematical formulas. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
+     * mathematical formulas. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.
+     * When this operation is not parallelized, elements are processed in row-major order; when it is
+     * parallelized, the encounter order is unspecified.</p>
      *
      * <p>If {@code mapper} throws, updates already completed are retained; this method does not
      * roll back changes. Sequential traversal stops at the failing call. During parallel execution,
@@ -1409,9 +1492,20 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
             throws IllegalArgumentException, E, NullPointerException {
         N.checkArgNotNull(mapper, cs.mapper);
 
+        if (isEmpty()) {
+            return;
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Byte.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final byte[] row = a[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        row[j] = mapper.apply(i, j);
+                    }
+                }
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final byte[] row = a[i];
@@ -1428,7 +1522,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * All elements that satisfy the predicate are replaced with the specified new value.
      * This modifies the matrix directly.
      *
-     * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.</p>
+     * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
+     * When this operation is not parallelized, elements are processed in row-major order; when it is
+     * parallelized, the encounter order is unspecified.</p>
      *
      * <p>If {@code predicate} throws, updates already completed are retained; this method does not
      * roll back changes. Sequential traversal stops at the failing call. During parallel execution,
@@ -1458,13 +1554,22 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     public <E extends Exception> void replaceIf(final Throwables.BytePredicate<E> predicate, final byte newValue) throws IllegalArgumentException, E {
         N.checkArgNotNull(predicate, cs.predicate);
 
+        if (isEmpty()) {
+            return;
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
-                if (predicate.test(a[i][j])) {
-                    a[i][j] = newValue;
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Byte.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final byte[] row = a[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        if (predicate.test(row[j])) {
+                            row[j] = newValue;
+                        }
+                    }
                 }
-            };
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            });
         } else {
             for (final byte[] row : a) {
                 for (int j = 0; j < columnCount; j++) {
@@ -1482,7 +1587,9 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * This modifies the matrix directly.
      *
      * <p>This is useful for position-based replacements such as setting diagonals, borders,
-     * or specific regions. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
+     * or specific regions. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.
+     * When this operation is not parallelized, elements are processed in row-major order; when it is
+     * parallelized, the encounter order is unspecified.</p>
      *
      * <p>Nonmatching positions perform no write.</p>
      *
@@ -1515,13 +1622,22 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final byte newValue) throws IllegalArgumentException, E {
         N.checkArgNotNull(predicate, cs.predicate);
 
+        if (isEmpty()) {
+            return;
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
-                if (predicate.test(i, j)) {
-                    a[i][j] = newValue;
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Byte.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final byte[] row = a[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        if (predicate.test(i, j)) {
+                            row[j] = newValue;
+                        }
+                    }
                 }
-            };
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final byte[] row = a[i];
@@ -1568,11 +1684,27 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     public <E extends Exception> ByteMatrix map(final Throwables.ByteUnaryOperator<E> mapper) throws IllegalArgumentException, E {
         N.checkArgNotNull(mapper, cs.mapper);
 
+        if (rowCount == 0 && columnCount == 0) {
+            return EMPTY_BYTE_MATRIX;
+        }
+
         final byte[][] result = new byte[rowCount][columnCount];
 
+        if (isEmpty()) {
+            return wrapResult(result, columnCount);
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsByte(a[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Byte.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final byte[] row = a[i];
+                    final byte[] resultRow = result[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        resultRow[j] = mapper.applyAsByte(row[j]);
+                    }
+                }
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final byte[] row = a[i];
@@ -1624,9 +1756,21 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
 
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
 
+        if (isEmpty()) {
+            return Matrix.newResult(result, targetElementType, columnCount);
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Long.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final byte[] row = a[i];
+                    final R[] resultRow = result[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        resultRow[j] = mapper.apply(row[j]);
+                    }
+                }
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final byte[] row = a[i];
@@ -1663,8 +1807,12 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param value the value to fill the matrix with
      */
     public void fill(final byte value) {
+        if (isEmpty()) {
+            return;
+        }
+
         for (int i = 0; i < rowCount; i++) {
-            N.fill(a[i], value);
+            java.util.Arrays.fill(a[i], value);
         }
     }
 
@@ -1675,6 +1823,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * If the source array is larger, only the portion that fits is copied. {@code null} rows in
      * {@code source} are skipped (the corresponding row of this matrix is left unchanged).
      * The matrix is modified in-place.
+     * Source rows may be this matrix's own backing rows (for example arrays returned by {@code rowView(int)});
+     * overlapping copies still read every source value as it was when this method was called.
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1743,10 +1893,13 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         }
 
         final byte[][] sourceSnapshot = snapshotRowsIfBackingRows(source, destRowIndex, destColumnIndex);
+        final int maxCopyCols = columnCount - destColumnIndex;
 
         for (int i = 0, minLen = N.min(rowCount - destRowIndex, sourceSnapshot.length); i < minLen; i++) {
-            if (sourceSnapshot[i] != null) {
-                N.copy(sourceSnapshot[i], 0, a[i + destRowIndex], destColumnIndex, N.min(sourceSnapshot[i].length, columnCount - destColumnIndex));
+            final byte[] srcRow = sourceSnapshot[i];
+
+            if (srcRow != null) {
+                N.copy(srcRow, 0, a[i + destRowIndex], destColumnIndex, N.min(srcRow.length, maxCopyCols));
             }
         }
     }
@@ -1775,6 +1928,10 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      */
     @Override
     public ByteMatrix copy() {
+        if (rowCount == 0 && columnCount == 0) {
+            return EMPTY_BYTE_MATRIX;
+        }
+
         final byte[][] c = new byte[rowCount][];
 
         for (int i = 0; i < rowCount; i++) {
@@ -1803,7 +1960,10 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
      * @param toRowIndex the ending row index (exclusive)
-     * @return a new {@code ByteMatrix} containing the specified rows
+     * @return a new {@code ByteMatrix} containing the specified rows with dimensions
+     *         {@code (toRowIndex - fromRowIndex) x columnCount}; an empty range preserves
+     *         {@code columnCount} as a {@code 0 x columnCount} matrix, or returns the shared
+     *         {@link #empty()} instance when the resulting shape is {@code 0 x 0}
      * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount},
      *         or {@code fromRowIndex > toRowIndex}
      */
@@ -1811,7 +1971,13 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     public ByteMatrix copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
-        final byte[][] c = new byte[toRowIndex - fromRowIndex][];
+        final int newRowCount = toRowIndex - fromRowIndex;
+
+        if (newRowCount == 0 && columnCount == 0) {
+            return EMPTY_BYTE_MATRIX;
+        }
+
+        final byte[][] c = new byte[newRowCount][];
 
         for (int i = fromRowIndex; i < toRowIndex; i++) {
             c[i - fromRowIndex] = a[i].clone();
@@ -1840,7 +2006,10 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param toRowIndex the ending row index (exclusive)
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
-     * @return a new {@code ByteMatrix} containing the specified submatrix
+     * @return a new {@code ByteMatrix} containing the specified submatrix with dimensions
+     *         {@code (toRowIndex - fromRowIndex) x (toColumnIndex - fromColumnIndex)}; an empty
+     *         row or column range preserves the non-zero dimension, or returns the shared
+     *         {@link #empty()} instance when the resulting shape is {@code 0 x 0}
      * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount},
      *         {@code fromRowIndex > toRowIndex}, {@code fromColumnIndex < 0},
      *         {@code toColumnIndex > columnCount}, or {@code fromColumnIndex > toColumnIndex}
@@ -1850,13 +2019,35 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
             throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
-        final byte[][] c = new byte[toRowIndex - fromRowIndex][];
 
-        for (int i = fromRowIndex; i < toRowIndex; i++) {
-            c[i - fromRowIndex] = N.copyOfRange(a[i], fromColumnIndex, toColumnIndex);
+        final int newRowCount = toRowIndex - fromRowIndex;
+        final int newColumnCount = toColumnIndex - fromColumnIndex;
+
+        if (newRowCount == 0 && newColumnCount == 0) {
+            return EMPTY_BYTE_MATRIX;
         }
 
-        return wrapResult(c, toColumnIndex - fromColumnIndex);
+        if (newRowCount == 0) {
+            return wrapResult(new byte[0][], newColumnCount);
+        }
+
+        if (newColumnCount == 0) {
+            return wrapResult(new byte[newRowCount][0], 0);
+        }
+
+        final byte[][] c = new byte[newRowCount][];
+
+        if (fromColumnIndex == 0 && toColumnIndex == columnCount) {
+            for (int i = fromRowIndex; i < toRowIndex; i++) {
+                c[i - fromRowIndex] = a[i].clone();
+            }
+        } else {
+            for (int i = fromRowIndex; i < toRowIndex; i++) {
+                c[i - fromRowIndex] = java.util.Arrays.copyOfRange(a[i], fromColumnIndex, toColumnIndex);
+            }
+        }
+
+        return wrapResult(c, newColumnCount);
     }
 
     /**
@@ -1958,27 +2149,38 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     public ByteMatrix resize(final int newRowCount, final int newColumnCount, final byte defaultValue) throws IllegalArgumentException {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newRowCount, newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newColumnCount, newColumnCount);
-        checkNonNegativeShape(newRowCount, newColumnCount);
+
         if (newRowCount <= rowCount && newColumnCount <= columnCount) {
             return copyRegion(0, newRowCount, 0, newColumnCount);
-        } else {
-            final boolean fillDefaultValue = defaultValue != BYTE_0;
-            final byte[][] b = new byte[newRowCount][];
+        }
 
-            for (int i = 0; i < newRowCount; i++) {
-                b[i] = i < rowCount ? N.copyOf(a[i], newColumnCount) : new byte[newColumnCount];
+        if (newColumnCount == 0) {
+            return wrapResult(new byte[newRowCount][0], 0);
+        }
 
-                if (fillDefaultValue) {
-                    if (i >= rowCount) {
-                        N.fill(b[i], defaultValue);
-                    } else if (columnCount < newColumnCount) {
-                        N.fill(b[i], columnCount, newColumnCount, defaultValue);
-                    }
-                }
+        final boolean fillDefaultValue = defaultValue != BYTE_0;
+        final byte[][] b = new byte[newRowCount][];
+        final int existingRows = Math.min(rowCount, newRowCount);
+
+        for (int i = 0; i < existingRows; i++) {
+            b[i] = java.util.Arrays.copyOf(a[i], newColumnCount);
+
+            if (fillDefaultValue && columnCount < newColumnCount) {
+                java.util.Arrays.fill(b[i], columnCount, newColumnCount, defaultValue);
+            }
+        }
+
+        for (int i = existingRows; i < newRowCount; i++) {
+            final byte[] row = new byte[newColumnCount];
+
+            if (fillDefaultValue) {
+                java.util.Arrays.fill(row, defaultValue);
             }
 
-            return wrapResult(b, newColumnCount);
+            b[i] = row;
         }
+
+        return wrapResult(b, newColumnCount);
     }
 
     /**
@@ -2095,27 +2297,38 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         } else {
             final int newRowCount = padTop + rowCount + padBottom;
             final int newColumnCount = padLeft + columnCount + padRight;
-            checkNonNegativeShape(newRowCount, newColumnCount);
-            final boolean fillDefaultValue = defaultValue != BYTE_0;
+            final boolean fillDefaultValue = defaultValue != BYTE_0 && newColumnCount > 0;
             final byte[][] b = new byte[newRowCount][newColumnCount];
 
-            for (int i = 0; i < newRowCount; i++) {
-                if (i >= padTop && i < padTop + rowCount) {
-                    N.copy(a[i - padTop], 0, b[i], padLeft, columnCount);
+            if (fillDefaultValue) {
+                for (int i = 0; i < padTop; i++) {
+                    java.util.Arrays.fill(b[i], defaultValue);
+                }
+            }
+
+            final int rightPadStart = padLeft + columnCount;
+
+            for (int i = 0; i < rowCount; i++) {
+                final byte[] destRow = b[padTop + i];
+
+                if (columnCount > 0) {
+                    System.arraycopy(a[i], 0, destRow, padLeft, columnCount);
                 }
 
                 if (fillDefaultValue) {
-                    if (i < padTop || i >= padTop + rowCount) {
-                        N.fill(b[i], defaultValue);
-                    } else if (columnCount < newColumnCount) {
-                        if (padLeft > 0) {
-                            N.fill(b[i], 0, padLeft, defaultValue);
-                        }
-
-                        if (padRight > 0) {
-                            N.fill(b[i], columnCount + padLeft, newColumnCount, defaultValue);
-                        }
+                    if (padLeft > 0) {
+                        java.util.Arrays.fill(destRow, 0, padLeft, defaultValue);
                     }
+
+                    if (padRight > 0) {
+                        java.util.Arrays.fill(destRow, rightPadStart, newColumnCount, defaultValue);
+                    }
+                }
+            }
+
+            if (fillDefaultValue) {
+                for (int i = padTop + rowCount; i < newRowCount; i++) {
+                    java.util.Arrays.fill(b[i], defaultValue);
                 }
             }
 
@@ -2214,9 +2427,22 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      */
     @Override
     public ByteMatrix flipHorizontally() {
-        final ByteMatrix res = this.copy();
-        res.flipHorizontallyInPlace();
-        return res;
+        if (columnCount < 2 || rowCount == 0) {
+            return copy();
+        }
+
+        final byte[][] c = new byte[rowCount][columnCount];
+
+        for (int i = 0; i < rowCount; i++) {
+            final byte[] src = a[i];
+            final byte[] dst = c[i];
+
+            for (int j = 0, k = columnCount - 1; j < columnCount; j++, k--) {
+                dst[j] = src[k];
+            }
+        }
+
+        return wrapResult(c, columnCount);
     }
 
     /**
@@ -2243,9 +2469,17 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      */
     @Override
     public ByteMatrix flipVertically() {
-        final ByteMatrix res = this.copy();
-        res.flipVerticallyInPlace();
-        return res;
+        if (rowCount == 0 && columnCount == 0) {
+            return EMPTY_BYTE_MATRIX;
+        }
+
+        final byte[][] c = new byte[rowCount][];
+
+        for (int i = 0; i < rowCount; i++) {
+            c[i] = a[rowCount - i - 1].clone();
+        }
+
+        return wrapResult(c, columnCount);
     }
 
     /**
@@ -2276,24 +2510,50 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      */
     @Override
     public ByteMatrix rotate90() {
-        if (columnCount == 0) {
-            return wrapResult(new byte[0][], rowCount);
+        if (rowCount == 0 && columnCount == 0) {
+            return EMPTY_BYTE_MATRIX;
         }
-
-        checkNonNegativeShape(columnCount, rowCount);
 
         final byte[][] c = new byte[columnCount][rowCount];
 
-        if (rowCount <= columnCount) {
+        if (isEmpty()) {
+            return wrapResult(c, rowCount);
+        }
+
+        if (rowCount >= TRANSPOSE_TILE_THRESHOLD && columnCount >= TRANSPOSE_TILE_THRESHOLD) {
+            for (int jj = 0; jj < rowCount;) {
+                final int jEnd = rowCount - jj > TRANSPOSE_TILE_SIZE ? jj + TRANSPOSE_TILE_SIZE : rowCount;
+
+                for (int ii = 0; ii < columnCount;) {
+                    final int iEnd = columnCount - ii > TRANSPOSE_TILE_SIZE ? ii + TRANSPOSE_TILE_SIZE : columnCount;
+
+                    for (int j = jj; j < jEnd; j++) {
+                        final byte[] srcRow = a[rowCount - j - 1];
+
+                        for (int i = ii; i < iEnd; i++) {
+                            c[i][j] = srcRow[i];
+                        }
+                    }
+
+                    ii = iEnd;
+                }
+
+                jj = jEnd;
+            }
+        } else if (rowCount <= columnCount) {
             for (int j = 0; j < rowCount; j++) {
+                final byte[] srcRow = a[rowCount - j - 1];
+
                 for (int i = 0; i < columnCount; i++) {
-                    c[i][j] = a[rowCount - j - 1][i];
+                    c[i][j] = srcRow[i];
                 }
             }
         } else {
             for (int i = 0; i < columnCount; i++) {
+                final byte[] destRow = c[i];
+
                 for (int j = 0; j < rowCount; j++) {
-                    c[i][j] = a[rowCount - j - 1][i];
+                    destRow[j] = a[rowCount - j - 1][i];
                 }
             }
         }
@@ -2325,11 +2585,29 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      */
     @Override
     public ByteMatrix rotate180() {
-        final byte[][] c = new byte[rowCount][];
+        if (rowCount == 0 && columnCount == 0) {
+            return EMPTY_BYTE_MATRIX;
+        }
+
+        if (columnCount < 2) {
+            final byte[][] c = new byte[rowCount][];
+
+            for (int i = 0; i < rowCount; i++) {
+                c[i] = a[rowCount - i - 1].clone();
+            }
+
+            return wrapResult(c, columnCount);
+        }
+
+        final byte[][] c = new byte[rowCount][columnCount];
 
         for (int i = 0; i < rowCount; i++) {
-            c[i] = a[rowCount - i - 1].clone();
-            N.reverse(c[i]);
+            final byte[] src = a[rowCount - i - 1];
+            final byte[] dst = c[i];
+
+            for (int j = 0, k = columnCount - 1; j < columnCount; j++, k--) {
+                dst[j] = src[k];
+            }
         }
 
         return wrapResult(c, columnCount);
@@ -2364,24 +2642,51 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      */
     @Override
     public ByteMatrix rotate270() {
-        if (columnCount == 0) {
-            return wrapResult(new byte[0][], rowCount);
+        if (rowCount == 0 && columnCount == 0) {
+            return EMPTY_BYTE_MATRIX;
         }
-
-        checkNonNegativeShape(columnCount, rowCount);
 
         final byte[][] c = new byte[columnCount][rowCount];
 
-        if (rowCount <= columnCount) {
+        if (isEmpty()) {
+            return wrapResult(c, rowCount);
+        }
+
+        if (rowCount >= TRANSPOSE_TILE_THRESHOLD && columnCount >= TRANSPOSE_TILE_THRESHOLD) {
+            for (int jj = 0; jj < rowCount;) {
+                final int jEnd = rowCount - jj > TRANSPOSE_TILE_SIZE ? jj + TRANSPOSE_TILE_SIZE : rowCount;
+
+                for (int ii = 0; ii < columnCount;) {
+                    final int iEnd = columnCount - ii > TRANSPOSE_TILE_SIZE ? ii + TRANSPOSE_TILE_SIZE : columnCount;
+
+                    for (int j = jj; j < jEnd; j++) {
+                        final byte[] srcRow = a[j];
+
+                        for (int i = ii; i < iEnd; i++) {
+                            c[i][j] = srcRow[columnCount - i - 1];
+                        }
+                    }
+
+                    ii = iEnd;
+                }
+
+                jj = jEnd;
+            }
+        } else if (rowCount <= columnCount) {
             for (int j = 0; j < rowCount; j++) {
+                final byte[] srcRow = a[j];
+
                 for (int i = 0; i < columnCount; i++) {
-                    c[i][j] = a[j][columnCount - i - 1];
+                    c[i][j] = srcRow[columnCount - i - 1];
                 }
             }
         } else {
             for (int i = 0; i < columnCount; i++) {
+                final byte[] destRow = c[i];
+                final int srcCol = columnCount - i - 1;
+
                 for (int j = 0; j < rowCount; j++) {
-                    c[i][j] = a[j][columnCount - i - 1];
+                    destRow[j] = a[j][srcCol];
                 }
             }
         }
@@ -2411,24 +2716,50 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      */
     @Override
     public ByteMatrix transpose() {
-        if (columnCount == 0) {
-            return wrapResult(new byte[0][], rowCount);
+        if (rowCount == 0 && columnCount == 0) {
+            return EMPTY_BYTE_MATRIX;
         }
-
-        checkNonNegativeShape(columnCount, rowCount);
 
         final byte[][] c = new byte[columnCount][rowCount];
 
-        if (rowCount <= columnCount) {
+        if (isEmpty()) {
+            return wrapResult(c, rowCount);
+        }
+
+        if (rowCount >= TRANSPOSE_TILE_THRESHOLD && columnCount >= TRANSPOSE_TILE_THRESHOLD) {
+            for (int jj = 0; jj < rowCount;) {
+                final int jEnd = rowCount - jj > TRANSPOSE_TILE_SIZE ? jj + TRANSPOSE_TILE_SIZE : rowCount;
+
+                for (int ii = 0; ii < columnCount;) {
+                    final int iEnd = columnCount - ii > TRANSPOSE_TILE_SIZE ? ii + TRANSPOSE_TILE_SIZE : columnCount;
+
+                    for (int j = jj; j < jEnd; j++) {
+                        final byte[] srcRow = a[j];
+
+                        for (int i = ii; i < iEnd; i++) {
+                            c[i][j] = srcRow[i];
+                        }
+                    }
+
+                    ii = iEnd;
+                }
+
+                jj = jEnd;
+            }
+        } else if (rowCount <= columnCount) {
             for (int j = 0; j < rowCount; j++) {
+                final byte[] srcRow = a[j];
+
                 for (int i = 0; i < columnCount; i++) {
-                    c[i][j] = a[j][i];
+                    c[i][j] = srcRow[i];
                 }
             }
         } else {
             for (int i = 0; i < columnCount; i++) {
+                final byte[] destRow = c[i];
+
                 for (int j = 0; j < rowCount; j++) {
-                    c[i][j] = a[j][i];
+                    destRow[j] = a[j][i];
                 }
             }
         }
@@ -2469,13 +2800,16 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     public ByteMatrix reshapeAndPad(final int newRowCount, final int newColumnCount) throws IllegalArgumentException {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newRowCount, newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newColumnCount, newColumnCount);
-        checkNonNegativeShape(newRowCount, newColumnCount);
         N.checkArgument((long) newRowCount * newColumnCount >= elementCount(), "New shape [{}x{}={}] is too small to hold all {} elements", newRowCount,
                 newColumnCount, (long) newRowCount * newColumnCount, elementCount());
 
+        if (newRowCount == 0 && newColumnCount == 0) {
+            return EMPTY_BYTE_MATRIX;
+        }
+
         final byte[][] c = new byte[newRowCount][newColumnCount];
 
-        if (newRowCount == 0 || newColumnCount == 0 || N.isEmpty(a)) {
+        if (newRowCount == 0 || newColumnCount == 0 || isEmpty()) {
             return wrapResult(c, newColumnCount);
         }
 
@@ -2553,27 +2887,39 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
             return copy();
         }
 
-        final byte[][] c = new byte[rowCount * rowRepeats][columnCount * columnRepeats];
+        final int newRowCount = rowCount * rowRepeats;
+        final int newColumnCount = columnCount * columnRepeats;
+
+        if (newRowCount == 0 && newColumnCount == 0) {
+            return EMPTY_BYTE_MATRIX;
+        }
+
+        final byte[][] c = new byte[newRowCount][newColumnCount];
+
+        if (isEmpty()) {
+            return wrapResult(c, newColumnCount);
+        }
 
         for (int i = 0; i < rowCount; i++) {
             final byte[] aa = a[i];
-            final byte[] fr = c[i * rowRepeats];
+            final int baseRow = i * rowRepeats;
+            final byte[] fr = c[baseRow];
 
             if (columnRepeats == 1) {
                 // Repeating whole rows: one bulk copy instead of a one-cell fill per element.
-                N.copy(aa, 0, fr, 0, columnCount);
+                System.arraycopy(aa, 0, fr, 0, columnCount);
             } else {
-                for (int j = 0; j < columnCount; j++) {
-                    N.fill(fr, j * columnRepeats, (j + 1) * columnRepeats, aa[j]);
+                for (int j = 0, offset = 0; j < columnCount; j++, offset += columnRepeats) {
+                    java.util.Arrays.fill(fr, offset, offset + columnRepeats, aa[j]);
                 }
             }
 
             for (int k = 1; k < rowRepeats; k++) {
-                N.copy(fr, 0, c[i * rowRepeats + k], 0, fr.length);
+                System.arraycopy(fr, 0, c[baseRow + k], 0, newColumnCount);
             }
         }
 
-        return wrapResult(c, columnCount * columnRepeats);
+        return wrapResult(c, newColumnCount);
     }
 
     /**
@@ -2619,10 +2965,17 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
             return copy();
         }
 
-        final byte[][] c = new byte[rowCount * rowRepeats][columnCount * columnRepeats];
+        final int newRowCount = rowCount * rowRepeats;
+        final int newColumnCount = columnCount * columnRepeats;
+
+        if (newRowCount == 0 && newColumnCount == 0) {
+            return EMPTY_BYTE_MATRIX;
+        }
+
+        final byte[][] c = new byte[newRowCount][newColumnCount];
 
         if (isEmpty()) {
-            return wrapResult(c, columnCount * columnRepeats);
+            return wrapResult(c, newColumnCount);
         }
 
         for (int i = 0; i < rowCount; i++) {
@@ -2631,11 +2984,11 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
 
         for (int i = 1; i < rowRepeats; i++) {
             for (int j = 0; j < rowCount; j++) {
-                N.copy(c[j], 0, c[i * rowCount + j], 0, c[j].length);
+                System.arraycopy(c[j], 0, c[i * rowCount + j], 0, newColumnCount);
             }
         }
 
-        return wrapResult(c, columnCount * columnRepeats);
+        return wrapResult(c, newColumnCount);
     }
 
     /**
@@ -2661,14 +3014,18 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     @Override
     public ByteList flatten() throws IllegalStateException {
         // Check for overflow before allocation
-        if ((long) rowCount * columnCount > Integer.MAX_VALUE) {
+        if (elementCount > Integer.MAX_VALUE) {
             throw new IllegalStateException("Matrix too large to flatten: " + rowCount + " x " + columnCount);
         }
 
-        final byte[] c = new byte[rowCount * columnCount];
+        if (elementCount == 0) {
+            return new ByteList();
+        }
 
-        for (int i = 0; i < rowCount; i++) {
-            N.copy(a[i], 0, c, i * columnCount, columnCount);
+        final byte[] c = new byte[(int) elementCount];
+
+        for (int i = 0, offset = 0; i < rowCount; i++, offset += columnCount) {
+            System.arraycopy(a[i], 0, c, offset, columnCount);
         }
 
         return ByteList.of(c);
@@ -2752,6 +3109,10 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         final long mergedRowCount = (long) rowCount + other.rowCount;
         N.checkArgument(mergedRowCount <= Integer.MAX_VALUE, "Merged row count overflow: {} + {} = {}", rowCount, other.rowCount, mergedRowCount);
 
+        if (mergedRowCount == 0 && columnCount == 0) {
+            return EMPTY_BYTE_MATRIX;
+        }
+
         final byte[][] c = new byte[(int) mergedRowCount][];
         int j = 0;
 
@@ -2802,14 +3163,27 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         N.checkArgument(mergedColumnCount <= Integer.MAX_VALUE, "Merged column count overflow: {} + {} = {}", columnCount, other.columnCount,
                 mergedColumnCount);
 
-        final byte[][] c = new byte[rowCount][(int) mergedColumnCount];
+        final int newColumnCount = (int) mergedColumnCount;
 
-        for (int i = 0; i < rowCount; i++) {
-            N.copy(a[i], 0, c[i], 0, columnCount);
-            N.copy(other.a[i], 0, c[i], columnCount, other.columnCount);
+        if (rowCount == 0 && newColumnCount == 0) {
+            return EMPTY_BYTE_MATRIX;
         }
 
-        return wrapResult(c, (int) mergedColumnCount);
+        final byte[][] c = new byte[rowCount][newColumnCount];
+
+        if (newColumnCount > 0) {
+            for (int i = 0; i < rowCount; i++) {
+                if (columnCount > 0) {
+                    System.arraycopy(a[i], 0, c[i], 0, columnCount);
+                }
+
+                if (other.columnCount > 0) {
+                    System.arraycopy(other.a[i], 0, c[i], columnCount, other.columnCount);
+                }
+            }
+        }
+
+        return wrapResult(c, newColumnCount);
     }
 
     /**
@@ -2853,12 +3227,30 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         N.checkArgument(isSameShape(other), "Cannot add matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
-        final byte[][] otherArray = other.a;
+        if (rowCount == 0 && columnCount == 0) {
+            return EMPTY_BYTE_MATRIX;
+        }
+
         final byte[][] result = new byte[rowCount][columnCount];
 
+        if (isEmpty()) {
+            return wrapResult(result, columnCount);
+        }
+
+        final byte[][] otherArray = other.a;
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<RuntimeException> elementAction = (i, j) -> result[i][j] = (byte) (a[i][j] + otherArray[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Byte.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final byte[] row = a[i];
+                    final byte[] otherRow = otherArray[i];
+                    final byte[] resultRow = result[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        resultRow[j] = (byte) (row[j] + otherRow[j]);
+                    }
+                }
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final byte[] row = a[i];
@@ -2876,21 +3268,66 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
 
     /**
      * Adds corresponding elements without narrowing the result to {@code byte}.
+     * The matrices must have the same dimensions. The original matrices are not modified.
+     *
+     * <p>The operation may be performed in parallel for large matrices.</p>
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * ByteMatrix a = ByteMatrix.wrap(new byte[][] {{100, -100}});
+     * ByteMatrix b = ByteMatrix.wrap(new byte[][] {{100, -100}});
+     * IntMatrix sum = a.addWidened(b);
+     * sum.get(0, 0);                                 // returns 200 (no byte wraparound)
+     * sum.get(0, 1);                                 // returns -200
+     *
+     * a.addWidened((ByteMatrix) null);               // throws IllegalArgumentException
+     * a.addWidened(ByteMatrix.wrap(new byte[][] {{1}})); // throws IllegalArgumentException (different shapes)
+     * }</pre>
      *
      * @param other the matrix to add; must be non-{@code null} and have the same shape
      * @return an {@link IntMatrix} containing the exact element-wise sums
      * @throws IllegalArgumentException if {@code other} is {@code null} or has a different shape
+     * @see #add(ByteMatrix)
+     * @see #addExact(ByteMatrix)
      */
     public IntMatrix addWidened(final ByteMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot add matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
+        if (rowCount == 0 && columnCount == 0) {
+            return IntMatrix.empty();
+        }
+
         final int[][] result = new int[rowCount][columnCount];
 
-        for (int i = 0; i < rowCount; i++) {
-            for (int j = 0; j < columnCount; j++) {
-                result[i][j] = a[i][j] + other.a[i][j];
+        if (isEmpty()) {
+            return IntMatrix.wrapResult(result, columnCount);
+        }
+
+        final byte[][] otherArray = other.a;
+
+        if (Matrices.shouldRunInParallel(this)) {
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Integer.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final byte[] row = a[i];
+                    final byte[] otherRow = otherArray[i];
+                    final int[] resultRow = result[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        resultRow[j] = row[j] + otherRow[j];
+                    }
+                }
+            });
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final byte[] row = a[i];
+                final byte[] otherRow = otherArray[i];
+                final int[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = row[j] + otherRow[j];
+                }
             }
         }
 
@@ -2899,22 +3336,50 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
 
     /**
      * Adds corresponding elements and throws if any mathematical sum is outside the {@code byte} range.
+     * The matrices must have the same dimensions. The original matrices are not modified.
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * ByteMatrix a = ByteMatrix.wrap(new byte[][] {{10, 20}});
+     * ByteMatrix b = ByteMatrix.wrap(new byte[][] {{30, 40}});
+     * ByteMatrix sum = a.addExact(b);
+     * sum.get(0, 1);                                 // returns (byte) 60
+     *
+     * ByteMatrix max = ByteMatrix.wrap(new byte[][] {{127}});
+     * max.addExact(ByteMatrix.wrap(new byte[][] {{1}})); // throws ArithmeticException (128 overflows byte)
+     * }</pre>
      *
      * @param other the matrix to add; must be non-{@code null} and have the same shape
      * @return a {@code ByteMatrix} containing the exact element-wise sums
      * @throws IllegalArgumentException if {@code other} is {@code null} or has a different shape
      * @throws ArithmeticException if any sum is outside {@code [-128, 127]}
+     * @see #add(ByteMatrix)
+     * @see #addWidened(ByteMatrix)
      */
     public ByteMatrix addExact(final ByteMatrix other) throws IllegalArgumentException, ArithmeticException {
         N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot add matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
+        if (rowCount == 0 && columnCount == 0) {
+            return EMPTY_BYTE_MATRIX;
+        }
+
         final byte[][] result = new byte[rowCount][columnCount];
 
+        if (isEmpty()) {
+            return wrapResult(result, columnCount);
+        }
+
+        final byte[][] otherArray = other.a;
+
         for (int i = 0; i < rowCount; i++) {
+            final byte[] row = a[i];
+            final byte[] otherRow = otherArray[i];
+            final byte[] resultRow = result[i];
+
             for (int j = 0; j < columnCount; j++) {
-                result[i][j] = toByteExact(a[i][j] + other.a[i][j]);
+                resultRow[j] = toByteExact(row[j] + otherRow[j]);
             }
         }
 
@@ -2961,12 +3426,30 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         N.checkArgument(isSameShape(other), "Cannot subtract matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
-        final byte[][] otherArray = other.a;
+        if (rowCount == 0 && columnCount == 0) {
+            return EMPTY_BYTE_MATRIX;
+        }
+
         final byte[][] result = new byte[rowCount][columnCount];
 
+        if (isEmpty()) {
+            return wrapResult(result, columnCount);
+        }
+
+        final byte[][] otherArray = other.a;
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<RuntimeException> elementAction = (i, j) -> result[i][j] = (byte) (a[i][j] - otherArray[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Byte.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final byte[] row = a[i];
+                    final byte[] otherRow = otherArray[i];
+                    final byte[] resultRow = result[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        resultRow[j] = (byte) (row[j] - otherRow[j]);
+                    }
+                }
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final byte[] row = a[i];
@@ -2984,21 +3467,66 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
 
     /**
      * Subtracts corresponding elements without narrowing the result to {@code byte}.
+     * The matrices must have the same dimensions. The original matrices are not modified.
+     *
+     * <p>The operation may be performed in parallel for large matrices.</p>
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * ByteMatrix a = ByteMatrix.wrap(new byte[][] {{-100, 100}});
+     * ByteMatrix b = ByteMatrix.wrap(new byte[][] {{100, -100}});
+     * IntMatrix diff = a.subtractWidened(b);
+     * diff.get(0, 0);                                     // returns -200 (no byte wraparound)
+     * diff.get(0, 1);                                     // returns 200
+     *
+     * a.subtractWidened((ByteMatrix) null);               // throws IllegalArgumentException
+     * a.subtractWidened(ByteMatrix.wrap(new byte[][] {{1}})); // throws IllegalArgumentException (different shapes)
+     * }</pre>
      *
      * @param other the matrix to subtract; must be non-{@code null} and have the same shape
      * @return an {@link IntMatrix} containing the exact element-wise differences
      * @throws IllegalArgumentException if {@code other} is {@code null} or has a different shape
+     * @see #subtract(ByteMatrix)
+     * @see #subtractExact(ByteMatrix)
      */
     public IntMatrix subtractWidened(final ByteMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot subtract matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
+        if (rowCount == 0 && columnCount == 0) {
+            return IntMatrix.empty();
+        }
+
         final int[][] result = new int[rowCount][columnCount];
 
-        for (int i = 0; i < rowCount; i++) {
-            for (int j = 0; j < columnCount; j++) {
-                result[i][j] = a[i][j] - other.a[i][j];
+        if (isEmpty()) {
+            return IntMatrix.wrapResult(result, columnCount);
+        }
+
+        final byte[][] otherArray = other.a;
+
+        if (Matrices.shouldRunInParallel(this)) {
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Integer.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final byte[] row = a[i];
+                    final byte[] otherRow = otherArray[i];
+                    final int[] resultRow = result[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        resultRow[j] = row[j] - otherRow[j];
+                    }
+                }
+            });
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final byte[] row = a[i];
+                final byte[] otherRow = otherArray[i];
+                final int[] resultRow = result[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    resultRow[j] = row[j] - otherRow[j];
+                }
             }
         }
 
@@ -3007,22 +3535,50 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
 
     /**
      * Subtracts corresponding elements and throws if any mathematical difference is outside the {@code byte} range.
+     * The matrices must have the same dimensions. The original matrices are not modified.
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * ByteMatrix a = ByteMatrix.wrap(new byte[][] {{50, 40}});
+     * ByteMatrix b = ByteMatrix.wrap(new byte[][] {{10, 60}});
+     * ByteMatrix diff = a.subtractExact(b);
+     * diff.get(0, 1);                                       // returns (byte) -20
+     *
+     * ByteMatrix min = ByteMatrix.wrap(new byte[][] {{-128}});
+     * min.subtractExact(ByteMatrix.wrap(new byte[][] {{1}})); // throws ArithmeticException (-129 underflows byte)
+     * }</pre>
      *
      * @param other the matrix to subtract; must be non-{@code null} and have the same shape
      * @return a {@code ByteMatrix} containing the exact element-wise differences
      * @throws IllegalArgumentException if {@code other} is {@code null} or has a different shape
      * @throws ArithmeticException if any difference is outside {@code [-128, 127]}
+     * @see #subtract(ByteMatrix)
+     * @see #subtractWidened(ByteMatrix)
      */
     public ByteMatrix subtractExact(final ByteMatrix other) throws IllegalArgumentException, ArithmeticException {
         N.checkArgNotNull(other, cs.other);
         N.checkArgument(isSameShape(other), "Cannot subtract matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
+        if (rowCount == 0 && columnCount == 0) {
+            return EMPTY_BYTE_MATRIX;
+        }
+
         final byte[][] result = new byte[rowCount][columnCount];
 
+        if (isEmpty()) {
+            return wrapResult(result, columnCount);
+        }
+
+        final byte[][] otherArray = other.a;
+
         for (int i = 0; i < rowCount; i++) {
+            final byte[] row = a[i];
+            final byte[] otherRow = otherArray[i];
+            final byte[] resultRow = result[i];
+
             for (int j = 0; j < columnCount; j++) {
-                result[i][j] = toByteExact(a[i][j] - other.a[i][j]);
+                resultRow[j] = toByteExact(row[j] - otherRow[j]);
             }
         }
 
@@ -3071,11 +3627,19 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
                 columnCount, other.rowCount, other.columnCount);
 
-        checkNonNegativeShape(rowCount, other.columnCount);
+        final int newColumnCount = other.columnCount;
+
+        if (rowCount == 0 && newColumnCount == 0) {
+            return EMPTY_BYTE_MATRIX;
+        }
+
+        final byte[][] result = new byte[rowCount][newColumnCount];
+
+        if (rowCount == 0 || columnCount == 0 || newColumnCount == 0) {
+            return wrapResult(result, newColumnCount);
+        }
 
         final byte[][] otherArray = other.a;
-        final int newColumnCount = other.columnCount;
-        final byte[][] result = new byte[rowCount][newColumnCount];
 
         if (Matrices.shouldRunMatrixMultiplyInParallel(this, newColumnCount)) {
             final int commonCount = columnCount;
@@ -3088,6 +3652,11 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
 
                     for (int k = 0; k < commonCount; k++) {
                         final byte aik = row[k];
+
+                        if (aik == 0) {
+                            continue;
+                        }
+
                         final byte[] otherRow = otherArray[k];
 
                         for (int j = fromColumnIndex; j < toColumnIndex; j++) {
@@ -3105,6 +3674,11 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
 
                 for (int k = 0; k < columnCount; k++) {
                     final byte aik = row[k];
+
+                    if (aik == 0) {
+                        continue;
+                    }
+
                     final byte[] otherRow = otherArray[k];
 
                     for (int j = 0; j < newColumnCount; j++) {
@@ -3122,9 +3696,29 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * A dot product of two {@code byte} vectors whose length is representable by Java arrays cannot
      * overflow {@code long}, so every result cell is exact.
      *
-     * @param other the right operand; must be non-{@code null} and dimensionally compatible
-     * @return a {@link LongMatrix} containing the widened matrix product
+     * <p>Degenerate shapes follow standard matrix-product dimensions: multiplying an {@code M x 0} matrix
+     * by a {@code 0 x N} matrix produces an {@code M x N} zero matrix, multiplying a {@code 0 x K} matrix
+     * by a {@code K x N} matrix produces a {@code 0 x N} matrix, and a {@code 0 x 0} result returns
+     * {@link LongMatrix#empty()}.</p>
+     *
+     * <p>The operation may be performed in parallel for large products.</p>
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * ByteMatrix a = ByteMatrix.wrap(new byte[][] {{100, 100}});
+     * ByteMatrix b = ByteMatrix.wrap(new byte[][] {{100}, {100}});
+     * LongMatrix product = a.matrixMultiplyWidened(b);
+     * product.get(0, 0);                                       // returns 20000L (exact, no byte wraparound)
+     *
+     * a.matrixMultiplyWidened((ByteMatrix) null);              // throws IllegalArgumentException
+     * a.matrixMultiplyWidened(ByteMatrix.wrap(new byte[][] {{1}})); // throws IllegalArgumentException (incompatible shapes)
+     * }</pre>
+     *
+     * @param other the right operand; must be non-{@code null} and satisfy {@code this.columnCount == other.rowCount}
+     * @return a {@link LongMatrix} of shape {@code this.rowCount x other.columnCount} containing the widened matrix product
      * @throws IllegalArgumentException if {@code other} is {@code null} or {@code this.columnCount != other.rowCount}
+     * @see #matrixMultiply(ByteMatrix)
+     * @see #matrixMultiplyExact(ByteMatrix)
      */
     public LongMatrix matrixMultiplyWidened(final ByteMatrix other) throws IllegalArgumentException {
         N.checkArgNotNull(other, cs.other);
@@ -3133,21 +3727,62 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
                 columnCount, other.rowCount, other.columnCount);
 
         final int newColumnCount = other.columnCount;
+
+        if (rowCount == 0 && newColumnCount == 0) {
+            return LongMatrix.empty();
+        }
+
         final long[][] result = new long[rowCount][newColumnCount];
+
+        if (rowCount == 0 || columnCount == 0 || newColumnCount == 0) {
+            return LongMatrix.wrapResult(result, newColumnCount);
+        }
+
+        final byte[][] otherArray = other.a;
 
         // i-k-j loop order, as in ShortMatrix and IntMatrix, so the right-hand rows are read sequentially;
         // the rows are additionally hoisted out of the inner loops here. The largest possible byte dot
         // product still fits in long for any Java-array length.
-        for (int i = 0; i < rowCount; i++) {
-            final byte[] leftRow = a[i];
-            final long[] resultRow = result[i];
+        if (Matrices.shouldRunMatrixMultiplyInParallel(this, newColumnCount)) {
+            final int commonCount = columnCount;
 
-            for (int k = 0; k < columnCount; k++) {
-                final long left = leftRow[k];
-                final byte[] rightRow = other.a[k];
+            Matrices.matrixMultiplyInParallel(rowCount, newColumnCount, Long.BYTES, (fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex) -> {
+                for (int i = fromRowIndex; i < toRowIndex; i++) {
+                    final byte[] leftRow = a[i];
+                    final long[] resultRow = result[i];
 
-                for (int j = 0; j < newColumnCount; j++) {
-                    resultRow[j] += left * rightRow[j];
+                    for (int k = 0; k < commonCount; k++) {
+                        final long left = leftRow[k];
+
+                        if (left == 0) {
+                            continue;
+                        }
+
+                        final byte[] rightRow = otherArray[k];
+
+                        for (int j = fromColumnIndex; j < toColumnIndex; j++) {
+                            resultRow[j] += left * rightRow[j];
+                        }
+                    }
+                }
+            });
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final byte[] leftRow = a[i];
+                final long[] resultRow = result[i];
+
+                for (int k = 0; k < columnCount; k++) {
+                    final long left = leftRow[k];
+
+                    if (left == 0) {
+                        continue;
+                    }
+
+                    final byte[] rightRow = otherArray[k];
+
+                    for (int j = 0; j < newColumnCount; j++) {
+                        resultRow[j] += left * rightRow[j];
+                    }
                 }
             }
         }
@@ -3159,10 +3794,34 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * Computes the mathematical matrix product and throws if any final cell is outside the {@code byte} range.
      * The dot products are accumulated before the range check, so cancellation is handled correctly.
      *
-     * @param other the right operand; must be non-{@code null} and dimensionally compatible
-     * @return a {@code ByteMatrix} containing the exact matrix product
+     * <p>Degenerate shapes follow standard matrix-product dimensions: multiplying an {@code M x 0} matrix
+     * by a {@code 0 x N} matrix produces an {@code M x N} zero matrix, multiplying a {@code 0 x K} matrix
+     * by a {@code K x N} matrix produces a {@code 0 x N} matrix, and a {@code 0 x 0} result returns
+     * the shared {@link #empty()} instance.</p>
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * ByteMatrix a = ByteMatrix.wrap(new byte[][] {{1, 2}, {3, 4}});
+     * ByteMatrix b = ByteMatrix.wrap(new byte[][] {{5, 6}, {7, 8}});
+     * ByteMatrix product = a.matrixMultiplyExact(b);
+     * product.get(0, 0);                                       // returns (byte) 19
+     * product.get(1, 1);                                       // returns (byte) 50
+     *
+     * // Cancellation works because range validation happens on the final dot product
+     * ByteMatrix c = ByteMatrix.wrap(new byte[][] {{100, -100}});
+     * ByteMatrix d = ByteMatrix.wrap(new byte[][] {{2}, {2}});
+     * c.matrixMultiplyExact(d).get(0, 0);                      // returns (byte) 0 (200 - 200)
+     *
+     * ByteMatrix big = ByteMatrix.wrap(new byte[][] {{20}});
+     * big.matrixMultiplyExact(ByteMatrix.wrap(new byte[][] {{10}})); // throws ArithmeticException (200 overflows byte)
+     * }</pre>
+     *
+     * @param other the right operand; must be non-{@code null} and satisfy {@code this.columnCount == other.rowCount}
+     * @return a {@code ByteMatrix} of shape {@code this.rowCount x other.columnCount} containing the exact matrix product
      * @throws IllegalArgumentException if {@code other} is {@code null} or {@code this.columnCount != other.rowCount}
      * @throws ArithmeticException if any result cell is outside {@code [-128, 127]}
+     * @see #matrixMultiply(ByteMatrix)
+     * @see #matrixMultiplyWidened(ByteMatrix)
      */
     public ByteMatrix matrixMultiplyExact(final ByteMatrix other) throws IllegalArgumentException, ArithmeticException {
         N.checkArgNotNull(other, cs.other);
@@ -3171,38 +3830,85 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
                 columnCount, other.rowCount, other.columnCount);
 
         final int newColumnCount = other.columnCount;
+
+        if (rowCount == 0 && newColumnCount == 0) {
+            return EMPTY_BYTE_MATRIX;
+        }
+
         final byte[][] result = new byte[rowCount][newColumnCount];
 
         if (rowCount == 0 || newColumnCount == 0 || columnCount == 0) {
             return wrapResult(result, newColumnCount);
         }
 
-        // Reuse one widened row rather than retaining a full long matrix alongside the byte result.
-        final long[] sums = new long[newColumnCount];
+        final byte[][] otherArray = other.a;
 
-        for (int i = 0; i < rowCount; i++) {
-            if (i > 0) {
-                N.fill(sums, 0L);
-            }
+        if (columnCount <= MAX_EXACT_INT_DOT_LENGTH) {
+            // Each byte product has magnitude at most (-128) * (-128) = 16,384, so at most 131,071 terms
+            // cannot overflow signed 32-bit int; reusing an int[] row halves temporary memory and cache footprint.
+            final int[] sums = new int[newColumnCount];
 
-            final byte[] leftRow = a[i];
+            for (int i = 0; i < rowCount; i++) {
+                if (i > 0) {
+                    java.util.Arrays.fill(sums, 0);
+                }
 
-            for (int k = 0; k < columnCount; k++) {
-                final long left = leftRow[k];
-                final byte[] rightRow = other.a[k];
+                final byte[] leftRow = a[i];
 
-                // Unchecked is safe: each product is at most 2^14 in magnitude and there are fewer than
-                // 2^31 terms, so a partial sum never exceeds 2^45 and cannot overflow long.
+                for (int k = 0; k < columnCount; k++) {
+                    final int left = leftRow[k];
+
+                    if (left == 0) {
+                        continue;
+                    }
+
+                    final byte[] rightRow = otherArray[k];
+
+                    for (int j = 0; j < newColumnCount; j++) {
+                        sums[j] += left * rightRow[j];
+                    }
+                }
+
+                final byte[] resultRow = result[i];
+
                 for (int j = 0; j < newColumnCount; j++) {
-                    sums[j] += left * rightRow[j];
+                    // Check only complete dot products: out-of-range partial sums may still cancel.
+                    resultRow[j] = toByteExact(sums[j]);
                 }
             }
+        } else {
+            // Reuse one widened row rather than retaining a full long matrix alongside the byte result.
+            final long[] sums = new long[newColumnCount];
 
-            final byte[] resultRow = result[i];
+            for (int i = 0; i < rowCount; i++) {
+                if (i > 0) {
+                    java.util.Arrays.fill(sums, 0L);
+                }
 
-            for (int j = 0; j < newColumnCount; j++) {
-                // Check only complete dot products: out-of-range partial sums may still cancel.
-                resultRow[j] = toByteExact(sums[j]);
+                final byte[] leftRow = a[i];
+
+                for (int k = 0; k < columnCount; k++) {
+                    final long left = leftRow[k];
+
+                    if (left == 0) {
+                        continue;
+                    }
+
+                    final byte[] rightRow = otherArray[k];
+
+                    // Unchecked is safe: each product is at most 2^14 in magnitude and there are fewer than
+                    // 2^31 terms, so a partial sum never exceeds 2^45 and cannot overflow long.
+                    for (int j = 0; j < newColumnCount; j++) {
+                        sums[j] += left * rightRow[j];
+                    }
+                }
+
+                final byte[] resultRow = result[i];
+
+                for (int j = 0; j < newColumnCount; j++) {
+                    // Check only complete dot products: out-of-range partial sums may still cancel.
+                    resultRow[j] = toByteExact(sums[j]);
+                }
             }
         }
 
@@ -3210,7 +3916,23 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     }
 
     /**
-     * Narrows a value to {@code byte} without overflow.
+     * Narrows an {@code int} value to {@code byte} without overflow.
+     *
+     * @param value the value to narrow
+     * @return the value as a {@code byte}
+     * @throws ArithmeticException if {@code value} is less than {@link Byte#MIN_VALUE}
+     *         or greater than {@link Byte#MAX_VALUE}
+     */
+    private static byte toByteExact(final int value) throws ArithmeticException {
+        if ((byte) value != value) {
+            throw new ArithmeticException("byte overflow: " + value);
+        }
+
+        return (byte) value;
+    }
+
+    /**
+     * Narrows a {@code long} value to {@code byte} without overflow.
      *
      * @param value the value to narrow
      * @return the value as a {@code byte}
@@ -3218,7 +3940,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *         or greater than {@link Byte#MAX_VALUE}
      */
     private static byte toByteExact(final long value) throws ArithmeticException {
-        if (value < Byte.MIN_VALUE || value > Byte.MAX_VALUE) {
+        if ((byte) value != value) {
             throw new ArithmeticException("byte overflow: " + value);
         }
 
@@ -3251,12 +3973,14 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     public Matrix<Byte> boxed() {
         final Byte[][] c = new Byte[rowCount][columnCount];
 
-        for (int i = 0; i < rowCount; i++) {
-            final byte[] aa = a[i];
-            final Byte[] cc = c[i];
+        if (columnCount > 0) {
+            for (int i = 0; i < rowCount; i++) {
+                final byte[] aa = a[i];
+                final Byte[] cc = c[i];
 
-            for (int j = 0; j < columnCount; j++) {
-                cc[j] = aa[j]; // NOSONAR
+                for (int j = 0; j < columnCount; j++) {
+                    cc[j] = aa[j]; // NOSONAR
+                }
             }
         }
 
@@ -3286,11 +4010,24 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @see IntMatrix#from(byte[][])
      */
     public IntMatrix toIntMatrix() {
-        if (rowCount == 0) {
-            return IntMatrix.wrapResult(new int[0][], columnCount);
+        if (rowCount == 0 && columnCount == 0) {
+            return IntMatrix.empty();
         }
 
-        return IntMatrix.from(a);
+        final int[][] c = new int[rowCount][columnCount];
+
+        if (columnCount > 0) {
+            for (int i = 0; i < rowCount; i++) {
+                final byte[] aa = a[i];
+                final int[] cc = c[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    cc[j] = aa[j]; // NOSONAR
+                }
+            }
+        }
+
+        return IntMatrix.wrapResult(c, columnCount);
     }
 
     /**
@@ -3315,14 +4052,20 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @see #toDoubleMatrix()
      */
     public LongMatrix toLongMatrix() {
+        if (rowCount == 0 && columnCount == 0) {
+            return LongMatrix.empty();
+        }
+
         final long[][] c = new long[rowCount][columnCount];
 
-        for (int i = 0; i < rowCount; i++) {
-            final byte[] aa = a[i];
-            final long[] cc = c[i];
+        if (columnCount > 0) {
+            for (int i = 0; i < rowCount; i++) {
+                final byte[] aa = a[i];
+                final long[] cc = c[i];
 
-            for (int j = 0; j < columnCount; j++) {
-                cc[j] = aa[j]; // NOSONAR
+                for (int j = 0; j < columnCount; j++) {
+                    cc[j] = aa[j]; // NOSONAR
+                }
             }
         }
 
@@ -3351,14 +4094,20 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @see #toDoubleMatrix()
      */
     public FloatMatrix toFloatMatrix() {
+        if (rowCount == 0 && columnCount == 0) {
+            return FloatMatrix.empty();
+        }
+
         final float[][] c = new float[rowCount][columnCount];
 
-        for (int i = 0; i < rowCount; i++) {
-            final byte[] aa = a[i];
-            final float[] cc = c[i];
+        if (columnCount > 0) {
+            for (int i = 0; i < rowCount; i++) {
+                final byte[] aa = a[i];
+                final float[] cc = c[i];
 
-            for (int j = 0; j < columnCount; j++) {
-                cc[j] = aa[j]; // NOSONAR
+                for (int j = 0; j < columnCount; j++) {
+                    cc[j] = aa[j]; // NOSONAR
+                }
             }
         }
 
@@ -3387,14 +4136,20 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @see #toFloatMatrix()
      */
     public DoubleMatrix toDoubleMatrix() {
+        if (rowCount == 0 && columnCount == 0) {
+            return DoubleMatrix.empty();
+        }
+
         final double[][] c = new double[rowCount][columnCount];
 
-        for (int i = 0; i < rowCount; i++) {
-            final byte[] aa = a[i];
-            final double[] cc = c[i];
+        if (columnCount > 0) {
+            for (int i = 0; i < rowCount; i++) {
+                final byte[] aa = a[i];
+                final double[] cc = c[i];
 
-            for (int j = 0; j < columnCount; j++) {
-                cc[j] = aa[j]; // NOSONAR
+                for (int j = 0; j < columnCount; j++) {
+                    cc[j] = aa[j]; // NOSONAR
+                }
             }
         }
 
@@ -3447,12 +4202,30 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
                 other.rowCount, other.columnCount);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
 
-        final byte[][] b = other.a;
+        if (rowCount == 0 && columnCount == 0) {
+            return EMPTY_BYTE_MATRIX;
+        }
+
         final byte[][] result = new byte[rowCount][columnCount];
 
+        if (isEmpty()) {
+            return wrapResult(result, columnCount);
+        }
+
+        final byte[][] b = other.a;
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsByte(a[i][j], b[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Byte.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final byte[] row = a[i];
+                    final byte[] otherRow = b[i];
+                    final byte[] resultRow = result[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        resultRow[j] = zipFunction.applyAsByte(row[j], otherRow[j]);
+                    }
+                }
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final byte[] row = a[i];
@@ -3520,13 +4293,32 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
                 third.rowCount, third.columnCount);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
 
-        final byte[][] b = other.a;
-        final byte[][] c = third.a;
+        if (rowCount == 0 && columnCount == 0) {
+            return EMPTY_BYTE_MATRIX;
+        }
+
         final byte[][] result = new byte[rowCount][columnCount];
 
+        if (isEmpty()) {
+            return wrapResult(result, columnCount);
+        }
+
+        final byte[][] b = other.a;
+        final byte[][] c = third.a;
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsByte(a[i][j], b[i][j], c[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Byte.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final byte[] row = a[i];
+                    final byte[] otherRow = b[i];
+                    final byte[] thirdRow = c[i];
+                    final byte[] resultRow = result[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        resultRow[j] = zipFunction.applyAsByte(row[j], otherRow[j], thirdRow[j]);
+                    }
+                }
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final byte[] row = a[i];
@@ -3769,7 +4561,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
      * @param toRowIndex the ending row index (exclusive)
-     * @return a ByteStream of elements from the specified row range, or an empty stream if the matrix is empty
+     * @return a ByteStream of elements from the specified row range, or an empty stream if the range or matrix is empty
      * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount}, or {@code fromRowIndex > toRowIndex}
      */
     @Override
@@ -3841,22 +4633,32 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
              */
             @Override
             public byte[] toArray() throws IllegalStateException {
+                // count() is terminal and consumes the iterator, so sizing must not call it.
                 final int len = toArrayLength((long) (toRowIndex - i) * columnCount - j);
                 final byte[] c = new byte[len];
+
+                if (len == 0) {
+                    return c;
+                }
+
                 int k = 0;
+                int row = i;
+                int col = j;
 
                 while (k < len) {
-                    final int chunk = N.min(columnCount - j, len - k);
-                    N.copy(a[i], j, c, k, chunk);
+                    final int chunk = N.min(columnCount - col, len - k);
+                    System.arraycopy(a[row], col, c, k, chunk);
                     k += chunk;
-                    j += chunk;
+                    col += chunk;
 
-                    if (j >= columnCount) {
-                        i++;
-                        j = 0;
+                    if (col >= columnCount) {
+                        row++;
+                        col = 0;
                     }
                 }
 
+                i = row;
+                j = col;
                 return c;
             }
 
@@ -3918,7 +4720,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @return a ByteStream of elements from the specified column range in column-major order,
-     *         or an empty stream if the matrix is empty
+     *         or an empty stream if the range or matrix is empty
      * @throws IndexOutOfBoundsException if {@code fromColumnIndex < 0}, {@code toColumnIndex > columnCount},
      *         or {@code fromColumnIndex > toColumnIndex}
      */
@@ -3992,18 +4794,27 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
              */
             @Override
             public byte[] toArray() throws IllegalStateException {
+                // count() is terminal and consumes the iterator, so sizing must not call it.
                 final int len = toArrayLength((long) (toColumnIndex - j) * rowCount - i);
                 final byte[] c = new byte[len];
 
-                for (int k = 0; k < len; k++) {
-                    c[k] = a[i++][j];
-
-                    if (i >= rowCount) {
-                        i = 0;
-                        j++;
-                    }
+                if (len == 0) {
+                    return c;
                 }
 
+                int k = 0;
+                int startRow = i;
+
+                for (int col = j; col < toColumnIndex; col++) {
+                    for (int row = startRow; row < rowCount; row++) {
+                        c[k++] = a[row][col];
+                    }
+
+                    startRow = 0;
+                }
+
+                i = 0;
+                j = toColumnIndex;
                 return c;
             }
 
@@ -4126,6 +4937,38 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
                 cursor = toIndex;
                 return remaining;
             }
+
+            @Override
+            public List<ByteStream> toList() {
+                final List<ByteStream> result = new ArrayList<>(toIndex - cursor);
+
+                while (cursor < toIndex) {
+                    result.add(ByteStream.of(a[cursor++]));
+                }
+
+                return result;
+            }
+
+            @SuppressWarnings("unchecked")
+            @Override
+            public <A> A[] toArray(A[] c) throws NullPointerException, ArrayStoreException {
+                final int len = toIndex - cursor;
+
+                if (c.length < len) {
+                    c = newDestinationArray(c, len);
+                }
+
+                for (int k = 0; k < len; k++) {
+                    c[k] = (A) ByteStream.of(a[cursor]);
+                    cursor++;
+                }
+
+                if (c.length > len) {
+                    c[len] = null;
+                }
+
+                return c;
+            }
         });
     }
 
@@ -4158,6 +5001,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      * @return a Stream of ByteStream objects, one for each column in the matrix,
      *         or an empty stream when there are no columns (a {@code 0 x N} matrix still yields one
      *         empty stream per column)
+     * @see #columnMajorStream(int, int)
      */
     @Override
     public Stream<ByteStream> columnStreams() {
@@ -4221,62 +5065,7 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
                     throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                 }
 
-                return ByteStream.of(new ByteIteratorEx() {
-                    private final int columnIndex = cursor++;
-                    private final int toIndex2 = rowCount;
-                    private int cursor2 = 0;
-
-                    @Override
-                    public boolean hasNext() {
-                        return cursor2 < toIndex2;
-                    }
-
-                    /**
-                     * {@inheritDoc}
-                     *
-                     * @throws NoSuchElementException if no elements remain in this iterator
-                     */
-                    @Override
-                    public byte nextByte() throws NoSuchElementException {
-                        if (cursor2 >= toIndex2) {
-                            throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
-                        }
-
-                        return a[cursor2++][columnIndex];
-                    }
-
-                    @Override
-                    public void advance(final long n) {
-                        if (n <= 0) {
-                            return;
-                        }
-
-                        cursor2 = n < toIndex2 - cursor2 ? cursor2 + (int) n : toIndex2;
-                    }
-
-                    @Override
-                    public long count() {
-                        final long remaining = toIndex2 - cursor2;
-                        cursor2 = toIndex2;
-                        return remaining;
-                    }
-
-                    @Override
-                    public byte[] toArray() {
-                        final byte[] result = new byte[toIndex2 - cursor2];
-
-                        for (int i = 0; i < result.length; i++) {
-                            result[i] = a[cursor2++][columnIndex];
-                        }
-
-                        return result;
-                    }
-
-                    @Override
-                    public ByteList toList() {
-                        return ByteList.of(toArray());
-                    }
-                });
+                return columnStream(cursor++);
             }
 
             @Override
@@ -4293,6 +5082,108 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
                 final long remaining = toIndex - cursor;
                 cursor = toIndex;
                 return remaining;
+            }
+
+            @Override
+            public List<ByteStream> toList() {
+                final List<ByteStream> result = new ArrayList<>(toIndex - cursor);
+
+                while (cursor < toIndex) {
+                    result.add(columnStream(cursor++));
+                }
+
+                return result;
+            }
+
+            @SuppressWarnings("unchecked")
+            @Override
+            public <A> A[] toArray(A[] c) throws NullPointerException, ArrayStoreException {
+                final int len = toIndex - cursor;
+
+                if (c.length < len) {
+                    c = newDestinationArray(c, len);
+                }
+
+                for (int k = 0; k < len; k++) {
+                    c[k] = (A) columnStream(cursor);
+                    cursor++;
+                }
+
+                if (c.length > len) {
+                    c[len] = null;
+                }
+
+                return c;
+            }
+        });
+    }
+
+    /**
+     * Returns a live {@link ByteStream} over the elements in {@code columnIndex}.
+     *
+     * @param columnIndex the validated column index
+     * @return a stream traversing rows {@code 0..rowCount - 1} at {@code columnIndex}, or an empty stream when {@code rowCount == 0}
+     */
+    private ByteStream columnStream(final int columnIndex) {
+        if (rowCount == 0) {
+            return ByteStream.empty();
+        }
+
+        return ByteStream.of(new ByteIteratorEx() {
+            private final int toIndex2 = rowCount;
+            private int cursor2 = 0;
+
+            @Override
+            public boolean hasNext() {
+                return cursor2 < toIndex2;
+            }
+
+            /**
+             * {@inheritDoc}
+             *
+             * @throws NoSuchElementException if no elements remain in this iterator
+             */
+            @Override
+            public byte nextByte() throws NoSuchElementException {
+                if (cursor2 >= toIndex2) {
+                    throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
+                }
+
+                return a[cursor2++][columnIndex];
+            }
+
+            @Override
+            public void advance(final long n) {
+                if (n <= 0) {
+                    return;
+                }
+
+                cursor2 = n < toIndex2 - cursor2 ? cursor2 + (int) n : toIndex2;
+            }
+
+            @Override
+            public long count() {
+                final long remaining = toIndex2 - cursor2;
+                cursor2 = toIndex2;
+                return remaining;
+            }
+
+            @Override
+            public byte[] toArray() {
+                final int len = toIndex2 - cursor2;
+                final byte[] result = new byte[len];
+
+                for (int i = 0; i < len; i++) {
+                    result[i] = a[cursor2 + i][columnIndex];
+                }
+
+                cursor2 = toIndex2;
+                return result;
+            }
+
+            @Override
+            public ByteList toList() {
+                return ByteList.of(toArray());
             }
         });
     }
@@ -4402,9 +5293,20 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
         N.checkArgNotNull(action, cs.action);
 
+        if (fromRowIndex == toRowIndex || fromColumnIndex == toColumnIndex) {
+            return;
+        }
+
         if (Matrices.shouldRunInParallel(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> action.accept(a[i][j]);
-            Matrices.forEachIndices(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, elementAction, true);
+            Matrices.forEachBlockInParallel(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, Byte.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final byte[] currentRow = a[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        action.accept(currentRow[j]);
+                    }
+                }
+            });
         } else {
             for (int i = fromRowIndex; i < toRowIndex; i++) {
                 final byte[] currentRow = a[i];
@@ -4424,39 +5326,35 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      */
     @Override
     String toMultilineString() {
-        if (a.length == 0) {
+        if (rowCount == 0) {
             return "[]";
-        } else {
-            final StringBuilder sb = Objectory.createStringBuilder();
-            final int len = a.length;
-            String str = "";
+        }
 
-            try {
-                for (int i = 0; i < len; i++) {
-                    if (i > 0) {
-                        sb.append(ARRAY_PRINT_SEPARATOR);
-                    }
+        final StringBuilder sb = Objectory.createStringBuilder(estimateStringCapacity(rowCount, elementCount, 5));
 
-                    final byte[] row = a[i];
-                    sb.append('[');
-
-                    for (int j = 0, rowLen = row.length; j < rowLen; j++) {
-                        if (j > 0) {
-                            sb.append(", ");
-                        }
-
-                        sb.append(row[j]);
-                    }
-
-                    sb.append(']');
+        try {
+            for (int i = 0; i < rowCount; i++) {
+                if (i > 0) {
+                    sb.append(ARRAY_PRINT_SEPARATOR);
                 }
 
-                str = sb.toString();
-            } finally {
-                Objectory.recycle(sb);
+                final byte[] row = a[i];
+                sb.append('[');
+
+                for (int j = 0; j < columnCount; j++) {
+                    if (j > 0) {
+                        sb.append(", ");
+                    }
+
+                    sb.append(row[j]);
+                }
+
+                sb.append(']');
             }
 
-            return str;
+            return sb.toString();
+        } finally {
+            Objectory.recycle(sb);
         }
     }
 
@@ -4485,7 +5383,17 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     public int hashCode() {
         // A zero-row matrix carries its column count outside the backing array, and equals() compares
         // it, so it must take part in the hash; every other shape is already distinguished by the data.
-        return rowCount == 0 && columnCount > 0 ? 961 + columnCount : N.deepHashCode(a);
+        if (rowCount == 0 && columnCount > 0) {
+            return 961 + columnCount;
+        }
+
+        int result = 1;
+
+        for (final byte[] row : a) {
+            result = 31 * result + java.util.Arrays.hashCode(row);
+        }
+
+        return result;
     }
 
     /**
@@ -4517,7 +5425,21 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
         }
 
         if (obj instanceof final ByteMatrix another) {
-            return columnCount == another.columnCount && rowCount == another.rowCount && N.deepEquals(a, another.a);
+            if (columnCount != another.columnCount || rowCount != another.rowCount) {
+                return false;
+            }
+
+            if (columnCount == 0) {
+                return true;
+            }
+
+            for (int i = 0; i < rowCount; i++) {
+                if (!java.util.Arrays.equals(a[i], another.a[i])) {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         return false;
@@ -4526,7 +5448,8 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
     /**
      * Returns a string representation of this matrix in a compact two-dimensional array format.
      * The output shows all matrix elements with rows enclosed in brackets and
-     * elements separated by commas and spaces.
+     * elements separated by commas and spaces. Any zero-row matrix (including both {@code 0 x 0}
+     * and {@code 0 x N} matrices) renders as {@code "[]"}.
      *
      * <p>The format is suitable for debugging and logging. For pretty-printed output
      * with each row on a separate line, use {@link #println()} instead.</p>
@@ -4546,6 +5469,38 @@ public final class ByteMatrix extends AbstractMatrix<byte[], ByteList, ByteStrea
      */
     @Override
     public String toString() {
-        return N.deepToString(a);
+        if (rowCount == 0) {
+            return "[]";
+        }
+
+        final StringBuilder sb = Objectory.createStringBuilder(estimateStringCapacity(rowCount, elementCount, 5));
+
+        try {
+            sb.append('[');
+
+            for (int i = 0; i < rowCount; i++) {
+                if (i > 0) {
+                    sb.append(", ");
+                }
+
+                final byte[] row = a[i];
+                sb.append('[');
+
+                for (int j = 0; j < columnCount; j++) {
+                    if (j > 0) {
+                        sb.append(", ");
+                    }
+
+                    sb.append(row[j]);
+                }
+
+                sb.append(']');
+            }
+
+            sb.append(']');
+            return sb.toString();
+        } finally {
+            Objectory.recycle(sb);
+        }
     }
 }

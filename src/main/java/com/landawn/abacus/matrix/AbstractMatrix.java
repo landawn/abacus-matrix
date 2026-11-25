@@ -18,15 +18,18 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.random.RandomGenerator;
 
 import com.landawn.abacus.annotation.SuppressFBWarnings;
 import com.landawn.abacus.util.IOUtil;
+import com.landawn.abacus.util.InternalUtil;
 import com.landawn.abacus.util.N;
 import com.landawn.abacus.util.Sheet.Point;
 import com.landawn.abacus.util.Throwables;
 import com.landawn.abacus.util.stream.IntStream;
+import com.landawn.abacus.util.stream.ObjIteratorEx;
 import com.landawn.abacus.util.stream.Stream;
 
 /**
@@ -227,25 +230,36 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     }
 
     /**
-     * Constructs a matrix, optionally skipping the duplicate-row scan.
+     * Maximum row count for which duplicate-row validation uses an inline pairwise identity scan
+     * instead of allocating a {@link RowIdentityIndex}.
+     */
+    static final int SMALL_ROW_IDENTITY_SCAN_LIMIT = 16;
+
+    /** Tile edge size for cache-blocked transpose and 90/270-degree rotations on large matrices. */
+    static final int TRANSPOSE_TILE_SIZE = 32;
+
+    /** Minimum dimension on both axes before switching to cache-blocked transpose/rotation loops. */
+    static final int TRANSPOSE_TILE_THRESHOLD = 64;
+
+    /**
+     * Constructs a matrix, optionally trusting library-allocated storage.
      *
-     * <p>Pass {@code true} for {@code rowsAreKnownDistinct} only when this library allocated the row
-     * arrays itself -- {@code new T[rowCount][columnCount]}, a per-row {@code clone()}, or
-     * {@code newIndependentRow(...)} -- because each of those produces identity-distinct rows by
-     * construction, so the scan can only ever confirm what the allocation already guarantees. The scan
-     * is not free: it hashes every row by identity into a table of two to four {@code int} slots per
-     * row on <i>every</i> construction, which shows on tall-and-thin matrices whose cells are cheap
-     * to process. Rows are still checked for null and rectangularity on both paths.</p>
+     * <p>Pass {@code true} for {@code rowsAreKnownDistinct} only when this library allocated both the
+     * outer array and every row array itself -- {@code new T[rowCount][columnCount]}, a per-row
+     * {@code clone()}, or {@code newIndependentRow(...)} -- because those allocations guarantee
+     * ownership of the outer array, non-null rectangular rows of length {@code explicitColumnCount},
+     * and identity-distinct rows by construction. Skipping the outer-array clone, per-row scan, and
+     * identity-table build eliminates O(rowCount) overhead on every derived matrix operation.</p>
      *
      * @param a the row arrays; must be non-{@code null} and rectangular
      * @param elementType the matrix element type; must be non-{@code null}
      * @param explicitColumnCount the logical column count; must be non-negative and, when rows
      *        are present, equal to every row's length
-     * @param rowsAreKnownDistinct {@code true} only for row arrays this library allocated itself
+     * @param rowsAreKnownDistinct {@code true} only for freshly allocated outer and row arrays this library owns exclusively
      * @throws IllegalArgumentException if {@code a} or {@code elementType} is {@code null}, if
-     *         {@code explicitColumnCount} is negative, if any row of {@code a} is {@code null} or its length
-     *         differs from {@code explicitColumnCount}, or, when {@code rowsAreKnownDistinct} is {@code false},
-     *         if two logical rows are the same array object
+     *         {@code explicitColumnCount} is negative, or, when {@code rowsAreKnownDistinct} is {@code false},
+     *         if any row of {@code a} is {@code null}, its length differs from {@code explicitColumnCount},
+     *         or two logical rows are the same array object
      */
     @SuppressFBWarnings("CT_CONSTRUCTOR_THROW")
     AbstractMatrix(final A[] a, final Class<?> elementType, final int explicitColumnCount, final boolean rowsAreKnownDistinct) throws IllegalArgumentException {
@@ -253,30 +267,46 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         N.checkArgNotNull(elementType, "Element type cannot be null");
         N.checkArgument(explicitColumnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.columnCount, explicitColumnCount);
 
-        // The logical shape is cached, so retaining the caller's outer array would let a row
-        // replacement silently invalidate every bounds and traversal invariant in this class.
-        final A[] validatedRows = a.clone();
+        final A[] validatedRows;
 
-        // Fewer than two rows cannot contain a duplicate, so the index is never worth allocating there.
-        final RowIdentityIndex seenRows = rowsAreKnownDistinct || validatedRows.length < 2 ? null : new RowIdentityIndex(validatedRows, validatedRows.length);
+        if (rowsAreKnownDistinct) {
+            // Library-owned result factories allocate a fresh outer array and fresh rectangular rows,
+            // so cloning the outer array and re-scanning every row would only duplicate guaranteed invariants.
+            validatedRows = a;
+        } else {
+            // The logical shape is cached, so retaining the caller's outer array would let a row
+            // replacement silently invalidate every bounds and traversal invariant in this class.
+            validatedRows = a.clone();
 
-        // Validate the snapshot, not the caller's array: a concurrent write to `a` between the
-        // clone above and this loop would otherwise let an invalid row reach `this.a` unchecked.
-        for (int i = 0; i < validatedRows.length; i++) {
-            final A row = validatedRows[i];
-            N.checkArgument(row != null, "Row {} cannot be null", i);
+            final int len = validatedRows.length;
+            final RowIdentityIndex seenRows = len > SMALL_ROW_IDENTITY_SCAN_LIMIT ? new RowIdentityIndex(validatedRows, len) : null;
 
-            if (length(row) != explicitColumnCount) {
-                throw new IllegalArgumentException(formatMsg(MSG_NOT_RECTANGULAR, explicitColumnCount, i, length(row)));
-            }
+            // Validate the snapshot, not the caller's array: a concurrent write to `a` between the
+            // clone above and this loop would otherwise let an invalid row reach `this.a` unchecked.
+            for (int i = 0; i < len; i++) {
+                final A row = validatedRows[i];
+                N.checkArgument(row != null, "Row {} cannot be null", i);
 
-            if (seenRows != null) {
-                final int firstIndex = seenRows.add(i);
+                if (length(row) != explicitColumnCount) {
+                    throw new IllegalArgumentException(formatMsg(MSG_NOT_RECTANGULAR, explicitColumnCount, i, length(row)));
+                }
 
-                if (firstIndex >= 0) {
-                    // One physical row cannot represent two independently addressable logical rows:
-                    // updating either position would necessarily and invisibly update the other.
-                    throw new IllegalArgumentException(formatMsg(MSG_DUPLICATE_ROW, i, firstIndex));
+                if (seenRows != null) {
+                    final int firstIndex = seenRows.add(i);
+
+                    if (firstIndex >= 0) {
+                        // One physical row cannot represent two independently addressable logical rows:
+                        // updating either position would necessarily and invisibly update the other.
+                        throw new IllegalArgumentException(formatMsg(MSG_DUPLICATE_ROW, i, firstIndex));
+                    }
+                } else {
+                    // For small matrices, pairwise identity checks avoid allocating RowIdentityIndex and
+                    // computing System.identityHashCode for every row array.
+                    for (int j = 0; j < i; j++) {
+                        if (validatedRows[j] == row) {
+                            throw new IllegalArgumentException(formatMsg(MSG_DUPLICATE_ROW, i, j));
+                        }
+                    }
                 }
             }
         }
@@ -333,7 +363,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
         for (int i = 0; i < toRowIndex; i++) {
             if (a[i] == source) {
-                return cloneArray(source);
+                return copyArrayPrefix(source, columnCount);
             }
         }
 
@@ -424,20 +454,6 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     }
 
     /**
-     * Returns a new array of the same runtime type and length as {@code source}, containing the same
-     * primitive values or element references. The supplied array is not modified.
-     *
-     * @param <R> the array type
-     * @param source the non-{@code null} array to copy
-     * @return an independent array with the same contents as {@code source}
-     * @throws NullPointerException if {@code source} is {@code null}
-     * @throws IllegalArgumentException if {@code source} is not an array
-     */
-    private static <R> R cloneArray(final R source) throws NullPointerException, IllegalArgumentException {
-        return copyArrayPrefix(source, java.lang.reflect.Array.getLength(source));
-    }
-
-    /**
      * Returns a new array of the same runtime type as {@code source} holding its first {@code length}
      * primitive values or element references. The supplied array is not modified.
      *
@@ -456,7 +472,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         return (R) copy;
     }
 
-    /** Rows shorter than this are tiled by doubling in {@link #tileRow(Object, Object, int, int)}. */
+    /** Rows of at most this length are tiled by doubling in {@link #tileRow(Object, Object, int, int)}. */
     private static final int TILE_BY_DOUBLING_MAX_LENGTH = 63;
 
     /**
@@ -510,6 +526,21 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         }
 
         return (int) count;
+    }
+
+    /**
+     * Allocates a destination array of length {@code len} with the same runtime component type as
+     * {@code prototype}, without copying existing elements of {@code prototype}.
+     *
+     * @param <A> the destination array element type
+     * @param prototype the non-{@code null} prototype array whose component type is used
+     * @param len the non-negative length of the newly allocated array
+     * @return a newly allocated array of length {@code len} with the same runtime type as {@code prototype}
+     */
+    @SuppressWarnings("unchecked")
+    static <A> A[] newDestinationArray(final A[] prototype, final int len) {
+        return prototype.getClass() == Object[].class ? (A[]) new Object[len]
+                : (A[]) java.lang.reflect.Array.newInstance(prototype.getClass().getComponentType(), len);
     }
 
     /**
@@ -795,8 +826,8 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * A matrix is considered empty if either the number of rows or columns is zero,
      * resulting in a total count of zero elements.
      *
-     * <p>Note: An empty matrix has zero elements. This includes shapes such as {@code 0 × 0}
-     * and {@code rowCount × 0}, so an empty matrix does not necessarily have zero rows.</p>
+     * <p>Note: An empty matrix has zero elements. This includes shapes such as {@code 0 × 0},
+     * {@code rowCount × 0}, and {@code 0 × columnCount}, so an empty matrix does not necessarily have zero rows.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -916,8 +947,6 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @see #copyRegion(int, int, int, int)
      */
     public M copyColumns(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
-        N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
-
         return copyRegion(0, rowCount, fromColumnIndex, toColumnIndex);
     }
 
@@ -1214,8 +1243,6 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
         N.checkArgument(newRowCount <= Integer.MAX_VALUE, "Reshaped row count overflow: ceil({} / {}) = {} exceeds Integer.MAX_VALUE", elementCount,
                 newColumnCount, newRowCount);
-
-        checkNonNegativeShape((int) newRowCount, newColumnCount);
 
         return reshapeAndPad((int) newRowCount, newColumnCount);
     }
@@ -1635,6 +1662,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     public <E extends Exception> void forEachIndices(final Throwables.IntBiConsumer<E> action) throws IllegalArgumentException, E {
         N.checkArgNotNull(action, cs.action);
 
+        if (elementCount == 0) {
+            return;
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
             Matrices.forEachIndices(rowCount, columnCount, action, true);
         } else {
@@ -1696,6 +1727,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
         N.checkArgNotNull(action, cs.action);
 
+        if (fromRowIndex == toRowIndex || fromColumnIndex == toColumnIndex) {
+            return;
+        }
+
         if (Matrices.shouldRunInParallel(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
             Matrices.forEachIndices(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, action, true);
         } else {
@@ -1743,8 +1778,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if {@code action.accept} throws for a visited matrix position
      */
+    @SuppressWarnings("unchecked")
     public <E extends Exception> void forEachIndices(final Throwables.BiIntObjConsumer<M, E> action) throws IllegalArgumentException, E {
         N.checkArgNotNull(action, cs.action);
+
+        if (elementCount == 0) {
+            return;
+        }
 
         final M matrix = (M) this;
 
@@ -1804,11 +1844,16 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if {@code action.accept} throws for a visited position in the requested region
      */
+    @SuppressWarnings("unchecked")
     public <E extends Exception> void forEachIndices(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
             final Throwables.BiIntObjConsumer<M, E> action) throws IndexOutOfBoundsException, IllegalArgumentException, E {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
         N.checkArgNotNull(action, cs.action);
+
+        if (fromRowIndex == toRowIndex || fromColumnIndex == toColumnIndex) {
+            return;
+        }
 
         final M matrix = (M) this;
 
@@ -2170,14 +2215,131 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     public Stream<Point> rowMajorPoints(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
-        if (columnCount == 0) {
+        if (fromRowIndex == toRowIndex || columnCount == 0) {
             return Stream.empty();
         }
 
-        // Capture the column count rather than this matrix, so the lazy stream does not retain its rows.
-        final int columns = columnCount;
-        return IntStream.range(fromRowIndex, toRowIndex)
-                .flatMapToObj(rowIndex -> IntStream.range(0, columns).mapToObj(columnIndex -> Point.of(rowIndex, columnIndex)));
+        // Delegate to a static helper so the iterator cannot capture this matrix and retain its backing rows.
+        return rowMajorPointStream(fromRowIndex, toRowIndex, columnCount);
+    }
+
+    /**
+     * Creates a lazy row-major stream of {@link Point} coordinates without capturing a matrix instance.
+     *
+     * @param fromRowIndex the starting row index, inclusive ({@code < toRowIndex})
+     * @param toRowIndex the ending row index, exclusive
+     * @param columns the positive column count
+     * @return a lazy stream of {@link Point} coordinates in row-major order
+     */
+    private static Stream<Point> rowMajorPointStream(final int fromRowIndex, final int toRowIndex, final int columns) {
+        return Stream.of(new ObjIteratorEx<Point>() {
+            private int row = fromRowIndex;
+            private int col = 0;
+
+            private long remaining() {
+                return row >= toRowIndex ? 0L : ((long) (toRowIndex - row)) * columns - col;
+            }
+
+            @Override
+            public boolean hasNext() {
+                return row < toRowIndex;
+            }
+
+            @Override
+            public Point next() {
+                if (row >= toRowIndex) {
+                    throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
+                }
+
+                final Point point = Point.of(row, col);
+
+                if (++col == columns) {
+                    col = 0;
+                    row++;
+                }
+
+                return point;
+            }
+
+            @Override
+            public void advance(final long n) {
+                if (n <= 0 || row >= toRowIndex) {
+                    return;
+                }
+
+                final long rem = remaining();
+
+                if (n >= rem) {
+                    row = toRowIndex;
+                    col = 0;
+                    return;
+                }
+
+                final long pos = ((long) (row - fromRowIndex)) * columns + col + n;
+                row = fromRowIndex + (int) (pos / columns);
+                col = (int) (pos % columns);
+            }
+
+            @Override
+            public long count() {
+                final long rem = remaining();
+                row = toRowIndex;
+                col = 0;
+                return rem;
+            }
+
+            /**
+             * {@inheritDoc}
+             *
+             * @throws IllegalStateException if the number of remaining elements exceeds {@link Integer#MAX_VALUE};
+             *         no elements are consumed
+             */
+            @Override
+            public List<Point> toList() throws IllegalStateException {
+                final int len = toArrayLength(remaining());
+                final List<Point> list = new ArrayList<>(len);
+
+                while (row < toRowIndex) {
+                    for (int c = col; c < columns; c++) {
+                        list.add(Point.of(row, c));
+                    }
+
+                    row++;
+                    col = 0;
+                }
+
+                return list;
+            }
+
+            @Override
+            @SuppressWarnings("unchecked")
+            public <T> T[] toArray(T[] c) throws IllegalStateException, NullPointerException, ArrayStoreException {
+                final int len = toArrayLength(remaining());
+
+                if (c.length < len) {
+                    c = newDestinationArray(c, len);
+                }
+
+                int k = 0;
+
+                while (row < toRowIndex) {
+                    while (col < columns) {
+                        c[k] = (T) Point.of(row, col);
+                        k++;
+                        col++;
+                    }
+
+                    row++;
+                    col = 0;
+                }
+
+                if (c.length > len) {
+                    c[len] = null;
+                }
+
+                return c;
+            }
+        });
     }
 
     /**
@@ -2233,14 +2395,131 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     public Stream<Point> columnMajorPoints(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
-        if (rowCount == 0) {
+        if (fromColumnIndex == toColumnIndex || rowCount == 0) {
             return Stream.empty();
         }
 
-        // Capture the row count rather than this matrix, so the lazy stream does not retain its rows.
-        final int rows = rowCount;
-        return IntStream.range(fromColumnIndex, toColumnIndex)
-                .flatMapToObj(columnIndex -> IntStream.range(0, rows).mapToObj(rowIndex -> Point.of(rowIndex, columnIndex)));
+        // Delegate to a static helper so the iterator cannot capture this matrix and retain its backing rows.
+        return columnMajorPointStream(fromColumnIndex, toColumnIndex, rowCount);
+    }
+
+    /**
+     * Creates a lazy column-major stream of {@link Point} coordinates without capturing a matrix instance.
+     *
+     * @param fromColumnIndex the starting column index, inclusive ({@code < toColumnIndex})
+     * @param toColumnIndex the ending column index, exclusive
+     * @param rows the positive row count
+     * @return a lazy stream of {@link Point} coordinates in column-major order
+     */
+    private static Stream<Point> columnMajorPointStream(final int fromColumnIndex, final int toColumnIndex, final int rows) {
+        return Stream.of(new ObjIteratorEx<Point>() {
+            private int row = 0;
+            private int col = fromColumnIndex;
+
+            private long remaining() {
+                return col >= toColumnIndex ? 0L : ((long) (toColumnIndex - col)) * rows - row;
+            }
+
+            @Override
+            public boolean hasNext() {
+                return col < toColumnIndex;
+            }
+
+            @Override
+            public Point next() {
+                if (col >= toColumnIndex) {
+                    throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
+                }
+
+                final Point point = Point.of(row, col);
+
+                if (++row == rows) {
+                    row = 0;
+                    col++;
+                }
+
+                return point;
+            }
+
+            @Override
+            public void advance(final long n) {
+                if (n <= 0 || col >= toColumnIndex) {
+                    return;
+                }
+
+                final long rem = remaining();
+
+                if (n >= rem) {
+                    row = 0;
+                    col = toColumnIndex;
+                    return;
+                }
+
+                final long pos = ((long) (col - fromColumnIndex)) * rows + row + n;
+                col = fromColumnIndex + (int) (pos / rows);
+                row = (int) (pos % rows);
+            }
+
+            @Override
+            public long count() {
+                final long rem = remaining();
+                row = 0;
+                col = toColumnIndex;
+                return rem;
+            }
+
+            /**
+             * {@inheritDoc}
+             *
+             * @throws IllegalStateException if the number of remaining elements exceeds {@link Integer#MAX_VALUE};
+             *         no elements are consumed
+             */
+            @Override
+            public List<Point> toList() throws IllegalStateException {
+                final int len = toArrayLength(remaining());
+                final List<Point> list = new ArrayList<>(len);
+
+                while (col < toColumnIndex) {
+                    for (int r = row; r < rows; r++) {
+                        list.add(Point.of(r, col));
+                    }
+
+                    row = 0;
+                    col++;
+                }
+
+                return list;
+            }
+
+            @Override
+            @SuppressWarnings("unchecked")
+            public <T> T[] toArray(T[] c) throws IllegalStateException, NullPointerException, ArrayStoreException {
+                final int len = toArrayLength(remaining());
+
+                if (c.length < len) {
+                    c = newDestinationArray(c, len);
+                }
+
+                int k = 0;
+
+                while (col < toColumnIndex) {
+                    while (row < rows) {
+                        c[k] = (T) Point.of(row, col);
+                        k++;
+                        row++;
+                    }
+
+                    row = 0;
+                    col++;
+                }
+
+                if (c.length > len) {
+                    c[len] = null;
+                }
+
+                return c;
+            }
+        });
     }
 
     /**
@@ -2296,8 +2575,17 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     public Stream<Stream<Point>> rowPoints(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
+        if (fromRowIndex == toRowIndex) {
+            return Stream.empty();
+        }
+
         // Capture the column count rather than this matrix, so the lazy stream does not retain its rows.
         final int columns = columnCount;
+
+        if (columns == 0) {
+            return IntStream.range(fromRowIndex, toRowIndex).mapToObj(rowIndex -> Stream.empty());
+        }
+
         return IntStream.range(fromRowIndex, toRowIndex)
                 .mapToObj(rowIndex -> IntStream.range(0, columns).mapToObj(columnIndex -> Point.of(rowIndex, columnIndex)));
     }
@@ -2355,8 +2643,17 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     public Stream<Stream<Point>> columnPoints(final int fromColumnIndex, final int toColumnIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
 
+        if (fromColumnIndex == toColumnIndex) {
+            return Stream.empty();
+        }
+
         // Capture the row count rather than this matrix, so the lazy stream does not retain its rows.
         final int rows = rowCount;
+
+        if (rows == 0) {
+            return IntStream.range(fromColumnIndex, toColumnIndex).mapToObj(columnIndex -> Stream.empty());
+        }
+
         return IntStream.range(fromColumnIndex, toColumnIndex)
                 .mapToObj(columnIndex -> IntStream.range(0, rows).mapToObj(rowIndex -> Point.of(rowIndex, columnIndex)));
     }
@@ -2644,6 +2941,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @throws IllegalArgumentException if {@code action} is {@code null}
      * @throws E if {@code action.accept(this)} throws
      */
+    @SuppressWarnings("unchecked")
     public <E extends Exception> void accept(final Throwables.Consumer<? super M, E> action) throws IllegalArgumentException, E {
         N.checkArgNotNull(action, cs.action);
 
@@ -2676,6 +2974,7 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      * @throws IllegalArgumentException if {@code mapper} is {@code null}
      * @throws E if {@code mapper.apply(this)} throws
      */
+    @SuppressWarnings("unchecked")
     public <R, E extends Exception> R apply(final Throwables.Function<? super M, R, E> mapper) throws IllegalArgumentException, E {
         N.checkArgNotNull(mapper, cs.mapper);
 
@@ -2715,16 +3014,17 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
             // Stream directly to the destination. Building the complete rendering first can
             // temporarily double the memory needed for a large matrix and defeats Appendable's
             // purpose for writers and other incremental sinks.
-            for (int i = 0; i < rowCount; i++) {
-                if (i > 0) {
-                    output.append(ARRAY_PRINT_SEPARATOR);
-                }
+            // Dispatch once on the outer 2D array type (AbstractMatrix is sealed to Matrix and the
+            // 8 primitive matrices) and fast-path StringBuilder to avoid per-element String allocations.
+            if (a instanceof Object[][] rows) {
+                for (int i = 0; i < rowCount; i++) {
+                    if (i > 0) {
+                        output.append(ARRAY_PRINT_SEPARATOR);
+                    }
 
-                output.append('[');
-                final A row = a[i];
+                    output.append('[');
+                    final Object[] values = rows[i];
 
-                if (row instanceof Object[] values) {
-                    // Object rows still go through the overridable hook, just without reflective access (about 2x faster).
                     for (int j = 0; j < columnCount; j++) {
                         if (j > 0) {
                             output.append(", ");
@@ -2732,17 +3032,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
 
                         appendElementForOutput(output, values[j]);
                     }
-                } else if (!appendPrimitiveRow(output, row)) {
-                    for (int j = 0; j < columnCount; j++) {
-                        if (j > 0) {
-                            output.append(", ");
-                        }
 
-                        appendElementForOutput(output, java.lang.reflect.Array.get(row, j));
-                    }
+                    output.append(']');
                 }
-
-                output.append(']');
+            } else if (output instanceof StringBuilder sb) {
+                appendPrimitiveRowsToStringBuilder(sb);
+            } else {
+                appendPrimitiveRowsToAppendable(output);
             }
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
@@ -2750,90 +3046,359 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
     }
 
     /**
-     * Appends the comma-separated elements of a primitive row, skipping the reflective
-     * {@code Array.get}, boxing and {@code N.toString} of the generic path (2-5x slower on large
-     * matrices). {@code char[]} rows are quoted and escaped exactly as
-     * {@code CharMatrix}'s {@link #appendElementForOutput(Appendable, Object)} override does, other
-     * primitive rows render in their natural string form, and object rows are left to the caller,
-     * which renders each element through that hook. No other subclass overrides it (every concrete
-     * subclass lives in this package, because {@link #toMultilineString()} is package-private), so no
-     * override is bypassed.
+     * Estimates an initial {@link StringBuilder} capacity for formatting a matrix, capped to avoid
+     * integer overflow or excessive upfront allocation on huge matrices.
      *
-     * @param output the non-{@code null} destination
-     * @param row the backing row to render
-     * @return {@code true} if the row was appended, {@code false} if the caller must render it element by element
-     * @throws IOException if {@code output.append} throws an I/O exception
+     * @param rowCount the number of rows
+     * @param elementCount the total number of elements
+     * @param charsPerElement an approximate average character width per element including separators
+     * @return a non-negative initial capacity estimate
      */
-    private static boolean appendPrimitiveRow(final Appendable output, final Object row) throws IOException {
-        if (row instanceof int[] values) {
-            for (int j = 0; j < values.length; j++) {
-                if (j > 0) {
-                    output.append(", ");
-                }
-
-                output.append(String.valueOf(values[j]));
-            }
-        } else if (row instanceof long[] values) {
-            for (int j = 0; j < values.length; j++) {
-                if (j > 0) {
-                    output.append(", ");
-                }
-
-                output.append(String.valueOf(values[j]));
-            }
-        } else if (row instanceof double[] values) {
-            for (int j = 0; j < values.length; j++) {
-                if (j > 0) {
-                    output.append(", ");
-                }
-
-                output.append(String.valueOf(values[j]));
-            }
-        } else if (row instanceof float[] values) {
-            for (int j = 0; j < values.length; j++) {
-                if (j > 0) {
-                    output.append(", ");
-                }
-
-                output.append(String.valueOf(values[j]));
-            }
-        } else if (row instanceof boolean[] values) {
-            for (int j = 0; j < values.length; j++) {
-                if (j > 0) {
-                    output.append(", ");
-                }
-
-                output.append(String.valueOf(values[j]));
-            }
-        } else if (row instanceof byte[] values) {
-            for (int j = 0; j < values.length; j++) {
-                if (j > 0) {
-                    output.append(", ");
-                }
-
-                output.append(String.valueOf(values[j]));
-            }
-        } else if (row instanceof short[] values) {
-            for (int j = 0; j < values.length; j++) {
-                if (j > 0) {
-                    output.append(", ");
-                }
-
-                output.append(String.valueOf(values[j]));
-            }
-        } else if (row instanceof char[] values) {
-            for (int j = 0; j < values.length; j++) {
-                if (j > 0) {
-                    output.append(", ");
-                }
-
-                CharMatrix.appendEscapedChar(output, values[j]);
-            }
-        } else {
-            return false;
+    static int estimateStringCapacity(final int rowCount, final long elementCount, final int charsPerElement) {
+        if (rowCount <= 0) {
+            return 2;
         }
 
-        return true;
+        final int maxCapacity = 1 << 24;
+
+        if (elementCount <= 0 || charsPerElement <= 0) {
+            return (int) Math.min(maxCapacity, 4L + rowCount * 4L);
+        }
+
+        // Cap at 16 Mi chars (~16-32 MB) before multiplying so huge elementCount * charsPerElement cannot overflow long.
+        if (rowCount >= (maxCapacity >>> 2) || elementCount >= maxCapacity) {
+            return maxCapacity;
+        }
+
+        final long estimate = 4L + rowCount * 4L + elementCount * charsPerElement;
+        return (int) Math.min(maxCapacity, estimate);
+    }
+
+    /**
+     * Appends all rows of a primitive matrix directly to a {@link StringBuilder}, avoiding
+     * per-element {@link String#valueOf} allocations and per-row type dispatch.
+     *
+     * @param sb the non-{@code null} destination builder
+     */
+    private void appendPrimitiveRowsToStringBuilder(final StringBuilder sb) {
+        if (a instanceof int[][] rows) {
+            for (int i = 0; i < rowCount; i++) {
+                if (i > 0) {
+                    sb.append(ARRAY_PRINT_SEPARATOR);
+                }
+
+                sb.append('[');
+                final int[] values = rows[i];
+
+                for (int j = 0; j < values.length; j++) {
+                    if (j > 0) {
+                        sb.append(", ");
+                    }
+
+                    sb.append(values[j]);
+                }
+
+                sb.append(']');
+            }
+        } else if (a instanceof long[][] rows) {
+            for (int i = 0; i < rowCount; i++) {
+                if (i > 0) {
+                    sb.append(ARRAY_PRINT_SEPARATOR);
+                }
+
+                sb.append('[');
+                final long[] values = rows[i];
+
+                for (int j = 0; j < values.length; j++) {
+                    if (j > 0) {
+                        sb.append(", ");
+                    }
+
+                    sb.append(values[j]);
+                }
+
+                sb.append(']');
+            }
+        } else if (a instanceof double[][] rows) {
+            for (int i = 0; i < rowCount; i++) {
+                if (i > 0) {
+                    sb.append(ARRAY_PRINT_SEPARATOR);
+                }
+
+                sb.append('[');
+                final double[] values = rows[i];
+
+                for (int j = 0; j < values.length; j++) {
+                    if (j > 0) {
+                        sb.append(", ");
+                    }
+
+                    sb.append(values[j]);
+                }
+
+                sb.append(']');
+            }
+        } else if (a instanceof float[][] rows) {
+            for (int i = 0; i < rowCount; i++) {
+                if (i > 0) {
+                    sb.append(ARRAY_PRINT_SEPARATOR);
+                }
+
+                sb.append('[');
+                final float[] values = rows[i];
+
+                for (int j = 0; j < values.length; j++) {
+                    if (j > 0) {
+                        sb.append(", ");
+                    }
+
+                    sb.append(values[j]);
+                }
+
+                sb.append(']');
+            }
+        } else if (a instanceof boolean[][] rows) {
+            for (int i = 0; i < rowCount; i++) {
+                if (i > 0) {
+                    sb.append(ARRAY_PRINT_SEPARATOR);
+                }
+
+                sb.append('[');
+                final boolean[] values = rows[i];
+
+                for (int j = 0; j < values.length; j++) {
+                    if (j > 0) {
+                        sb.append(", ");
+                    }
+
+                    sb.append(values[j]);
+                }
+
+                sb.append(']');
+            }
+        } else if (a instanceof byte[][] rows) {
+            for (int i = 0; i < rowCount; i++) {
+                if (i > 0) {
+                    sb.append(ARRAY_PRINT_SEPARATOR);
+                }
+
+                sb.append('[');
+                final byte[] values = rows[i];
+
+                for (int j = 0; j < values.length; j++) {
+                    if (j > 0) {
+                        sb.append(", ");
+                    }
+
+                    sb.append(values[j]);
+                }
+
+                sb.append(']');
+            }
+        } else if (a instanceof short[][] rows) {
+            for (int i = 0; i < rowCount; i++) {
+                if (i > 0) {
+                    sb.append(ARRAY_PRINT_SEPARATOR);
+                }
+
+                sb.append('[');
+                final short[] values = rows[i];
+
+                for (int j = 0; j < values.length; j++) {
+                    if (j > 0) {
+                        sb.append(", ");
+                    }
+
+                    sb.append(values[j]);
+                }
+
+                sb.append(']');
+            }
+        } else if (a instanceof char[][] rows) {
+            for (int i = 0; i < rowCount; i++) {
+                if (i > 0) {
+                    sb.append(ARRAY_PRINT_SEPARATOR);
+                }
+
+                sb.append('[');
+                final char[] values = rows[i];
+
+                for (int j = 0; j < values.length; j++) {
+                    if (j > 0) {
+                        sb.append(", ");
+                    }
+
+                    CharMatrix.appendEscapedChar(sb, values[j]);
+                }
+
+                sb.append(']');
+            }
+        }
+    }
+
+    /**
+     * Appends all rows of a primitive matrix to a generic {@link Appendable}, hoisting type
+     * dispatch out of the row loop. Because {@code AbstractMatrix} is {@code sealed} to {@code Matrix}
+     * and the eight primitive matrix subclasses, only {@code CharMatrix} overrides
+     * {@link #appendElementForOutput(Appendable, Object)}, and its escaping is mirrored directly here.
+     *
+     * @param output the non-{@code null} destination
+     * @throws IOException if {@code output.append} throws an I/O exception
+     */
+    private void appendPrimitiveRowsToAppendable(final Appendable output) throws IOException {
+        if (a instanceof int[][] rows) {
+            for (int i = 0; i < rowCount; i++) {
+                if (i > 0) {
+                    output.append(ARRAY_PRINT_SEPARATOR);
+                }
+
+                output.append('[');
+                final int[] values = rows[i];
+
+                for (int j = 0; j < values.length; j++) {
+                    if (j > 0) {
+                        output.append(", ");
+                    }
+
+                    output.append(String.valueOf(values[j]));
+                }
+
+                output.append(']');
+            }
+        } else if (a instanceof long[][] rows) {
+            for (int i = 0; i < rowCount; i++) {
+                if (i > 0) {
+                    output.append(ARRAY_PRINT_SEPARATOR);
+                }
+
+                output.append('[');
+                final long[] values = rows[i];
+
+                for (int j = 0; j < values.length; j++) {
+                    if (j > 0) {
+                        output.append(", ");
+                    }
+
+                    output.append(String.valueOf(values[j]));
+                }
+
+                output.append(']');
+            }
+        } else if (a instanceof double[][] rows) {
+            for (int i = 0; i < rowCount; i++) {
+                if (i > 0) {
+                    output.append(ARRAY_PRINT_SEPARATOR);
+                }
+
+                output.append('[');
+                final double[] values = rows[i];
+
+                for (int j = 0; j < values.length; j++) {
+                    if (j > 0) {
+                        output.append(", ");
+                    }
+
+                    output.append(String.valueOf(values[j]));
+                }
+
+                output.append(']');
+            }
+        } else if (a instanceof float[][] rows) {
+            for (int i = 0; i < rowCount; i++) {
+                if (i > 0) {
+                    output.append(ARRAY_PRINT_SEPARATOR);
+                }
+
+                output.append('[');
+                final float[] values = rows[i];
+
+                for (int j = 0; j < values.length; j++) {
+                    if (j > 0) {
+                        output.append(", ");
+                    }
+
+                    output.append(String.valueOf(values[j]));
+                }
+
+                output.append(']');
+            }
+        } else if (a instanceof boolean[][] rows) {
+            for (int i = 0; i < rowCount; i++) {
+                if (i > 0) {
+                    output.append(ARRAY_PRINT_SEPARATOR);
+                }
+
+                output.append('[');
+                final boolean[] values = rows[i];
+
+                for (int j = 0; j < values.length; j++) {
+                    if (j > 0) {
+                        output.append(", ");
+                    }
+
+                    output.append(String.valueOf(values[j]));
+                }
+
+                output.append(']');
+            }
+        } else if (a instanceof byte[][] rows) {
+            for (int i = 0; i < rowCount; i++) {
+                if (i > 0) {
+                    output.append(ARRAY_PRINT_SEPARATOR);
+                }
+
+                output.append('[');
+                final byte[] values = rows[i];
+
+                for (int j = 0; j < values.length; j++) {
+                    if (j > 0) {
+                        output.append(", ");
+                    }
+
+                    output.append(String.valueOf(values[j]));
+                }
+
+                output.append(']');
+            }
+        } else if (a instanceof short[][] rows) {
+            for (int i = 0; i < rowCount; i++) {
+                if (i > 0) {
+                    output.append(ARRAY_PRINT_SEPARATOR);
+                }
+
+                output.append('[');
+                final short[] values = rows[i];
+
+                for (int j = 0; j < values.length; j++) {
+                    if (j > 0) {
+                        output.append(", ");
+                    }
+
+                    output.append(String.valueOf(values[j]));
+                }
+
+                output.append(']');
+            }
+        } else if (a instanceof char[][] rows) {
+            for (int i = 0; i < rowCount; i++) {
+                if (i > 0) {
+                    output.append(ARRAY_PRINT_SEPARATOR);
+                }
+
+                output.append('[');
+                final char[] values = rows[i];
+
+                for (int j = 0; j < values.length; j++) {
+                    if (j > 0) {
+                        output.append(", ");
+                    }
+
+                    CharMatrix.appendEscapedCharUnchecked(output, values[j]);
+                }
+
+                output.append(']');
+            }
+        }
     }
 
     /**
@@ -2925,7 +3490,10 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
      */
     protected void checkSameShape(final M other) throws IllegalArgumentException {
         N.checkArgNotNull(other, cs.other);
-        N.checkArgument(isSameShape(other), MSG_SHAPE_MISMATCH, rowCount, columnCount, other.rowCount, other.columnCount);
+
+        if (rowCount != other.rowCount || columnCount != other.columnCount) {
+            throw new IllegalArgumentException(formatMsg(MSG_SHAPE_MISMATCH, rowCount, columnCount, other.rowCount, other.columnCount));
+        }
     }
 
     /**
@@ -2989,36 +3557,59 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
         /** The bucket count of the chained layout: the largest power-of-two {@code int[]} length. */
         static final int MAX_CHAINED_BUCKET_COUNT = 1 << 30;
 
+        /** The outer array whose row identities are indexed. */
         private final Object[] rows;
+
+        /** Open-addressing slots or chained bucket heads storing {@code position + 1} ({@code 0} means empty). */
         private final int[] table;
+
+        /** Unsigned right-shift count mapping a 32-bit Fibonacci product into {@code [0, table.length)}. */
         private final int shift;
+
+        /** Next-entry links ({@code position + 1}) for the chained layout, or {@code null} when open-addressed. */
         private final int[] next;
 
         /**
+         * Creates an identity index sized automatically for up to {@code capacity} entries.
+         *
          * @param rows the outer array whose positions are indexed; its elements must not change while this index is used
          * @param capacity the maximum number of positions that will be added; must be at least 1
+         * @throws IllegalArgumentException if {@code rows} is {@code null} or {@code capacity < 1}
          */
-        RowIdentityIndex(final Object[] rows, final int capacity) {
+        RowIdentityIndex(final Object[] rows, final int capacity) throws IllegalArgumentException {
             // An IdentityHashMap cannot serve as the large-input layout: it holds at most 2^29 - 1 entries and then
             // throws IllegalStateException("Capacity exhausted."), which is exactly the range this branch must cover.
             this(rows, capacity, capacity <= MAX_TABLE_CAPACITY ? 0 : MAX_CHAINED_BUCKET_COUNT);
         }
 
         /**
+         * Creates an identity index using either open addressing or explicit power-of-two bucket chaining.
+         *
          * @param rows the outer array whose positions are indexed; its elements must not change while this index is used
          * @param capacity the maximum number of positions that will be added; must be at least 1
-         * @param chainedBucketCount {@code 0} for the open-addressing layout sized by {@code capacity}, or a power of two
-         *        of at least 2 selecting the chained layout with that many buckets (tests use small counts to force long
-         *        chains); a single bucket would need a 32-bit shift, which Java masks to no shift at all
+         * @param chainedBucketCount {@code 0} for the open-addressing layout sized by {@code capacity} (automatically
+         *        falling back to {@link #MAX_CHAINED_BUCKET_COUNT} if {@code capacity > MAX_TABLE_CAPACITY}), or a power
+         *        of two of at least 2 selecting the chained layout with that many buckets (tests use small counts to force
+         *        long chains); a single bucket would need a 32-bit shift, which Java masks to no shift at all
+         * @throws IllegalArgumentException if {@code rows} is {@code null}, {@code capacity < 1}, or {@code chainedBucketCount}
+         *         is neither {@code 0} nor a power of two {@code >= 2}
          */
-        RowIdentityIndex(final Object[] rows, final int capacity, final int chainedBucketCount) {
+        RowIdentityIndex(final Object[] rows, final int capacity, final int chainedBucketCount) throws IllegalArgumentException {
+            N.checkArgNotNull(rows, "rows");
+            N.checkArgument(capacity >= 1, "capacity must be at least 1, but got: {}", capacity);
             this.rows = rows;
 
-            if (chainedBucketCount == 0) {
+            // Fall back to chaining if a direct 3-arg caller requests open-addressing above MAX_TABLE_CAPACITY,
+            // since highestOneBit(capacity - 1) << 2 would otherwise overflow to Integer.MIN_VALUE.
+            final int effectiveChainedBuckets = chainedBucketCount == 0 && capacity > MAX_TABLE_CAPACITY ? MAX_CHAINED_BUCKET_COUNT : chainedBucketCount;
+
+            if (effectiveChainedBuckets == 0) {
                 table = new int[Integer.highestOneBit(Math.max(capacity, 2) - 1) << 2];
                 next = null;
             } else {
-                table = new int[chainedBucketCount];
+                N.checkArgument(effectiveChainedBuckets >= 2 && Integer.bitCount(effectiveChainedBuckets) == 1,
+                        "chainedBucketCount must be 0 or a power of two >= 2, but got: {}", effectiveChainedBuckets);
+                table = new int[effectiveChainedBuckets];
                 next = new int[rows.length]; // next[position] = 1 + the position added before it to the same bucket, 0 ends the chain
             }
 
@@ -3084,6 +3675,13 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
             }
         }
 
+        /**
+         * Searches a bucket chain for {@code row} by object identity.
+         *
+         * @param head the bucket head ({@code position + 1}, or {@code 0} when empty)
+         * @param row the target row reference
+         * @return the indexed position holding {@code row}, or {@code -1} if absent
+         */
         private int indexInChain(final int head, final Object row) {
             for (int entry = head; entry != 0; entry = next[entry - 1]) {
                 if (rows[entry - 1] == row) {
@@ -3094,6 +3692,12 @@ public abstract sealed class AbstractMatrix<A, PL, ES, RS, M extends AbstractMat
             return -1;
         }
 
+        /**
+         * Maps {@code row}'s identity hash code into {@code [0, table.length)}.
+         *
+         * @param row the row reference to hash; may be {@code null}
+         * @return the initial table slot or bucket index
+         */
         private int slotOf(final Object row) {
             // Fibonacci hashing: the multiply spreads identity hash codes, which may be clustered, over the top bits.
             return (System.identityHashCode(row) * 0x9E3779B9) >>> shift;

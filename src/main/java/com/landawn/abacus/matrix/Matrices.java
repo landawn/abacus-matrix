@@ -16,6 +16,7 @@ package com.landawn.abacus.matrix;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.Iterator;
@@ -353,6 +354,23 @@ public final class Matrices {
     static final int MATRIX_MULTIPLY_MIN_BAND_BYTES = 128;
 
     /**
+     * The least work, in cell operations (cells times the caller's per-cell cost), that
+     * {@link #forEachBlockInParallel(int, int, int, int, int, int, BlockAction)} gives one task, except under the two-task floor
+     * that method describes. Element-wise callbacks cost about one operation per cell, unlike a matrix-product cell, so smaller tasks
+     * spend more time being scheduled than computing.
+     */
+    static final int MIN_PARALLEL_BLOCK_WORK = 1024;
+
+    /**
+     * The most inputs a parallel collection zip hoists into a per-task buffer of row references. Above it, a task reads
+     * {@code matrices[k].a[i][j]} directly, so each concurrent task's temporary memory stays bounded however many matrices are
+     * folded: one buffer of {@code size} references per task ran a 16-thread fold of 1,500,000 matrices out of a 64 MB heap.
+     * Past this many inputs the per-cell work (and, for an N-function zip, its {@code size}-element callback array) dominates
+     * the cost of the extra indirection.
+     */
+    static final int MAX_HOISTED_FOLD_INPUTS = 1024;
+
+    /**
      * Computes the blocks of a matrix product, one block of result cells per parallel task.
      *
      * @see #matrixMultiplyInParallel(int, int, int, MatrixMultiplyBlockKernel)
@@ -396,9 +414,21 @@ public final class Matrices {
      * @param resultColumnCount the number of result columns; must not be negative
      * @param elementBytes the size in bytes of one result element, which sets the narrowest band; must be positive
      * @param kernel the block kernel; must be safe to run concurrently on disjoint blocks
+     * @throws IllegalArgumentException if {@code rowCount < 0}, {@code resultColumnCount < 0}, {@code elementBytes <= 0}, or {@code kernel} is {@code null}
      */
-    static void matrixMultiplyInParallel(final int rowCount, final int resultColumnCount, final int elementBytes, final MatrixMultiplyBlockKernel kernel) {
+    static void matrixMultiplyInParallel(final int rowCount, final int resultColumnCount, final int elementBytes, final MatrixMultiplyBlockKernel kernel)
+            throws IllegalArgumentException {
+        N.checkArgument(rowCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, cs.rowCount, rowCount);
+        N.checkArgument(resultColumnCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, cs.resultColumnCount, resultColumnCount);
+        N.checkArgument(elementBytes > 0, "elementBytes must be positive: {}", elementBytes);
+        N.checkArgNotNull(kernel, "kernel");
+
         if (rowCount == 0 || resultColumnCount == 0) {
+            return;
+        }
+
+        if (!IS_PARALLEL_STREAM_SUPPORTED) {
+            kernel.multiply(0, rowCount, 0, resultColumnCount);
             return;
         }
 
@@ -421,6 +451,262 @@ public final class Matrices {
             final int rowIndex = task / bandCount;
             final long band = task % bandCount;
             kernel.multiply(rowIndex, rowIndex + 1, (int) (band * resultColumnCount / bandCount), (int) ((band + 1) * resultColumnCount / bandCount));
+        });
+    }
+
+    /**
+     * Processes one rectangular block of matrix cells in parallel.
+     *
+     * @param <E> the type of exception that the block action might throw
+     * @see #forEachBlockInParallel(int, int, int, BlockAction)
+     */
+    @FunctionalInterface
+    interface BlockAction<E extends Exception> {
+        /**
+         * Processes rows {@code [fromRow, toRow)} and columns {@code [fromColumn, toColumn)}.
+         *
+         * @param fromRow the first row index, inclusive
+         * @param toRow the last row index, exclusive
+         * @param fromColumn the first column index, inclusive
+         * @param toColumn the last column index, exclusive
+         * @throws E if an error occurs while processing the block
+         */
+        void accept(int fromRow, int toRow, int fromColumn, int toColumn) throws E;
+    }
+
+    /**
+     * Runs {@code action} in parallel over disjoint cache-line-friendly blocks covering
+     * {@code [0, rowCount) x [0, columnCount)}.
+     *
+     * @param <E> the type of exception that the block action might throw
+     * @param rowCount the number of rows; must not be negative
+     * @param columnCount the number of columns; must not be negative
+     * @param elementBytes the size in bytes of one output element, which bounds the narrowest column band; must be positive
+     * @param action the block action; must be safe to run concurrently on disjoint blocks
+     * @throws IllegalArgumentException if {@code rowCount < 0}, {@code columnCount < 0}, {@code elementBytes <= 0}, or {@code action} is {@code null}
+     * @throws E if {@code action} throws while processing a block
+     * @see #forEachBlockInParallel(int, int, int, int, BlockAction)
+     */
+    static <E extends Exception> void forEachBlockInParallel(final int rowCount, final int columnCount, final int elementBytes, final BlockAction<E> action)
+            throws IllegalArgumentException, E {
+        forEachBlockInParallel(rowCount, columnCount, elementBytes, 1, action);
+    }
+
+    /**
+     * Runs {@code action} in parallel over disjoint cache-line-friendly blocks covering
+     * {@code [0, rowCount) x [0, columnCount)}, sizing the blocks for {@code cellCost} operations per cell.
+     *
+     * @param <E> the type of exception that the block action might throw
+     * @param rowCount the number of rows; must not be negative
+     * @param columnCount the number of columns; must not be negative
+     * @param elementBytes the size in bytes of one output element, which bounds the narrowest column band; must be positive
+     * @param cellCost about how many callback operations each cell costs, such as the number of matrices a collection zip folds;
+     *        must be positive
+     * @param action the block action; must be safe to run concurrently on disjoint blocks
+     * @throws IllegalArgumentException if {@code rowCount < 0}, {@code columnCount < 0}, {@code elementBytes <= 0},
+     *         {@code cellCost <= 0}, or {@code action} is {@code null}
+     * @throws E if {@code action} throws while processing a block
+     * @see #forEachBlockInParallel(int, int, int, int, int, int, BlockAction)
+     */
+    static <E extends Exception> void forEachBlockInParallel(final int rowCount, final int columnCount, final int elementBytes, final int cellCost,
+            final BlockAction<E> action) throws IllegalArgumentException, E {
+        N.checkArgument(rowCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, cs.rowCount, rowCount);
+        N.checkArgument(columnCount >= 0, AbstractMatrix.MSG_NEGATIVE_DIMENSION, cs.columnCount, columnCount);
+        forEachBlockInParallel(0, rowCount, 0, columnCount, elementBytes, cellCost, action);
+    }
+
+    /**
+     * Runs {@code action} in parallel over disjoint cache-line-friendly blocks covering
+     * {@code [fromRowIndex, toRowIndex) x [fromColumnIndex, toColumnIndex)}, for a callback that costs about one operation per cell.
+     *
+     * @param <E> the type of exception that the block action might throw
+     * @param fromRowIndex the starting row index, inclusive ({@code >= 0})
+     * @param toRowIndex the ending row index, exclusive ({@code >= fromRowIndex})
+     * @param fromColumnIndex the starting column index, inclusive ({@code >= 0})
+     * @param toColumnIndex the ending column index, exclusive ({@code >= fromColumnIndex})
+     * @param elementBytes the size in bytes of one output element, which bounds the narrowest column band; must be positive
+     * @param action the block action; must be safe to run concurrently on disjoint blocks
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code fromRowIndex > toRowIndex}, {@code fromColumnIndex < 0},
+     *         or {@code fromColumnIndex > toColumnIndex}
+     * @throws IllegalArgumentException if {@code elementBytes <= 0} or {@code action} is {@code null}
+     * @throws E if {@code action} throws while processing a block
+     * @see #forEachBlockInParallel(int, int, int, int, int, int, BlockAction)
+     */
+    static <E extends Exception> void forEachBlockInParallel(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
+            final int elementBytes, final BlockAction<E> action) throws IndexOutOfBoundsException, IllegalArgumentException, E {
+        forEachBlockInParallel(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, elementBytes, 1, action);
+    }
+
+    /**
+     * Runs {@code action} in parallel over disjoint cache-line-friendly blocks covering
+     * {@code [fromRowIndex, toRowIndex) x [fromColumnIndex, toColumnIndex)}.
+     *
+     * <p>The work of the region is its cell count times {@code cellCost}. The region is split into at most
+     * {@link #MATRIX_MULTIPLY_TARGET_TASK_COUNT} rectangular tasks of at least {@link #MIN_PARALLEL_BLOCK_WORK} work each. With
+     * enough rows, each task is a full-width group of consecutive rows; with too few rows for that, it is a full-height column band;
+     * with fewer rows than tasks, each row is split into even column bands.</p>
+     *
+     * <p>The one exception is the two-task floor: a region that cannot be cut into two rectangles that each reach the minimum, but
+     * whose shape allows a cut at all, still gets two tasks so that a forced-parallel run can use a second thread. That cut is a
+     * single row or column cut, whichever leaves the larger smaller half ({@code 3 x 683} splits into {@code 1023 + 1026} cells).</p>
+     *
+     * <p>A column band is never narrower than {@code (MATRIX_MULTIPLY_MIN_BAND_BYTES / elementBytes) / cellCost} columns, both
+     * divisions rounded down, nor narrower than one column. A cheap element-wise result written by two tasks sharing a cache line
+     * bounces between their cores; a costlier cell is written once per {@code cellCost} operations, so its bands may be narrower.
+     * A region that yields a single block runs on the calling thread.</p>
+     *
+     * @param <E> the type of exception that the block action might throw
+     * @param fromRowIndex the starting row index, inclusive ({@code >= 0})
+     * @param toRowIndex the ending row index, exclusive ({@code >= fromRowIndex})
+     * @param fromColumnIndex the starting column index, inclusive ({@code >= 0})
+     * @param toColumnIndex the ending column index, exclusive ({@code >= fromColumnIndex})
+     * @param elementBytes the size in bytes of one output element, which bounds the narrowest column band; must be positive
+     * @param cellCost about how many callback operations each cell costs, such as the number of matrices a collection zip folds;
+     *        must be positive
+     * @param action the block action; must be safe to run concurrently on disjoint blocks
+     * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code fromRowIndex > toRowIndex}, {@code fromColumnIndex < 0},
+     *         or {@code fromColumnIndex > toColumnIndex}
+     * @throws IllegalArgumentException if {@code elementBytes <= 0}, {@code cellCost <= 0}, or {@code action} is {@code null}
+     * @throws E if {@code action} throws while processing a block
+     */
+    static <E extends Exception> void forEachBlockInParallel(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex, final int toColumnIndex,
+            final int elementBytes, final int cellCost, final BlockAction<E> action) throws IndexOutOfBoundsException, IllegalArgumentException, E {
+        if (fromRowIndex < 0 || fromRowIndex > toRowIndex) {
+            throw new IndexOutOfBoundsException(AbstractMatrix.formatMsg("Invalid row range: [{}, {})", fromRowIndex, toRowIndex));
+        }
+
+        if (fromColumnIndex < 0 || fromColumnIndex > toColumnIndex) {
+            throw new IndexOutOfBoundsException(AbstractMatrix.formatMsg("Invalid column range: [{}, {})", fromColumnIndex, toColumnIndex));
+        }
+
+        N.checkArgument(elementBytes > 0, "elementBytes must be positive: {}", elementBytes);
+        N.checkArgument(cellCost > 0, "cellCost must be positive: {}", cellCost);
+        N.checkArgNotNull(action, cs.action);
+
+        final int rowCount = toRowIndex - fromRowIndex;
+        final int columnCount = toColumnIndex - fromColumnIndex;
+
+        if (rowCount == 0 || columnCount == 0) {
+            return;
+        }
+
+        if (!IS_PARALLEL_STREAM_SUPPORTED) {
+            action.accept(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex);
+            return;
+        }
+
+        // A task must do enough work to pay for its scheduling: one task per row made a 100000 x 3 map/add/updateAll 4-40x
+        // slower than the sequential loop. Work is cells x cellCost, so a collection zip folding 128 matrices of 1 x 64 still
+        // splits (sizing by output cells alone ran its whole fold on the calling thread). Aim for about
+        // MATRIX_MULTIPLY_TARGET_TASK_COUNT tasks of at least MIN_PARALLEL_BLOCK_WORK work each, but at least two, so a
+        // forced-parallel run can still use a second thread.
+        final long work = saturatedMultiply((long) rowCount * columnCount, cellCost);
+        final int desiredTaskCount = (int) Math.min(MATRIX_MULTIPLY_TARGET_TASK_COUNT, Math.max(2, work / MIN_PARALLEL_BLOCK_WORK));
+        // The fewest cells that reach MIN_PARALLEL_BLOCK_WORK; at least 1.
+        final int minTaskCells = (MIN_PARALLEL_BLOCK_WORK - 1) / cellCost + 1;
+        // The narrowest column band: (MATRIX_MULTIPLY_MIN_BAND_BYTES / elementBytes) / cellCost columns, both divisions rounded
+        // down, and at least one column. Narrower bands would let two tasks keep rewriting the same cache line of a cheap
+        // element-wise result; a costlier cell writes its result once per cellCost operations, so its bands may be narrower.
+        final int minBandWidth = Math.max(1, MATRIX_MULTIPLY_MIN_BAND_BYTES / elementBytes / cellCost);
+
+        if (rowCount >= desiredTaskCount) {
+            // Full-width groups of consecutive rows. Group sizes differ by at most one row, and capping the group count at
+            // rowCount / minGroupRows keeps every group at least minGroupRows rows, hence at least minTaskCells cells.
+            final int minGroupRows = (minTaskCells - 1) / columnCount + 1;
+            final int groupCount = Math.min(desiredTaskCount, rowCount / minGroupRows);
+
+            if (groupCount >= 2) {
+                runRowGroupsInParallel(fromRowIndex, rowCount, fromColumnIndex, toColumnIndex, groupCount, action);
+                return;
+            }
+
+            // Too few rows for two groups that each reach the minimum. Then desiredTaskCount is 2: rowCount < 2 x minGroupRows
+            // caps the cells at 3 x minTaskCells - 3, so the work stays below 3 x MIN_PARALLEL_BLOCK_WORK. So make one cut, row or column, whichever leaves the larger smaller half. When any
+            // two rectangles can reach the minimum this picks them, since the row cut cannot: 3 x 800 splits into two 3 x 400
+            // bands rather than 800 + 1600 cells. Otherwise it is the two-task floor at its most even: 3 x 683 splits into
+            // 1023 + 1026 cells rather than 683 + 1366. rowCount >= desiredTaskCount >= 2, so the row cut always exists; the
+            // column cut needs two bands of at least minBandWidth.
+            final long smallerRowHalf = (long) (rowCount / 2) * columnCount;
+            final long smallerColumnHalf = columnCount / 2 >= minBandWidth ? (long) rowCount * (columnCount / 2) : -1;
+
+            if (smallerColumnHalf > smallerRowHalf) {
+                runFullHeightBandsInParallel(fromRowIndex, toRowIndex, fromColumnIndex, columnCount, 2, action);
+            } else {
+                runRowGroupsInParallel(fromRowIndex, rowCount, fromColumnIndex, toColumnIndex, 2, action);
+            }
+
+            return;
+        }
+
+        // Fewer rows than tasks: split each row into even column bands (widths differ by at most one column). Rounding the bands
+        // per row DOWN keeps rowCount x bandCount <= desiredTaskCount, and both width caps below are floors, so every band is at
+        // least minBandWidth and (outside the two-task floor) at least minTaskCells wide. A row left unsplit holds more than
+        // MIN_PARALLEL_BLOCK_WORK work, since rowCount < desiredTaskCount <= work / MIN_PARALLEL_BLOCK_WORK there.
+        final int maxBandsByWidth = columnCount / minBandWidth;
+        int bandCount = Math.min(desiredTaskCount / rowCount, Math.min(maxBandsByWidth, columnCount / Math.max(minBandWidth, minTaskCells)));
+
+        if (rowCount == 1 && bandCount < 2) {
+            // The two-task floor: split a single row in two when the cache-line minimum allows it.
+            bandCount = Math.min(2, maxBandsByWidth);
+        }
+
+        final int bands = Math.max(1, bandCount);
+        final int taskCount = rowCount * bands;
+
+        if (taskCount == 1) {
+            action.accept(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex);
+            return;
+        }
+
+        //noinspection resource
+        IntStream.range(0, taskCount).parallel().forEach(task -> {
+            final int rowIndex = fromRowIndex + task / bands;
+            final long band = task % bands;
+            action.accept(rowIndex, rowIndex + 1, fromColumnIndex + (int) (band * columnCount / bands),
+                    fromColumnIndex + (int) ((band + 1) * columnCount / bands));
+        });
+    }
+
+    /**
+     * Runs {@code action} in parallel on {@code groupCount} full-width groups of consecutive rows whose sizes differ by at most one row.
+     *
+     * @param <E> the type of exception that the block action might throw
+     * @param fromRowIndex the first row of the region, inclusive
+     * @param rowCount the number of rows in the region; at least {@code groupCount}
+     * @param fromColumnIndex the first column of the region, inclusive
+     * @param toColumnIndex the last column of the region, exclusive
+     * @param groupCount the number of groups; at least 2
+     * @param action the block action
+     * @throws E if {@code action} throws while processing a block
+     */
+    private static <E extends Exception> void runRowGroupsInParallel(final int fromRowIndex, final int rowCount, final int fromColumnIndex,
+            final int toColumnIndex, final int groupCount, final BlockAction<E> action) throws E {
+        //noinspection resource
+        IntStream.range(0, groupCount).parallel().forEach(task -> {
+            final int groupFromRow = fromRowIndex + (int) ((long) task * rowCount / groupCount);
+            final int groupToRow = fromRowIndex + (int) ((long) (task + 1) * rowCount / groupCount);
+            action.accept(groupFromRow, groupToRow, fromColumnIndex, toColumnIndex);
+        });
+    }
+
+    /**
+     * Runs {@code action} in parallel on {@code bandCount} full-height column bands whose widths differ by at most one column.
+     *
+     * @param <E> the type of exception that the block action might throw
+     * @param fromRowIndex the first row of the region, inclusive
+     * @param toRowIndex the last row of the region, exclusive
+     * @param fromColumnIndex the first column of the region, inclusive
+     * @param columnCount the number of columns in the region; at least {@code bandCount}
+     * @param bandCount the number of bands; at least 2
+     * @param action the block action
+     * @throws E if {@code action} throws while processing a block
+     */
+    private static <E extends Exception> void runFullHeightBandsInParallel(final int fromRowIndex, final int toRowIndex, final int fromColumnIndex,
+            final int columnCount, final int bandCount, final BlockAction<E> action) throws E {
+        //noinspection resource
+        IntStream.range(0, bandCount).parallel().forEach(band -> {
+            action.accept(fromRowIndex, toRowIndex, fromColumnIndex + (int) ((long) band * columnCount / bandCount),
+                    fromColumnIndex + (int) ((long) (band + 1) * columnCount / bandCount));
         });
     }
 
@@ -595,21 +881,17 @@ public final class Matrices {
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative, or if {@code targetElementType} is {@code null}
      *         or {@code void.class}, or if adding two array dimensions to {@code targetElementType} would exceed the JVM limit of 255.
      */
+    @SuppressWarnings("unchecked")
     public static <T> T[][] newMatrixArray(final int rowCount, final int columnCount, final Class<T> targetElementType) throws IllegalArgumentException {
         AbstractMatrix.checkNonNegativeShape(rowCount, columnCount);
         N.checkArgNotNull(targetElementType, cs.targetElementType);
 
         final Class<T> eleType = normalizeElementType(targetElementType);
-        final Class<T[]> subArrayType = (Class<T[]>) N.newArray(eleType, 0).getClass();
-
-        final T[][] result = N.newArray(subArrayType, rowCount);
-
-        for (int i = 0; i < rowCount; i++) {
-            // N.newArray may reuse a cached zero-length array. Each logical row must remain
-            // independently addressable even when it currently has no columns.
-            result[i] = columnCount == 0 ? (T[]) java.lang.reflect.Array.newInstance(eleType, 0) : N.newArray(eleType, columnCount);
-        }
-
+        // Array.newInstance(eleType, rowCount, columnCount) always allocates a fresh outer array even when
+        // rowCount == 0 (unlike N.newArray which can return a cached shared empty array), creates identity-distinct
+        // rows even when columnCount == 0, skips inner allocations when rowCount == 0, and validates total array
+        // dimensions <= 255 in one native call.
+        final T[][] result = (T[][]) java.lang.reflect.Array.newInstance(eleType, rowCount, columnCount);
         return result;
     }
 
@@ -800,7 +1082,7 @@ public final class Matrices {
             return;
         }
 
-        if (inParallel && IS_PARALLEL_STREAM_SUPPORTED) {
+        if (inParallel && IS_PARALLEL_STREAM_SUPPORTED && (rowCount > 1 || columnCount > 1)) {
             // Parallelize the larger dimension so the work splits into as many independent
             // units as possible (a 1xN or Nx1 region would otherwise get no parallelism).
             if (rowCount >= columnCount) {
@@ -936,6 +1218,8 @@ public final class Matrices {
         final long total = (long) rowCount * columnCount;
         final ObjIteratorEx<T> iterator = new ObjIteratorEx<>() {
             private long cursor;
+            private int row = fromRowIndex;
+            private int col = fromColumnIndex;
 
             @Override
             public boolean hasNext() {
@@ -954,9 +1238,14 @@ public final class Matrices {
                     throw new NoSuchElementException();
                 }
 
-                final long position = cursor++;
-                final int i = fromRowIndex + (int) (position / columnCount);
-                final int j = fromColumnIndex + (int) (position % columnCount);
+                cursor++;
+                final int i = row;
+                final int j = col++;
+
+                if (col == toColumnIndex) {
+                    col = fromColumnIndex;
+                    row++;
+                }
 
                 try {
                     return mapper.apply(i, j);
@@ -969,6 +1258,11 @@ public final class Matrices {
             public void advance(final long n) {
                 if (n > 0) {
                     cursor = n < total - cursor ? cursor + n : total;
+
+                    if (cursor < total) {
+                        row = fromRowIndex + (int) (cursor / columnCount);
+                        col = fromColumnIndex + (int) (cursor % columnCount);
+                    }
                 }
             }
 
@@ -1092,6 +1386,8 @@ public final class Matrices {
         final long total = (long) rowCount * columnCount;
         final IntIteratorEx iterator = new IntIteratorEx() {
             private long cursor;
+            private int row = fromRowIndex;
+            private int col = fromColumnIndex;
 
             @Override
             public boolean hasNext() {
@@ -1110,9 +1406,14 @@ public final class Matrices {
                     throw new NoSuchElementException();
                 }
 
-                final long position = cursor++;
-                final int i = fromRowIndex + (int) (position / columnCount);
-                final int j = fromColumnIndex + (int) (position % columnCount);
+                cursor++;
+                final int i = row;
+                final int j = col++;
+
+                if (col == toColumnIndex) {
+                    col = fromColumnIndex;
+                    row++;
+                }
 
                 try {
                     return mapper.applyAsInt(i, j);
@@ -1125,6 +1426,11 @@ public final class Matrices {
             public void advance(final long n) {
                 if (n > 0) {
                     cursor = n < total - cursor ? cursor + n : total;
+
+                    if (cursor < total) {
+                        row = fromRowIndex + (int) (cursor / columnCount);
+                        col = fromColumnIndex + (int) (cursor % columnCount);
+                    }
                 }
             }
 
@@ -1198,9 +1504,13 @@ public final class Matrices {
             final Throwables.IntTriConsumer<RuntimeException> action) throws IllegalArgumentException, RuntimeException {
         N.checkArgNotNull(a, cs.a);
         N.checkArgNotNull(b, cs.b);
-        N.checkArgument(a.columnCount == b.rowCount,
-                "Matrix dimensions incompatible for multiplication: a is {}x{}, b is {}x{} (a.columnCount must equal b.rowCount)", a.rowCount, a.columnCount,
-                b.rowCount, b.columnCount);
+
+        if (a.columnCount != b.rowCount) {
+            throw new IllegalArgumentException(
+                    AbstractMatrix.formatMsg("Matrix dimensions incompatible for multiplication: a is {}x{}, b is {}x{} (a.columnCount must equal b.rowCount)",
+                            a.rowCount, a.columnCount, b.rowCount, b.columnCount));
+        }
+
         N.checkArgNotNull(action, cs.action);
 
         forEachCartesianIndices(a, b, action, shouldRunMatrixMultiplyInParallel(a, b.columnCount));
@@ -1255,9 +1565,13 @@ public final class Matrices {
             final boolean inParallel) throws IllegalArgumentException, RuntimeException {
         N.checkArgNotNull(a, cs.a);
         N.checkArgNotNull(b, cs.b);
-        N.checkArgument(a.columnCount == b.rowCount,
-                "Matrix dimensions incompatible for multiplication: a is {}x{}, b is {}x{} (a.columnCount must equal b.rowCount)", a.rowCount, a.columnCount,
-                b.rowCount, b.columnCount);
+
+        if (a.columnCount != b.rowCount) {
+            throw new IllegalArgumentException(
+                    AbstractMatrix.formatMsg("Matrix dimensions incompatible for multiplication: a is {}x{}, b is {}x{} (a.columnCount must equal b.rowCount)",
+                            a.rowCount, a.columnCount, b.rowCount, b.columnCount));
+        }
+
         N.checkArgNotNull(action, cs.action);
 
         final int rowCountA = a.rowCount;
@@ -1268,7 +1582,7 @@ public final class Matrices {
             return;
         }
 
-        if (inParallel && IS_PARALLEL_STREAM_SUPPORTED) {
+        if (inParallel && IS_PARALLEL_STREAM_SUPPORTED && (rowCountA > 1 || columnCountB > 1)) {
             // Parallelize over the larger of i (rowCountA) and j (columnCountB) so the work splits
             // into as many independent units as possible; k is never a candidate (see below).
             if (rowCountA >= columnCountB) {
@@ -1382,10 +1696,11 @@ public final class Matrices {
      * Equivalent to chaining {@link AbstractMatrix#stackVertically(AbstractMatrix)} calls,
      * but avoids the boilerplate when stacking three or more matrices.</p>
      *
-     * <p>Inputs with compatible runtime storage are copied directly into one result allocation in
-     * encounter order. Incompatible implementations use the public pairwise operation. For
-     * {@link Matrix} inputs whose element types differ, each pairwise step infers its result's
-     * element type from its two operands, so the final element type can depend on the input order.</p>
+     * <p>All inputs are copied into one result allocation in encounter order. For {@link Matrix} inputs
+     * whose element types differ, the result's element type is resolved left to right, each step combining
+     * the type resolved so far with the next input's element type exactly as the pairwise operation would, so
+     * the final element type can depend on the input order. To choose the result's element type explicitly,
+     * use the overload that takes a target element type.</p>
      *
      * <p>A single input is normally copied. When that input is the shared {@link Matrix#empty()}
      * instance, it is returned as-is because it has no mutable cells. A collection of two or more
@@ -1416,12 +1731,12 @@ public final class Matrices {
      *         mismatched column counts, or the combined row count exceeds {@code Integer.MAX_VALUE}
      * @throws SecurityException if a security manager denies access to type metadata while inferring the common runtime element type
      * @see AbstractMatrix#stackVertically(AbstractMatrix)
+     * @see #stackVertically(Collection, Class)
      * @see #stackHorizontally(Collection)
      */
     public static <M extends AbstractMatrix<?, ?, ?, ?, M>> M stackVertically(final Collection<? extends M> matrices)
             throws IllegalArgumentException, SecurityException {
-        checkMatricesNotEmptyAndNoNullElements(matrices, cs.matrices);
-        return stack(matrices, true);
+        return stack(snapshotNonEmptyMatrices(matrices, cs.matrices), true);
     }
 
     /**
@@ -1432,10 +1747,11 @@ public final class Matrices {
      * Equivalent to chaining {@link AbstractMatrix#stackHorizontally(AbstractMatrix)} calls,
      * but avoids the boilerplate when stacking three or more matrices.</p>
      *
-     * <p>Inputs with compatible runtime storage are copied directly into one result allocation in
-     * encounter order. Incompatible implementations use the public pairwise operation. For
-     * {@link Matrix} inputs whose element types differ, each pairwise step infers its result's
-     * element type from its two operands, so the final element type can depend on the input order.</p>
+     * <p>All inputs are copied into one result allocation in encounter order. For {@link Matrix} inputs
+     * whose element types differ, the result's element type is resolved left to right, each step combining
+     * the type resolved so far with the next input's element type exactly as the pairwise operation would, so
+     * the final element type can depend on the input order. To choose the result's element type explicitly,
+     * use the overload that takes a target element type.</p>
      *
      * <p>A single input is normally copied. When that input is the shared {@link Matrix#empty()}
      * instance, it is returned as-is because it has no mutable cells. A collection of two or more
@@ -1466,16 +1782,262 @@ public final class Matrices {
      *         mismatched row counts, or the combined column count exceeds {@code Integer.MAX_VALUE}
      * @throws SecurityException if a security manager denies access to type metadata while inferring the common runtime element type
      * @see AbstractMatrix#stackHorizontally(AbstractMatrix)
+     * @see #stackHorizontally(Collection, Class)
      * @see #stackVertically(Collection)
      */
     public static <M extends AbstractMatrix<?, ?, ?, ?, M>> M stackHorizontally(final Collection<? extends M> matrices)
             throws IllegalArgumentException, SecurityException {
-        checkMatricesNotEmptyAndNoNullElements(matrices, cs.matrices);
-        return stack(matrices, false);
+        return stack(snapshotNonEmptyMatrices(matrices, cs.matrices), false);
     }
 
     /**
-     * Stacks a validated, non-empty collection of matrices in encounter order. A single input is
+     * Stacks a non-empty collection of generic {@link Matrix} instances vertically into a new matrix
+     * whose rows have the exact writable runtime component type {@code targetElementType}.
+     *
+     * <p>Unlike {@link #stackVertically(Collection)}, this overload never infers the result's element type
+     * from the inputs: every input element is copied into rows of exactly {@code targetElementType},
+     * which must be able to store every input matrix's runtime element type.</p>
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * Matrix<Integer> ints = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}});
+     * Matrix<Double> doubles = Matrix.wrap(Double.class, new Double[][] {{3.5, 4.5}});
+     * Matrix<Number> stacked = Matrices.stackVertically(Arrays.asList(ints, doubles), Number.class);
+     * // stacked.elementType() == Number.class, stacked.rowCount() == 2
+     * }</pre>
+     *
+     * @param <T> the element type of the stacked result matrix
+     * @param matrices the matrices to stack vertically; must not be {@code null}, empty, or contain {@code null} elements
+     * @param targetElementType the exact runtime element type of the result matrix; primitive scalar types are auto-wrapped,
+     *        must not be {@code null} or {@code void.class}, and must be assignable from every input matrix's runtime element type
+     * @return a newly allocated {@link Matrix} containing all rows in encounter order
+     * @throws IllegalArgumentException if {@code matrices} is {@code null}, empty, or contains {@code null} elements; if column counts differ;
+     *         if the combined row count exceeds {@code Integer.MAX_VALUE}; if {@code targetElementType} is {@code null}, {@code void.class}, or
+     *         cannot safely store an input matrix's runtime element type
+     * @see Matrix#stackVertically(Matrix, Class)
+     * @see #stackHorizontally(Collection, Class)
+     */
+    public static <T> Matrix<T> stackVertically(final Collection<? extends Matrix<? extends T>> matrices, final Class<T> targetElementType)
+            throws IllegalArgumentException {
+        return stackTypedMatrices(matrices, targetElementType, true);
+    }
+
+    /**
+     * Stacks a non-empty collection of generic {@link Matrix} instances horizontally into a new matrix
+     * whose rows have the exact writable runtime component type {@code targetElementType}.
+     *
+     * <p>Unlike {@link #stackHorizontally(Collection)}, this overload never infers the result's element type
+     * from the inputs: every input element is copied into rows of exactly {@code targetElementType},
+     * which must be able to store every input matrix's runtime element type.</p>
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * Matrix<Integer> ints = Matrix.wrap(Integer.class, new Integer[][] {{1}, {2}});
+     * Matrix<Double> doubles = Matrix.wrap(Double.class, new Double[][] {{3.5}, {4.5}});
+     * Matrix<Number> stacked = Matrices.stackHorizontally(Arrays.asList(ints, doubles), Number.class);
+     * // stacked.elementType() == Number.class, stacked.columnCount() == 2
+     * }</pre>
+     *
+     * @param <T> the element type of the stacked result matrix
+     * @param matrices the matrices to stack horizontally; must not be {@code null}, empty, or contain {@code null} elements
+     * @param targetElementType the exact runtime element type of the result matrix; primitive scalar types are auto-wrapped,
+     *        must not be {@code null} or {@code void.class}, and must be assignable from every input matrix's runtime element type
+     * @return a newly allocated {@link Matrix} containing all columns in encounter order
+     * @throws IllegalArgumentException if {@code matrices} is {@code null}, empty, or contains {@code null} elements; if row counts differ;
+     *         if the combined column count exceeds {@code Integer.MAX_VALUE}; if {@code targetElementType} is {@code null}, {@code void.class}, or
+     *         cannot safely store an input matrix's runtime element type
+     * @see Matrix#stackHorizontally(Matrix, Class)
+     * @see #stackVertically(Collection, Class)
+     */
+    public static <T> Matrix<T> stackHorizontally(final Collection<? extends Matrix<? extends T>> matrices, final Class<T> targetElementType)
+            throws IllegalArgumentException {
+        return stackTypedMatrices(matrices, targetElementType, false);
+    }
+
+    /**
+     * Validates and stacks generic matrices into explicitly typed storage in a single pass.
+     *
+     * @param <T> the result element type
+     * @param matrices the matrix collection to validate and stack
+     * @param targetElementType the requested result element type
+     * @param vertically {@code true} for vertical stacking; {@code false} for horizontal stacking
+     * @return a newly allocated {@link Matrix} with runtime element type {@code normalizeElementType(targetElementType)}
+     * @throws IllegalArgumentException if any argument, dimension, or element-type constraint is violated
+     */
+    @SuppressWarnings("unchecked")
+    private static <T> Matrix<T> stackTypedMatrices(final Collection<? extends Matrix<? extends T>> matrices, final Class<T> targetElementType,
+            final boolean vertically) throws IllegalArgumentException {
+        // Validate the collection in signature order before taking the snapshot, then re-run the same checks on the
+        // snapshot so a collection mutated in between cannot slip invalid input past them.
+        N.checkArgNotEmpty(matrices, cs.matrices);
+        checkNonEmptyWithoutNullElements(matrices, cs.matrices);
+        checkStackDimensions(matrices, vertically);
+        N.checkArgNotNull(targetElementType, cs.targetElementType);
+        final Class<T> normalizedTargetType = normalizeElementType(targetElementType);
+        checkStackElementTypes(matrices, normalizedTargetType);
+
+        final Matrix<?>[] snapshot = matrices.toArray((Matrix<?>[]) EMPTY_OBJECT_MATRICES);
+        final List<Matrix<?>> snapshotView = Arrays.asList(snapshot);
+        checkNonEmptyWithoutNullElements(snapshotView, cs.matrices);
+        checkStackDimensions(snapshotView, vertically);
+        checkStackElementTypes(snapshotView, normalizedTargetType);
+
+        return copyStackedMatrices(snapshot, normalizedTargetType, vertically);
+    }
+
+    /**
+     * Checks the stacking dimensions of non-empty, {@code null}-free inputs: every matrix must share the first matrix's column
+     * count (vertical) or row count (horizontal), and the concatenated dimension must not exceed {@code Integer.MAX_VALUE}.
+     *
+     * <p>This is the single implementation behind every stacking path; callers pass either the caller's collection (before the
+     * snapshot) or {@code Arrays.asList(snapshot)}. Elements are re-checked for {@code null} so that a collection mutated after
+     * {@link #checkNonEmptyWithoutNullElements(Iterable, String)} fails with an {@link IllegalArgumentException}, not an NPE.</p>
+     *
+     * @param matrices the matrices, already checked to be non-empty and {@code null}-free
+     * @param vertically {@code true} for vertical stacking; {@code false} for horizontal stacking
+     * @throws IllegalArgumentException if {@code matrices} is empty or contains {@code null}, if a required dimension differs, or if the
+     *         concatenated dimension exceeds {@code Integer.MAX_VALUE}
+     */
+    private static void checkStackDimensions(final Iterable<? extends AbstractMatrix<?, ?, ?, ?, ?>> matrices, final boolean vertically)
+            throws IllegalArgumentException {
+        final Iterator<? extends AbstractMatrix<?, ?, ?, ?, ?>> it = matrices.iterator();
+
+        if (!it.hasNext()) {
+            throw new IllegalArgumentException("'" + cs.matrices + "' cannot be null or empty");
+        }
+
+        final AbstractMatrix<?, ?, ?, ?, ?> first = it.next();
+
+        if (first == null) {
+            throw new IllegalArgumentException(cs.matrices + "[0] is null");
+        }
+
+        long accumulated = vertically ? first.rowCount : first.columnCount;
+        int idx = 1;
+
+        while (it.hasNext()) {
+            final AbstractMatrix<?, ?, ?, ?, ?> current = it.next();
+
+            if (current == null) {
+                throw new IllegalArgumentException(cs.matrices + "[" + idx + "] is null");
+            }
+
+            if (vertically) {
+                if (first.columnCount != current.columnCount) {
+                    throw new IllegalArgumentException(
+                            AbstractMatrix.formatMsg(AbstractMatrix.MSG_VSTACK_COLUMN_MISMATCH, first.columnCount, current.columnCount));
+                }
+
+                final long merged = accumulated + current.rowCount;
+                if (merged > Integer.MAX_VALUE) {
+                    throw new IllegalArgumentException(
+                            AbstractMatrix.formatMsg("Merged row count overflow: {} + {} = {}", accumulated, current.rowCount, merged));
+                }
+                accumulated = merged;
+            } else {
+                if (first.rowCount != current.rowCount) {
+                    throw new IllegalArgumentException(AbstractMatrix.formatMsg(AbstractMatrix.MSG_HSTACK_ROW_MISMATCH, first.rowCount, current.rowCount));
+                }
+
+                final long merged = accumulated + current.columnCount;
+                if (merged > Integer.MAX_VALUE) {
+                    throw new IllegalArgumentException(
+                            AbstractMatrix.formatMsg("Merged column count overflow: {} + {} = {}", accumulated, current.columnCount, merged));
+                }
+                accumulated = merged;
+            }
+
+            idx++;
+        }
+    }
+
+    /**
+     * Verifies that every matrix has a runtime element type that {@code normalizedTargetType} can store. Callers pass either the
+     * caller's collection or {@code Arrays.asList(snapshot)}.
+     *
+     * @param matrices the non-empty, {@code null}-free matrices
+     * @param normalizedTargetType the validated, normalized target element type
+     * @throws IllegalArgumentException if a matrix is {@code null} or its runtime element type is not assignable to
+     *         {@code normalizedTargetType}
+     */
+    private static void checkStackElementTypes(final Iterable<? extends Matrix<?>> matrices, final Class<?> normalizedTargetType)
+            throws IllegalArgumentException {
+        int idx = 0;
+
+        for (final Matrix<?> m : matrices) {
+            if (m == null) {
+                throw new IllegalArgumentException(cs.matrices + "[" + idx + "] is null");
+            }
+
+            if (!normalizedTargetType.isAssignableFrom(m.elementType)) {
+                throw new IllegalArgumentException(AbstractMatrix.formatMsg("Target element type {} cannot safely store {}[{}]'s runtime element type {}",
+                        normalizedTargetType.getTypeName(), cs.matrices, idx, m.elementType.getTypeName()));
+            }
+
+            idx++;
+        }
+    }
+
+    /**
+     * Copies a validated non-empty snapshot of generic matrices into one newly allocated {@link Matrix} of {@code resultElementType}.
+     *
+     * @param <T> the result element type
+     * @param snapshot the validated non-empty, dimension-compatible matrix snapshot
+     * @param resultElementType the validated, normalized result element type assignable from every input
+     * @param vertically {@code true} for vertical stacking; {@code false} for horizontal stacking
+     * @return the newly allocated stacked matrix
+     */
+    @SuppressWarnings("unchecked")
+    private static <T> Matrix<T> copyStackedMatrices(final Matrix<?>[] snapshot, final Class<T> resultElementType, final boolean vertically) {
+        final Matrix<?> first = snapshot[0];
+
+        if (vertically) {
+            int totalRows = 0;
+            for (final Matrix<?> m : snapshot) {
+                totalRows += m.rowCount;
+            }
+
+            final int resultColumns = first.columnCount;
+            final T[][] result = newMatrixArray(totalRows, resultColumns, resultElementType);
+
+            if (resultColumns > 0) {
+                int dstRow = 0;
+                for (final Matrix<?> m : snapshot) {
+                    for (final Object srcRow : m.a) {
+                        System.arraycopy(srcRow, 0, result[dstRow++], 0, resultColumns);
+                    }
+                }
+            }
+
+            return Matrix.newResult(result, resultElementType, resultColumns);
+        } else {
+            int totalColumns = 0;
+            for (final Matrix<?> m : snapshot) {
+                totalColumns += m.columnCount;
+            }
+
+            final int resultRows = first.rowCount;
+            final T[][] result = newMatrixArray(resultRows, totalColumns, resultElementType);
+
+            if (totalColumns > 0) {
+                for (int r = 0; r < resultRows; r++) {
+                    final T[] dstRow = result[r];
+                    int dstCol = 0;
+                    for (final Matrix<?> m : snapshot) {
+                        if (m.columnCount > 0) {
+                            System.arraycopy(m.a[r], 0, dstRow, dstCol, m.columnCount);
+                            dstCol += m.columnCount;
+                        }
+                    }
+                }
+            }
+
+            return Matrix.newResult(result, resultElementType, totalColumns);
+        }
+    }
+
+    /**
+     * Stacks a validated, non-empty snapshot of matrices in encounter order. A single input is
      * copied, except that the shared {@link Matrix#empty()} instance is returned as-is.
      *
      * @param <M> the concrete matrix type
@@ -1487,24 +2049,48 @@ public final class Matrices {
      *         count exceeds {@code Integer.MAX_VALUE}
      * @throws SecurityException if a security manager denies access to type metadata while inferring the common runtime element type
      */
-    private static <M extends AbstractMatrix<?, ?, ?, ?, M>> M stack(final Collection<? extends M> matrices, final boolean vertically)
+    private static <M extends AbstractMatrix<?, ?, ?, ?, M>> M stack(final M[] matrices, final boolean vertically)
             throws IllegalArgumentException, SecurityException {
-        if (matrices.size() == 1) {
-            final M only = matrices.iterator().next();
+        if (matrices.length == 1) {
+            final M only = matrices[0];
 
             // The shared Object-typed empty matrix has no cells that a caller can mutate.
             return only instanceof Matrix<?> matrix && matrix.isSharedEmptyMatrix() ? only : only.copy();
         }
 
-        // Matrix<T> can wrap covariant arrays. Regrouping heterogeneous storage types can change
-        // which intermediate allocation fails, so preserve the original left-to-right behavior.
+        // Matrix<T> inputs with differing element types preserve the exact left-to-right pairwise common-type
+        // resolution while copying cells in a single pass instead of O(k^2 * N) intermediate allocations.
         if (!hasCompatibleStackStorage(matrices)) {
-            checkMixedStackDimensions(matrices, vertically);
-            final Iterator<? extends M> iterator = matrices.iterator();
-            M result = iterator.next();
+            checkStackDimensions(Arrays.asList(matrices), vertically);
 
-            while (iterator.hasNext()) {
-                result = vertically ? result.stackVertically(iterator.next()) : result.stackHorizontally(iterator.next());
+            boolean allGenericMatrices = true;
+            for (final M m : matrices) {
+                if (!(m instanceof Matrix<?>)) {
+                    allGenericMatrices = false;
+                    break;
+                }
+            }
+
+            if (allGenericMatrices) {
+                final Matrix<?>[] genericSnapshot = new Matrix<?>[matrices.length];
+                for (int i = 0; i < matrices.length; i++) {
+                    genericSnapshot[i] = (Matrix<?>) matrices[i];
+                }
+
+                Class<?> mergedType = genericSnapshot[0].elementType;
+                for (int i = 1; i < genericSnapshot.length; i++) {
+                    mergedType = resolveCommonAssignableType(mergedType, genericSnapshot[i].elementType);
+                }
+
+                @SuppressWarnings("unchecked")
+                final M singlePassResult = (M) copyStackedMatrices(genericSnapshot, (Class<Object>) mergedType, vertically);
+                return singlePassResult;
+            }
+
+            M result = matrices[0];
+
+            for (int i = 1; i < matrices.length; i++) {
+                result = vertically ? result.stackVertically(matrices[i]) : result.stackHorizontally(matrices[i]);
             }
 
             return result;
@@ -1514,50 +2100,20 @@ public final class Matrices {
     }
 
     /**
-     * Checks every shape before a mixed-storage stack creates any intermediate matrices.
-     *
-     * @param matrices the non-empty, null-free collection
-     * @param vertically whether rows are concatenated
-     * @throws IllegalArgumentException if a required dimension differs or a concatenated dimension exceeds {@code Integer.MAX_VALUE}
-     */
-    private static void checkMixedStackDimensions(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> matrices, final boolean vertically)
-            throws IllegalArgumentException {
-        final Iterator<? extends AbstractMatrix<?, ?, ?, ?, ?>> iterator = matrices.iterator();
-        final AbstractMatrix<?, ?, ?, ?, ?> first = iterator.next();
-        long accumulated = vertically ? first.rowCount : first.columnCount;
-
-        while (iterator.hasNext()) {
-            final AbstractMatrix<?, ?, ?, ?, ?> current = iterator.next();
-
-            if (vertically) {
-                N.checkArgument(first.columnCount == current.columnCount, AbstractMatrix.MSG_VSTACK_COLUMN_MISMATCH, first.columnCount, current.columnCount);
-                final long merged = accumulated + current.rowCount;
-                N.checkArgument(merged <= Integer.MAX_VALUE, "Merged row count overflow: {} + {} = {}", accumulated, current.rowCount, merged);
-                accumulated = merged;
-            } else {
-                N.checkArgument(first.rowCount == current.rowCount, AbstractMatrix.MSG_HSTACK_ROW_MISMATCH, first.rowCount, current.rowCount);
-                final long merged = accumulated + current.columnCount;
-                N.checkArgument(merged <= Integer.MAX_VALUE, "Merged column count overflow: {} + {} = {}", accumulated, current.columnCount, merged);
-                accumulated = merged;
-            }
-        }
-    }
-
-    /**
      * Stacks storage-compatible matrices with one result allocation and one pass over the inputs.
      * Pairwise folding repeatedly copied cells, making n-ary stacking needlessly super-linear.
      *
      * @param <M> the concrete matrix type
-     * @param matrices the validated non-empty collection of non-null matrices with compatible storage
+     * @param matrices the validated non-empty snapshot of non-null matrices with compatible storage
      * @param vertically whether to append rows instead of columns
-     * @return a new matrix containing all input rows or columns in collection order
+     * @return a new matrix containing all input rows or columns in array order
      * @throws IllegalArgumentException if the column counts (vertical) or row counts (horizontal) differ, or if the combined row (vertical) or
      *         column (horizontal) count exceeds {@code Integer.MAX_VALUE}
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private static <M extends AbstractMatrix<?, ?, ?, ?, M>> M stackCompatibleStorage(final Collection<? extends M> matrices, final boolean vertically)
+    private static <M extends AbstractMatrix<?, ?, ?, ?, M>> M stackCompatibleStorage(final M[] matrices, final boolean vertically)
             throws IllegalArgumentException {
-        final AbstractMatrix first = matrices.iterator().next();
+        final AbstractMatrix first = matrices[0];
         final Object[] resultRows;
         final int resultColumnCount;
 
@@ -1565,9 +2121,16 @@ public final class Matrices {
             long totalRows = 0;
 
             for (final M matrix : matrices) {
-                N.checkArgument(matrix.columnCount == first.columnCount, AbstractMatrix.MSG_VSTACK_COLUMN_MISMATCH, first.columnCount, matrix.columnCount);
-                totalRows += matrix.rowCount;
-                N.checkArgument(totalRows <= Integer.MAX_VALUE, "Merged row count exceeds Integer.MAX_VALUE: {}", totalRows);
+                if (matrix.columnCount != first.columnCount) {
+                    throw new IllegalArgumentException(
+                            AbstractMatrix.formatMsg(AbstractMatrix.MSG_VSTACK_COLUMN_MISMATCH, first.columnCount, matrix.columnCount));
+                }
+
+                final long merged = totalRows + matrix.rowCount;
+                if (merged > Integer.MAX_VALUE) {
+                    throw new IllegalArgumentException(AbstractMatrix.formatMsg("Merged row count overflow: {} + {} = {}", totalRows, matrix.rowCount, merged));
+                }
+                totalRows = merged;
             }
 
             resultColumnCount = first.columnCount;
@@ -1582,26 +2145,37 @@ public final class Matrices {
 
             for (final M matrix : matrices) {
                 for (final Object sourceRow : matrix.a) {
-                    final int length = java.lang.reflect.Array.getLength(sourceRow);
-                    final Object copy = java.lang.reflect.Array.newInstance(copiedRowComponentType, length);
-                    System.arraycopy(sourceRow, 0, copy, 0, length);
-                    resultRows[targetRow++] = copy;
+                    if (sourceRow.getClass() == resultRowType) {
+                        resultRows[targetRow++] = cloneRow(sourceRow);
+                    } else {
+                        final Object copy = java.lang.reflect.Array.newInstance(copiedRowComponentType, resultColumnCount);
+                        System.arraycopy(sourceRow, 0, copy, 0, resultColumnCount);
+                        resultRows[targetRow++] = copy;
+                    }
                 }
             }
         } else {
             long totalColumns = 0;
 
             for (final M matrix : matrices) {
-                N.checkArgument(matrix.rowCount == first.rowCount, AbstractMatrix.MSG_HSTACK_ROW_MISMATCH, first.rowCount, matrix.rowCount);
-                totalColumns += matrix.columnCount;
-                N.checkArgument(totalColumns <= Integer.MAX_VALUE, "Merged column count exceeds Integer.MAX_VALUE: {}", totalColumns);
+                if (matrix.rowCount != first.rowCount) {
+                    throw new IllegalArgumentException(AbstractMatrix.formatMsg(AbstractMatrix.MSG_HSTACK_ROW_MISMATCH, first.rowCount, matrix.rowCount));
+                }
+
+                final long merged = totalColumns + matrix.columnCount;
+                if (merged > Integer.MAX_VALUE) {
+                    throw new IllegalArgumentException(
+                            AbstractMatrix.formatMsg("Merged column count overflow: {} + {} = {}", totalColumns, matrix.columnCount, merged));
+                }
+                totalColumns = merged;
             }
 
             resultColumnCount = (int) totalColumns;
-            resultRows = (Object[]) java.lang.reflect.Array.newInstance(first.a.getClass().getComponentType(), first.rowCount);
+            final Class<?> resultRowType = first.a.getClass().getComponentType();
+            final Class<?> componentType = resultRowType.getComponentType();
+            resultRows = (Object[]) java.lang.reflect.Array.newInstance(resultRowType, first.rowCount);
 
             for (int i = 0; i < first.rowCount; i++) {
-                final Class<?> componentType = first.a.getClass().getComponentType().getComponentType();
                 final Object resultRow = java.lang.reflect.Array.newInstance(componentType, resultColumnCount);
                 int targetColumn = 0;
 
@@ -1619,14 +2193,42 @@ public final class Matrices {
     }
 
     /**
+     * Clones a single-dimensional backing row array directly without reflective array creation.
+     *
+     * @param sourceRow the non-{@code null} row array whose exact runtime type already matches the result row type
+     * @return a newly allocated shallow copy of {@code sourceRow}
+     */
+    private static Object cloneRow(final Object sourceRow) {
+        if (sourceRow instanceof final int[] row) {
+            return row.clone();
+        } else if (sourceRow instanceof final double[] row) {
+            return row.clone();
+        } else if (sourceRow instanceof final long[] row) {
+            return row.clone();
+        } else if (sourceRow instanceof final float[] row) {
+            return row.clone();
+        } else if (sourceRow instanceof final boolean[] row) {
+            return row.clone();
+        } else if (sourceRow instanceof final byte[] row) {
+            return row.clone();
+        } else if (sourceRow instanceof final short[] row) {
+            return row.clone();
+        } else if (sourceRow instanceof final char[] row) {
+            return row.clone();
+        }
+
+        return ((Object[]) sourceRow).clone();
+    }
+
+    /**
      * Wraps freshly allocated rows in the same concrete matrix type as {@code template}.
      *
      * @param template a supported, non-null matrix whose type matches {@code rows}
      * @param rows rectangular, identity-distinct rows of the template's runtime array type
      * @param columnCount the non-negative logical column count matching every row
      * @return the new matrix
-     * @throws IllegalArgumentException if the template has an unsupported matrix type or the rows violate its constructor's shape or
-     *         runtime-element-type requirements
+     * @throws IllegalArgumentException if the template has an unsupported matrix type, or, for a {@link Matrix} template, the rows'
+     *         runtime component type does not match its element type; the rows' shape and identity are trusted, not re-validated
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private static AbstractMatrix newMatrixLike(final AbstractMatrix template, final Object[] rows, final int columnCount) throws IllegalArgumentException {
@@ -1654,21 +2256,20 @@ public final class Matrices {
     }
 
     /**
-     * Checks whether all matrices in the collection share the same runtime storage: the same
+     * Checks whether all matrices in the snapshot share the same runtime storage: the same
      * matrix class and, for generic {@link Matrix} instances, the same runtime element type.
      * Only then may n-ary stacking copy the inputs directly into one result allocation.
      *
      * @param matrices the matrices to check, must be non-empty and contain no {@code null} elements
      * @return {@code true} if all matrices have compatible storage for direct stacking
      */
-    private static boolean hasCompatibleStackStorage(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> matrices) {
-        final Iterator<? extends AbstractMatrix<?, ?, ?, ?, ?>> iterator = matrices.iterator();
-        final AbstractMatrix<?, ?, ?, ?, ?> first = iterator.next();
+    private static boolean hasCompatibleStackStorage(final AbstractMatrix<?, ?, ?, ?, ?>[] matrices) {
+        final AbstractMatrix<?, ?, ?, ?, ?> first = matrices[0];
         final Class<?> matrixClass = first.getClass();
         final Class<?> elementType = first instanceof Matrix<?> ? ((Matrix<?>) first).elementType : null;
 
-        while (iterator.hasNext()) {
-            final AbstractMatrix<?, ?, ?, ?, ?> current = iterator.next();
+        for (int i = 1; i < matrices.length; i++) {
+            final AbstractMatrix<?, ?, ?, ?, ?> current = matrices[i];
 
             if (current.getClass() != matrixClass || (elementType != null && ((Matrix<?>) current).elementType != elementType)) {
                 return false;
@@ -1826,12 +2427,11 @@ public final class Matrices {
      */
     public static <E extends Exception> ByteMatrix zip(final Collection<ByteMatrix> coll, final Throwables.ByteBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
-        N.checkArgNotNull(coll, cs.coll);
         checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
+        final ByteMatrix[] matrices = snapshotSameShapeForZip(coll, EMPTY_BYTE_MATRICES);
 
-        final int size = coll.size();
-        final ByteMatrix[] matrices = coll.toArray(new ByteMatrix[size]);
+        final int size = matrices.length;
 
         if (size == 1) {
             return matrices[0].copy();
@@ -1843,38 +2443,62 @@ public final class Matrices {
         final int columnCount = matrices[0].columnCount;
         final byte[][] result = new byte[rowCount][columnCount];
 
-        if (Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size))) {
-            final Throwables.IntBiConsumer<E> action = (i, j) -> {
-                byte zipped = matrices[0].a[i][j];
+        if (rowCount > 0 && columnCount > 0) {
+            if (Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size))) {
+                forEachBlockInParallel(rowCount, columnCount, Byte.BYTES, size, (fromRow, toRow, fromCol, toCol) -> {
+                    // Hoisting one row reference per input keeps the inner loop on plain arrays, but each concurrent task would
+                    // hold size references: past MAX_HOISTED_FOLD_INPUTS inputs, index the matrices directly instead. Either way
+                    // each cell is the sequential left fold, accumulated in a local and written once.
+                    final byte[][] rows = size <= MAX_HOISTED_FOLD_INPUTS ? new byte[size][] : null;
 
-                for (int k = 1; k < size; k++) {
-                    zipped = zipFunction.applyAsByte(zipped, matrices[k].a[i][j]);
-                }
+                    for (int i = fromRow; i < toRow; i++) {
+                        if (rows != null) {
+                            for (int k = 0; k < size; k++) {
+                                rows[k] = matrices[k].a[i];
+                            }
+                        }
 
-                result[i][j] = zipped;
-            };
+                        final byte[] firstRow = matrices[0].a[i];
+                        final byte[] resultRow = result[i];
 
-            forEachIndices(rowCount, columnCount, action, true);
-        } else {
-            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
-            final byte[][] rows = new byte[size][];
+                        for (int j = fromCol; j < toCol; j++) {
+                            byte zipped = firstRow[j];
 
-            for (int i = 0; i < rowCount; i++) {
-                for (int k = 0; k < size; k++) {
-                    rows[k] = matrices[k].a[i];
-                }
+                            if (rows != null) {
+                                for (int k = 1; k < size; k++) {
+                                    zipped = zipFunction.applyAsByte(zipped, rows[k][j]);
+                                }
+                            } else {
+                                for (int k = 1; k < size; k++) {
+                                    zipped = zipFunction.applyAsByte(zipped, matrices[k].a[i][j]);
+                                }
+                            }
 
-                final byte[] firstRow = rows[0];
-                final byte[] resultRow = result[i];
+                            resultRow[j] = zipped;
+                        }
+                    }
+                });
+            } else {
+                // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+                final byte[][] rows = new byte[size][];
 
-                for (int j = 0; j < columnCount; j++) {
-                    byte zipped = firstRow[j];
-
-                    for (int k = 1; k < size; k++) {
-                        zipped = zipFunction.applyAsByte(zipped, rows[k][j]);
+                for (int i = 0; i < rowCount; i++) {
+                    for (int k = 0; k < size; k++) {
+                        rows[k] = matrices[k].a[i];
                     }
 
-                    resultRow[j] = zipped;
+                    final byte[] firstRow = rows[0];
+                    final byte[] resultRow = result[i];
+
+                    for (int j = 0; j < columnCount; j++) {
+                        byte zipped = firstRow[j];
+
+                        for (int k = 1; k < size; k++) {
+                            zipped = zipFunction.applyAsByte(zipped, rows[k][j]);
+                        }
+
+                        resultRow[j] = zipped;
+                    }
                 }
             }
         }
@@ -1913,7 +2537,7 @@ public final class Matrices {
      * @param a the first matrix, must not be {@code null}
      * @param b the second matrix, must not be {@code null} and must have the same shape as {@code a}
      * @param zipFunction the function to combine corresponding elements, takes two bytes and returns a non-{@code null} {@code Integer}; must not be {@code null} and must be thread-safe if execution is parallelized
-     * @return a {@link IntMatrix} with the combined values, never {@code null}
+     * @return an {@link IntMatrix} with the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code a} is {@code null}, if {@code b} is {@code null} or its shape differs from {@code a}'s shape,
      *         or if {@code zipFunction} is {@code null}
      * @throws E if {@code zipFunction} throws while processing a visited cell
@@ -1934,17 +2558,28 @@ public final class Matrices {
         final byte[][] ba = b.a;
         final int[][] result = new int[rowCount][columnCount];
 
-        if (Matrices.shouldRunInParallel(a)) {
-            final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j]);
-            forEachIndices(rowCount, columnCount, action, true);
-        } else {
-            for (int i = 0; i < rowCount; i++) {
-                final byte[] aRow = aa[i];
-                final byte[] bRow = ba[i];
-                final int[] resultRow = result[i];
+        if (rowCount > 0 && columnCount > 0) {
+            if (Matrices.shouldRunInParallel(a)) {
+                forEachBlockInParallel(rowCount, columnCount, Integer.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                    for (int i = fromRow; i < toRow; i++) {
+                        final byte[] aRow = aa[i];
+                        final byte[] bRow = ba[i];
+                        final int[] resultRow = result[i];
 
-                for (int j = 0; j < columnCount; j++) {
-                    resultRow[j] = zipFunction.apply(aRow[j], bRow[j]);
+                        for (int j = fromCol; j < toCol; j++) {
+                            resultRow[j] = zipFunction.apply(aRow[j], bRow[j]);
+                        }
+                    }
+                });
+            } else {
+                for (int i = 0; i < rowCount; i++) {
+                    final byte[] aRow = aa[i];
+                    final byte[] bRow = ba[i];
+                    final int[] resultRow = result[i];
+
+                    for (int j = 0; j < columnCount; j++) {
+                        resultRow[j] = zipFunction.apply(aRow[j], bRow[j]);
+                    }
                 }
             }
         }
@@ -1989,7 +2624,7 @@ public final class Matrices {
      * @param b the second matrix, must not be {@code null} and must have the same shape as {@code a}
      * @param c the third matrix, must not be {@code null} and must have the same shape as {@code a} and {@code b}
      * @param zipFunction the function to combine corresponding elements, takes three bytes and returns a non-{@code null} {@code Integer}; must not be {@code null} and must be thread-safe if execution is parallelized
-     * @return a {@link IntMatrix} with the combined values, never {@code null}
+     * @return an {@link IntMatrix} with the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code a} is {@code null}, if {@code b} is {@code null} or its shape differs from {@code a}'s shape,
      *         if {@code c} is {@code null} or its shape differs from {@code a}'s shape, or if {@code zipFunction} is {@code null}
      * @throws E if {@code zipFunction} throws while processing a visited cell
@@ -2013,18 +2648,30 @@ public final class Matrices {
         final byte[][] ca = c.a;
         final int[][] result = new int[rowCount][columnCount];
 
-        if (Matrices.shouldRunInParallel(a)) {
-            final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j], ca[i][j]);
-            forEachIndices(rowCount, columnCount, action, true);
-        } else {
-            for (int i = 0; i < rowCount; i++) {
-                final byte[] aRow = aa[i];
-                final byte[] bRow = ba[i];
-                final byte[] cRow = ca[i];
-                final int[] resultRow = result[i];
+        if (rowCount > 0 && columnCount > 0) {
+            if (Matrices.shouldRunInParallel(a)) {
+                forEachBlockInParallel(rowCount, columnCount, Integer.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                    for (int i = fromRow; i < toRow; i++) {
+                        final byte[] aRow = aa[i];
+                        final byte[] bRow = ba[i];
+                        final byte[] cRow = ca[i];
+                        final int[] resultRow = result[i];
 
-                for (int j = 0; j < columnCount; j++) {
-                    resultRow[j] = zipFunction.apply(aRow[j], bRow[j], cRow[j]);
+                        for (int j = fromCol; j < toCol; j++) {
+                            resultRow[j] = zipFunction.apply(aRow[j], bRow[j], cRow[j]);
+                        }
+                    }
+                });
+            } else {
+                for (int i = 0; i < rowCount; i++) {
+                    final byte[] aRow = aa[i];
+                    final byte[] bRow = ba[i];
+                    final byte[] cRow = ca[i];
+                    final int[] resultRow = result[i];
+
+                    for (int j = 0; j < columnCount; j++) {
+                        resultRow[j] = zipFunction.apply(aRow[j], bRow[j], cRow[j]);
+                    }
                 }
             }
         }
@@ -2071,7 +2718,7 @@ public final class Matrices {
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
      * @param zipFunction the function that takes an array of bytes and returns a non-{@code null} {@code Integer}; must not be {@code null} and must be thread-safe if execution is parallelized
-     * @return a {@link IntMatrix} with the combined values, never {@code null}
+     * @return an {@link IntMatrix} with the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different
      *         shapes; if {@code zipFunction} is {@code null}
      * @throws E if {@code zipFunction} throws while processing a visited cell
@@ -2133,7 +2780,7 @@ public final class Matrices {
      * @param zipFunction the function that takes an array of bytes and returns a non-{@code null} {@code Integer}; must not be {@code null} and must be thread-safe if execution is parallelized
      * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
      *                               {@code false} to create new arrays for each position
-     * @return a {@link IntMatrix} with the combined values, never {@code null}
+     * @return an {@link IntMatrix} with the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different
      *         shapes; if {@code zipFunction} is {@code null}
      * @throws E if {@code zipFunction} throws while processing a visited cell
@@ -2143,51 +2790,70 @@ public final class Matrices {
      */
     public static <E extends Exception> IntMatrix zipToInt(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<Integer, E> zipFunction,
             final boolean shareIntermediateArray) throws IllegalArgumentException, E, NullPointerException {
-        N.checkArgNotNull(coll, cs.coll);
         checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
+        final ByteMatrix[] matrices = snapshotSameShapeForZip(coll, EMPTY_BYTE_MATRICES);
 
-        final int size = coll.size();
-        final ByteMatrix[] matrices = coll.toArray(new ByteMatrix[size]);
-
+        final int size = matrices.length;
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
-        final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size));
         final int[][] result = new int[rowCount][columnCount];
 
-        if (zipInParallel) {
-            final Throwables.IntBiConsumer<E> action = (i, j) -> {
-                final byte[] tmp = new byte[size]; // concurrent calls never share a callback array
+        if (rowCount > 0 && columnCount > 0) {
+            if (Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size))) {
+                forEachBlockInParallel(rowCount, columnCount, Integer.BYTES, size, (fromRow, toRow, fromCol, toCol) -> {
+                    // Hoisting one row reference per input saves 1.5-3.5x on the per-cell gather, but each concurrent task would hold
+                    // size references: past MAX_HOISTED_FOLD_INPUTS inputs, index the matrices directly instead.
+                    final byte[][] rows = size <= MAX_HOISTED_FOLD_INPUTS ? new byte[size][] : null;
 
-                for (int k = 0; k < size; k++) {
-                    tmp[k] = matrices[k].a[i][j];
-                }
+                    for (int i = fromRow; i < toRow; i++) {
+                        if (rows != null) {
+                            for (int k = 0; k < size; k++) {
+                                rows[k] = matrices[k].a[i];
+                            }
+                        }
 
-                result[i][j] = zipFunction.apply(tmp);
-            };
+                        final int[] resultRow = result[i];
 
-            forEachIndices(rowCount, columnCount, action, true);
-        } else {
-            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
-            // An unshared callback array is allocated fresh, about 2x cheaper than cloning a zeroed template.
-            final byte[] sharedArray = shareIntermediateArray ? new byte[size] : null;
-            final byte[][] rows = new byte[size][];
+                        for (int j = fromCol; j < toCol; j++) {
+                            final byte[] tmp = new byte[size]; // concurrent calls never share a callback array
 
-            for (int i = 0; i < rowCount; i++) {
-                for (int k = 0; k < size; k++) {
-                    rows[k] = matrices[k].a[i];
-                }
+                            if (rows != null) {
+                                for (int k = 0; k < size; k++) {
+                                    tmp[k] = rows[k][j];
+                                }
+                            } else {
+                                for (int k = 0; k < size; k++) {
+                                    tmp[k] = matrices[k].a[i][j];
+                                }
+                            }
 
-                final int[] resultRow = result[i];
+                            resultRow[j] = zipFunction.apply(tmp);
+                        }
+                    }
+                });
+            } else {
+                // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+                // An unshared callback array is allocated fresh, about 2x cheaper than cloning a zeroed template.
+                final byte[] sharedArray = shareIntermediateArray ? new byte[size] : null;
+                final byte[][] rows = new byte[size][];
 
-                for (int j = 0; j < columnCount; j++) {
-                    final byte[] tmp = sharedArray == null ? new byte[size] : sharedArray;
-
+                for (int i = 0; i < rowCount; i++) {
                     for (int k = 0; k < size; k++) {
-                        tmp[k] = rows[k][j];
+                        rows[k] = matrices[k].a[i];
                     }
 
-                    resultRow[j] = zipFunction.apply(tmp);
+                    final int[] resultRow = result[i];
+
+                    for (int j = 0; j < columnCount; j++) {
+                        final byte[] tmp = sharedArray == null ? new byte[size] : sharedArray;
+
+                        for (int k = 0; k < size; k++) {
+                            tmp[k] = rows[k][j];
+                        }
+
+                        resultRow[j] = zipFunction.apply(tmp);
+                    }
                 }
             }
         }
@@ -2234,7 +2900,8 @@ public final class Matrices {
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
      * @param zipFunction the function that takes an array of bytes (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
-     * @param targetElementType the class of the result element type, must not be {@code null}
+     * @param targetElementType the class of the result element type; primitive scalar types will be auto-wrapped, must not be {@code null}
+     *        or {@code void.class}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different
      *         shapes; if {@code zipFunction} or {@code targetElementType} is {@code null}; if {@code targetElementType} is {@code void.class},
@@ -2297,7 +2964,8 @@ public final class Matrices {
      * @param zipFunction the function that takes an array of bytes (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
      * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
      *                               {@code false} to create new arrays for each position
-     * @param targetElementType the class of the result element type, must not be {@code null}
+     * @param targetElementType the class of the result element type; primitive scalar types will be auto-wrapped, must not be {@code null}
+     *        or {@code void.class}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different
      *         shapes; if {@code zipFunction} or {@code targetElementType} is {@code null}; if {@code targetElementType} is {@code void.class},
@@ -2310,53 +2978,72 @@ public final class Matrices {
      */
     public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<ByteMatrix> coll, final Throwables.ByteNFunction<? extends R, E> zipFunction,
             final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E, ArrayStoreException {
-        N.checkArgNotNull(coll, cs.coll);
         checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgNotNull(targetElementType, cs.targetElementType);
         final Class<R> normalizedTargetType = normalizeElementType(targetElementType);
+        final ByteMatrix[] matrices = snapshotSameShapeForZip(coll, EMPTY_BYTE_MATRICES);
 
-        final int size = coll.size();
-        final ByteMatrix[] matrices = coll.toArray(new ByteMatrix[size]);
-
+        final int size = matrices.length;
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
-        final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size));
         final R[][] result = newMatrixArray(rowCount, columnCount, normalizedTargetType);
 
-        if (zipInParallel) {
-            final Throwables.IntBiConsumer<E> action = (i, j) -> {
-                final byte[] tmp = new byte[size]; // concurrent calls never share a callback array
+        if (rowCount > 0 && columnCount > 0) {
+            if (Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size))) {
+                forEachBlockInParallel(rowCount, columnCount, Long.BYTES, size, (fromRow, toRow, fromCol, toCol) -> {
+                    // Hoisting one row reference per input saves 1.5-3.5x on the per-cell gather, but each concurrent task would hold
+                    // size references: past MAX_HOISTED_FOLD_INPUTS inputs, index the matrices directly instead.
+                    final byte[][] rows = size <= MAX_HOISTED_FOLD_INPUTS ? new byte[size][] : null;
 
-                for (int k = 0; k < size; k++) {
-                    tmp[k] = matrices[k].a[i][j];
-                }
+                    for (int i = fromRow; i < toRow; i++) {
+                        if (rows != null) {
+                            for (int k = 0; k < size; k++) {
+                                rows[k] = matrices[k].a[i];
+                            }
+                        }
 
-                result[i][j] = zipFunction.apply(tmp);
-            };
+                        final R[] resultRow = result[i];
 
-            forEachIndices(rowCount, columnCount, action, true);
-        } else {
-            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
-            // An unshared callback array is allocated fresh, about 2x cheaper than cloning a zeroed template.
-            final byte[] sharedArray = shareIntermediateArray ? new byte[size] : null;
-            final byte[][] rows = new byte[size][];
+                        for (int j = fromCol; j < toCol; j++) {
+                            final byte[] tmp = new byte[size]; // concurrent calls never share a callback array
 
-            for (int i = 0; i < rowCount; i++) {
-                for (int k = 0; k < size; k++) {
-                    rows[k] = matrices[k].a[i];
-                }
+                            if (rows != null) {
+                                for (int k = 0; k < size; k++) {
+                                    tmp[k] = rows[k][j];
+                                }
+                            } else {
+                                for (int k = 0; k < size; k++) {
+                                    tmp[k] = matrices[k].a[i][j];
+                                }
+                            }
 
-                final R[] resultRow = result[i];
+                            resultRow[j] = zipFunction.apply(tmp);
+                        }
+                    }
+                });
+            } else {
+                // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+                // An unshared callback array is allocated fresh, about 2x cheaper than cloning a zeroed template.
+                final byte[] sharedArray = shareIntermediateArray ? new byte[size] : null;
+                final byte[][] rows = new byte[size][];
 
-                for (int j = 0; j < columnCount; j++) {
-                    final byte[] tmp = sharedArray == null ? new byte[size] : sharedArray;
-
+                for (int i = 0; i < rowCount; i++) {
                     for (int k = 0; k < size; k++) {
-                        tmp[k] = rows[k][j];
+                        rows[k] = matrices[k].a[i];
                     }
 
-                    resultRow[j] = zipFunction.apply(tmp);
+                    final R[] resultRow = result[i];
+
+                    for (int j = 0; j < columnCount; j++) {
+                        final byte[] tmp = sharedArray == null ? new byte[size] : sharedArray;
+
+                        for (int k = 0; k < size; k++) {
+                            tmp[k] = rows[k][j];
+                        }
+
+                        resultRow[j] = zipFunction.apply(tmp);
+                    }
                 }
             }
         }
@@ -2394,7 +3081,7 @@ public final class Matrices {
      * @param a the first matrix, must not be {@code null}
      * @param b the second matrix, must not be {@code null} and must have the same shape as {@code a}
      * @param zipFunction the binary operator to combine corresponding elements from both matrices, must not be {@code null} and must be thread-safe if execution is parallelized
-     * @return a {@link IntMatrix} containing the results of applying the function to each pair of elements, never {@code null}
+     * @return an {@link IntMatrix} containing the results of applying the function to each pair of elements, never {@code null}
      * @throws IllegalArgumentException if {@code a} is {@code null}, if {@code b} is {@code null} or its shape differs from {@code a}'s shape,
      *         or if {@code zipFunction} is {@code null}
      * @throws E if {@code zipFunction} throws while processing a visited cell
@@ -2444,7 +3131,7 @@ public final class Matrices {
      * @param b the second matrix, must not be {@code null} and must have the same shape as {@code a}
      * @param c the third matrix, must not be {@code null} and must have the same shape as {@code a} and {@code b}
      * @param zipFunction the ternary operator to combine corresponding elements from all three matrices, must not be {@code null} and must be thread-safe if execution is parallelized
-     * @return a {@link IntMatrix} containing the results of applying the function to each triple of elements, never {@code null}
+     * @return an {@link IntMatrix} containing the results of applying the function to each triple of elements, never {@code null}
      * @throws IllegalArgumentException if {@code a} is {@code null}, if {@code b} is {@code null} or its shape differs from {@code a}'s shape,
      *         if {@code c} is {@code null} or its shape differs from {@code a}'s shape, or if {@code zipFunction} is {@code null}
      * @throws E if {@code zipFunction} throws while processing a visited cell
@@ -2505,7 +3192,7 @@ public final class Matrices {
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
      * @param zipFunction the binary operator to combine elements sequentially, must not be {@code null} and must be thread-safe if execution is parallelized
-     * @return a {@link IntMatrix} containing the combined results, never {@code null}
+     * @return an {@link IntMatrix} containing the combined results, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different
      *         shapes; if {@code zipFunction} is {@code null}
      * @throws E if {@code zipFunction} throws while combining values from two or more matrices at a visited cell
@@ -2515,12 +3202,11 @@ public final class Matrices {
      */
     public static <E extends Exception> IntMatrix zip(final Collection<IntMatrix> coll, final Throwables.IntBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
-        N.checkArgNotNull(coll, cs.coll);
         checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
+        final IntMatrix[] matrices = snapshotSameShapeForZip(coll, EMPTY_INT_MATRICES);
 
-        final int size = coll.size();
-        final IntMatrix[] matrices = coll.toArray(new IntMatrix[size]);
+        final int size = matrices.length;
 
         if (size == 1) {
             return matrices[0].copy();
@@ -2532,38 +3218,62 @@ public final class Matrices {
         final int columnCount = matrices[0].columnCount;
         final int[][] result = new int[rowCount][columnCount];
 
-        if (Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size))) {
-            final Throwables.IntBiConsumer<E> action = (i, j) -> {
-                int zipped = matrices[0].a[i][j];
+        if (rowCount > 0 && columnCount > 0) {
+            if (Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size))) {
+                forEachBlockInParallel(rowCount, columnCount, Integer.BYTES, size, (fromRow, toRow, fromCol, toCol) -> {
+                    // Hoisting one row reference per input keeps the inner loop on plain arrays, but each concurrent task would
+                    // hold size references: past MAX_HOISTED_FOLD_INPUTS inputs, index the matrices directly instead. Either way
+                    // each cell is the sequential left fold, accumulated in a local and written once.
+                    final int[][] rows = size <= MAX_HOISTED_FOLD_INPUTS ? new int[size][] : null;
 
-                for (int k = 1; k < size; k++) {
-                    zipped = zipFunction.applyAsInt(zipped, matrices[k].a[i][j]);
-                }
+                    for (int i = fromRow; i < toRow; i++) {
+                        if (rows != null) {
+                            for (int k = 0; k < size; k++) {
+                                rows[k] = matrices[k].a[i];
+                            }
+                        }
 
-                result[i][j] = zipped;
-            };
+                        final int[] firstRow = matrices[0].a[i];
+                        final int[] resultRow = result[i];
 
-            forEachIndices(rowCount, columnCount, action, true);
-        } else {
-            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
-            final int[][] rows = new int[size][];
+                        for (int j = fromCol; j < toCol; j++) {
+                            int zipped = firstRow[j];
 
-            for (int i = 0; i < rowCount; i++) {
-                for (int k = 0; k < size; k++) {
-                    rows[k] = matrices[k].a[i];
-                }
+                            if (rows != null) {
+                                for (int k = 1; k < size; k++) {
+                                    zipped = zipFunction.applyAsInt(zipped, rows[k][j]);
+                                }
+                            } else {
+                                for (int k = 1; k < size; k++) {
+                                    zipped = zipFunction.applyAsInt(zipped, matrices[k].a[i][j]);
+                                }
+                            }
 
-                final int[] firstRow = rows[0];
-                final int[] resultRow = result[i];
+                            resultRow[j] = zipped;
+                        }
+                    }
+                });
+            } else {
+                // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+                final int[][] rows = new int[size][];
 
-                for (int j = 0; j < columnCount; j++) {
-                    int zipped = firstRow[j];
-
-                    for (int k = 1; k < size; k++) {
-                        zipped = zipFunction.applyAsInt(zipped, rows[k][j]);
+                for (int i = 0; i < rowCount; i++) {
+                    for (int k = 0; k < size; k++) {
+                        rows[k] = matrices[k].a[i];
                     }
 
-                    resultRow[j] = zipped;
+                    final int[] firstRow = rows[0];
+                    final int[] resultRow = result[i];
+
+                    for (int j = 0; j < columnCount; j++) {
+                        int zipped = firstRow[j];
+
+                        for (int k = 1; k < size; k++) {
+                            zipped = zipFunction.applyAsInt(zipped, rows[k][j]);
+                        }
+
+                        resultRow[j] = zipped;
+                    }
                 }
             }
         }
@@ -2622,17 +3332,28 @@ public final class Matrices {
         final int[][] ba = b.a;
         final long[][] result = new long[rowCount][columnCount];
 
-        if (Matrices.shouldRunInParallel(a)) {
-            final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j]);
-            forEachIndices(rowCount, columnCount, action, true);
-        } else {
-            for (int i = 0; i < rowCount; i++) {
-                final int[] aRow = aa[i];
-                final int[] bRow = ba[i];
-                final long[] resultRow = result[i];
+        if (rowCount > 0 && columnCount > 0) {
+            if (Matrices.shouldRunInParallel(a)) {
+                forEachBlockInParallel(rowCount, columnCount, Long.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                    for (int i = fromRow; i < toRow; i++) {
+                        final int[] aRow = aa[i];
+                        final int[] bRow = ba[i];
+                        final long[] resultRow = result[i];
 
-                for (int j = 0; j < columnCount; j++) {
-                    resultRow[j] = zipFunction.apply(aRow[j], bRow[j]);
+                        for (int j = fromCol; j < toCol; j++) {
+                            resultRow[j] = zipFunction.apply(aRow[j], bRow[j]);
+                        }
+                    }
+                });
+            } else {
+                for (int i = 0; i < rowCount; i++) {
+                    final int[] aRow = aa[i];
+                    final int[] bRow = ba[i];
+                    final long[] resultRow = result[i];
+
+                    for (int j = 0; j < columnCount; j++) {
+                        resultRow[j] = zipFunction.apply(aRow[j], bRow[j]);
+                    }
                 }
             }
         }
@@ -2697,18 +3418,30 @@ public final class Matrices {
         final int[][] ca = c.a;
         final long[][] result = new long[rowCount][columnCount];
 
-        if (Matrices.shouldRunInParallel(a)) {
-            final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j], ca[i][j]);
-            forEachIndices(rowCount, columnCount, action, true);
-        } else {
-            for (int i = 0; i < rowCount; i++) {
-                final int[] aRow = aa[i];
-                final int[] bRow = ba[i];
-                final int[] cRow = ca[i];
-                final long[] resultRow = result[i];
+        if (rowCount > 0 && columnCount > 0) {
+            if (Matrices.shouldRunInParallel(a)) {
+                forEachBlockInParallel(rowCount, columnCount, Long.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                    for (int i = fromRow; i < toRow; i++) {
+                        final int[] aRow = aa[i];
+                        final int[] bRow = ba[i];
+                        final int[] cRow = ca[i];
+                        final long[] resultRow = result[i];
 
-                for (int j = 0; j < columnCount; j++) {
-                    resultRow[j] = zipFunction.apply(aRow[j], bRow[j], cRow[j]);
+                        for (int j = fromCol; j < toCol; j++) {
+                            resultRow[j] = zipFunction.apply(aRow[j], bRow[j], cRow[j]);
+                        }
+                    }
+                });
+            } else {
+                for (int i = 0; i < rowCount; i++) {
+                    final int[] aRow = aa[i];
+                    final int[] bRow = ba[i];
+                    final int[] cRow = ca[i];
+                    final long[] resultRow = result[i];
+
+                    for (int j = 0; j < columnCount; j++) {
+                        resultRow[j] = zipFunction.apply(aRow[j], bRow[j], cRow[j]);
+                    }
                 }
             }
         }
@@ -2825,51 +3558,70 @@ public final class Matrices {
      */
     public static <E extends Exception> LongMatrix zipToLong(final Collection<IntMatrix> coll, final Throwables.IntNFunction<Long, E> zipFunction,
             final boolean shareIntermediateArray) throws IllegalArgumentException, E, NullPointerException {
-        N.checkArgNotNull(coll, cs.coll);
         checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
+        final IntMatrix[] matrices = snapshotSameShapeForZip(coll, EMPTY_INT_MATRICES);
 
-        final int size = coll.size();
-        final IntMatrix[] matrices = coll.toArray(new IntMatrix[size]);
-
+        final int size = matrices.length;
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
-        final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size));
         final long[][] result = new long[rowCount][columnCount];
 
-        if (zipInParallel) {
-            final Throwables.IntBiConsumer<E> action = (i, j) -> {
-                final int[] tmp = new int[size]; // concurrent calls never share a callback array
+        if (rowCount > 0 && columnCount > 0) {
+            if (Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size))) {
+                forEachBlockInParallel(rowCount, columnCount, Long.BYTES, size, (fromRow, toRow, fromCol, toCol) -> {
+                    // Hoisting one row reference per input saves 1.5-3.5x on the per-cell gather, but each concurrent task would hold
+                    // size references: past MAX_HOISTED_FOLD_INPUTS inputs, index the matrices directly instead.
+                    final int[][] rows = size <= MAX_HOISTED_FOLD_INPUTS ? new int[size][] : null;
 
-                for (int k = 0; k < size; k++) {
-                    tmp[k] = matrices[k].a[i][j];
-                }
+                    for (int i = fromRow; i < toRow; i++) {
+                        if (rows != null) {
+                            for (int k = 0; k < size; k++) {
+                                rows[k] = matrices[k].a[i];
+                            }
+                        }
 
-                result[i][j] = zipFunction.apply(tmp);
-            };
+                        final long[] resultRow = result[i];
 
-            forEachIndices(rowCount, columnCount, action, true);
-        } else {
-            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
-            // An unshared callback array is allocated fresh, about 2x cheaper than cloning a zeroed template.
-            final int[] sharedArray = shareIntermediateArray ? new int[size] : null;
-            final int[][] rows = new int[size][];
+                        for (int j = fromCol; j < toCol; j++) {
+                            final int[] tmp = new int[size]; // concurrent calls never share a callback array
 
-            for (int i = 0; i < rowCount; i++) {
-                for (int k = 0; k < size; k++) {
-                    rows[k] = matrices[k].a[i];
-                }
+                            if (rows != null) {
+                                for (int k = 0; k < size; k++) {
+                                    tmp[k] = rows[k][j];
+                                }
+                            } else {
+                                for (int k = 0; k < size; k++) {
+                                    tmp[k] = matrices[k].a[i][j];
+                                }
+                            }
 
-                final long[] resultRow = result[i];
+                            resultRow[j] = zipFunction.apply(tmp);
+                        }
+                    }
+                });
+            } else {
+                // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+                // An unshared callback array is allocated fresh, about 2x cheaper than cloning a zeroed template.
+                final int[] sharedArray = shareIntermediateArray ? new int[size] : null;
+                final int[][] rows = new int[size][];
 
-                for (int j = 0; j < columnCount; j++) {
-                    final int[] tmp = sharedArray == null ? new int[size] : sharedArray;
-
+                for (int i = 0; i < rowCount; i++) {
                     for (int k = 0; k < size; k++) {
-                        tmp[k] = rows[k][j];
+                        rows[k] = matrices[k].a[i];
                     }
 
-                    resultRow[j] = zipFunction.apply(tmp);
+                    final long[] resultRow = result[i];
+
+                    for (int j = 0; j < columnCount; j++) {
+                        final int[] tmp = sharedArray == null ? new int[size] : sharedArray;
+
+                        for (int k = 0; k < size; k++) {
+                            tmp[k] = rows[k][j];
+                        }
+
+                        resultRow[j] = zipFunction.apply(tmp);
+                    }
                 }
             }
         }
@@ -2928,17 +3680,28 @@ public final class Matrices {
         final int[][] ba = b.a;
         final double[][] result = new double[rowCount][columnCount];
 
-        if (Matrices.shouldRunInParallel(a)) {
-            final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j]);
-            forEachIndices(rowCount, columnCount, action, true);
-        } else {
-            for (int i = 0; i < rowCount; i++) {
-                final int[] aRow = aa[i];
-                final int[] bRow = ba[i];
-                final double[] resultRow = result[i];
+        if (rowCount > 0 && columnCount > 0) {
+            if (Matrices.shouldRunInParallel(a)) {
+                forEachBlockInParallel(rowCount, columnCount, Double.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                    for (int i = fromRow; i < toRow; i++) {
+                        final int[] aRow = aa[i];
+                        final int[] bRow = ba[i];
+                        final double[] resultRow = result[i];
 
-                for (int j = 0; j < columnCount; j++) {
-                    resultRow[j] = zipFunction.apply(aRow[j], bRow[j]);
+                        for (int j = fromCol; j < toCol; j++) {
+                            resultRow[j] = zipFunction.apply(aRow[j], bRow[j]);
+                        }
+                    }
+                });
+            } else {
+                for (int i = 0; i < rowCount; i++) {
+                    final int[] aRow = aa[i];
+                    final int[] bRow = ba[i];
+                    final double[] resultRow = result[i];
+
+                    for (int j = 0; j < columnCount; j++) {
+                        resultRow[j] = zipFunction.apply(aRow[j], bRow[j]);
+                    }
                 }
             }
         }
@@ -3003,18 +3766,30 @@ public final class Matrices {
         final int[][] ca = c.a;
         final double[][] result = new double[rowCount][columnCount];
 
-        if (Matrices.shouldRunInParallel(a)) {
-            final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j], ca[i][j]);
-            forEachIndices(rowCount, columnCount, action, true);
-        } else {
-            for (int i = 0; i < rowCount; i++) {
-                final int[] aRow = aa[i];
-                final int[] bRow = ba[i];
-                final int[] cRow = ca[i];
-                final double[] resultRow = result[i];
+        if (rowCount > 0 && columnCount > 0) {
+            if (Matrices.shouldRunInParallel(a)) {
+                forEachBlockInParallel(rowCount, columnCount, Double.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                    for (int i = fromRow; i < toRow; i++) {
+                        final int[] aRow = aa[i];
+                        final int[] bRow = ba[i];
+                        final int[] cRow = ca[i];
+                        final double[] resultRow = result[i];
 
-                for (int j = 0; j < columnCount; j++) {
-                    resultRow[j] = zipFunction.apply(aRow[j], bRow[j], cRow[j]);
+                        for (int j = fromCol; j < toCol; j++) {
+                            resultRow[j] = zipFunction.apply(aRow[j], bRow[j], cRow[j]);
+                        }
+                    }
+                });
+            } else {
+                for (int i = 0; i < rowCount; i++) {
+                    final int[] aRow = aa[i];
+                    final int[] bRow = ba[i];
+                    final int[] cRow = ca[i];
+                    final double[] resultRow = result[i];
+
+                    for (int j = 0; j < columnCount; j++) {
+                        resultRow[j] = zipFunction.apply(aRow[j], bRow[j], cRow[j]);
+                    }
                 }
             }
         }
@@ -3123,51 +3898,70 @@ public final class Matrices {
      */
     public static <E extends Exception> DoubleMatrix zipToDouble(final Collection<IntMatrix> coll, final Throwables.IntNFunction<Double, E> zipFunction,
             final boolean shareIntermediateArray) throws IllegalArgumentException, E, NullPointerException {
-        N.checkArgNotNull(coll, cs.coll);
         checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
+        final IntMatrix[] matrices = snapshotSameShapeForZip(coll, EMPTY_INT_MATRICES);
 
-        final int size = coll.size();
-        final IntMatrix[] matrices = coll.toArray(new IntMatrix[size]);
-
+        final int size = matrices.length;
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
-        final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size));
         final double[][] result = new double[rowCount][columnCount];
 
-        if (zipInParallel) {
-            final Throwables.IntBiConsumer<E> action = (i, j) -> {
-                final int[] tmp = new int[size]; // concurrent calls never share a callback array
+        if (rowCount > 0 && columnCount > 0) {
+            if (Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size))) {
+                forEachBlockInParallel(rowCount, columnCount, Double.BYTES, size, (fromRow, toRow, fromCol, toCol) -> {
+                    // Hoisting one row reference per input saves 1.5-3.5x on the per-cell gather, but each concurrent task would hold
+                    // size references: past MAX_HOISTED_FOLD_INPUTS inputs, index the matrices directly instead.
+                    final int[][] rows = size <= MAX_HOISTED_FOLD_INPUTS ? new int[size][] : null;
 
-                for (int k = 0; k < size; k++) {
-                    tmp[k] = matrices[k].a[i][j];
-                }
+                    for (int i = fromRow; i < toRow; i++) {
+                        if (rows != null) {
+                            for (int k = 0; k < size; k++) {
+                                rows[k] = matrices[k].a[i];
+                            }
+                        }
 
-                result[i][j] = zipFunction.apply(tmp);
-            };
+                        final double[] resultRow = result[i];
 
-            forEachIndices(rowCount, columnCount, action, true);
-        } else {
-            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
-            // An unshared callback array is allocated fresh, about 2x cheaper than cloning a zeroed template.
-            final int[] sharedArray = shareIntermediateArray ? new int[size] : null;
-            final int[][] rows = new int[size][];
+                        for (int j = fromCol; j < toCol; j++) {
+                            final int[] tmp = new int[size]; // concurrent calls never share a callback array
 
-            for (int i = 0; i < rowCount; i++) {
-                for (int k = 0; k < size; k++) {
-                    rows[k] = matrices[k].a[i];
-                }
+                            if (rows != null) {
+                                for (int k = 0; k < size; k++) {
+                                    tmp[k] = rows[k][j];
+                                }
+                            } else {
+                                for (int k = 0; k < size; k++) {
+                                    tmp[k] = matrices[k].a[i][j];
+                                }
+                            }
 
-                final double[] resultRow = result[i];
+                            resultRow[j] = zipFunction.apply(tmp);
+                        }
+                    }
+                });
+            } else {
+                // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+                // An unshared callback array is allocated fresh, about 2x cheaper than cloning a zeroed template.
+                final int[] sharedArray = shareIntermediateArray ? new int[size] : null;
+                final int[][] rows = new int[size][];
 
-                for (int j = 0; j < columnCount; j++) {
-                    final int[] tmp = sharedArray == null ? new int[size] : sharedArray;
-
+                for (int i = 0; i < rowCount; i++) {
                     for (int k = 0; k < size; k++) {
-                        tmp[k] = rows[k][j];
+                        rows[k] = matrices[k].a[i];
                     }
 
-                    resultRow[j] = zipFunction.apply(tmp);
+                    final double[] resultRow = result[i];
+
+                    for (int j = 0; j < columnCount; j++) {
+                        final int[] tmp = sharedArray == null ? new int[size] : sharedArray;
+
+                        for (int k = 0; k < size; k++) {
+                            tmp[k] = rows[k][j];
+                        }
+
+                        resultRow[j] = zipFunction.apply(tmp);
+                    }
                 }
             }
         }
@@ -3212,7 +4006,8 @@ public final class Matrices {
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
      * @param zipFunction the function that takes an array of integers (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
-     * @param targetElementType the class of the result element type, must not be {@code null}
+     * @param targetElementType the class of the result element type; primitive scalar types will be auto-wrapped, must not be {@code null}
+     *        or {@code void.class}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different
      *         shapes; if {@code zipFunction} or {@code targetElementType} is {@code null}; if {@code targetElementType} is {@code void.class},
@@ -3275,7 +4070,8 @@ public final class Matrices {
      * @param zipFunction the function that takes an array of integers (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
      * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
      *                               {@code false} to create new arrays for each position
-     * @param targetElementType the class of the result element type, must not be {@code null}
+     * @param targetElementType the class of the result element type; primitive scalar types will be auto-wrapped, must not be {@code null}
+     *        or {@code void.class}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different
      *         shapes; if {@code zipFunction} or {@code targetElementType} is {@code null}; if {@code targetElementType} is {@code void.class},
@@ -3288,53 +4084,72 @@ public final class Matrices {
      */
     public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<IntMatrix> coll, final Throwables.IntNFunction<? extends R, E> zipFunction,
             final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E, ArrayStoreException {
-        N.checkArgNotNull(coll, cs.coll);
         checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgNotNull(targetElementType, cs.targetElementType);
         final Class<R> normalizedTargetType = normalizeElementType(targetElementType);
+        final IntMatrix[] matrices = snapshotSameShapeForZip(coll, EMPTY_INT_MATRICES);
 
-        final int size = coll.size();
-        final IntMatrix[] matrices = coll.toArray(new IntMatrix[size]);
-
+        final int size = matrices.length;
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
-        final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size));
         final R[][] result = newMatrixArray(rowCount, columnCount, normalizedTargetType);
 
-        if (zipInParallel) {
-            final Throwables.IntBiConsumer<E> action = (i, j) -> {
-                final int[] tmp = new int[size]; // concurrent calls never share a callback array
+        if (rowCount > 0 && columnCount > 0) {
+            if (Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size))) {
+                forEachBlockInParallel(rowCount, columnCount, Long.BYTES, size, (fromRow, toRow, fromCol, toCol) -> {
+                    // Hoisting one row reference per input saves 1.5-3.5x on the per-cell gather, but each concurrent task would hold
+                    // size references: past MAX_HOISTED_FOLD_INPUTS inputs, index the matrices directly instead.
+                    final int[][] rows = size <= MAX_HOISTED_FOLD_INPUTS ? new int[size][] : null;
 
-                for (int k = 0; k < size; k++) {
-                    tmp[k] = matrices[k].a[i][j];
-                }
+                    for (int i = fromRow; i < toRow; i++) {
+                        if (rows != null) {
+                            for (int k = 0; k < size; k++) {
+                                rows[k] = matrices[k].a[i];
+                            }
+                        }
 
-                result[i][j] = zipFunction.apply(tmp);
-            };
+                        final R[] resultRow = result[i];
 
-            forEachIndices(rowCount, columnCount, action, true);
-        } else {
-            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
-            // An unshared callback array is allocated fresh, about 2x cheaper than cloning a zeroed template.
-            final int[] sharedArray = shareIntermediateArray ? new int[size] : null;
-            final int[][] rows = new int[size][];
+                        for (int j = fromCol; j < toCol; j++) {
+                            final int[] tmp = new int[size]; // concurrent calls never share a callback array
 
-            for (int i = 0; i < rowCount; i++) {
-                for (int k = 0; k < size; k++) {
-                    rows[k] = matrices[k].a[i];
-                }
+                            if (rows != null) {
+                                for (int k = 0; k < size; k++) {
+                                    tmp[k] = rows[k][j];
+                                }
+                            } else {
+                                for (int k = 0; k < size; k++) {
+                                    tmp[k] = matrices[k].a[i][j];
+                                }
+                            }
 
-                final R[] resultRow = result[i];
+                            resultRow[j] = zipFunction.apply(tmp);
+                        }
+                    }
+                });
+            } else {
+                // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+                // An unshared callback array is allocated fresh, about 2x cheaper than cloning a zeroed template.
+                final int[] sharedArray = shareIntermediateArray ? new int[size] : null;
+                final int[][] rows = new int[size][];
 
-                for (int j = 0; j < columnCount; j++) {
-                    final int[] tmp = sharedArray == null ? new int[size] : sharedArray;
-
+                for (int i = 0; i < rowCount; i++) {
                     for (int k = 0; k < size; k++) {
-                        tmp[k] = rows[k][j];
+                        rows[k] = matrices[k].a[i];
                     }
 
-                    resultRow[j] = zipFunction.apply(tmp);
+                    final R[] resultRow = result[i];
+
+                    for (int j = 0; j < columnCount; j++) {
+                        final int[] tmp = sharedArray == null ? new int[size] : sharedArray;
+
+                        for (int k = 0; k < size; k++) {
+                            tmp[k] = rows[k][j];
+                        }
+
+                        resultRow[j] = zipFunction.apply(tmp);
+                    }
                 }
             }
         }
@@ -3493,12 +4308,11 @@ public final class Matrices {
      */
     public static <E extends Exception> LongMatrix zip(final Collection<LongMatrix> coll, final Throwables.LongBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
-        N.checkArgNotNull(coll, cs.coll);
         checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
+        final LongMatrix[] matrices = snapshotSameShapeForZip(coll, EMPTY_LONG_MATRICES);
 
-        final int size = coll.size();
-        final LongMatrix[] matrices = coll.toArray(new LongMatrix[size]);
+        final int size = matrices.length;
 
         if (size == 1) {
             return matrices[0].copy();
@@ -3510,38 +4324,62 @@ public final class Matrices {
         final int columnCount = matrices[0].columnCount;
         final long[][] result = new long[rowCount][columnCount];
 
-        if (Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size))) {
-            final Throwables.IntBiConsumer<E> action = (i, j) -> {
-                long zipped = matrices[0].a[i][j];
+        if (rowCount > 0 && columnCount > 0) {
+            if (Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size))) {
+                forEachBlockInParallel(rowCount, columnCount, Long.BYTES, size, (fromRow, toRow, fromCol, toCol) -> {
+                    // Hoisting one row reference per input keeps the inner loop on plain arrays, but each concurrent task would
+                    // hold size references: past MAX_HOISTED_FOLD_INPUTS inputs, index the matrices directly instead. Either way
+                    // each cell is the sequential left fold, accumulated in a local and written once.
+                    final long[][] rows = size <= MAX_HOISTED_FOLD_INPUTS ? new long[size][] : null;
 
-                for (int k = 1; k < size; k++) {
-                    zipped = zipFunction.applyAsLong(zipped, matrices[k].a[i][j]);
-                }
+                    for (int i = fromRow; i < toRow; i++) {
+                        if (rows != null) {
+                            for (int k = 0; k < size; k++) {
+                                rows[k] = matrices[k].a[i];
+                            }
+                        }
 
-                result[i][j] = zipped;
-            };
+                        final long[] firstRow = matrices[0].a[i];
+                        final long[] resultRow = result[i];
 
-            forEachIndices(rowCount, columnCount, action, true);
-        } else {
-            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
-            final long[][] rows = new long[size][];
+                        for (int j = fromCol; j < toCol; j++) {
+                            long zipped = firstRow[j];
 
-            for (int i = 0; i < rowCount; i++) {
-                for (int k = 0; k < size; k++) {
-                    rows[k] = matrices[k].a[i];
-                }
+                            if (rows != null) {
+                                for (int k = 1; k < size; k++) {
+                                    zipped = zipFunction.applyAsLong(zipped, rows[k][j]);
+                                }
+                            } else {
+                                for (int k = 1; k < size; k++) {
+                                    zipped = zipFunction.applyAsLong(zipped, matrices[k].a[i][j]);
+                                }
+                            }
 
-                final long[] firstRow = rows[0];
-                final long[] resultRow = result[i];
+                            resultRow[j] = zipped;
+                        }
+                    }
+                });
+            } else {
+                // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+                final long[][] rows = new long[size][];
 
-                for (int j = 0; j < columnCount; j++) {
-                    long zipped = firstRow[j];
-
-                    for (int k = 1; k < size; k++) {
-                        zipped = zipFunction.applyAsLong(zipped, rows[k][j]);
+                for (int i = 0; i < rowCount; i++) {
+                    for (int k = 0; k < size; k++) {
+                        rows[k] = matrices[k].a[i];
                     }
 
-                    resultRow[j] = zipped;
+                    final long[] firstRow = rows[0];
+                    final long[] resultRow = result[i];
+
+                    for (int j = 0; j < columnCount; j++) {
+                        long zipped = firstRow[j];
+
+                        for (int k = 1; k < size; k++) {
+                            zipped = zipFunction.applyAsLong(zipped, rows[k][j]);
+                        }
+
+                        resultRow[j] = zipped;
+                    }
                 }
             }
         }
@@ -3600,17 +4438,28 @@ public final class Matrices {
         final long[][] ba = b.a;
         final double[][] result = new double[rowCount][columnCount];
 
-        if (Matrices.shouldRunInParallel(a)) {
-            final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j]);
-            forEachIndices(rowCount, columnCount, action, true);
-        } else {
-            for (int i = 0; i < rowCount; i++) {
-                final long[] aRow = aa[i];
-                final long[] bRow = ba[i];
-                final double[] resultRow = result[i];
+        if (rowCount > 0 && columnCount > 0) {
+            if (Matrices.shouldRunInParallel(a)) {
+                forEachBlockInParallel(rowCount, columnCount, Double.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                    for (int i = fromRow; i < toRow; i++) {
+                        final long[] aRow = aa[i];
+                        final long[] bRow = ba[i];
+                        final double[] resultRow = result[i];
 
-                for (int j = 0; j < columnCount; j++) {
-                    resultRow[j] = zipFunction.apply(aRow[j], bRow[j]);
+                        for (int j = fromCol; j < toCol; j++) {
+                            resultRow[j] = zipFunction.apply(aRow[j], bRow[j]);
+                        }
+                    }
+                });
+            } else {
+                for (int i = 0; i < rowCount; i++) {
+                    final long[] aRow = aa[i];
+                    final long[] bRow = ba[i];
+                    final double[] resultRow = result[i];
+
+                    for (int j = 0; j < columnCount; j++) {
+                        resultRow[j] = zipFunction.apply(aRow[j], bRow[j]);
+                    }
                 }
             }
         }
@@ -3675,18 +4524,30 @@ public final class Matrices {
         final long[][] ca = c.a;
         final double[][] result = new double[rowCount][columnCount];
 
-        if (Matrices.shouldRunInParallel(a)) {
-            final Throwables.IntBiConsumer<E> action = (i, j) -> result[i][j] = zipFunction.apply(aa[i][j], ba[i][j], ca[i][j]);
-            forEachIndices(rowCount, columnCount, action, true);
-        } else {
-            for (int i = 0; i < rowCount; i++) {
-                final long[] aRow = aa[i];
-                final long[] bRow = ba[i];
-                final long[] cRow = ca[i];
-                final double[] resultRow = result[i];
+        if (rowCount > 0 && columnCount > 0) {
+            if (Matrices.shouldRunInParallel(a)) {
+                forEachBlockInParallel(rowCount, columnCount, Double.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                    for (int i = fromRow; i < toRow; i++) {
+                        final long[] aRow = aa[i];
+                        final long[] bRow = ba[i];
+                        final long[] cRow = ca[i];
+                        final double[] resultRow = result[i];
 
-                for (int j = 0; j < columnCount; j++) {
-                    resultRow[j] = zipFunction.apply(aRow[j], bRow[j], cRow[j]);
+                        for (int j = fromCol; j < toCol; j++) {
+                            resultRow[j] = zipFunction.apply(aRow[j], bRow[j], cRow[j]);
+                        }
+                    }
+                });
+            } else {
+                for (int i = 0; i < rowCount; i++) {
+                    final long[] aRow = aa[i];
+                    final long[] bRow = ba[i];
+                    final long[] cRow = ca[i];
+                    final double[] resultRow = result[i];
+
+                    for (int j = 0; j < columnCount; j++) {
+                        resultRow[j] = zipFunction.apply(aRow[j], bRow[j], cRow[j]);
+                    }
                 }
             }
         }
@@ -3794,51 +4655,70 @@ public final class Matrices {
      */
     public static <E extends Exception> DoubleMatrix zipToDouble(final Collection<LongMatrix> coll, final Throwables.LongNFunction<Double, E> zipFunction,
             final boolean shareIntermediateArray) throws IllegalArgumentException, E, NullPointerException {
-        N.checkArgNotNull(coll, cs.coll);
         checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
+        final LongMatrix[] matrices = snapshotSameShapeForZip(coll, EMPTY_LONG_MATRICES);
 
-        final int size = coll.size();
-        final LongMatrix[] matrices = coll.toArray(new LongMatrix[size]);
-
+        final int size = matrices.length;
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
-        final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size));
         final double[][] result = new double[rowCount][columnCount];
 
-        if (zipInParallel) {
-            final Throwables.IntBiConsumer<E> action = (i, j) -> {
-                final long[] tmp = new long[size]; // concurrent calls never share a callback array
+        if (rowCount > 0 && columnCount > 0) {
+            if (Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size))) {
+                forEachBlockInParallel(rowCount, columnCount, Double.BYTES, size, (fromRow, toRow, fromCol, toCol) -> {
+                    // Hoisting one row reference per input saves 1.5-3.5x on the per-cell gather, but each concurrent task would hold
+                    // size references: past MAX_HOISTED_FOLD_INPUTS inputs, index the matrices directly instead.
+                    final long[][] rows = size <= MAX_HOISTED_FOLD_INPUTS ? new long[size][] : null;
 
-                for (int k = 0; k < size; k++) {
-                    tmp[k] = matrices[k].a[i][j];
-                }
+                    for (int i = fromRow; i < toRow; i++) {
+                        if (rows != null) {
+                            for (int k = 0; k < size; k++) {
+                                rows[k] = matrices[k].a[i];
+                            }
+                        }
 
-                result[i][j] = zipFunction.apply(tmp);
-            };
+                        final double[] resultRow = result[i];
 
-            forEachIndices(rowCount, columnCount, action, true);
-        } else {
-            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
-            // An unshared callback array is allocated fresh, about 2x cheaper than cloning a zeroed template.
-            final long[] sharedArray = shareIntermediateArray ? new long[size] : null;
-            final long[][] rows = new long[size][];
+                        for (int j = fromCol; j < toCol; j++) {
+                            final long[] tmp = new long[size]; // concurrent calls never share a callback array
 
-            for (int i = 0; i < rowCount; i++) {
-                for (int k = 0; k < size; k++) {
-                    rows[k] = matrices[k].a[i];
-                }
+                            if (rows != null) {
+                                for (int k = 0; k < size; k++) {
+                                    tmp[k] = rows[k][j];
+                                }
+                            } else {
+                                for (int k = 0; k < size; k++) {
+                                    tmp[k] = matrices[k].a[i][j];
+                                }
+                            }
 
-                final double[] resultRow = result[i];
+                            resultRow[j] = zipFunction.apply(tmp);
+                        }
+                    }
+                });
+            } else {
+                // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+                // An unshared callback array is allocated fresh, about 2x cheaper than cloning a zeroed template.
+                final long[] sharedArray = shareIntermediateArray ? new long[size] : null;
+                final long[][] rows = new long[size][];
 
-                for (int j = 0; j < columnCount; j++) {
-                    final long[] tmp = sharedArray == null ? new long[size] : sharedArray;
-
+                for (int i = 0; i < rowCount; i++) {
                     for (int k = 0; k < size; k++) {
-                        tmp[k] = rows[k][j];
+                        rows[k] = matrices[k].a[i];
                     }
 
-                    resultRow[j] = zipFunction.apply(tmp);
+                    final double[] resultRow = result[i];
+
+                    for (int j = 0; j < columnCount; j++) {
+                        final long[] tmp = sharedArray == null ? new long[size] : sharedArray;
+
+                        for (int k = 0; k < size; k++) {
+                            tmp[k] = rows[k][j];
+                        }
+
+                        resultRow[j] = zipFunction.apply(tmp);
+                    }
                 }
             }
         }
@@ -3882,7 +4762,8 @@ public final class Matrices {
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
      * @param zipFunction the function that takes an array of longs (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
-     * @param targetElementType the class of the result element type, must not be {@code null}
+     * @param targetElementType the class of the result element type; primitive scalar types will be auto-wrapped, must not be {@code null}
+     *        or {@code void.class}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different
      *         shapes; if {@code zipFunction} or {@code targetElementType} is {@code null}; if {@code targetElementType} is {@code void.class},
@@ -3945,7 +4826,8 @@ public final class Matrices {
      * @param zipFunction the function that takes an array of longs (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
      * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
      *                               {@code false} to create new arrays for each position
-     * @param targetElementType the class of the result element type, must not be {@code null}
+     * @param targetElementType the class of the result element type; primitive scalar types will be auto-wrapped, must not be {@code null}
+     *        or {@code void.class}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different
      *         shapes; if {@code zipFunction} or {@code targetElementType} is {@code null}; if {@code targetElementType} is {@code void.class},
@@ -3958,53 +4840,72 @@ public final class Matrices {
      */
     public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<LongMatrix> coll, final Throwables.LongNFunction<? extends R, E> zipFunction,
             final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E, ArrayStoreException {
-        N.checkArgNotNull(coll, cs.coll);
         checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgNotNull(targetElementType, cs.targetElementType);
         final Class<R> normalizedTargetType = normalizeElementType(targetElementType);
+        final LongMatrix[] matrices = snapshotSameShapeForZip(coll, EMPTY_LONG_MATRICES);
 
-        final int size = coll.size();
-        final LongMatrix[] matrices = coll.toArray(new LongMatrix[size]);
-
+        final int size = matrices.length;
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
-        final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size));
         final R[][] result = newMatrixArray(rowCount, columnCount, normalizedTargetType);
 
-        if (zipInParallel) {
-            final Throwables.IntBiConsumer<E> action = (i, j) -> {
-                final long[] tmp = new long[size]; // concurrent calls never share a callback array
+        if (rowCount > 0 && columnCount > 0) {
+            if (Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size))) {
+                forEachBlockInParallel(rowCount, columnCount, Long.BYTES, size, (fromRow, toRow, fromCol, toCol) -> {
+                    // Hoisting one row reference per input saves 1.5-3.5x on the per-cell gather, but each concurrent task would hold
+                    // size references: past MAX_HOISTED_FOLD_INPUTS inputs, index the matrices directly instead.
+                    final long[][] rows = size <= MAX_HOISTED_FOLD_INPUTS ? new long[size][] : null;
 
-                for (int k = 0; k < size; k++) {
-                    tmp[k] = matrices[k].a[i][j];
-                }
+                    for (int i = fromRow; i < toRow; i++) {
+                        if (rows != null) {
+                            for (int k = 0; k < size; k++) {
+                                rows[k] = matrices[k].a[i];
+                            }
+                        }
 
-                result[i][j] = zipFunction.apply(tmp);
-            };
+                        final R[] resultRow = result[i];
 
-            forEachIndices(rowCount, columnCount, action, true);
-        } else {
-            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
-            // An unshared callback array is allocated fresh, about 2x cheaper than cloning a zeroed template.
-            final long[] sharedArray = shareIntermediateArray ? new long[size] : null;
-            final long[][] rows = new long[size][];
+                        for (int j = fromCol; j < toCol; j++) {
+                            final long[] tmp = new long[size]; // concurrent calls never share a callback array
 
-            for (int i = 0; i < rowCount; i++) {
-                for (int k = 0; k < size; k++) {
-                    rows[k] = matrices[k].a[i];
-                }
+                            if (rows != null) {
+                                for (int k = 0; k < size; k++) {
+                                    tmp[k] = rows[k][j];
+                                }
+                            } else {
+                                for (int k = 0; k < size; k++) {
+                                    tmp[k] = matrices[k].a[i][j];
+                                }
+                            }
 
-                final R[] resultRow = result[i];
+                            resultRow[j] = zipFunction.apply(tmp);
+                        }
+                    }
+                });
+            } else {
+                // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+                // An unshared callback array is allocated fresh, about 2x cheaper than cloning a zeroed template.
+                final long[] sharedArray = shareIntermediateArray ? new long[size] : null;
+                final long[][] rows = new long[size][];
 
-                for (int j = 0; j < columnCount; j++) {
-                    final long[] tmp = sharedArray == null ? new long[size] : sharedArray;
-
+                for (int i = 0; i < rowCount; i++) {
                     for (int k = 0; k < size; k++) {
-                        tmp[k] = rows[k][j];
+                        rows[k] = matrices[k].a[i];
                     }
 
-                    resultRow[j] = zipFunction.apply(tmp);
+                    final R[] resultRow = result[i];
+
+                    for (int j = 0; j < columnCount; j++) {
+                        final long[] tmp = sharedArray == null ? new long[size] : sharedArray;
+
+                        for (int k = 0; k < size; k++) {
+                            tmp[k] = rows[k][j];
+                        }
+
+                        resultRow[j] = zipFunction.apply(tmp);
+                    }
                 }
             }
         }
@@ -4164,12 +5065,11 @@ public final class Matrices {
      */
     public static <E extends Exception> DoubleMatrix zip(final Collection<DoubleMatrix> coll, final Throwables.DoubleBinaryOperator<E> zipFunction)
             throws IllegalArgumentException, E {
-        N.checkArgNotNull(coll, cs.coll);
         checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
+        final DoubleMatrix[] matrices = snapshotSameShapeForZip(coll, EMPTY_DOUBLE_MATRICES);
 
-        final int size = coll.size();
-        final DoubleMatrix[] matrices = coll.toArray(new DoubleMatrix[size]);
+        final int size = matrices.length;
 
         if (size == 1) {
             return matrices[0].copy();
@@ -4181,38 +5081,62 @@ public final class Matrices {
         final int columnCount = matrices[0].columnCount;
         final double[][] result = new double[rowCount][columnCount];
 
-        if (Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size))) {
-            final Throwables.IntBiConsumer<E> action = (i, j) -> {
-                double zipped = matrices[0].a[i][j];
+        if (rowCount > 0 && columnCount > 0) {
+            if (Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size))) {
+                forEachBlockInParallel(rowCount, columnCount, Double.BYTES, size, (fromRow, toRow, fromCol, toCol) -> {
+                    // Hoisting one row reference per input keeps the inner loop on plain arrays, but each concurrent task would
+                    // hold size references: past MAX_HOISTED_FOLD_INPUTS inputs, index the matrices directly instead. Either way
+                    // each cell is the sequential left fold, accumulated in a local and written once.
+                    final double[][] rows = size <= MAX_HOISTED_FOLD_INPUTS ? new double[size][] : null;
 
-                for (int k = 1; k < size; k++) {
-                    zipped = zipFunction.applyAsDouble(zipped, matrices[k].a[i][j]);
-                }
+                    for (int i = fromRow; i < toRow; i++) {
+                        if (rows != null) {
+                            for (int k = 0; k < size; k++) {
+                                rows[k] = matrices[k].a[i];
+                            }
+                        }
 
-                result[i][j] = zipped;
-            };
+                        final double[] firstRow = matrices[0].a[i];
+                        final double[] resultRow = result[i];
 
-            forEachIndices(rowCount, columnCount, action, true);
-        } else {
-            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
-            final double[][] rows = new double[size][];
+                        for (int j = fromCol; j < toCol; j++) {
+                            double zipped = firstRow[j];
 
-            for (int i = 0; i < rowCount; i++) {
-                for (int k = 0; k < size; k++) {
-                    rows[k] = matrices[k].a[i];
-                }
+                            if (rows != null) {
+                                for (int k = 1; k < size; k++) {
+                                    zipped = zipFunction.applyAsDouble(zipped, rows[k][j]);
+                                }
+                            } else {
+                                for (int k = 1; k < size; k++) {
+                                    zipped = zipFunction.applyAsDouble(zipped, matrices[k].a[i][j]);
+                                }
+                            }
 
-                final double[] firstRow = rows[0];
-                final double[] resultRow = result[i];
+                            resultRow[j] = zipped;
+                        }
+                    }
+                });
+            } else {
+                // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+                final double[][] rows = new double[size][];
 
-                for (int j = 0; j < columnCount; j++) {
-                    double zipped = firstRow[j];
-
-                    for (int k = 1; k < size; k++) {
-                        zipped = zipFunction.applyAsDouble(zipped, rows[k][j]);
+                for (int i = 0; i < rowCount; i++) {
+                    for (int k = 0; k < size; k++) {
+                        rows[k] = matrices[k].a[i];
                     }
 
-                    resultRow[j] = zipped;
+                    final double[] firstRow = rows[0];
+                    final double[] resultRow = result[i];
+
+                    for (int j = 0; j < columnCount; j++) {
+                        double zipped = firstRow[j];
+
+                        for (int k = 1; k < size; k++) {
+                            zipped = zipFunction.applyAsDouble(zipped, rows[k][j]);
+                        }
+
+                        resultRow[j] = zipped;
+                    }
                 }
             }
         }
@@ -4253,7 +5177,8 @@ public final class Matrices {
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
      * @param zipFunction the function that takes an array of doubles (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
-     * @param targetElementType the class of the result element type, must not be {@code null}
+     * @param targetElementType the class of the result element type; primitive scalar types will be auto-wrapped, must not be {@code null}
+     *        or {@code void.class}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different
      *         shapes; if {@code zipFunction} or {@code targetElementType} is {@code null}; if {@code targetElementType} is {@code void.class},
@@ -4313,7 +5238,8 @@ public final class Matrices {
      * @param zipFunction the function that takes an array of doubles (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
      * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
      *                               {@code false} to create new arrays for each position
-     * @param targetElementType the class of the result element type, must not be {@code null}
+     * @param targetElementType the class of the result element type; primitive scalar types will be auto-wrapped, must not be {@code null}
+     *        or {@code void.class}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different
      *         shapes; if {@code zipFunction} or {@code targetElementType} is {@code null}; if {@code targetElementType} is {@code void.class},
@@ -4326,53 +5252,72 @@ public final class Matrices {
      */
     public static <R, E extends Exception> Matrix<R> zipToObj(final Collection<DoubleMatrix> coll, final Throwables.DoubleNFunction<? extends R, E> zipFunction,
             final boolean shareIntermediateArray, final Class<R> targetElementType) throws IllegalArgumentException, E, ArrayStoreException {
-        N.checkArgNotNull(coll, cs.coll);
         checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgNotNull(targetElementType, cs.targetElementType);
         final Class<R> normalizedTargetType = normalizeElementType(targetElementType);
+        final DoubleMatrix[] matrices = snapshotSameShapeForZip(coll, EMPTY_DOUBLE_MATRICES);
 
-        final int size = coll.size();
-        final DoubleMatrix[] matrices = coll.toArray(new DoubleMatrix[size]);
-
+        final int size = matrices.length;
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
-        final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size));
         final R[][] result = newMatrixArray(rowCount, columnCount, normalizedTargetType);
 
-        if (zipInParallel) {
-            final Throwables.IntBiConsumer<E> action = (i, j) -> {
-                final double[] tmp = new double[size]; // concurrent calls never share a callback array
+        if (rowCount > 0 && columnCount > 0) {
+            if (Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size))) {
+                forEachBlockInParallel(rowCount, columnCount, Long.BYTES, size, (fromRow, toRow, fromCol, toCol) -> {
+                    // Hoisting one row reference per input saves 1.5-3.5x on the per-cell gather, but each concurrent task would hold
+                    // size references: past MAX_HOISTED_FOLD_INPUTS inputs, index the matrices directly instead.
+                    final double[][] rows = size <= MAX_HOISTED_FOLD_INPUTS ? new double[size][] : null;
 
-                for (int k = 0; k < size; k++) {
-                    tmp[k] = matrices[k].a[i][j];
-                }
+                    for (int i = fromRow; i < toRow; i++) {
+                        if (rows != null) {
+                            for (int k = 0; k < size; k++) {
+                                rows[k] = matrices[k].a[i];
+                            }
+                        }
 
-                result[i][j] = zipFunction.apply(tmp);
-            };
+                        final R[] resultRow = result[i];
 
-            forEachIndices(rowCount, columnCount, action, true);
-        } else {
-            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
-            // An unshared callback array is allocated fresh, about 2x cheaper than cloning a zeroed template.
-            final double[] sharedArray = shareIntermediateArray ? new double[size] : null;
-            final double[][] rows = new double[size][];
+                        for (int j = fromCol; j < toCol; j++) {
+                            final double[] tmp = new double[size]; // concurrent calls never share a callback array
 
-            for (int i = 0; i < rowCount; i++) {
-                for (int k = 0; k < size; k++) {
-                    rows[k] = matrices[k].a[i];
-                }
+                            if (rows != null) {
+                                for (int k = 0; k < size; k++) {
+                                    tmp[k] = rows[k][j];
+                                }
+                            } else {
+                                for (int k = 0; k < size; k++) {
+                                    tmp[k] = matrices[k].a[i][j];
+                                }
+                            }
 
-                final R[] resultRow = result[i];
+                            resultRow[j] = zipFunction.apply(tmp);
+                        }
+                    }
+                });
+            } else {
+                // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+                // An unshared callback array is allocated fresh, about 2x cheaper than cloning a zeroed template.
+                final double[] sharedArray = shareIntermediateArray ? new double[size] : null;
+                final double[][] rows = new double[size][];
 
-                for (int j = 0; j < columnCount; j++) {
-                    final double[] tmp = sharedArray == null ? new double[size] : sharedArray;
-
+                for (int i = 0; i < rowCount; i++) {
                     for (int k = 0; k < size; k++) {
-                        tmp[k] = rows[k][j];
+                        rows[k] = matrices[k].a[i];
                     }
 
-                    resultRow[j] = zipFunction.apply(tmp);
+                    final R[] resultRow = result[i];
+
+                    for (int j = 0; j < columnCount; j++) {
+                        final double[] tmp = sharedArray == null ? new double[size] : sharedArray;
+
+                        for (int k = 0; k < size; k++) {
+                            tmp[k] = rows[k][j];
+                        }
+
+                        resultRow[j] = zipFunction.apply(tmp);
+                    }
                 }
             }
         }
@@ -4393,8 +5338,8 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> names = Matrix.wrap(new String[][] {{"Alice", "Bob"}, {"Carol", "Dave"}});
-     * Matrix<String> tags = Matrix.wrap(new String[][] {{"x", "y"}, {"z", "w"}});
+     * Matrix<String> names = Matrix.wrap(String.class, new String[][] {{"Alice", "Bob"}, {"Carol", "Dave"}});
+     * Matrix<String> tags = Matrix.wrap(String.class, new String[][] {{"x", "y"}, {"z", "w"}});
      *
      * Matrix<String> result = Matrices.zip(names, tags, (name, tag) -> name + ":" + tag);
      * // result.get(0, 0) equals "Alice:x", result.get(1, 1) equals "Dave:w"
@@ -4402,7 +5347,7 @@ public final class Matrices {
      * Matrix<String> upper = Matrices.zip(names, tags, (name, tag) -> name.toUpperCase());
      * // upper.get(0, 0) equals "ALICE"
      *
-     * Matrix<String> wrong = Matrix.wrap(new String[][] {{"a", "b", "c"}}); // different shape
+     * Matrix<String> wrong = Matrix.wrap(String.class, new String[][] {{"a", "b", "c"}}); // different shape
      * Matrices.zip(names, wrong, (x, y) -> x + y);                        // throws IllegalArgumentException (shape mismatch)
      * Matrices.zip(names, (Matrix<String>) null, (x, y) -> x + y);        // throws IllegalArgumentException (null b)
      * }</pre>
@@ -4446,8 +5391,8 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> numbers = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
-     * Matrix<String> labels = Matrix.wrap(new String[][] {{"A", "B"}, {"C", "D"}});
+     * Matrix<Integer> numbers = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<String> labels = Matrix.wrap(String.class, new String[][] {{"A", "B"}, {"C", "D"}});
      *
      * Matrix<String> result = Matrices.zip(numbers, labels, (num, label) -> label + ":" + num, String.class);
      * // result.get(0, 0) equals "A:1", result.get(1, 1) equals "D:4"
@@ -4455,7 +5400,7 @@ public final class Matrices {
      * Matrix<Integer> sum = Matrices.zip(numbers, numbers, (x, y) -> x + y, Integer.class);
      * // sum.get(0, 0) == 2  (1 + 1)
      *
-     * Matrix<String> wrong = Matrix.wrap(new String[][] {{"a", "b", "c"}});  // different shape
+     * Matrix<String> wrong = Matrix.wrap(String.class, new String[][] {{"a", "b", "c"}}); // different shape
      * Matrices.zip(numbers, wrong, (n, s) -> n + s, String.class);         // throws IllegalArgumentException (shape mismatch)
      * Matrices.zip(numbers, labels, (n, s) -> s + n, null);                // throws IllegalArgumentException (null type)
      * }</pre>
@@ -4467,7 +5412,8 @@ public final class Matrices {
      * @param a the first matrix, must not be {@code null}
      * @param b the second matrix, must not be {@code null} and must have the same shape as {@code a}
      * @param zipFunction the function to combine corresponding elements from both matrices, must not be {@code null} and must be thread-safe if execution is parallelized
-     * @param targetElementType the class of the result element type, must not be {@code null}
+     * @param targetElementType the class of the result element type; primitive scalar types will be auto-wrapped, must not be {@code null}
+     *        or {@code void.class}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code a} is {@code null}, if {@code b} is {@code null} or its shape differs from {@code a}'s shape,
      *         or if {@code zipFunction} or {@code targetElementType} is {@code null}; if {@code targetElementType} is {@code void.class}, or if
@@ -4504,9 +5450,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> m1 = Matrix.wrap(new Integer[][] {{1, 2}});
-     * Matrix<Integer> m2 = Matrix.wrap(new Integer[][] {{3, 4}});
-     * Matrix<Integer> m3 = Matrix.wrap(new Integer[][] {{5, 6}});
+     * Matrix<Integer> m1 = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}});
+     * Matrix<Integer> m2 = Matrix.wrap(Integer.class, new Integer[][] {{3, 4}});
+     * Matrix<Integer> m3 = Matrix.wrap(Integer.class, new Integer[][] {{5, 6}});
      *
      * Matrix<Integer> result = Matrices.zip(m1, m2, m3, (a, b, c) -> (a + b) * c);
      * // result.get(0, 0) == 20  ((1 + 3) * 5), result.get(0, 1) == 36  ((2 + 4) * 6)
@@ -4514,7 +5460,7 @@ public final class Matrices {
      * Matrix<Integer> sum = Matrices.zip(m1, m2, m3, (a, b, c) -> a + b + c);
      * // sum.get(0, 0) == 9
      *
-     * Matrix<Integer> wrong = Matrix.wrap(new Integer[][] {{1}, {2}}); // different shape
+     * Matrix<Integer> wrong = Matrix.wrap(Integer.class, new Integer[][] {{1}, {2}}); // different shape
      * Matrices.zip(m1, m2, wrong, (a, b, c) -> a + b + c);           // throws IllegalArgumentException (shape mismatch)
      * Matrices.zip(m1, m2, (Matrix<Integer>) null, (a, b, c) -> 0);  // throws IllegalArgumentException (null c)
      * }</pre>
@@ -4562,9 +5508,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> numbers = Matrix.wrap(new Integer[][] {{1, 2}});
-     * Matrix<String> units = Matrix.wrap(new String[][] {{"kg", "m"}});
-     * Matrix<Boolean> valid = Matrix.wrap(new Boolean[][] {{true, false}});
+     * Matrix<Integer> numbers = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}});
+     * Matrix<String> units = Matrix.wrap(String.class, new String[][] {{"kg", "m"}});
+     * Matrix<Boolean> valid = Matrix.wrap(Boolean.class, new Boolean[][] {{true, false}});
      *
      * Matrix<String> result = Matrices.zip(numbers, units, valid,
      *     (num, unit, isValid) -> isValid ? num + unit : "N/A", String.class);
@@ -4574,7 +5520,7 @@ public final class Matrices {
      *     (num, unit, isValid) -> num + unit.length(), Integer.class);
      * // lengths.get(0, 0) == 3  (1 + "kg".length())
      *
-     * Matrix<String> wrong = Matrix.wrap(new String[][] {{"a"}, {"b"}});        // different shape
+     * Matrix<String> wrong = Matrix.wrap(String.class, new String[][] {{"a"}, {"b"}}); // different shape
      * Matrices.zip(numbers, units, wrong, (n, u, w) -> "" + n, String.class); // throws IllegalArgumentException (shape mismatch)
      * Matrices.zip(numbers, units, valid, (n, u, v) -> "" + n, null);         // throws IllegalArgumentException (null type)
      * }</pre>
@@ -4588,7 +5534,8 @@ public final class Matrices {
      * @param b the second matrix, must not be {@code null} and must have the same shape as {@code a}
      * @param c the third matrix, must not be {@code null} and must have the same shape as {@code a} and {@code b}
      * @param zipFunction the function to combine corresponding elements from all three matrices, must not be {@code null} and must be thread-safe if execution is parallelized
-     * @param targetElementType the class of the result element type, must not be {@code null}
+     * @param targetElementType the class of the result element type; primitive scalar types will be auto-wrapped, must not be {@code null}
+     *        or {@code void.class}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code a} is {@code null}, if {@code b} is {@code null} or its shape differs from {@code a}'s shape,
      *         if {@code c} is {@code null} or its shape differs from {@code a}'s shape, or if {@code zipFunction} or {@code targetElementType}
@@ -4637,9 +5584,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<String> m1 = Matrix.wrap(new String[][] {{"a", "b"}, {"c", "d"}});
-     * Matrix<String> m2 = Matrix.wrap(new String[][] {{"1", "2"}, {"3", "4"}});
-     * Matrix<String> m3 = Matrix.wrap(new String[][] {{"x", "y"}, {"z", "w"}});
+     * Matrix<String> m1 = Matrix.wrap(String.class, new String[][] {{"a", "b"}, {"c", "d"}});
+     * Matrix<String> m2 = Matrix.wrap(String.class, new String[][] {{"1", "2"}, {"3", "4"}});
+     * Matrix<String> m3 = Matrix.wrap(String.class, new String[][] {{"x", "y"}, {"z", "w"}});
      *
      * Matrix<String> joined = Matrices.zip(Arrays.asList(m1, m2, m3), (a, b) -> a + b);
      * // joined.get(0, 0) equals "a1x", joined.get(1, 1) equals "d4w"
@@ -4650,7 +5597,7 @@ public final class Matrices {
      * Matrix<String> copy = Matrices.zip(Arrays.asList(m1), (a, b) -> a + b);
      * // copy is a copy of m1: [["a", "b"], ["c", "d"]]  (binary op never invoked for a single matrix)
      *
-     * Matrix<String> wrong = Matrix.wrap(new String[][] {{"a", "b", "c"}});      // different shape
+     * Matrix<String> wrong = Matrix.wrap(String.class, new String[][] {{"a", "b", "c"}}); // different shape
      * Matrices.zip(Arrays.asList(m1, wrong), (a, b) -> a + b);                 // throws IllegalArgumentException (shape mismatch)
      * Matrices.zip(Collections.<Matrix<String>> emptyList(), (a, b) -> a + b); // throws IllegalArgumentException (empty)
      * }</pre>
@@ -4673,14 +5620,14 @@ public final class Matrices {
      *             {@link #zip(Collection, Throwables.BinaryOperator, Class)} and state it explicitly.
      */
     @Deprecated
+    @SuppressWarnings("unchecked")
     public static <T, E extends Exception> Matrix<T> zip(final Collection<Matrix<T>> coll, final Throwables.BinaryOperator<T, E> zipFunction)
             throws IllegalArgumentException, SecurityException, E, ArrayStoreException {
-        N.checkArgNotNull(coll, cs.coll);
         checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
+        final Matrix<T>[] matrices = snapshotSameShapeForZip(coll, (Matrix<T>[]) EMPTY_OBJECT_MATRICES);
 
-        final Matrix<T>[] matrices = coll.toArray(new Matrix[coll.size()]);
-        return zip(coll, zipFunction, resolveCommonElementType(matrices));
+        return zip(matrices, zipFunction, resolveCommonElementType(matrices), false);
     }
 
     /**
@@ -4689,70 +5636,163 @@ public final class Matrices {
      * Supplying the type explicitly avoids guessing a writable array type from potentially
      * heterogeneous input implementations.
      *
-     * @param <T> the input and result element type
-     * @param <E> the checked exception type of the operator
-     * @param coll the non-empty, null-free collection of same-shaped matrices
-     * @param zipFunction the left-to-right per-cell fold; must not be {@code null} and must be thread-safe if execution is parallelized
-     * @param elementType the exact writable result and accepted input supertype; must not be {@code null}
-     * @return a newly allocated matrix with the same shape, including an explicit {@code 0 x N} shape
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * Matrix<Integer> m1 = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> m2 = Matrix.wrap(Integer.class, new Integer[][] {{5, 6}, {7, 8}});
+     * Matrix<Integer> m3 = Matrix.wrap(Integer.class, new Integer[][] {{9, 10}, {11, 12}});
+     *
+     * Matrix<Integer> sum = Matrices.zip(Arrays.asList(m1, m2, m3), Integer::sum, Integer.class);
+     * // sum.get(0, 0) == 15, sum.get(1, 1) == 24
+     * }</pre>
+     *
+     * @param <T> the element type of the input and result matrices
+     * @param <E> the type of exception that the zip function might throw
+     * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
+     * @param zipFunction the binary operator to combine elements sequentially, must not be {@code null} and must be thread-safe if execution is parallelized
+     * @param elementType the exact writable result and accepted input supertype; primitive scalar types will be auto-wrapped, must not be {@code null}
+     *        or {@code void.class}
+     * @return a newly allocated {@link Matrix} of type T containing the combined results, never {@code null}; it has the same shape as the inputs,
+     *         including an explicit {@code 0 x N} shape
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different
      *         shapes; if {@code zipFunction} or {@code elementType} is {@code null}; if a non-empty matrix's declared element type is not
-     *         assignable to {@code elementType}; if {@code elementType} is {@code void.class}, or if adding two array dimensions to {@code
-     *         elementType} would exceed the JVM limit of 255.
+     *         assignable to {@code elementType} after primitive scalar normalization; if {@code elementType} is {@code void.class}, or if adding
+     *         two array dimensions to {@code elementType} would exceed the JVM limit of 255
      * @throws E if {@code zipFunction} throws while combining values from two or more matrices at a visited cell
      * @throws ArrayStoreException if the final combined value for a visited cell cannot be stored in
      *         the result's normalized runtime element type
+     * @see #zip(Matrix, Matrix, Throwables.BiFunction)
+     * @see #zip(Collection, Throwables.Function, Class, Class)
      */
     @SuppressWarnings("unchecked")
     public static <T, E extends Exception> Matrix<T> zip(final Collection<Matrix<T>> coll, final Throwables.BinaryOperator<T, E> zipFunction,
             final Class<T> elementType) throws IllegalArgumentException, E, ArrayStoreException {
-        N.checkArgNotNull(coll, cs.coll);
         checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgNotNull(elementType, cs.elementType);
-
         final Class<T> normalizedElementType = normalizeElementType(elementType);
-        final int size = coll.size();
-        final Matrix<T>[] matrices = coll.toArray(new Matrix[size]);
-        checkCompatibleElementTypes(matrices, normalizedElementType);
+        checkCompatibleElementTypes(coll, normalizedElementType, "element type");
+        final Matrix<T>[] matrices = snapshotSameShapeForZip(coll, (Matrix<T>[]) EMPTY_OBJECT_MATRICES);
 
+        return zip(matrices, zipFunction, normalizedElementType, true);
+    }
+
+    /**
+     * Combines a validated snapshot of same-shaped generic matrices with a left-to-right binary fold.
+     *
+     * @param <T> the element type of the input and result matrices
+     * @param <E> the type of exception that the zip function might throw
+     * @param matrices the validated, non-empty, null-free, same-shaped matrix snapshot
+     * @param zipFunction the non-{@code null} binary operator
+     * @param normalizedElementType the non-{@code null}, normalized result and input supertype
+     * @param checkElementTypes whether to re-verify element-type assignability on {@code matrices}
+     * @return a newly allocated {@link Matrix} containing the combined results
+     * @throws IllegalArgumentException if a non-empty matrix's element type is incompatible with {@code normalizedElementType}, or if array
+     *         allocation exceeds 255 dimensions
+     * @throws E if {@code zipFunction} throws while combining values from two or more matrices
+     * @throws ArrayStoreException if a combined value cannot be stored in the result rows
+     */
+    @SuppressWarnings("unchecked")
+    private static <T, E extends Exception> Matrix<T> zip(final Matrix<T>[] matrices, final Throwables.BinaryOperator<T, E> zipFunction,
+            final Class<T> normalizedElementType, final boolean checkElementTypes) throws IllegalArgumentException, E, ArrayStoreException {
+        if (checkElementTypes) {
+            checkCompatibleElementTypes(Arrays.asList(matrices), normalizedElementType, "element type");
+        }
+
+        final int size = matrices.length;
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
         final T[][] result = newMatrixArray(rowCount, columnCount, normalizedElementType);
 
-        if (Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size))) {
-            final Throwables.IntBiConsumer<E> action = (i, j) -> {
-                T zipped = matrices[0].a[i][j];
+        if (rowCount > 0 && columnCount > 0) {
+            if (size == 1) {
+                final T[][] source = matrices[0].a;
 
-                for (int k = 1; k < size; k++) {
-                    zipped = zipFunction.apply(zipped, matrices[k].a[i][j]);
+                for (int i = 0; i < rowCount; i++) {
+                    System.arraycopy(source[i], 0, result[i], 0, columnCount);
                 }
+            } else if (size == 2) {
+                final T[][] aa = matrices[0].a;
+                final T[][] ba = matrices[1].a;
 
-                result[i][j] = zipped;
-            };
+                if (Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, 2))) {
+                    forEachBlockInParallel(rowCount, columnCount, Long.BYTES, 2, (fromRow, toRow, fromCol, toCol) -> {
+                        for (int i = fromRow; i < toRow; i++) {
+                            final T[] aRow = aa[i];
+                            final T[] bRow = ba[i];
+                            final T[] resultRow = result[i];
 
-            forEachIndices(rowCount, columnCount, action, true);
-        } else {
-            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
-            @SuppressWarnings("unchecked")
-            final T[][] rows = (T[][]) new Object[size][]; // T erases to Object, so this buffer accepts every input's row array
+                            for (int j = fromCol; j < toCol; j++) {
+                                resultRow[j] = zipFunction.apply(aRow[j], bRow[j]);
+                            }
+                        }
+                    });
+                } else {
+                    for (int i = 0; i < rowCount; i++) {
+                        final T[] aRow = aa[i];
+                        final T[] bRow = ba[i];
+                        final T[] resultRow = result[i];
 
-            for (int i = 0; i < rowCount; i++) {
-                for (int k = 0; k < size; k++) {
-                    rows[k] = matrices[k].a[i];
+                        for (int j = 0; j < columnCount; j++) {
+                            resultRow[j] = zipFunction.apply(aRow[j], bRow[j]);
+                        }
+                    }
                 }
+            } else if (Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size))) {
+                forEachBlockInParallel(rowCount, columnCount, Long.BYTES, size, (fromRow, toRow, fromCol, toCol) -> {
+                    // Hoisting one row reference per input keeps the inner loop on plain arrays, but each concurrent task would
+                    // hold size references: past MAX_HOISTED_FOLD_INPUTS inputs, index the matrices directly instead. Either way
+                    // each cell is the sequential left fold, accumulated in a local and written once.
+                    final T[][] rows = size <= MAX_HOISTED_FOLD_INPUTS ? (T[][]) new Object[size][] : null; // T erases to Object, so this buffer accepts every input's row array
 
-                final T[] firstRow = rows[0];
-                final T[] resultRow = result[i];
+                    for (int i = fromRow; i < toRow; i++) {
+                        if (rows != null) {
+                            for (int k = 0; k < size; k++) {
+                                rows[k] = matrices[k].a[i];
+                            }
+                        }
 
-                for (int j = 0; j < columnCount; j++) {
-                    T zipped = firstRow[j];
+                        final T[] firstRow = matrices[0].a[i];
+                        final T[] resultRow = result[i];
 
-                    for (int k = 1; k < size; k++) {
-                        zipped = zipFunction.apply(zipped, rows[k][j]);
+                        for (int j = fromCol; j < toCol; j++) {
+                            T zipped = firstRow[j];
+
+                            if (rows != null) {
+                                for (int k = 1; k < size; k++) {
+                                    zipped = zipFunction.apply(zipped, rows[k][j]);
+                                }
+                            } else {
+                                for (int k = 1; k < size; k++) {
+                                    zipped = zipFunction.apply(zipped, matrices[k].a[i][j]);
+                                }
+                            }
+
+                            resultRow[j] = zipped;
+                        }
+                    }
+                });
+            } else {
+                // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+                final T[][] rows = (T[][]) new Object[size][]; // T erases to Object, so this buffer accepts every input's row array
+
+                for (int i = 0; i < rowCount; i++) {
+                    for (int k = 0; k < size; k++) {
+                        rows[k] = matrices[k].a[i];
                     }
 
-                    resultRow[j] = zipped;
+                    final T[] firstRow = rows[0];
+                    final T[] resultRow = result[i];
+
+                    for (int j = 0; j < columnCount; j++) {
+                        T zipped = firstRow[j];
+
+                        for (int k = 1; k < size; k++) {
+                            zipped = zipFunction.apply(zipped, rows[k][j]);
+                        }
+
+                        resultRow[j] = zipped;
+                    }
                 }
             }
         }
@@ -4776,9 +5816,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> m1 = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
-     * Matrix<Integer> m2 = Matrix.wrap(new Integer[][] {{5, 6}, {7, 8}});
-     * Matrix<Integer> m3 = Matrix.wrap(new Integer[][] {{9, 10}, {11, 12}});
+     * Matrix<Integer> m1 = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> m2 = Matrix.wrap(Integer.class, new Integer[][] {{5, 6}, {7, 8}});
+     * Matrix<Integer> m3 = Matrix.wrap(Integer.class, new Integer[][] {{9, 10}, {11, 12}});
      *
      * Matrix<Integer> sum = Matrices.zip(Arrays.asList(m1, m2, m3),
      *     arr -> arr[0] + arr[1] + arr[2], Integer.class);
@@ -4788,7 +5828,7 @@ public final class Matrices {
      *     arr -> arr[0] + "-" + arr[1] + "-" + arr[2], String.class);
      * // joined.get(0, 0) equals "1-5-9"
      *
-     * Matrix<Integer> wrong = Matrix.wrap(new Integer[][] {{1, 2, 3}});                   // different shape
+     * Matrix<Integer> wrong = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}}); // different shape
      * Matrices.zip(Arrays.asList(m1, wrong), arr -> 0, Integer.class);                  // throws IllegalArgumentException (shape mismatch)
      * Matrices.zip(Collections.<Matrix<Integer>> emptyList(), arr -> 0, Integer.class); // throws IllegalArgumentException (empty)
      * }</pre>
@@ -4798,7 +5838,8 @@ public final class Matrices {
      * @param <E> the type of exception that the zip function might throw
      * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
      * @param zipFunction the function that takes an array of values (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
-     * @param targetElementType the class of the result element type, must not be {@code null}
+     * @param targetElementType the class of the result element type; primitive scalar types will be auto-wrapped, must not be {@code null}
+     *        or {@code void.class}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different
      *         shapes; if {@code zipFunction} or {@code targetElementType} is {@code null}; if {@code targetElementType} is {@code void.class},
@@ -4824,22 +5865,41 @@ public final class Matrices {
      * {@code zipFunction}. Both array component types are explicit so neither input callback
      * storage nor result storage depends on a runtime common-type heuristic.
      *
-     * @param <T> the input element type
-     * @param <R> the result element type
-     * @param <E> the checked exception type of the function
-     * @param coll the non-empty, null-free collection of same-shaped matrices
-     * @param zipFunction the per-cell aggregation function; must not be {@code null} and must be thread-safe if execution is parallelized
-     * @param inputElementType the exact runtime component type of the callback array; must not be {@code null}
-     * @param targetElementType the exact runtime component type of result rows; must not be {@code null}
-     * @return a newly allocated result matrix with the same shape
+     * <p>This is a convenience method that delegates to
+     * {@link #zip(Collection, Throwables.Function, boolean, Class, Class)} with
+     * {@code shareIntermediateArray = false}.</p>
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * Matrix<Integer> m1 = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> m2 = Matrix.wrap(Integer.class, new Integer[][] {{5, 6}, {7, 8}});
+     *
+     * Matrix<String> joined = Matrices.zip(Arrays.asList(m1, m2),
+     *     arr -> arr[0] + "-" + arr[1], Integer.class, String.class);
+     * // joined.get(0, 0) equals "1-5", joined.get(1, 1) equals "4-8"
+     * }</pre>
+     *
+     * @param <T> the element type of the input matrices
+     * @param <R> the element type of the result matrix
+     * @param <E> the type of exception that the zip function might throw
+     * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
+     * @param zipFunction the function that takes an array of values (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
+     * @param inputElementType the exact runtime component type of the callback array; primitive scalar types will be auto-wrapped, must not be {@code null}
+     *        or {@code void.class}
+     * @param targetElementType the class of the result element type; primitive scalar types will be auto-wrapped, must not be {@code null}
+     *        or {@code void.class}
+     * @return a newly allocated {@link Matrix} of type R containing the combined values, never {@code null}; it has the same shape as the inputs,
+     *         including an explicit {@code 0 x N} shape
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different
      *         shapes; if {@code zipFunction}, {@code inputElementType}, or {@code targetElementType} is {@code null}; if a non-empty input
-     *         matrix's declared element type is not assignable to {@code inputElementType}; if {@code inputElementType} or {@code
-     *         targetElementType} is {@code void.class}. Array allocation also rejects a callback-array type or result-array type with more than
-     *         255 dimensions.
+     *         matrix's declared element type is not assignable to {@code inputElementType} after primitive scalar normalization; if
+     *         {@code inputElementType} or {@code targetElementType} is {@code void.class}; or if allocating the callback array or result rows
+     *         would exceed the JVM limit of 255 array dimensions
      * @throws E if {@code zipFunction} throws while processing a visited cell
      * @throws ArrayStoreException if {@code zipFunction} stores a value incompatible with the callback array or returns a value not assignable
-     *         to the normalized {@code targetElementType}
+     *         to {@code targetElementType} after primitive scalar normalization
+     * @see #zip(Collection, Throwables.Function, boolean, Class, Class)
+     * @see #zip(Collection, Throwables.BinaryOperator, Class)
      */
     public static <T, R, E extends Exception> Matrix<R> zip(final Collection<Matrix<T>> coll, final Throwables.Function<? super T[], R, E> zipFunction,
             final Class<T> inputElementType, final Class<R> targetElementType) throws IllegalArgumentException, E, ArrayStoreException {
@@ -4874,9 +5934,9 @@ public final class Matrices {
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
-     * Matrix<Integer> m1 = Matrix.wrap(new Integer[][] {{1, 2}, {3, 4}});
-     * Matrix<Integer> m2 = Matrix.wrap(new Integer[][] {{5, 6}, {7, 8}});
-     * Matrix<Integer> m3 = Matrix.wrap(new Integer[][] {{9, 10}, {11, 12}});
+     * Matrix<Integer> m1 = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> m2 = Matrix.wrap(Integer.class, new Integer[][] {{5, 6}, {7, 8}});
+     * Matrix<Integer> m3 = Matrix.wrap(Integer.class, new Integer[][] {{9, 10}, {11, 12}});
      *
      * Matrix<Double> avg = Matrices.zip(Arrays.asList(m1, m2, m3),
      *     arr -> java.util.Arrays.stream(arr).mapToInt(i -> i).average().orElse(0.0), true, Double.class);
@@ -4886,7 +5946,7 @@ public final class Matrices {
      *     arr -> java.util.Arrays.stream(arr).max(Integer::compare).orElse(0), false, Integer.class);
      * // max.get(1, 1) == 12
      *
-     * Matrix<Integer> wrong = Matrix.wrap(new Integer[][] {{1, 2, 3}});           // different shape
+     * Matrix<Integer> wrong = Matrix.wrap(Integer.class, new Integer[][] {{1, 2, 3}}); // different shape
      * Matrices.zip(Arrays.asList(m1, wrong), arr -> 0, false, Integer.class);   // throws IllegalArgumentException (shape mismatch)
      * Matrices.zip(Arrays.asList(m1, m2), arr -> 0, false, null);               // throws IllegalArgumentException (null type)
      * }</pre>
@@ -4898,7 +5958,8 @@ public final class Matrices {
      * @param zipFunction the function that takes an array of values (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
      * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
      *                               {@code false} to create new arrays for each position
-     * @param targetElementType the class of the result element type, must not be {@code null}
+     * @param targetElementType the class of the result element type; primitive scalar types will be auto-wrapped, must not be {@code null}
+     *        or {@code void.class}
      * @return a new {@link Matrix} of type R containing the combined values, never {@code null}
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different
      *         shapes; if {@code zipFunction} or {@code targetElementType} is {@code null}; if {@code targetElementType} is {@code void.class},
@@ -4914,97 +5975,155 @@ public final class Matrices {
      *             {@link #zip(Collection, Throwables.Function, boolean, Class, Class)} and state it explicitly.
      */
     @Deprecated
+    @SuppressWarnings("unchecked")
     public static <T, R, E extends Exception> Matrix<R> zip(final Collection<Matrix<T>> coll, final Throwables.Function<? super T[], R, E> zipFunction,
             final boolean shareIntermediateArray, final Class<R> targetElementType)
             throws IllegalArgumentException, SecurityException, ClassCastException, E, ArrayStoreException {
-        N.checkArgNotNull(coll, cs.coll);
         checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgNotNull(targetElementType, cs.targetElementType);
         final Class<R> normalizedTargetType = normalizeElementType(targetElementType);
+        final Matrix<T>[] matrices = snapshotSameShapeForZip(coll, (Matrix<T>[]) EMPTY_OBJECT_MATRICES);
 
-        final Matrix<T>[] matrices = coll.toArray(new Matrix[coll.size()]);
-        return zip(coll, zipFunction, shareIntermediateArray, resolveCommonElementType(matrices), normalizedTargetType);
+        return zip(matrices, zipFunction, shareIntermediateArray, resolveCommonElementType(matrices), normalizedTargetType);
     }
 
     /**
      * Full typed collection-zip overload with optional sequential callback-array reuse.
      * When parallel execution is enabled, a distinct callback array is always used per cell.
      *
-     * @param <T> the input element type
-     * @param <R> the result element type
-     * @param <E> the checked exception type of the function
-     * @param coll the non-empty, null-free collection of same-shaped matrices
-     * @param zipFunction the per-cell aggregation function; must not be {@code null} and must be thread-safe if execution is parallelized
-     * @param shareIntermediateArray whether sequential execution may reuse one callback array;
-     *        callers must not retain or modify a reused array
-     * @param inputElementType the exact runtime component type of callback arrays; must not be {@code null}
-     * @param targetElementType the exact runtime component type of result rows; must not be {@code null}
-     * @return a newly allocated result matrix with the same shape
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * Matrix<Integer> m1 = Matrix.wrap(Integer.class, new Integer[][] {{1, 2}, {3, 4}});
+     * Matrix<Integer> m2 = Matrix.wrap(Integer.class, new Integer[][] {{5, 6}, {7, 8}});
+     *
+     * Matrix<Double> avg = Matrices.zip(Arrays.asList(m1, m2),
+     *     arr -> (arr[0] + arr[1]) / 2.0, true, Integer.class, Double.class);
+     * // avg.get(0, 0) == 3.0, avg.get(1, 1) == 6.0
+     * }</pre>
+     *
+     * @param <T> the element type of the input matrices
+     * @param <R> the element type of the result matrix
+     * @param <E> the type of exception that the zip function might throw
+     * @param coll the collection of matrices to combine, must not be {@code null}, empty, or contain {@code null} elements
+     * @param zipFunction the function that takes an array of values (one from each matrix) and returns a result of type R, must not be {@code null} and must be thread-safe if execution is parallelized
+     * @param shareIntermediateArray {@code true} to reuse the intermediate array (sequential execution only);
+     *                               {@code false} to create new arrays for each position
+     * @param inputElementType the exact runtime component type of the callback array; primitive scalar types will be auto-wrapped, must not be {@code null}
+     *        or {@code void.class}
+     * @param targetElementType the class of the result element type; primitive scalar types will be auto-wrapped, must not be {@code null}
+     *        or {@code void.class}
+     * @return a newly allocated {@link Matrix} of type R containing the combined values, never {@code null}; it has the same shape as the inputs,
+     *         including an explicit {@code 0 x N} shape
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, or contains {@code null} elements; if matrices have different
      *         shapes; if {@code zipFunction}, {@code inputElementType}, or {@code targetElementType} is {@code null}; if a non-empty input
-     *         matrix's declared element type is not assignable to {@code inputElementType}; if {@code inputElementType} or {@code
-     *         targetElementType} is {@code void.class}. Array allocation also rejects a callback-array type or result-array type with more than
-     *         255 dimensions.
+     *         matrix's declared element type is not assignable to {@code inputElementType} after primitive scalar normalization; if
+     *         {@code inputElementType} or {@code targetElementType} is {@code void.class}; or if allocating the callback array or result rows
+     *         would exceed the JVM limit of 255 array dimensions
      * @throws E if {@code zipFunction} throws while processing a visited cell
      * @throws ArrayStoreException if {@code zipFunction} stores a value incompatible with the callback array or returns a value not assignable
-     *         to the normalized {@code targetElementType}
+     *         to {@code targetElementType} after primitive scalar normalization
+     * @see #zip(Collection, Throwables.Function, Class, Class)
+     * @see #zip(Collection, Throwables.BinaryOperator, Class)
      */
     @SuppressWarnings("unchecked")
     public static <T, R, E extends Exception> Matrix<R> zip(final Collection<Matrix<T>> coll, final Throwables.Function<? super T[], R, E> zipFunction,
             final boolean shareIntermediateArray, final Class<T> inputElementType, final Class<R> targetElementType)
             throws IllegalArgumentException, E, ArrayStoreException {
-        N.checkArgNotNull(coll, cs.coll);
         checkShapeForZip(coll);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
         N.checkArgNotNull(inputElementType, cs.inputElementType);
         final Class<T> normalizedInputType = normalizeElementType(inputElementType);
-        final int size = coll.size();
-        final Matrix<T>[] matrices = coll.toArray(new Matrix[size]);
-        checkCompatibleElementTypes(matrices, normalizedInputType);
+        checkCompatibleElementTypes(coll, normalizedInputType, "input element type");
         N.checkArgNotNull(targetElementType, cs.targetElementType);
         final Class<R> normalizedTargetType = normalizeElementType(targetElementType);
+        final Matrix<T>[] matrices = snapshotSameShapeForZip(coll, (Matrix<T>[]) EMPTY_OBJECT_MATRICES);
+        checkCompatibleElementTypes(Arrays.asList(matrices), normalizedInputType, "input element type");
 
+        return zip(matrices, zipFunction, shareIntermediateArray, normalizedInputType, normalizedTargetType);
+    }
+
+    /**
+     * Combines a validated snapshot of same-shaped generic matrices by passing a typed callback array per cell.
+     *
+     * @param <T> the element type of the input matrices
+     * @param <R> the element type of the result matrix
+     * @param <E> the type of exception that the zip function might throw
+     * @param matrices the validated, non-empty, null-free, same-shaped matrix snapshot
+     * @param zipFunction the non-{@code null} per-cell aggregation function
+     * @param shareIntermediateArray whether sequential execution may reuse one callback array
+     * @param normalizedInputType the non-{@code null}, normalized callback-array component type
+     * @param normalizedTargetType the non-{@code null}, normalized result component type
+     * @return a newly allocated {@link Matrix} containing the combined values
+     * @throws IllegalArgumentException if allocating the callback array or result rows exceeds 255 dimensions
+     * @throws E if {@code zipFunction} throws while processing a visited cell
+     * @throws ArrayStoreException if {@code zipFunction} writes an incompatible value into the callback array or returns an incompatible result
+     */
+    @SuppressWarnings("unchecked")
+    private static <T, R, E extends Exception> Matrix<R> zip(final Matrix<T>[] matrices, final Throwables.Function<? super T[], R, E> zipFunction,
+            final boolean shareIntermediateArray, final Class<T> normalizedInputType, final Class<R> normalizedTargetType)
+            throws IllegalArgumentException, E, ArrayStoreException {
+        final int size = matrices.length;
         final int rowCount = matrices[0].rowCount;
         final int columnCount = matrices[0].columnCount;
-        final boolean zipInParallel = Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size));
         // The callback array must have the exact runtime type normalizedInputType, so unshared arrays are
         // clones of this all-null template rather than reflective allocations.
         final T[] intermediateArray = N.newArray(normalizedInputType, size);
         final R[][] result = newMatrixArray(rowCount, columnCount, normalizedTargetType);
 
-        if (zipInParallel) {
-            final Throwables.IntBiConsumer<E> action = (i, j) -> {
-                final T[] tmp = N.clone(intermediateArray); // concurrent calls never share a callback array
+        if (rowCount > 0 && columnCount > 0) {
+            if (Matrices.shouldRunInParallel(matrices[0], saturatedMultiply(matrices[0].elementCount, size))) {
+                forEachBlockInParallel(rowCount, columnCount, Long.BYTES, size, (fromRow, toRow, fromCol, toCol) -> {
+                    // Hoisting one row reference per input saves 1.5-3.5x on the per-cell gather, but each concurrent task would hold
+                    // size references: past MAX_HOISTED_FOLD_INPUTS inputs, index the matrices directly instead.
+                    final T[][] rows = size <= MAX_HOISTED_FOLD_INPUTS ? (T[][]) new Object[size][] : null; // T erases to Object, so this buffer accepts every input's row array
 
-                for (int k = 0; k < size; k++) {
-                    tmp[k] = matrices[k].a[i][j];
-                }
+                    for (int i = fromRow; i < toRow; i++) {
+                        if (rows != null) {
+                            for (int k = 0; k < size; k++) {
+                                rows[k] = matrices[k].a[i];
+                            }
+                        }
 
-                result[i][j] = zipFunction.apply(tmp);
-            };
+                        final R[] resultRow = result[i];
 
-            forEachIndices(rowCount, columnCount, action, true);
-        } else {
-            // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
-            @SuppressWarnings("unchecked")
-            final T[][] rows = (T[][]) new Object[size][]; // T erases to Object, so this buffer accepts every input's row array
+                        for (int j = fromCol; j < toCol; j++) {
+                            final T[] tmp = N.clone(intermediateArray); // concurrent calls never share a callback array
 
-            for (int i = 0; i < rowCount; i++) {
-                for (int k = 0; k < size; k++) {
-                    rows[k] = matrices[k].a[i];
-                }
+                            if (rows != null) {
+                                for (int k = 0; k < size; k++) {
+                                    tmp[k] = rows[k][j];
+                                }
+                            } else {
+                                for (int k = 0; k < size; k++) {
+                                    tmp[k] = matrices[k].a[i][j];
+                                }
+                            }
 
-                final R[] resultRow = result[i];
+                            resultRow[j] = zipFunction.apply(tmp);
+                        }
+                    }
+                });
+            } else {
+                // One reused buffer holds the current row of every input, so the inner loops index plain arrays.
+                final T[][] rows = (T[][]) new Object[size][]; // T erases to Object, so this buffer accepts every input's row array
 
-                for (int j = 0; j < columnCount; j++) {
-                    final T[] tmp = shareIntermediateArray ? intermediateArray : N.clone(intermediateArray);
-
+                for (int i = 0; i < rowCount; i++) {
                     for (int k = 0; k < size; k++) {
-                        tmp[k] = rows[k][j];
+                        rows[k] = matrices[k].a[i];
                     }
 
-                    resultRow[j] = zipFunction.apply(tmp);
+                    final R[] resultRow = result[i];
+
+                    for (int j = 0; j < columnCount; j++) {
+                        final T[] tmp = shareIntermediateArray ? intermediateArray : N.clone(intermediateArray);
+
+                        for (int k = 0; k < size; k++) {
+                            tmp[k] = rows[k][j];
+                        }
+
+                        resultRow[j] = zipFunction.apply(tmp);
+                    }
                 }
             }
         }
@@ -5013,23 +6132,32 @@ public final class Matrices {
     }
 
     /**
-     * Checks the runtime types before allocating callback arrays or result storage.
+     * Checks the runtime element types of zip inputs before allocating callback or result arrays. Callers pass either the caller's
+     * collection (before the snapshot) or {@code Arrays.asList(snapshot)}, so both passes share one implementation and message.
      *
-     * @param <T> the input element type
-     * @param matrices the non-null, null-free matrix snapshot
-     * @param inputElementType the non-null, normalized callback-array component type
-     * @throws IllegalArgumentException if a non-empty matrix declares an element type that is not assignable to {@code inputElementType}
+     * @param matrices the non-empty, {@code null}-free matrices
+     * @param expectedType the non-null, normalized element supertype
+     * @param roleLabel the diagnostic label for {@code expectedType} (e.g. {@code "input element type"} or {@code "element type"})
+     * @throws IllegalArgumentException if a matrix is {@code null}, or a non-empty matrix declares an element type that is not assignable to
+     *         {@code expectedType}
      */
-    private static <T> void checkCompatibleElementTypes(final Matrix<T>[] matrices, final Class<T> inputElementType) throws IllegalArgumentException {
-        for (int i = 0; i < matrices.length; i++) {
-            final Matrix<T> matrix = matrices[i];
+    private static void checkCompatibleElementTypes(final Iterable<? extends Matrix<?>> matrices, final Class<?> expectedType, final String roleLabel)
+            throws IllegalArgumentException {
+        int i = 0;
+
+        for (final Matrix<?> matrix : matrices) {
+            if (matrix == null) {
+                throw new IllegalArgumentException(cs.coll + "[" + i + "] is null");
+            }
 
             // An empty matrix contributes no value to a callback array, so its placeholder token
             // cannot cause an ArrayStoreException and need not constrain the requested input type.
-            if (matrix.elementCount > 0 && !inputElementType.isAssignableFrom(matrix.elementType)) {
+            if (matrix.elementCount > 0 && !expectedType.isAssignableFrom(matrix.elementType)) {
                 throw new IllegalArgumentException(cs.coll + "[" + i + "] declares element type " + matrix.elementType.getTypeName()
-                        + ", which is not assignable to input element type " + inputElementType.getTypeName());
+                        + ", which is not assignable to " + roleLabel + " " + expectedType.getTypeName());
             }
+
+            i++;
         }
     }
 
@@ -5087,8 +6215,12 @@ public final class Matrices {
             }
 
             final int totalDistance = entry.getValue() + rightDistance;
-            final int typePenalty = commonTypePenalty(candidate);
+            if (totalDistance > bestDistance) {
+                continue;
+            }
+
             final int methodCount = candidate.getMethods().length;
+            final int typePenalty = commonTypePenalty(candidate, methodCount);
             final boolean betterRank = totalDistance < bestDistance || (totalDistance == bestDistance && typePenalty < bestPenalty)
                     || (totalDistance == bestDistance && typePenalty == bestPenalty && methodCount > bestMethodCount);
 
@@ -5189,6 +6321,7 @@ public final class Matrices {
             return resolveCommonType(componentTypes).arrayType();
         }
 
+        // Not presized: the map holds one entry per DISTINCT type, often two or three however many matrices there are.
         final Map<Class<?>, Map<Class<?>, Integer>> distancesByType = new LinkedHashMap<>();
 
         for (final Class<?> type : types) {
@@ -5205,8 +6338,9 @@ public final class Matrices {
             long totalDistance = 0;
             boolean commonToAll = true;
 
-            for (final Class<?> type : types) {
-                final Integer distance = distancesByType.get(type).get(candidate);
+            // Sum over distinct input types rather than raw occurrences so duplicate element types do not skew distance weights.
+            for (final Map<Class<?>, Integer> distances : distancesByType.values()) {
+                final Integer distance = distances.get(candidate);
 
                 if (distance == null) {
                     commonToAll = false;
@@ -5216,12 +6350,12 @@ public final class Matrices {
                 totalDistance += distance;
             }
 
-            if (!commonToAll) {
+            if (!commonToAll || totalDistance > bestDistance) {
                 continue;
             }
 
-            final int typePenalty = commonTypePenalty(candidate);
             final int methodCount = candidate.getMethods().length;
+            final int typePenalty = commonTypePenalty(candidate, methodCount);
             final boolean betterRank = totalDistance < bestDistance || (totalDistance == bestDistance && typePenalty < bestPenalty)
                     || (totalDistance == bestDistance && typePenalty == bestPenalty && methodCount > bestMethodCount);
 
@@ -5305,20 +6439,39 @@ public final class Matrices {
      * {@link Object}.
      *
      * @param type the non-{@code null} candidate type
+     * @param methodCount the precomputed number of public methods on {@code type}
      * @return the candidate's non-negative preference penalty; lower values are preferred
-     * @throws SecurityException if a security manager denies access to type metadata while inferring the common runtime element type
      */
-    private static int commonTypePenalty(final Class<?> type) throws SecurityException {
+    private static int commonTypePenalty(final Class<?> type, final int methodCount) {
         if (type == Object.class) {
             return 3;
         }
 
         if (type.isInterface()) {
-            return type.getMethods().length == 0 ? 2 : 1;
+            return methodCount == 0 ? 2 : 1;
         }
 
         return 0;
     }
+
+    /** Shared empty array template used when snapshotting {@link ByteMatrix} collections. */
+    private static final ByteMatrix[] EMPTY_BYTE_MATRICES = new ByteMatrix[0];
+
+    /** Shared empty array template used when snapshotting {@link IntMatrix} collections. */
+    private static final IntMatrix[] EMPTY_INT_MATRICES = new IntMatrix[0];
+
+    /** Shared empty array template used when snapshotting {@link LongMatrix} collections. */
+    private static final LongMatrix[] EMPTY_LONG_MATRICES = new LongMatrix[0];
+
+    /** Shared empty array template used when snapshotting {@link DoubleMatrix} collections. */
+    private static final DoubleMatrix[] EMPTY_DOUBLE_MATRICES = new DoubleMatrix[0];
+
+    /** Shared empty array template used when snapshotting generic {@link Matrix} collections. */
+    @SuppressWarnings("rawtypes")
+    private static final Matrix[] EMPTY_OBJECT_MATRICES = new Matrix[0];
+
+    /** Shared empty array template used when snapshotting {@link AbstractMatrix} collections. */
+    private static final AbstractMatrix<?, ?, ?, ?, ?>[] EMPTY_ABSTRACT_MATRICES = new AbstractMatrix<?, ?, ?, ?, ?>[0];
 
     /**
      * Verifies that two matrices are non-{@code null} and have identical dimensions.
@@ -5328,8 +6481,10 @@ public final class Matrices {
      * @throws IllegalArgumentException if either matrix is {@code null} or their dimensions differ
      */
     private static void checkShapeForZip(final AbstractMatrix<?, ?, ?, ?, ?> a, final AbstractMatrix<?, ?, ?, ?, ?> b) throws IllegalArgumentException {
-        N.checkArgument(isSameShape(a, b), "Cannot zip matrices with different shapes: first is {}x{} but second is {}x{}", a.rowCount, a.columnCount,
-                b.rowCount, b.columnCount);
+        if (!isSameShape(a, b)) {
+            throw new IllegalArgumentException(AbstractMatrix.formatMsg("Cannot zip matrices with different shapes: first is {}x{} but second is {}x{}",
+                    a.rowCount, a.columnCount, b.rowCount, b.columnCount));
+        }
     }
 
     /**
@@ -5342,51 +6497,135 @@ public final class Matrices {
      * @throws IllegalArgumentException if either matrix is {@code null} or their dimensions differ
      */
     private static void checkThirdShapeForZip(final AbstractMatrix<?, ?, ?, ?, ?> a, final AbstractMatrix<?, ?, ?, ?, ?> c) throws IllegalArgumentException {
-        N.checkArgument(isSameShape(a, c), "Cannot zip matrices with different shapes: first is {}x{} but third is {}x{}", a.rowCount, a.columnCount,
-                c.rowCount, c.columnCount);
+        if (!isSameShape(a, c)) {
+            throw new IllegalArgumentException(AbstractMatrix.formatMsg("Cannot zip matrices with different shapes: first is {}x{} but third is {}x{}",
+                    a.rowCount, a.columnCount, c.rowCount, c.columnCount));
+        }
     }
 
     /**
-     * Verifies that a collection is non-empty, contains no {@code null} matrices, and that every
-     * matrix has the same dimensions as the first.
+     * Validates that {@code coll} is non-{@code null}, non-empty, contains no {@code null} elements,
+     * and that every matrix has the same shape as the first, without allocating a snapshot array.
      *
-     * @param coll the matrix collection to validate; must not be {@code null}
+     * <p>Every element is checked for {@code null} before any shape is compared, so a later {@code null} element is reported in
+     * preference to an earlier shape mismatch. {@link #snapshotSameShapeForZip(Collection, AbstractMatrix[])} runs the same two
+     * checks on its snapshot.</p>
+     *
+     * @param coll the matrix collection to validate
      * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, contains a {@code null} element, or contains matrices of
      *         different shapes
      */
     private static void checkShapeForZip(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> coll) throws IllegalArgumentException {
-        checkMatricesNotEmptyAndNoNullElements(coll, cs.coll);
+        N.checkArgNotNull(coll, cs.coll);
+        checkNonEmptyWithoutNullElements(coll, cs.coll);
+        checkSameShapeForZip(coll);
+    }
 
-        final Iterator<? extends AbstractMatrix<?, ?, ?, ?, ?>> iterator = coll.iterator();
+    /**
+     * Snapshots a matrix collection once, verifying that it is non-{@code null}, non-empty,
+     * contains no {@code null} elements, and that every matrix has the same shape as the first.
+     *
+     * @param <M> the concrete matrix type
+     * @param coll the matrix collection to snapshot and validate
+     * @param emptyArray a zero-length typed array matching {@code M[]}
+     * @return the validated non-empty snapshot array
+     * @throws IllegalArgumentException if {@code coll} is {@code null}, empty, contains a {@code null} element, or contains matrices of
+     *         different shapes
+     */
+    private static <M extends AbstractMatrix<?, ?, ?, ?, ?>> M[] snapshotSameShapeForZip(final Collection<M> coll, final M[] emptyArray)
+            throws IllegalArgumentException {
+        N.checkArgNotNull(coll, cs.coll);
+        final M[] matrices = coll.toArray(emptyArray);
+        final List<M> view = Arrays.asList(matrices);
+        checkNonEmptyWithoutNullElements(view, cs.coll);
+        checkSameShapeForZip(view);
+
+        return matrices;
+    }
+
+    /**
+     * Checks that every matrix has the same shape as the first. This is the single implementation behind both the pre-snapshot
+     * collection check and the snapshot re-check of the collection zips. Elements are re-checked for {@code null} so that a collection
+     * mutated after {@link #checkNonEmptyWithoutNullElements(Iterable, String)} fails with an {@link IllegalArgumentException}, not an NPE.
+     *
+     * @param matrices the matrices, already checked to be non-empty and {@code null}-free
+     * @throws IllegalArgumentException if {@code matrices} is empty, contains {@code null}, or contains matrices of different shapes
+     */
+    private static void checkSameShapeForZip(final Iterable<? extends AbstractMatrix<?, ?, ?, ?, ?>> matrices) throws IllegalArgumentException {
+        final Iterator<? extends AbstractMatrix<?, ?, ?, ?, ?>> iterator = matrices.iterator();
+
+        if (!iterator.hasNext()) {
+            throw new IllegalArgumentException("'" + cs.coll + "' cannot be null or empty");
+        }
+
         final AbstractMatrix<?, ?, ?, ?, ?> first = iterator.next();
+
+        if (first == null) {
+            throw new IllegalArgumentException(cs.coll + "[0] is null");
+        }
+
+        final int rowCount = first.rowCount;
+        final int columnCount = first.columnCount;
         int idx = 1;
 
         while (iterator.hasNext()) {
             final AbstractMatrix<?, ?, ?, ?, ?> current = iterator.next();
 
-            N.checkArgument(isSameShape(first, current), "Cannot zip matrices with different shapes: {}[0] is {}x{} but {}[{}] is {}x{}", cs.coll,
-                    first.rowCount, first.columnCount, cs.coll, idx, current.rowCount, current.columnCount);
+            if (current == null) {
+                throw new IllegalArgumentException(cs.coll + "[" + idx + "] is null");
+            }
+
+            if (current.rowCount != rowCount || current.columnCount != columnCount) {
+                throw new IllegalArgumentException(AbstractMatrix.formatMsg("Cannot zip matrices with different shapes: {}[0] is {}x{} but {}[{}] is {}x{}",
+                        cs.coll, rowCount, columnCount, cs.coll, idx, current.rowCount, current.columnCount));
+            }
+
             idx++;
         }
     }
 
     /**
-     * Verifies that a matrix collection is non-empty and contains no {@code null} elements.
+     * Checks that {@code elements} is non-empty and contains no {@code null} element. This is the single null and emptiness check shared
+     * by every collection zip and n-ary stack, applied both to the caller's collection and to {@code Arrays.asList(snapshot)}.
      *
-     * @param matrices the collection to validate; must not be {@code null}
-     * @param argName the caller's parameter name, reported if {@code matrices} is {@code null}, empty, or contains a {@code null} element
-     * @throws IllegalArgumentException if {@code matrices} is {@code null}, empty, or contains a {@code null} element
+     * @param elements the elements to check; must not be {@code null}
+     * @param argName the caller's parameter name used in the messages
+     * @throws IllegalArgumentException if {@code elements} is empty (including a collection that reports a size but iterates nothing) or
+     *         contains a {@code null} element, reported by its encounter index
      */
-    private static void checkMatricesNotEmptyAndNoNullElements(final Collection<? extends AbstractMatrix<?, ?, ?, ?, ?>> matrices, final String argName)
-            throws IllegalArgumentException {
-        N.checkArgNotEmpty(matrices, argName);
-
+    private static void checkNonEmptyWithoutNullElements(final Iterable<?> elements, final String argName) throws IllegalArgumentException {
         int idx = 0;
-        for (final AbstractMatrix<?, ?, ?, ?, ?> m : matrices) {
-            if (m == null) {
+
+        for (final Object element : elements) {
+            if (element == null) {
                 throw new IllegalArgumentException(argName + "[" + idx + "] is null");
             }
+
             idx++;
         }
+
+        if (idx == 0) {
+            throw new IllegalArgumentException("'" + argName + "' cannot be null or empty");
+        }
+    }
+
+    /**
+     * Snapshots a matrix collection once, verifying that it is non-{@code null}, non-empty,
+     * and contains no {@code null} elements.
+     *
+     * @param <M> the concrete matrix type
+     * @param matrices the collection to snapshot and validate
+     * @param argName the caller's parameter name, reported if validation fails
+     * @return the validated non-empty snapshot array
+     * @throws IllegalArgumentException if {@code matrices} is {@code null}, empty, or contains a {@code null} element
+     */
+    @SuppressWarnings("unchecked")
+    private static <M extends AbstractMatrix<?, ?, ?, ?, M>> M[] snapshotNonEmptyMatrices(final Collection<? extends M> matrices, final String argName)
+            throws IllegalArgumentException {
+        N.checkArgNotEmpty(matrices, argName);
+        final AbstractMatrix<?, ?, ?, ?, ?>[] snapshot = matrices.toArray(EMPTY_ABSTRACT_MATRICES);
+        checkNonEmptyWithoutNullElements(Arrays.asList(snapshot), argName);
+
+        return (M[]) snapshot;
     }
 }

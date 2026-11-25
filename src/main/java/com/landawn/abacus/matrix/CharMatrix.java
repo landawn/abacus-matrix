@@ -15,10 +15,11 @@
 package com.landawn.abacus.matrix;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.random.RandomGenerator;
 
-import com.landawn.abacus.annotation.SuppressFBWarnings;
 import com.landawn.abacus.util.Array;
 import com.landawn.abacus.util.Arrays;
 import com.landawn.abacus.util.CharList;
@@ -118,33 +119,35 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     }
 
     /**
-     * Constructs a matrix with an optional guarantee that its row arrays are distinct.
+     * Constructs a matrix, optionally trusting library-allocated storage.
      *
      * @param a the rectangular, non-null array of non-null row arrays
      * @param columnCount the non-negative logical column count
-     * @param rowsAreKnownDistinct whether callers guarantee that no row array is repeated
-     * @throws IllegalArgumentException if {@code a} is {@code null}, if {@code columnCount} is negative,
-     *         if a row is {@code null} or its length differs from {@code columnCount}, or if rows are repeated
-     *         when {@code rowsAreKnownDistinct} is {@code false}
+     * @param rowsAreKnownDistinct {@code true} only when {@code a} and every row in {@code a} are freshly allocated
+     *        by this library (retaining {@code a} directly and trusting non-null, rectangular, identity-distinct rows)
+     * @throws IllegalArgumentException if {@code a} is {@code null}, if {@code columnCount} is negative, or,
+     *         when {@code rowsAreKnownDistinct} is {@code false}, if a row is {@code null}, its length differs
+     *         from {@code columnCount}, or two rows are the same array
      */
     private CharMatrix(final char[][] a, final int columnCount, final boolean rowsAreKnownDistinct) throws IllegalArgumentException {
         super(N.checkArgNotNull(a, "Matrix array cannot be null"), char.class, columnCount, rowsAreKnownDistinct);
     }
 
     /**
-     * Wraps a derived result whose row arrays are known to be distinct.
+     * Wraps a library-owned derived result array without re-cloning or re-scanning rows.
      *
-     * @param a the non-null rectangular result array with distinct, non-null rows
-     * @param columnCount the non-negative logical column count
-     * @return the shared empty matrix for a {@code 0 x 0} result, otherwise a new matrix
-     * @throws IllegalArgumentException if {@code a} is {@code null}, if {@code columnCount} is negative, if a row is {@code null},
-     *         or if a row length differs from {@code columnCount}
+     * @param a a freshly allocated outer array of freshly allocated, non-null, rectangular, identity-distinct rows
+     *        owned exclusively by this library
+     * @param columnCount the non-negative logical column count matching every row's length
+     * @return the shared empty matrix for a {@code 0 x 0} result, otherwise a new matrix retaining {@code a}
+     * @throws IllegalArgumentException if {@code a} is {@code null} or {@code columnCount} is negative
      */
     static CharMatrix wrapResult(final char[][] a, final int columnCount) throws IllegalArgumentException {
         N.checkArgNotNull(a, cs.a);
 
-        // Every wrapResult(...) call site (here, in Matrix and in Matrices) passes freshly allocated rows, so they are
-        // identity-distinct by construction and the duplicate-row scan can be skipped.
+        // Every wrapResult(...) call site passes a freshly allocated outer array and freshly allocated rectangular
+        // rows owned exclusively by this library, so outer-array cloning, per-row validation, and the duplicate-row
+        // scan can be skipped.
         return a.length == 0 && columnCount == 0 ? EMPTY_CHAR_MATRIX : new CharMatrix(a, columnCount, true);
     }
 
@@ -196,7 +199,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     /**
      * Creates a {@code CharMatrix} that owns a defensive deep copy of the supplied two-dimensional array.
      *
-     * <p>For a non-empty input, unlike {@link #wrap(char[][])}, which copies the outer array but shares the caller's rows,
+     * <p>For a non-empty input, unlike {@link #wrap(char[]...)}, which copies the outer array but shares the caller's rows,
      * this factory allocates a new outer array and clones every row. Subsequent modifications to {@code a}
      * (or its rows) are therefore <b>not</b> visible through the returned matrix, and vice versa. A zero-row
      * input is canonicalized to the shared empty matrix, so its outer-array identity is not retained.</p>
@@ -219,7 +222,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @return a new {@code CharMatrix} backed by a deep copy of {@code a}, or the shared empty matrix if {@code a} is empty
      * @throws IllegalArgumentException if {@code a} is {@code null}, if any row of {@code a} is {@code null}, or if the rows have
      *         different lengths (i.e. the array is not rectangular)
-     * @see #wrap(char[][])
+     * @see #wrap(char[]...)
      * @see #copy()
      */
     public static CharMatrix copyOf(final char[]... a) throws IllegalArgumentException {
@@ -229,21 +232,23 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
             return EMPTY_CHAR_MATRIX;
         }
 
-        N.checkArgument(a[0] != null, "Row 0 cannot be null");
-        final int columnCount = a[0].length;
+        // Snapshot the outer array so concurrent mutations to `a` cannot swap in a null or jagged row between validation and cloning.
+        final char[][] rows = a.clone();
 
-        for (int i = 1; i < a.length; i++) {
-            N.checkArgument(a[i] != null, "Row {} cannot be null", i);
-            N.checkArgument(a[i].length == columnCount, MSG_NOT_RECTANGULAR, columnCount, i, a[i].length);
+        N.checkArgument(rows[0] != null, "Row 0 cannot be null");
+        final int columnCount = rows[0].length;
+
+        for (int i = 1, len = rows.length; i < len; i++) {
+            final char[] row = rows[i];
+            N.checkArgument(row != null, "Row {} cannot be null", i);
+            N.checkArgument(row.length == columnCount, MSG_NOT_RECTANGULAR, columnCount, i, row.length);
         }
 
-        final char[][] c = new char[a.length][];
-
-        for (int i = 0, len = a.length; i < len; i++) {
-            c[i] = a[i] == null ? null : a[i].clone();
+        for (int i = 0, len = rows.length; i < len; i++) {
+            rows[i] = rows[i].clone();
         }
 
-        return wrapResult(c, columnCount);
+        return wrapResult(rows, columnCount);
     }
 
     /**
@@ -271,18 +276,31 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     }
 
     /**
-     * Creates a {@code 1 x columnCount} matrix using the caller-supplied random source.
-     * Supplying the source makes generation reproducible when it has a fixed seed.
+     * Creates a {@code 1 x columnCount} matrix filled with random char values drawn uniformly from
+     * the full unsigned 16-bit range {@code [0, 65535]} using the caller-supplied random source.
+     * Supplying the source makes generation reproducible when it has a fixed seed. Values are not
+     * constrained to printable characters and may include surrogates and control codes.
+     * A {@code columnCount} of {@code 0} produces a shape-preserving {@code 1 x 0} matrix.
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * CharMatrix matrix = CharMatrix.randomRow(5, new java.util.Random(42L));
+     * matrix.rowCount();            // returns 1
+     * matrix.columnCount();         // returns 5 (reproducible with fixed seed)
+     *
+     * CharMatrix.randomRow(0, new java.util.Random(42L)).columnCount(); // returns 0 (1x0 matrix)
+     * CharMatrix.randomRow(5, null);                                    // throws IllegalArgumentException
+     * }</pre>
      *
      * @param columnCount the number of columns; must be non-negative
      * @param randomGenerator the random source; must not be {@code null}
-     * @return the generated single-row matrix
+     * @return a new {@code 1 x columnCount} matrix filled with random values, including a shape-preserving {@code 1 x 0} result
      * @throws IllegalArgumentException if {@code columnCount} is negative, or if {@code randomGenerator} is {@code null}
      * @throws RuntimeException if {@code randomGenerator.nextInt(int)} fails while generating a matrix element
+     * @see #randomRow(int)
+     * @see #random(int, int, RandomGenerator)
      */
     public static CharMatrix randomRow(final int columnCount, final RandomGenerator randomGenerator) throws IllegalArgumentException, RuntimeException {
-        N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.columnCount, columnCount);
-
         return random(1, columnCount, randomGenerator);
     }
 
@@ -304,7 +322,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * @param rowCount the number of rows in the new matrix; must be {@code >= 0}
      * @param columnCount the number of columns in the new matrix; must be {@code >= 0}
-     * @return a new {@code CharMatrix} of dimensions {@code rowCount x columnCount} filled with random values
+     * @return a new {@code CharMatrix} of dimensions {@code rowCount x columnCount} filled with random values,
+     *         or the shared {@link #empty()} instance when both dimensions are zero
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative
      */
     public static CharMatrix random(final int rowCount, final int columnCount) throws IllegalArgumentException {
@@ -312,27 +331,53 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     }
 
     /**
-     * Creates a matrix of random UTF-16 code units using the caller-supplied random source.
+     * Creates a matrix of random UTF-16 code units drawn uniformly from the full unsigned 16-bit
+     * range {@code [0, 65535]} using the caller-supplied random source. Supplying the source makes
+     * generation reproducible when it has a fixed seed. Values are not constrained to printable
+     * characters and may include surrogates and control codes.
+     *
+     * <p>A {@code 0 x 0} shape returns the shared {@link #empty()} singleton, while {@code 0 x N}
+     * and {@code N x 0} shapes are preserved with independent row storage.</p>
+     *
+     * <p><b>Usage Examples:</b></p>
+     * <pre>{@code
+     * CharMatrix matrix = CharMatrix.random(2, 3, new java.util.Random(42L));
+     * matrix.rowCount();            // returns 2
+     * matrix.columnCount();         // returns 3 (reproducible with fixed seed)
+     *
+     * boolean sharedEmpty = CharMatrix.random(0, 0, new java.util.Random(42L)) == CharMatrix.empty(); // true
+     * CharMatrix.random(0, 3, new java.util.Random(42L)).columnCount();         // returns 3 (0x3 preserved)
+     * CharMatrix.random(3, 0, new java.util.Random(42L)).rowCount();            // returns 3 (3x0 preserved)
+     * CharMatrix.random(2, 3, null);                                            // throws IllegalArgumentException
+     * }</pre>
      *
      * @param rowCount the number of rows; must be non-negative
      * @param columnCount the number of columns; must be non-negative
      * @param randomGenerator the random source; must not be {@code null}
-     * @return a matrix with the requested shape, including a shape-preserving {@code 0 x N} result
+     * @return a matrix with the requested shape: the shared {@link #empty()} singleton for {@code 0 x 0},
+     *         otherwise a new matrix (preserving {@code 0 x N} and {@code N x 0} shapes)
      * @throws IllegalArgumentException if {@code rowCount} or {@code columnCount} is negative, or if {@code randomGenerator} is {@code null}
      * @throws RuntimeException if {@code randomGenerator.nextInt(int)} fails while generating a matrix element
+     * @see #random(int, int)
+     * @see #randomRow(int, RandomGenerator)
      */
     public static CharMatrix random(final int rowCount, final int columnCount, final RandomGenerator randomGenerator)
             throws IllegalArgumentException, RuntimeException {
         N.checkArgument(rowCount >= 0, MSG_NEGATIVE_DIMENSION, cs.rowCount, rowCount);
         N.checkArgument(columnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.columnCount, columnCount);
         N.checkArgNotNull(randomGenerator, cs.randomGenerator);
-        checkNonNegativeShape(rowCount, columnCount);
+
+        if (rowCount == 0 && columnCount == 0) {
+            return EMPTY_CHAR_MATRIX;
+        }
 
         final char[][] a = new char[rowCount][columnCount];
 
-        for (char[] ea : a) {
-            for (int i = 0; i < columnCount; i++) {
-                ea[i] = (char) randomGenerator.nextInt(BOUND);
+        if (columnCount > 0) {
+            for (final char[] ea : a) {
+                for (int i = 0; i < columnCount; i++) {
+                    ea[i] = (char) randomGenerator.nextInt(BOUND);
+                }
             }
         }
 
@@ -358,7 +403,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @return a single-row {@code CharMatrix} containing the range of values
      */
     public static CharMatrix range(final char startInclusive, final char endExclusive) {
-        return new CharMatrix(new char[][] { ownedRangeRow(Array.range(startInclusive, endExclusive)) });
+        final char[] row = ownedRangeRow(Array.range(startInclusive, endExclusive));
+        return wrapResult(new char[][] { row }, row.length);
     }
 
     /**
@@ -384,7 +430,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @throws IllegalArgumentException if {@code step} is zero
      */
     public static CharMatrix range(final char startInclusive, final char endExclusive, final int step) throws IllegalArgumentException {
-        return new CharMatrix(new char[][] { ownedRangeRow(Array.range(startInclusive, endExclusive, step)) });
+        final char[] row = ownedRangeRow(Array.range(startInclusive, endExclusive, step));
+        return wrapResult(new char[][] { row }, row.length);
     }
 
     /**
@@ -406,7 +453,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @return a single-row {@code CharMatrix} containing the range of values
      */
     public static CharMatrix rangeClosed(final char startInclusive, final char endInclusive) {
-        return new CharMatrix(new char[][] { ownedRangeRow(Array.rangeClosed(startInclusive, endInclusive)) });
+        final char[] row = ownedRangeRow(Array.rangeClosed(startInclusive, endInclusive));
+        return wrapResult(new char[][] { row }, row.length);
     }
 
     /**
@@ -434,7 +482,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @throws IllegalArgumentException if {@code step} is zero
      */
     public static CharMatrix rangeClosed(final char startInclusive, final char endInclusive, final int step) throws IllegalArgumentException {
-        return new CharMatrix(new char[][] { ownedRangeRow(Array.rangeClosed(startInclusive, endInclusive, step)) });
+        final char[] row = ownedRangeRow(Array.rangeClosed(startInclusive, endInclusive, step));
+        return wrapResult(new char[][] { row }, row.length);
     }
 
     /**
@@ -552,24 +601,32 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     public static CharMatrix ofDiagonals(final char[] mainDiagonal, final char[] antiDiagonal) throws IllegalArgumentException {
         N.checkArgument(mainDiagonal != null || antiDiagonal != null, "Both 'mainDiagonal' and 'antiDiagonal' can't be null");
 
-        N.checkArgument(N.isEmpty(mainDiagonal) || N.isEmpty(antiDiagonal) || mainDiagonal.length == antiDiagonal.length,
+        final boolean hasMain = N.notEmpty(mainDiagonal);
+        final boolean hasAnti = N.notEmpty(antiDiagonal);
+
+        N.checkArgument(!hasMain || !hasAnti || mainDiagonal.length == antiDiagonal.length,
                 "The lengths of 'mainDiagonal' and 'antiDiagonal' must be the same: mainDiagonal length={}, antiDiagonal length={}", N.len(mainDiagonal),
                 N.len(antiDiagonal));
 
-        if (N.isEmpty(mainDiagonal) && N.isEmpty(antiDiagonal)) {
+        if (!hasMain && !hasAnti) {
             return EMPTY_CHAR_MATRIX;
         }
 
-        final int len = N.max(N.len(mainDiagonal), N.len(antiDiagonal));
+        final int len = hasMain ? mainDiagonal.length : antiDiagonal.length;
         final char[][] result = new char[len][len];
 
-        if (N.notEmpty(antiDiagonal)) {
-            for (int i = 0, j = len - 1; i < len; i++, j--) {
-                result[i][j] = antiDiagonal[i];
+        if (hasMain && hasAnti) {
+            for (int i = 0; i < len; i++) {
+                final char[] row = result[i];
+                // Write anti-diagonal first so mainDiagonal wins at the center cell when len is odd.
+                row[len - 1 - i] = antiDiagonal[i];
+                row[i] = mainDiagonal[i];
             }
-        }
-
-        if (N.notEmpty(mainDiagonal)) {
+        } else if (hasAnti) {
+            for (int i = 0; i < len; i++) {
+                result[i][len - 1 - i] = antiDiagonal[i];
+            }
+        } else {
             for (int i = 0; i < len; i++) {
                 result[i][i] = mainDiagonal[i]; // NOSONAR
             }
@@ -889,7 +946,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     public char[] rowCopy(final int rowIndex) throws IndexOutOfBoundsException {
         checkRowIndex(rowIndex);
 
-        return N.copyOf(a[rowIndex], columnCount);
+        return a[rowIndex].clone();
     }
 
     /**
@@ -960,7 +1017,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
         N.checkArgNotNull(row, cs.row);
         N.checkArgument(row.length == columnCount, MSG_ROW_LENGTH_MISMATCH, columnCount, row.length);
 
-        N.copy(row, 0, a[rowIndex], 0, columnCount);
+        if (row == a[rowIndex] || columnCount == 0) {
+            return;
+        }
+
+        System.arraycopy(row, 0, a[rowIndex], 0, columnCount);
     }
 
     /**
@@ -1123,6 +1184,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * The diagonal array must have exactly {@code min(rowCount, columnCount)} elements.
      *
      * <p>This method sets the main diagonal elements at positions (0,0), (1,1), (2,2), etc.</p>
+     *
+     * <p>The supplied array may be one of this matrix's live backing rows (for example a value returned
+     * by {@code rowView(k)}): no defensive snapshot is needed because iteration {@code i} writes only
+     * {@code (i, i)}, touching {@code rowView(k)} solely at {@code i == k} where {@code rowView(k)[k]}
+     * is copied onto itself without disturbing any unread element.</p>
      *
      * <p><b>Usage Examples:</b></p>
      * <pre>{@code
@@ -1337,13 +1403,20 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     public <E extends Exception> void updateAll(final Throwables.CharUnaryOperator<E> operator) throws IllegalArgumentException, E {
         N.checkArgNotNull(operator, cs.operator);
 
-        if (columnCount == 0) {
+        if (isEmpty()) {
             return;
         }
 
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = operator.applyAsChar(a[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Character.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final char[] row = a[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        row[j] = operator.applyAsChar(row[j]);
+                    }
+                }
+            });
         } else {
             for (final char[] row : a) {
                 for (int j = 0; j < columnCount; j++) {
@@ -1359,7 +1432,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * <p>The mapper receives the row and column indices for each element and returns the new value
      * for that position. This is useful for initializing matrices based on position patterns or
-     * mathematical formulas. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
+     * mathematical formulas. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.
+     * When this operation is not parallelized, elements are processed in row-major order; when it is
+     * parallelized, the encounter order is unspecified.</p>
      *
      * <p>If {@code mapper} throws, updates already completed are retained; this method does not
      * roll back changes. Sequential traversal stops at the failing call. During parallel execution,
@@ -1396,9 +1471,20 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
             throws IllegalArgumentException, E, NullPointerException {
         N.checkArgNotNull(mapper, cs.mapper);
 
+        if (isEmpty()) {
+            return;
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> a[i][j] = mapper.apply(i, j);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Character.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final char[] row = a[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        row[j] = mapper.apply(i, j);
+                    }
+                }
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final char[] row = a[i];
@@ -1415,7 +1501,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * All elements that satisfy the predicate are replaced with the specified new value.
      * This modifies the matrix directly.
      *
-     * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.</p>
+     * <p>The operation may be performed in parallel for large matrices to improve performance. If parallelized, the supplied function must be thread-safe.
+     * When this operation is not parallelized, elements are processed in row-major order; when it is
+     * parallelized, the encounter order is unspecified.</p>
      *
      * <p>If {@code predicate} throws, updates already completed are retained; this method does not
      * roll back changes. Sequential traversal stops at the failing call. During parallel execution,
@@ -1446,13 +1534,22 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     public <E extends Exception> void replaceIf(final Throwables.CharPredicate<E> predicate, final char newValue) throws IllegalArgumentException, E {
         N.checkArgNotNull(predicate, cs.predicate);
 
+        if (isEmpty()) {
+            return;
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
-                if (predicate.test(a[i][j])) {
-                    a[i][j] = newValue;
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Character.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final char[] row = a[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        if (predicate.test(row[j])) {
+                            row[j] = newValue;
+                        }
+                    }
                 }
-            };
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            });
         } else {
             for (final char[] row : a) {
                 for (int j = 0; j < columnCount; j++) {
@@ -1470,7 +1567,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * This modifies the matrix directly.
      *
      * <p>This is useful for position-based replacements such as setting diagonals, borders,
-     * or specific regions. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.</p>
+     * or specific regions. The operation may be performed in parallel for large matrices. If parallelized, the supplied function must be thread-safe.
+     * When this operation is not parallelized, elements are processed in row-major order; when it is
+     * parallelized, the encounter order is unspecified.</p>
      *
      * <p>Nonmatching positions perform no write.</p>
      *
@@ -1505,13 +1604,22 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     public <E extends Exception> void replaceIf(final Throwables.IntBiPredicate<E> predicate, final char newValue) throws IllegalArgumentException, E {
         N.checkArgNotNull(predicate, cs.predicate);
 
+        if (isEmpty()) {
+            return;
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> {
-                if (predicate.test(i, j)) {
-                    a[i][j] = newValue;
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Character.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final char[] row = a[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        if (predicate.test(i, j)) {
+                            row[j] = newValue;
+                        }
+                    }
                 }
-            };
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final char[] row = a[i];
@@ -1556,11 +1664,23 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     public <E extends Exception> CharMatrix map(final Throwables.CharUnaryOperator<E> mapper) throws IllegalArgumentException, E {
         N.checkArgNotNull(mapper, cs.mapper);
 
+        if (isEmpty()) {
+            return rowCount == 0 && columnCount == 0 ? EMPTY_CHAR_MATRIX : wrapResult(new char[rowCount][columnCount], columnCount);
+        }
+
         final char[][] result = new char[rowCount][columnCount];
 
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.applyAsChar(a[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Character.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final char[] row = a[i];
+                    final char[] resultRow = result[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        resultRow[j] = mapper.applyAsChar(row[j]);
+                    }
+                }
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final char[] row = a[i];
@@ -1612,9 +1732,21 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
         final R[][] result = Matrices.newMatrixArray(rowCount, columnCount, targetElementType);
 
+        if (isEmpty()) {
+            return Matrix.newResult(result, targetElementType, columnCount);
+        }
+
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = mapper.apply(a[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Long.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final char[] row = a[i];
+                    final R[] resultRow = result[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        resultRow[j] = mapper.apply(row[j]);
+                    }
+                }
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final char[] row = a[i];
@@ -1650,8 +1782,12 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param value the value to fill the matrix with
      */
     public void fill(final char value) {
-        for (int i = 0; i < rowCount; i++) {
-            N.fill(a[i], value);
+        if (isEmpty()) {
+            return;
+        }
+
+        for (final char[] row : a) {
+            java.util.Arrays.fill(row, value);
         }
     }
 
@@ -1737,8 +1873,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
         final char[][] sourceSnapshot = snapshotRowsIfBackingRows(source, destRowIndex, destColumnIndex);
 
         for (int i = 0, minLen = N.min(rowCount - destRowIndex, sourceSnapshot.length); i < minLen; i++) {
-            if (sourceSnapshot[i] != null) {
-                N.copy(sourceSnapshot[i], 0, a[i + destRowIndex], destColumnIndex, N.min(sourceSnapshot[i].length, columnCount - destColumnIndex));
+            final char[] srcRow = sourceSnapshot[i];
+
+            if (srcRow != null) {
+                N.copy(srcRow, 0, a[i + destRowIndex], destColumnIndex, N.min(srcRow.length, columnCount - destColumnIndex));
             }
         }
     }
@@ -1765,6 +1903,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      */
     @Override
     public CharMatrix copy() {
+        if (rowCount == 0 && columnCount == 0) {
+            return EMPTY_CHAR_MATRIX;
+        }
+
         final char[][] c = new char[rowCount][];
 
         for (int i = 0; i < rowCount; i++) {
@@ -1793,7 +1935,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
      * @param toRowIndex the ending row index (exclusive)
-     * @return a new {@code CharMatrix} containing the specified rows
+     * @return a new {@code CharMatrix} containing the specified rows (preserving {@code 0 x columnCount}
+     *         for an empty range when {@code columnCount > 0}), or the shared {@link #empty()} singleton
+     *         if the result is {@code 0 x 0}
      * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount},
      *         or {@code fromRowIndex > toRowIndex}
      */
@@ -1801,7 +1945,13 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     public CharMatrix copyRows(final int fromRowIndex, final int toRowIndex) throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
 
-        final char[][] c = new char[toRowIndex - fromRowIndex][];
+        final int newRowCount = toRowIndex - fromRowIndex;
+
+        if (newRowCount == 0 && columnCount == 0) {
+            return EMPTY_CHAR_MATRIX;
+        }
+
+        final char[][] c = new char[newRowCount][];
 
         for (int i = fromRowIndex; i < toRowIndex; i++) {
             c[i - fromRowIndex] = a[i].clone();
@@ -1830,7 +1980,9 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param toRowIndex the ending row index (exclusive)
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
-     * @return a new {@code CharMatrix} containing the specified submatrix
+     * @return a new {@code CharMatrix} containing the specified submatrix (preserving {@code 0 x N}
+     *         and {@code N x 0} shapes for empty ranges), or the shared {@link #empty()} singleton
+     *         if the result is {@code 0 x 0}
      * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount},
      *         {@code fromRowIndex > toRowIndex}, {@code fromColumnIndex < 0},
      *         {@code toColumnIndex > columnCount}, or {@code fromColumnIndex > toColumnIndex}
@@ -1840,13 +1992,37 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
             throws IndexOutOfBoundsException {
         N.checkFromToIndex(fromRowIndex, toRowIndex, rowCount);
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
-        final char[][] c = new char[toRowIndex - fromRowIndex][];
 
-        for (int i = fromRowIndex; i < toRowIndex; i++) {
-            c[i - fromRowIndex] = N.copyOfRange(a[i], fromColumnIndex, toColumnIndex);
+        final int newRowCount = toRowIndex - fromRowIndex;
+        final int newColumnCount = toColumnIndex - fromColumnIndex;
+
+        if (newRowCount == 0 && newColumnCount == 0) {
+            return EMPTY_CHAR_MATRIX;
         }
 
-        return wrapResult(c, toColumnIndex - fromColumnIndex);
+        if (newRowCount == 0) {
+            return wrapResult(new char[0][], newColumnCount);
+        }
+
+        final char[][] c = new char[newRowCount][];
+
+        if (fromColumnIndex == 0 && toColumnIndex == columnCount) {
+            for (int i = fromRowIndex; i < toRowIndex; i++) {
+                c[i - fromRowIndex] = a[i].clone();
+            }
+        } else if (newColumnCount == 0) {
+            for (int i = 0; i < newRowCount; i++) {
+                c[i] = new char[0];
+            }
+        } else {
+            for (int i = fromRowIndex; i < toRowIndex; i++) {
+                final char[] row = new char[newColumnCount];
+                System.arraycopy(a[i], fromColumnIndex, row, 0, newColumnCount);
+                c[i - fromRowIndex] = row;
+            }
+        }
+
+        return wrapResult(c, newColumnCount);
     }
 
     /**
@@ -1958,27 +2134,41 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     public CharMatrix resize(final int newRowCount, final int newColumnCount, final char defaultValue) throws IllegalArgumentException {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newRowCount, newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newColumnCount, newColumnCount);
-        checkNonNegativeShape(newRowCount, newColumnCount);
+
         if (newRowCount <= rowCount && newColumnCount <= columnCount) {
             return copyRegion(0, newRowCount, 0, newColumnCount);
-        } else {
-            final boolean fillDefaultValue = defaultValue != CHAR_0;
-            final char[][] b = new char[newRowCount][];
+        }
 
-            for (int i = 0; i < newRowCount; i++) {
-                b[i] = i < rowCount ? N.copyOf(a[i], newColumnCount) : new char[newColumnCount];
+        final boolean fillDefaultValue = defaultValue != CHAR_0 && newColumnCount > 0;
+        final char[][] b = new char[newRowCount][];
+        final int existingRows = Math.min(rowCount, newRowCount);
+        final int copyCols = Math.min(columnCount, newColumnCount);
 
-                if (fillDefaultValue) {
-                    if (i >= rowCount) {
-                        N.fill(b[i], defaultValue);
-                    } else if (columnCount < newColumnCount) {
-                        N.fill(b[i], columnCount, newColumnCount, defaultValue);
-                    }
-                }
+        for (int i = 0; i < existingRows; i++) {
+            final char[] dstRow = new char[newColumnCount];
+
+            if (copyCols > 0) {
+                System.arraycopy(a[i], 0, dstRow, 0, copyCols);
             }
 
-            return wrapResult(b, newColumnCount);
+            if (fillDefaultValue && copyCols < newColumnCount) {
+                java.util.Arrays.fill(dstRow, copyCols, newColumnCount, defaultValue);
+            }
+
+            b[i] = dstRow;
         }
+
+        for (int i = existingRows; i < newRowCount; i++) {
+            final char[] dstRow = new char[newColumnCount];
+
+            if (fillDefaultValue) {
+                java.util.Arrays.fill(dstRow, defaultValue);
+            }
+
+            b[i] = dstRow;
+        }
+
+        return wrapResult(b, newColumnCount);
     }
 
     /**
@@ -2096,35 +2286,47 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
         if (padTop == 0 && padBottom == 0 && padLeft == 0 && padRight == 0) {
             return copy();
-        } else {
-            final int newRowCount = padTop + rowCount + padBottom;
-            final int newColumnCount = padLeft + columnCount + padRight;
-            checkNonNegativeShape(newRowCount, newColumnCount);
-            final boolean fillDefaultValue = defaultValue != CHAR_0;
-            final char[][] b = new char[newRowCount][newColumnCount];
+        }
 
-            for (int i = 0; i < newRowCount; i++) {
-                if (i >= padTop && i < padTop + rowCount) {
-                    N.copy(a[i - padTop], 0, b[i], padLeft, columnCount);
+        final int newRowCount = padTop + rowCount + padBottom;
+        final int newColumnCount = padLeft + columnCount + padRight;
+        final char[][] b = new char[newRowCount][newColumnCount];
+        final boolean fillDefaultValue = defaultValue != CHAR_0 && newColumnCount > 0;
+        final int bottomStart = padTop + rowCount;
+
+        if (fillDefaultValue) {
+            for (int i = 0; i < padTop; i++) {
+                java.util.Arrays.fill(b[i], defaultValue);
+            }
+        }
+
+        if (columnCount > 0 || fillDefaultValue) {
+            for (int i = 0; i < rowCount; i++) {
+                final char[] dstRow = b[padTop + i];
+
+                if (columnCount > 0) {
+                    System.arraycopy(a[i], 0, dstRow, padLeft, columnCount);
                 }
 
                 if (fillDefaultValue) {
-                    if (i < padTop || i >= padTop + rowCount) {
-                        N.fill(b[i], defaultValue);
-                    } else if (columnCount < newColumnCount) {
-                        if (padLeft > 0) {
-                            N.fill(b[i], 0, padLeft, defaultValue);
-                        }
+                    if (padLeft > 0) {
+                        java.util.Arrays.fill(dstRow, 0, padLeft, defaultValue);
+                    }
 
-                        if (padRight > 0) {
-                            N.fill(b[i], columnCount + padLeft, newColumnCount, defaultValue);
-                        }
+                    if (padRight > 0) {
+                        java.util.Arrays.fill(dstRow, padLeft + columnCount, newColumnCount, defaultValue);
                     }
                 }
             }
-
-            return wrapResult(b, newColumnCount);
         }
+
+        if (fillDefaultValue) {
+            for (int i = bottomStart; i < newRowCount; i++) {
+                java.util.Arrays.fill(b[i], defaultValue);
+            }
+        }
+
+        return wrapResult(b, newColumnCount);
     }
 
     /**
@@ -2213,9 +2415,28 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      */
     @Override
     public CharMatrix flipHorizontally() {
-        final CharMatrix res = this.copy();
-        res.flipHorizontallyInPlace();
-        return res;
+        if (columnCount < 2) {
+            return copy();
+        }
+
+        if (rowCount == 0) {
+            return wrapResult(new char[0][], columnCount);
+        }
+
+        final char[][] c = new char[rowCount][];
+
+        for (int i = 0; i < rowCount; i++) {
+            final char[] srcRow = a[i];
+            final char[] dstRow = new char[columnCount];
+
+            for (int j = 0, k = columnCount - 1; j < columnCount; j++, k--) {
+                dstRow[j] = srcRow[k];
+            }
+
+            c[i] = dstRow;
+        }
+
+        return wrapResult(c, columnCount);
     }
 
     /**
@@ -2240,9 +2461,17 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      */
     @Override
     public CharMatrix flipVertically() {
-        final CharMatrix res = this.copy();
-        res.flipVerticallyInPlace();
-        return res;
+        if (rowCount == 0) {
+            return columnCount == 0 ? EMPTY_CHAR_MATRIX : wrapResult(new char[0][], columnCount);
+        }
+
+        final char[][] c = new char[rowCount][];
+
+        for (int i = 0; i < rowCount; i++) {
+            c[i] = a[rowCount - i - 1].clone();
+        }
+
+        return wrapResult(c, columnCount);
     }
 
     /**
@@ -2274,23 +2503,46 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     @Override
     public CharMatrix rotate90() {
         if (columnCount == 0) {
-            return wrapResult(new char[0][], rowCount);
+            return rowCount == 0 ? EMPTY_CHAR_MATRIX : wrapResult(new char[0][], rowCount);
         }
-
-        checkNonNegativeShape(columnCount, rowCount);
 
         final char[][] c = new char[columnCount][rowCount];
 
-        if (rowCount <= columnCount) {
+        if (rowCount >= TRANSPOSE_TILE_THRESHOLD && columnCount >= TRANSPOSE_TILE_THRESHOLD) {
+            // Cache-blocked tiling keeps both source rows and destination rows resident in L1/L2 cache.
+            for (int j0 = 0; j0 < rowCount;) {
+                final int jMax = rowCount - j0 > TRANSPOSE_TILE_SIZE ? j0 + TRANSPOSE_TILE_SIZE : rowCount;
+
+                for (int i0 = 0; i0 < columnCount;) {
+                    final int iMax = columnCount - i0 > TRANSPOSE_TILE_SIZE ? i0 + TRANSPOSE_TILE_SIZE : columnCount;
+
+                    for (int j = j0; j < jMax; j++) {
+                        final char[] srcRow = a[rowCount - j - 1];
+
+                        for (int i = i0; i < iMax; i++) {
+                            c[i][j] = srcRow[i];
+                        }
+                    }
+
+                    i0 = iMax;
+                }
+
+                j0 = jMax;
+            }
+        } else if (rowCount <= columnCount) {
             for (int j = 0; j < rowCount; j++) {
+                final char[] srcRow = a[rowCount - j - 1];
+
                 for (int i = 0; i < columnCount; i++) {
-                    c[i][j] = a[rowCount - j - 1][i];
+                    c[i][j] = srcRow[i];
                 }
             }
         } else {
             for (int i = 0; i < columnCount; i++) {
+                final char[] dstRow = c[i];
+
                 for (int j = 0; j < rowCount; j++) {
-                    c[i][j] = a[rowCount - j - 1][i];
+                    dstRow[j] = a[rowCount - j - 1][i];
                 }
             }
         }
@@ -2323,11 +2575,27 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      */
     @Override
     public CharMatrix rotate180() {
+        if (rowCount == 0) {
+            return columnCount == 0 ? EMPTY_CHAR_MATRIX : wrapResult(new char[0][], columnCount);
+        }
+
         final char[][] c = new char[rowCount][];
 
-        for (int i = 0; i < rowCount; i++) {
-            c[i] = a[rowCount - i - 1].clone();
-            N.reverse(c[i]);
+        if (columnCount < 2) {
+            for (int i = 0; i < rowCount; i++) {
+                c[i] = a[rowCount - i - 1].clone();
+            }
+        } else {
+            for (int i = 0; i < rowCount; i++) {
+                final char[] srcRow = a[rowCount - i - 1];
+                final char[] dstRow = new char[columnCount];
+
+                for (int j = 0, k = columnCount - 1; j < columnCount; j++, k--) {
+                    dstRow[j] = srcRow[k];
+                }
+
+                c[i] = dstRow;
+            }
         }
 
         return wrapResult(c, columnCount);
@@ -2362,23 +2630,47 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     @Override
     public CharMatrix rotate270() {
         if (columnCount == 0) {
-            return wrapResult(new char[0][], rowCount);
+            return rowCount == 0 ? EMPTY_CHAR_MATRIX : wrapResult(new char[0][], rowCount);
         }
-
-        checkNonNegativeShape(columnCount, rowCount);
 
         final char[][] c = new char[columnCount][rowCount];
 
-        if (rowCount <= columnCount) {
+        if (rowCount >= TRANSPOSE_TILE_THRESHOLD && columnCount >= TRANSPOSE_TILE_THRESHOLD) {
+            // Cache-blocked tiling keeps both source rows and destination rows resident in L1/L2 cache.
+            for (int j0 = 0; j0 < rowCount;) {
+                final int jMax = rowCount - j0 > TRANSPOSE_TILE_SIZE ? j0 + TRANSPOSE_TILE_SIZE : rowCount;
+
+                for (int i0 = 0; i0 < columnCount;) {
+                    final int iMax = columnCount - i0 > TRANSPOSE_TILE_SIZE ? i0 + TRANSPOSE_TILE_SIZE : columnCount;
+
+                    for (int j = j0; j < jMax; j++) {
+                        final char[] srcRow = a[j];
+
+                        for (int i = i0; i < iMax; i++) {
+                            c[i][j] = srcRow[columnCount - i - 1];
+                        }
+                    }
+
+                    i0 = iMax;
+                }
+
+                j0 = jMax;
+            }
+        } else if (rowCount <= columnCount) {
             for (int j = 0; j < rowCount; j++) {
+                final char[] srcRow = a[j];
+
                 for (int i = 0; i < columnCount; i++) {
-                    c[i][j] = a[j][columnCount - i - 1];
+                    c[i][j] = srcRow[columnCount - i - 1];
                 }
             }
         } else {
             for (int i = 0; i < columnCount; i++) {
+                final char[] dstRow = c[i];
+                final int srcCol = columnCount - i - 1;
+
                 for (int j = 0; j < rowCount; j++) {
-                    c[i][j] = a[j][columnCount - i - 1];
+                    dstRow[j] = a[j][srcCol];
                 }
             }
         }
@@ -2416,23 +2708,46 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     @Override
     public CharMatrix transpose() {
         if (columnCount == 0) {
-            return wrapResult(new char[0][], rowCount);
+            return rowCount == 0 ? EMPTY_CHAR_MATRIX : wrapResult(new char[0][], rowCount);
         }
-
-        checkNonNegativeShape(columnCount, rowCount);
 
         final char[][] c = new char[columnCount][rowCount];
 
-        if (rowCount <= columnCount) {
+        if (rowCount >= TRANSPOSE_TILE_THRESHOLD && columnCount >= TRANSPOSE_TILE_THRESHOLD) {
+            // Cache-blocked tiling keeps both source rows and destination rows resident in L1/L2 cache.
+            for (int j0 = 0; j0 < rowCount;) {
+                final int jMax = rowCount - j0 > TRANSPOSE_TILE_SIZE ? j0 + TRANSPOSE_TILE_SIZE : rowCount;
+
+                for (int i0 = 0; i0 < columnCount;) {
+                    final int iMax = columnCount - i0 > TRANSPOSE_TILE_SIZE ? i0 + TRANSPOSE_TILE_SIZE : columnCount;
+
+                    for (int j = j0; j < jMax; j++) {
+                        final char[] srcRow = a[j];
+
+                        for (int i = i0; i < iMax; i++) {
+                            c[i][j] = srcRow[i];
+                        }
+                    }
+
+                    i0 = iMax;
+                }
+
+                j0 = jMax;
+            }
+        } else if (rowCount <= columnCount) {
             for (int j = 0; j < rowCount; j++) {
+                final char[] srcRow = a[j];
+
                 for (int i = 0; i < columnCount; i++) {
-                    c[i][j] = a[j][i];
+                    c[i][j] = srcRow[i];
                 }
             }
         } else {
             for (int i = 0; i < columnCount; i++) {
+                final char[] dstRow = c[i];
+
                 for (int j = 0; j < rowCount; j++) {
-                    c[i][j] = a[j][i];
+                    dstRow[j] = a[j][i];
                 }
             }
         }
@@ -2468,18 +2783,20 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @throws IllegalArgumentException if {@code newRowCount} or {@code newColumnCount} is negative, or if the new shape is too small
      *         to hold every existing element
      */
-    @SuppressFBWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG")
     @Override
     public CharMatrix reshapeAndPad(final int newRowCount, final int newColumnCount) throws IllegalArgumentException {
         N.checkArgument(newRowCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newRowCount, newRowCount);
         N.checkArgument(newColumnCount >= 0, MSG_NEGATIVE_DIMENSION, cs.newColumnCount, newColumnCount);
-        checkNonNegativeShape(newRowCount, newColumnCount);
-        N.checkArgument((long) newRowCount * newColumnCount >= elementCount(), "New shape [{}x{}={}] is too small to hold all {} elements", newRowCount,
-                newColumnCount, (long) newRowCount * newColumnCount, elementCount());
+        N.checkArgument((long) newRowCount * newColumnCount >= elementCount, "New shape [{}x{}={}] is too small to hold all {} elements", newRowCount,
+                newColumnCount, (long) newRowCount * newColumnCount, elementCount);
+
+        if (newRowCount == 0 && newColumnCount == 0) {
+            return EMPTY_CHAR_MATRIX;
+        }
 
         final char[][] c = new char[newRowCount][newColumnCount];
 
-        if (newRowCount == 0 || newColumnCount == 0 || N.isEmpty(a)) {
+        if (newRowCount == 0 || newColumnCount == 0 || isEmpty()) {
             return wrapResult(c, newColumnCount);
         }
 
@@ -2557,27 +2874,39 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
             return copy();
         }
 
-        final char[][] c = new char[rowCount * rowRepeats][columnCount * columnRepeats];
+        final int newRowCount = rowCount * rowRepeats;
+        final int newColumnCount = columnCount * columnRepeats;
+
+        if (newRowCount == 0 && newColumnCount == 0) {
+            return EMPTY_CHAR_MATRIX;
+        }
+
+        final char[][] c = new char[newRowCount][newColumnCount];
+
+        if (isEmpty()) {
+            return wrapResult(c, newColumnCount);
+        }
 
         for (int i = 0; i < rowCount; i++) {
             final char[] aa = a[i];
-            final char[] fr = c[i * rowRepeats];
+            final int baseRow = i * rowRepeats;
+            final char[] fr = c[baseRow];
 
             if (columnRepeats == 1) {
                 // Repeating whole rows: one bulk copy instead of a one-cell fill per element.
-                N.copy(aa, 0, fr, 0, columnCount);
+                System.arraycopy(aa, 0, fr, 0, columnCount);
             } else {
-                for (int j = 0; j < columnCount; j++) {
-                    N.fill(fr, j * columnRepeats, (j + 1) * columnRepeats, aa[j]);
+                for (int j = 0, offset = 0; j < columnCount; j++, offset += columnRepeats) {
+                    java.util.Arrays.fill(fr, offset, offset + columnRepeats, aa[j]);
                 }
             }
 
             for (int k = 1; k < rowRepeats; k++) {
-                N.copy(fr, 0, c[i * rowRepeats + k], 0, fr.length);
+                System.arraycopy(fr, 0, c[baseRow + k], 0, newColumnCount);
             }
         }
 
-        return wrapResult(c, columnCount * columnRepeats);
+        return wrapResult(c, newColumnCount);
     }
 
     /**
@@ -2622,10 +2951,17 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
             return copy();
         }
 
-        final char[][] c = new char[rowCount * rowRepeats][columnCount * columnRepeats];
+        final int newRowCount = rowCount * rowRepeats;
+        final int newColumnCount = columnCount * columnRepeats;
+
+        if (newRowCount == 0 && newColumnCount == 0) {
+            return EMPTY_CHAR_MATRIX;
+        }
+
+        final char[][] c = new char[newRowCount][newColumnCount];
 
         if (isEmpty()) {
-            return wrapResult(c, columnCount * columnRepeats);
+            return wrapResult(c, newColumnCount);
         }
 
         for (int i = 0; i < rowCount; i++) {
@@ -2634,11 +2970,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
         for (int i = 1; i < rowRepeats; i++) {
             for (int j = 0; j < rowCount; j++) {
-                N.copy(c[j], 0, c[i * rowCount + j], 0, c[j].length);
+                System.arraycopy(c[j], 0, c[i * rowCount + j], 0, newColumnCount);
             }
         }
 
-        return wrapResult(c, columnCount * columnRepeats);
+        return wrapResult(c, newColumnCount);
     }
 
     /**
@@ -2662,15 +2998,18 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      */
     @Override
     public CharList flatten() throws IllegalStateException {
-        // Check for overflow before allocation
-        if ((long) rowCount * columnCount > Integer.MAX_VALUE) {
+        if (elementCount > Integer.MAX_VALUE) {
             throw new IllegalStateException("Matrix too large to flatten: " + rowCount + " x " + columnCount);
         }
 
-        final char[] c = new char[rowCount * columnCount];
+        if (elementCount == 0) {
+            return new CharList();
+        }
 
-        for (int i = 0; i < rowCount; i++) {
-            N.copy(a[i], 0, c, i * columnCount, columnCount);
+        final char[] c = new char[(int) elementCount];
+
+        for (int i = 0, offset = 0; i < rowCount; i++, offset += columnCount) {
+            System.arraycopy(a[i], 0, c, offset, columnCount);
         }
 
         return CharList.of(c);
@@ -2755,6 +3094,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
         final long mergedRowCount = (long) rowCount + other.rowCount;
         N.checkArgument(mergedRowCount <= Integer.MAX_VALUE, "Merged row count overflow: {} + {} = {}", rowCount, other.rowCount, mergedRowCount);
 
+        if (mergedRowCount == 0 && columnCount == 0) {
+            return EMPTY_CHAR_MATRIX;
+        }
+
         final char[][] c = new char[(int) mergedRowCount][];
         int j = 0;
 
@@ -2804,14 +3147,27 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
         N.checkArgument(mergedColumnCount <= Integer.MAX_VALUE, "Merged column count overflow: {} + {} = {}", columnCount, other.columnCount,
                 mergedColumnCount);
 
-        final char[][] c = new char[rowCount][(int) mergedColumnCount];
+        final int newColumnCount = (int) mergedColumnCount;
 
-        for (int i = 0; i < rowCount; i++) {
-            N.copy(a[i], 0, c[i], 0, columnCount);
-            N.copy(other.a[i], 0, c[i], columnCount, other.columnCount);
+        if (rowCount == 0 && newColumnCount == 0) {
+            return EMPTY_CHAR_MATRIX;
         }
 
-        return wrapResult(c, (int) mergedColumnCount);
+        final char[][] c = new char[rowCount][newColumnCount];
+
+        if (rowCount > 0 && newColumnCount > 0) {
+            for (int i = 0; i < rowCount; i++) {
+                if (columnCount > 0) {
+                    System.arraycopy(a[i], 0, c[i], 0, columnCount);
+                }
+
+                if (other.columnCount > 0) {
+                    System.arraycopy(other.a[i], 0, c[i], columnCount, other.columnCount);
+                }
+            }
+        }
+
+        return wrapResult(c, newColumnCount);
     }
 
     /**
@@ -2853,12 +3209,25 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
         N.checkArgument(isSameShape(other), "Cannot add matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
+        if (isEmpty()) {
+            return rowCount == 0 && columnCount == 0 ? EMPTY_CHAR_MATRIX : wrapResult(new char[rowCount][columnCount], columnCount);
+        }
+
         final char[][] otherArray = other.a;
         final char[][] result = new char[rowCount][columnCount];
 
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<RuntimeException> elementAction = (i, j) -> result[i][j] = (char) (a[i][j] + otherArray[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Character.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final char[] row = a[i];
+                    final char[] otherRow = otherArray[i];
+                    final char[] resultRow = result[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        resultRow[j] = (char) (row[j] + otherRow[j]);
+                    }
+                }
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final char[] row = a[i];
@@ -2914,12 +3283,25 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
         N.checkArgument(isSameShape(other), "Cannot subtract matrices with different shapes: this is {}x{} but other is {}x{}", rowCount, columnCount,
                 other.rowCount, other.columnCount);
 
+        if (isEmpty()) {
+            return rowCount == 0 && columnCount == 0 ? EMPTY_CHAR_MATRIX : wrapResult(new char[rowCount][columnCount], columnCount);
+        }
+
         final char[][] otherArray = other.a;
         final char[][] result = new char[rowCount][columnCount];
 
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<RuntimeException> elementAction = (i, j) -> result[i][j] = (char) (a[i][j] - otherArray[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Character.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final char[] row = a[i];
+                    final char[] otherRow = otherArray[i];
+                    final char[] resultRow = result[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        resultRow[j] = (char) (row[j] - otherRow[j]);
+                    }
+                }
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final char[] row = a[i];
@@ -2979,11 +3361,18 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
                 "Matrix dimensions incompatible for multiplication: this is {}x{}, other is {}x{} (this.columnCount must equal other.rowCount)", rowCount,
                 columnCount, other.rowCount, other.columnCount);
 
-        checkNonNegativeShape(rowCount, other.columnCount);
+        final int newColumnCount = other.columnCount;
+
+        if (rowCount == 0 && newColumnCount == 0) {
+            return EMPTY_CHAR_MATRIX;
+        }
 
         final char[][] otherArray = other.a;
-        final int newColumnCount = other.columnCount;
         final char[][] result = new char[rowCount][newColumnCount];
+
+        if (rowCount == 0 || columnCount == 0 || newColumnCount == 0) {
+            return wrapResult(result, newColumnCount);
+        }
 
         if (Matrices.shouldRunMatrixMultiplyInParallel(this, newColumnCount)) {
             final int commonCount = columnCount;
@@ -2996,6 +3385,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
                     for (int k = 0; k < commonCount; k++) {
                         final char aik = row[k];
+
+                        if (aik == 0) {
+                            continue;
+                        }
+
                         final char[] otherRow = otherArray[k];
 
                         for (int j = fromColumnIndex; j < toColumnIndex; j++) {
@@ -3013,6 +3407,11 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
                 for (int k = 0; k < columnCount; k++) {
                     final char aik = row[k];
+
+                    if (aik == 0) {
+                        continue;
+                    }
+
                     final char[] otherRow = otherArray[k];
 
                     for (int j = 0; j < newColumnCount; j++) {
@@ -3045,12 +3444,14 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     public Matrix<Character> boxed() {
         final Character[][] c = new Character[rowCount][columnCount];
 
-        for (int i = 0; i < rowCount; i++) {
-            final char[] aa = a[i];
-            final Character[] cc = c[i];
+        if (!isEmpty()) {
+            for (int i = 0; i < rowCount; i++) {
+                final char[] aa = a[i];
+                final Character[] cc = c[i];
 
-            for (int j = 0; j < columnCount; j++) {
-                cc[j] = aa[j]; // NOSONAR
+                for (int j = 0; j < columnCount; j++) {
+                    cc[j] = aa[j]; // NOSONAR
+                }
             }
         }
 
@@ -3079,11 +3480,24 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @see IntMatrix#from(char[][])
      */
     public IntMatrix toIntMatrix() {
-        if (rowCount == 0) {
-            return IntMatrix.wrapResult(new int[0][], columnCount);
+        if (rowCount == 0 && columnCount == 0) {
+            return IntMatrix.empty();
         }
 
-        return IntMatrix.from(a);
+        final int[][] c = new int[rowCount][columnCount];
+
+        if (columnCount > 0) {
+            for (int i = 0; i < rowCount; i++) {
+                final char[] aa = a[i];
+                final int[] cc = c[i];
+
+                for (int j = 0; j < columnCount; j++) {
+                    cc[j] = aa[j]; // NOSONAR
+                }
+            }
+        }
+
+        return IntMatrix.wrapResult(c, columnCount);
     }
 
     /**
@@ -3107,14 +3521,20 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @see #toDoubleMatrix()
      */
     public LongMatrix toLongMatrix() {
+        if (rowCount == 0 && columnCount == 0) {
+            return LongMatrix.empty();
+        }
+
         final long[][] c = new long[rowCount][columnCount];
 
-        for (int i = 0; i < rowCount; i++) {
-            final char[] aa = a[i];
-            final long[] cc = c[i];
+        if (columnCount > 0) {
+            for (int i = 0; i < rowCount; i++) {
+                final char[] aa = a[i];
+                final long[] cc = c[i];
 
-            for (int j = 0; j < columnCount; j++) {
-                cc[j] = aa[j]; // NOSONAR
+                for (int j = 0; j < columnCount; j++) {
+                    cc[j] = aa[j]; // NOSONAR
+                }
             }
         }
 
@@ -3142,14 +3562,20 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @see #toDoubleMatrix()
      */
     public FloatMatrix toFloatMatrix() {
+        if (rowCount == 0 && columnCount == 0) {
+            return FloatMatrix.empty();
+        }
+
         final float[][] c = new float[rowCount][columnCount];
 
-        for (int i = 0; i < rowCount; i++) {
-            final char[] aa = a[i];
-            final float[] cc = c[i];
+        if (columnCount > 0) {
+            for (int i = 0; i < rowCount; i++) {
+                final char[] aa = a[i];
+                final float[] cc = c[i];
 
-            for (int j = 0; j < columnCount; j++) {
-                cc[j] = aa[j]; // NOSONAR
+                for (int j = 0; j < columnCount; j++) {
+                    cc[j] = aa[j]; // NOSONAR
+                }
             }
         }
 
@@ -3177,14 +3603,20 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @see #toFloatMatrix()
      */
     public DoubleMatrix toDoubleMatrix() {
+        if (rowCount == 0 && columnCount == 0) {
+            return DoubleMatrix.empty();
+        }
+
         final double[][] c = new double[rowCount][columnCount];
 
-        for (int i = 0; i < rowCount; i++) {
-            final char[] aa = a[i];
-            final double[] cc = c[i];
+        if (columnCount > 0) {
+            for (int i = 0; i < rowCount; i++) {
+                final char[] aa = a[i];
+                final double[] cc = c[i];
 
-            for (int j = 0; j < columnCount; j++) {
-                cc[j] = aa[j]; // NOSONAR
+                for (int j = 0; j < columnCount; j++) {
+                    cc[j] = aa[j]; // NOSONAR
+                }
             }
         }
 
@@ -3233,12 +3665,25 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
                 other.rowCount, other.columnCount);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
 
+        if (isEmpty()) {
+            return rowCount == 0 && columnCount == 0 ? EMPTY_CHAR_MATRIX : wrapResult(new char[rowCount][columnCount], columnCount);
+        }
+
         final char[][] otherData = other.a;
         final char[][] result = new char[rowCount][columnCount];
 
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsChar(a[i][j], otherData[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Character.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final char[] row = a[i];
+                    final char[] otherRow = otherData[i];
+                    final char[] resultRow = result[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        resultRow[j] = zipFunction.applyAsChar(row[j], otherRow[j]);
+                    }
+                }
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final char[] row = a[i];
@@ -3302,13 +3747,27 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
                 third.rowCount, third.columnCount);
         N.checkArgNotNull(zipFunction, cs.zipFunction);
 
+        if (isEmpty()) {
+            return rowCount == 0 && columnCount == 0 ? EMPTY_CHAR_MATRIX : wrapResult(new char[rowCount][columnCount], columnCount);
+        }
+
         final char[][] otherData = other.a;
         final char[][] thirdData = third.a;
         final char[][] result = new char[rowCount][columnCount];
 
         if (Matrices.shouldRunInParallel(this)) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> result[i][j] = zipFunction.applyAsChar(a[i][j], otherData[i][j], thirdData[i][j]);
-            Matrices.forEachIndices(rowCount, columnCount, elementAction, true);
+            Matrices.forEachBlockInParallel(rowCount, columnCount, Character.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final char[] row = a[i];
+                    final char[] otherRow = otherData[i];
+                    final char[] thirdRow = thirdData[i];
+                    final char[] resultRow = result[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        resultRow[j] = zipFunction.applyAsChar(row[j], otherRow[j], thirdRow[j]);
+                    }
+                }
+            });
         } else {
             for (int i = 0; i < rowCount; i++) {
                 final char[] row = a[i];
@@ -3373,7 +3832,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
                     throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                 }
 
-                return a[cursor][cursor++];
+                final int idx = cursor++;
+                return a[idx][idx];
             }
 
             @Override
@@ -3394,13 +3854,16 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
             @Override
             public char[] toArray() {
-                final char[] result = new char[toIndex - cursor];
+                final int start = cursor;
+                final int len = toIndex - start;
+                final char[] result = new char[len];
 
-                for (int i = 0; i < result.length; i++) {
-                    result[i] = a[cursor][cursor];
-                    cursor++;
+                for (int i = 0; i < len; i++) {
+                    final int idx = start + i;
+                    result[i] = a[idx][idx];
                 }
 
+                cursor = toIndex;
                 return result;
             }
 
@@ -3459,9 +3922,8 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
                     throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                 }
 
-                final char result = a[cursor][columnCount - cursor - 1];
-                cursor++;
-                return result;
+                final int idx = cursor++;
+                return a[idx][columnCount - idx - 1];
             }
 
             @Override
@@ -3482,13 +3944,17 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
 
             @Override
             public char[] toArray() {
-                final char[] result = new char[toIndex - cursor];
+                final int start = cursor;
+                final int len = toIndex - start;
+                final char[] result = new char[len];
+                final int lastCol = columnCount - 1;
 
-                for (int i = 0; i < result.length; i++) {
-                    result[i] = a[cursor][columnCount - cursor - 1];
-                    cursor++;
+                for (int i = 0; i < len; i++) {
+                    final int idx = start + i;
+                    result[i] = a[idx][lastCol - idx];
                 }
 
+                cursor = toIndex;
                 return result;
             }
 
@@ -3551,7 +4017,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      *
      * @param fromRowIndex the starting row index (inclusive, 0-based)
      * @param toRowIndex the ending row index (exclusive)
-     * @return a CharStream of elements from the specified row range, or an empty stream if the matrix is empty
+     * @return a CharStream of elements from the specified row range, or an empty stream if the range is empty or the matrix is empty
      * @throws IndexOutOfBoundsException if {@code fromRowIndex < 0}, {@code toRowIndex > rowCount}, or {@code fromRowIndex > toRowIndex}
      */
     @Override
@@ -3625,25 +4091,35 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
             public char[] toArray() throws IllegalStateException {
                 final int len = toArrayLength((long) (toRowIndex - i) * columnCount - j);
                 final char[] c = new char[len];
+                int row = i;
+                int col = j;
                 int k = 0;
 
                 while (k < len) {
-                    final int chunk = N.min(columnCount - j, len - k);
-                    N.copy(a[i], j, c, k, chunk);
+                    final int chunk = Math.min(columnCount - col, len - k);
+                    System.arraycopy(a[row], col, c, k, chunk);
                     k += chunk;
-                    j += chunk;
+                    col += chunk;
 
-                    if (j >= columnCount) {
-                        i++;
-                        j = 0;
+                    if (col >= columnCount) {
+                        row++;
+                        col = 0;
                     }
                 }
 
+                i = row;
+                j = col;
                 return c;
             }
 
+            /**
+             * {@inheritDoc}
+             *
+             * @throws IllegalStateException if more than {@code Integer.MAX_VALUE} elements remain;
+             *         no elements are consumed
+             */
             @Override
-            public CharList toList() {
+            public CharList toList() throws IllegalStateException {
                 return CharList.of(toArray());
             }
         });
@@ -3700,7 +4176,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @param fromColumnIndex the starting column index (inclusive, 0-based)
      * @param toColumnIndex the ending column index (exclusive)
      * @return a CharStream of elements from the specified column range in column-major order,
-     *         or an empty stream if the matrix is empty
+     *         or an empty stream if the range is empty or the matrix is empty
      * @throws IndexOutOfBoundsException if {@code fromColumnIndex < 0}, {@code toColumnIndex > columnCount},
      *         or {@code fromColumnIndex > toColumnIndex}
      */
@@ -3776,21 +4252,31 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
             public char[] toArray() throws IllegalStateException {
                 final int len = toArrayLength((long) (toColumnIndex - j) * rowCount - i);
                 final char[] c = new char[len];
+                int row = i;
+                int col = j;
+                int k = 0;
 
-                for (int k = 0; k < len; k++) {
-                    c[k] = a[i++][j];
-
-                    if (i >= rowCount) {
-                        i = 0;
-                        j++;
+                for (; col < toColumnIndex; col++) {
+                    for (; row < rowCount; row++) {
+                        c[k++] = a[row][col];
                     }
+
+                    row = 0;
                 }
 
+                i = 0;
+                j = toColumnIndex;
                 return c;
             }
 
+            /**
+             * {@inheritDoc}
+             *
+             * @throws IllegalStateException if more than {@code Integer.MAX_VALUE} elements remain;
+             *         no elements are consumed
+             */
             @Override
-            public CharList toList() {
+            public CharList toList() throws IllegalStateException {
                 return CharList.of(toArray());
             }
         });
@@ -3908,6 +4394,45 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
                 cursor = toIndex;
                 return remaining;
             }
+
+            @Override
+            public List<CharStream> toList() {
+                final int len = toIndex - cursor;
+                final List<CharStream> result = new ArrayList<>(len);
+
+                while (cursor < toIndex) {
+                    result.add(CharStream.of(a[cursor++]));
+                }
+
+                return result;
+            }
+
+            /**
+             * {@inheritDoc}
+             *
+             * @throws NullPointerException if {@code c} is {@code null}; no elements are consumed
+             * @throws ArrayStoreException if a stream cannot be stored in {@code c}; that element remains unconsumed
+             */
+            @SuppressWarnings("unchecked")
+            @Override
+            public <A> A[] toArray(A[] c) throws NullPointerException, ArrayStoreException {
+                final int len = toIndex - cursor;
+
+                if (c.length < len) {
+                    c = newDestinationArray(c, len);
+                }
+
+                for (int i = 0; i < len; i++) {
+                    c[i] = (A) CharStream.of(a[cursor]);
+                    cursor++;
+                }
+
+                if (c.length > len) {
+                    c[len] = null;
+                }
+
+                return c;
+            }
         });
     }
 
@@ -3940,6 +4465,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * @return a Stream of CharStream objects, one for each column in the matrix,
      *         or an empty stream when there are no columns (a {@code 0 x N} matrix still yields one
      *         empty stream per column)
+     * @see #columnMajorStream(int, int)
      */
     @Override
     public Stream<CharStream> columnStreams() {
@@ -4003,62 +4529,7 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
                     throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
                 }
 
-                return CharStream.of(new CharIteratorEx() {
-                    private final int columnIndex = cursor++;
-                    private final int toIndex2 = rowCount;
-                    private int cursor2 = 0;
-
-                    @Override
-                    public boolean hasNext() {
-                        return cursor2 < toIndex2;
-                    }
-
-                    /**
-                     * {@inheritDoc}
-                     *
-                     * @throws NoSuchElementException if no elements remain in this iterator
-                     */
-                    @Override
-                    public char nextChar() throws NoSuchElementException {
-                        if (cursor2 >= toIndex2) {
-                            throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
-                        }
-
-                        return a[cursor2++][columnIndex];
-                    }
-
-                    @Override
-                    public void advance(final long n) {
-                        if (n <= 0) {
-                            return;
-                        }
-
-                        cursor2 = n < toIndex2 - cursor2 ? cursor2 + (int) n : toIndex2;
-                    }
-
-                    @Override
-                    public long count() {
-                        final long remaining = toIndex2 - cursor2;
-                        cursor2 = toIndex2;
-                        return remaining;
-                    }
-
-                    @Override
-                    public char[] toArray() {
-                        final char[] result = new char[toIndex2 - cursor2];
-
-                        for (int i = 0; i < result.length; i++) {
-                            result[i] = a[cursor2++][columnIndex];
-                        }
-
-                        return result;
-                    }
-
-                    @Override
-                    public CharList toList() {
-                        return CharList.of(toArray());
-                    }
-                });
+                return columnStream(cursor++);
             }
 
             @Override
@@ -4075,6 +4546,116 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
                 final long remaining = toIndex - cursor;
                 cursor = toIndex;
                 return remaining;
+            }
+
+            @Override
+            public List<CharStream> toList() {
+                final int len = toIndex - cursor;
+                final List<CharStream> result = new ArrayList<>(len);
+
+                while (cursor < toIndex) {
+                    result.add(columnStream(cursor++));
+                }
+
+                return result;
+            }
+
+            /**
+             * {@inheritDoc}
+             *
+             * @throws NullPointerException if {@code c} is {@code null}; no elements are consumed
+             * @throws ArrayStoreException if a stream cannot be stored in {@code c}; that element remains unconsumed
+             */
+            @SuppressWarnings("unchecked")
+            @Override
+            public <A> A[] toArray(A[] c) throws NullPointerException, ArrayStoreException {
+                final int len = toIndex - cursor;
+
+                if (c.length < len) {
+                    c = newDestinationArray(c, len);
+                }
+
+                for (int i = 0; i < len; i++) {
+                    c[i] = (A) columnStream(cursor);
+                    cursor++;
+                }
+
+                if (c.length > len) {
+                    c[len] = null;
+                }
+
+                return c;
+            }
+        });
+    }
+
+    /**
+     * Returns a live {@link CharStream} over the elements in {@code columnIndex}.
+     *
+     * @param columnIndex the validated column index
+     * @return a stream traversing rows {@code 0..rowCount - 1} at {@code columnIndex}, or an empty stream when {@code rowCount == 0}
+     */
+    private CharStream columnStream(final int columnIndex) {
+        if (rowCount == 0) {
+            return CharStream.empty();
+        }
+
+        return CharStream.of(new CharIteratorEx() {
+            private final int toIndex2 = rowCount;
+            private int cursor2 = 0;
+
+            @Override
+            public boolean hasNext() {
+                return cursor2 < toIndex2;
+            }
+
+            /**
+             * {@inheritDoc}
+             *
+             * @throws NoSuchElementException if no elements remain in this iterator
+             */
+            @Override
+            public char nextChar() throws NoSuchElementException {
+                if (cursor2 >= toIndex2) {
+                    throw new NoSuchElementException(InternalUtil.ERROR_MSG_FOR_NO_SUCH_EX);
+                }
+
+                return a[cursor2++][columnIndex];
+            }
+
+            @Override
+            public void advance(final long n) {
+                if (n <= 0) {
+                    return;
+                }
+
+                cursor2 = n < toIndex2 - cursor2 ? cursor2 + (int) n : toIndex2;
+            }
+
+            @Override
+            public long count() {
+                final long remaining = toIndex2 - cursor2;
+                cursor2 = toIndex2;
+                return remaining;
+            }
+
+            @Override
+            public char[] toArray() {
+                final int start = cursor2;
+                final int len = toIndex2 - start;
+                final char[] result = new char[len];
+
+                for (int i = 0; i < len; i++) {
+                    result[i] = a[start + i][columnIndex];
+                }
+
+                cursor2 = toIndex2;
+                return result;
+            }
+
+            @Override
+            public CharList toList() {
+                return CharList.of(toArray());
             }
         });
     }
@@ -4187,9 +4768,20 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
         N.checkFromToIndex(fromColumnIndex, toColumnIndex, columnCount);
         N.checkArgNotNull(action, cs.action);
 
+        if (fromRowIndex == toRowIndex || fromColumnIndex == toColumnIndex) {
+            return;
+        }
+
         if (Matrices.shouldRunInParallel(this, ((long) (toRowIndex - fromRowIndex)) * (toColumnIndex - fromColumnIndex))) {
-            final Throwables.IntBiConsumer<E> elementAction = (i, j) -> action.accept(a[i][j]);
-            Matrices.forEachIndices(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, elementAction, true);
+            Matrices.forEachBlockInParallel(fromRowIndex, toRowIndex, fromColumnIndex, toColumnIndex, Character.BYTES, (fromRow, toRow, fromCol, toCol) -> {
+                for (int i = fromRow; i < toRow; i++) {
+                    final char[] currentRow = a[i];
+
+                    for (int j = fromCol; j < toCol; j++) {
+                        action.accept(currentRow[j]);
+                    }
+                }
+            });
         } else {
             for (int i = fromRowIndex; i < toRowIndex; i++) {
                 final char[] currentRow = a[i];
@@ -4224,27 +4816,29 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
             return "[]";
         }
 
-        final StringBuilder sb = Objectory.createStringBuilder();
-        String result = "";
+        final StringBuilder sb = Objectory.createStringBuilder(estimateStringCapacity(rowCount, elementCount, 5));
 
         try {
+            final String rowSeparator = multiline ? ARRAY_PRINT_SEPARATOR : ", ";
+
             if (!multiline) {
                 sb.append('[');
             }
 
             for (int i = 0; i < rowCount; i++) {
                 if (i > 0) {
-                    sb.append(multiline ? ARRAY_PRINT_SEPARATOR : ", ");
+                    sb.append(rowSeparator);
                 }
 
                 sb.append('[');
+                final char[] row = a[i];
 
                 for (int j = 0; j < columnCount; j++) {
                     if (j > 0) {
                         sb.append(", ");
                     }
 
-                    appendEscapedChar(sb, a[i][j]);
+                    appendEscapedChar(sb, row[j]);
                 }
 
                 sb.append(']');
@@ -4254,15 +4848,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
                 sb.append(']');
             }
 
-            result = sb.toString();
-        } catch (final IOException e) {
-            // StringBuilder never throws IOException; this only satisfies Appendable's general contract.
-            throw new AssertionError(e);
+            return sb.toString();
         } finally {
             Objectory.recycle(sb);
         }
-
-        return result;
     }
 
     /**
@@ -4295,7 +4884,17 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      */
     static void appendEscapedChar(final Appendable output, final char value) throws IllegalArgumentException, RuntimeException, IOException {
         N.checkArgNotNull(output, cs.output);
+        appendEscapedCharUnchecked(output, value);
+    }
 
+    /**
+     * Appends one escaped, single-quoted character literal to an already-validated destination.
+     *
+     * @param output the non-null destination
+     * @param value the character to append
+     * @throws IOException if {@code output} fails while appending
+     */
+    static void appendEscapedCharUnchecked(final Appendable output, final char value) throws IOException {
         output.append('\'');
 
         switch (value) {
@@ -4338,6 +4937,53 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     }
 
     /**
+     * Appends one escaped, single-quoted character literal directly to a {@link StringBuilder},
+     * avoiding interface dispatch and checked {@link IOException} handling in hot loops.
+     *
+     * @param sb the non-null destination builder
+     * @param value the character to append
+     */
+    static void appendEscapedChar(final StringBuilder sb, final char value) {
+        sb.append('\'');
+
+        switch (value) {
+            case '\b':
+                sb.append("\\b");
+                break;
+            case '\t':
+                sb.append("\\t");
+                break;
+            case '\n':
+                sb.append("\\n");
+                break;
+            case '\f':
+                sb.append("\\f");
+                break;
+            case '\r':
+                sb.append("\\r");
+                break;
+            case '\'':
+                sb.append("\\'");
+                break;
+            case '\\':
+                sb.append("\\\\");
+                break;
+            default:
+                if (value >= 0x20 && value <= 0x7e) {
+                    sb.append(value);
+                } else {
+                    sb.append('\\').append('u');
+                    sb.append(HEX_DIGITS.charAt(value >>> 12));
+                    sb.append(HEX_DIGITS.charAt((value >>> 8) & 0xf));
+                    sb.append(HEX_DIGITS.charAt((value >>> 4) & 0xf));
+                    sb.append(HEX_DIGITS.charAt(value & 0xf));
+                }
+        }
+
+        sb.append('\'');
+    }
+
+    /**
      * Returns a hash code value for this matrix.
      * The hash code is computed from the deep contents of the internal two-dimensional array. A matrix
      * with no rows but some columns has no contents to hash, so its column count participates instead, keeping
@@ -4362,7 +5008,17 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
     public int hashCode() {
         // A zero-row matrix carries its column count outside the backing array, and equals() compares
         // it, so it must take part in the hash; every other shape is already distinguished by the data.
-        return rowCount == 0 && columnCount > 0 ? 961 + columnCount : N.deepHashCode(a);
+        if (rowCount == 0 && columnCount > 0) {
+            return 961 + columnCount;
+        }
+
+        int result = 1;
+
+        for (final char[] row : a) {
+            result = 31 * result + java.util.Arrays.hashCode(row);
+        }
+
+        return result;
     }
 
     /**
@@ -4394,7 +5050,21 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
         }
 
         if (obj instanceof final CharMatrix another) {
-            return columnCount == another.columnCount && rowCount == another.rowCount && N.deepEquals(a, another.a);
+            if (columnCount != another.columnCount || rowCount != another.rowCount) {
+                return false;
+            }
+
+            if (columnCount == 0) {
+                return true;
+            }
+
+            for (int i = 0; i < rowCount; i++) {
+                if (!java.util.Arrays.equals(a[i], another.a[i])) {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         return false;
@@ -4404,9 +5074,10 @@ public final class CharMatrix extends AbstractMatrix<char[], CharList, CharStrea
      * Returns a compact diagnostic representation with every UTF-16 code unit quoted and escaped.
      * Printable ASCII characters appear directly; special characters and every other code unit use
      * Java-style escapes. For example, a newline is rendered as a backslash followed by {@code n},
-     * and a surrogate is rendered as a four-digit hexadecimal escape.
+     * and a surrogate is rendered as a four-digit hexadecimal escape. Any zero-row matrix
+     * (including {@code 0 x N} with {@code N > 0}) renders as {@code "[]"}.
      *
-     * @return an unambiguous two-dimensional representation of this matrix
+     * @return an unambiguous two-dimensional representation of this matrix, or {@code "[]"} if this matrix has no rows
      * @see #println()
      */
     @Override
